@@ -12,69 +12,88 @@
   </head>
 
   <body>
-    <div class="container">
+    <div class="container mt-3">
+      <h1>World Hammer</h1>
+
       <ul class="nav nav-tabs" id="myTab" role="tablist">
         <li class="nav-item nav-fill">
-          <a class="nav-link active" id="shape-tab" data-toggle="tab" href="#shapepanel" role="tab" aria-controls="shape" aria-selected="true">Planet</a>
+          <a class="nav-link active" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet" aria-selected="true">Planet</a>
         </li>
         <li class="nav-item nav-fill">
-          <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrainpanel" role="tab" aria-controls="terrain" aria-selected="false">Terrain</a>
+          <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain" aria-selected="false">Terrain</a>
         </li>
         <li class="nav-item nav-fill">
-          <a class="nav-link" id="history-tab" data-toggle="tab" href="#historypanel" role="tab" aria-controls="history" aria-selected="false">History</a>
+          <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history" aria-selected="false">History</a>
         </li>
         <li class="nav-item nav-fill">
-          <a class="nav-link" id="map-tab" data-toggle="tab" href="#mappanel" role="tab" aria-controls="map" aria-selected="false">Map</a>
+          <a class="nav-link" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map" aria-selected="false">Map</a>
         </li>
       </ul>
 
-      <div class="tab-content" id="myTabContent">
+      <div class="tab-content">
         
-        <div class="tab-pane fade show active" id="shapepanel" role="tabpanel" aria-labelledby="shape-tab">
-          <div class="row">
-            <div class="col-xs-12 col-md-4 col-lg-3">
-              <form>
+        <div class="tab-pane fade show active" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
+          <div class="container mt-2">
+            <div class="row">
+              <div class="col-xs-12 col-md-4 col-lg-3">
+                <form>
+                  <div class="form-group">
+                    <label for="planet-type">Type</label>
+                    <select class="custom-select" id="planet-type">
+                      <option selected value="0">Spheroid</option>
+                      <option value="1">Toroid</option>
+                      <option value="2">Plane</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="planet-locked">
+                      <label class="custom-control-label" for="planet-locked">Tidally-locked</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="planet-day">Day length</label>
+                    <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" input data-suffix="hr" id="planet-day"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="planet-gravity">Surface gravity</label>
+                    <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" input data-suffix="g" id="planet-gravity"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="planet-size">Circumference</label>
+                    <input type="number" value="8000" data-decimals="0" min="1000" max="100000" step="1000" input data-suffix="km" id="planet-size"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="planet-tilt">Axial tilt</label>
+                    <input type="number" value="20" data-decimals="1" min="0" max="90" step="5" input data-suffix="°" id="planet-tilt"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="planet-temperature">Maximum temperature</label>
+                    <input type="number" value="30" data-decimals="0" min="10" max="50" step="5" input data-suffix="°C" id="planet-temperature"/>
+                  </div>
+                  <!--<div class="form-group">
+                    <label for="planet-resolution">Number of cells</label>
+                    <input type="number" value="500" min="0" max="1000" step="50" id="planet-resolution"/>
+                  </div>-->
+                </form>
+              </div>
 
-                <label for="planet-type">Type</label>
-                <select class="custom-select" id="planet-type">
-                  <option selected value="0">Spheroid</option>
-                  <option value="1">Toroid</option>
-                  <option value="2">Plane</option>
-                </select>
-                <div class="custom-control custom-checkbox">
-                  <input type="checkbox" class="custom-control-input" id="planet-locked">
-                  <label class="custom-control-label" for="planet-locked">Tidally-locked</label>
-                </div>
-                <label for="planet-day">Day length</label>
-                <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" input data-suffix="hr" id="planet-day"/>
-                <label for="planet-size">Circumference</label>
-                <input type="number" value="8000" data-decimals="0" min="1000" max="100000" step="1000" input data-suffix="km" id="planet-size"/>
-                <label for="planet-gravity">Surface gravity</label>
-                <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" input data-suffix="g" id="planet-gravity"/>
-                <label for="planet-tilt">Axial tilt</label>
-                <input type="number" value="20" data-decimals="1" min="0" max="90" step="5" input data-suffix="°" id="planet-tilt"/>
-                <label for="planet-temperature">Maximum temperature</label>
-                <input type="number" value="30" data-decimals="1" min="10" max="50" step="5" input data-suffix="°C" id="planet-temperature"/>
-                <!--<label for="planet-resolution">Number of cells</label>
-                <input type="number" value="500" min="0" max="1000" step="50" id="planet-resolution"/>-->
-              </form>
-            </div>
-
-            <div class="col-xs-12 col-md-8 col-lg-9">
-              Map. I like maps.
+              <div class="col-xs-12 col-md-8 col-lg-9">
+                Map. I like maps.
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="tab-pane fade" id="terrainpanel" role="tabpanel" aria-labelledby="terrain-tab">
+        <div class="tab-pane fade" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
           This is where the plate tectonics happen.
         </div>
 
-        <div class="tab-pane fade" id="historypanel" role="tabpanel" aria-labelledby="history-tab">
+        <div class="tab-pane fade" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
           This is where you can watch history play out.
         </div>
 
-        <div class="tab-pane fade" id="mappanel" role="tabpanel" aria-labelledby="map-tab">
+        <div class="tab-pane fade" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
           This is where you download the map.
         </div>
 
