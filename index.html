@@ -10,40 +10,75 @@
 
     <title>World Hammer &ndash; fastasy map generator</title>
   </head>
+
   <body>
-    <ul class="nav nav-tabs" id="myTab" role="tablist">
-      <li class="nav-item nav-fill">
-        <a class="nav-link active" id="shape-tab" data-toggle="tab" href="#shapepanel" role="tab" aria-controls="shape" aria-selected="true">Shape</a>
-      </li>
-      <li class="nav-item nav-fill">
-        <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrainpanel" role="tab" aria-controls="terrain" aria-selected="false">Terrain</a>
-      </li>
-      <li class="nav-item nav-fill">
-        <a class="nav-link" id="history-tab" data-toggle="tab" href="#historypanel" role="tab" aria-controls="history" aria-selected="false">History</a>
-      </li>
-      <li class="nav-item nav-fill">
-        <a class="nav-link" id="map-tab" data-toggle="tab" href="#mappanel" role="tab" aria-controls="map" aria-selected="false">Map</a>
-      </li>
-    </ul>
+    <div class="container">
+      <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item nav-fill">
+          <a class="nav-link active" id="shape-tab" data-toggle="tab" href="#shapepanel" role="tab" aria-controls="shape" aria-selected="true">Planet</a>
+        </li>
+        <li class="nav-item nav-fill">
+          <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrainpanel" role="tab" aria-controls="terrain" aria-selected="false">Terrain</a>
+        </li>
+        <li class="nav-item nav-fill">
+          <a class="nav-link" id="history-tab" data-toggle="tab" href="#historypanel" role="tab" aria-controls="history" aria-selected="false">History</a>
+        </li>
+        <li class="nav-item nav-fill">
+          <a class="nav-link" id="map-tab" data-toggle="tab" href="#mappanel" role="tab" aria-controls="map" aria-selected="false">Map</a>
+        </li>
+      </ul>
 
-    <div class="tab-content" id="myTabContent">
-      
-      <div class="tab-pane fade show active" id="shapepanel" role="tabpanel" aria-labelledby="shape-tab">
-        This is where you learn about the true shape of the Earth.
+      <div class="tab-content" id="myTabContent">
+        
+        <div class="tab-pane fade show active" id="shapepanel" role="tabpanel" aria-labelledby="shape-tab">
+          <div class="row">
+            <div class="col-xs-12 col-md-4 col-lg-3">
+              <form>
+
+                <label for="planet-type">Type</label>
+                <select class="custom-select" id="planet-type">
+                  <option selected value="0">Spheroid</option>
+                  <option value="1">Toroid</option>
+                  <option value="2">Plane</option>
+                </select>
+                <div class="custom-control custom-checkbox">
+                  <input type="checkbox" class="custom-control-input" id="planet-locked">
+                  <label class="custom-control-label" for="planet-locked">Tidally-locked</label>
+                </div>
+                <label for="planet-day">Day length</label>
+                <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" input data-suffix="hr" id="planet-day"/>
+                <label for="planet-size">Circumference</label>
+                <input type="number" value="8000" data-decimals="0" min="1000" max="100000" step="1000" input data-suffix="km" id="planet-size"/>
+                <label for="planet-gravity">Surface gravity</label>
+                <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" input data-suffix="g" id="planet-gravity"/>
+                <label for="planet-tilt">Axial tilt</label>
+                <input type="number" value="20" data-decimals="1" min="0" max="90" step="5" input data-suffix="°" id="planet-tilt"/>
+                <label for="planet-temperature">Maximum temperature</label>
+                <input type="number" value="30" data-decimals="1" min="10" max="50" step="5" input data-suffix="°C" id="planet-temperature"/>
+                <!--<label for="planet-resolution">Number of cells</label>
+                <input type="number" value="500" min="0" max="1000" step="50" id="planet-resolution"/>-->
+              </form>
+            </div>
+
+            <div class="col-xs-12 col-md-8 col-lg-9">
+              Map. I like maps.
+            </div>
+          </div>
+        </div>
+
+        <div class="tab-pane fade" id="terrainpanel" role="tabpanel" aria-labelledby="terrain-tab">
+          This is where the plate tectonics happen.
+        </div>
+
+        <div class="tab-pane fade" id="historypanel" role="tabpanel" aria-labelledby="history-tab">
+          This is where you can watch history play out.
+        </div>
+
+        <div class="tab-pane fade" id="mappanel" role="tabpanel" aria-labelledby="map-tab">
+          This is where you download the map.
+        </div>
+
       </div>
-
-      <div class="tab-pane fade" id="terrainpanel" role="tabpanel" aria-labelledby="terrain-tab">
-        This is where the plate tectonics happen.
-      </div>
-
-      <div class="tab-pane fade" id="historypanel" role="tabpanel" aria-labelledby="history-tab">
-        This is where you can watch history play out.
-      </div>
-
-      <div class="tab-pane fade" id="mappanel" role="tabpanel" aria-labelledby="map-tab">
-        This is where you download the map.
-      </div>
-
     </div>
 
     <!-- Optional JavaScript -->
@@ -51,5 +86,9 @@
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="./src/bootstrap-input-spinner.js"></script>
+    <script>
+      $("input[type='number']").inputSpinner()
+    </script>
   </body>
 </html>
