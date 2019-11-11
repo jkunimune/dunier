@@ -12,7 +12,7 @@
   </head>
 
   <body>
-    <div class="container mt-3">
+    <div class="container mt-3 mb-5">
       <h1>World Hammer</h1>
 
       <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -38,6 +38,10 @@
               <div class="col-xs-12 col-md-4 col-lg-3">
                 <form>
                   <div class="form-group">
+                    <label for="planet-seed">Random seed</label>
+                    <input type="number" value="0" min="0" max="99999999" step="1" id="planet-seed"/>
+                  </div>
+                  <div class="form-group">
                     <label for="planet-type">Type</label>
                     <select class="custom-select" id="planet-type">
                       <option selected value="0">Spheroid</option>
@@ -53,28 +57,29 @@
                   </div>
                   <div class="form-group">
                     <label for="planet-day">Day length</label>
-                    <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" input data-suffix="hr" id="planet-day"/>
+                    <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="hr" id="planet-day"/>
                   </div>
                   <div class="form-group">
                     <label for="planet-gravity">Surface gravity</label>
-                    <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" input data-suffix="g" id="planet-gravity"/>
+                    <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="g" id="planet-gravity"/>
                   </div>
                   <div class="form-group">
                     <label for="planet-size">Circumference</label>
-                    <input type="number" value="8000" data-decimals="0" min="1000" max="100000" step="1000" input data-suffix="km" id="planet-size"/>
+                    <input type="number" value="8000" data-decimals="0" min="1000" max="100000" step="1000" data-suffix="km" id="planet-size"/>
                   </div>
                   <div class="form-group">
                     <label for="planet-tilt">Axial tilt</label>
-                    <input type="number" value="20" data-decimals="1" min="0" max="90" step="5" input data-suffix="°" id="planet-tilt"/>
+                    <input type="number" value="20" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
                   </div>
                   <div class="form-group">
                     <label for="planet-temperature">Maximum temperature</label>
-                    <input type="number" value="30" data-decimals="0" min="10" max="50" step="5" input data-suffix="°C" id="planet-temperature"/>
+                    <input type="number" value="30" data-decimals="0" min="10" max="50" step="5" data-suffix="°C" id="planet-temperature"/>
                   </div>
                   <!--<div class="form-group">
                     <label for="planet-resolution">Number of cells</label>
                     <input type="number" value="500" min="0" max="1000" step="50" id="planet-resolution"/>
                   </div>-->
+                  <button type="button" class="btn btn-block btn-primary" id="planet-apply">Apply</button>
                 </form>
               </div>
 
