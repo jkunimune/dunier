@@ -42,7 +42,7 @@
                     <input type="number" value="0" min="0" max="99999999" step="1" id="planet-seed"/>
                   </div>
                   <div class="form-group">
-                    <label for="planet-type">Type</label>
+                    <label for="planet-type">Shape</label>
                     <select class="custom-select" id="planet-type">
                       <option selected value="0">Spheroid</option>
                       <option value="1">Toroid</option>
@@ -71,10 +71,10 @@
                     <label for="planet-tilt">Axial tilt</label>
                     <input type="number" value="20" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
                   </div>
-                  <div class="form-group">
+                  <!--<div class="form-group">
                     <label for="planet-temperature">Maximum temperature</label>
                     <input type="number" value="30" data-decimals="0" min="10" max="50" step="5" data-suffix="°C" id="planet-temperature"/>
-                  </div>
+                  </div>-->
                   <!--<div class="form-group">
                     <label for="planet-resolution">Number of cells</label>
                     <input type="number" value="500" min="0" max="1000" step="50" id="planet-resolution"/>
@@ -104,8 +104,7 @@
       </div>
     </div>
 
-    <!-- Optional JavaScript -->
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <!-- JavaScript dependencies -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
@@ -114,6 +113,10 @@
     <script>
       $("input[type='number']").inputSpinner()
     </script>
+
+    <!-- generation scripts -->
+    <script src="./src/utils.js"></script>
+    <script src="./src/surface.js"></script>
     <script src="./src/index.js"></script>
   </body>
 </html>

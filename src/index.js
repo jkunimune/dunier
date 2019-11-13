@@ -11,29 +11,33 @@ $( document ).ready(function() {
 /**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
-$( "#planet-apply" ).on("click", function() {
+$( '#planet-apply' ).on("click", function() {
+	const surface = new Sphere(
+		$( '#planet-day' ).val(),
+		$( '#planet-gravity' ).val(),
+		$( '#planet-circumference' ).val(),
+		$( '#planet-tilt' ).val());
+	surface.populate(2);
+
 	const mapDiv = document.getElementById('planet-map');
 	const data = [{
 		type: "mesh3d",
-		x: [], y: [], z: [],
-		intensity: [],
+		x: surface.nodes.map(n => n.x),
+		y: surface.nodes.map(n => n.y),
+		z: surface.nodes.map(n => n.z),
+		i: surface.triangles.map(t => t.i),
+		j: surface.triangles.map(t => t.j),
+		k: surface.triangles.map(t => t.k),
+		intensity: surface.nodes.map(n => Math.cos(n.u)),
 		colorscale: 'Hot',
 	}];
+	console.log(data);
 	const layout = {
 		margin: {l: 20, r: 20, t: 20, b: 20},
 	};
 	const config = {
 		responsive: true,
 	};
-
-	for (let i = 0; i < 36; i ++) {
-		let ph = Math.asin(2*Math.random() - 1);
-		let l = Math.PI*(2*Math.random() - 1);
-		data[0].x.push(Math.cos(ph)*Math.cos(l));
-		data[0].y.push(Math.cos(ph)*Math.sin(l));
-		data[0].z.push(Math.sin(ph));
-		data[0].intensity.push(Math.cos(ph)*Math.cos(ph));
-	}
 
 	Plotly.react(mapDiv, data, layout, config);
 });
