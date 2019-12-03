@@ -1,6 +1,16 @@
 // index.js: interfaces with forms and plots
 'use strict';
 
+const TERRAIN_COLORMAP = [
+	[0.00, 'rgb(194, 229, 253)'],
+	[0.17, 'rgb(157, 214, 218)'],
+	[0.33, 'rgb(117, 201, 181)'],
+	[0.50, 'rgb(073, 188, 137)'],
+	[0.67, 'rgb(037, 173, 084)'],
+	[0.83, 'rgb(068, 150, 024)'],
+	[1.00, 'rgb(095, 124, 017)'],
+];
+
 /**
  * Once the page is ready, start the algorithm!
  */
@@ -29,7 +39,7 @@ $( '#planet-apply' ).on("click", function() {
 		j: surface.triangles.map(t => t.j),
 		k: surface.triangles.map(t => t.k),
 		intensity: surface.nodes.map(n => Math.cos(n.u)),
-		colorscale: 'Hot',
+		colorscale: TERRAIN_COLORMAP,
 	}];
 	const layout = {
 		margin: {l: 20, r: 20, t: 20, b: 20},
