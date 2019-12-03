@@ -17,7 +17,7 @@ $( '#planet-apply' ).on("click", function() {
 		$( '#planet-gravity' ).val(),
 		$( '#planet-circumference' ).val(),
 		$( '#planet-tilt' ).val());
-	surface.populate(2);
+	surface.populate(1000, 2);
 
 	const mapDiv = document.getElementById('planet-map');
 	const data = [{
@@ -31,7 +31,6 @@ $( '#planet-apply' ).on("click", function() {
 		intensity: surface.nodes.map(n => Math.cos(n.u)),
 		colorscale: 'Hot',
 	}];
-	console.log(data);
 	const layout = {
 		margin: {l: 20, r: 20, t: 20, b: 20},
 	};
