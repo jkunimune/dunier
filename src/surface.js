@@ -41,7 +41,7 @@ class Surface {
 
 	/**
 	 * return a list of nodes along with an associated list of triangles that
-	   completely cover this Surface
+	 * completely cover this Surface
 	 */
 	partition() {
 		throw new Error("Unimplemented");
@@ -62,7 +62,7 @@ class Surface {
 	}
 
 	/**
-	 * return the 3D cartesian coordinates corresponding to the given parameters
+	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
 	 xyz(u, v) {
 	 	throw new Error("Unimplemented");
@@ -122,21 +122,18 @@ class Sphere extends Surface {
 	}
 
 	xyz(ph, l) {
-		return {
-			x: -Math.cos(ph)*Math.sin(l),
-			y: Math.cos(ph)*Math.cos(l),
-			z: Math.sin(ph) };
+		return new Vector(
+			-Math.cos(ph)*Math.sin(l),
+			 Math.cos(ph)*Math.cos(l),
+			 Math.sin(ph));
 	}
 
 	encompassing(triangle, r) {
 		for (let i = 0; i < 3; i ++) {
 			const a = triangle.vertices[i];
 			const b = triangle.vertices[(i+1)%3];
-			const axb = {
-				x: a.y*b.z - a.z*b.y,
-				y: a.z*b.x - a.x*b.z,
-				z: a.x*b.y - a.y*b.x};
-			if (axb.x*r.x + axb.y*r.y + axb.z*r.z < 0)
+			const axb = a.pos.cross(b.pos);
+			if (axb.dot(r.pos) < 0)
 				return false;
 		}
 		return true;
@@ -156,14 +153,9 @@ class Node {
 		this.surface = surface;
 		this.index = index;
 		this.u = position.u, this.v = position.v;
-		let {x, y, z} = surface.xyz(this.u, this.v);
-		this.x = x, this.y = y, this.z = z;
+		this.pos = surface.xyz(this.u, this.v);
 		this.neighbors = new Map();
 		this.parents = null;
-	}
-
-	toString() {
-		return `<${Math.trunc(10*this.x)}, ${Math.trunc(10*this.y)}, ${Math.trunc(10*this.z)}>`;
 	}
 }
 
@@ -185,7 +177,7 @@ class Triangle {
 			const node0 = this.vertices[i], node1 = this.vertices[(i+1)%3];
 			if (node0.neighbors.has(node1)) { // if so,
 				this.edges[i] = node0.neighbors.get(node1); // take that edge
-				if (this.edges[i].nodeA == node0) // and depending on its direction,
+				if (this.edges[i].node0 == node0) // and depending on its direction,
 					this.edges[i].triangleL = this; // replace one of the triangles on it with this
 				else
 					this.edges[i].triangleR = this;
@@ -197,8 +189,38 @@ class Triangle {
 		}
 	}
 
+	/**
+	 * compute the center of the circumcenter whose center is coplanar with all three
+	 * vertices (and store it if you haven't yet).
+	 */
+	getCircumcenter() {
+		if (this.circumcenter == undefined) {
+			const a = this.vertices[0], b = this.vertices[1], c = this.vertices[2]; // the math gets pretty hairy
+			const ac = c.pos.minus(a.pos); // so these shortened variable names are really important
+			const ab = b.pos.minus(a.pos);
+			const abxac = ab.cross(ac);
+			const ao =
+				abxac.cross(ab).times(ac.sqr()).plus(
+				ac.cross(abxac).times(ab.sqr())).times(1/
+					(2*abxac.sqr()));
+
+			this.circumcenter = a.pos.plus(ao);
+		}
+		return this.circumcenter;
+	}
+
+	/**
+	 * Find and return the vertex across from the given edge.
+	 */
+	acrossFrom(edge) {
+		for (const vertex of this.vertices)
+			if (vertex != edge.node0 && vertex != edge.node1)
+				return vertex;
+		throw "Could not find a nonadjacent vertex."
+	}
+
 	toString() {
-		return `${this.vertices[0]}--${this.vertices[1]}--${this.vertices[2]}`;
+		return `${this.vertices[0].pos}--${this.vertices[1].pos}--${this.vertices[2].pos}`;
 	}
 }
 
@@ -207,18 +229,73 @@ class Triangle {
  * A line between two connected Nodes, and separating two triangles
  */
 class Edge {
-	constructor(nodeA, triangleR, nodeB, triangleL, length) {
-		this.nodeA = nodeA; // save these new values for the edge
+	constructor(node0, triangleR, node1, triangleL, length) {
+		this.node0 = node0; // save these new values for the edge
 		this.triangleR = triangleR;
-		this.nodeB = nodeB;
+		this.node1 = node1;
 		this.triangleL = triangleL;
 		this.length;
 
-		nodeA.neighbors.set(nodeB, this);
-		nodeB.neighbors.set(nodeA, this);
+		node0.neighbors.set(node1, this);
+		node1.neighbors.set(node0, this);
 	}
 
 	toString() {
-		return `${this.nodeA}--${this.nodeB}`;
+		return `${this.node0.pos}--${this.node1.pos}`;
+	}
+}
+
+
+/**
+ * A simple class to bind vector operations
+ */
+class Vector {
+	constructor(x, y, z) {
+		this.x = x;
+		this.y = y;
+		this.z = z;
+	}
+
+	times(a) {
+		return new Vector(
+			this.x * a,
+			this.y * a,
+			this.z * a);
+	}
+
+	plus(that) {
+		return new Vector(
+			this.x + that.x,
+			this.y + that.y,
+			this.z + that.z);
+	}
+
+	minus(that) {
+		return new Vector(
+			this.x - that.x,
+			this.y - that.y,
+			this.z - that.z);
+	}
+
+	dot(that) {
+		return (
+			this.x*that.x +
+			this.y*that.y +
+			this.z*that.z);
+	}
+
+	cross(that) {
+		return new Vector(
+			this.y*that.z - this.z*that.y,
+			this.z*that.x - this.x*that.z,
+			this.x*that.y - this.y*that.x);
+	}
+
+	sqr() {
+		return this.dot(this);
+	}
+
+	toString() {
+		return `<${Math.trunc(10*this.x)}, ${Math.trunc(10*this.y)}, ${Math.trunc(10*this.z)}>`;
 	}
 }

@@ -32,9 +32,9 @@ $( '#planet-apply' ).on("click", function() {
 	const mapDiv = document.getElementById('planet-map');
 	const data = [{
 		type: "mesh3d",
-		x: surface.nodes.map(n => n.x),
-		y: surface.nodes.map(n => n.y),
-		z: surface.nodes.map(n => n.z),
+		x: surface.nodes.map(n => n.pos.x),
+		y: surface.nodes.map(n => n.pos.y),
+		z: surface.nodes.map(n => n.pos.z),
 		i: surface.triangles.map(t => t.i),
 		j: surface.triangles.map(t => t.j),
 		k: surface.triangles.map(t => t.k),

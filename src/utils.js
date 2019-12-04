@@ -21,22 +21,34 @@ function delaunayTriangulate(surf) {
 		containing.children = triangles.slice(triangles.length-3); // we could remove containing from triangles now, but it would be a waste of time
 		node.parent = containing.vertices[Math.trunc(3*Math.random())];
 
-		const flipQueue = []; // start a list of edges to try flipping
+		const flipQueue = [...containing.edges]; // start a list of edges to try flipping
 		flipQueue.concat(containing.edges); // and put the edges of this triangle on it
 
 		while (flipQueue.length > 0) { // go through that queue
-			let edge = flipQueue.pop();
-			if (false) { // and check for non-Delaunay edges
-				const newTriangles = edge.flip(); // flip them
-				triangles.concat(newTriangles);
-				flipQueue.push(null); // and add their neighbors to the queue
+			const edge = flipQueue.pop(); // extract the needed geometric entities
+			// console.log(`Should I flip ${edge}?`);
+			const a = edge.node0, c = edge.node1;
+			const abc = edge.triangleR, cda = edge.triangleL;
+			const b = abc.acrossFrom(edge);
+			const d = cda.acrossFrom(edge);
+			const o = abc.getCircumcenter();
+			if (d.pos.minus(o).sqr() < a.pos.minus(o).sqr()) { // and check for non-Delaunay edges
+				// console.log("si!");
+				triangles.push(new Triangle(b, c, d)); // flip them!
+				triangles.push(new Triangle(d, a, b));
+				abc.children = cda.children = triangles.slice(triangles.length-2);
+				const perimeter = [a.neighbors.get(b), b.neighbors.get(c), c.neighbors.get(d), d.neighbors.get(a)];
+				for (const nextEdge of perimeter) // and add their neighbors to the queue
+					if (nextEdge.node0 != node && perimeter.node1 != node) // taking care to skip edges that have already been flipped
+						flipQueue.push(nextEdge);
 			}
+			// else
+			// 	console.log("no.");
 		}
 	}
 
 	const splitQueue = [];
 	for (const dummyNode of dummyNodes) { // now remove the original vertices
-		console.log(`Removing all triangles neighboring ${dummyNode}.`);
 		splitQueue.push(dummyNode.neighbors.keys());
 		for (const dummyEdge of dummyNode.neighbors.values()) {
 			// print(dummyEdge);
