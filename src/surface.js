@@ -2,7 +2,7 @@
 'use strict';
 
 
-const NOISINESS = 0.03;
+const NOISINESS = 0.1;
 
 
 /**
@@ -24,7 +24,6 @@ class Surface {
 
 		delaunayTriangulate(this);
 
-
 		// for (let j = 0; j < numLloyd; j ++) {
 		// 	for (let i = 0; i < numNodes; i ++) {
 		// 		let {u, v} = this.nodes[i].getCentroid();
@@ -44,7 +43,7 @@ class Surface {
 					variance += this.distance(node, parent)/node.parents.length;
 				}
 			}
-			variance = variance*NOISINESS;
+			variance = Math.pow(variance, 1.5)*NOISINESS;
 			let u1 = Math.random(), u2 = Math.random();
 			node.terme += Math.sqrt(-2*variance*Math.log(u1))*Math.cos(2*Math.PI*u2);
 			node.barxe += Math.sqrt(-2*variance*Math.log(u1))*Math.cos(2*Math.PI*u2);
