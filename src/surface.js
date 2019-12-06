@@ -157,6 +157,31 @@ class Node {
 		this.neighbors = new Map();
 		this.parents = null;
 	}
+
+	/**
+	 * Return the triangle which appears left of that from the vantage of this.
+	 */
+	leftOf(that) {
+		if (this.neighbors.get(that).node0 == this)
+			return this.neighbors.get(that).triangleL;
+		else
+			return this.neighbors.get(that).triangleR;
+	}
+
+	/**
+	 * Return the Triangles that border this in widdershins order.
+	 */
+	getPolygon() {
+		if (this.vertices == undefined) { // don't compute this unless you must
+			this.vertices = [this.neighbors.values().next().value.triangleL]; // start with an arbitrary neighboring triangle
+			while (this.vertices.length < this.neighbors.size) {
+				const lastTriangle = this.vertices[this.vertices.length-1];
+				const nextNode = lastTriangle.clockwiseOf(this);
+				this.vertices.push(this.leftOf(nextNode));
+			}
+		}
+		return this.vertices;
+	}
 }
 
 
@@ -217,6 +242,24 @@ class Triangle {
 			if (vertex != edge.node0 && vertex != edge.node1)
 				return vertex;
 		throw "Could not find a nonadjacent vertex."
+	}
+
+	/**
+	 * Find and return the vertex clockwise of the given edge.
+	 */
+	clockwiseOf(node) {
+		for (let i = 0; i < 3; i ++)
+			if (this.vertices[i] == node)
+				return this.vertices[(i+2)%3];
+	}
+
+	/**
+	 * Find and return the vertex widdershins of the given edge.
+	 */
+	widdershinsOf(node) {
+		for (let i = 0; i < 3; i ++)
+			if (this.vertices[i] == node)
+				return this.vertices[(i+1)%3];
 	}
 
 	toString() {

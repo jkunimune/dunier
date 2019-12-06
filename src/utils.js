@@ -22,48 +22,69 @@ function delaunayTriangulate(surf) {
 		node.parent = containing.vertices[Math.trunc(3*Math.random())];
 
 		const flipQueue = [...containing.edges]; // start a list of edges to try flipping
-		flipQueue.concat(containing.edges); // and put the edges of this triangle on it
-
-		while (flipQueue.length > 0) { // go through that queue
-			const edge = flipQueue.pop(); // extract the needed geometric entities
-			// console.log(`Should I flip ${edge}?`);
-			const a = edge.node0, c = edge.node1;
-			const abc = edge.triangleR, cda = edge.triangleL;
-			const b = abc.acrossFrom(edge);
-			const d = cda.acrossFrom(edge);
-			const o = abc.getCircumcenter();
-			if (d.pos.minus(o).sqr() < a.pos.minus(o).sqr()) { // and check for non-Delaunay edges
-				// console.log("si!");
-				triangles.push(new Triangle(b, c, d)); // flip them!
-				triangles.push(new Triangle(d, a, b));
-				abc.children = cda.children = triangles.slice(triangles.length-2);
-				const perimeter = [a.neighbors.get(b), b.neighbors.get(c), c.neighbors.get(d), d.neighbors.get(a)];
-				for (const nextEdge of perimeter) // and add their neighbors to the queue
-					if (nextEdge.node0 != node && perimeter.node1 != node) // taking care to skip edges that have already been flipped
-						flipQueue.push(nextEdge);
-			}
-			// else
-			// 	console.log("no.");
-		}
+		flipEdges(flipQueue, [], node, triangles); // and put the edges of this triangle on it
 	}
 
-	const splitQueue = [];
 	for (const dummyNode of dummyNodes) { // now remove the original vertices
-		splitQueue.push(dummyNode.neighbors.keys());
-		for (const dummyEdge of dummyNode.neighbors.values()) {
-			// print(dummyEdge);
-			for (let i = 0; i < triangles.length; i ++) {
-				if (triangles[i] == dummyEdge.triangleL || triangles[i] == dummyEdge.triangleR) {
-					triangles.splice(i, 1);
-					// console.log(`Goodbye, ${dummyEdge.triangleL}`);
-				}
-			}
+		const oldTriangles = dummyNode.getPolygon();
+		const arbitraryNode = oldTriangles[0].clockwiseOf(dummyNode);
+		const flipQueue = [];
+		const flipImmune = [];
+		for (let j = 0; j < oldTriangles.length; j ++) { // start by filling the gap left by this node
+			const b = oldTriangles[j].widdershinsOf(dummyNode);
+			const c = oldTriangles[j].clockwiseOf(dummyNode);
+			if (j >= 2)
+				triangles.push(new Triangle(arbitraryNode, b, c)); // with new, naively placed triangles
+			if (j >= 3)
+				flipQueue.push(arbitraryNode.neighbors.get(b));
+			flipImmune.push(b.neighbors.get(c));
+			oldTriangles[j].children = []; // and remove the old triangles
 		}
+		console.log(flipQueue);
+		for (const q of flipQueue)
+			console.log(q);
+		console.log(flipImmune);
+		flipEdges(flipQueue, flipImmune, null, triangles);
 	}
 	// TODO: recursively split the polygons in splitQueue with Delaunay edges
 
 	surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles
 } // TODO: delete the triangle lineage graph to clear up some memory
+
+/**
+ * Go through the queue and flip any non-delaunay edges. After flipping an edge, add
+ * adjacent edges to the queue. Do not check edges that have newestNode as an endpoint or
+ * that are in immune. allTriangles is the running list of all triangles that must be
+ * kept up to date.
+ */
+function flipEdges(queue, immune, newestNode, allTriangles) {
+	while (queue.length > 0) { // go through that queue
+		const edge = queue.pop(); // extract the needed geometric entities
+		const a = edge.node0, c = edge.node1;
+		const abc = edge.triangleR, cda = edge.triangleL;
+		const b = abc.acrossFrom(edge);
+		const d = cda.acrossFrom(edge);
+		const o = abc.getCircumcenter();
+		if (d.pos.minus(o).sqr() < a.pos.minus(o).sqr()) { // and check for non-Delaunay edges
+			console.log("flip!");
+			a.neighbors.delete(c); // flip them!
+			c.neighbors.delete(a); // (remove the old edge)
+			allTriangles.push(new Triangle(b, c, d)); // (and add new triangles)
+			allTriangles.push(new Triangle(d, a, b));
+			abc.children = cda.children = allTriangles.slice(allTriangles.length-2); // (the old triangles can stick around for now)
+			const perimeter = [a.neighbors.get(b), b.neighbors.get(c), c.neighbors.get(d), d.neighbors.get(a)];
+			for (const nextEdge of perimeter) // and add their neighbors to the queue
+				if (!queue.includes(nextEdge) &&
+					!immune.includes(nextEdge) &&
+					(nextEdge.node0 != newestNode && nextEdge.node1 != newestNode)) { // taking care to skip edges that have already been flipped
+					queue.push(nextEdge);
+				console.log("added to queue");
+			}
+		}
+		else
+			console.log("don't flip");
+	}
+}
 
 /**
  * go down the chain of triangles to find the one that contains this point
