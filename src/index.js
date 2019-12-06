@@ -38,7 +38,7 @@ $( '#planet-apply' ).on("click", function() {
 		i: surface.triangles.map(t => t.i),
 		j: surface.triangles.map(t => t.j),
 		k: surface.triangles.map(t => t.k),
-		intensity: surface.nodes.map(n => Math.cos(n.u)),
+		intensity: surface.nodes.map(n => n.terme),
 		colorscale: TERRAIN_COLORMAP,
 	}];
 	const layout = {

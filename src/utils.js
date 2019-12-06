@@ -40,10 +40,6 @@ function delaunayTriangulate(surf) {
 			flipImmune.push(b.neighbors.get(c));
 			oldTriangles[j].children = []; // and remove the old triangles
 		}
-		console.log(flipQueue);
-		for (const q of flipQueue)
-			console.log(q);
-		console.log(flipImmune);
 		flipEdges(flipQueue, flipImmune, null, triangles);
 	}
 	// TODO: recursively split the polygons in splitQueue with Delaunay edges
@@ -66,7 +62,6 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 		const d = cda.acrossFrom(edge);
 		const o = abc.getCircumcenter();
 		if (d.pos.minus(o).sqr() < a.pos.minus(o).sqr()) { // and check for non-Delaunay edges
-			console.log("flip!");
 			a.neighbors.delete(c); // flip them!
 			c.neighbors.delete(a); // (remove the old edge)
 			allTriangles.push(new Triangle(b, c, d)); // (and add new triangles)
@@ -78,11 +73,8 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 					!immune.includes(nextEdge) &&
 					(nextEdge.node0 != newestNode && nextEdge.node1 != newestNode)) { // taking care to skip edges that have already been flipped
 					queue.push(nextEdge);
-				console.log("added to queue");
 			}
 		}
-		else
-			console.log("don't flip");
 	}
 }
 

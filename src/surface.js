@@ -2,6 +2,9 @@
 'use strict';
 
 
+const NOISINESS = 0.03;
+
+
 /**
  * Generic 3D collection of nodes and edges
  */
@@ -21,6 +24,7 @@ class Surface {
 
 		delaunayTriangulate(this);
 
+
 		// for (let j = 0; j < numLloyd; j ++) {
 		// 	for (let i = 0; i < numNodes; i ++) {
 		// 		let {u, v} = this.nodes[i].getCentroid();
@@ -30,6 +34,26 @@ class Surface {
 		// 		delaunayTriangulate(this);
 		// 	}
 		// }
+
+		for (const node of this.nodes) { // assign each node random values
+			let variance = 0;
+			for (const parent of node.parents) {
+				if (parent.index != null) {
+					node.terme += parent.terme/node.parents.length;
+					node.barxe += parent.barxe/node.parents.length;
+					variance += this.distance(node, parent)/node.parents.length;
+				}
+			}
+			variance = variance*NOISINESS;
+			let u1 = Math.random(), u2 = Math.random();
+			node.terme += Math.sqrt(-2*variance*Math.log(u1))*Math.cos(2*Math.PI*u2);
+			node.barxe += Math.sqrt(-2*variance*Math.log(u1))*Math.cos(2*Math.PI*u2);
+		}
+		for (const node of this.nodes) { // and then throw in the baseline
+			node.terme += Math.pow(Math.cos(node.u), 2); // TODO: surface-dependent climate
+			node.barxe += Math.pow(Math.cos(node.u), 2) + Math.pow(Math.cos(3*node.u), 2);
+		}
+
 	}
 
 	/**
@@ -156,6 +180,10 @@ class Node {
 		this.pos = surface.xyz(this.u, this.v);
 		this.neighbors = new Map();
 		this.parents = null;
+
+		this.terme = 0;
+		this.barxe = 0;
+		this.altitude = 0;
 	}
 
 	/**
