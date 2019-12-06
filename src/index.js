@@ -1,15 +1,31 @@
 // index.js: interfaces with forms and plots
 'use strict';
 
+
 const TERRAIN_COLORMAP = [
-	[0.00, 'rgb(194, 229, 253)'],
-	[0.17, 'rgb(157, 214, 218)'],
-	[0.33, 'rgb(117, 201, 181)'],
-	[0.50, 'rgb(073, 188, 137)'],
-	[0.67, 'rgb(037, 173, 084)'],
-	[0.83, 'rgb(068, 150, 024)'],
-	[1.00, 'rgb(095, 124, 017)'],
+	[0/8, 'rgb(240, 251, 252)'],
+	[1/8, 'rgb(202, 234, 241)'],
+	[2/8, 'rgb(156, 220, 222)'],
+	[3/8, 'rgb(114, 206, 190)'],
+	[4/8, 'rgb(076, 192, 154)'],
+	[5/8, 'rgb(043, 176, 113)'],
+	[6/8, 'rgb(041, 157, 070)'],
+	[7/8, 'rgb(067, 135, 029)'],
+	[8/8, 'rgb(083, 112, 001)'],
 ];
+
+// const TERRAIN_COLORMAP = [
+// 	[0/8, 'rgb(000, 000, 000)'],
+// 	[1/8, 'rgb(073, 001, 000)'],
+// 	[2/8, 'rgb(124, 002, 000)'],
+// 	[3/8, 'rgb(179, 006, 000)'],
+// 	[4/8, 'rgb(236, 019, 000)'],
+// 	[5/8, 'rgb(255, 103, 000)'],
+// 	[6/8, 'rgb(255, 165, 000)'],
+// 	[7/8, 'rgb(255, 233, 016)'],
+// 	[8/8, 'rgb(255, 255, 255)'],
+// ];
+
 
 /**
  * Once the page is ready, start the algorithm!
@@ -27,7 +43,7 @@ $( '#planet-apply' ).on("click", function() {
 		$( '#planet-gravity' ).val(),
 		$( '#planet-circumference' ).val(),
 		$( '#planet-tilt' ).val());
-	surface.populate(1000, 2);
+	surface.populate(10000, 2);
 
 	const mapDiv = document.getElementById('planet-map');
 	const data = [{
@@ -40,6 +56,7 @@ $( '#planet-apply' ).on("click", function() {
 		k: surface.triangles.map(t => t.k),
 		intensity: surface.nodes.map(n => n.terme),
 		colorscale: TERRAIN_COLORMAP,
+		colorbar: {title: "Temperature"},
 	}];
 	const layout = {
 		margin: {l: 20, r: 20, t: 20, b: 20},
