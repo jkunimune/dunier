@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import jv, jn_zeros
 
-RES = 12
+RES = 24
 MAX_ASPECT_RATIO = 2
 BOUNDARY_EXCESS = 3
-EIGEN_RES = 36
+EIGEN_RES = 48
 INTEGRATION_RES = 8
 
 ρB = 1.1*MAX_ASPECT_RATIO
@@ -47,8 +47,8 @@ print("iterating over angular velocities")
 
 rotation_parameters = []
 aspect_ratios = []
-for ω2 in np.linspace(0, 0.5, 12): # angular velocity
-	print("solving for equilibrium: ")
+for ω2 in np.linspace(0, 0.5, 51): # angular velocity
+	print("solving for equilibrium: {}".format(ω2))
 
 	planet = np.zeros(P.shape) # initialize a spherical planet
 	planet[np.hypot(P, Z) < 1] = 1
@@ -63,37 +63,45 @@ for ω2 in np.linspace(0, 0.5, 12): # angular velocity
 
 		ɸ += ω2*P**2/2 # introduce the effective rotational potential
 
-		plt.clf()
+		plt.clf() # do an interim plot
 		plt.pcolormesh(ρ_mesh, z_mesh, planet)
 		plt.colorbar()
 		plt.contour(ρ, z, ɸ, levels=12, colors='w')
 		plt.axis('equal')
-		plt.pause(.5)
+		plt.pause(1/60)
 
 		edge = np.nonzero(np.linalg.norm(np.gradient(planet), axis=0)) # redistribute the mass
 		num_rocks = int(np.sum(planet[edge])) # this could be run multiple times to get an exact equipotential solution before recomputing the potential,
 		hierarchy = np.argsort(-ɸ[edge]) # but this way is a little stabler, and I think a little faster
-		if np.all(planet[edge[0][hierarchy[:num_rocks]],edge[1][hierarchy[:num_rocks]]] == 1): # if this changes absolutely noting, break
+		if np.all(planet[edge[0][hierarchy[:num_rocks]],edge[1][hierarchy[:num_rocks]]] == 1): # terminal condition A:
+			max_radius = np.max(P[np.nonzero(planet)]) + dρ/2 # if this changes absolutely noting, break
+			min_radius = np.max(Z[np.nonzero(planet)]) + dz/2
 			break
 		planet[edge[0][hierarchy[:num_rocks]],edge[1][hierarchy[:num_rocks]]] = 1 # WHEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 		planet[edge[0][hierarchy[num_rocks:]],edge[1][hierarchy[num_rocks:]]] = 0 # EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 
-	print("evaluating")
-	max_radius = np.max(P[np.nonzero(planet)]) + dρ/2
-	min_radius = np.max(Z[np.nonzero(planet)]) + dz/2
+		if np.any(np.nonzero(planet[:,-1])): # terminal condition B:
+			max_radius, min_radius = np.nan, np.nan # if it has hit the boundary, break
+			break
+
 	g = 1 # (because I normalized it)
 	rotation_parameters.append(ω2*max_radius/g)
 	aspect_ratios.append(max_radius/min_radius)
+	if np.isnan(aspect_ratios[-1]):
+		break
 
-	print("numografa")
+print("analisa")
+rotation_parameters = np.array(rotation_parameters)
+aspect_ratios = np.array(aspect_ratios)
+print(rotation_parameters)
+print(aspect_ratios)
 
-	# plt.pcolormesh(ρ_mesh, z_mesh, planet)
-	# plt.colorbar()
-	# plt.contour(ρ, z, ɸ, levels=12, colors='w')
-	# plt.axis('equal')
-	plt.show()
+fit, err = opt.curve_fit(lambda x, a: 1+x/2+a*x**2, rotation_parameters, aspect_ratios)
+print("α = 1 + 1/2*Rω^2/g + {:.3f}*(Rω^2/g)^2".format(fit[0]))
 
-print(np.array(rotation_parameters))
-print(np.array(aspect_ratios))
-plt.plot(rotation_parameters, aspect_ratios)
+plt.clf()
+plt.plot(rotation_parameters, aspect_ratios, 'o')
+plt.plot(rotation_parameters, 1 + rotation_parameters/2 + fit[0]*rotation_parameters**2)
+plt.xlabel("R*ω^2/g")
+plt.ylabel("α")
 plt.show()
