@@ -1,17 +1,21 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import jv, jn_zeros
+import scipy.optimize as opt
 
-RES = 24
-MAX_ASPECT_RATIO = 2
+MODE = 'toroid'#'ellpisoid'
+PARAM_SWEEP = 0.6 + np.linspace(0, 1, 36)**2
+
+RES = 12
+MAX_ASPECT_RATIO = 6
 BOUNDARY_EXCESS = 3
-EIGEN_RES = 48
+EIGEN_RES = 24
 INTEGRATION_RES = 8
 
 ρB = 1.1*MAX_ASPECT_RATIO
 zB = 1.1
-ρ_inf = ρB*BOUNDARY_EXCESS
 z_inf = zB*BOUNDARY_EXCESS
+ρ_inf = ρB + (z_inf - zB)
 
 ρ_mesh = np.linspace(0, ρB, int(MAX_ASPECT_RATIO*RES)+1) # radial coordinate
 z_mesh = np.linspace(0, zB, int(RES)+1) # axial coordinate
@@ -25,7 +29,7 @@ n_in_pixel = P_in_pixel.size
 
 print("sana baze")
 
-max_n = int(EIGEN_RES*MAX_ASPECT_RATIO) # for relevant ns and ms
+max_n = int(EIGEN_RES*ρ_inf/z_inf) # for relevant ns and ms
 max_m = int(EIGEN_RES)
 J_zeros = jn_zeros(0, max_n)
 B = np.empty((max_n*max_m, *P.shape)) # create a basis matrix (each layer is an eigenfunction)
@@ -46,22 +50,33 @@ for n in range(0, max_n):
 print("iterating over angular velocities")
 
 rotation_parameters = []
-aspect_ratios = []
-for ω2 in np.linspace(0, 0.5, 51): # angular velocity
-	print("solving for equilibrium: {}".format(ω2))
+aspect_ratios, elongations = [], []
+for l in PARAM_SWEEP: # angular momentum
+	print("solving for equilibrium: {}".format(l))
 
-	planet = np.zeros(P.shape) # initialize a spherical planet
-	planet[np.hypot(P, Z) < 1] = 1
+	planet = np.zeros(P.shape) # initialize a spherical/toral planet
+	if MODE == 'ellipsoid':
+		planet[np.hypot(P, Z) < 1] = 1
+	elif MODE == 'toroid':
+		planet[np.hypot(P-3, Z) < 1] = 1
+	else:
+		raise Exception()
 
 	while True:
 		A = np.sum(PB*planet[np.newaxis, :, :]*dρ*dz, axis=(1,2)) # fourier transform
 		planet_twiddle = np.sum(B*A[:, np.newaxis, np.newaxis], axis=0)
 
 		ɸ = np.sum(B*(A/Λ)[:, np.newaxis, np.newaxis], axis=0) # compute the potential
+		M = 2*np.pi*np.sum(planet*P)*dρ*dz
+		ɸ /= M # normalize so mass = 1
 		g = np.linalg.norm(np.gradient(ɸ, z, ρ), axis=0)
-		ɸ /= np.max(g[:-1,:-1]) # normalize so surface gravity is 1
 
-		ɸ += ω2*P**2/2 # introduce the effective rotational potential
+		ρ_min = P[np.nonzero(planet)].min() - dρ/2
+		ρ_max = P[np.nonzero(planet)].max() + dρ/2
+		z_max = Z[np.nonzero(planet)].max() + dz/2
+		g_max = g[:-1, :-1].max()
+		ω = l/(ρ_max**2)
+		ɸ += P**2*ω**2/2 # introduce the effective rotational potential
 
 		plt.clf() # do an interim plot
 		plt.pcolormesh(ρ_mesh, z_mesh, planet)
@@ -74,34 +89,59 @@ for ω2 in np.linspace(0, 0.5, 51): # angular velocity
 		num_rocks = int(np.sum(planet[edge])) # this could be run multiple times to get an exact equipotential solution before recomputing the potential,
 		hierarchy = np.argsort(-ɸ[edge]) # but this way is a little stabler, and I think a little faster
 		if np.all(planet[edge[0][hierarchy[:num_rocks]],edge[1][hierarchy[:num_rocks]]] == 1): # terminal condition A:
-			max_radius = np.max(P[np.nonzero(planet)]) + dρ/2 # if this changes absolutely noting, break
-			min_radius = np.max(Z[np.nonzero(planet)]) + dz/2
-			break
+			break # if this changes absolutely noting, break
 		planet[edge[0][hierarchy[:num_rocks]],edge[1][hierarchy[:num_rocks]]] = 1 # WHEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 		planet[edge[0][hierarchy[num_rocks:]],edge[1][hierarchy[num_rocks:]]] = 0 # EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 
 		if np.any(np.nonzero(planet[:,-1])): # terminal condition B:
-			max_radius, min_radius = np.nan, np.nan # if it has hit the boundary, break
+			ρ_min, ρ_max, z_max = np.nan, np.nan, np.nan # if it has hit the boundary, break
+			break
+		if MODE == 'toroid' and np.any(np.nonzero(planet[:,0])):
+			ρ_min = np.nan # if it is a torus and collapsed into a sphere, break
 			break
 
-	g = 1 # (because I normalized it)
-	rotation_parameters.append(ω2*max_radius/g)
-	aspect_ratios.append(max_radius/min_radius)
-	if np.isnan(aspect_ratios[-1]):
+	if np.isnan(ρ_min): # let us know how it went
+		print("xibay")
+	else:
+		print("win")
+	if np.isnan(ρ_max): # and stop trying if it's hitting the walls
 		break
+	rotation_parameters.append(ρ_max*ω**2/g_max)
+	if MODE == 'ellipsoid':
+		aspect_ratios.append(ρ_max/z_max)
+		elongations.append(0)
+	else:
+		aspect_ratios.append((ρ_max+ρ_min)/(ρ_max-ρ_min))
+		elongations.append((ρ_max-ρ_min)/(2*z_max))
 
 print("analisa")
 rotation_parameters = np.array(rotation_parameters)
 aspect_ratios = np.array(aspect_ratios)
+elongations = np.array(elongations)
 print(rotation_parameters)
 print(aspect_ratios)
-
-fit, err = opt.curve_fit(lambda x, a: 1+x/2+a*x**2, rotation_parameters, aspect_ratios)
-print("α = 1 + 1/2*Rω^2/g + {:.3f}*(Rω^2/g)^2".format(fit[0]))
-
+print(elongations)
+valid = np.isfinite(aspect_ratios)
+if MODE == 'ellpisoid':
+	α_fit_params, err = opt.curve_fit(lambda x, a: 1+x/2+a*x**2, rotation_parameters[valid], aspect_ratios[valid])
+	α_fit = 1 + rotation_parameters/2 + α_fit_params[0]*rotation_parameters**2
+	print("α = 1 + 1/2*Rω^2/g + {:.3f}*(Rω^2/g)^2".format(*α_fit_params))
+	e_fit = elongations
+else:
+	α_fit_params, err = opt.curve_fit(lambda x, a, b: 1 - a*(x-b), rotation_parameters[valid], aspect_ratios[valid])
+	α_fit = 1 - α_fit_params[0]*(rotation_parameters - α_fit_params[1])
+	print("α = 1 - {:.3f}*(Rω^2/g - {:.3f})".format(*α_fit_params))
+	e_fit_params, err = opt.curve_fit(lambda x, a, b: a*x+b, rotation_parameters[valid], elongations[valid])
+	e_fit = e_fit_params[0]*rotation_parameters + e_fit_params[1]
+	print("e = {:.3f}*Rω^2/g + {:.3f}".format(*e_fit_params))
 plt.clf()
-plt.plot(rotation_parameters, aspect_ratios, 'o')
-plt.plot(rotation_parameters, 1 + rotation_parameters/2 + fit[0]*rotation_parameters**2)
+plt.plot(rotation_parameters[valid], aspect_ratios[valid], 'o')
+plt.plot(rotation_parameters[valid], α_fit[valid], '--')
 plt.xlabel("R*ω^2/g")
 plt.ylabel("α")
+plt.figure()
+plt.plot(rotation_parameters[valid], elongations[valid], 'o')
+plt.plot(rotation_parameters[valid], e_fit[valid], '--')
+plt.xlabel("R*ω^2/g")
+plt.ylabel("e")
 plt.show()
