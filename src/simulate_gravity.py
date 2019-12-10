@@ -4,12 +4,12 @@ from scipy.special import jv, jn_zeros
 import scipy.optimize as opt
 
 MODE = 'toroid'#'ellpisoid'
-PARAM_SWEEP = 0.6 + np.linspace(0, 1, 36)**2
+PARAM_SWEEP = 0.5 + np.linspace(0, 1, 50)**2
 
-RES = 12
+RES = 16
 MAX_ASPECT_RATIO = 6
 BOUNDARY_EXCESS = 3
-EIGEN_RES = 24
+EIGEN_RES = 32
 INTEGRATION_RES = 8
 
 ρB = 1.1*MAX_ASPECT_RATIO
@@ -62,13 +62,11 @@ for l in PARAM_SWEEP: # angular momentum
 	else:
 		raise Exception()
 
-	while True:
+	for i in range(MAX_ASPECT_RATIO*RES):
 		A = np.sum(PB*planet[np.newaxis, :, :]*dρ*dz, axis=(1,2)) # fourier transform
 		planet_twiddle = np.sum(B*A[:, np.newaxis, np.newaxis], axis=0)
 
 		ɸ = np.sum(B*(A/Λ)[:, np.newaxis, np.newaxis], axis=0) # compute the potential
-		M = 2*np.pi*np.sum(planet*P)*dρ*dz
-		ɸ /= M # normalize so mass = 1
 		g = np.linalg.norm(np.gradient(ɸ, z, ρ), axis=0)
 
 		ρ_min = P[np.nonzero(planet)].min() - dρ/2
@@ -85,13 +83,13 @@ for l in PARAM_SWEEP: # angular momentum
 		plt.axis('equal')
 		plt.pause(1/60)
 
-		edge = np.nonzero(np.linalg.norm(np.gradient(planet), axis=0)) # redistribute the mass
-		num_rocks = int(np.sum(planet[edge])) # this could be run multiple times to get an exact equipotential solution before recomputing the potential,
-		hierarchy = np.argsort(-ɸ[edge]) # but this way is a little stabler, and I think a little faster
-		if np.all(planet[edge[0][hierarchy[:num_rocks]],edge[1][hierarchy[:num_rocks]]] == 1): # terminal condition A:
+		edge = np.nonzero(np.linalg.norm(planet+np.gradient(planet), axis=0)) # redistribute the mass within the planet and adjacent spaces
+		hierarchy = np.argsort(-ɸ[edge]) # but this way is a little stabler, and I think a little faster TODO what if I find an equipotential for real each time
+		cutoff = int(np.sum(planet[edge]))
+		if np.all(planet[edge[0][hierarchy[:cutoff]],edge[1][hierarchy[:cutoff]]] == 1): # terminal condition A:
 			break # if this changes absolutely noting, break
-		planet[edge[0][hierarchy[:num_rocks]],edge[1][hierarchy[:num_rocks]]] = 1 # WHEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
-		planet[edge[0][hierarchy[num_rocks:]],edge[1][hierarchy[num_rocks:]]] = 0 # EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+		planet[edge[0][hierarchy[:cutoff]],edge[1][hierarchy[:cutoff]]] = 1 # WHEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
+		planet[edge[0][hierarchy[cutoff:]],edge[1][hierarchy[cutoff:]]] = 0 # EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE
 
 		if np.any(np.nonzero(planet[:,-1])): # terminal condition B:
 			ρ_min, ρ_max, z_max = np.nan, np.nan, np.nan # if it has hit the boundary, break
@@ -131,9 +129,9 @@ else:
 	α_fit_params, err = opt.curve_fit(lambda x, a, b: 1 - a*(x-b), rotation_parameters[valid], aspect_ratios[valid])
 	α_fit = 1 - α_fit_params[0]*(rotation_parameters - α_fit_params[1])
 	print("α = 1 - {:.3f}*(Rω^2/g - {:.3f})".format(*α_fit_params))
-	e_fit_params, err = opt.curve_fit(lambda x, a, b: a*x+b, rotation_parameters[valid], elongations[valid])
-	e_fit = e_fit_params[0]*rotation_parameters + e_fit_params[1]
-	print("e = {:.3f}*Rω^2/g + {:.3f}".format(*e_fit_params))
+	e_fit_params, err = opt.curve_fit(lambda x, a, b: 1+b*x+a*x**2, rotation_parameters[valid], elongations[valid])
+	e_fit = 1 + e_fit_params[1]*rotation_parameters + e_fit_params[0]*rotation_parameters**2
+	print("e = 1 + {1:.3f}*Rω^2/g + {0:.3f}*(Rω^2/g)^2".format(*e_fit_params))
 plt.clf()
 plt.plot(rotation_parameters[valid], aspect_ratios[valid], 'o')
 plt.plot(rotation_parameters[valid], α_fit[valid], '--')
