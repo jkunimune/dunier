@@ -3,11 +3,11 @@ import matplotlib.pyplot as plt
 from scipy.special import jv, jn_zeros
 import scipy.optimize as opt
 
-MODE = 'toroid'#'ellpisoid'
-PARAM_SWEEP = np.linspace(1, 5, 41)
+MODE = 'ellipsoid'
+PARAM_SWEEP = np.linspace(1, 3, 41)
 
 RES = 16
-MAX_ASPECT_RATIO = 6
+MAX_ASPECT_RATIO = 3
 BOUNDARY_EXCESS = 3
 EIGEN_RES = 32
 INTEGRATION_RES = 8
@@ -56,7 +56,7 @@ for α_0 in PARAM_SWEEP: # angular momentum
 
 	planet = np.zeros(P.shape) # initialize a spherical/toral planet
 	if MODE == 'ellipsoid':
-		planet[np.hypot(P, Z) < 1] = 1
+		planet[np.hypot(P/α_0, Z) < 1] = 1
 	elif MODE == 'toroid':
 		planet[np.hypot(P-α_0, Z) < 1] = 1
 	else:
@@ -68,14 +68,17 @@ for α_0 in PARAM_SWEEP: # angular momentum
 
 		ɸ = np.sum(B*(A/Λ)[:, np.newaxis, np.newaxis], axis=0) # compute the potential
 		g = np.linalg.norm(np.gradient(ɸ, z, ρ), axis=0)
-		ɸ_in = ɸ[0, np.nonzero(planet[0,:])[0]][np.argmin(P[0, np.nonzero(planet[0,:])[0]])]
+		if MODE == 'ellipsoid':
+			ɸ_in = ɸ[np.nonzero(planet[:,0])[0], 0][np.argmax(Z[np.nonzero(planet[:,0])[0], 0])]
+		else:
+			ɸ_in = ɸ[0, np.nonzero(planet[0,:])[0]][np.argmin(P[0, np.nonzero(planet[0,:])[0]])]
 		ɸ_out = ɸ[0, np.nonzero(planet[0,:])[0]][np.argmax(P[0, np.nonzero(planet[0,:])[0]])]
 
 		ρ_min = P[np.nonzero(planet)].min() - dρ/2
 		ρ_max = P[np.nonzero(planet)].max() + dρ/2
 		z_max = Z[np.nonzero(planet)].max() + dz/2
 		g_max = g[:-1, :-1].max()
-		ω = np.sqrt(2*(ɸ_in - ɸ_out)/((ρ_max-dρ/2)**2 - (ρ_min+dρ/2)**2))
+		ω = np.sqrt(max(0, 2*(ɸ_in - ɸ_out)/((ρ_max-dρ/2)**2 - (ρ_min+dρ/2)**2)))
 		ɸ += P**2*ω**2/2 # introduce the effective rotational potential
 
 		plt.clf() # do an interim plot
@@ -122,10 +125,10 @@ print(rotation_parameters)
 print(aspect_ratios)
 print(elongations)
 valid = np.isfinite(aspect_ratios)
-if MODE == 'ellpisoid':
-	α_fit_params, err = opt.curve_fit(lambda x, a: 1+x/2+a*x**2, rotation_parameters[valid], aspect_ratios[valid])
-	α_fit = 1 + rotation_parameters/2 + α_fit_params[0]*rotation_parameters**2
-	print("α = 1 + 1/2*Rω^2/g + {:.3f}*(Rω^2/g)^2".format(*α_fit_params))
+if MODE == 'ellipsoid':
+	α_fit_params, err = opt.curve_fit(lambda x, a, b: 1+x/2+a*x**2+b*x**3, rotation_parameters[valid], aspect_ratios[valid])
+	α_fit = 1 + rotation_parameters/2 + α_fit_params[0]*rotation_parameters**2 + α_fit_params[1]*rotation_parameters**3
+	print("α = 1 + 1/2*Rω^2/g + {:.3f}*(Rω^2/g)^2 + {:.3f}*(Rω^2/g)^3".format(*α_fit_params))
 	e_fit = elongations
 else:
 	α_fit_params, err = opt.curve_fit(lambda x, a, b: (a*x + b*x**2), rotation_parameters[valid], 1/aspect_ratios[valid])
