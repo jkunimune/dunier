@@ -2,7 +2,7 @@
 'use strict';
 
 
-const NOISINESS = 0.1;
+const NOISINESS = 2e-6;
 
 
 /**
@@ -49,7 +49,7 @@ class Surface {
 			node.barxe += Math.sqrt(-2*variance*Math.log(u1))*Math.cos(2*Math.PI*u2);
 		}
 		for (const node of this.nodes) { // and then throw in the baseline
-			node.terme += Math.pow(Math.cos(node.u), 2); // TODO: surface-dependent climate
+			node.terme += Math.cos(node.u); // TODO: surface-dependent climate
 			node.barxe += Math.pow(Math.cos(node.u), 2) + Math.pow(Math.cos(3*node.u), 2);
 		}
 
@@ -59,7 +59,7 @@ class Surface {
 	 * return the u-v parameterization of a point uniformly sampled from the Surface
 	 */
 	randomPoint() {
-		throw new Error("Unimplemented");
+		throw "Unimplemented";
 	}
 
 	/**
@@ -67,42 +67,42 @@ class Surface {
 	 * completely cover this Surface
 	 */
 	partition() {
-		throw new Error("Unimplemented");
+		throw "Unimplemented";
 	}
 
 	/**
 	 * return the local length-to-latitude rate
 	 */
 	dsdu(u, v) {
-		throw new Error("Unimplemented");
+		throw "Unimplemented";
 	}
 
 	/**
 	 * return the local effective width
 	 */
 	dAds(u, v) {
-		throw new Error("Unimplemented");
+		throw "Unimplemented";
 	}
 
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
 	 xyz(u, v) {
-	 	throw new Error("Unimplemented");
+		throw "Unimplemented";
 	 }
 
 	/**
 	 * does the given triangle contain the given point on this surface?
 	 */
 	encompassing(triangle, node) {
-		throw new Error("Unimplemented");
+		throw "Unimplemented";
 	}
 
 	/**
 	 * orthodromic distance from A to B on the surface
 	 */
 	distance(a, b) {
-		throw new Error("Unimplemented");
+		throw "Unimplemented";
 	}
 }
 
@@ -137,18 +137,18 @@ class Sphere extends Surface {
 	}
 
 	dsdu(ph, l) {
-		return radius;
+		return this.radius;
 	}
 
 	dAds(ph, l) {
-		return radius*Math.cos(ph);
+		return this.radius*Math.cos(ph);
 	}
 
 	xyz(ph, l) {
 		return new Vector(
-			-Math.cos(ph)*Math.sin(l),
-			 Math.cos(ph)*Math.cos(l),
-			 Math.sin(ph));
+			-this.radius*Math.cos(ph)*Math.sin(l),
+			 this.radius*Math.cos(ph)*Math.cos(l),
+			 this.radius*Math.sin(ph));
 	}
 
 	encompassing(triangle, r) {
@@ -163,7 +163,80 @@ class Sphere extends Surface {
 	}
 
 	distance(a, b) {
-		return Math.acos(Math.sin(a.u)*Math.sin(b.u) + Math.cos(a.u)*Math.cos(b.u)*Math.cos(a.v - b.v));
+		return this.radius*Math.acos(a.pos.dot(b.pos)/(this.radius*this.radius));
+	}
+}
+
+
+class Spheroid extends Surface {
+	constructor(dayLength, gravity, circumference, tilt) {
+		super();
+		this.radius = circumference/(2*Math.PI); // keep radius in km
+		const g = gravity*9.8; // gravity in m/s^2
+		const om = 2*Math.PI/(dayLength*3600); // and angular velocity in rad/s
+		const w = (this.radius*1000)*om*om/g; // this dimensionless parameter determines the aspect ratio
+		this.aspectRatio = 1 + w/2 + 1.99*w*w + 11.26*w*w*w; // numerically determined formula for oblateness
+		this.flattening = 1 - 1/this.aspectRatio;
+		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2))
+	}
+
+	randomPoint() { // it's probably fine that this is only approximately equally spaced
+		return { u: Math.asin(2*Math.random()-1), v: Math.PI*(2*Math.random()-1) };
+	}
+
+	partition() {
+		let nodes = [
+			new Node(null, { u: 0, v: 0 }, this),
+			new Node(null, { u: 0, v: Math.PI/2 }, this),
+			new Node(null, { u: 0, v: Math.PI }, this),
+			new Node(null, { u: 0, v: -Math.PI/2 }, this),
+			new Node(null, { u: Math.PI/2, v: 0 }, this),
+			new Node(null, { u: -Math.PI/2, v: 0 }, this),
+		];
+		let triangles = [];
+		for (let i = 0; i < 4; i ++) {
+			triangles.push(
+				new Triangle(nodes[4], nodes[i], nodes[(i+1)%4]));
+			triangles.push(
+				new Triangle(nodes[5], nodes[(i+1)%4], nodes[i]));
+		}
+		return [nodes, triangles];
+	}
+
+	dsdu(ph, l) {
+		return radius*Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(ph), 2));
+	}
+
+	dAds(ph, l) {
+		return radius*Math.cos(ph);
+	}
+
+	xyz(ph, l) {
+		return new Vector(
+			-this.radius*Math.cos(ph)*Math.sin(l),
+			 this.radius*Math.cos(ph)*Math.cos(l),
+			 this.radius*Math.sin(ph)/this.aspectRatio);
+	}
+
+	encompassing(triangle, r) {
+		for (let i = 0; i < 3; i ++) {
+			const a = triangle.vertices[i];
+			const b = triangle.vertices[(i+1)%3];
+			const axb = a.pos.cross(b.pos);
+			if (axb.dot(r.pos) < 0)
+				return false;
+		}
+		return true;
+	}
+
+	distance(a, b) {
+		const s = Math.acos(Math.sin(a.u)*Math.sin(b.u) +
+			Math.cos(a.u)*Math.cos(b.u)*Math.cos(a.v - b.v));
+		const p = (a.u + b.u)/2;
+		const q = (b.u - a.u)/2;
+		const x = (s - Math.sin(s))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(s/2), 2);
+		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
+		return this.radius*(s - this.flattening/2*(x + y));
 	}
 }
 
@@ -268,7 +341,7 @@ class Triangle {
 		for (const vertex of this.vertices)
 			if (vertex != edge.node0 && vertex != edge.node1)
 				return vertex;
-		throw "Could not find a nonadjacent vertex."
+		throw "Could not find a nonadjacent vertex.";
 	}
 
 	/**
@@ -287,6 +360,13 @@ class Triangle {
 		for (let i = 0; i < 3; i ++)
 			if (this.vertices[i] == node)
 				return this.vertices[(i+1)%3];
+	}
+
+	isDegenerate() {
+		return (
+			this.vertices[0] == this.vertices[1] ||
+			this.vertices[1] == this.vertices[2] ||
+			this.vertices[2] == this.vertices[0]);
 	}
 
 	toString() {

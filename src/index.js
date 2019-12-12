@@ -41,9 +41,9 @@ $( '#planet-apply' ).on("click", function() {
 	const surface = new Sphere(
 		$( '#planet-day' ).val(),
 		$( '#planet-gravity' ).val(),
-		$( '#planet-circumference' ).val(),
+		$( '#planet-size' ).val(),
 		$( '#planet-tilt' ).val());
-	surface.populate(10000, 2);
+	surface.populate(1000, 2);
 
 	const mapDiv = document.getElementById('planet-map');
 	const data = [{
