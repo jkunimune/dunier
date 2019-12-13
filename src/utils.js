@@ -31,7 +31,7 @@ function delaunayTriangulate(surf) {
 		const flipQueue = [];
 		const flipImmune = [];
 		for (let j = 0; j < oldTriangles.length; j ++) { // start by filling the gap left by this node
-			const b = oldTriangles[j].widdershinsOf(dummyNode);
+			const b = oldTriangles[j].widershinsOf(dummyNode);
 			const c = oldTriangles[j].clockwiseOf(dummyNode);
 			if (j >= 2)
 				triangles.push(new Triangle(arbitraryNode, b, c)); // with new, naively placed triangles
@@ -42,7 +42,6 @@ function delaunayTriangulate(surf) {
 		}
 		flipEdges(flipQueue, flipImmune, null, triangles);
 	}
-	// TODO: recursively split the polygons in splitQueue with Delaunay edges
 
 	surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles
 } // TODO: delete the triangle lineage graph to clear up some memory
@@ -71,7 +70,7 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 			for (const nextEdge of perimeter) // and add their neighbors to the queue
 				if (!queue.includes(nextEdge) &&
 					!immune.includes(nextEdge) &&
-					(nextEdge.node0 != newestNode && nextEdge.node1 != newestNode)) { // taking care to skip edges that have already been flipped
+					(nextEdge.node0 !== newestNode && nextEdge.node1 !== newestNode)) { // taking care to skip edges that have already been flipped
 					queue.push(nextEdge);
 			}
 		}

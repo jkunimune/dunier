@@ -204,11 +204,11 @@ class Spheroid extends Surface {
 	}
 
 	dsdu(ph, l) {
-		return radius*Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(ph), 2));
+		return this.radius*Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(ph), 2));
 	}
 
 	dAds(ph, l) {
-		return radius*Math.cos(ph);
+		return this.radius*Math.cos(ph);
 	}
 
 	xyz(ph, l) {
@@ -248,7 +248,8 @@ class Node {
 	constructor(index, position, surface) {
 		this.surface = surface;
 		this.index = index;
-		this.u = position.u, this.v = position.v;
+		this.u = position.u;
+		this.v = position.v;
 		this.pos = surface.xyz(this.u, this.v);
 		this.neighbors = new Map();
 		this.parents = null;
@@ -262,17 +263,17 @@ class Node {
 	 * Return the triangle which appears left of that from the vantage of this.
 	 */
 	leftOf(that) {
-		if (this.neighbors.get(that).node0 == this)
+		if (this.neighbors.get(that).node0 === this)
 			return this.neighbors.get(that).triangleL;
 		else
 			return this.neighbors.get(that).triangleR;
 	}
 
 	/**
-	 * Return the Triangles that border this in widdershins order.
+	 * Return the Triangles that border this in widershins order.
 	 */
 	getPolygon() {
-		if (this.vertices == undefined) { // don't compute this unless you must
+		if (this.vertices === undefined) { // don't compute this unless you must
 			this.vertices = [this.neighbors.values().next().value.triangleL]; // start with an arbitrary neighboring triangle
 			while (this.vertices.length < this.neighbors.size) {
 				const lastTriangle = this.vertices[this.vertices.length-1];
@@ -302,7 +303,7 @@ class Triangle {
 			const node0 = this.vertices[i], node1 = this.vertices[(i+1)%3];
 			if (node0.neighbors.has(node1)) { // if so,
 				this.edges[i] = node0.neighbors.get(node1); // take that edge
-				if (this.edges[i].node0 == node0) // and depending on its direction,
+				if (this.edges[i].node0 === node0) // and depending on its direction,
 					this.edges[i].triangleL = this; // replace one of the triangles on it with this
 				else
 					this.edges[i].triangleR = this;
@@ -319,7 +320,7 @@ class Triangle {
 	 * vertices (and store it if you haven't yet).
 	 */
 	getCircumcenter() {
-		if (this.circumcenter == undefined) {
+		if (this.circumcenter === undefined) {
 			const a = this.vertices[0], b = this.vertices[1], c = this.vertices[2]; // the math gets pretty hairy
 			const ac = c.pos.minus(a.pos); // so these shortened variable names are really important
 			const ab = b.pos.minus(a.pos);
@@ -339,7 +340,7 @@ class Triangle {
 	 */
 	acrossFrom(edge) {
 		for (const vertex of this.vertices)
-			if (vertex != edge.node0 && vertex != edge.node1)
+			if (vertex !== edge.node0 && vertex !== edge.node1)
 				return vertex;
 		throw "Could not find a nonadjacent vertex.";
 	}
@@ -349,24 +350,24 @@ class Triangle {
 	 */
 	clockwiseOf(node) {
 		for (let i = 0; i < 3; i ++)
-			if (this.vertices[i] == node)
+			if (this.vertices[i] === node)
 				return this.vertices[(i+2)%3];
 	}
 
 	/**
-	 * Find and return the vertex widdershins of the given edge.
+	 * Find and return the vertex widershins of the given edge.
 	 */
-	widdershinsOf(node) {
+	widershinsOf(node) {
 		for (let i = 0; i < 3; i ++)
-			if (this.vertices[i] == node)
+			if (this.vertices[i] === node)
 				return this.vertices[(i+1)%3];
 	}
 
 	isDegenerate() {
 		return (
-			this.vertices[0] == this.vertices[1] ||
-			this.vertices[1] == this.vertices[2] ||
-			this.vertices[2] == this.vertices[0]);
+			this.vertices[0] === this.vertices[1] ||
+			this.vertices[1] === this.vertices[2] ||
+			this.vertices[2] === this.vertices[0]);
 	}
 
 	toString() {
@@ -384,7 +385,7 @@ class Edge {
 		this.triangleR = triangleR;
 		this.node1 = node1;
 		this.triangleL = triangleL;
-		this.length;
+		this.length = length;
 
 		node0.neighbors.set(node1, this);
 		node1.neighbors.set(node0, this);
