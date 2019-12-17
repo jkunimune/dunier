@@ -4,12 +4,12 @@ from scipy.special import jv, jn_zeros
 import scipy.optimize as opt
 
 MODE = 'ellipsoid'
-PARAM_SWEEP = np.linspace(1, 3, 41)
+PARAM_SWEEP = np.linspace(1, 3.5, 51)
 
-RES = 16
-MAX_ASPECT_RATIO = 3
+RES = 20
+MAX_ASPECT_RATIO = 3.5
 BOUNDARY_EXCESS = 3
-EIGEN_RES = 32
+EIGEN_RES = 40
 INTEGRATION_RES = 8
 
 ρB = 1.1*MAX_ASPECT_RATIO
@@ -62,7 +62,7 @@ for α_0 in PARAM_SWEEP: # angular momentum
 	else:
 		raise Exception()
 
-	for i in range(MAX_ASPECT_RATIO*RES):
+	for i in range(int(MAX_ASPECT_RATIO*RES)):
 		A = np.sum(PB*planet[np.newaxis, :, :]*dρ*dz, axis=(1,2)) # fourier transform
 		planet_twiddle = np.sum(B*A[:, np.newaxis, np.newaxis], axis=0)
 
@@ -73,11 +73,11 @@ for α_0 in PARAM_SWEEP: # angular momentum
 		else:
 			ɸ_in = ɸ[0, np.nonzero(planet[0,:])[0]][np.argmin(P[0, np.nonzero(planet[0,:])[0]])]
 		ɸ_out = ɸ[0, np.nonzero(planet[0,:])[0]][np.argmax(P[0, np.nonzero(planet[0,:])[0]])]
+		g_out = g[0, np.nonzero(planet[0,:])[0]][np.argmax(P[0, np.nonzero(planet[0,:])[0]])]
 
 		ρ_min = P[np.nonzero(planet)].min() - dρ/2
 		ρ_max = P[np.nonzero(planet)].max() + dρ/2
 		z_max = Z[np.nonzero(planet)].max() + dz/2
-		g_max = g[:-1, :-1].max()
 		ω = np.sqrt(max(0, 2*(ɸ_in - ɸ_out)/((ρ_max-dρ/2)**2 - (ρ_min+dρ/2)**2)))
 		ɸ += P**2*ω**2/2 # introduce the effective rotational potential
 
@@ -109,7 +109,7 @@ for α_0 in PARAM_SWEEP: # angular momentum
 		print("win")
 	if np.isnan(ρ_max): # and stop trying if it's hitting the walls
 		break
-	rotation_parameters.append(ρ_max*ω**2/g_max)
+	rotation_parameters.append(ρ_max*ω**2/g_out)
 	if MODE == 'ellipsoid':
 		aspect_ratios.append(ρ_max/z_max)
 		elongations.append(0)
@@ -126,8 +126,8 @@ print(aspect_ratios)
 print(elongations)
 valid = np.isfinite(aspect_ratios)
 if MODE == 'ellipsoid':
-	α_fit_params, err = opt.curve_fit(lambda x, a, b: 1+x/2+a*x**2+b*x**3, rotation_parameters[valid], aspect_ratios[valid])
-	α_fit = 1 + rotation_parameters/2 + α_fit_params[0]*rotation_parameters**2 + α_fit_params[1]*rotation_parameters**3
+	α_fit_params, err = opt.curve_fit(lambda x, a, b: 1 + x/2 + a*x**2 + b*x**3, rotation_parameters[valid], aspect_ratios[valid])
+	α_fit = 1 + 0.5*rotation_parameters + α_fit_params[0]*rotation_parameters**2 + α_fit_params[1]*rotation_parameters**3
 	print("α = 1 + 1/2*Rω^2/g + {:.3f}*(Rω^2/g)^2 + {:.3f}*(Rω^2/g)^3".format(*α_fit_params))
 	e_fit = elongations
 else:
