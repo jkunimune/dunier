@@ -25,25 +25,28 @@ function delaunayTriangulate(surf) {
 		flipEdges(flipQueue, [], node, triangles); // and put the edges of this triangle on it
 	}
 
-	for (const dummyNode of dummyNodes) { // now remove the original vertices
-		const oldTriangles = dummyNode.getPolygon();
-		const arbitraryNode = oldTriangles[0].clockwiseOf(dummyNode);
-		const flipQueue = [];
-		const flipImmune = [];
-		for (let j = 0; j < oldTriangles.length; j ++) { // start by filling the gap left by this node
-			const b = oldTriangles[j].widershinsOf(dummyNode);
-			const c = oldTriangles[j].clockwiseOf(dummyNode);
-			if (j >= 2)
-				triangles.push(new Triangle(arbitraryNode, b, c)); // with new, naively placed triangles
-			if (j >= 3)
-				flipQueue.push(arbitraryNode.neighbors.get(b));
-			flipImmune.push(b.neighbors.get(c));
-			oldTriangles[j].children = []; // and remove the old triangles
-		}
-		flipEdges(flipQueue, flipImmune, null, triangles);
-	}
-
-	surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles
+	// for (const dummyNode of dummyNodes) { // now remove the original vertices
+	// 	const oldTriangles = dummyNode.getPolygon();
+	// 	const arbitraryNode = oldTriangles[0].clockwiseOf(dummyNode);
+	// 	const flipQueue = [];
+	// 	const flipImmune = [];
+	// 	for (let j = 0; j < oldTriangles.length; j ++) { // start by filling the gap left by this node
+	// 		const b = oldTriangles[j].widershinsOf(dummyNode);
+	// 		const c = oldTriangles[j].clockwiseOf(dummyNode);
+	// 		if (j >= 2)
+	// 			triangles.push(new Triangle(arbitraryNode, b, c)); // with new, naively placed triangles
+	// 		// if (triangles[triangles.length-1].isInsideOut())
+	// 		// 	throw "is me";
+	// 		if (j >= 3)
+	// 			flipQueue.push(arbitraryNode.neighbors.get(b));
+	// 		flipImmune.push(b.neighbors.get(c));
+	// 		oldTriangles[j].children = []; // and remove the old triangles
+	// 	}
+	// 	flipEdges(flipQueue, flipImmune, null, triangles);
+	// }
+	//
+	// surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles
+	surf.triangles = triangles.filter(t => t.children == null && t.i != null && t.j != null && t.k != null)
 } // TODO: delete the triangle lineage graph to clear up some memory
 
 /**
@@ -55,12 +58,21 @@ function delaunayTriangulate(surf) {
 function flipEdges(queue, immune, newestNode, allTriangles) {
 	while (queue.length > 0) { // go through that queue
 		const edge = queue.pop(); // extract the needed geometric entities
-		const a = edge.node0, c = edge.node1;
-		const abc = edge.triangleR, cda = edge.triangleL;
+		const abc = edge.triangleR;
+		const cda = edge.triangleL;
+		const a = edge.node0;
 		const b = abc.acrossFrom(edge);
+		const c = edge.node1;
 		const d = cda.acrossFrom(edge);
-		const o = abc.getCircumcenter();
-		if (d.pos.minus(o).sqr() < a.pos.minus(o).sqr()) { // and check for non-Delaunay edges
+
+		const nHat = a.getNormal().plus(b.getNormal()).plus(c.getNormal()).plus(d.getNormal());
+		const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
+		const uHat = nHat.cross(vHat).norm();
+		const ap = {x: a.pos.dot(vHat), y: a.pos.dot(uHat)}; // project them into the normal plane
+		const bp = {x: b.pos.dot(vHat), y: b.pos.dot(uHat)}; // (don't worry about the rotation and scaling)
+		const cp = {x: c.pos.dot(vHat), y: c.pos.dot(uHat)};
+		const dp = {x: d.pos.dot(vHat), y: d.pos.dot(uHat)};
+		if (!isDelaunay(ap, bp, cp, dp)) { // and check for non-Delaunay edges
 			a.neighbors.delete(c); // flip them!
 			c.neighbors.delete(a); // (remove the old edge)
 			allTriangles.push(new Triangle(b, c, d)); // (and add new triangles)
@@ -78,11 +90,29 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 }
 
 /**
+ * Check whether a--c is a Delaunay edge in 2D given the existence of b and d
+ */
+function isDelaunay(a, b, c, d) {
+	const mat = [
+		[a.x - d.x, a.y - d.y, a.x*a.x + a.y*a.y - d.x*d.x - d.y*d.y],
+		[b.x - d.x, b.y - d.y, b.x*b.x + b.y*b.y - d.x*d.x - d.y*d.y],
+		[c.x - d.x, c.y - d.y, c.x*c.x + c.y*c.y - d.x*d.x - d.y*d.y],
+	];
+	let det = 0;
+	for (let i = 0; i < 3; i ++) {
+		det = det +
+			mat[0][ i     ] * mat[1][(i+1)%3] * mat[2][(i+2)%3] -
+			mat[0][(i+2)%3] * mat[1][(i+1)%3] * mat[2][ i     ];
+	}
+	return det <= 0;
+}
+
+/**
  * go down the chain of triangles to find the one that contains this point
  */
 function findSmallestEncompassing(node, partition, surf) {
 	for (const triangle of partition) {
-		if (surf.encompassing(triangle, node)) {
+		if (triangle.contains(node)) {
 			// console.log(`${triangle} si indu ${node}.`);
 			// console.log(triangle.children)
 			if (triangle.children == null)
@@ -93,5 +123,5 @@ function findSmallestEncompassing(node, partition, surf) {
 		// else
 		// 	console.log(`${triangle} no indu ${node}.`);
 	}
-	throw "no eureka tingon da indu.";
+	throw "no eureka tinogon da indu.";
 }

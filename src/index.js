@@ -38,7 +38,7 @@ $( document ).ready(function() {
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
 $( '#planet-apply' ).on("click", function() {
-	const surface = new Sphere(
+	const surface = new Spheroid(
 		$( '#planet-day' ).val(),
 		$( '#planet-gravity' ).val(),
 		$( '#planet-size' ).val(),

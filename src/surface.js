@@ -2,7 +2,7 @@
 'use strict';
 
 
-const NOISINESS = 2e-6;
+const NOISINESS = 1.5e-6;
 
 
 /**
@@ -64,7 +64,8 @@ class Surface {
 
 	/**
 	 * return a list of nodes along with an associated list of triangles that
-	 * completely cover this Surface
+	 * completely cover this Surface. The mesh must never diverge from the surface farther
+	 * than the radius of curvature.
 	 */
 	partition() {
 		throw "Unimplemented";
@@ -87,19 +88,21 @@ class Surface {
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
-	 xyz(u, v) {
-		throw "Unimplemented";
-	 }
-
-	/**
-	 * does the given triangle contain the given point on this surface?
-	 */
-	encompassing(triangle, node) {
+	xyz(u, v) {
 		throw "Unimplemented";
 	}
 
 	/**
-	 * orthodromic distance from A to B on the surface
+	 * return the normalized vector pointing outward at this node. the node may be assumed
+	 * to be on this Surface.
+	 */
+	getNormal(node) {
+		throw "Unimplemented";
+	}
+
+	/**
+	 * orthodromic distance from A to B on the surface (it's okay if it's just
+	 * an approximation).
 	 */
 	distance(a, b) {
 		throw "Unimplemented";
@@ -151,15 +154,8 @@ class Sphere extends Surface {
 			 this.radius*Math.sin(ph));
 	}
 
-	encompassing(triangle, r) {
-		for (let i = 0; i < 3; i ++) {
-			const a = triangle.vertices[i];
-			const b = triangle.vertices[(i+1)%3];
-			const axb = a.pos.cross(b.pos);
-			if (axb.dot(r.pos) < 0)
-				return false;
-		}
-		return true;
+	getNormal(node) {
+		return node.pos.norm();
 	}
 
 	distance(a, b) {
@@ -175,7 +171,7 @@ class Spheroid extends Surface {
 		const g = gravity*9.8; // gravity in m/s^2
 		const om = 2*Math.PI/(dayLength*3600); // and angular velocity in rad/s
 		const w = (this.radius*1000)*om*om/g; // this dimensionless parameter determines the aspect ratio
-		this.aspectRatio = 1 + w/2 + 1.99*w*w + 11.26*w*w*w; // numerically determined formula for oblateness
+		this.aspectRatio = 1 + w/2 + 2.0*w*w + 11.3*w*w*w; // numerically determined formula for oblateness
 		this.flattening = 1 - 1/this.aspectRatio;
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2))
 	}
@@ -185,21 +181,55 @@ class Spheroid extends Surface {
 	}
 
 	partition() {
-		let nodes = [
-			new Node(null, { u: 0, v: 0 }, this),
-			new Node(null, { u: 0, v: Math.PI/2 }, this),
-			new Node(null, { u: 0, v: Math.PI }, this),
-			new Node(null, { u: 0, v: -Math.PI/2 }, this),
-			new Node(null, { u: Math.PI/2, v: 0 }, this),
-			new Node(null, { u: -Math.PI/2, v: 0 }, this),
-		];
-		let triangles = [];
-		for (let i = 0; i < 4; i ++) {
+		const n = 4;
+		const m = Math.max(4, Math.trunc(
+			Math.PI/Math.acos(1 - Math.pow(this.aspectRatio, -2))) + 1); // higher aspect ratio = tighter curvature = more points needed
+		const nodes = [];
+		for (let i = 1; i < n; i ++) // construct a grid of points,
+			for (let j = 0; j < m; j ++)
+				nodes.push(new Node(null, {
+					u: Math.atan(Math.tan(Math.PI*(i/n - .5))/this.aspectRatio),
+					v: 2*Math.PI*(j + .5*(i%2))/m,
+				}, this));
+		const kS = nodes.length; // assign Nodes to the poles,
+		nodes.push(new Node(null, { u: -Math.PI/2, v: 0 }, this));
+		const kN = nodes.length;
+		nodes.push(new Node(null, { u: Math.PI/2, v: 0 }, this));
+
+		const triangles = []; // and strew it all with triangles
+		for (let j = 0; j < m; j ++)
 			triangles.push(
-				new Triangle(nodes[4], nodes[i], nodes[(i+1)%4]));
-			triangles.push(
-				new Triangle(nodes[5], nodes[(i+1)%4], nodes[i]));
+				new Triangle(nodes[kS], nodes[(j+1)%m], nodes[j]));
+		for (let i = 1; i < n-1; i ++) {
+			for (let j = 0; j < m; j ++) {
+				if (i%2 === 1) {
+					triangles.push(new Triangle(
+						nodes[(i-1)*m + j],
+						nodes[i*m + (j+1)%m],
+						nodes[i*m + j]));
+					triangles.push(new Triangle(
+						nodes[(i-1)*m + j],
+						nodes[(i-1)*m + (j+1)%m],
+						nodes[i*m + (j+1)%m]));
+				}
+				else {
+					triangles.push(new Triangle(
+						nodes[(i-1)*m + j],
+						nodes[(i-1)*m + (j+1)%m],
+						nodes[i*m + j]));
+					triangles.push(new Triangle(
+						nodes[(i-1)*m + (j+1)%m],
+						nodes[i*m + (j+1)%m],
+						nodes[i*m + j]));
+				}
+			}
 		}
+		for (let j = 0; j < m; j ++)
+			triangles.push(
+				new Triangle(nodes[kN], nodes[(n-2)*m + j], nodes[(n-2)*m + (j+1)%m]));
+		for (const t of triangles)
+			if (t.isInsideOut())
+				throw "am me";
 		return [nodes, triangles];
 	}
 
@@ -218,15 +248,13 @@ class Spheroid extends Surface {
 			 this.radius*Math.sin(ph)/this.aspectRatio);
 	}
 
-	encompassing(triangle, r) {
-		for (let i = 0; i < 3; i ++) {
-			const a = triangle.vertices[i];
-			const b = triangle.vertices[(i+1)%3];
-			const axb = a.pos.cross(b.pos);
-			if (axb.dot(r.pos) < 0)
-				return false;
-		}
-		return true;
+	getNormal(node) {
+		const ph = Math.atan(this.aspectRatio*Math.tan(node.u)); // use geodetic coordinates
+		const l = node.v;
+		return new Vector(
+			-Math.cos(ph)*Math.sin(l),
+			 Math.cos(ph)*Math.cos(l),
+			 Math.sin(ph));
 	}
 
 	distance(a, b) {
@@ -260,7 +288,7 @@ class Node {
 	}
 
 	/**
-	 * Return the triangle which appears left of that from the vantage of this.
+	 * return the triangle which appears left of that from the point of view of this.
 	 */
 	leftOf(that) {
 		if (this.neighbors.get(that).node0 === this)
@@ -270,7 +298,7 @@ class Node {
 	}
 
 	/**
-	 * Return the Triangles that border this in widershins order.
+	 * return the Triangles that border this in widershins order.
 	 */
 	getPolygon() {
 		if (this.vertices === undefined) { // don't compute this unless you must
@@ -282,6 +310,15 @@ class Node {
 			}
 		}
 		return this.vertices;
+	}
+
+	/**
+	 * return the normal direction vector at this point
+	 */
+	getNormal() {
+		if (this.normal === undefined)
+			this.normal = this.surface.getNormal(this);
+		return this.normal;
 	}
 }
 
@@ -336,6 +373,43 @@ class Triangle {
 	}
 
 	/**
+	 * determine whether this triangle contains the given Node, using its neighbors to
+	 * hint at the direction of the surface. must return false for points outside the
+	 * triangle's circumcircle.
+	 */
+	contains(r) {
+		const normal = [];
+		for (let i = 0; i < 3; i ++)
+			normal.push(this.surface.getNormal(this.vertices[i])); // compute normal vectors
+		if (this.surface.getNormal(r).dot(normal[0].plus(normal[1]).plus(normal[2])) < 0)
+			return false; // check alignment on the surface
+		for (let i = 0; i < 3; i ++) {
+			const a = this.vertices[i];
+			const na = normal[i];
+			const b = this.vertices[(i+1)%3];
+			const nb = normal[(i+1)%3]
+			const ab = a.neighbors.get(b);
+			const edgeDirection = b.pos.minus(a.pos);
+			const normalDirection = na.plus(nb);
+			const boundDirection = normalDirection.cross(edgeDirection);
+			if (boundDirection.dot(r.pos.minus(a.pos)) < 0)
+				return false; // check each side condition
+		}
+		return true;
+	}
+
+	/**
+	 * compute the outward normal vector of this triangle.
+	 * @returns Vector, normalized
+	 */
+	getNormal() {
+		const ab = this.vertices[1].pos.minus(this.vertices[0].pos);
+		const ac = this.vertices[2].pos.minus(this.vertices[0].pos);
+		const abxac = ab.cross(ac);
+		return abxac.norm();
+	}
+
+	/**
 	 * Find and return the vertex across from the given edge.
 	 */
 	acrossFrom(edge) {
@@ -363,11 +437,11 @@ class Triangle {
 				return this.vertices[(i+1)%3];
 	}
 
-	isDegenerate() {
-		return (
-			this.vertices[0] === this.vertices[1] ||
-			this.vertices[1] === this.vertices[2] ||
-			this.vertices[2] === this.vertices[0]);
+	isInsideOut() {
+		let vNormal = new Vector(0, 0, 0);
+		for (let i = 0; i < 3; i ++)
+			vNormal = vNormal.plus(this.surface.getNormal(this.vertices[i]));
+		return this.getNormal().dot(vNormal) <= 0;
 	}
 
 	toString() {
@@ -446,7 +520,11 @@ class Vector {
 		return this.dot(this);
 	}
 
+	norm() {
+		return this.times(Math.pow(this.sqr(), -0.5));
+	}
+
 	toString() {
-		return `<${Math.trunc(10*this.x)}, ${Math.trunc(10*this.y)}, ${Math.trunc(10*this.z)}>`;
+		return `<${Math.trunc(this.x)}, ${Math.trunc(this.y)}, ${Math.trunc(this.z)}>`;
 	}
 }
