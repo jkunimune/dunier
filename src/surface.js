@@ -171,7 +171,9 @@ class Spheroid extends Surface {
 		const g = gravity*9.8; // gravity in m/s^2
 		const om = 2*Math.PI/(dayLength*3600); // and angular velocity in rad/s
 		const w = (this.radius*1000)*om*om/g; // this dimensionless parameter determines the aspect ratio
-		this.aspectRatio = 1 + w/2 + 2.0*w*w + 11.3*w*w*w; // numerically determined formula for oblateness
+		this.aspectRatio = 1 + w/2 + 1.5*w*w + 6.5*w*w*w; // numerically determined formula for oblateness
+		if (this.aspectRatio > 4)
+			throw new RangeError("Unstable planet");
 		this.flattening = 1 - 1/this.aspectRatio;
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2))
 	}

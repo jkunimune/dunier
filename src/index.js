@@ -38,11 +38,27 @@ $( document ).ready(function() {
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
 $( '#planet-apply' ).on("click", function() {
-	const surface = new Spheroid(
-		$( '#planet-day' ).val(),
-		$( '#planet-gravity' ).val(),
-		$( '#planet-size' ).val(),
-		$( '#planet-tilt' ).val());
+	let surface = undefined;
+	try {
+		surface = new Spheroid(
+			$('#planet-day').val(),
+			$('#planet-gravity').val(),
+			$('#planet-size').val(),
+			$('#planet-tilt').val());
+	} catch (err) {
+		if (err instanceof RangeError) {
+			$('#alert-box').html(
+				"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
+				"  The planet tore itself apart. Please try different parameters.\n" +
+				"  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>\n" +
+				"    <span aria-hidden='true'>&times;</span>\n" +
+				"  </button>\n" +
+				"</div>");
+			return;
+		}
+		else
+			throw err;
+	}
 	surface.populate(1000, 2);
 
 	const mapDiv = document.getElementById('planet-map');

@@ -13,6 +13,9 @@
 
   <body>
     <div class="container mt-3 mb-5">
+      <div id="alert-box">
+      </div>
+
       <h1>World Hammer</h1>
 
       <ul class="nav nav-tabs" id="myTab" role="tablist">
@@ -57,11 +60,11 @@
                   </div>
                   <div class="form-group">
                     <label for="planet-size">Circumference</label>
-                    <input type="number" value="8000" data-decimals="0" min="1000" max="100000" step="1000" data-suffix="km" id="planet-size"/>
+                    <input type="number" value="8000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
                   </div>
                   <div class="form-group">
                     <label for="planet-gravity">Surface gravity</label>
-                    <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="g" id="planet-gravity"/>
+                    <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
                   </div>
                   <div class="form-group">
                     <label for="planet-day">Day length</label>

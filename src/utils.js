@@ -25,28 +25,25 @@ function delaunayTriangulate(surf) {
 		flipEdges(flipQueue, [], node, triangles); // and put the edges of this triangle on it
 	}
 
-	// for (const dummyNode of dummyNodes) { // now remove the original vertices
-	// 	const oldTriangles = dummyNode.getPolygon();
-	// 	const arbitraryNode = oldTriangles[0].clockwiseOf(dummyNode);
-	// 	const flipQueue = [];
-	// 	const flipImmune = [];
-	// 	for (let j = 0; j < oldTriangles.length; j ++) { // start by filling the gap left by this node
-	// 		const b = oldTriangles[j].widershinsOf(dummyNode);
-	// 		const c = oldTriangles[j].clockwiseOf(dummyNode);
-	// 		if (j >= 2)
-	// 			triangles.push(new Triangle(arbitraryNode, b, c)); // with new, naively placed triangles
-	// 		// if (triangles[triangles.length-1].isInsideOut())
-	// 		// 	throw "is me";
-	// 		if (j >= 3)
-	// 			flipQueue.push(arbitraryNode.neighbors.get(b));
-	// 		flipImmune.push(b.neighbors.get(c));
-	// 		oldTriangles[j].children = []; // and remove the old triangles
-	// 	}
-	// 	flipEdges(flipQueue, flipImmune, null, triangles);
-	// }
-	//
-	// surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles
-	surf.triangles = triangles.filter(t => t.children == null && t.i != null && t.j != null && t.k != null)
+	for (const dummyNode of dummyNodes) { // now remove the original vertices
+		const oldTriangles = dummyNode.getPolygon();
+		const arbitraryNode = oldTriangles[0].clockwiseOf(dummyNode);
+		const flipQueue = [];
+		const flipImmune = [];
+		for (let j = 0; j < oldTriangles.length; j ++) { // start by filling the gap left by this node
+			const b = oldTriangles[j].widershinsOf(dummyNode);
+			const c = oldTriangles[j].clockwiseOf(dummyNode);
+			if (j >= 2)
+				triangles.push(new Triangle(arbitraryNode, b, c)); // with new, naively placed triangles
+			if (j >= 3)
+				flipQueue.push(arbitraryNode.neighbors.get(b));
+			flipImmune.push(b.neighbors.get(c));
+			oldTriangles[j].children = []; // and remove the old triangles
+		}
+		flipEdges(flipQueue, flipImmune, null, triangles);
+	}
+
+	surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles
 } // TODO: delete the triangle lineage graph to clear up some memory
 
 /**
