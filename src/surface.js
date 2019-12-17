@@ -181,9 +181,9 @@ class Spheroid extends Surface {
 	}
 
 	partition() {
+		const b = Math.atan(1/this.aspectRatio);
+		const m = Math.trunc(2*Math.PI/Math.hypot(Math.sin(b)/this.aspectRatio, 1 - Math.cos(b)));
 		const n = 4;
-		const m = Math.max(4, Math.trunc(
-			Math.PI/Math.acos(1 - Math.pow(this.aspectRatio, -2))) + 1); // higher aspect ratio = tighter curvature = more points needed
 		const nodes = [];
 		for (let i = 1; i < n; i ++) // construct a grid of points,
 			for (let j = 0; j < m; j ++)
