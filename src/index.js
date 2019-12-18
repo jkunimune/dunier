@@ -47,7 +47,7 @@ $( '#planet-apply' ).on("click", function() {
 			$('#planet-tilt').val());
 	} catch (err) {
 		if (err instanceof RangeError) {
-			$('#alert-box').html(
+			$('#alert-box').append(
 				"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
 				"  The planet tore itself apart. Please try different parameters.\n" +
 				"  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>\n" +
