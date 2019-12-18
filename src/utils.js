@@ -12,14 +12,14 @@ function delaunayTriangulate(surf) {
 	for (const node of surf.nodes) { // for each node,
 		const containing = findSmallestEncompassing(node, partition, surf); // find out which triangle it's in
 		node.parents = containing.vertices; // that is its parent triangle
-		for (let j = 0; j < 3; j ++) { // add the three new child triangles
+		for (let j = 0; j < 3; j ++) { // add the three new child triangles // TODO make it so I can call this multiple times without altering the state of the actual Surface (I'll likely need my own Node class just for topography management)
 			triangles.push(new Triangle(
 				node,
 				containing.vertices[j],
 				containing.vertices[(j+1)%3]));
 		}
 		containing.children = triangles.slice(triangles.length-3); // we could remove containing from triangles now, but it would be a waste of time
-		node.parent = containing.vertices[Math.trunc(3*Math.random())];
+		node.parent = containing.vertices[Math.trunc(3*Math.random())]; // TODO: make my own pseudorandom generator
 
 		const flipQueue = [...containing.edges]; // start a list of edges to try flipping
 		flipEdges(flipQueue, [], node, triangles); // and put the edges of this triangle on it
@@ -38,9 +38,11 @@ function delaunayTriangulate(surf) {
 			if (j >= 3)
 				flipQueue.push(arbitraryNode.neighbors.get(b));
 			flipImmune.push(b.neighbors.get(c));
-			oldTriangles[j].children = []; // and remove the old triangles
+			oldTriangles[j].children = []; // and effectively remove the old triangles
 		}
 		flipEdges(flipQueue, flipImmune, null, triangles);
+		for (const neighbor of dummyNode.neighbors.keys())
+			neighbor.neighbors.delete(dummyNode); // remove all remaining references to this node. it never existed. take care of anyone who says otherwise.
 	}
 
 	surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles

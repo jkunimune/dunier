@@ -355,26 +355,6 @@ class Triangle {
 	}
 
 	/**
-	 * compute the center of the circumcenter whose center is coplanar with all three
-	 * vertices (and store it if you haven't yet).
-	 */
-	getCircumcenter() {
-		if (this.circumcenter === undefined) {
-			const a = this.vertices[0], b = this.vertices[1], c = this.vertices[2]; // the math gets pretty hairy
-			const ac = c.pos.minus(a.pos); // so these shortened variable names are really important
-			const ab = b.pos.minus(a.pos);
-			const abxac = ab.cross(ac);
-			const ao =
-				abxac.cross(ab).times(ac.sqr()).plus(
-				ac.cross(abxac).times(ab.sqr())).times(1/
-					(2*abxac.sqr()));
-
-			this.circumcenter = a.pos.plus(ao);
-		}
-		return this.circumcenter;
-	}
-
-	/**
 	 * determine whether this triangle contains the given Node, using its neighbors to
 	 * hint at the direction of the surface. must return false for points outside the
 	 * triangle's circumcircle.
