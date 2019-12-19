@@ -3,6 +3,7 @@
 
 
 const NOISINESS = 5e-5;
+const AVG_TEMP = 283; // K
 
 
 /**
@@ -65,8 +66,9 @@ class Surface {
 			node.barxe += rng.normal(0, std);
 		}
 		for (const node of this.nodes) { // and then throw in the baseline
-			node.terme += Math.cos(node.u); // TODO: surface-dependent climate
-			node.barxe += Math.pow(Math.cos(node.u), 2) + Math.pow(Math.cos(3*node.u), 2);
+			node.terme += AVG_TEMP*Math.pow(this.insolation(node.u), 1/4.) - 273; // TODO: surface-dependent climate
+			const lat = this.geodeticLatitude(node.u);
+			node.barxe += Math.pow(Math.cos(lat), 2) + Math.pow(Math.cos(3*lat), 2);
 		}
 
 	}
@@ -103,6 +105,20 @@ class Surface {
 	}
 
 	/**
+	 * return the geodetic latitude corresponding to a u value.
+	 */
+	geodeticLatitude(u) {
+		throw "Unimplemented";
+	}
+
+	/**
+	 * return the amount of solar radiation at a u value, normalized to peak at 1.
+	 */
+	insolation(u) {
+		throw "Unimplemented";
+	}
+
+	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
 	xyz(u, v) {
@@ -127,62 +143,8 @@ class Surface {
 }
 
 
-class Sphere extends Surface {
-	constructor(dayLength, gravity, circumference, tilt) {
-		super();
-		this.radius = circumference/(2*Math.PI);
-	}
-
-	randomPoint(rng) {
-		return { u: Math.asin(rng.uniform(-1, 1)), v: rng.uniform(-Math.PI, Math.PI) };
-	}
-
-	partition() {
-		let nodes = [
-			new Node(null, { u: 0, v: 0 }, this),
-			new Node(null, { u: 0, v: Math.PI/2 }, this),
-			new Node(null, { u: 0, v: Math.PI }, this),
-			new Node(null, { u: 0, v: -Math.PI/2 }, this),
-			new Node(null, { u: Math.PI/2, v: 0 }, this),
-			new Node(null, { u: -Math.PI/2, v: 0 }, this),
-		];
-		let triangles = [];
-		for (let i = 0; i < 4; i ++) {
-			triangles.push(
-				new Triangle(nodes[4], nodes[i], nodes[(i+1)%4]));
-			triangles.push(
-				new Triangle(nodes[5], nodes[(i+1)%4], nodes[i]));
-		}
-		return [nodes, triangles];
-	}
-
-	dsdu(ph, l) {
-		return this.radius;
-	}
-
-	dAds(ph, l) {
-		return this.radius*Math.cos(ph);
-	}
-
-	xyz(ph, l) {
-		return new Vector(
-			-this.radius*Math.cos(ph)*Math.sin(l),
-			 this.radius*Math.cos(ph)*Math.cos(l),
-			 this.radius*Math.sin(ph));
-	}
-
-	getNormal(node) {
-		return node.pos.norm();
-	}
-
-	distance(a, b) {
-		return this.radius*Math.acos(a.pos.dot(b.pos)/(this.radius*this.radius));
-	}
-}
-
-
 class Spheroid extends Surface {
-	constructor(dayLength, gravity, circumference, tilt) {
+	constructor(dayLength, gravity, circumference, obliquity) {
 		super();
 		this.radius = circumference/(2*Math.PI); // keep radius in km
 		const g = gravity*9.8; // gravity in m/s^2
@@ -193,6 +155,7 @@ class Spheroid extends Surface {
 			throw new RangeError("Unstable planet");
 		this.flattening = 1 - 1/this.aspectRatio;
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2))
+		this.obliquity = obliquity*Math.PI/180;
 	}
 
 	randomPoint(rng) {
@@ -255,12 +218,23 @@ class Spheroid extends Surface {
 		return [nodes, triangles];
 	}
 
-	dsdu(ph, l) {
+	dsdu(ph) {
 		return this.radius*Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(ph), 2));
 	}
 
-	dAds(ph, l) {
+	dAds(ph) {
 		return this.radius*Math.cos(ph);
+	}
+
+	geodeticLatitude(ph) {
+		return Math.atan(this.aspectRatio*Math.tan(ph));
+	}
+
+	insolation(ph) {
+		return 1 -
+			5/8.*legendreP2(Math.cos(this.obliquity))*legendreP2(Math.sin(ph)) -
+			9/64.*legendreP4(Math.cos(this.obliquity))*legendreP4(Math.sin(ph)) -
+			65/1024.*legendreP6(Math.cos(this.obliquity))*legendreP6(Math.sin(ph));
 	}
 
 	xyz(ph, l) {
@@ -271,7 +245,7 @@ class Spheroid extends Surface {
 	}
 
 	getNormal(node) {
-		const ph = Math.atan(this.aspectRatio*Math.tan(node.u)); // use geodetic coordinates
+		const ph = this.geodeticLatitude(node.u); // use geodetic coordinates
 		const l = node.v;
 		return new Vector(
 			-Math.cos(ph)*Math.sin(l),

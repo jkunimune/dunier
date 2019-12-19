@@ -2,6 +2,27 @@
 'use strict';
 
 /**
+ * second Legendre polynomial.
+ */
+function legendreP2(y) {
+	return (3*y*y - 1)/2;
+}
+
+/**
+ * second Legendre polynomial.
+ */
+function legendreP4(y) {
+	return ((35*y*y - 30)*y*y + 3)/8;
+}
+
+/**
+ * second Legendre polynomial.
+ */
+function legendreP6(y) {
+	return (((231*y*y - 315)*y*y + 105)*y*y - 5)/16;
+}
+
+/**
  * set the triangles attribute of the surface, and set up all the Edges and references
  * and stuff
  */
