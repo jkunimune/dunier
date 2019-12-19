@@ -35,18 +35,66 @@ $( document ).ready(function() {
 });
 
 /**
+ * The "Toroid" option makes the "Tidally-locked" checkbox nonapplicable.
+ */
+$( '#planet-type' ).on('click', function() {
+	if (this.value == 1) { // if it's toroidal now
+		if ($('#planet-locked').prop('checked')) // uncheck tidal locking if we need to
+			$('#planet-locked').click();
+		$('#planet-locked').prop('disabled', true); // and disable it
+	}
+	else { // if it's anything else
+		$('#planet-locked').prop('disabled', false); // enable it
+	}
+});
+
+/**
+ * The "Tidally-locked" checkbox makes some other options nonapplicable.
+ */
+$( '#planet-locked' ).on('click', function() {
+	$('#planet-day').prop('disabled', this.checked); // rotation period
+	$('#planet-tilt').prop('disabled', this.checked); // and obliquity are both irrelevant
+});
+
+/**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
-$( '#planet-apply' ).on("click", function() {
+$( '#planet-apply' ).on('click', function() {
 	const rng = new Random(
-		$('#planet-seed').val());
+		$('#planet-seed').val()); // use the random seed
 	let surface = undefined;
-	try {
-		surface = new Spheroid(
-			$('#planet-day').val(),
-			$('#planet-gravity').val(),
-			$('#planet-size').val(),
-			$('#planet-tilt').val());
+	try { // create a surface
+		if ($('#planet-type').val() === '0') { // spheroid
+			if ($('#planet-locked').prop('checked')) { // spherical
+				surface = new Sphere(
+					$('#planet-size').val());
+			}
+			else { // oblate
+				surface = new Spheroid(
+					$('#planet-size').val(),
+					$('#planet-gravity').val(),
+					$('#planet-day').val(),
+					$('#planet-tilt').val());
+			}
+		}
+		else if ($('#planet-type').val() === '1') { // toroid
+			// surface = new Toroid(
+			// 	$('#planet-size').val(),
+			// 	$('#planet-gravity').val(),
+			// 	$('#planet-day').val(),
+			// 	$('#planet-tilt').val());
+		}
+		else if ($('#planet-type').val() === '2') { // plane
+			if ($('#planet-locked').prop('checked')) { // with static sun
+				// surface = new StaticPlane(
+				// 	$('#planet-size').val());
+			}
+			else { // with orbiting sun
+				// surface = new Plane(
+				// 	$('#planet-size').val(),
+				// 	$('#planet-tilt').val());
+			}
+		}
 	} catch (err) {
 		if (err instanceof RangeError) {
 			$('#alert-box').append(

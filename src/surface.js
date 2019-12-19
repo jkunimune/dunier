@@ -144,7 +144,7 @@ class Surface {
 
 
 class Spheroid extends Surface {
-	constructor(dayLength, gravity, circumference, obliquity) {
+	constructor(circumference, gravity, dayLength, obliquity) {
 		super();
 		this.radius = circumference/(2*Math.PI); // keep radius in km
 		const g = gravity*9.8; // gravity in m/s^2
@@ -154,7 +154,7 @@ class Spheroid extends Surface {
 		if (this.aspectRatio > 4)
 			throw new RangeError("Unstable planet");
 		this.flattening = 1 - 1/this.aspectRatio;
-		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2))
+		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2));
 		this.obliquity = obliquity*Math.PI/180;
 	}
 
@@ -261,6 +261,17 @@ class Spheroid extends Surface {
 		const x = (s - Math.sin(s))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(s/2), 2);
 		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
 		return this.radius*(s - this.flattening/2*(x + y));
+	}
+}
+
+
+class Sphere extends Spheroid {
+	constructor(circumference) {
+		super(circumference, 1, Number.POSITIVE_INFINITY, Number.NaN);
+	}
+
+	insolation(ph) {
+		return Math.max(0, Math.sin(ph));
 	}
 }
 
