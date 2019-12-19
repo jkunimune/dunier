@@ -5,13 +5,12 @@
  * set the triangles attribute of the surface, and set up all the Edges and references
  * and stuff
  */
-function delaunayTriangulate(surf) {
+function delaunayTriangulate(surf, rng) {
 	const [dummyNodes, partition] = surf.partition(); // load up a top-level set of triangles
 	const triangles = partition.slice(); // hold onto that list and make a copy
 
 	for (const node of surf.nodes) { // for each node,
 		const containing = findSmallestEncompassing(node, partition, surf); // find out which triangle it's in
-		node.parents = containing.vertices; // that is its parent triangle
 		for (let j = 0; j < 3; j ++) { // add the three new child triangles // TODO make it so I can call this multiple times without altering the state of the actual Surface (I'll likely need my own Node class just for topography management)
 			triangles.push(new Triangle(
 				node,
@@ -19,10 +18,14 @@ function delaunayTriangulate(surf) {
 				containing.vertices[(j+1)%3]));
 		}
 		containing.children = triangles.slice(triangles.length-3); // we could remove containing from triangles now, but it would be a waste of time
-		node.parent = containing.vertices[Math.trunc(3*Math.random())]; // TODO: make my own pseudorandom generator
 
 		const flipQueue = [...containing.edges]; // start a list of edges to try flipping
 		flipEdges(flipQueue, [], node, triangles); // and put the edges of this triangle on it
+		node.parents = new Map();
+		for (const key of node.neighbors.keys()) { // its parentage is all currently connected non-dummy nodes
+			if (key.index != null)
+				node.parents.set(key, node.neighbors.get(key)); // so just filter node.adjacent
+		}
 	}
 
 	for (const dummyNode of dummyNodes) { // now remove the original vertices

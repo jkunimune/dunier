@@ -38,6 +38,8 @@ $( document ).ready(function() {
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
 $( '#planet-apply' ).on("click", function() {
+	const rng = new Random(
+		$('#planet-seed').val());
 	let surface = undefined;
 	try {
 		surface = new Spheroid(
@@ -59,7 +61,7 @@ $( '#planet-apply' ).on("click", function() {
 		else
 			throw err;
 	}
-	surface.populate(1000, 2);
+	surface.populate(10000, 2, rng);
 
 	const mapDiv = document.getElementById('planet-map');
 	const data = [{

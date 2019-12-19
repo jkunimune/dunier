@@ -2,7 +2,7 @@
 'use strict';
 
 
-const NOISINESS = 1.5e-6;
+const NOISINESS = 5e-5;
 
 
 /**
@@ -18,11 +18,11 @@ class Surface {
 	 * Fill this.nodes with random nodes, spaced via numLloyd iterations of Lloyd
 	 * relaxation
 	 */
-	populate(numNodes, numLloyd) {
+	populate(numNodes, numLloyd, rng) {
 		for (let i = 0; i < numNodes; i ++)
-			this.nodes.push(new Node(i, this.randomPoint(), this));
+			this.nodes.push(new Node(i, this.randomPoint(rng), this));
 
-		delaunayTriangulate(this);
+		delaunayTriangulate(this, rng);
 
 		// for (let j = 0; j < numLloyd; j ++) {
 		// 	for (let i = 0; i < numNodes; i ++) {
@@ -30,23 +30,39 @@ class Surface {
 		// 		this.nodes[i].u = u;
 		// 		this.nodes[i].v = v;
 
-		// 		delaunayTriangulate(this);
+		// 		delaunayTriangulate(this, rng);
 		// 	}
 		// }
 
+		for (let i = 1; i < this.nodes.length; i ++) { // after all that's through, some nodes won't have any parents
+			if (this.nodes[i].parents.length === 0) { // if that's so,
+				const orphan = this.nodes[i];
+				let closest = undefined; // the easiest thing to do is to just assign it the closest node that came before it
+				let minDistance = Number.POSITIVE_INFINITY;
+				for (let j = 0; j < orphan.index; j ++) {
+					const distance = this.distance(this.nodes[j], orphan);
+					if (distance < minDistance) {
+						minDistance = distance;
+						closest = this.nodes[j];
+					}
+				}
+				orphan.parents = new Map();
+				orphan.parents.set(closest, new Edge(orphan, null, closest, null, minDistance));
+			}
+		}
+
 		for (const node of this.nodes) { // assign each node random values
-			let variance = 0;
-			for (const parent of node.parents) {
-				if (parent.index != null) {
-					node.terme += parent.terme/node.parents.length;
-					node.barxe += parent.barxe/node.parents.length;
-					variance += this.distance(node, parent)/node.parents.length;
+			let scale = 0; // based on a diamond-square-like algorithm
+			if (node.index >= 12) { // where the first few are zero, to keep the whole thing from floating away
+				for (const parent of node.parents.keys()) {
+					node.terme += parent.terme / node.parents.size;
+					node.barxe += parent.barxe / node.parents.size;
+					scale += node.parents.get(parent).length / node.parents.size;
 				}
 			}
-			variance = Math.pow(variance, 1.5)*NOISINESS;
-			let u1 = Math.random(), u2 = Math.random();
-			node.terme += Math.sqrt(-2*variance*Math.log(u1))*Math.cos(2*Math.PI*u2);
-			node.barxe += Math.sqrt(-2*variance*Math.log(u1))*Math.cos(2*Math.PI*u2);
+			const std = Math.pow(scale, 1.0)*NOISINESS;
+			node.terme += rng.normal(0, std);
+			node.barxe += rng.normal(0, std);
 		}
 		for (const node of this.nodes) { // and then throw in the baseline
 			node.terme += Math.cos(node.u); // TODO: surface-dependent climate
@@ -56,9 +72,10 @@ class Surface {
 	}
 
 	/**
-	 * return the u-v parameterization of a point uniformly sampled from the Surface
+	 * return the u-v parameterization of a point uniformly sampled from the Surface using
+	 * the given random number generator.
 	 */
-	randomPoint() {
+	randomPoint(rng) {
 		throw "Unimplemented";
 	}
 
@@ -116,8 +133,8 @@ class Sphere extends Surface {
 		this.radius = circumference/(2*Math.PI);
 	}
 
-	randomPoint() {
-		return { u: Math.asin(2*Math.random()-1), v: Math.PI*(2*Math.random()-1) };
+	randomPoint(rng) {
+		return { u: Math.asin(rng.uniform(-1, 1)), v: rng.uniform(-Math.PI, Math.PI) };
 	}
 
 	partition() {
@@ -178,8 +195,11 @@ class Spheroid extends Surface {
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2))
 	}
 
-	randomPoint() { // it's probably fine that this is only approximately equally spaced
-		return { u: Math.asin(2*Math.random()-1), v: Math.PI*(2*Math.random()-1) };
+	randomPoint(rng) {
+		const x = rng.normal(0, this.radius);
+		const y = rng.normal(0, this.radius);
+		const z = rng.normal(0, this.radius/this.aspectRatio);
+		return { u: Math.atan(z*this.aspectRatio/Math.hypot(x,y)), v: Math.atan2(y, x) };
 	}
 
 	partition() {
