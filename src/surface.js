@@ -12,7 +12,6 @@ const AVG_TEMP = 283; // K
 class Surface {
 	constructor() {
 		this.nodes = [];
-		this.triangles = [];
 	}
 
 	/**
@@ -94,7 +93,7 @@ class Surface {
 			Z.push([]);
 			S.push([]);
 			for (let j = 0; j <= m; j ++) {
-				const v = j/m*2*Math.PI; // I think v allways represents some [0, 2*pi) angle
+				const v = j/m*2*Math.PI; // I think v always represents some [0, 2*pi) angle
 				const {x, y, z} = this.xyz(u, v);
 				X[i].push(x);
 				Y[i].push(y);
@@ -317,7 +316,7 @@ class Sphere extends Spheroid {
 	}
 
 	insolation(ph) {
-		return Math.max(0, Math.sin(ph));
+		return Math.PI/2*Math.max(0, Math.sin(ph));
 	}
 }
 

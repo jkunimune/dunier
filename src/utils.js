@@ -26,7 +26,7 @@ function legendreP6(y) {
  * set the triangles attribute of the surface, and set up all the Edges and references
  * and stuff
  */
-function delaunayTriangulate(surf, rng) {
+function delaunayTriangulate(surf) {
 	const [dummyNodes, partition] = surf.partition(); // load up a top-level set of triangles
 	const triangles = partition.slice(); // hold onto that list and make a copy
 

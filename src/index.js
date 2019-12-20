@@ -3,15 +3,15 @@
 
 
 const TERRAIN_COLORMAP = [
-	[0/8, 'rgb(240, 251, 252)'],
-	[1/8, 'rgb(202, 234, 241)'],
-	[2/8, 'rgb(156, 220, 222)'],
-	[3/8, 'rgb(114, 206, 190)'],
-	[4/8, 'rgb(076, 192, 154)'],
-	[5/8, 'rgb(043, 176, 113)'],
-	[6/8, 'rgb(041, 157, 070)'],
-	[7/8, 'rgb(067, 135, 029)'],
-	[8/8, 'rgb(083, 112, 001)'],
+	[0/8, 'rgb(251, 252, 253)'],
+	[1/8, 'rgb(213, 231, 245)'],
+	[2/8, 'rgb(165, 214, 236)'],
+	[3/8, 'rgb(118, 199, 205)'],
+	[4/8, 'rgb( 82, 183, 167)'],
+	[5/8, 'rgb( 48, 166, 125)'],
+	[6/8, 'rgb( 36, 147,  79)'],
+	[7/8, 'rgb( 59, 124,  33)'],
+	[8/8, 'rgb( 76,  98,   6)'],
 ];
 
 // const TERRAIN_COLORMAP = [
@@ -127,7 +127,9 @@ $( '#planet-apply' ).on('click', function() {
 		cmin: 0,
 		cmax: Math.max(...[].concat(...I)),
 		colorscale: TERRAIN_COLORMAP,
+		showscale: false,
 		lightposition: {x: 1000, y: 1000, z: 0},
+		hoverinfo: "none",
 	}];
 	const layout = {
 		margin: {l: 20, r: 20, t: 20, b: 20},
