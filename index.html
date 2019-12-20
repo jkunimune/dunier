@@ -101,12 +101,18 @@
                     <label for="terrain-terme">Mean Temperature</label>
                     <input type="number" value="10" data-decimals="1" min="-50" max="50" step="5" data-suffix="°C" id="terrain-terme"/>
                   </div>
+                  <div class="form-group">
+                    <label for="terrain-nade">Mean Temperature</label>
+                    <input type="number" value="10" data-decimals="1" min="-50" max="50" step="5" data-suffix="°C" id="terrain-nade"/>
+                  </div>
                   <button type="button" class="btn btn-block btn-primary" id="terrain-apply">Apply</button>
                 </form>
               </div>
 
               <div class="col-xs-12 col-md-8 col-lg-9">
-                <svg version="1.1" id="terrain-map" width="100%" height="100%">
+                <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" id="terrain-map">
+                  <rect x="0" y="0" width="100%" height="100%" style="fill:#000080"></rect>
+                  <rect x="0" y="0" width="100%" height="100%" style="fill:#800080" id="pakala"></rect>
                 </svg>
               </div>
             </div>

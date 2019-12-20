@@ -117,7 +117,7 @@ $( '#planet-apply' ).on('click', function() {
 	}
 
 	const [x, y, z, I] = surface.parameterize(50);
-	const mapDiv = document.getElementById('planet-map');
+	const mapDiv = $('#planet-map')[0];
 	const data = [{
 		type: "surface",
 		x: x,
@@ -127,7 +127,6 @@ $( '#planet-apply' ).on('click', function() {
 		cmin: 0,
 		cmax: Math.max(...[].concat(...I)),
 		colorscale: TERRAIN_COLORMAP,
-		colorbar: {title: "Insolation"},
 		lightposition: {x: 1000, y: 1000, z: 0},
 	}];
 	const layout = {
@@ -143,8 +142,16 @@ $( '#planet-apply' ).on('click', function() {
 /**
  * Generate the heightmap and biomes on the planet's surface.
  */
-$( 'terrain-apply' ).on('click', function() {
+$( '#terrain-apply' ).on('click', function() {
 	const rng = new Random(
-		$('#planet-seed').val()); // use the random seed
-	surface.populate(10000, 2, rng);
+		$('#terrain-seme').val()); // use the random seed
+	// surface.populate(10000, 2, rng);
+
+	$('#pakala').attr('width', '50%');
+	const mapDiv = $('#terrain-map');
+	const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+	dot.setAttribute('cx', "0");
+	dot.setAttribute('cy', "0");
+	dot.setAttribute('r', "10");
+	mapDiv.append(dot);
 });
