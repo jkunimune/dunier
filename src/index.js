@@ -27,6 +27,9 @@ const TERRAIN_COLORMAP = [
 // ];
 
 
+let surface = undefined;
+
+
 /**
  * Once the page is ready, start the algorithm!
  */
@@ -34,19 +37,22 @@ $( document ).ready(function() {
 	console.log("ready!");
 });
 
+
 /**
  * The "Toroid" option makes the "Tidally-locked" checkbox nonapplicable.
  */
 $( '#planet-type' ).on('click', function() {
-	if (this.value == 1) { // if it's toroidal now
-		if ($('#planet-locked').prop('checked')) // uncheck tidal locking if we need to
-			$('#planet-locked').click();
-		$('#planet-locked').prop('disabled', true); // and disable it
+	const checkbox = $('#planet-locked');
+	if (this.value === '1') { // if it's toroidal now
+		if (checkbox.prop('checked')) // uncheck tidal locking if we need to
+			checkbox.click();
+		checkbox.prop('disabled', true); // and disable it
 	}
 	else { // if it's anything else
-		$('#planet-locked').prop('disabled', false); // enable it
+		checkbox.prop('disabled', false); // enable it
 	}
 });
+
 
 /**
  * The "Tidally-locked" checkbox makes some other options nonapplicable.
@@ -56,16 +62,16 @@ $( '#planet-locked' ).on('click', function() {
 	$('#planet-tilt').prop('disabled', this.checked); // and obliquity are both irrelevant
 });
 
+
 /**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
 $( '#planet-apply' ).on('click', function() {
-	const rng = new Random(
-		$('#planet-seed').val()); // use the random seed
-	let surface = undefined;
+	const planetType = $('#planet-type').val();
+	const tidallyLocked = $('#planet-locked').prop('checked');
 	try { // create a surface
-		if ($('#planet-type').val() === '0') { // spheroid
-			if ($('#planet-locked').prop('checked')) { // spherical
+		if (planetType === '0') { // spheroid
+			if (tidallyLocked) { // spherical
 				surface = new Sphere(
 					$('#planet-size').val());
 			}
@@ -77,15 +83,15 @@ $( '#planet-apply' ).on('click', function() {
 					$('#planet-tilt').val());
 			}
 		}
-		else if ($('#planet-type').val() === '1') { // toroid
+		else if (planetType === '1') { // toroid
 			// surface = new Toroid(
 			// 	$('#planet-size').val(),
 			// 	$('#planet-gravity').val(),
 			// 	$('#planet-day').val(),
 			// 	$('#planet-tilt').val());
 		}
-		else if ($('#planet-type').val() === '2') { // plane
-			if ($('#planet-locked').prop('checked')) { // with static sun
+		else if (planetType === '2') { // plane
+			if (tidallyLocked) { // with static sun
 				// surface = new StaticPlane(
 				// 	$('#planet-size').val());
 			}
@@ -109,20 +115,20 @@ $( '#planet-apply' ).on('click', function() {
 		else
 			throw err;
 	}
-	surface.populate(10000, 2, rng);
 
+	const [x, y, z, I] = surface.parameterize(50);
 	const mapDiv = document.getElementById('planet-map');
 	const data = [{
-		type: "mesh3d",
-		x: surface.nodes.map(n => n.pos.x),
-		y: surface.nodes.map(n => n.pos.y),
-		z: surface.nodes.map(n => n.pos.z),
-		i: surface.triangles.map(t => t.i),
-		j: surface.triangles.map(t => t.j),
-		k: surface.triangles.map(t => t.k),
-		intensity: surface.nodes.map(n => n.terme),
+		type: "surface",
+		x: x,
+		y: y,
+		z: z,
+		surfacecolor: I,
+		cmin: 0,
+		cmax: Math.max(...[].concat(...I)),
 		colorscale: TERRAIN_COLORMAP,
-		colorbar: {title: "Temperature"},
+		colorbar: {title: "Insolation"},
+		lightposition: {x: 1000, y: 1000, z: 0},
 	}];
 	const layout = {
 		margin: {l: 20, r: 20, t: 20, b: 20},
@@ -130,6 +136,15 @@ $( '#planet-apply' ).on('click', function() {
 	const config = {
 		responsive: true,
 	};
-
 	Plotly.react(mapDiv, data, layout, config);
+});
+
+
+/**
+ * Generate the heightmap and biomes on the planet's surface.
+ */
+$( 'terrain-apply' ).on('click', function() {
+	const rng = new Random(
+		$('#planet-seed').val()); // use the random seed
+	surface.populate(10000, 2, rng);
 });

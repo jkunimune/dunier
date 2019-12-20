@@ -70,15 +70,39 @@ class Surface {
 			const lat = this.geodeticLatitude(node.u);
 			node.barxe += Math.pow(Math.cos(lat), 2) + Math.pow(Math.cos(3*lat), 2);
 		}
-
 	}
 
 	/**
 	 * return the u-v parameterization of a point uniformly sampled from the Surface using
 	 * the given random number generator.
 	 */
-	randomPoint(rng) {
+	randomPoint(rng) { // TODO: compute an authalic latitude table and use that
 		throw "Unimplemented";
+	}
+
+	/**
+	 * return a 2d array of x, y, z, and insolation.
+	 */
+	parameterize(resolution) {
+		const n = 2*resolution, m = 4*resolution;
+		const X = [], Y = [], Z = [], S = [];
+		for (let i = 0; i <= n; i ++) {
+			const u = i/n*(this.uMax() - this.uMin()) + this.uMin(); // map i to the valid range for u
+			const s = this.insolation(u);
+			X.push([]);
+			Y.push([]);
+			Z.push([]);
+			S.push([]);
+			for (let j = 0; j <= m; j ++) {
+				const v = j/m*2*Math.PI; // I think v allways represents some [0, 2*pi) angle
+				const {x, y, z} = this.xyz(u, v);
+				X[i].push(x);
+				Y[i].push(y);
+				Z[i].push(z);
+				S[i].push(s);
+			}
+		}
+		return [X, Y, Z, S];
 	}
 
 	/**
@@ -138,6 +162,20 @@ class Surface {
 	 * an approximation).
 	 */
 	distance(a, b) {
+		throw "Unimplemented";
+	}
+
+	/**
+	 * minimum valid value of u.
+	 */
+	uMin() {
+		throw "Unimplemented";
+	}
+
+	/**
+	 * maximum valid value of u.
+	 */
+	uMax() {
 		throw "Unimplemented";
 	}
 }
@@ -262,6 +300,14 @@ class Spheroid extends Surface {
 		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
 		return this.radius*(s - this.flattening/2*(x + y));
 	}
+
+	uMin() {
+		return -Math.PI/2;
+	}
+
+	uMax() {
+		return Math.PI/2;
+	}
 }
 
 
@@ -374,8 +420,7 @@ class Triangle {
 			const a = this.vertices[i];
 			const na = normal[i];
 			const b = this.vertices[(i+1)%3];
-			const nb = normal[(i+1)%3]
-			const ab = a.neighbors.get(b);
+			const nb = normal[(i+1)%3];
 			const edgeDirection = b.pos.minus(a.pos);
 			const normalDirection = na.plus(nb);
 			const boundDirection = normalDirection.cross(edgeDirection);
