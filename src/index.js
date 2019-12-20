@@ -147,11 +147,6 @@ $( '#terrain-apply' ).on('click', function() {
 		$('#terrain-seme').val()); // use the random seed
 	// surface.populate(10000, 2, rng);
 
-	$('#pakala').attr('width', '50%');
-	const mapDiv = $('#terrain-map');
-	const dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-	dot.setAttribute('cx', "0");
-	dot.setAttribute('cy', "0");
-	dot.setAttribute('r', "10");
-	mapDiv.append(dot);
+	const map = SVG('#terrain-map');
+	const rect = map.rect(.2, .3).move(.1, 0).attr({fill: '#f06'});
 });
