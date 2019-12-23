@@ -160,9 +160,10 @@ $( '#terrain-apply' ).on('click', function() {
 		const points = [];
 		for (const vertex of node.getPolygon()) {
 			const {u, v} = vertex.getCircumcenter();
+			const r = (surface.uMax() - u)/(surface.uMax() - surface.uMin());
 			points.push([
-				v/(2*Math.PI) + 0.5,
-				(u - surface.uMin())/(surface.uMax() - surface.uMin())]);
+				 r*Math.sin(v),
+				-r*Math.cos(v)]);
 		}
 		const color = `rgb(${rng.discreet(0, 256)}, ${rng.discreet(0, 256)}, ${rng.discreet(0, 256)})`;
 		const polygon = polygonGrupe.polygon(points).fill(color);
