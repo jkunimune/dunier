@@ -19,6 +19,7 @@ class Surface {
 	 * relaxation
 	 */
 	populate(numNodes, numLloyd, rng) {
+		this.nodes = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < numNodes; i ++)
 			this.nodes.push(new Node(i, this.randomPoint(rng), this));
 
@@ -145,6 +146,13 @@ class Surface {
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
 	xyz(u, v) {
+		throw "Unimplemented";
+	}
+
+	/**
+	 * return the 2D parameterization corresponding to the given parameters
+	 */
+	uv(x, y, z) {
 		throw "Unimplemented";
 	}
 
@@ -281,6 +289,12 @@ class Spheroid extends Surface {
 			 this.radius*Math.sin(ph)/this.aspectRatio);
 	}
 
+	uv(x, y, z) {
+		return {
+			u: Math.atan2(this.aspectRatio*z, Math.hypot(x, y)),
+			v: Math.atan2(-x, y)};
+	}
+
 	getNormal(node) {
 		const ph = this.geodeticLatitude(node.u); // use geodetic coordinates
 		const l = node.v;
@@ -316,7 +330,7 @@ class Sphere extends Spheroid {
 	}
 
 	insolation(ph) {
-		return Math.PI/2*Math.max(0, Math.sin(ph));
+		return 1.5*Math.max(0, Math.sin(ph));
 	}
 }
 
@@ -350,15 +364,29 @@ class Node {
 	}
 
 	/**
+	 * check for the existence of a Triangle containing these three nodes in that order.
+	 * @returns boolean
+	 */
+	inTriangleWith(b, c) {
+		if (!this.neighbors.has(b))
+			return false;
+		return this.leftOf(b).acrossFrom(this.neighbors.get(b)) === c;
+	}
+
+	/**
 	 * return the Triangles that border this in widershins order.
 	 */
 	getPolygon() {
 		if (this.vertices === undefined) { // don't compute this unless you must
-			this.vertices = [this.neighbors.values().next().value.triangleL]; // start with an arbitrary neighboring triangle
-			while (this.vertices.length < this.neighbors.size) {
-				const lastTriangle = this.vertices[this.vertices.length-1];
-				const nextNode = lastTriangle.clockwiseOf(this);
-				this.vertices.push(this.leftOf(nextNode));
+			try {
+				this.vertices = [this.neighbors.values().next().value.triangleL]; // start with an arbitrary neighboring triangle
+				while (this.vertices.length < this.neighbors.size) {
+					const lastTriangle = this.vertices[this.vertices.length - 1];
+					const nextNode = lastTriangle.clockwiseOf(this);
+					this.vertices.push(this.leftOf(nextNode));
+				}
+			} catch {
+				throw "aahhuh";
 			}
 		}
 		return this.vertices;
@@ -383,9 +411,6 @@ class Triangle {
 		this.vertices = [a, b, c]; // nodes, ordered widdershins
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
 		this.surface = a.surface;
-		this.i = a.index;
-		this.j = b.index;
-		this.k = c.index;
 		this.children = null;
 
 		for (let i = 0; i < 3; i ++) { // check each pair to see if they are already connected
@@ -438,6 +463,50 @@ class Triangle {
 		const ac = this.vertices[2].pos.minus(this.vertices[0].pos);
 		const abxac = ab.cross(ac);
 		return abxac.norm();
+	}
+
+	/**
+	 * compute the u-v parameterization of the circumcenter in the plane normal to the sum
+	 * of the vertices' normal vectors.
+	 */
+	getCircumcenter() {
+		if (this.circumcenter === undefined) {
+			let nHat = new Vector(0, 0, 0);
+			for (const vertex of this.vertices)
+				nHat = nHat.plus(vertex.getNormal());
+			nHat = nHat.norm();
+			const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
+			const uHat = nHat.cross(vHat);
+			const projected = [];
+			for (const vertex of this.vertices) // project all of the vertices into the tangent plane
+				projected.push({
+					v: vHat.dot(vertex.pos),
+					u: uHat.dot(vertex.pos),
+					n: nHat.dot(vertex.pos)});
+
+			let vNumerator = 0, uNumerator = 0;
+			let denominator = 0, nSum = 0;
+			for (let i = 0; i < 3; i++) { // do the 2D circumcenter calculation
+				const a = projected[i];
+				const b = projected[(i + 1)%3];
+				const c = projected[(i + 2)%3];
+				vNumerator += (a.v*a.v + a.u*a.u) * (b.u - c.u);
+				uNumerator += (a.v*a.v + a.u*a.u) * (b.v - c.v);
+				denominator += a.v * (b.u - c.u);
+				nSum += a.n;
+			}
+			const center = {
+				v:  vNumerator/denominator/2,
+				u: -uNumerator/denominator/2,
+				n:  nSum/3};
+
+			center.x = vHat.x*center.v + uHat.x*center.u + nHat.x*center.n;
+			center.y = vHat.y*center.v + uHat.y*center.u + nHat.y*center.n;
+			center.z = vHat.z*center.v + uHat.z*center.u + nHat.z*center.n;
+			this.circumcenter = this.surface.uv(center.x, center.y, center.z); // finally, put it back in u-v space
+		}
+
+		return this.circumcenter;
 	}
 
 	/**
@@ -494,6 +563,11 @@ class Edge {
 
 		node0.neighbors.set(node1, this);
 		node1.neighbors.set(node0, this);
+	}
+
+	seppuku() {
+		this.node0.neighbors.delete(this.node1);
+		this.node1.neighbors.delete(this.node0);
 	}
 
 	toString() {

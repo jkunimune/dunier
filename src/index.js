@@ -147,8 +147,20 @@ $( '#planet-apply' ).on('click', function() {
 $( '#terrain-apply' ).on('click', function() {
 	const rng = new Random(
 		$('#terrain-seme').val()); // use the random seed
-	// surface.populate(10000, 2, rng);
+	surface.populate(1000, 2, rng);
 
 	const map = SVG('#terrain-map');
-	const rect = map.rect(.2, .3).move(.1, 0).attr({fill: '#f06'});
+	const polygonGrupe = SVG('#terrain-tiles');
+	polygonGrupe.clear();
+	for (const node of surface.nodes) {
+		const points = [];
+		for (const vertex of node.getPolygon()) {
+			const {u, v} = vertex.getCircumcenter();
+			points.push([
+				v/(2*Math.PI) + 0.5,
+				(u - surface.uMin())/(surface.uMax() - surface.uMin())]);
+		}
+		const color = `rgb(${rng.discreet(0, 256)}, ${rng.discreet(0, 256)}, ${rng.discreet(0, 256)})`;
+		const polygon = polygonGrupe.polygon(points).fill(color);
+	}
 });

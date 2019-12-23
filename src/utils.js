@@ -50,27 +50,53 @@ function delaunayTriangulate(surf) {
 	}
 
 	for (const dummyNode of dummyNodes) { // now remove the original vertices
-		const oldTriangles = dummyNode.getPolygon();
-		const arbitraryNode = oldTriangles[0].clockwiseOf(dummyNode);
-		const flipQueue = [];
-		const flipImmune = [];
-		for (let j = 0; j < oldTriangles.length; j ++) { // start by filling the gap left by this node
-			const b = oldTriangles[j].widershinsOf(dummyNode);
-			const c = oldTriangles[j].clockwiseOf(dummyNode);
-			if (j >= 2)
-				triangles.push(new Triangle(arbitraryNode, b, c)); // with new, naively placed triangles
-			if (j >= 3)
-				flipQueue.push(arbitraryNode.neighbors.get(b));
-			flipImmune.push(b.neighbors.get(c));
-			oldTriangles[j].children = []; // and effectively remove the old triangles
-		}
-		flipEdges(flipQueue, flipImmune, null, triangles);
-		for (const neighbor of dummyNode.neighbors.keys())
-			neighbor.neighbors.delete(dummyNode); // remove all remaining references to this node. it never existed. take care of anyone who says otherwise.
+		triangles.push(...removeNode(dummyNode));
 	}
 
 	surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles
 } // TODO: delete the triangle lineage graph to clear up some memory
+
+/**
+ * remove all Triangles and Edges connected to the given node, and return a list of new
+ * Triangles between the surrounding nodes to replace them.
+ * @param node the dummy node to be removed
+ */
+function removeNode(node) {
+	const oldTriangles = node.getPolygon();
+	let newTriangles, newEdges, flipQueue, flipImmune;
+	arbitrationLoop:
+	for (let i0 = 0; i0 < oldTriangles.length; i0 ++) { // we have to pick an arbitrary border node to start this process
+		newEdges = [];
+		newTriangles = [];
+		flipQueue = [];
+		flipImmune = [];
+		const a = oldTriangles[i0].clockwiseOf(node); // choosing i0 is harder than it may seem if we want to avoid coincident triangles
+		for (let j = 0; j < oldTriangles.length; j ++) { // begin filling the gap left by this null node
+			const b = oldTriangles[(i0 + j)%oldTriangles.length].widershinsOf(node); // with new, naively placed triangles
+			const c = oldTriangles[(i0 + j)%oldTriangles.length].clockwiseOf(node);
+			if (a.inTriangleWith(c, b)) { // in the unlikely event i0 was a bad choice,
+				for (const badEdge of newEdges)
+					badEdge.seppuku(); // undo our mistakes
+				continue arbitrationLoop; // try a different one
+			}
+			if (j >= 2) // otherwise
+				newTriangles.push(new Triangle(a, b, c)); // proceed with the new triangle
+			if (j >= 3) {
+				newEdges.push(a.neighbors.get(b));
+				flipQueue.push(a.neighbors.get(b));
+			}
+			flipImmune.push(b.neighbors.get(c));
+			oldTriangles[j].children = []; // and effectively remove the old triangles
+		} // if you make it to the end of the for loop, then arbitrary was a fine choice
+		break; // and we can proceed
+	}
+
+	flipEdges(flipQueue, flipImmune, null, newTriangles);
+	for (const witness of node.neighbors.values())
+		witness.seppuku(); // remove all remaining references to this node. it never existed. take care of anyone who says otherwise.
+
+	return newTriangles;
+}
 
 /**
  * Go through the queue and flip any non-delaunay edges. After flipping an edge, add
@@ -87,17 +113,17 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 		const b = abc.acrossFrom(edge);
 		const c = edge.node1;
 		const d = cda.acrossFrom(edge);
+		const ac = a.neighbors.get(c);
 
 		const nHat = a.getNormal().plus(b.getNormal()).plus(c.getNormal()).plus(d.getNormal());
 		const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
 		const uHat = nHat.cross(vHat).norm();
 		const ap = {x: a.pos.dot(vHat), y: a.pos.dot(uHat)}; // project them into the normal plane
-		const bp = {x: b.pos.dot(vHat), y: b.pos.dot(uHat)}; // (don't worry about the rotation and scaling)
+		const bp = {x: b.pos.dot(vHat), y: b.pos.dot(uHat)};
 		const cp = {x: c.pos.dot(vHat), y: c.pos.dot(uHat)};
 		const dp = {x: d.pos.dot(vHat), y: d.pos.dot(uHat)};
 		if (!isDelaunay(ap, bp, cp, dp)) { // and check for non-Delaunay edges
-			a.neighbors.delete(c); // flip them!
-			c.neighbors.delete(a); // (remove the old edge)
+			ac.seppuku(); // flip them! (remove the old edge)
 			allTriangles.push(new Triangle(b, c, d)); // (and add new triangles)
 			allTriangles.push(new Triangle(d, a, b));
 			abc.children = cda.children = allTriangles.slice(allTriangles.length-2); // (the old triangles can stick around for now)
