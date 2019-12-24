@@ -317,8 +317,8 @@ class Spheroid extends Surface {
 
 
 class Sphere extends Spheroid {
-	constructor(circumference) {
-		super(circumference, 1, Number.POSITIVE_INFINITY, Number.NaN);
+	constructor(radius) {
+		super(radius, 1, 0, Number.NaN);
 	}
 
 	insolation(ph) {
