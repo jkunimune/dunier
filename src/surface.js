@@ -3,8 +3,6 @@
 
 
 const INTEGRATION_RESOLUTION = 20;
-const NOISINESS = 5e-5;
-const AVG_TEMP = 283; // K
 
 
 /**
@@ -16,7 +14,7 @@ class Surface {
 	}
 
 	/**
-	 * Fill this.nodes with random nodes, spaced via numLloyd iterations of Lloyd
+	 * fill this.nodes with random nodes, spaced via numLloyd iterations of Lloyd
 	 * relaxation
 	 */
 	populate(numNodes, numLloyd, rng) {
@@ -35,12 +33,13 @@ class Surface {
 			A += dAds*dsdu*du;
 			s += dsdu*du;
 		}
+		this.area = this.cumulAreas[this.cumulAreas.length - 1];
 
 		this.nodes = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < numNodes; i ++)
 			this.nodes.push(new Node(i, this.randomPoint(rng), this));
 
-		delaunayTriangulate(this, rng);
+		delaunayTriangulate(this);
 
 		// for (let j = 0; j < numLloyd; j ++) {
 		// 	for (let i = 0; i < numNodes; i ++) {
@@ -48,7 +47,7 @@ class Surface {
 		// 		this.nodes[i].u = u;
 		// 		this.nodes[i].v = v;
 
-		// 		delaunayTriangulate(this, rng);
+		// 		delaunayTriangulate(this);
 		// 	}
 		// }
 
@@ -64,28 +63,8 @@ class Surface {
 						closest = this.nodes[j];
 					}
 				}
-				orphan.parents = new Map();
-				orphan.parents.set(closest, new Edge(orphan, null, closest, null, minDistance));
+				orphan.parents = [closest];
 			}
-		}
-
-		for (const node of this.nodes) { // assign each node random values
-			let scale = 0; // based on a diamond-square-like algorithm
-			if (node.index >= 12) { // where the first few are zero, to keep the whole thing from floating away
-				for (const parent of node.parents.keys()) {
-					node.terme += parent.terme / node.parents.size;
-					node.barxe += parent.barxe / node.parents.size;
-					scale += node.parents.get(parent).length / node.parents.size;
-				}
-			}
-			const std = Math.pow(scale, 1.0)*NOISINESS;
-			node.terme += rng.normal(0, std);
-			node.barxe += rng.normal(0, std);
-		}
-		for (const node of this.nodes) { // and then throw in the baseline
-			node.terme += AVG_TEMP*Math.pow(this.insolation(node.u), 1/4.) - 273; // TODO: surface-dependent climate
-			const ph = this.geodeticLatitude(node.u);
-			node.barxe += Math.pow(Math.cos(ph), 2) + Math.pow(Math.cos(3*ph), 2);
 		}
 	}
 
@@ -149,14 +128,14 @@ class Surface {
 	}
 
 	/**
-	 * return the geodetic latitude corresponding to a u value.
+	 * return the amount of moisture accumulation at a u value, normalized to peak at 1.
 	 */
-	geodeticLatitude(u) {
+	windConvergence(u) {
 		throw "Unimplemented";
 	}
 
 	/**
-	 * return the amount of solar radiation at a u value, normalized to peak at 1.
+	 * return the amount of solar radiation at a u value, normalized to average to 1.
 	 */
 	insolation(u) {
 		throw "Unimplemented";
@@ -209,18 +188,16 @@ class Surface {
 
 
 class Spheroid extends Surface {
-	constructor(circumference, gravity, dayLength, obliquity) {
+	constructor(radius, gravity, omega, obliquity) {
 		super();
-		this.radius = circumference/(2*Math.PI); // keep radius in km
-		const g = gravity*9.8; // gravity in m/s^2
-		const om = 2*Math.PI/(dayLength*3600); // and angular velocity in rad/s
-		const w = (this.radius*1000)*om*om/g; // this dimensionless parameter determines the aspect ratio
+		this.radius = radius; // keep radius in km
+		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
 		this.aspectRatio = 1 + w/2 + 1.5*w*w + 6.5*w*w*w; // numerically determined formula for oblateness
 		if (this.aspectRatio > 4)
 			throw new RangeError("Unstable planet");
 		this.flattening = 1 - 1/this.aspectRatio;
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2));
-		this.obliquity = obliquity*Math.PI/180;
+		this.obliquity = obliquity;
 	}
 
 	partition() {
@@ -284,8 +261,9 @@ class Spheroid extends Surface {
 		return this.radius*Math.cos(ph);
 	}
 
-	geodeticLatitude(ph) {
-		return Math.atan(this.aspectRatio*Math.tan(ph));
+	windConvergence(ph) {
+		const b = Math.atan(this.aspectRatio*Math.tan(ph));
+		return Math.pow(Math.cos(b), 2) + Math.pow(Math.cos(3*b), 2);
 	}
 
 	insolation(ph) {
@@ -309,7 +287,7 @@ class Spheroid extends Surface {
 	}
 
 	getNormal(node) {
-		const ph = this.geodeticLatitude(node.u); // use geodetic coordinates
+		const ph = Math.atan(this.aspectRatio*Math.tan(node.u)); // use geodetic coordinates
 		const l = node.v;
 		return new Vector(
 			-Math.cos(ph)*Math.sin(l),
@@ -363,7 +341,7 @@ class Node {
 
 		this.terme = 0;
 		this.barxe = 0;
-		this.altitude = 0;
+		this.gawe = 0;
 	}
 
 	/**

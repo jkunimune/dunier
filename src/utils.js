@@ -61,10 +61,10 @@ function delaunayTriangulate(surf) {
 
 		const flipQueue = [...containing.edges]; // start a list of edges to try flipping
 		flipEdges(flipQueue, [], node, triangles); // and put the edges of this triangle on it
-		node.parents = new Map();
-		for (const key of node.neighbors.keys()) { // its parentage is all currently connected non-dummy nodes
-			if (key.index != null)
-				node.parents.set(key, node.neighbors.get(key)); // so just filter node.adjacent
+		node.parents = [];
+		for (const currentNeighbor of node.neighbors.keys()) { // its parentage is all currently connected non-dummy nodes
+			if (currentNeighbor.index !== null)
+				node.parents.push(currentNeighbor); // so just filter node.adjacent
 		}
 	}
 

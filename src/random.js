@@ -41,7 +41,7 @@ class Random {
 		return mean*Math.log(this.next());
 	}
 
-	discreet(min, max) {
+	discrete(min, max) {
 		return Math.trunc(this.uniform(min, max));
 	}
 }

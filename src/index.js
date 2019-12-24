@@ -71,38 +71,43 @@ $( '#planet-locked' ).on('click', function() {
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
 $( '#planet-apply' ).on('click', function() {
-	const planetType = $('#planet-type').val();
+	const planetType = $('#planet-type').val(); // read input
 	const tidallyLocked = $('#planet-locked').prop('checked');
+	const radius = $('#planet-size').val() / (2*Math.PI);
+	const gravity = $('#planet-gravity').val() * 9.8;
+	const spinRate = 1/$('#planet-day').val() * 2*Math.PI/3600;
+	const obliquity = $('#planet-tilt').val() * Math.PI/180;
+
 	try { // create a surface
 		if (planetType === '0') { // spheroid
 			if (tidallyLocked) { // spherical
 				surface = new Sphere(
-					$('#planet-size').val());
+					radius);
 			}
 			else { // oblate
 				surface = new Spheroid(
-					$('#planet-size').val(),
-					$('#planet-gravity').val(),
-					$('#planet-day').val(),
-					$('#planet-tilt').val());
+					radius,
+					gravity,
+					spinRate,
+					obliquity);
 			}
 		}
 		else if (planetType === '1') { // toroid
 			// surface = new Toroid(
-			// 	$('#planet-size').val(),
-			// 	$('#planet-gravity').val(),
-			// 	$('#planet-day').val(),
-			// 	$('#planet-tilt').val());
+			// 	radius,
+			// 	gravity,
+			// 	spinRate,
+			// 	obliquity);
 		}
 		else if (planetType === '2') { // plane
 			if (tidallyLocked) { // with static sun
 				// surface = new StaticPlane(
-				// 	$('#planet-size').val());
+				// 	radius);
 			}
 			else { // with orbiting sun
 				// surface = new Plane(
-				// 	$('#planet-size').val(),
-				// 	$('#planet-tilt').val());
+				// 	radius,
+				// 	obliquity);
 			}
 		}
 	} catch (err) {
@@ -149,9 +154,18 @@ $( '#planet-apply' ).on('click', function() {
  * Generate the heightmap and biomes on the planet's surface.
  */
 $( '#terrain-apply' ).on('click', function() {
-	const rng = new Random(
-		$('#terrain-seme').val()); // use the random seed
-	surface.populate(1000, 2, rng);
+	const randomSeme = $('#terrain-seme').val();
+	const numContinents = $('#terrain-continents').val() * 2;
+	const percentOcean = $('#terrain-fen').val() / 100;
+	const avgTerme = $('#terrain-terme').val() + 273;
+	const riverSize = $('#terrain-nade').val();
+
+	let rng = new Random(randomSeme); // use the random seed
+	surface.populate(1000, 2, rng); // finish constructing the surface
+	generateTerrain(
+		avgTerme,
+		numContinents,
+		surface, rng); // create the terrain!
 
 	const map = SVG('#terrain-map');
 	const polygonGrupe = SVG('#terrain-tiles');
@@ -165,7 +179,8 @@ $( '#terrain-apply' ).on('click', function() {
 				 r*Math.sin(v),
 				-r*Math.cos(v)]);
 		}
-		const color = `rgb(${rng.discreet(0, 256)}, ${rng.discreet(0, 256)}, ${rng.discreet(0, 256)})`;
+		const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
+		// const color = `rgb(${0}, ${128}, ${Math.max(0, Math.min(255, Math.trunc((node.gawe+2)/4*256)))})`;
 		const polygon = polygonGrupe.polygon(points).fill(color);
 	}
 });
