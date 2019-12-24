@@ -2,6 +2,7 @@
 'use strict';
 
 
+const INTEGRATION_RESOLUTION = 20;
 const NOISINESS = 5e-5;
 const AVG_TEMP = 283; // K
 
@@ -19,6 +20,22 @@ class Surface {
 	 * relaxation
 	 */
 	populate(numNodes, numLloyd, rng) {
+		this.refLatitudes = []; // fill in latitude-integrated values
+		this.cumulAreas = []; // for use in map projections
+		this.cumulDistances = [];
+		let u = this.uMin(), A = 0, s = 0;
+		const du = (this.uMax() - this.uMin())/INTEGRATION_RESOLUTION;
+		for (let i = 0; i <= INTEGRATION_RESOLUTION; i ++) {
+			this.refLatitudes.push(u);
+			this.cumulAreas.push(A);
+			this.cumulDistances.push(s);
+			const dsdu = this.dsdu(u + du/2); // a simple middle Riemann sum will do
+			const dAds = this.dAds(u + du/2);
+			u += du;
+			A += dAds*dsdu*du;
+			s += dsdu*du;
+		}
+
 		this.nodes = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < numNodes; i ++)
 			this.nodes.push(new Node(i, this.randomPoint(rng), this));
@@ -67,8 +84,8 @@ class Surface {
 		}
 		for (const node of this.nodes) { // and then throw in the baseline
 			node.terme += AVG_TEMP*Math.pow(this.insolation(node.u), 1/4.) - 273; // TODO: surface-dependent climate
-			const lat = this.geodeticLatitude(node.u);
-			node.barxe += Math.pow(Math.cos(lat), 2) + Math.pow(Math.cos(3*lat), 2);
+			const ph = this.geodeticLatitude(node.u);
+			node.barxe += Math.pow(Math.cos(ph), 2) + Math.pow(Math.cos(3*ph), 2);
 		}
 	}
 
@@ -76,8 +93,11 @@ class Surface {
 	 * return the u-v parameterization of a point uniformly sampled from the Surface using
 	 * the given random number generator.
 	 */
-	randomPoint(rng) { // TODO: compute an authalic latitude table and use that
-		throw "Unimplemented";
+	randomPoint(rng) {
+		const v = rng.uniform(0, 2*Math.PI);
+		const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
+		const u = linterp(A, this.cumulAreas, this.refLatitudes);
+		return {u: u, v: v};
 	}
 
 	/**
@@ -117,14 +137,14 @@ class Surface {
 	/**
 	 * return the local length-to-latitude rate
 	 */
-	dsdu(u, v) {
+	dsdu(u) {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the local effective width
 	 */
-	dAds(u, v) {
+	dAds(u) {
 		throw "Unimplemented";
 	}
 
@@ -201,13 +221,6 @@ class Spheroid extends Surface {
 		this.flattening = 1 - 1/this.aspectRatio;
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2));
 		this.obliquity = obliquity*Math.PI/180;
-	}
-
-	randomPoint(rng) {
-		const x = rng.normal(0, this.radius);
-		const y = rng.normal(0, this.radius);
-		const z = rng.normal(0, this.radius/this.aspectRatio);
-		return { u: Math.atan(z*this.aspectRatio/Math.hypot(x,y)), v: Math.atan2(y, x) };
 	}
 
 	partition() {

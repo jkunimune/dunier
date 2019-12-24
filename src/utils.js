@@ -23,6 +23,25 @@ function legendreP6(y) {
 }
 
 /**
+ * linearly interpolate x from the sorted function X onto the corresponding output Y.
+ */
+function linterp(x, X, Y) {
+	if (X.length !== Y.length)
+		throw new RangeError("array lengths must match");
+
+	let min = 0, max = X.length - 1;
+	while (max - min > 1) {
+		const mid = Math.trunc((min + max)/2);
+		if (X[mid] <= x)
+			min = mid;
+		else
+			max = mid;
+	}
+
+	return (x - X[min])/(X[max] - X[min])*(Y[max] - Y[min]) + Y[min];
+}
+
+/**
  * set the triangles attribute of the surface, and set up all the Edges and references
  * and stuff
  */

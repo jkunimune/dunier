@@ -7,7 +7,7 @@
  */
 class Random {
 	constructor(seed) {
-		this.seed = seed + 12345;
+		this.val = seed + 12345;
 		this.index = 0;
 		this.boxMullerBacklog = null;
 		for (let i = 0; i < 3; i ++)
@@ -15,8 +15,8 @@ class Random {
 	}
 
 	next() {
-		this.seed = this.seed * 1132489760 % 2147483647;
-		return (this.seed-1) / 2147483646;
+		this.val = this.val * 1132489760 % 2147483647;
+		return (this.val-1) / 2147483646;
 	}
 
 	uniform(min, max) {
