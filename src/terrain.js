@@ -17,6 +17,7 @@ const NOISE_SCALE_SLOPE = 1.0;
  */
 function generateTerrain(avgTerme, numContinents, surf, rng) {
 	generateClimate(avgTerme, surf, rng);
+	rng = rng.reset();
 	generateContinents(numContinents, surf, rng);
 }
 

@@ -3,6 +3,7 @@
 
 
 const INTEGRATION_RESOLUTION = 20;
+const TILE_AREA = 50000; // typical area of a tile in km^2
 
 
 /**
@@ -17,7 +18,7 @@ class Surface {
 	 * fill this.nodes with random nodes, spaced via numLloyd iterations of Lloyd
 	 * relaxation
 	 */
-	populate(numNodes, numLloyd, rng) {
+	populate(numLloyd, rng) {
 		this.refLatitudes = []; // fill in latitude-integrated values
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
@@ -36,7 +37,7 @@ class Surface {
 		this.area = this.cumulAreas[this.cumulAreas.length - 1];
 
 		this.nodes = []; // remember to clear the old nodes, if necessary
-		for (let i = 0; i < numNodes; i ++)
+		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
 			this.nodes.push(new Node(i, this.randomPoint(rng), this));
 
 		delaunayTriangulate(this);

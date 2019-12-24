@@ -7,6 +7,7 @@
  */
 class Random {
 	constructor(seed) {
+		this.seed = seed;
 		this.val = seed + 12345;
 		this.index = 0;
 		this.boxMullerBacklog = null;
@@ -43,5 +44,15 @@ class Random {
 
 	discrete(min, max) {
 		return Math.trunc(this.uniform(min, max));
+	}
+
+	/**
+	 * return a new Random based on this one. it will be seeded by a random number
+	 * dependent on this.seed, but the values it produces will be pseudoindependent of
+	 * the values of this one. this may be useful if one wants to produce multiple static
+	 * series of pseudorandom numbers where the lengths of the series are variable.
+	 */
+	reset() {
+		return new Random((2147483629*this.seed + 2147483587)%2147483647);
 	}
 }

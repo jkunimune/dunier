@@ -161,7 +161,8 @@ $( '#terrain-apply' ).on('click', function() {
 	const riverSize = $('#terrain-nade').val();
 
 	let rng = new Random(randomSeme); // use the random seed
-	surface.populate(1000, 2, rng); // finish constructing the surface
+	surface.populate(2, rng); // finish constructing the surface
+	rng = rng.reset();
 	generateTerrain(
 		avgTerme,
 		numContinents,
