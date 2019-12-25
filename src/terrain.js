@@ -62,7 +62,22 @@ function generateContinents(numPlates, surf, rng) {
 				node.gawe = rng.uniform(-1, 0); // and oceans distinguished by index
 		}
 		else { // and the rest with a method similar to that above,
-			const parent = node.parents[rng.discrete(0, node.parents.length)]; // but with sharper borders
+			let parent = undefined; // but where each node chooses just one parent
+			const preferredParents = [];
+			for (const pair of node.between) { // if this node is directly between two nodes
+				if (pair[0].plate === pair[1].plate) { // of the same plate
+					if (!preferredParents.includes(pair[0]))
+						preferredParents.push(pair[0]); // try to have it take the plate from one of them, to keep that plate together
+					if (!preferredParents.includes(pair[1]))
+						preferredParents.push(pair[1]);
+				}
+			}
+			if (preferredParents.length > 0) {// in any case, just take the parent pseudorandomly
+				parent = preferredParents[rng.discrete(0, preferredParents.length)];
+			}
+			else
+				parent = node.parents[rng.discrete(0, node.parents.length)];
+
 			const scale = surf.distance(node, parent);
 			const std = noiseLevel*Math.pow(Math.min(scale, maxScale), NOISE_SCALE_SLOPE);
 			node.plate = parent.plate;

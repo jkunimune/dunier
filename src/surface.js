@@ -338,7 +338,8 @@ class Node {
 		this.v = position.v;
 		this.pos = surface.xyz(this.u, this.v);
 		this.neighbors = new Map();
-		this.parents = null;
+		this.parents = undefined;
+		this.between = undefined; // nodes that this one gets between
 
 		this.terme = 0;
 		this.barxe = 0;

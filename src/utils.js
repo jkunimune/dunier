@@ -51,7 +51,7 @@ function delaunayTriangulate(surf) {
 
 	for (const node of surf.nodes) { // for each node,
 		const containing = findSmallestEncompassing(node, partition, surf); // find out which triangle it's in
-		for (let j = 0; j < 3; j ++) { // add the three new child triangles // TODO make it so I can call this multiple times without altering the state of the actual Surface (I'll likely need my own Node class just for topography management)
+		for (let j = 0; j < 3; j ++) { // add the three new child triangles
 			triangles.push(new Triangle(
 				node,
 				containing.vertices[j],
@@ -60,19 +60,23 @@ function delaunayTriangulate(surf) {
 		containing.children = triangles.slice(triangles.length-3); // we could remove containing from triangles now, but it would be a waste of time
 
 		const flipQueue = [...containing.edges]; // start a list of edges to try flipping
-		flipEdges(flipQueue, [], node, triangles); // and put the edges of this triangle on it
+		const flipHistory = flipEdges(flipQueue, [], node, triangles); // and put the edges of this triangle on it
 		node.parents = [];
 		for (const currentNeighbor of node.neighbors.keys()) { // its parentage is all currently connected non-dummy nodes
 			if (currentNeighbor.index !== null)
 				node.parents.push(currentNeighbor); // so just filter node.adjacent
 		}
+		node.between = [];
+		for (const edge of flipHistory) // store the edges that were flipped; this node is "between" those pairs of nodes
+			if (edge.node0.index != null && edge.node1.index != null)
+				node.between.push([edge.node0, edge.node1]);
 	}
 
 	for (const dummyNode of dummyNodes) { // now remove the original vertices
 		triangles.push(...removeNode(dummyNode));
 	}
 
-	surf.triangles = triangles.filter(t => t.children == null); // _now_ remove the extraneous triangles
+	surf.triangles = triangles.filter(tri => tri.children == null); // _now_ remove the extraneous triangles
 } // TODO: delete the triangle lineage graph to clear up some memory
 
 /**
@@ -122,8 +126,11 @@ function removeNode(node) {
  * adjacent edges to the queue. Do not check edges that have newestNode as an endpoint or
  * that are in immune. allTriangles is the running list of all triangles that must be
  * kept up to date.
+ * @return Array of Edges that were flipped
  */
 function flipEdges(queue, immune, newestNode, allTriangles) {
+	const flipped = [];
+
 	while (queue.length > 0) { // go through that queue
 		const edge = queue.pop(); // extract the needed geometric entities
 		const abc = edge.triangleR;
@@ -146,8 +153,9 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 			allTriangles.push(new Triangle(b, c, d)); // (and add new triangles)
 			allTriangles.push(new Triangle(d, a, b));
 			abc.children = cda.children = allTriangles.slice(allTriangles.length-2); // (the old triangles can stick around for now)
+			flipped.push(ac); // record this
 			const perimeter = [a.neighbors.get(b), b.neighbors.get(c), c.neighbors.get(d), d.neighbors.get(a)];
-			for (const nextEdge of perimeter) // and add their neighbors to the queue
+			for (const nextEdge of perimeter) // and add the neighbors to the queue
 				if (!queue.includes(nextEdge) &&
 					!immune.includes(nextEdge) &&
 					(nextEdge.node0 !== newestNode && nextEdge.node1 !== newestNode)) { // taking care to skip edges that have already been flipped
@@ -155,6 +163,8 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 			}
 		}
 	}
+
+	return flipped;
 }
 
 /**
