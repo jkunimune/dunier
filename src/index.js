@@ -168,20 +168,12 @@ $( '#terrain-apply' ).on('click', function() {
 		numContinents,
 		surface, rng); // create the terrain!
 
-	const map = SVG('#terrain-map');
-	const polygonGrupe = SVG('#terrain-tiles');
-	polygonGrupe.clear();
+	const mapSvg = SVG('#terrain-tiles');
+	const mapProjection = new Azimuthal(surface);
+	mapSvg.clear();
 	for (const node of surface.nodes) {
-		const points = [];
-		for (const vertex of node.getPolygon()) {
-			const {u, v} = vertex.getCircumcenter();
-			const r = (surface.uMax() - u)/(surface.uMax() - surface.uMin());
-			points.push([
-				 r*Math.sin(v),
-				-r*Math.cos(v)]);
-		}
 		const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
 		// const color = `rgb(${0}, ${128}, ${Math.max(0, Math.min(255, Math.trunc((node.gawe+2)/4*256)))})`;
-		const polygon = polygonGrupe.polygon(points).fill(color);
+		mapProjection.map(node.getPolygon(), mapSvg, color);
 	}
 });

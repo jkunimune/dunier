@@ -2,7 +2,7 @@
 'use strict';
 
 
-const INTEGRATION_RESOLUTION = 20;
+const INTEGRATION_RESOLUTION = 32;
 const TILE_AREA = 50000; // typical area of a tile in km^2
 
 
@@ -10,8 +10,10 @@ const TILE_AREA = 50000; // typical area of a tile in km^2
  * Generic 3D collection of nodes and edges
  */
 class Surface {
-	constructor() {
+	constructor(uMin, uMax) {
 		this.nodes = [];
+		this.uMin = uMin;
+		this.uMax = uMax;
 	}
 
 	/**
@@ -22,8 +24,8 @@ class Surface {
 		this.refLatitudes = []; // fill in latitude-integrated values
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
-		let u = this.uMin(), A = 0, s = 0;
-		const du = (this.uMax() - this.uMin())/INTEGRATION_RESOLUTION;
+		let u = this.uMin, A = 0, s = 0;
+		const du = (this.uMax() - this.uMin)/INTEGRATION_RESOLUTION;
 		for (let i = 0; i <= INTEGRATION_RESOLUTION; i ++) {
 			this.refLatitudes.push(u);
 			this.cumulAreas.push(A);
@@ -34,7 +36,8 @@ class Surface {
 			A += dAds*dsdu*du;
 			s += dsdu*du;
 		}
-		this.area = this.cumulAreas[this.cumulAreas.length - 1];
+		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
+		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
 		this.nodes = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
@@ -87,7 +90,7 @@ class Surface {
 		const n = 2*resolution, m = 4*resolution;
 		const X = [], Y = [], Z = [], S = [];
 		for (let i = 0; i <= n; i ++) {
-			const u = i/n*(this.uMax() - this.uMin()) + this.uMin(); // map i to the valid range for u
+			const u = i/n*(this.uMax() - this.uMin) + this.uMin; // map i to the valid range for u
 			const s = this.insolation(u);
 			X.push([]);
 			Y.push([]);
@@ -171,26 +174,12 @@ class Surface {
 	distance(a, b) {
 		throw "Unimplemented";
 	}
-
-	/**
-	 * minimum valid value of u.
-	 */
-	uMin() {
-		throw "Unimplemented";
-	}
-
-	/**
-	 * maximum valid value of u.
-	 */
-	uMax() {
-		throw "Unimplemented";
-	}
 }
 
 
 class Spheroid extends Surface {
 	constructor(radius, gravity, omega, obliquity) {
-		super();
+		super(-Math.PI/2, Math.PI/2);
 		this.radius = radius; // keep radius in km
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
 		this.aspectRatio = 1 + w/2 + 1.5*w*w + 6.5*w*w*w; // numerically determined formula for oblateness
@@ -304,14 +293,6 @@ class Spheroid extends Surface {
 		const x = (s - Math.sin(s))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(s/2), 2);
 		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
 		return this.radius*(s - this.flattening/2*(x + y));
-	}
-
-	uMin() {
-		return -Math.PI/2;
-	}
-
-	uMax() {
-		return Math.PI/2;
 	}
 }
 
