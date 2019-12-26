@@ -25,7 +25,7 @@ class Surface {
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
 		let u = this.uMin, A = 0, s = 0;
-		const du = (this.uMax() - this.uMin)/INTEGRATION_RESOLUTION;
+		const du = (this.uMax - this.uMin)/INTEGRATION_RESOLUTION;
 		for (let i = 0; i <= INTEGRATION_RESOLUTION; i ++) {
 			this.refLatitudes.push(u);
 			this.cumulAreas.push(A);
@@ -90,7 +90,7 @@ class Surface {
 		const n = 2*resolution, m = 4*resolution;
 		const X = [], Y = [], Z = [], S = [];
 		for (let i = 0; i <= n; i ++) {
-			const u = i/n*(this.uMax() - this.uMin) + this.uMin; // map i to the valid range for u
+			const u = i/n*(this.uMax - this.uMin) + this.uMin; // map i to the valid range for u
 			const s = this.insolation(u);
 			X.push([]);
 			Y.push([]);
