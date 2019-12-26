@@ -27,7 +27,7 @@ function legendreP6(y) {
  */
 function linterp(x, X, Y) {
 	if (X.length !== Y.length)
-		throw new RangeError("array lengths must match");
+		throw "array lengths must match";
 
 	let min = 0, max = X.length - 1;
 	while (max - min > 1) {

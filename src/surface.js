@@ -3,7 +3,7 @@
 
 
 const INTEGRATION_RESOLUTION = 32;
-const TILE_AREA = 50000; // typical area of a tile in km^2
+const TILE_AREA = 40000; // typical area of a tile in km^2
 
 
 /**
@@ -237,9 +237,6 @@ class Spheroid extends Surface {
 		for (let j = 0; j < m; j ++)
 			triangles.push(
 				new Triangle(nodes[kN], nodes[(n-2)*m + j], nodes[(n-2)*m + (j+1)%m]));
-		for (const t of triangles)
-			if (t.isInsideOut())
-				throw "am me";
 		return [nodes, triangles];
 	}
 
@@ -352,15 +349,11 @@ class Node {
 	 */
 	getPolygon() {
 		if (this.vertices === undefined) { // don't compute this unless you must
-			try {
-				this.vertices = [this.neighbors.values().next().value.triangleL]; // start with an arbitrary neighboring triangle
-				while (this.vertices.length < this.neighbors.size) {
-					const lastTriangle = this.vertices[this.vertices.length - 1];
-					const nextNode = lastTriangle.clockwiseOf(this);
-					this.vertices.push(this.leftOf(nextNode));
-				}
-			} catch {
-				throw "aahhuh";
+			this.vertices = [this.neighbors.values().next().value.triangleL]; // start with an arbitrary neighboring triangle
+			while (this.vertices.length < this.neighbors.size) {
+				const lastTriangle = this.vertices[this.vertices.length - 1];
+				const nextNode = lastTriangle.clockwiseOf(this);
+				this.vertices.push(this.leftOf(nextNode));
 			}
 		}
 		return this.vertices;
