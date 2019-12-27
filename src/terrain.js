@@ -11,14 +11,18 @@ const NOISE_SCALE_SLOPE = 1.0;
 /**
  * create all of the continents and biomes and rivers that go into the physical geography
  * of a good fictional world.
- * @param surf the surface to modify
+ * @param numContinents number of continents, equal to half the number of plates
+ * @param percentOcean fraction of nodes that should be set to samud
  * @param avgTerme some vaguely defined median temperature in Kelvin
+ * @param surf the surface to modify
  * @param rng the seeded random number generator to use
  */
-function generateTerrain(avgTerme, numContinents, surf, rng) {
-	generateClimate(avgTerme, surf, rng);
-	rng = rng.reset();
+function generateTerrain(numContinents, percentOcean, avgTerme, surf, rng) {
 	generateContinents(numContinents, surf, rng);
+	fillOcean(percentOcean, surf);
+	rng = rng.reset();
+	generateClimate(avgTerme, surf, rng);
+	setBiomes(surf);
 }
 
 function generateClimate(avgTerme, surf, rng) {
@@ -47,6 +51,11 @@ function generateClimate(avgTerme, surf, rng) {
 		node.terme += avgTerme*Math.pow(surf.insolation(node.u), 1/4.) - 273;
 		node.barxe += surf.windConvergence(node.u);
 	}
+}
+
+
+function setBiomes(surf) {
+
 }
 
 
@@ -83,5 +92,37 @@ function generateContinents(numPlates, surf, rng) {
 			node.plate = parent.plate;
 			node.gawe = parent.gawe + rng.normal(0, std);
 		}
+	}
+}
+
+
+/**
+ * fill in the ocean biome using a very simple flood fill
+ * @param fraction
+ * @param surf
+ */
+function fillOcean(fraction, surf) {
+	let minim = surf.nodes[0];
+	for (const node of surf.nodes) // start with the lowest node
+		if (node.gawe < minim.gawe)
+			minim = node;
+	let samudGawe = Number.NEGATIVE_INFINITY;
+	let numSamud = 0;
+	const queue = new TinyQueue([minim], (a, b) => a.gawe - b.gawe); // it shall seed our ocean
+	while (queue.length > 0 && numSamud < fraction*surf.nodes.length) { // up to the desired fraction:
+		samudGawe = queue.peek().gawe; // raise the sea level to the next lowest point
+		while (queue.peek().gawe <= samudGawe) { // and flood all lower nodes
+			const next = queue.pop();
+			if (next.biome !== 'samud') {
+				next.biome = 'samud';
+				numSamud ++;
+				for (const neighbor of next.neighbors.keys())
+					queue.push(neighbor); // spreading the water to their neighbors
+			}
+		}
+	}
+
+	for (const node of surf.nodes) {
+		node.gawe -= samudGawe;
 	}
 }

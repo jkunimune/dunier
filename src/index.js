@@ -164,16 +164,19 @@ $( '#terrain-apply' ).on('click', function() {
 	surface.populate(2, rng); // finish constructing the surface
 	rng = rng.reset();
 	generateTerrain(
-		avgTerme,
 		numContinents,
+		percentOcean,
+		avgTerme,
 		surface, rng); // create the terrain!
 
 	const mapSvg = SVG('#terrain-tiles');
 	const mapProjection = new Azimuthal(surface);
 	mapSvg.clear();
 	for (const node of surface.nodes) {
-		const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
-		// const color = `rgb(${0}, ${128}, ${Math.max(0, Math.min(255, Math.trunc((node.gawe+2)/4*256)))})`;
+		// const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
+		const color = (node.biome === 'samud') ?
+			`rgb(${0}, ${Math.max(0, Math.min(255, Math.trunc((node.gawe+2)/2*256)))}, ${255})` :
+			`rgb(${Math.max(0, Math.min(255, Math.trunc((node.gawe)/2*256)))}, ${255}, ${0})`;
 		mapProjection.map(node.getPolygon(), mapSvg, color);
 	}
 });

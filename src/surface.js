@@ -322,6 +322,7 @@ class Node {
 		this.terme = 0;
 		this.barxe = 0;
 		this.gawe = 0;
+		this.biome = null;
 	}
 
 	/**

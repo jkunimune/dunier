@@ -111,7 +111,7 @@ class MapProjection {
 
 	/**
 	 * generate some <path> segments to compensate for something circling the North Pole.
-	 * @return [Array of String, Array of Array]
+	 * @return Array containing [Array of String, Array of Array]
 	 */
 	mapNorthPole() {
 		throw "unimplemented";
@@ -119,7 +119,7 @@ class MapProjection {
 
 	/**
 	 * generate some <path> segments to compensate for something circling the South Pole.
-	 * @return [Array of String, Array of Array]
+	 * @return Array containing [Array of String, Array of Array]
 	 */
 	mapSouthPole() {
 		throw "unimplemented";
