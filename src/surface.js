@@ -3,7 +3,7 @@
 
 
 const INTEGRATION_RESOLUTION = 32;
-const TILE_AREA = 40000; // typical area of a tile in km^2
+const TILE_AREA = 50000; // typical area of a tile in km^2
 
 
 /**
@@ -245,7 +245,7 @@ class Spheroid extends Surface {
 	}
 
 	dAds(ph) {
-		return this.radius*Math.cos(ph);
+		return 2*Math.PI*this.radius*Math.cos(ph);
 	}
 
 	windConvergence(ph) {
@@ -317,7 +317,6 @@ class Node {
 		this.pos = surface.xyz(this.u, this.v);
 		this.neighbors = new Map();
 		this.parents = undefined;
-		this.between = undefined; // nodes that this one gets between
 
 		this.terme = 0;
 		this.barxe = 0;
@@ -503,13 +502,6 @@ class Triangle {
 		for (let i = 0; i < 3; i ++)
 			if (this.vertices[i] === node)
 				return this.vertices[(i+1)%3];
-	}
-
-	isInsideOut() {
-		let vNormal = new Vector(0, 0, 0);
-		for (let i = 0; i < 3; i ++)
-			vNormal = vNormal.plus(this.surface.getNormal(this.vertices[i]));
-		return this.getNormal().dot(vNormal) <= 0;
 	}
 
 	toString() {

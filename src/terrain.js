@@ -3,7 +3,7 @@
 
 
 const CLIMATE_NOISE_LEVEL = 1;
-const TERRAIN_NOISE_LEVEL = 0;
+const TERRAIN_NOISE_LEVEL = 1e-1;
 const MAX_NOISE_SCALE = 1/16;
 const NOISE_SCALE_SLOPE = 1.0;
 

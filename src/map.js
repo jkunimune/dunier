@@ -21,19 +21,17 @@ class MapProjection {
 	 * @param color String or anything that can be passed to svg.js's functions.
 	 */
 	map(polygon, svg, color) {
-		let segments = [];
 		let jinPoints = [];
 		for (const vertex of polygon) {
 			const {u, v} = vertex.getCircumcenter();
-			segments.push('L'); // start by collecting the input into a list of Strings
-			jinPoints.push([u, v]); // of movement types and Arrays
+			jinPoints.push({type: 'L', args: [u, v]}); // start by collecting the input into a list of segments
 		}
 
 		let numX = 0;
 		let indeX = null;
-		for (let i = segments.length; i > 0; i --) { // sweep through the result
-			const [u0, v0] = jinPoints[i-1];
-			const [u1, v1] = jinPoints[i%segments.length];
+		for (let i = jinPoints.length; i > 0; i --) { // sweep through the result
+			const [u0, v0] = jinPoints[i-1].args;
+			const [u1, v1] = jinPoints[i%jinPoints.length].args;
 			if (Math.abs(v1 - v0) > Math.PI) { // look for lines that cross the +/- pi border
 				const pos0 = this.surface.xyz(u0, v0);
 				const pos1 = this.surface.xyz(u1, v1);
@@ -41,64 +39,53 @@ class MapProjection {
 				const uX = this.surface.uv(posX.x, posX.y, posX.z).u;
 				const vX = (v1 < v0) ? Math.PI : -Math.PI;
 				numX += Math.sign(v0 - v1); // count the number of times it crosses east
-				segments.splice(i, 0, 'L', 'M');
-				jinPoints.splice(i, 0, [uX, vX], [uX, -vX]); // and break them up accordingly
+				jinPoints.splice(i, 0,
+					{type: 'L', args: [uX, vX]}, {type: 'M', args: [uX, -vX]}); // and break them up accordingly
 				indeX = i + 1;
 			}
 		}
 
-		if (indeX !== null) { // if we have a nonzero index of a break
-			segments = segments.slice(indeX).concat(segments.slice(0, indeX)); // shift the array around to put it at the start
-			jinPoints = jinPoints.slice(indeX).concat(jinPoints.slice(0, indeX));
-		}
-		else { // if there were no breaks
-			segments.push(segments[0]); // add a path closure to the end
-			jinPoints.push(jinPoints[0]);
-			segments[0] = 'M'; // and change the beginning to a moveto
-		}
+		if (indeX !== null) // if we have an index of a break
+			jinPoints = jinPoints.slice(indeX).concat(jinPoints.slice(0, indeX)); // shift the array around to put it at the start
+		else // if there were no breaks
+			jinPoints.push({...jinPoints[0]}); // add a path closure to the end
+		jinPoints[0].type = 'M'; // ensure the beginning is a moveto
 
 		const cutPoints = [];
-		for (const [u, v] of jinPoints) {
+		for (const {type, args} of jinPoints) {
+			const [u, v] = args;
 			const {x, y} = this.project(u, v); // project each point to the plane
-			cutPoints.push([x, y]);
+			cutPoints.push({type: type, args: [x, y]});
 		}
 
-		for (let i = 1; i < segments.length; i ++) { // sweep through the resulting polygon
-			if (segments[i] === 'L') { // skipping the ones that aren't actually lines
-				const [x0, y0] = cutPoints[i-1];
-				const [x1, y1] = cutPoints[i];
+		for (let i = 1; i < jinPoints.length; i ++) { // sweep through the resulting polygon
+			if (jinPoints[i].type === 'L') { // skipping the ones that aren't actually lines
+				const [x0, y0] = cutPoints[i-1].args;
+				const [x1, y1] = cutPoints[i].args;
 				if (Math.hypot(x1 - x0, y1 - y0) > MAP_PRECISION) { // look for lines that are too long
-					const [u0, v0] = jinPoints[i-1];
-					const [u1, v1] = jinPoints[i];
+					const [u0, v0] = jinPoints[i-1].args;
+					const [u1, v1] = jinPoints[i].args;
 					const midPos = this.surface.xyz(u0, v0).plus(
 						this.surface.xyz(u1, v1)).times(1 / 2); // and split them in half
 					const {u, v} = this.surface.uv(midPos.x, midPos.y, midPos.z);
 					const {x, y} = this.project(u, v);
-					segments.splice(i, 0, 'L');
-					jinPoints.splice(i, 0, [u, v]); // add the midpoints to the polygon
-					cutPoints.splice(i, 0, [x, y]);
+					jinPoints.splice(i, 0, {type: 'L', args: [u, v]}); // add the midpoints to the polygon
+					cutPoints.splice(i, 0, {type: 'L', args: [x, y]});
 					i --; // and check again
 				}
 			}
 		}
 
-		if (numX === 1) { // now, if it circumnavigated east,
-			const [poleSegments, polePoints] = this.mapNorthPole(); // then it circled the North Pole
-			segments.push(...poleSegments); // add whatever element is needed to deal with that
-			cutPoints.push(...polePoints);
-		}
-		else if (numX === -1) { // if it circumnavigated west,
-			const [poleSegments, polePoints] = this.mapSouthPole(); // then it circled the South Pole
-			segments.push(...poleSegments); // do what you need to do
-			cutPoints.push(...polePoints);
-		}
-		else if (numX !== 0) { // beware of polygons that circumnavigate multiple times
+		if (numX === 1) // now, if it circumnavigated east, then it circled the North Pole
+			cutPoints.push(...this.mapNorthPole()); // add whatever element is needed to deal with that
+		else if (numX === -1) // if it circumnavigated west, then it circled the South Pole
+			cutPoints.push(...this.mapSouthPole()); // do what you need to do
+		else if (numX !== 0) // beware of polygons that circumnavigate multiple times
 			throw "we no pologon!"; // because that would be geometrically impossible
-		}
 
 		let str = ''; // finally, put it in the <path>
-		for (let i = 0; i < segments.length; i ++)
-			str += segments[i] + cutPoints[i].join() + ' ';
+		for (let i = 0; i < cutPoints.length; i ++)
+			str += cutPoints[i].type + cutPoints[i].args.join(',') + ' ';
 		svg.path(str).fill(color);
 	}
 
@@ -139,12 +126,13 @@ class Azimuthal extends MapProjection {
 	}
 
 	mapNorthPole() {
-		return [[], []];
+		return [];
 	}
 
 	mapSouthPole() {
 		return [
-			['M',     'A',                   'A'],
-			[[0, -1], [1, 1, 0, 1, 0, 0, 1], [1, 1, 0, 1, 0, 0, -1]]];
+			{type: 'M', args: [0, -1]},
+			{type: 'A', args: [1, 1, 0, 1, 0, 0, 1]},
+			{type: 'A', args: [1, 1, 0, 1, 0, 0, -1]}];
 	}
 }
