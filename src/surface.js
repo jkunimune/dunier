@@ -294,6 +294,10 @@ class Spheroid extends Surface {
 }
 
 
+/**
+ * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the y direction
+ * rather than the z.
+ */
 class Sphere extends Spheroid {
 	constructor(radius) {
 		super(radius, 1, 0, Number.NaN);
@@ -301,6 +305,19 @@ class Sphere extends Spheroid {
 
 	insolation(ph) {
 		return 1.5*Math.max(0, Math.sin(ph));
+	}
+
+	xyz(ph, l) {
+		const {x, y, z} = super.xyz(ph, l);
+		return new Vector(x, z, -y);
+	}
+
+	uv(x, y, z) {
+		return super.uv(x, -z, y);
+	}
+
+	getNormal(node) {
+		return node.pos.norm();
 	}
 }
 
