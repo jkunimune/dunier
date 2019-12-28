@@ -176,7 +176,7 @@ $( '#terrain-apply' ).on('click', function() {
 		// const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
 		const color = (node.biome === 'samud') ?
 			`rgb(${0}, ${Math.max(0, Math.min(255, Math.trunc((node.gawe+2)/2*256)))}, ${255})` :
-			`rgb(${Math.max(0, Math.min(255, Math.trunc((node.gawe)/2*256)))}, ${255}, ${0})`;
+			`rgb(${Math.max(0, Math.min(255, Math.trunc((node.gawe)/2*256)))}, ${192}, ${0})`;
 		mapProjection.map(node.getPolygon(), mapSvg, color);
 	}
 });

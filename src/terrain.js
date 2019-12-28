@@ -3,7 +3,7 @@
 
 
 const CLIMATE_NOISE_LEVEL = 1;
-const TERRAIN_NOISE_LEVEL = 1e-1;
+const TERRAIN_NOISE_LEVEL = 0.3;
 const MAX_NOISE_SCALE = 1/16;
 const NOISE_SCALE_SLOPE = 1.0;
 
@@ -29,22 +29,10 @@ function generateClimate(avgTerme, surf, rng) {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
 	const noiseLevel = CLIMATE_NOISE_LEVEL/Math.pow(maxScale, NOISE_SCALE_SLOPE);
 	for (const node of surf.nodes) { // assign each node random values
-		let scale = 0; // based on a diamond-square-like algorithm
-		for (const parent of node.parents)
-			scale += surf.distance(node, parent);
-		scale = scale/node.parents.length;
-		if (Number.isNaN(scale) || scale > maxScale) {
-			scale = maxScale;
-		}
-		else { // where values are correlated under a certain scale
-			for (const parent of node.parents) {
-				node.terme += parent.terme/node.parents.length;
-				node.barxe += parent.barxe/node.parents.length;
-			}
-		}
-		const std = noiseLevel*Math.pow(maxScale, NOISE_SCALE_SLOPE);
-		node.terme += rng.normal(0, std);
-		node.barxe += rng.normal(0, std);
+		node.terme = getNoiseFunction(node, node.parents, 'terme', surf, rng,
+			maxScale, noiseLevel, NOISE_SCALE_SLOPE);
+		node.barxe = getNoiseFunction(node, node.parents, 'barxe', surf, rng,
+			maxScale, noiseLevel, NOISE_SCALE_SLOPE);
 	}
 
 	for (const node of surf.nodes) { // and then throw in the baseline
@@ -62,36 +50,39 @@ function setBiomes(surf) {
 function generateContinents(numPlates, surf, rng) {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
 	const noiseLevel = TERRAIN_NOISE_LEVEL/Math.pow(maxScale, NOISE_SCALE_SLOPE);
-	for (const node of surf.nodes) { // assign each node random values
+	for (const node of surf.nodes) { // start by assigning plates
 		if (node.index < numPlates) {
-			node.plate = node.index; // completely random for the plate seeds
-			if (node.index < numPlates/2)
-				node.gawe = rng.uniform(0, 1); // with continents
-			else
-				node.gawe = rng.uniform(-1, 0); // and oceans distinguished by index
+			node.plate = node.index; // the first few are seeds
+			node.gawe = 0;
+			rng.discrete(0, 0); // but call rng anyway to keep things consistent
+			rng.normal(0, 0);
 		}
-		else { // and the rest with a method similar to that above,
-			let parent = undefined; // but where each node chooses just one parent
-			const preferredParents = [];
+		else { // and the rest with a method similar to that above
+			const prefParents = [];
 			for (const pair of node.between) { // if this node is directly between two nodes
 				if (pair[0].plate === pair[1].plate) { // of the same plate
-					if (!preferredParents.includes(pair[0]))
-						preferredParents.push(pair[0]); // try to have it take the plate from one of them, to keep that plate together
-					if (!preferredParents.includes(pair[1]))
-						preferredParents.push(pair[1]);
+					if (!prefParents.includes(pair[0]))
+						prefParents.push(pair[0]); // try to have it take the plate from one of them, to keep that plate together
+					if (!prefParents.includes(pair[1]))
+						prefParents.push(pair[1]);
 				}
 			}
-			if (preferredParents.length > 0) {// in any case, just take the parent pseudorandomly
-				parent = preferredParents[rng.discrete(0, preferredParents.length)];
-			}
+			if (prefParents.length > 0) // in any case, just take the plate parent pseudorandomly
+				node.plate = prefParents[rng.discrete(0, prefParents.length)].plate;
 			else
-				parent = node.parents[rng.discrete(0, node.parents.length)];
+				node.plate = node.parents[rng.discrete(0, node.parents.length)].plate;
 
-			const scale = surf.distance(node, parent);
-			const std = noiseLevel*Math.pow(Math.min(scale, maxScale), NOISE_SCALE_SLOPE);
-			node.plate = parent.plate;
-			node.gawe = parent.gawe + rng.normal(0, std);
+			node.gawe = getNoiseFunction(node,
+				node.parents.filter(p => p.plate === node.plate), 'gawe',
+				surf, rng, maxScale, noiseLevel, NOISE_SCALE_SLOPE);
 		}
+	}
+
+	for (const node of surf.nodes) { // once that's done, add in the plate altitude baselines
+		if (node.plate%2 === 0)
+			node.gawe += node.plate/numPlates - 1; // order them so that adding and removing plates results in minimal change
+		else
+			node.gawe += 1 - node.plate/numPlates;
 	}
 }
 
@@ -111,7 +102,7 @@ function fillOcean(fraction, surf) {
 	const queue = new TinyQueue([minim], (a, b) => a.gawe - b.gawe); // it shall seed our ocean
 	while (queue.length > 0 && numSamud < fraction*surf.nodes.length) { // up to the desired fraction:
 		samudGawe = queue.peek().gawe; // raise the sea level to the next lowest point
-		while (queue.peek().gawe <= samudGawe) { // and flood all lower nodes
+		while (queue.length > 0 && queue.peek().gawe <= samudGawe) { // and flood all lower nodes
 			const next = queue.pop();
 			if (next.biome !== 'samud') {
 				next.biome = 'samud';
@@ -125,4 +116,39 @@ function fillOcean(fraction, surf) {
 	for (const node of surf.nodes) {
 		node.gawe -= samudGawe;
 	}
+}
+
+
+/**
+ * compute the diamond square noise algorithm to one node, given its parents.
+ * @param node Node to be changed
+ * @param parents Array of Nodes that will influence it
+ * @param attr String identifier of attribute that is being compared and set
+ * @param surf Surface on which the algorithm takes place
+ * @param rng Random to use for the values
+ * @param maxScale the scale above which values are not correlated
+ * @param level number noise magnitude scalar
+ * @param slope number logarithmic rate at which noise dies off with distance
+ * @return number the value of attr this node should take
+ */
+function getNoiseFunction(node, parents, attr, surf, rng, maxScale, level, slope) {
+	let scale = 0;
+	let weightSum = 0;
+	let value = 0;
+	for (const parent of parents) {
+		const dist = surf.distance(node, parent); // look at parent distances
+		scale += dist/parents.length; // compute the mean scale // TODO might save some time if I save these distances
+		weightSum += 1/dist;
+		value += parent[attr]/dist; // compute the weighted average of them
+	}
+	value /= weightSum; // normalize
+
+	if (Number.isNaN(value) || scale > maxScale) { // above a certain scale (or in lieu of any parents)
+		scale = maxScale; // the std levels out
+		value = 0; // and information is no longer correlated
+	}
+	const std = level*Math.pow(scale, slope);
+	value += rng.normal(0, std); // finally, add the random part of the random noise
+
+	return value;
 }
