@@ -2,9 +2,10 @@
 'use strict';
 
 
-const CLIMATE_NOISE_LEVEL = 1;
-const TERRAIN_NOISE_LEVEL = 0.3;
-const MAX_NOISE_SCALE = 1/16;
+const TERME_NOISE_LEVEL = 10;
+const BARXE_NOISE_LEVEL = .3;
+const GAWE_NOISE_LEVEL = 0.5;
+const MAX_NOISE_SCALE = 1/8;
 const NOISE_SCALE_SLOPE = 1.0;
 
 
@@ -27,12 +28,11 @@ function generateTerrain(numContinents, percentOcean, avgTerme, surf, rng) {
 
 function generateClimate(avgTerme, surf, rng) {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
-	const noiseLevel = CLIMATE_NOISE_LEVEL/Math.pow(maxScale, NOISE_SCALE_SLOPE);
 	for (const node of surf.nodes) { // assign each node random values
 		node.terme = getNoiseFunction(node, node.parents, 'terme', surf, rng,
-			maxScale, noiseLevel, NOISE_SCALE_SLOPE);
+			maxScale, TERME_NOISE_LEVEL, NOISE_SCALE_SLOPE);
 		node.barxe = getNoiseFunction(node, node.parents, 'barxe', surf, rng,
-			maxScale, noiseLevel, NOISE_SCALE_SLOPE);
+			maxScale, BARXE_NOISE_LEVEL, NOISE_SCALE_SLOPE);
 	}
 
 	for (const node of surf.nodes) { // and then throw in the baseline
@@ -49,7 +49,6 @@ function setBiomes(surf) {
 
 function generateContinents(numPlates, surf, rng) {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
-	const noiseLevel = TERRAIN_NOISE_LEVEL/Math.pow(maxScale, NOISE_SCALE_SLOPE);
 	for (const node of surf.nodes) { // start by assigning plates
 		if (node.index < numPlates) {
 			node.plate = node.index; // the first few are seeds
@@ -74,7 +73,7 @@ function generateContinents(numPlates, surf, rng) {
 
 			node.gawe = getNoiseFunction(node,
 				node.parents.filter(p => p.plate === node.plate), 'gawe',
-				surf, rng, maxScale, noiseLevel, NOISE_SCALE_SLOPE);
+				surf, rng, maxScale, GAWE_NOISE_LEVEL, NOISE_SCALE_SLOPE);
 		}
 	}
 
@@ -147,7 +146,7 @@ function getNoiseFunction(node, parents, attr, surf, rng, maxScale, level, slope
 		scale = maxScale; // the std levels out
 		value = 0; // and information is no longer correlated
 	}
-	const std = level*Math.pow(scale, slope);
+	const std = level*Math.pow(scale/maxScale, slope);
 	value += rng.normal(0, std); // finally, add the random part of the random noise
 
 	return value;
