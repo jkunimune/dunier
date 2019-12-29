@@ -20,6 +20,8 @@ const NOISE_SCALE_SLOPE = 1.0;
  */
 function generateTerrain(numContinents, percentOcean, avgTerme, surf, rng) {
 	generateContinents(numContinents, surf, rng);
+	rng = rng.reset();
+	movePlates(surf, rng);
 	fillOcean(percentOcean, surf);
 	rng = rng.reset();
 	generateClimate(avgTerme, surf, rng);
@@ -82,6 +84,84 @@ function generateContinents(numPlates, surf, rng) {
 			node.gawe += node.plate/numPlates - 1; // order them so that adding and removing plates results in minimal change
 		else
 			node.gawe += 1 - node.plate/numPlates;
+	}
+}
+
+
+/**
+ * apply plate tectonics to the surface!
+ */
+function movePlates(surf, rng) {
+	const velocities = [];
+	for (const node of surf.nodes) { // start by counting up all the plates
+		if (node.plate >= velocities.length) // and assigning them random velocities
+			velocities.push(node.getNormal().cross(new Vector(
+				rng.normal(0, 1), rng.normal(0, 1), rng.normal(0, 1)))); // orthogonal to the normal at their seeds
+		else
+			break;
+	}
+
+	const queue = new TinyQueue([], (a, b) => a.distance - b.distance);
+	for (const node of surf.nodes) { // now for phase 2:
+		let fault;
+		let minDistance = Number.POSITIVE_INFINITY;
+		for (const neighbor of node.neighbors.keys()) { // look for adjacent nodes
+			if (neighbor.plate !== node.plate) { // that are on different plates
+				const distance = node.neighbors.get(neighbor).length;
+				if (typeof(fault) == 'undefined' || distance < minDistance) {
+					fault = neighbor;
+					minDistance = distance;
+				}
+			}
+		}
+
+		if (typeof(fault) != 'undefined') { // if you found one,
+			const relPosition = node.pos.minus(fault.pos);
+			const relVelocity = velocities[node.plate].minus(velocities[fault.plate]); // determine the speed at which they are moving away from each other
+			let type; // and whether these are both continents or if this is a top or a bottom or what
+			if (node.gawe > 1/3 && fault.gawe > 1/3)
+				type = 'continent';
+			else if (node.gawe > fault.gawe)
+				type = 'top';
+			else
+				type = 'bottom';
+			queue.push({
+				node: node, distance: minDistance/2,
+				speed: relPosition.norm().dot(relVelocity),
+				type: type}); // add it to the queue
+		}
+
+		node.flag = false; // also set up these temporary flags
+	}
+
+	while (queue.length > 0) { // now, we iterate through the queue
+		const {node, distance, speed, type} = queue.pop(); // each element of the queue is a node waiting to be affected by plate tectonics
+		if (node.flag)  continue; // some of them may have already come up
+		let gawoMute = 0; // the type and distance determine how it will be affected
+		if (speed < 0) { // converging
+			if (type === 'continent') { // continents
+				gawoMute = Math.max(0, -speed*30 - distance/10);
+			}
+			else if (type === 'top') { // subductor
+
+			}
+			else { // subductee
+
+			}
+		}
+		else { // divergence
+
+		}
+
+		if (gawoMute !== 0) { // if there was any change at all
+			node.gawe += gawoMute; // apply it
+			node.flag = true; // mark this node
+			for (const neighbor of node.neighbors.keys()) // and add its neighbors to the queue
+				queue.push({
+					node: neighbor,
+					distance: distance+node.neighbors.get(neighbor).length,
+					speed: speed, type: type}); // add it to the queue
+		}
 	}
 }
 

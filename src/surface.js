@@ -273,7 +273,7 @@ class Spheroid extends Surface {
 			v: Math.atan2(-x, y)};
 	}
 
-	getNormal(node) {
+	getNormal(node) { // TODO: I could maybe save some time by storing this
 		const ph = Math.atan(this.aspectRatio*Math.tan(node.u)); // use geodetic coordinates
 		const l = node.v;
 		return new Vector(
