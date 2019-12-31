@@ -42,6 +42,15 @@ function linterp(x, X, Y) {
 }
 
 /**
+ * combine the two arrays and remove duplicates.
+ */
+function union(a, b) {
+	a = [...a];
+	b = [...b];
+	return a.concat(b.filter(e => !a.includes(e)));
+}
+
+/**
  * set the triangles attribute of the surface, and set up all the Edges and references
  * and stuff
  */

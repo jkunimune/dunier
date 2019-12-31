@@ -35,7 +35,7 @@ class MapProjection {
 			if (Math.abs(v1 - v0) > Math.PI) { // look for lines that cross the +/- pi border
 				const pos0 = this.surface.xyz(u0, v0);
 				const pos1 = this.surface.xyz(u1, v1);
-				const posX = pos0.plus(pos1).times(1/2);
+				const posX = pos0.plus(pos1).over(2);
 				const uX = this.surface.uv(posX.x, posX.y, posX.z).u;
 				const vX = (v1 < v0) ? Math.PI : -Math.PI;
 				numX += Math.sign(v0 - v1); // count the number of times it crosses east
@@ -66,7 +66,7 @@ class MapProjection {
 					const [u0, v0] = jinPoints[i-1].args;
 					const [u1, v1] = jinPoints[i].args;
 					const midPos = this.surface.xyz(u0, v0).plus(
-						this.surface.xyz(u1, v1)).times(1 / 2); // and split them in half
+						this.surface.xyz(u1, v1)).over(2); // and split them in half
 					const {u, v} = this.surface.uv(midPos.x, midPos.y, midPos.z);
 					const {x, y} = this.project(u, v);
 					jinPoints.splice(i, 0, {type: 'L', args: [u, v]}); // add the midpoints to the polygon

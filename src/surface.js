@@ -570,6 +570,13 @@ class Vector {
 			this.z * a);
 	}
 
+	over(a) {
+		return new Vector(
+			this.x / a,
+			this.y / a,
+			this.z / a);
+	}
+
 	plus(that) {
 		return new Vector(
 			this.x + that.x,

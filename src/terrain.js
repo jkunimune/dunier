@@ -4,9 +4,21 @@
 
 const TERME_NOISE_LEVEL = 10;
 const BARXE_NOISE_LEVEL = .3;
-const GAWE_NOISE_LEVEL = 0.5;
 const MAX_NOISE_SCALE = 1/8;
 const NOISE_SCALE_SLOPE = 1.0;
+
+const OCEAN_DEPTH = 4; // km
+const CONTINENT_VARIATION = .5; // km
+const OCEANIC_VARIATION = 1; // km
+const MOUNTAIN_HEIGHT = 4; // km
+const VOLCANO_HEIGHT = 5; // km
+const RIFT_HEIGHT = 2; // km
+const TRENCH_DEPTH = 5; // km
+const MOUNTAIN_WIDTH = 400; // km
+const TRENCH_WIDTH = 100; // km
+const SLOPE_WIDTH = 400; // km
+const RIFT_WIDTH = 800; // km
+const OCEAN_SIZE = 0.3; // as a fraction of continental length scale
 
 
 /**
@@ -75,15 +87,17 @@ function generateContinents(numPlates, surf, rng) {
 
 			node.gawe = getNoiseFunction(node,
 				node.parents.filter(p => p.plate === node.plate), 'gawe',
-				surf, rng, maxScale, GAWE_NOISE_LEVEL, NOISE_SCALE_SLOPE);
+				surf, rng, maxScale,
+				(node.plate%2===0) ? CONTINENT_VARIATION : OCEANIC_VARIATION,
+				NOISE_SCALE_SLOPE);
 		}
 	}
 
 	for (const node of surf.nodes) { // once that's done, add in the plate altitude baselines
 		if (node.plate%2 === 0)
-			node.gawe += node.plate/numPlates - 1; // order them so that adding and removing plates results in minimal change
+			node.gawe += OCEAN_DEPTH/2; // order them so that adding and removing plates results in minimal change
 		else
-			node.gawe += 1 - node.plate/numPlates;
+			node.gawe -= OCEAN_DEPTH/2;
 	}
 }
 
@@ -95,11 +109,13 @@ function movePlates(surf, rng) {
 	const velocities = [];
 	for (const node of surf.nodes) { // start by counting up all the plates
 		if (node.plate >= velocities.length) // and assigning them random velocities
-			velocities.push(node.getNormal().cross(new Vector(
-				rng.normal(0, 1), rng.normal(0, 1), rng.normal(0, 1)))); // orthogonal to the normal at their seeds
+			velocities.push(node.getNormal().cross(new Vector( // TODO allow for plate rotation in the tangent plane
+				rng.normal(0, .5), rng.normal(0, .5), rng.normal(0, .5)))); // orthogonal to the normal at their seeds
 		else
 			break;
 	}
+
+	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
 
 	const queue = new TinyQueue([], (a, b) => a.distance - b.distance);
 	for (const node of surf.nodes) { // now for phase 2:
@@ -116,52 +132,100 @@ function movePlates(surf, rng) {
 		}
 
 		if (typeof(fault) != 'undefined') { // if you found one,
-			const relPosition = node.pos.minus(fault.pos);
-			const relVelocity = velocities[node.plate].minus(velocities[fault.plate]); // determine the speed at which they are moving away from each other
-			let type; // and whether these are both continents or if this is a top or a bottom or what
-			if (node.gawe > 1/3 && fault.gawe > 1/3)
-				type = 'continent';
-			else if (node.gawe > fault.gawe)
-				type = 'top';
-			else
-				type = 'bottom';
+			let nodePos = new Vector(0, 0, 0); // do some additional computation to smooth out the boundaries
+			let faultPos = new Vector(0, 0, 0);
+			let nodeMass = 0, faultMass = 0;
+			for (const n of union(node.neighbors.keys(), fault.neighbors.keys())) {
+				if (n.plate === node.plate) {
+					nodePos = nodePos.plus(n.pos);
+					nodeMass ++;
+				}
+				else if (n.plate === fault.plate) {
+					faultPos = faultPos.plus(n.pos);
+					faultMass ++;
+				}
+			}
+			const relPosition = nodePos.over(nodeMass).minus(faultPos.over(faultMass));
+			const relVelocity = velocities[node.plate].minus(velocities[fault.plate]);
+			const relSpeed = relPosition.norm().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
+			let type, width; // and whether these are both continents or if this is a top or a bottom or what
+			if (relSpeed < 0) {
+				if (node.gawe > 0 && fault.gawe > 0) {
+					type = 'xan'; // continental collision
+					width = -relSpeed*MOUNTAIN_WIDTH*Math.sqrt(2);
+				}
+				else if (node.gawe < fault.gawe) {
+					type = 'kav'; // deep sea trench
+					width = TRENCH_WIDTH*Math.sqrt(2);
+				}
+				else {
+					type = 'nesokurbe'; // island arc
+					width = MOUNTAIN_WIDTH*Math.sqrt(2);
+				}
+			}
+			else {
+				if (node.gawe < 0) {
+					type = 'fenia'; // mid-oceanic rift
+					width = relSpeed*RIFT_WIDTH*2;
+				}
+				else {
+					type = 'rampe'; // mid-oceanic rift plus continental slope
+					width = relSpeed*oceanWidth;
+				}
+			}
 			queue.push({
-				node: node, distance: minDistance/2,
-				speed: relPosition.norm().dot(relVelocity),
-				type: type}); // add it to the queue
+				node: node, distance: minDistance/2, width: width,
+				speed: Math.abs(relSpeed), type: type}); // add it to the queue
+			node.relSpeed = relSpeed;
 		}
+		else
+			node.relSpeed = Number.NaN;
 
 		node.flag = false; // also set up these temporary flags
 	}
 
 	while (queue.length > 0) { // now, we iterate through the queue
-		const {node, distance, speed, type} = queue.pop(); // each element of the queue is a node waiting to be affected by plate tectonics
+		const {node, distance, width, speed, type} = queue.pop(); // each element of the queue is a node waiting to be affected by plate tectonics
 		if (node.flag)  continue; // some of them may have already come up
-		let gawoMute = 0; // the type and distance determine how it will be affected
-		if (speed < 0) { // converging
-			if (type === 'continent') { // continents
-				gawoMute = Math.max(0, -speed*30 - distance/10);
-			}
-			else if (type === 'top') { // subductor
-
-			}
-			else { // subductee
-
-			}
+		if (distance > width)   continue; // there's also always a possibility we are out of the range of influence of this fault
+		if (type === 'xan') { // based on the type, find the height change as a function of distance
+			const x = distance / (speed*MOUNTAIN_WIDTH);
+			node.gawe += Math.sqrt(speed) * MOUNTAIN_HEIGHT * // continent-continent ranges are even
+				bellCurve(x) * wibbleCurve(x); // (the sinusoidal term makes it a little more rugged)
 		}
-		else { // divergence
-
+		else if (type === 'kav') {
+			const x = distance / TRENCH_WIDTH;
+			node.gawe -= speed * TRENCH_DEPTH *
+				digibbalCurve(x) * wibbleCurve(x); // while subductive faults are odd
+		}
+		else if (type === 'nesokurbe') {
+			const x = distance / MOUNTAIN_WIDTH;
+			node.gawe += speed * VOLCANO_HEIGHT *
+				digibbalCurve(x) * wibbleCurve(x);
+		}
+		else if (type === 'fenia') {
+			const dS = speed*oceanWidth;
+			const dR = Math.min(0, dS - 2*SLOPE_WIDTH - 2*RIFT_WIDTH);
+			const xR = (distance - dR) / RIFT_WIDTH;
+			node.gawe += RIFT_HEIGHT * Math.exp(-xR);
+		}
+		else if (type === 'rampe') {
+			const dS = speed*oceanWidth; // passive margins are kind of complicated
+			const dR = Math.min(0, dS - 2*SLOPE_WIDTH - 2*RIFT_WIDTH);
+			const xS = (dS - distance) / SLOPE_WIDTH;
+			const xR = (distance - dR) / RIFT_WIDTH;
+			node.gawe += OCEAN_DEPTH * (Math.exp(-xS) - 1) + RIFT_HEIGHT * Math.exp(-xR);
+		}
+		else {
+			throw "Unrecognized fault type";
 		}
 
-		if (gawoMute !== 0) { // if there was any change at all
-			node.gawe += gawoMute; // apply it
-			node.flag = true; // mark this node
-			for (const neighbor of node.neighbors.keys()) // and add its neighbors to the queue
-				queue.push({
-					node: neighbor,
-					distance: distance+node.neighbors.get(neighbor).length,
-					speed: speed, type: type}); // add it to the queue
-		}
+		node.flag = true; // mark this node
+		for (const neighbor of node.neighbors.keys()) // and add its neighbors to the queue
+			queue.push({
+				node: neighbor,
+				distance: distance+node.neighbors.get(neighbor).length,
+				width: width, speed: speed, type: type}); // add it to the queue
 	}
 }
 
@@ -230,4 +294,17 @@ function getNoiseFunction(node, parents, attr, surf, rng, maxScale, level, slope
 	value += rng.normal(0, std); // finally, add the random part of the random noise
 
 	return value;
+}
+
+
+function bellCurve(x) {
+	return (1 - x*x*(1 - x*x/4));
+}
+
+function digibbalCurve(x) {
+	return Math.sqrt(3125/512)*x*(1 - x*x*(1 - x*x/4));
+}
+
+function wibbleCurve(x) {
+	return 1 + Math.cos(6*Math.PI*x)/6;
 }
