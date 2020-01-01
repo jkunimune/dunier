@@ -24,12 +24,12 @@ const OCEANIC_VARIATION = 1; // km
 const MOUNTAIN_HEIGHT = 4; // km
 const VOLCANO_HEIGHT = 5; // km
 const RIFT_HEIGHT = 2; // km
-const TRENCH_DEPTH = 5; // km
+const TRENCH_DEPTH = 4; // km
 const MOUNTAIN_WIDTH = 400; // km
 const TRENCH_WIDTH = 100; // km
 const SLOPE_WIDTH = 400; // km
 const RIFT_WIDTH = 800; // km
-const OCEAN_SIZE = 1/3; // as a fraction of continental length scale
+const OCEAN_SIZE = 0.25; // as a fraction of continental length scale
 
 
 /**
@@ -158,7 +158,7 @@ function movePlates(surf, rng) {
 	for (const node of surf.nodes) { // start by counting up all the plates
 		if (node.plate >= velocities.length) // and assigning them random velocities
 			velocities.push(node.getNormal().cross(new Vector( // TODO allow for plate rotation in the tangent plane
-				rng.normal(0, .5), rng.normal(0, .5), rng.normal(0, .5)))); // orthogonal to the normal at their seeds
+				rng.normal(0, Math.sqrt(.5)), rng.normal(0, Math.sqrt(.5)), rng.normal(0, Math.sqrt(.5))))); // orthogonal to the normal at their seeds
 		else
 			break;
 	}
