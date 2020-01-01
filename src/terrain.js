@@ -18,7 +18,7 @@ const MOUNTAIN_WIDTH = 400; // km
 const TRENCH_WIDTH = 100; // km
 const SLOPE_WIDTH = 400; // km
 const RIFT_WIDTH = 800; // km
-const OCEAN_SIZE = 0.3; // as a fraction of continental length scale
+const OCEAN_SIZE = 1/3; // as a fraction of continental length scale
 
 
 /**
@@ -83,14 +83,26 @@ function generateContinents(numPlates, surf, rng) {
 			if (prefParents.length > 0) // in any case, just take the plate parent pseudorandomly
 				node.plate = prefParents[rng.discrete(0, prefParents.length)].plate;
 			else
-				node.plate = node.parents[rng.discrete(0, node.parents.length)].plate;
-
-			node.gawe = getNoiseFunction(node,
-				node.parents.filter(p => p.plate === node.plate), 'gawe',
-				surf, rng, maxScale,
-				(node.plate%2===0) ? CONTINENT_VARIATION : OCEANIC_VARIATION,
-				NOISE_SCALE_SLOPE);
+				node.plate = node.parents[rng.discrete(0, node.parents.length)].plate; // if there are no pairs, just choose from the full set
 		}
+	}
+
+	for (const node of surf.nodes) { // refine the plate definitions
+		if (node.plate !== node.index) {
+			const count = new Array(numPlates).fill(0);
+			for (const neighbor of node.neighbors.keys())
+				count[neighbor.plate] ++;
+			count[node.plate] += 0.5;
+			node.plate = argmax(count); // to smooth out the plate borders at the finest level
+		}
+	}
+
+	for (const node of surf.nodes) { // with plates finalized,
+		node.gawe = getNoiseFunction(node,
+			node.parents.filter(p => p.plate === node.plate), 'gawe',
+			surf, rng, maxScale,
+			(node.plate%2===0) ? CONTINENT_VARIATION : OCEANIC_VARIATION,
+			NOISE_SCALE_SLOPE); // at last apply the noise function
 	}
 
 	for (const node of surf.nodes) { // once that's done, add in the plate altitude baselines
@@ -119,19 +131,19 @@ function movePlates(surf, rng) {
 
 	const queue = new TinyQueue([], (a, b) => a.distance - b.distance);
 	for (const node of surf.nodes) { // now for phase 2:
-		let fault;
+		let fault = null;
 		let minDistance = Number.POSITIVE_INFINITY;
 		for (const neighbor of node.neighbors.keys()) { // look for adjacent nodes
 			if (neighbor.plate !== node.plate) { // that are on different plates
 				const distance = node.neighbors.get(neighbor).length;
-				if (typeof(fault) == 'undefined' || distance < minDistance) {
+				if (fault == null || distance < minDistance) {
 					fault = neighbor;
 					minDistance = distance;
 				}
 			}
 		}
 
-		if (typeof(fault) != 'undefined') { // if you found one,
+		if (fault != null) { // if you found one,
 			let nodePos = new Vector(0, 0, 0); // do some additional computation to smooth out the boundaries
 			let faultPos = new Vector(0, 0, 0);
 			let nodeMass = 0, faultMass = 0;
@@ -235,7 +247,7 @@ function movePlates(surf, rng) {
  * @param fraction
  * @param surf
  */
-function fillOcean(fraction, surf) {
+function fillOcean(fraction, surf) { // TODO actually, I want users to set sea level directly
 	let minim = surf.nodes[0];
 	for (const node of surf.nodes) // start with the lowest node
 		if (node.gawe < minim.gawe)

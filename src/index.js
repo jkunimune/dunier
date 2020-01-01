@@ -175,12 +175,12 @@ $( '#terrain-apply' ).on('click', function() {
 	for (const node of surface.nodes) {
 		// const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
 		const color = (node.biome === 'samud') ?
-			`rgb(${0}, ${Math.max(0, Math.min(255, Math.trunc((node.gawe+4)/4*256)))}, ${255})` :
-			`rgb(${Math.max(0, Math.min(255, Math.trunc((node.gawe)/4*256)))}, ${192}, ${0})`;
+			rgb(0, (node.gawe+4)/4*256, 255) :
+			rgb(node.gawe/4*256, 192, 0);
 		// const color = Number.isNaN(node.relSpeed) ? 'rgb(0,0,0)' :
 		// 	(node.relSpeed >= 0) ?
-		// 		`rgb(${255}, ${Math.trunc((2-node.relSpeed)*128)}, ${Math.trunc((2-node.relSpeed)*128)})` :
-		// 		`rgb(${Math.trunc((2+node.relSpeed)*128)}, ${Math.trunc((2+node.relSpeed)*128)}, ${255})`;
+		// 		rgb(255, (2-node.relSpeed)*128, (2-node.relSpeed)*128) :
+		// 		rgb((2+node.relSpeed)*128, (2+node.relSpeed)*128, 255);
 		mapProjection.map(node.getPolygon(), mapSvg, color);
 	}
 });

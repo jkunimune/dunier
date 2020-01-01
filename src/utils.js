@@ -2,6 +2,17 @@
 'use strict';
 
 /**
+ * maximum index.
+ */
+function argmax(arr) {
+	let maxIdx = null;
+	for (let i = 0; i < arr.length; i ++)
+		if (maxIdx == null || arr[i] > arr[maxIdx])
+			maxIdx = i;
+	return maxIdx;
+}
+
+/**
  * second Legendre polynomial.
  */
 function legendreP2(y) {
@@ -48,6 +59,13 @@ function union(a, b) {
 	a = [...a];
 	b = [...b];
 	return a.concat(b.filter(e => !a.includes(e)));
+}
+
+function rgb(r, g, b) {
+	r = Math.max(0, Math.min(255, r));
+	g = Math.max(0, Math.min(255, g));
+	b = Math.max(0, Math.min(255, b));
+	return `rgb(${Math.trunc(r)}, ${Math.trunc(g)}, ${Math.trunc(b)})`;
 }
 
 /**

@@ -58,7 +58,7 @@ class Surface {
 		for (let i = 1; i < this.nodes.length; i ++) { // after all that's through, some nodes won't have any parents
 			if (this.nodes[i].parents.length === 0) { // if that's so,
 				const orphan = this.nodes[i];
-				let closest = undefined; // the easiest thing to do is to just assign it the closest node that came before it
+				let closest = null; // the easiest thing to do is to just assign it the closest node that came before it
 				let minDistance = Number.POSITIVE_INFINITY;
 				for (let j = 0; j < orphan.index; j ++) {
 					const distance = this.distance(this.nodes[j], orphan);
@@ -333,7 +333,7 @@ class Node {
 		this.v = position.v;
 		this.pos = surface.xyz(this.u, this.v);
 		this.neighbors = new Map();
-		this.parents = undefined;
+		this.parents = null;
 
 		this.terme = 0;
 		this.barxe = 0;
