@@ -94,8 +94,16 @@
                     <input type="number" value="8" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
                   </div>
                   <div class="form-group">
-                    <label for="terrain-fen">Percent ocean</label>
-                    <input type="number" value="70" data-decimals="1" min="0" max="99" step="1" data-suffix="%" id="terrain-fen"/>
+                    <label for="terrain-samud">Sea level</label>
+                    <select class="custom-select" id="terrain-samud">
+                      <option value="5">Extremely high</option>
+                      <option value="3">Extra high</option>
+                      <option value="2.1">High</option>
+                      <option selected value="1.7">Normal</option>
+                      <option value="1.2">Low</option>
+                      <option value="-0.5">Extra low</option>
+                      <option value="-1.5">Extremely low</option>
+                    </select>
                   </div>
                   <div class="form-group">
                     <label for="terrain-terme">Mean Temperature</label>

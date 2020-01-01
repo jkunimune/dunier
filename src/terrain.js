@@ -25,16 +25,16 @@ const OCEAN_SIZE = 1/3; // as a fraction of continental length scale
  * create all of the continents and biomes and rivers that go into the physical geography
  * of a good fictional world.
  * @param numContinents number of continents, equal to half the number of plates
- * @param percentOcean fraction of nodes that should be set to samud
+ * @param seaLevel desired sea level in km
  * @param avgTerme some vaguely defined median temperature in Kelvin
  * @param surf the surface to modify
  * @param rng the seeded random number generator to use
  */
-function generateTerrain(numContinents, percentOcean, avgTerme, surf, rng) {
+function generateTerrain(numContinents, seaLevel, avgTerme, surf, rng) {
 	generateContinents(numContinents, surf, rng);
 	rng = rng.reset();
 	movePlates(surf, rng);
-	fillOcean(percentOcean, surf);
+	fillOcean(seaLevel, surf);
 	rng = rng.reset();
 	generateClimate(avgTerme, surf, rng);
 	setBiomes(surf);
@@ -244,33 +244,55 @@ function movePlates(surf, rng) {
 
 /**
  * fill in the ocean biome using a very simple flood fill
- * @param fraction
+ * @param level
  * @param surf
  */
-function fillOcean(fraction, surf) { // TODO actually, I want users to set sea level directly
-	let minim = surf.nodes[0];
-	for (const node of surf.nodes) // start with the lowest node
-		if (node.gawe < minim.gawe)
-			minim = node;
-	let samudGawe = Number.NEGATIVE_INFINITY;
-	let numSamud = 0;
-	const queue = new TinyQueue([minim], (a, b) => a.gawe - b.gawe); // it shall seed our ocean
-	while (queue.length > 0 && numSamud < fraction*surf.nodes.length) { // up to the desired fraction:
-		samudGawe = queue.peek().gawe; // raise the sea level to the next lowest point
-		while (queue.length > 0 && queue.peek().gawe <= samudGawe) { // and flood all lower nodes
-			const next = queue.pop();
-			if (next.biome !== 'samud') {
-				next.biome = 'samud';
-				numSamud ++;
-				for (const neighbor of next.neighbors.keys())
-					queue.push(neighbor); // spreading the water to their neighbors
-			}
+function fillOcean(level, surf) {
+	let bestStart = null; // the size of the ocean depends heavily on where we start
+	let bestSize = 0;
+	while (true) { // we want to find the start point that maximizes that size
+		let start = null;
+		for (const node of surf.nodes) {
+			if (node.biome !== 'samud' && node.gawe <= level &&
+				(start == null || node.gawe < start.gawe)) // the lowest point that we haven't already tried is a good way to test
+				start = node;
+		}
+		if (start == null) // stop when we can't find any suitable starts
+			break;
+		let size = floodFrom(start, level, surf);
+		if (size > bestSize) {
+			bestStart = start;
+			bestSize = size;
+		}
+		if (size > surf.nodes.length/2) // or if we find one that fills over half the nodes
+			break;
+	}
+
+	if (bestStart == null)
+		return; // it's theoretically possible there wasn't any suitable start point. shikata wa nai yo.
+
+	for (const node of surf.nodes) // finally, clear all attempts
+		node.biome = null;
+	floodFrom(bestStart, level, surf); // and set it so that just the best start point is filled in
+
+	for (const node of surf.nodes) // and set sea level to 0
+		node.gawe -= level;
+}
+
+function floodFrom(start, level, surf) {
+	let numFilled = 0;
+	const queue = new TinyQueue([start], (a, b) => a.gawe - b.gawe); // it shall seed our ocean
+	while (queue.length > 0 && queue.peek().gawe <= level) { // flood all available nodes
+		const next = queue.pop();
+		if (next.biome !== 'samud') {
+			next.biome = 'samud';
+			numFilled ++;
+			for (const neighbor of next.neighbors.keys())
+				queue.push(neighbor); // spreading the water to their neighbors
 		}
 	}
 
-	for (const node of surf.nodes) {
-		node.gawe -= samudGawe;
-	}
+	return numFilled;
 }
 
 

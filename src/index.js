@@ -156,7 +156,7 @@ $( '#planet-apply' ).on('click', function() {
 $( '#terrain-apply' ).on('click', function() {
 	const randomSeme = $('#terrain-seme').val();
 	const numContinents = $('#terrain-continents').val() * 2;
-	const percentOcean = $('#terrain-fen').val() / 100;
+	const seaLevel = $('#terrain-samud').val();
 	const avgTerme = parseFloat($('#terrain-terme').val()) + 273;
 	const riverSize = $('#terrain-nade').val();
 
@@ -165,7 +165,7 @@ $( '#terrain-apply' ).on('click', function() {
 	rng = rng.reset();
 	generateTerrain(
 		numContinents,
-		percentOcean,
+		seaLevel,
 		avgTerme,
 		surface, rng); // create the terrain!
 
