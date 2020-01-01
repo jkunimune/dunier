@@ -2,33 +2,33 @@
 'use strict';
 
 
-const TERRAIN_COLORMAP = [
-	[0.0, 'rgb(251, 252, 253)'],
-	[0.1, 'rgb(215, 233, 249)'],
-	[0.2, 'rgb(165, 217, 245)'],
-	[0.3, 'rgb(117, 204, 214)'],
-	[0.4, 'rgb( 80, 189, 174)'],
-	[0.5, 'rgb( 41, 174, 131)'],
-	[0.6, 'rgb( 13, 156,  82)'],
-	[0.7, 'rgb( 53, 134,  28)'],
-	[0.8, 'rgb( 81, 109,   0)'],
-	[0.9, 'rgb( 87,  85,   3)'],
-	[1.0, 'rgb( 85,  61,   3)'],
-];
-
 // const TERRAIN_COLORMAP = [
-// 	[0.0, 'rgb(  0,   0,   0)'],
-// 	[0.1, 'rgb( 35,  11,  15)'],
-// 	[0.2, 'rgb( 74,  21,  30)'],
-// 	[0.3, 'rgb(115,  22,  40)'],
-// 	[0.4, 'rgb(161,   5,  39)'],
-// 	[0.5, 'rgb(197,  32,  19)'],
-// 	[0.6, 'rgb(217,  77,   3)'],
-// 	[0.7, 'rgb(232, 117,   5)'],
-// 	[0.8, 'rgb(242, 159,  34)'],
-// 	[0.9, 'rgb(246, 202,  78)'],
-// 	[1.0, 'rgb(249, 242, 144)'],
+// 	[0.0, 'rgb(251, 252, 253)'],
+// 	[0.1, 'rgb(215, 233, 249)'],
+// 	[0.2, 'rgb(165, 217, 245)'],
+// 	[0.3, 'rgb(117, 204, 214)'],
+// 	[0.4, 'rgb( 80, 189, 174)'],
+// 	[0.5, 'rgb( 41, 174, 131)'],
+// 	[0.6, 'rgb( 13, 156,  82)'],
+// 	[0.7, 'rgb( 53, 134,  28)'],
+// 	[0.8, 'rgb( 81, 109,   0)'],
+// 	[0.9, 'rgb( 87,  85,   3)'],
+// 	[1.0, 'rgb( 85,  61,   3)'],
 // ];
+
+const TERRAIN_COLORMAP = [
+	[0.0, 'rgb(  0,   0,   0)'],
+	[0.1, 'rgb( 35,  11,  15)'],
+	[0.2, 'rgb( 74,  21,  30)'],
+	[0.3, 'rgb(115,  22,  40)'],
+	[0.4, 'rgb(161,   5,  39)'],
+	[0.5, 'rgb(197,  32,  19)'],
+	[0.6, 'rgb(217,  77,   3)'],
+	[0.7, 'rgb(232, 117,   5)'],
+	[0.8, 'rgb(242, 159,  34)'],
+	[0.9, 'rgb(246, 202,  78)'],
+	[1.0, 'rgb(249, 242, 144)'],
+];
 
 
 let surface = undefined;
@@ -174,13 +174,25 @@ $( '#terrain-apply' ).on('click', function() {
 	mapSvg.clear();
 	for (const node of surface.nodes) {
 		// const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
-		const color = (node.biome === 'samud') ?
-			rgb(0, (node.gawe+4)/4*256, 255) :
-			rgb(node.gawe/4*256, 192, 0);
+		// const color = (node.biome === 'samud') ?
+		// 	rgb(0, (node.gawe+4)/4*256, 255) :
+		// 	rgb(node.gawe/4*256, 192, 0);
 		// const color = Number.isNaN(node.relSpeed) ? 'rgb(0,0,0)' :
 		// 	(node.relSpeed >= 0) ?
 		// 		rgb(255, (2-node.relSpeed)*128, (2-node.relSpeed)*128) :
 		// 		rgb((2+node.relSpeed)*128, (2+node.relSpeed)*128, 255);
+		const color = (node.biome == null) ? '#000000' :
+			(node.biome === 'samud') ? '#234095' :
+			(node.biome === 'barxojangal') ? '#0a6e07' :
+			(node.biome === 'jangal') ? '#677f39' :
+			(node.biome === 'taige') ? '#4ca06b' :
+			(node.biome === 'grasistan') ? '#a9c024' :
+			(node.biome === 'savanah') ? '#efbf53' :
+			(node.biome === 'registan') ? '#fae09a' :
+			(node.biome === 'tundar') ? '#ffffff' :
+			(node.biome === 'potistan') ? '#00ffff' :
+			(node.biome === 'piristan') ? '#ff7f00' :
+					`#ff0000`;
 		mapProjection.map(node.getPolygon(), mapSvg, color);
 	}
 });

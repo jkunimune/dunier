@@ -7,6 +7,17 @@ const BARXE_NOISE_LEVEL = .3;
 const MAX_NOISE_SCALE = 1/8;
 const NOISE_SCALE_SLOPE = 1.0;
 
+const TUNDRA_TEMP = -18;
+const DESERT_INTERCEPT = -30;
+const DESERT_SLOPE = 45;
+const TAIGA_TEMP = +3;
+const FLASH_TEMP = +50;
+const TROPIC_TEMP = +22;
+const FOREST_INTERCEPT = -30;
+const FOREST_SLOPE = 35;
+const MARSH_INTERCEPT = 1.5;
+const MARSH_SLOPE = -50;
+
 const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
 const OCEANIC_VARIATION = 1; // km
@@ -57,7 +68,32 @@ function generateClimate(avgTerme, surf, rng) {
 
 
 function setBiomes(surf) {
-
+	for (const node of surf.nodes) {
+		if (node.biome == null) {
+			if (node.terme < TUNDRA_TEMP)
+				node.biome = 'tundar';
+			else if (node.terme > DESERT_SLOPE*node.barxe + DESERT_INTERCEPT)
+				node.biome = 'registan';
+			else if (node.terme < TAIGA_TEMP)
+				node.biome = 'taige';
+			else if (node.terme > FLASH_TEMP)
+				node.biome = 'piristan';
+			else if (node.terme < TROPIC_TEMP) {
+				if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
+					node.biome = 'grasistan';
+				else if (node.terme > MARSH_SLOPE*node.barxe + MARSH_INTERCEPT)
+					node.biome = 'jangal';
+				else
+					node.biome = 'potistan';
+			}
+			else {
+				if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
+					node.biome = 'savanah';
+				else
+					node.biome = 'barxojangal';
+			}
+		}
+	}
 }
 
 
