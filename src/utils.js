@@ -218,15 +218,11 @@ function isDelaunay(a, b, c, d) {
 function findSmallestEncompassing(node, partition, surf) {
 	for (const triangle of partition) {
 		if (triangle.contains(node)) {
-			// console.log(`${triangle} si indu ${node}.`);
-			// console.log(triangle.children)
 			if (triangle.children == null)
 				return triangle;
 			else
 				return findSmallestEncompassing(node, triangle.children, surf);
 		}
-		// else
-		// 	console.log(`${triangle} no indu ${node}.`);
 	}
 	throw "no eureka tinogon da indu.";
 }

@@ -8,7 +8,7 @@
 class Random {
 	constructor(seed) {
 		this.seed = seed;
-		this.val = seed + 12345;
+		this.value = seed;
 		this.index = 0;
 		this.boxMullerBacklog = null;
 		for (let i = 0; i < 3; i ++)
@@ -16,8 +16,8 @@ class Random {
 	}
 
 	next() {
-		this.val = this.val * 1132489760 % 2147483647;
-		return (this.val-1) / 2147483646;
+		this.value = (this.value * 0x19660D + 0x3C6EF35F) % 0x100000000;
+		return this.value / 0x100000000;
 	}
 
 	uniform(min, max) {
@@ -53,6 +53,6 @@ class Random {
 	 * series of pseudorandom numbers where the lengths of the series are variable.
 	 */
 	reset() {
-		return new Random((2147483629*this.seed + 2147483587)%2147483647);
+		return new Random(this.seed + 1);
 	}
 }
