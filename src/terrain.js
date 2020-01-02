@@ -165,8 +165,8 @@ function movePlates(surf, rng) {
 
 	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
 
-	const hpQueue = new TinyQueue([], (a, b) => a.distance - b.distance);
-	const lpQueue = new TinyQueue([], (a, b) => a.distance - b.distance);
+	const hpQueue = new TinyQueue([], (a, b) => a.distance/a.width - b.distance/b.width);
+	const lpQueue = new TinyQueue([], (a, b) => a.distance/a.width - b.distance/b.width);
 	for (const node of surf.nodes) { // now for phase 2:
 		let fault = null;
 		let minDistance = Number.POSITIVE_INFINITY;
