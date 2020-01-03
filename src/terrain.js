@@ -22,7 +22,7 @@ const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
 const OCEANIC_VARIATION = 1; // km
 const MOUNTAIN_HEIGHT = 4; // km
-const VOLCANO_HEIGHT = 5; // km
+const VOLCANO_HEIGHT = 3.5; // km
 const RIFT_HEIGHT = 2; // km
 const TRENCH_DEPTH = 4; // km
 const MOUNTAIN_WIDTH = 400; // km
@@ -61,8 +61,8 @@ function generateClimate(avgTerme, surf, rng) {
 	}
 
 	for (const node of surf.nodes) { // and then throw in the baseline
-		node.terme += avgTerme*Math.pow(surf.insolation(node.u), 1/4.) - 273;
-		node.barxe += surf.windConvergence(node.u);
+		node.terme += avgTerme*Math.pow(surf.insolation(node.φ), 1/4.) - 273;
+		node.barxe += surf.windConvergence(node.φ);
 	}
 }
 
@@ -165,8 +165,8 @@ function movePlates(surf, rng) {
 
 	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
 
-	const hpQueue = new TinyQueue([], (a, b) => a.distance/a.width - b.distance/b.width);
-	const lpQueue = new TinyQueue([], (a, b) => a.distance/a.width - b.distance/b.width);
+	const hpQueue = new TinyQueue([], (a, b) => a.distance - b.distance);
+	const lpQueue = new TinyQueue([], (a, b) => a.distance - b.distance);
 	for (const node of surf.nodes) { // now for phase 2:
 		let fault = null;
 		let minDistance = Number.POSITIVE_INFINITY;
@@ -225,7 +225,7 @@ function movePlates(surf, rng) {
 			const queueElement = {
 				node: node, distance: minDistance/2, width: width,
 				speed: Math.abs(relSpeed), type: type}; // add it to the queue
-			if (type === 'rampe')	hpQueue.push(queueElement);
+			if (type === 'rampo')	hpQueue.push(queueElement);
 			else                    lpQueue.push(queueElement); // which queue depends on priority
 			node.relSpeed = relSpeed;
 		}
