@@ -198,7 +198,7 @@ class Spheroid extends Surface {
 		for (let i = 1; i < n; i ++) // construct a grid of points,
 			for (let j = 0; j < m; j ++)
 				nodes.push(new Node(null, {
-					φ: Math.atan(Math.tan(Math.PI*(i/n - .5))/this.aspectRatio),
+					φ: Math.PI*(i/n - .5),
 					λ: 2*Math.PI*(j + .5*(i%2))/m,
 				}, this));
 		const kS = nodes.length; // assign Nodes to the poles,
