@@ -30,6 +30,20 @@ const TERRAIN_COLORMAP = [
 	[1.0, 'rgb(249, 242, 144)'],
 ];
 
+const BIOME_COLORS = [
+	['samud',       '#234095'],
+	['barxojangal', '#0A6E07'],
+	['jangal',      '#677F39'],
+	['taige',       '#4CA06B'],
+	['grasistan',   '#A9C024'],
+	['savanah',     '#EFBF53'],
+	['registan',    '#FAE09A'],
+	['tundar',      '#FFFFFF'],
+	['potistan',    '#00FFBF'],
+	['piristan',    '#FF5F00'],
+	[null,          '#000000'],
+];
+
 
 let surface = undefined;
 
@@ -169,33 +183,9 @@ $( '#terrain-apply' ).on('click', function() {
 		avgTerme,
 		surface, rng); // create the terrain!
 
+	const mapper = new Chart(new Azimuthal(surface));
 	const mapSvg = SVG('#terrain-tiles');
-	const mapProjection = new Azimuthal(surface);
 	mapSvg.clear();
-	for (const node of surface.nodes) {
-		// const color = (node.biome === 'samud') ?
-		// 	rgb(0, 127, 255) :
-		// 	rgb((node.terme+30)/70*256, 0, 0);
-		// const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
-		// const color = (node.biome === 'samud') ?
-		// 	rgb(0, (node.gawe+4)/4*256, 255) :
-		// 	rgb(node.gawe/4*256, 192, 0);
-		// const color = Number.isNaN(node.relSpeed) ? 'rgb(0,0,0)' :
-		// 	(node.relSpeed >= 0) ?
-		// 		rgb(255, (2-node.relSpeed)*128, (2-node.relSpeed)*128) :
-		// 		rgb((2+node.relSpeed)*128, (2+node.relSpeed)*128, 255);
-		const color = (node.biome == null) ? '#000000' :
-			(node.biome === 'samud') ? '#234095' :
-			(node.biome === 'barxojangal') ? '#0a6e07' :
-			(node.biome === 'jangal') ? '#677f39' :
-			(node.biome === 'taige') ? '#4ca06b' :
-			(node.biome === 'grasistan') ? '#a9c024' :
-			(node.biome === 'savanah') ? '#efbf53' :
-			(node.biome === 'registan') ? '#fae09a' :
-			(node.biome === 'tundar') ? '#ffffff' :
-			(node.biome === 'potistan') ? '#00ffff' :
-			(node.biome === 'piristan') ? '#ff7f00' :
-					`#ff0000`;
-		mapProjection.map(node.getPolygon(), mapSvg, color);
-	}
+	for (const [biome, color] of BIOME_COLORS)
+		mapper.fill(surface.nodes.filter(n => n.biome === biome), mapSvg, color);
 });

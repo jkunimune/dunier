@@ -12,6 +12,8 @@ const TILE_AREA = 50000; // typical area of a tile in km^2
 class Surface {
 	constructor(φMin, φMax) {
 		this.nodes = [];
+		this.southPole = null;
+		this.northPole = null;
 		this.φMin = φMin;
 		this.φMax = φMax;
 	}
@@ -41,7 +43,7 @@ class Surface {
 
 		this.nodes = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
-			this.nodes.push(new Node(i, this.randomPoint(rng), this));
+			this.nodes.push(new Node(i, this.randomPoint(rng), this)); // push a bunch of new ones
 
 		delaunayTriangulate(this);
 
@@ -69,6 +71,15 @@ class Surface {
 				}
 				orphan.parents = [closest];
 			}
+		}
+
+		this.northPole = null; // finally, find and store the polar nodes
+		this.southPole = null;
+		for (const node of this.nodes) {
+			if (this.northPole == null || node.φ > this.northPole.φ)
+				this.northPole = node;
+			if (this.southPole == null || node.φ < this.southPole.φ)
+				this.southPole = node;
 		}
 	}
 
@@ -355,6 +366,16 @@ class Node {
 			return this.neighbors.get(that).triangleL;
 		else
 			return this.neighbors.get(that).triangleR;
+	}
+
+	/**
+	 * return the triangle which appears right of that from the point of view of this.
+	 */
+	rightOf(that) {
+		if (this.neighbors.get(that).node0 === this)
+			return this.neighbors.get(that).triangleR;
+		else
+			return this.neighbors.get(that).triangleL;
 	}
 
 	/**

@@ -1,60 +1,102 @@
 // map.js: all of the cartographic code
 'use strict';
 
-const MAP_PRECISION = 0.1;
+const MAP_PRECISION = 1/6;
 
 
 /**
- * a class to manage the plotting of points from a surface onto an SVG object.
+ * create an ordered Iterator of triangles that form the boundary of this.
+ * @param nodes Set of Node that are part of this group.
+ * @return Array of {type: String, args: [Number, Number]} that represents the
+ * boundary as a series of Path segments, ordered widdershins.
  */
-class MapProjection {
-	constructor(surface) {
-		this.surface = surface;
+function trace(nodes) {
+	if (!(nodes instanceof Set)) // first, cast this to a Set
+		nodes = new Set(nodes); // we're going to be making a _lot_ of calls to Set.has()
+
+	const accountedFor = new Set(); // keep track of which Edge have been done
+	const output = [];
+	for (let ind of nodes) { // look at every included node
+		for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
+			if (nodes.has(way))    continue; // (really we only care about excluded way)
+			let edge = ind.neighbors.get(way);
+			if (accountedFor.has(edge)) continue; // (and can ignore edges we've already hit)
+
+			const loopIdx = output.length;
+			const start = edge; // the edge between them defines the start of the loop
+			do {
+				const next = ind.leftOf(way); // look for the next triangle, going widdershins
+				const vertex = next.getCircumcenter(); // pick out its circumcenter to plot
+				output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
+				accountedFor.add(edge); // check this edge off
+				if (nodes.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
+					ind = next.acrossFrom(edge); // advance one of the state nodes
+				else
+					way = next.acrossFrom(edge);
+				edge = ind.neighbors.get(way); // and update edge
+			} while (edge !== start); // continue for the full loop
+
+			output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
+			output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
+		}
+	}
+
+	return output;
+}
+
+
+/**
+ * a class to handle all of the graphical arrangement stuff.
+ */
+class Chart {
+	constructor(projection) {
+		this.projection = projection;
 	}
 
 	/**
-	 * render the given polygon on the given SVG object in the given color. assumes the
-	 * polygon to be widdershins; if the polygon is clockwise, it will fill in the area
-	 * _outside_ it instead of inside it.
-	 * @param polygon Array of Triangles, where the circumcenters are the points to map.
-	 * @param svg SVG object, or one of the subgroup things that can also draw.
-	 * @param color String or anything that can be passed to svg.js's functions.
+	 * draw a region of the world on the map with the given color.
+	 * @param nodes Iterator of Node to be colored in.
+	 * @param svg SVG object on which to put the Path.
+	 * @param color String that HTML can interpret as a color.
+	 * @return Path the newly created element encompassing these triangles.
 	 */
-	map(polygon, svg, color) {
-		let jinPoints = [];
-		for (const vertex of polygon) {
-			const {φ, λ} = vertex.getCircumcenter();
-			jinPoints.push({type: 'L', args: [φ, λ]}); // start by collecting the input into a list of segments
-		}
+	fill(nodes, svg, color) {
+		let jinPoints = trace(nodes); // start by tracing the outline of the nodes
 
-		let numX = 0;
-		let indeX = null;
-		for (let i = jinPoints.length; i > 0; i --) { // sweep through the result
-			const [φ0, λ0] = jinPoints[i-1].args;
-			const [φ1, λ1] = jinPoints[i%jinPoints.length].args;
-			if (Math.abs(λ1 - λ0) > Math.PI) { // look for lines that cross the +/- pi border
-				const pos0 = this.surface.xyz(φ0, λ0);
-				const pos1 = this.surface.xyz(φ1, λ1);
-				const posX = pos0.plus(pos1).over(2);
-				const φX = this.surface.φλ(posX.x, posX.y, posX.z).φ;
-				const λX = (λ1 < λ0) ? Math.PI : -Math.PI;
-				numX += Math.sign(λ0 - λ1); // count the number of times it crosses east
-				jinPoints.splice(i, 0,
-					{type: 'L', args: [φX, λX]}, {type: 'M', args: [φX, -λX]}); // and break them up accordingly
-				indeX = i + 1;
+		let loopIdx = jinPoints.length;
+		let krusIdx = null;
+		for (let i = jinPoints.length-1; i >= 0; i --) { // sweep through the result
+			if (jinPoints[i].type === 'L') { // look for lines
+				const [φ0, λ0] = jinPoints[i-1].args;
+				const [φ1, λ1] = jinPoints[i].args;
+				if (Math.abs(λ1 - λ0) > Math.PI) { // that cross the +/- pi border
+					const φX = (φ0 + φ1)/2; // estimate the place where it crosses
+					const λX = (λ1 < λ0) ? Math.PI : -Math.PI;
+					jinPoints.splice(i, 0,
+						{type: 'L', args: [φX, λX]}, {type: 'M', args: [φX, -λX]}); // and break them up accordingly
+					krusIdx = i + 1;
+					loopIdx += 2; // be sure to change loopIdx to keep it in sync with the array
+				}
+			}
+			else if (jinPoints[i].type === 'M') { // look for existing breaks in the Path
+				if (krusIdx != null) { // if this map made a break in it, as well,
+					jinPoints = jinPoints.slice(0, i)
+						.concat(jinPoints.slice(krusIdx, loopIdx))
+						.concat(jinPoints.slice(i+1, krusIdx))
+						.concat(jinPoints.slice(loopIdx)); // then we'll want to rearrange this loop and cut out that moveto
+				}
+				krusIdx = null; // reset for the next loop
+				loopIdx = i; // which starts now
+			}
+			else {
+				throw "um. halow.";
 			}
 		}
-
-		if (indeX !== null) // if we have an index of a break
-			jinPoints = jinPoints.slice(indeX).concat(jinPoints.slice(0, indeX)); // shift the array around to put it at the start
-		else // if there were no breaks
-			jinPoints.push({...jinPoints[0]}); // add a path closure to the end
-		jinPoints[0].type = 'M'; // ensure the beginning is a moveto
 
 		const cutPoints = [];
 		for (const {type, args} of jinPoints) {
 			const [φ, λ] = args;
-			const {x, y} = this.project(φ, λ); // project each point to the plane
+			const {x, y} = this.projection.project(φ, λ); // project each point to the plane
 			cutPoints.push({type: type, args: [x, y]});
 		}
 
@@ -65,10 +107,8 @@ class MapProjection {
 				if (Math.hypot(x1 - x0, y1 - y0) > MAP_PRECISION) { // look for lines that are too long
 					const [φ0, λ0] = jinPoints[i-1].args;
 					const [φ1, λ1] = jinPoints[i].args;
-					const midPos = this.surface.xyz(φ0, λ0).plus(
-						this.surface.xyz(φ1, λ1)).over(2); // and split them in half
-					const {φ, λ} = this.surface.φλ(midPos.x, midPos.y, midPos.z);
-					const {x, y} = this.project(φ, λ);
+					const {φ, λ} = this.projection.getMidpoint(φ0, λ0, φ1, λ1); // and split them in half
+					const {x, y} = this.projection.project(φ, λ);
 					jinPoints.splice(i, 0, {type: 'L', args: [φ, λ]}); // add the midpoints to the polygon
 					cutPoints.splice(i, 0, {type: 'L', args: [x, y]});
 					i --; // and check again
@@ -76,17 +116,48 @@ class MapProjection {
 			}
 		}
 
-		if (numX === 1) // now, if it circumnavigated east, then it circled the North Pole
-			cutPoints.push(...this.mapNorthPole()); // add whatever element is needed to deal with that
-		else if (numX === -1) // if it circumnavigated west, then it circled the South Pole
-			cutPoints.push(...this.mapSouthPole()); // do what you need to do
-		else if (numX !== 0) // beware of polygons that circumnavigate multiple times
-			throw "we no pologon!"; // because that would be geometrically impossible
+		cutPoints.push(...this.projection.poleLines(nodes)); // add whatever adjustments are needed to account for singularities
 
 		let str = ''; // finally, put it in the <path>
 		for (let i = 0; i < cutPoints.length; i ++)
 			str += cutPoints[i].type + cutPoints[i].args.join(',') + ' ';
-		svg.path(str).fill(color);
+		return svg.path(str).fill(color);
+	}
+
+	/**
+	 * create a relief layer for the given set of triangles
+	 * @param triangles
+	 * @param svg
+	 * @param attr
+	 */
+	shade(triangles, svg, attr) {
+
+	}
+}
+
+
+/**
+ * a class to manage the plotting of points from a Surface onto a plane.
+ */
+class MapProjection {
+	constructor(surface) {
+		this.surface = surface;
+	}
+
+	/**
+	 * compute the coordinates at which the line between these two points crosses the
+	 * y-z plane.
+	 * @param φ0
+	 * @param λ0
+	 * @param φ1
+	 * @param λ1
+	 * @return {{φ: number, λ: number}}
+	 */
+	getMidpoint(φ0, λ0, φ1, λ1) {
+		const pos0 = this.surface.xyz(φ0, λ0);
+		const pos1 = this.surface.xyz(φ1, λ1);
+		const midPos = pos0.plus(pos1).over(2);
+		return this.surface.φλ(midPos.x, midPos.y, midPos.z);
 	}
 
 	/**
@@ -97,18 +168,11 @@ class MapProjection {
 	}
 
 	/**
-	 * generate some <path> segments to compensate for something circling the North Pole.
+	 * generate some <path> segments to compensate for something enclosing the Poles.
+	 * @param nodes Iterator of Node that may or may not contain singularities.
 	 * @return Array containing [Array of String, Array of Array]
 	 */
-	mapNorthPole() {
-		throw "unimplemented";
-	}
-
-	/**
-	 * generate some <path> segments to compensate for something circling the South Pole.
-	 * @return Array containing [Array of String, Array of Array]
-	 */
-	mapSouthPole() {
+	poleLines(nodes) {
 		throw "unimplemented";
 	}
 }
@@ -125,14 +189,13 @@ class Azimuthal extends MapProjection {
 		return {x: r*Math.sin(λ), y: r*Math.cos(λ)};
 	}
 
-	mapNorthPole() {
-		return [];
-	}
-
-	mapSouthPole() {
-		return [
-			{type: 'M', args: [0, -1]},
-			{type: 'A', args: [1, 1, 0, 1, 0, 0, 1]},
-			{type: 'A', args: [1, 1, 0, 1, 0, 0, -1]}];
+	poleLines(nodes) {
+		if (nodes.includes(this.surface.southPole))
+			return [
+				{type: 'M', args: [0, -1]},
+				{type: 'A', args: [1, 1, 0, 1, 0, 0, 1]},
+				{type: 'A', args: [1, 1, 0, 1, 0, 0, -1]}];
+		else
+			return [];
 	}
 }

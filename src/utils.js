@@ -114,6 +114,7 @@ function delaunayTriangulate(surf) {
 function removeNode(node) {
 	const oldTriangles = node.getPolygon();
 	let newTriangles, newEdges, flipQueue, flipImmune;
+	let foundGoodStart = false;
 	arbitrationLoop:
 	for (let i0 = 0; i0 < oldTriangles.length; i0 ++) { // we have to pick an arbitrary border node to start this process
 		newEdges = [];
@@ -124,21 +125,28 @@ function removeNode(node) {
 		for (let j = 0; j < oldTriangles.length; j ++) { // begin filling the gap left by this null node
 			const b = oldTriangles[(i0 + j)%oldTriangles.length].widershinsOf(node); // with new, naively placed triangles
 			const c = oldTriangles[(i0 + j)%oldTriangles.length].clockwiseOf(node);
-			if (a.inTriangleWith(c, b)) { // in the unlikely event i0 was a bad choice,
-				for (const badEdge of newEdges)
-					badEdge.seppuku(); // undo our mistakes
-				continue arbitrationLoop; // try a different one
-			}
-			if (j >= 2) // otherwise
-				newTriangles.push(new Triangle(a, b, c)); // proceed with the new triangle
-			if (j >= 3) {
-				newEdges.push(a.neighbors.get(b));
-				flipQueue.push(a.neighbors.get(b));
+			if (j >= 2) {
+				if (j < oldTriangles.length-1) {
+					if (a.neighbors.has(c)) { // in the unlikely event i0 was a bad choice,
+						for (const badEdge of newEdges)
+							badEdge.seppuku(); // undo our mistakes
+						continue arbitrationLoop; // try a different one
+					}
+				}
+				newTriangles.push(new Triangle(a, b, c)); // and proceed with the new triangle
+				if (j < oldTriangles.length-1) {
+					newEdges.push(a.neighbors.get(c)); // otherwise, note the new edges
+					flipQueue.push(a.neighbors.get(c));
+				}
 			}
 			flipImmune.push(b.neighbors.get(c));
-			oldTriangles[j].children = []; // and effectively remove the old triangles
+			oldTriangles[j].children = []; // and effectively remove the old triangle
 		} // if you make it to the end of the for loop, then arbitrary was a fine choice
+		foundGoodStart = true;
 		break; // and we can proceed
+	}
+	if (!foundGoodStart) { // TODO remove this when I'm confident in this algorithm
+		throw 'welp;';
 	}
 
 	flipEdges(flipQueue, flipImmune, null, newTriangles);
