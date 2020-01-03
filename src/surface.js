@@ -10,10 +10,10 @@ const TILE_AREA = 50000; // typical area of a tile in km^2
  * Generic 3D collection of nodes and edges
  */
 class Surface {
-	constructor(uMin, uMax) {
+	constructor(φMin, φMax) {
 		this.nodes = [];
-		this.uMin = uMin;
-		this.uMax = uMax;
+		this.φMin = φMin;
+		this.φMax = φMax;
 	}
 
 	/**
@@ -24,17 +24,17 @@ class Surface {
 		this.refLatitudes = []; // fill in latitude-integrated values
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
-		let u = this.uMin, A = 0, s = 0;
-		const du = (this.uMax - this.uMin)/INTEGRATION_RESOLUTION;
+		let φ = this.φMin, A = 0, s = 0;
+		const dφ = (this.φMax - this.φMin)/INTEGRATION_RESOLUTION;
 		for (let i = 0; i <= INTEGRATION_RESOLUTION; i ++) {
-			this.refLatitudes.push(u);
+			this.refLatitudes.push(φ);
 			this.cumulAreas.push(A);
 			this.cumulDistances.push(s);
-			const dsdu = this.dsdu(u + du/2); // a simple middle Riemann sum will do
-			const dAds = this.dAds(u + du/2);
-			u += du;
-			A += dAds*dsdu*du;
-			s += dsdu*du;
+			const dsdφ = this.dsdφ(φ + dφ/2); // a simple middle Riemann sum will do
+			const dAds = this.dAds(φ + dφ/2);
+			φ += dφ;
+			A += dAds*dsdφ*dφ;
+			s += dsdφ*dφ;
 		}
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
@@ -47,9 +47,9 @@ class Surface {
 
 		// for (let j = 0; j < numLloyd; j ++) {
 		// 	for (let i = 0; i < numNodes; i ++) {
-		// 		let {u, v} = this.nodes[i].getCentroid();
-		// 		this.nodes[i].u = u;
-		// 		this.nodes[i].v = v;
+		// 		let {φ, λ} = this.nodes[i].getCentroid();
+		// 		this.nodes[i].φ = φ;
+		// 		this.nodes[i].λ = λ;
 
 		// 		delaunayTriangulate(this);
 		// 	}
@@ -73,14 +73,14 @@ class Surface {
 	}
 
 	/**
-	 * return the u-v parameterization of a point uniformly sampled from the Surface using
-	 * the given random number generator.
+	 * return the coordinates of a point uniformly sampled from the Surface using the
+	 * given random number generator.
 	 */
 	randomPoint(rng) {
-		const v = rng.uniform(0, 2*Math.PI);
+		const λ = rng.uniform(-Math.PI, Math.PI);
 		const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
-		const u = linterp(A, this.cumulAreas, this.refLatitudes);
-		return {u: u, v: v};
+		const φ = linterp(A, this.cumulAreas, this.refLatitudes);
+		return {φ: φ, λ: λ};
 	}
 
 	/**
@@ -90,15 +90,15 @@ class Surface {
 		const n = 2*resolution, m = 4*resolution;
 		const X = [], Y = [], Z = [], S = [];
 		for (let i = 0; i <= n; i ++) {
-			const u = i/n*(this.uMax - this.uMin) + this.uMin; // map i to the valid range for u
-			const s = this.insolation(u);
+			const φ = i/n*(this.φMax - this.φMin) + this.φMin; // map i to the valid range for φ
+			const s = this.insolation(φ);
 			X.push([]);
 			Y.push([]);
 			Z.push([]);
 			S.push([]);
 			for (let j = 0; j <= m; j ++) {
-				const v = j/m*2*Math.PI; // I think v always represents some [0, 2*pi) angle
-				const {x, y, z} = this.xyz(u, v);
+				const λ = j/m*2*Math.PI; // I think λ always represents some [0, 2*pi) angle
+				const {x, y, z} = this.xyz(φ, λ);
 				X[i].push(x);
 				Y[i].push(y);
 				Z[i].push(z);
@@ -120,42 +120,42 @@ class Surface {
 	/**
 	 * return the local length-to-latitude rate
 	 */
-	dsdu(u) {
+	dsdφ(φ) {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the local effective width
 	 */
-	dAds(u) {
+	dAds(φ) {
 		throw "Unimplemented";
 	}
 
 	/**
-	 * return the amount of moisture accumulation at a u value, normalized to peak at 1.
+	 * return the amount of moisture accumulation at a latitude, normalized to peak at 1.
 	 */
-	windConvergence(u) {
+	windConvergence(φ) {
 		throw "Unimplemented";
 	}
 
 	/**
-	 * return the amount of solar radiation at a u value, normalized to average to 1.
+	 * return the amount of solar radiation at a latitude, normalized to average to 1.
 	 */
-	insolation(u) {
+	insolation(φ) {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
-	xyz(u, v) {
+	xyz(φ, λ) {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the 2D parameterization corresponding to the given parameters
 	 */
-	uv(x, y, z) {
+	φλ(x, y, z) {
 		throw "Unimplemented";
 	}
 
@@ -163,7 +163,7 @@ class Surface {
 	 * return the normalized vector pointing outward at this node. the node may be assumed
 	 * to be on this Surface.
 	 */
-	getNormal(node) {
+	normal(node) {
 		throw "Unimplemented";
 	}
 
@@ -198,13 +198,13 @@ class Spheroid extends Surface {
 		for (let i = 1; i < n; i ++) // construct a grid of points,
 			for (let j = 0; j < m; j ++)
 				nodes.push(new Node(null, {
-					u: Math.atan(Math.tan(Math.PI*(i/n - .5))/this.aspectRatio),
-					v: 2*Math.PI*(j + .5*(i%2))/m,
+					φ: Math.atan(Math.tan(Math.PI*(i/n - .5))/this.aspectRatio),
+					λ: 2*Math.PI*(j + .5*(i%2))/m,
 				}, this));
 		const kS = nodes.length; // assign Nodes to the poles,
-		nodes.push(new Node(null, { u: -Math.PI/2, v: 0 }, this));
+		nodes.push(new Node(null, { φ: -Math.PI/2, λ: 0 }, this));
 		const kN = nodes.length;
-		nodes.push(new Node(null, { u: Math.PI/2, v: 0 }, this));
+		nodes.push(new Node(null, { φ: Math.PI/2, λ: 0 }, this));
 
 		const triangles = []; // and strew it all with triangles
 		for (let j = 0; j < m; j ++)
@@ -240,53 +240,58 @@ class Spheroid extends Surface {
 		return [nodes, triangles];
 	}
 
-	dsdu(ph) {
-		return this.radius*Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(ph), 2));
+	dsdφ(φ) {
+		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
+		const dβdφ = this.aspectRatio/(
+			Math.pow(Math.sin(φ), 2) +
+			Math.pow(this.aspectRatio*Math.cos(φ), 2));
+		const dsdβ = this.radius*
+			Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(β), 2));
+		return dsdβ*dβdφ;
 	}
 
-	dAds(ph) {
-		return 2*Math.PI*this.radius*Math.cos(ph);
+	dAds(φ) {
+		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
+		return 2*Math.PI*this.radius*Math.cos(β);
 	}
 
-	windConvergence(ph) {
-		const b = Math.atan(this.aspectRatio*Math.tan(ph));
-		return Math.pow(Math.cos(b), 2) + Math.pow(Math.cos(3*b), 2);
+	windConvergence(φ) {
+		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
 	}
 
-	insolation(ph) {
+	insolation(φ) {
 		return 1 -
-			5/8.*legendreP2(Math.cos(this.obliquity))*legendreP2(Math.sin(ph)) -
-			9/64.*legendreP4(Math.cos(this.obliquity))*legendreP4(Math.sin(ph)) -
-			65/1024.*legendreP6(Math.cos(this.obliquity))*legendreP6(Math.sin(ph));
+			5/8.*legendreP2(Math.cos(this.obliquity))*legendreP2(Math.sin(φ)) -
+			9/64.*legendreP4(Math.cos(this.obliquity))*legendreP4(Math.sin(φ)) -
+			65/1024.*legendreP6(Math.cos(this.obliquity))*legendreP6(Math.sin(φ));
 	}
 
-	xyz(ph, l) {
+	xyz(φ, λ) {
+		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
 		return new Vector(
-			-this.radius*Math.cos(ph)*Math.sin(l),
-			 this.radius*Math.cos(ph)*Math.cos(l),
-			 this.radius*Math.sin(ph)/this.aspectRatio);
+			-this.radius*Math.cos(β)*Math.sin(λ),
+			 this.radius*Math.cos(β)*Math.cos(λ),
+			 this.radius*Math.sin(β)/this.aspectRatio);
 	}
 
-	uv(x, y, z) {
-		return {
-			u: Math.atan2(this.aspectRatio*z, Math.hypot(x, y)),
-			v: Math.atan2(-x, y)};
+	φλ(x, y, z) {
+		const β = Math.atan2(this.aspectRatio*z, Math.hypot(x, y));
+		const λ = Math.atan2(-x, y);
+		return {φ: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
 	}
 
-	getNormal(node) { // TODO: I could maybe save some time by storing this
-		const ph = Math.atan(this.aspectRatio*Math.tan(node.u)); // use geodetic coordinates
-		const l = node.v;
+	normal(node) {
 		return new Vector(
-			-Math.cos(ph)*Math.sin(l),
-			 Math.cos(ph)*Math.cos(l),
-			 Math.sin(ph));
+			-Math.cos(node.φ)*Math.sin(node.λ),
+			 Math.cos(node.φ)*Math.cos(node.λ),
+			 Math.sin(node.φ));
 	}
 
 	distance(a, b) {
-		const s = Math.acos(Math.sin(a.u)*Math.sin(b.u) +
-			Math.cos(a.u)*Math.cos(b.u)*Math.cos(a.v - b.v));
-		const p = (a.u + b.u)/2;
-		const q = (b.u - a.u)/2;
+		const s = Math.acos(Math.sin(a.φ)*Math.sin(b.φ) +
+			Math.cos(a.φ)*Math.cos(b.φ)*Math.cos(a.λ - b.λ));
+		const p = (a.φ + b.φ)/2;
+		const q = (b.φ - a.φ)/2;
 		const x = (s - Math.sin(s))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(s/2), 2);
 		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
 		return this.radius*(s - this.flattening/2*(x + y));
@@ -303,20 +308,20 @@ class Sphere extends Spheroid {
 		super(radius, 1, 0, Number.NaN);
 	}
 
-	insolation(ph) {
-		return 1.5*Math.max(0, Math.sin(ph));
+	insolation(φ) {
+		return 1.5*Math.max(0, Math.sin(φ));
 	}
 
-	xyz(ph, l) {
-		const {x, y, z} = super.xyz(ph, l);
+	xyz(φ, λ) {
+		const {x, y, z} = super.xyz(φ, λ);
 		return new Vector(x, z, -y);
 	}
 
-	uv(x, y, z) {
-		return super.uv(x, -z, y);
+	φλ(x, y, z) {
+		return super.φλ(x, -z, y);
 	}
 
-	getNormal(node) {
+	normal(node) {
 		return node.pos.norm();
 	}
 }
@@ -329,9 +334,10 @@ class Node {
 	constructor(index, position, surface) {
 		this.surface = surface;
 		this.index = index;
-		this.u = position.u;
-		this.v = position.v;
-		this.pos = surface.xyz(this.u, this.v);
+		this.φ = position.φ;
+		this.λ = position.λ;
+		this.pos = surface.xyz(this.φ, this.λ);
+		this.normal = surface.normal(this);
 		this.neighbors = new Map();
 		this.parents = null;
 
@@ -375,15 +381,6 @@ class Node {
 		}
 		return this.vertices;
 	}
-
-	/**
-	 * return the normal direction vector at this point
-	 */
-	getNormal() {
-		if (this.normal === undefined)
-			this.normal = this.surface.getNormal(this);
-		return this.normal;
-	}
 }
 
 
@@ -419,16 +416,15 @@ class Triangle {
 	 * triangle's circumcircle.
 	 */
 	contains(r) {
-		const normal = [];
-		for (let i = 0; i < 3; i ++)
-			normal.push(this.surface.getNormal(this.vertices[i])); // compute normal vectors
-		if (this.surface.getNormal(r).dot(normal[0].plus(normal[1]).plus(normal[2])) < 0)
+		const totalNormal = this.vertices[0].normal.plus(
+			this.vertices[1].normal).plus(this.vertices[2].normal);
+		if (r.normal.dot(totalNormal) < 0)
 			return false; // check alignment on the surface
 		for (let i = 0; i < 3; i ++) {
 			const a = this.vertices[i];
-			const na = normal[i];
+			const na = a.normal;
 			const b = this.vertices[(i+1)%3];
-			const nb = normal[(i+1)%3];
+			const nb = b.normal;
 			const edgeDirection = b.pos.minus(a.pos);
 			const normalDirection = na.plus(nb);
 			const boundDirection = normalDirection.cross(edgeDirection);
@@ -439,25 +435,14 @@ class Triangle {
 	}
 
 	/**
-	 * compute the outward normal vector of this triangle.
-	 * @returns Vector, normalized
-	 */
-	getNormal() {
-		const ab = this.vertices[1].pos.minus(this.vertices[0].pos);
-		const ac = this.vertices[2].pos.minus(this.vertices[0].pos);
-		const abxac = ab.cross(ac);
-		return abxac.norm();
-	}
-
-	/**
-	 * compute the u-v parameterization of the circumcenter in the plane normal to the sum
+	 * compute the φ-λ parameterization of the circumcenter in the plane normal to the sum
 	 * of the vertices' normal vectors.
 	 */
 	getCircumcenter() {
 		if (this.circumcenter === undefined) {
 			let nHat = new Vector(0, 0, 0);
 			for (const vertex of this.vertices)
-				nHat = nHat.plus(vertex.getNormal());
+				nHat = nHat.plus(vertex.normal);
 			nHat = nHat.norm();
 			const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
 			const uHat = nHat.cross(vHat);
@@ -487,7 +472,7 @@ class Triangle {
 			center.x = vHat.x*center.v + uHat.x*center.u + nHat.x*center.n;
 			center.y = vHat.y*center.v + uHat.y*center.u + nHat.y*center.n;
 			center.z = vHat.z*center.v + uHat.z*center.u + nHat.z*center.n;
-			this.circumcenter = this.surface.uv(center.x, center.y, center.z); // finally, put it back in u-v space
+			this.circumcenter = this.surface.φλ(center.x, center.y, center.z); // finally, put it back in φ-λ space
 		}
 
 		return this.circumcenter;

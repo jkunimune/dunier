@@ -168,7 +168,7 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 		const d = cda.acrossFrom(edge);
 		const ac = a.neighbors.get(c);
 
-		const nHat = a.getNormal().plus(b.getNormal()).plus(c.getNormal()).plus(d.getNormal());
+		const nHat = a.normal.plus(b.normal).plus(c.normal).plus(d.normal);
 		const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
 		const uHat = nHat.cross(vHat).norm();
 		const ap = {x: a.pos.dot(vHat), y: a.pos.dot(uHat)}; // project them into the normal plane

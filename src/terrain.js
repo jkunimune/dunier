@@ -157,7 +157,7 @@ function movePlates(surf, rng) {
 	const velocities = [];
 	for (const node of surf.nodes) { // start by counting up all the plates
 		if (node.plate >= velocities.length) // and assigning them random velocities
-			velocities.push(node.getNormal().cross(new Vector( // TODO allow for plate rotation in the tangent plane
+			velocities.push(node.normal.cross(new Vector( // TODO allow for plate rotation in the tangent plane
 				rng.normal(0, Math.sqrt(.5)), rng.normal(0, Math.sqrt(.5)), rng.normal(0, Math.sqrt(.5))))); // orthogonal to the normal at their seeds
 		else
 			break;
@@ -316,13 +316,13 @@ function fillOcean(level, surf) {
 
 	for (const node of surf.nodes) // finally, clear all attempts
 		node.biome = null;
-	floodFrom(bestStart, level, surf); // and set it so that just the best start point is filled in
+	floodFrom(bestStart, level); // and set it so that just the best start point is filled in
 
 	for (const node of surf.nodes) // and set sea level to 0
 		node.gawe -= level;
 }
 
-function floodFrom(start, level, surf) {
+function floodFrom(start, level) {
 	let numFilled = 0;
 	const queue = new TinyQueue([start], (a, b) => a.gawe - b.gawe); // it shall seed our ocean
 	while (queue.length > 0 && queue.peek().gawe <= level) { // flood all available nodes

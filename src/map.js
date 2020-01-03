@@ -23,24 +23,24 @@ class MapProjection {
 	map(polygon, svg, color) {
 		let jinPoints = [];
 		for (const vertex of polygon) {
-			const {u, v} = vertex.getCircumcenter();
-			jinPoints.push({type: 'L', args: [u, v]}); // start by collecting the input into a list of segments
+			const {φ, λ} = vertex.getCircumcenter();
+			jinPoints.push({type: 'L', args: [φ, λ]}); // start by collecting the input into a list of segments
 		}
 
 		let numX = 0;
 		let indeX = null;
 		for (let i = jinPoints.length; i > 0; i --) { // sweep through the result
-			const [u0, v0] = jinPoints[i-1].args;
-			const [u1, v1] = jinPoints[i%jinPoints.length].args;
-			if (Math.abs(v1 - v0) > Math.PI) { // look for lines that cross the +/- pi border
-				const pos0 = this.surface.xyz(u0, v0);
-				const pos1 = this.surface.xyz(u1, v1);
+			const [φ0, λ0] = jinPoints[i-1].args;
+			const [φ1, λ1] = jinPoints[i%jinPoints.length].args;
+			if (Math.abs(λ1 - λ0) > Math.PI) { // look for lines that cross the +/- pi border
+				const pos0 = this.surface.xyz(φ0, λ0);
+				const pos1 = this.surface.xyz(φ1, λ1);
 				const posX = pos0.plus(pos1).over(2);
-				const uX = this.surface.uv(posX.x, posX.y, posX.z).u;
-				const vX = (v1 < v0) ? Math.PI : -Math.PI;
-				numX += Math.sign(v0 - v1); // count the number of times it crosses east
+				const φX = this.surface.φλ(posX.x, posX.y, posX.z).φ;
+				const λX = (λ1 < λ0) ? Math.PI : -Math.PI;
+				numX += Math.sign(λ0 - λ1); // count the number of times it crosses east
 				jinPoints.splice(i, 0,
-					{type: 'L', args: [uX, vX]}, {type: 'M', args: [uX, -vX]}); // and break them up accordingly
+					{type: 'L', args: [φX, λX]}, {type: 'M', args: [φX, -λX]}); // and break them up accordingly
 				indeX = i + 1;
 			}
 		}
@@ -53,8 +53,8 @@ class MapProjection {
 
 		const cutPoints = [];
 		for (const {type, args} of jinPoints) {
-			const [u, v] = args;
-			const {x, y} = this.project(u, v); // project each point to the plane
+			const [φ, λ] = args;
+			const {x, y} = this.project(φ, λ); // project each point to the plane
 			cutPoints.push({type: type, args: [x, y]});
 		}
 
@@ -63,13 +63,13 @@ class MapProjection {
 				const [x0, y0] = cutPoints[i-1].args;
 				const [x1, y1] = cutPoints[i].args;
 				if (Math.hypot(x1 - x0, y1 - y0) > MAP_PRECISION) { // look for lines that are too long
-					const [u0, v0] = jinPoints[i-1].args;
-					const [u1, v1] = jinPoints[i].args;
-					const midPos = this.surface.xyz(u0, v0).plus(
-						this.surface.xyz(u1, v1)).over(2); // and split them in half
-					const {u, v} = this.surface.uv(midPos.x, midPos.y, midPos.z);
-					const {x, y} = this.project(u, v);
-					jinPoints.splice(i, 0, {type: 'L', args: [u, v]}); // add the midpoints to the polygon
+					const [φ0, λ0] = jinPoints[i-1].args;
+					const [φ1, λ1] = jinPoints[i].args;
+					const midPos = this.surface.xyz(φ0, λ0).plus(
+						this.surface.xyz(φ1, λ1)).over(2); // and split them in half
+					const {φ, λ} = this.surface.φλ(midPos.x, midPos.y, midPos.z);
+					const {x, y} = this.project(φ, λ);
+					jinPoints.splice(i, 0, {type: 'L', args: [φ, λ]}); // add the midpoints to the polygon
 					cutPoints.splice(i, 0, {type: 'L', args: [x, y]});
 					i --; // and check again
 				}
@@ -92,7 +92,7 @@ class MapProjection {
 	/**
 	 * transform the given parametric coordinates to Cartesian ones.
 	 */
-	project(u, v) {
+	project(φ, λ) {
 		throw "unimplemented";
 	}
 
@@ -119,10 +119,10 @@ class Azimuthal extends MapProjection {
 		super(surface, svg);
 	}
 
-	project(u, v) {
-		const p = linterp(u, this.surface.refLatitudes, this.surface.cumulDistances);
+	project(φ, λ) {
+		const p = linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
 		const r = 1 - p/this.surface.height;
-		return {x: r*Math.sin(v), y: r*Math.cos(v)};
+		return {x: r*Math.sin(λ), y: r*Math.cos(λ)};
 	}
 
 	mapNorthPole() {
