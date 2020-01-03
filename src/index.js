@@ -173,6 +173,9 @@ $( '#terrain-apply' ).on('click', function() {
 	const mapProjection = new Azimuthal(surface);
 	mapSvg.clear();
 	for (const node of surface.nodes) {
+		// const color = (node.biome === 'samud') ?
+		// 	rgb(0, 127, 255) :
+		// 	rgb((node.terme+30)/70*256, 0, 0);
 		// const color = `rgb(${20*node.plate}, ${(60*node.plate)%255}, ${(200*node.plate%255)})`;
 		// const color = (node.biome === 'samud') ?
 		// 	rgb(0, (node.gawe+4)/4*256, 255) :

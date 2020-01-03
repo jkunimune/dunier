@@ -6,6 +6,7 @@ const TERME_NOISE_LEVEL = 10;
 const BARXE_NOISE_LEVEL = .3;
 const MAX_NOISE_SCALE = 1/8;
 const NOISE_SCALE_SLOPE = 1.0;
+const ATMOSPHERE_THICKNESS = 12; // km
 
 const TUNDRA_TEMP = -18;
 const DESERT_INTERCEPT = -30;
@@ -61,7 +62,9 @@ function generateClimate(avgTerme, surf, rng) {
 	}
 
 	for (const node of surf.nodes) { // and then throw in the baseline
-		node.terme += avgTerme*Math.pow(surf.insolation(node.φ), 1/4.) - 273;
+		node.terme += Math.pow(
+			surf.insolation(node.φ)*Math.exp(-node.gawe/ATMOSPHERE_THICKNESS),
+			1/4.)*avgTerme - 273;
 		node.barxe += surf.windConvergence(node.φ);
 	}
 }
