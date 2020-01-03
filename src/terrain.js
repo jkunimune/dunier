@@ -2,10 +2,9 @@
 'use strict';
 
 
-const TERME_NOISE_LEVEL = 10;
-const BARXE_NOISE_LEVEL = .3;
+const TERME_NOISE_LEVEL = 20;
+const BARXE_NOISE_LEVEL = .5;
 const MAX_NOISE_SCALE = 1/8;
-const NOISE_SCALE_SLOPE = 1.0;
 const ATMOSPHERE_THICKNESS = 12; // km
 
 const TUNDRA_TEMP = -18;
@@ -23,7 +22,7 @@ const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
 const OCEANIC_VARIATION = 1; // km
 const MOUNTAIN_HEIGHT = 4; // km
-const VOLCANO_HEIGHT = 3.5; // km
+const VOLCANO_HEIGHT = 3.3; // km
 const RIFT_HEIGHT = 2; // km
 const TRENCH_DEPTH = 4; // km
 const MOUNTAIN_WIDTH = 400; // km
@@ -56,9 +55,9 @@ function generateClimate(avgTerme, surf, rng) {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
 	for (const node of surf.nodes) { // assign each node random values
 		node.terme = getNoiseFunction(node, node.parents, 'terme', surf, rng,
-			maxScale, TERME_NOISE_LEVEL, NOISE_SCALE_SLOPE);
+			maxScale, TERME_NOISE_LEVEL, 2);
 		node.barxe = getNoiseFunction(node, node.parents, 'barxe', surf, rng,
-			maxScale, BARXE_NOISE_LEVEL, NOISE_SCALE_SLOPE);
+			maxScale, BARXE_NOISE_LEVEL, 2);
 	}
 
 	for (const node of surf.nodes) { // and then throw in the baseline
@@ -141,7 +140,7 @@ function generateContinents(numPlates, surf, rng) {
 			node.parents.filter(p => p.plate === node.plate), 'gawe',
 			surf, rng, maxScale,
 			(node.plate%2===0) ? CONTINENT_VARIATION : OCEANIC_VARIATION,
-			NOISE_SCALE_SLOPE); // at last apply the noise function
+			1); // at last apply the noise function
 	}
 
 	for (const node of surf.nodes) { // once that's done, add in the plate altitude baselines

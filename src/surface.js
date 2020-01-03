@@ -3,7 +3,7 @@
 
 
 const INTEGRATION_RESOLUTION = 32;
-const TILE_AREA = 50000; // typical area of a tile in km^2
+const TILE_AREA = 30000; // typical area of a tile in km^2
 
 
 /**
