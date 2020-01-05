@@ -12,8 +12,6 @@ const TILE_AREA = 30000; // typical area of a tile in km^2
 class Surface {
 	constructor(φMin, φMax) {
 		this.nodes = [];
-		this.southPole = null;
-		this.northPole = null;
 		this.φMin = φMin;
 		this.φMax = φMax;
 	}
@@ -71,15 +69,6 @@ class Surface {
 				}
 				orphan.parents = [closest];
 			}
-		}
-
-		this.northPole = null; // finally, find and store the polar nodes
-		this.southPole = null;
-		for (const node of this.nodes) {
-			if (this.northPole == null || node.φ > this.northPole.φ)
-				this.northPole = node;
-			if (this.southPole == null || node.φ < this.southPole.φ)
-				this.southPole = node;
 		}
 	}
 

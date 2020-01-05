@@ -184,8 +184,11 @@ $( '#terrain-apply' ).on('click', function() {
 		surface, rng); // create the terrain!
 
 	const mapper = new Chart(new Azimuthal(surface));
-	const mapSvg = SVG('#terrain-tiles');
-	mapSvg.clear();
+	const colorLayer = SVG('#terrain-tiles');
+	colorLayer.clear();
 	for (const [biome, color] of BIOME_COLORS)
-		mapper.fill(surface.nodes.filter(n => n.biome === biome), mapSvg, color);
+		mapper.fill(surface.nodes.filter(n => n.biome === biome), colorLayer, color);
+	const reliefLayer = SVG('#terrain-shade');
+	reliefLayer.clear();
+	mapper.shade(surface.triangles, reliefLayer, 'gawe');
 });
