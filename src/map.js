@@ -2,8 +2,8 @@
 'use strict';
 
 const MAP_PRECISION = 1/6;
-const RELIEF_HEIGHT = 3e-2;
-const SUN_DIRECTION = new Vector(1, 2, 4).norm();
+const SUN_ELEVATION = 60/180*Math.PI;
+const AMBIENT_LIGHT = 0.2;
 
 
 /**
@@ -78,26 +78,32 @@ class Chart {
 		if (!triangles)
 			return;
 
-		let terrainHeight = 0; // start by normalizing the terrain
-		for (const triangle of triangles)
-			for (const node of triangle.vertices)
-				if (node[attr] > terrainHeight)
-					terrainHeight = node[attr]; // to its highest value
-
-		for (const triangle of triangles) { // for each triangle
-			const p2 = [], p3 = [];
-			for (const node of triangle.vertices) {
+		const slopes = [];
+		let maxSlope = 0;
+		for (let i = 0; i < triangles.length; i ++) { // start by computing slopes of all of the things
+			const p = [];
+			for (const node of triangles[i].vertices) {
 				const {x, y} = this.projection.project(node.φ, node.λ);
-				const z = Math.max(0, node[attr])/terrainHeight*RELIEF_HEIGHT;
-				p2.push({type: 'L', args: [node.φ, node.λ]}); // put its values in a plottable form
-				p3.push(new Vector(x, -y, z)); // and also compute its 3d position
+				const z = Math.max(0, node[attr]);
+				p.push(new Vector(x, -y, z));
 			}
-			p2[0].type = 'M';
-			p2.push({type: 'L', args: [...p2[0].args]});
-			let n = p3[1].minus(p3[0]).cross(p3[2].minus(p3[0])).norm(); // use the 3d positions to get a normal direction
-			if (n.z < 0)    n = n.times(-1); // (occasionally these can end up upside down)
-			const brightness = Math.max(0, n.dot(SUN_DIRECTION)); // and use that to get a brightness
-			this.map(p2, svg).fill({color: '#000', opacity: 1-brightness});
+			let n = p[1].minus(p[0]).cross(p[2].minus(p[0])).norm();
+			slopes.push(n.y/n.z);
+			if (n.z > 0 && slopes[i] > maxSlope)
+				maxSlope = slopes[i];
+		}
+
+		const heightScale = -Math.tan(2*SUN_ELEVATION)/maxSlope; // use that to normalize
+
+		for (let i = 0; i < triangles.length; i ++) { // for each triangle
+			const path = [];
+			for (const node of triangles[i].vertices)
+				path.push({type: 'L', args: [node.φ, node.λ]}); // put its values in a plottable form
+			path.push({type: 'L', args: [...path[0].args]});
+			path[0].type = 'M';
+			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
+				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes[i]))); // and use that to get a brightness
+			this.map(path, svg).fill({color: '#000', opacity: 1-brightness});
 		}
 	}
 
