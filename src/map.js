@@ -74,7 +74,7 @@ class Chart {
 	 * @param svg SVG object on which to shade.
 	 * @param attr String name of attribute to base the relief on.
 	 */
-	shade(triangles, svg, attr) {
+	shade(triangles, svg, attr) { // TODO use separate delaunay triangulation
 		if (!triangles)
 			return;
 

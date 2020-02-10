@@ -139,6 +139,13 @@ class Surface {
 	}
 
 	/**
+	 * for the purposes of the orographic effect, return a dimensionless tangent velocity.
+	 */
+	windVelocity(φ) {
+		throw "Unimplemented";
+	}
+
+	/**
 	 * return the amount of solar radiation at a latitude, normalized to average to 1.
 	 */
 	insolation(φ) {
@@ -255,15 +262,19 @@ class Spheroid extends Surface {
 		return 2*Math.PI*this.radius*Math.cos(β);
 	}
 
-	windConvergence(φ) {
-		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
-	}
-
 	insolation(φ) {
 		return 1 -
 			5/8.*legendreP2(Math.cos(this.obliquity))*legendreP2(Math.sin(φ)) -
 			9/64.*legendreP4(Math.cos(this.obliquity))*legendreP4(Math.sin(φ)) -
 			65/1024.*legendreP6(Math.cos(this.obliquity))*legendreP6(Math.sin(φ));
+	}
+
+	windConvergence(φ) {
+		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
+	}
+
+	windVelocity(φ) {
+		return {n: 0, d: Math.cos(φ)};
 	}
 
 	xyz(φ, λ) {
@@ -312,6 +323,14 @@ class Sphere extends Spheroid {
 		return 1.5*Math.max(0, Math.sin(φ));
 	}
 
+	windConvergence(φ) {
+		return Math.cos(φ);
+	}
+
+	windVelocity(φ) {
+		return {n: -Math.cos(φ), d: 0};
+	}
+
 	xyz(φ, λ) {
 		const {x, y, z} = super.xyz(φ, λ);
 		return new Vector(x, z, -y);
@@ -338,6 +357,14 @@ class Node {
 		this.λ = position.λ;
 		this.pos = surface.xyz(this.φ, this.λ);
 		this.normal = surface.normal(this);
+		this.dong = this.normal.cross(new Vector(0, 0, -1)).norm();
+		if (Number.isNaN(this.dong.x)) {
+			this.dong = this.normal.cross(this.pos).norm();
+			if (Number.isNaN(this.dong.x))
+				this.dong = this.normal.cross(new Vector(1, 0, 0)).norm();
+		}
+		this.nord = this.normal.cross(this.dong);
+
 		this.neighbors = new Map();
 		this.parents = null;
 

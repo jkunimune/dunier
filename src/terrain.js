@@ -2,18 +2,21 @@
 'use strict';
 
 
-const TERME_NOISE_LEVEL = 20;
-const BARXE_NOISE_LEVEL = .5;
+const TERME_NOISE_LEVEL = 12;
+const BARXE_NOISE_LEVEL = 1;
 const MAX_NOISE_SCALE = 1/8;
 const ATMOSPHERE_THICKNESS = 12; // km
+const CLOUD_HEIGHT = 2; // km
+const OROGRAPHIC_MAGNITUDE = 1;
+const OROGRAPHIC_RANGE = 8000; // km
 
 const TUNDRA_TEMP = -18;
-const DESERT_INTERCEPT = -30;
+const DESERT_INTERCEPT = -25;
 const DESERT_SLOPE = 45;
 const TAIGA_TEMP = +3;
 const FLASH_TEMP = +50;
 const TROPIC_TEMP = +22;
-const FOREST_INTERCEPT = -30;
+const FOREST_INTERCEPT = -35;
 const FOREST_SLOPE = 35;
 const MARSH_INTERCEPT = 1.5;
 const MARSH_SLOPE = -50;
@@ -65,6 +68,41 @@ function generateClimate(avgTerme, surf, rng) {
 			surf.insolation(node.φ)*Math.exp(-node.gawe/ATMOSPHERE_THICKNESS),
 			1/4.)*avgTerme - 273;
 		node.barxe += surf.windConvergence(node.φ);
+		const {n, d} = surf.windVelocity(node.φ);
+		node.hawe = node.nord.times(n).plus(node.dong.times(d));
+	}
+
+	for (const node of surf.nodes)
+		node.downwind = [];
+	const queue = [];
+	for (const node of surf.nodes) {
+		let bestDix = null; // define node.upwind as the neighbor that is in the upwindest direction of each node
+		for (const neighbor of node.neighbors.keys()) {
+			const dix = neighbor.pos.minus(node.pos).norm();
+			if (bestDix == null ||
+				dix.dot(node.hawe) < bestDix.dot(node.hawe)) {
+				bestDix = dix;
+				node.upwind = neighbor;
+				node.windSpeed = -dix.dot(node.hawe);
+			}
+		}
+		node.upwind.downwind.push(node); // and make sure that all nodes know who is downwind of them
+		if (node.biome === 'samud') // also seed the orographic effect in the oceans
+			queue.push({node: node, moisture: OROGRAPHIC_MAGNITUDE});
+		if (node.gawe > CLOUD_HEIGHT) // and also remove some moisture from mountains
+			node.barxe -= OROGRAPHIC_MAGNITUDE;
+	}
+	while (queue.length > 0) {
+		const {node, moisture} = queue.pop(); // each node looks downwind
+		node.barxe += moisture;
+		for (const downwind of node.downwind) {
+			if (downwind.biome !== 'samud' && downwind.gawe <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
+				const distance = node.neighbors.get(downwind).length;
+				queue.push({
+					node: downwind,
+					moisture: moisture*(1 - distance/OROGRAPHIC_RANGE/downwind.windSpeed)}); // receive slightly less moisture than this one got
+			}
+		}
 	}
 }
 
@@ -80,19 +118,16 @@ function setBiomes(surf) {
 				node.biome = 'taige';
 			else if (node.terme > FLASH_TEMP)
 				node.biome = 'piristan';
+			else if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
+				node.biome = 'grasistan';
 			else if (node.terme < TROPIC_TEMP) {
-				if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
-					node.biome = 'grasistan';
-				else if (node.terme > MARSH_SLOPE*node.barxe + MARSH_INTERCEPT)
+				if (node.terme > MARSH_SLOPE*node.barxe + MARSH_INTERCEPT)
 					node.biome = 'jangal';
 				else
 					node.biome = 'potistan';
 			}
 			else {
-				if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
-					node.biome = 'savanah';
-				else
-					node.biome = 'barxojangal';
+				node.biome = 'barxojangal';
 			}
 		}
 	}
@@ -106,7 +141,6 @@ function generateContinents(numPlates, surf, rng) {
 			node.plate = node.index; // the first few are seeds
 			node.gawe = 0;
 			rng.discrete(0, 0); // but call rng anyway to keep things consistent
-			rng.normal(0, 0);
 		}
 		else { // and the rest with a method similar to that above
 			const prefParents = [];
@@ -158,9 +192,10 @@ function generateContinents(numPlates, surf, rng) {
 function movePlates(surf, rng) {
 	const velocities = [];
 	for (const node of surf.nodes) { // start by counting up all the plates
-		if (node.plate >= velocities.length) // and assigning them random velocities
-			velocities.push(node.normal.cross(new Vector( // TODO allow for plate rotation in the tangent plane
-				rng.normal(0, Math.sqrt(.5)), rng.normal(0, Math.sqrt(.5)), rng.normal(0, Math.sqrt(.5))))); // orthogonal to the normal at their seeds
+		if (node.plate >= velocities.length) // and assigning them random velocities // TODO allow for plate rotation in the tangent plane
+			velocities.push(
+				node.dong.times(rng.normal(0, Math.sqrt(.5))).plus(
+				node.nord.times(rng.normal(0, Math.sqrt(.5))))); // orthogonal to the normal at their seeds
 		else
 			break;
 	}
@@ -385,5 +420,5 @@ function digibbalCurve(x) {
 }
 
 function wibbleCurve(x) {
-	return 1 + Math.cos(6*Math.PI*x)/6;
+	return 1 + Math.cos(12*Math.PI*x)/6;
 }
