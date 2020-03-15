@@ -20,6 +20,10 @@ class Random {
 		return this.value / 0x100000000;
 	}
 
+	probability(p) {
+		return this.next() < p;
+	}
+
 	uniform(min, max) {
 		return min + (max - min)*this.next();
 	}

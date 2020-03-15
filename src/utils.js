@@ -61,13 +61,6 @@ function union(a, b) {
 	return a.concat(b.filter(e => !a.includes(e)));
 }
 
-function rgb(r, g, b) {
-	r = Math.max(0, Math.min(255, r));
-	g = Math.max(0, Math.min(255, g));
-	b = Math.max(0, Math.min(255, b));
-	return `rgb(${Math.trunc(r)}, ${Math.trunc(g)}, ${Math.trunc(b)})`;
-}
-
 /**
  * set the triangles attribute of the surface, and set up all the Edges and references
  * and stuff
@@ -103,7 +96,7 @@ function delaunayTriangulate(surf) {
 		triangles.push(...removeNode(dummyNode));
 	}
 
-	surf.triangles = triangles.filter(tri => tri.children == null); // _now_ remove the extraneous triangles
+	surf.triangles = new Set(triangles.filter(tri => tri.children == null)); // _now_ remove the extraneous triangles
 } // TODO: delete the triangle lineage graph to clear up some memory
 
 /**

@@ -132,7 +132,33 @@
         </div>
 
         <div class="tab-pane fade" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
-          This is where you can watch history play out.
+          <div class="container mt-2">
+            <div class="row">
+              <div class="col-xs-12 col-md-4 col-lg-3">
+                <form>
+                  <div class="form-group">
+                    <label for="history-seme">Random seed</label>
+                    <input type="number" value="0" min="0" max="99999999" step="1" id="history-seme"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="history-nen">Year</label>
+                    <input type="number" value="0" min="-3000" max="0" step="500" id="history-nen"/>
+                  </div>
+                  <button type="button" class="btn btn-block btn-primary" id="history-apply">Apply</button>
+                </form>
+              </div>
+
+              <div class="col-xs-12 col-md-8 col-lg-9">
+                <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
+                     viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
+                  <filter id="blur">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
+                  </filter>
+                  <g id="history-tiles"></g>
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="tab-pane fade" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
@@ -159,6 +185,7 @@
     <script src="./src/random.js"></script>
     <script src="./src/surface.js"></script>
     <script src="./src/terrain.js"></script>
+    <script src="./src/world.js"></script>
     <script src="./src/map.js"></script>
     <script src="./src/index.js"></script>
   </body>

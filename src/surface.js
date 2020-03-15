@@ -11,7 +11,7 @@ const TILE_AREA = 30000; // typical area of a tile in km^2
  */
 class Surface {
 	constructor(φMin, φMax) {
-		this.nodes = [];
+		this.nodes = new Set();
 		this.φMin = φMin;
 		this.φMax = φMax;
 	}
@@ -20,7 +20,7 @@ class Surface {
 	 * fill this.nodes with random nodes, spaced via numLloyd iterations of Lloyd
 	 * relaxation
 	 */
-	populate(numLloyd, rng) {
+	populate(rng) {
 		this.refLatitudes = []; // fill in latitude-integrated values
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
@@ -39,32 +39,23 @@ class Surface {
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
-		this.nodes = []; // remember to clear the old nodes, if necessary
+		const nodes = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
-			this.nodes.push(new Node(i, this.randomPoint(rng), this)); // push a bunch of new ones
+			nodes.push(new Node(i, this.randomPoint(rng), this)); // push a bunch of new ones
+		this.nodes = new Set(nodes); // keep that list, but save it as a set as well
 
 		delaunayTriangulate(this);
 
-		// for (let j = 0; j < numLloyd; j ++) {
-		// 	for (let i = 0; i < numNodes; i ++) {
-		// 		let {φ, λ} = this.nodes[i].getCentroid();
-		// 		this.nodes[i].φ = φ;
-		// 		this.nodes[i].λ = λ;
-
-		// 		delaunayTriangulate(this);
-		// 	}
-		// }
-
-		for (let i = 1; i < this.nodes.length; i ++) { // after all that's through, some nodes won't have any parents
-			if (this.nodes[i].parents.length === 0) { // if that's so,
-				const orphan = this.nodes[i];
-				let closest = null; // the easiest thing to do is to just assign it the closest node that came before it
+		for (let i = 1; i < nodes.length; i ++) { // after all that's through, some nodes won't have any parents
+			if (nodes[i].parents.length === 0) { // if that's so,
+				const orphan = nodes[i];
+				let closest = null; // the easiest thing to do is to just assign it the closest node that came before it using the list
 				let minDistance = Number.POSITIVE_INFINITY;
 				for (let j = 0; j < orphan.index; j ++) {
-					const distance = this.distance(this.nodes[j], orphan);
+					const distance = this.distance(nodes[j], orphan);
 					if (distance < minDistance) {
 						minDistance = distance;
-						closest = this.nodes[j];
+						closest = nodes[j];
 					}
 				}
 				orphan.parents = [closest];
