@@ -91,7 +91,7 @@
                   </div>
                   <div class="form-group">
                     <label for="terrain-continents">Number of continents</label>
-                    <input type="number" value="8" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
+                    <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
                   </div>
                   <div class="form-group">
                     <label for="terrain-samud">Sea level</label>
@@ -107,11 +107,19 @@
                   </div>
                   <div class="form-group">
                     <label for="terrain-terme">Mean Temperature</label>
-                    <input type="number" value="15" data-decimals="1" min="-50" max="50" step="5" data-suffix="°C" id="terrain-terme"/>
+                    <select class="custom-select" id="terrain-terme">
+                      <option value="308">High</option>
+                      <option selected value="288">Normal</option>
+                      <option value="268">Low</option>
+                    </select>
                   </div>
                   <div class="form-group">
                     <label for="terrain-nade">Mean Rainfall</label>
-                    <input type="number" value="1" data-decimals="2" min="0" max="6" step=".1" id="terrain-nade"/>
+                    <select class="custom-select" id="terrain-nade">
+                      <option value="3.0">High</option>
+                      <option selected value="1.0">Normal</option>
+                      <option value="0.3">Low</option>
+                    </select>
                   </div>
                   <button type="button" class="btn btn-block btn-primary" id="terrain-apply">Apply</button>
                 </form>

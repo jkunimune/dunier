@@ -31,17 +31,16 @@ const TERRAIN_COLORMAP = [
 // ];
 
 const BIOME_COLORS = {
-	'samud':       '#234095',
-	'barxojangal': '#0A6E07',
-	'jangal':      '#677F39',
-	'taige':       '#4CA06B',
-	'grasistan':   '#A9C024',
-	'savane':      '#EFBF53',
-	'registan':    '#FAE09A',
+	'samud':       '#102F5C',
+	'potistan':    '#444921',
+	'barxojangal': '#176D0D',
+	'jangal':      '#647F45',
+	'taige':       '#4EA069',
+	'piristan':    '#DD9C6F',
+	'grasistan':   '#BED042',
+	'registan':    '#F5E292',
 	'tundar':      '#FFFFFF',
-	'potistan':    '#00FFBF',
-	'piristan':    '#FF5F00',
-	'kale':        '#F0E0D0',
+	'kale':        '#FAF2E4',
 	 null:         '#000000',
 };
 
@@ -196,7 +195,7 @@ $( '#terrain-apply' ).on('click', function() {
 	const randomSeme = $('#terrain-seme').val();
 	const numContinents = $('#terrain-continents').val() * 2;
 	const seaLevel = $('#terrain-samud').val();
-	const avgTerme = parseFloat($('#terrain-terme').val()) + 273;
+	const avgTerme = $('#terrain-terme').val();
 	const riverSize = $('#terrain-nade').val();
 
 	let rng = new Random(randomSeme); // use the random seed

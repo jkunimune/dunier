@@ -10,16 +10,15 @@ const CLOUD_HEIGHT = 2; // km
 const OROGRAPHIC_MAGNITUDE = 1;
 const OROGRAPHIC_RANGE = 8000; // km
 
-const TUNDRA_TEMP = -18;
-const DESERT_INTERCEPT = -25;
-const DESERT_SLOPE = 45;
-const TAIGA_TEMP = +3;
+const TUNDRA_TEMP = -10;
+const DESERT_INTERCEPT = -30;
+const DESERT_SLOPE = 60;
+const TAIGA_TEMP = +5;
 const FLASH_TEMP = +50;
 const TROPIC_TEMP = +22;
 const FOREST_INTERCEPT = -35;
-const FOREST_SLOPE = 35;
-const MARSH_INTERCEPT = 1.5;
-const MARSH_SLOPE = -50;
+const FOREST_SLOPE = 37;
+const MARSH_THRESH = 3.5;
 
 const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
@@ -121,7 +120,7 @@ function setBiomes(surf) {
 			else if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
 				node.biome = 'grasistan';
 			else if (node.terme < TROPIC_TEMP) {
-				if (node.terme > MARSH_SLOPE*node.barxe + MARSH_INTERCEPT)
+				if (node.barxe < MARSH_THRESH)
 					node.biome = 'jangal';
 				else
 					node.biome = 'potistan';
