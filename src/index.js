@@ -211,11 +211,11 @@ $( '#terrain-apply' ).on('click', function() {
 	const colorLayer = SVG('#terrain-tiles');
 	colorLayer.clear();
 	for (const biome in BIOME_COLORS)
-		mapper.fill([...surface.nodes].filter(n => n.biome === biome), colorLayer, BIOME_COLORS[biome]);
+		mapper.fill([...surface.nodes].filter(n => n.biome === biome), colorLayer, BIOME_COLORS[biome], (biome === 'samud') ? .0015 : 0);
 	const riverLayer = SVG('#terrain-nade');
 	riverLayer.clear();
 	for (const edge of surface.rivers)
-		mapper.stroke(edge, riverLayer, BIOME_COLORS['lage'], .005); // TODO: vary widths
+		mapper.stroke(edge, riverLayer, BIOME_COLORS['samud'], .003); // TODO: vary widths
 	const reliefLayer = SVG('#terrain-shade');
 	reliefLayer.clear();
 	mapper.shade(surface.triangles, reliefLayer, 'gawe');

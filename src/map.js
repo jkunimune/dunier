@@ -62,10 +62,10 @@ class Chart {
 	 * @param color String that HTML can interpret as a color.
 	 * @return Path the newly created element encompassing these triangles.
 	 */
-	fill(nodes, svg, color) {
+	fill(nodes, svg, color, strokeWidth=0) {
 		if (nodes.length <= 0)
 			return null;
-		return this.map(outline(nodes), svg).fill(color);
+		return this.map(outline(nodes), svg).fill(color).stroke({color: color, width: strokeWidth, linejoin: 'round'});
 	}
 
 	stroke(edge, svg, color, width) {
