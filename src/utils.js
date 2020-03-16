@@ -96,7 +96,9 @@ function delaunayTriangulate(surf) {
 		triangles.push(...removeNode(dummyNode));
 	}
 
-	surf.triangles = new Set(triangles.filter(tri => tri.children == null)); // _now_ remove the extraneous triangles
+	for (const triangle of triangles)
+		if (triangle.children == null)
+			surf.triangles.add(triangle); // _now_ remove the extraneous triangles
 } // TODO: delete the triangle lineage graph to clear up some memory
 
 /**

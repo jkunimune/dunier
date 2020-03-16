@@ -43,6 +43,7 @@ class Surface {
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
 			nodes.push(new Node(i, this.randomPoint(rng), this)); // push a bunch of new ones
 		this.nodes = new Set(nodes); // keep that list, but save it as a set as well
+		this.triangles = new Set(); // also start a new set for the triangles
 
 		delaunayTriangulate(this);
 
@@ -60,6 +61,17 @@ class Surface {
 				}
 				orphan.parents = [closest];
 			}
+		}
+
+		for (const triangle of this.triangles) { // finally, complete the remaining triangles' network graphs
+			for (let i = 0; i < 3; i ++) {
+				const edge = triangle.edges[i];
+				if (triangle === edge.triangleL)
+					triangle.neighbors.set(edge.triangleR, edge);
+				else
+					triangle.neighbors.set(edge.triangleL, edge);
+			}
+			triangle.computeCircumcenter();
 		}
 	}
 
@@ -419,6 +431,7 @@ class Triangle {
 	constructor(a, b, c) {
 		this.vertices = [a, b, c]; // nodes, ordered widdershins
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
+		this.neighbors = new Map(); // adjacent triangles
 		this.surface = a.surface;
 		this.children = null;
 
@@ -466,44 +479,43 @@ class Triangle {
 	 * compute the φ-λ parameterization of the circumcenter in the plane normal to the sum
 	 * of the vertices' normal vectors.
 	 */
-	getCircumcenter() {
-		if (this.circumcenter === undefined) {
-			let nHat = new Vector(0, 0, 0);
-			for (const vertex of this.vertices)
-				nHat = nHat.plus(vertex.normal);
-			nHat = nHat.norm();
-			const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
-			const uHat = nHat.cross(vHat);
-			const projected = [];
-			for (const vertex of this.vertices) // project all of the vertices into the tangent plane
-				projected.push({
-					v: vHat.dot(vertex.pos),
-					u: uHat.dot(vertex.pos),
-					n: nHat.dot(vertex.pos)});
+	computeCircumcenter() {
+		let nHat = new Vector(0, 0, 0);
+		for (const vertex of this.vertices)
+			nHat = nHat.plus(vertex.normal);
+		nHat = nHat.norm();
+		const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
+		const uHat = nHat.cross(vHat);
+		const projected = [];
+		for (const vertex of this.vertices) // project all of the vertices into the tangent plane
+			projected.push({
+				v: vHat.dot(vertex.pos),
+				u: uHat.dot(vertex.pos),
+				n: nHat.dot(vertex.pos)});
 
-			let vNumerator = 0, uNumerator = 0;
-			let denominator = 0, nSum = 0;
-			for (let i = 0; i < 3; i++) { // do the 2D circumcenter calculation
-				const a = projected[i];
-				const b = projected[(i + 1)%3];
-				const c = projected[(i + 2)%3];
-				vNumerator += (a.v*a.v + a.u*a.u) * (b.u - c.u);
-				uNumerator += (a.v*a.v + a.u*a.u) * (b.v - c.v);
-				denominator += a.v * (b.u - c.u);
-				nSum += a.n;
-			}
-			const center = {
-				v:  vNumerator/denominator/2,
-				u: -uNumerator/denominator/2,
-				n:  nSum/3};
-
-			center.x = vHat.x*center.v + uHat.x*center.u + nHat.x*center.n;
-			center.y = vHat.y*center.v + uHat.y*center.u + nHat.y*center.n;
-			center.z = vHat.z*center.v + uHat.z*center.u + nHat.z*center.n;
-			this.circumcenter = this.surface.φλ(center.x, center.y, center.z); // finally, put it back in φ-λ space
+		let vNumerator = 0, uNumerator = 0;
+		let denominator = 0, nSum = 0;
+		for (let i = 0; i < 3; i++) { // do the 2D circumcenter calculation
+			const a = projected[i];
+			const b = projected[(i + 1)%3];
+			const c = projected[(i + 2)%3];
+			vNumerator += (a.v*a.v + a.u*a.u) * (b.u - c.u);
+			uNumerator += (a.v*a.v + a.u*a.u) * (b.v - c.v);
+			denominator += a.v * (b.u - c.u);
+			nSum += a.n;
 		}
+		const center = {
+			v:  vNumerator/denominator/2,
+			u: -uNumerator/denominator/2,
+			n:  nSum/3};
 
-		return this.circumcenter;
+		center.x = vHat.x*center.v + uHat.x*center.u + nHat.x*center.n;
+		center.y = vHat.y*center.v + uHat.y*center.u + nHat.y*center.n;
+		center.z = vHat.z*center.v + uHat.z*center.u + nHat.z*center.n;
+		this.circumcenter = this.surface.φλ(center.x, center.y, center.z); // finally, put it back in φ-λ space
+
+		this.φ = this.circumcenter.φ; // and make these values a bit easier to access
+		this.λ = this.circumcenter.λ;
 	}
 
 	/**

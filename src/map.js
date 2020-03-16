@@ -7,12 +7,12 @@ const AMBIENT_LIGHT = 0.2;
 
 
 /**
- * create an ordered Iterator of triangles that form the boundary of this.
+ * create an ordered Iterator of segments that form the boundary of this.
  * @param nodes Set of Node that are part of this group.
  * @return Array of {type: String, args: [Number, Number]} that represents the
  * boundary as a series of Path segments, ordered widdershins.
  */
-function trace(nodes) {
+function outline(nodes) {
 	if (!(nodes instanceof Set)) // first, cast this to a Set
 		nodes = new Set(nodes); // we're going to be making a _lot_ of calls to Set.has()
 
@@ -28,7 +28,7 @@ function trace(nodes) {
 			const start = edge; // the edge between them defines the start of the loop
 			do {
 				const next = ind.leftOf(way); // look for the next triangle, going widdershins
-				const vertex = next.getCircumcenter(); // pick out its circumcenter to plot
+				const vertex = next.circumcenter; // pick out its circumcenter to plot
 				output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
 				accountedFor.add(edge); // check this edge off
 				if (nodes.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
@@ -65,7 +65,14 @@ class Chart {
 	fill(nodes, svg, color) {
 		if (nodes.length <= 0)
 			return null;
-		return this.map(trace(nodes), svg).fill(color);
+		return this.map(outline(nodes), svg).fill(color);
+	}
+
+	stroke(edge, svg, color, width) {
+		return this.map([
+			{type: 'M', args: [edge.triangleL.φ, edge.triangleL.λ]},
+			{type: 'L', args: [edge.triangleR.φ, edge.triangleR.λ]},
+		], svg, false).fill('none').stroke({color: color, width: width, linecap: 'round'});
 	}
 
 	/**
@@ -107,7 +114,15 @@ class Chart {
 		}
 	}
 
-	map(segments, svg) {
+	/**
+	 * project and convert a list of SVG paths in latitude-longitude coordinates representing a series of closed paths
+	 * into an SVG.Path object, and add that Path to the given SVG.
+	 * @param segments ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
+	 * @param svg the SVG object on which to draw things
+	 * @param closed if this is set to true, the map will make adjustments to account for its complete nature
+	 * @returns SVG.Path object
+	 */
+	map(segments, svg, closed=true) {
 		let jinPoints = segments;
 
 		let loopIdx = jinPoints.length;
@@ -126,7 +141,7 @@ class Chart {
 				}
 			}
 			else if (jinPoints[i].type === 'M') { // look for existing breaks in the Path
-				if (krusIdx != null) { // if this map made a break in it, as well,
+				if (closed && krusIdx != null) { // if this map made a break in it, as well,
 					jinPoints = jinPoints.slice(0, i)
 						.concat(jinPoints.slice(krusIdx, loopIdx))
 						.concat(jinPoints.slice(i+1, krusIdx))
@@ -163,34 +178,36 @@ class Chart {
 			}
 		}
 
-		let λTest = null;
-		let maxNordi = Number.NEGATIVE_INFINITY;
-		let maxSudi = Number.POSITIVE_INFINITY;
-		let enclosesNP = null;
-		let enclosesSP = null;
-		for (let i = 1; i < jinPoints.length; i ++) {
-			if (jinPoints[i].type === 'L') { // examine the lines
-				const [φ0, λ0] = jinPoints[i-1].args;
-				const [φ1, λ1] = jinPoints[i].args;
-				if (λTest == null)
-					λTest = (λ0 + λ1)/2; // choose a longitude (0 or pi would be easiest, but the curve doesn't always cross those)
-				if (λ0 < λTest !== λ1 < λTest) { // look for segments that cross that longitude
-					const φX = this.projection.getCrossing(φ0, λ0, φ1, λ1, λTest).φ;
-					if (φX > maxNordi) { // the northernmost one will tell us
-						maxNordi = φX;
-						enclosesNP = λ1 > λ0; // if the North Pole is enclosed
-					}
-					if (φX < maxSudi) { // the southernmost one will tell us
-						maxSudi = φX;
-						enclosesSP = λ1 < λ0; // if the South Pole is enclosed
+		if (closed) { // if this path is closed, adjust for the topology of the map projection
+			let λTest = null;
+			let maxNordi = Number.NEGATIVE_INFINITY;
+			let maxSudi = Number.POSITIVE_INFINITY;
+			let enclosesNP = null;
+			let enclosesSP = null;
+			for (let i = 1; i < jinPoints.length; i++) {
+				if (jinPoints[i].type === 'L') { // examine the lines
+					const [φ0, λ0] = jinPoints[i - 1].args;
+					const [φ1, λ1] = jinPoints[i].args;
+					if (λTest == null)
+						λTest = (λ0 + λ1) / 2; // choose a longitude (0 or pi would be easiest, but the curve doesn't always cross those)
+					if (λ0 < λTest !== λ1 < λTest) { // look for segments that cross that longitude
+						const φX = this.projection.getCrossing(φ0, λ0, φ1, λ1, λTest).φ;
+						if (φX > maxNordi) { // the northernmost one will tell us
+							maxNordi = φX;
+							enclosesNP = λ1 > λ0; // if the North Pole is enclosed
+						}
+						if (φX < maxSudi) { // the southernmost one will tell us
+							maxSudi = φX;
+							enclosesSP = λ1 < λ0; // if the South Pole is enclosed
+						}
 					}
 				}
 			}
+			if (enclosesNP)
+				cutPoints.push(...this.projection.mapNorthPole()); // add whatever adjustments are needed to account for singularities
+			if (enclosesSP)
+				cutPoints.push(...this.projection.mapSouthPole());
 		}
-		if (enclosesNP)
-			cutPoints.push(...this.projection.mapNorthPole()); // add whatever adjustments are needed to account for singularities
-		if (enclosesSP)
-			cutPoints.push(...this.projection.mapSouthPole());
 
 		let str = ''; // finally, put it in the <path>
 		for (let i = 0; i < cutPoints.length; i ++)

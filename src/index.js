@@ -31,10 +31,11 @@ const TERRAIN_COLORMAP = [
 // ];
 
 const BIOME_COLORS = {
-	'samud':       '#102F5C',
+	'samud':       '#06267f',
 	'potistan':    '#444921',
 	'barxojangal': '#176D0D',
 	'jangal':      '#647F45',
+	'lage':        '#2987D8',
 	'taige':       '#4EA069',
 	'piristan':    '#DD9C6F',
 	'grasistan':   '#BED042',
@@ -196,7 +197,6 @@ $( '#terrain-apply' ).on('click', function() {
 	const numContinents = $('#terrain-continents').val() * 2;
 	const seaLevel = $('#terrain-samud').val();
 	const avgTerme = $('#terrain-terme').val();
-	const riverSize = $('#terrain-nade').val();
 
 	let rng = new Random(randomSeme); // use the random seed
 	surface.populate(rng); // finish constructing the surface
@@ -212,6 +212,10 @@ $( '#terrain-apply' ).on('click', function() {
 	colorLayer.clear();
 	for (const biome in BIOME_COLORS)
 		mapper.fill([...surface.nodes].filter(n => n.biome === biome), colorLayer, BIOME_COLORS[biome]);
+	const riverLayer = SVG('#terrain-nade');
+	riverLayer.clear();
+	for (const edge of surface.rivers)
+		mapper.stroke(edge, riverLayer, BIOME_COLORS['lage'], .005); // TODO: vary widths
 	const reliefLayer = SVG('#terrain-shade');
 	reliefLayer.clear();
 	mapper.shade(surface.triangles, reliefLayer, 'gawe');

@@ -50,6 +50,7 @@ function generateTerrain(numContinents, seaLevel, avgTerme, surf, rng) {
 	fillOcean(seaLevel, surf);
 	rng = rng.reset();
 	generateClimate(avgTerme, surf, rng);
+	addRivers(surf);
 	setBiomes(surf);
 }
 
@@ -106,33 +107,12 @@ function generateClimate(avgTerme, surf, rng) {
 }
 
 
-function setBiomes(surf) {
-	for (const node of surf.nodes) {
-		if (node.biome == null) {
-			if (node.terme < TUNDRA_TEMP)
-				node.biome = 'tundar';
-			else if (node.terme > DESERT_SLOPE*node.barxe + DESERT_INTERCEPT)
-				node.biome = 'registan';
-			else if (node.terme < TAIGA_TEMP)
-				node.biome = 'taige';
-			else if (node.terme > FLASH_TEMP)
-				node.biome = 'piristan';
-			else if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
-				node.biome = 'grasistan';
-			else if (node.terme < TROPIC_TEMP) {
-				if (node.barxe < MARSH_THRESH)
-					node.biome = 'jangal';
-				else
-					node.biome = 'potistan';
-			}
-			else {
-				node.biome = 'barxojangal';
-			}
-		}
-	}
-}
-
-
+/**
+ * get the base planetary setup set up, with continents and plates and simple altitudes.
+ * @param numPlates the desired number of plates (half will be oceanic, and half will be continental)
+ * @param surf the surface on which to generate these continents
+ * @param rng the seeded random number generator to use
+ */
 function generateContinents(numPlates, surf, rng) {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
 	for (const node of surf.nodes) { // start by assigning plates
@@ -356,6 +336,93 @@ function fillOcean(level, surf) {
 
 	for (const node of surf.nodes) // and set sea level to 0
 		node.gawe -= level;
+}
+
+
+/**
+ * give the surface some rivers to draw, and also set up some nearby lakes.
+ * @param surf the Surface on which this takes place
+ */
+function addRivers(surf) {
+	surf.rivers = new Set(); // a set of Edges
+
+	for (const vertex of surf.triangles) {
+		vertex.gawe = 0; // first define altitudes for vertices, which only matters for this one purpose
+		for (const tile of vertex.vertices)
+			vertex.gawe += tile.gawe/vertex.vertices.length;
+	}
+
+	const nadeQueue = new TinyQueue([], (a, b) => b.drop - a.drop); // start with a queue of rivers forming from their deltas
+	for (const vertex of surf.triangles) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
+		for (const tile of vertex.vertices) {
+			if (tile.biome === 'samud') {
+				nadeQueue.push({nice: null, supr: vertex, drop: Number.POSITIVE_INFINITY});
+				break;
+			}
+		}
+	}
+
+	while (nadeQueue.length > 0) { // then iteratively extend them
+		const {nice, supr} = nadeQueue.pop(); // pick out the steepest potential river
+		if (supr.liwonice === undefined) { // if it's available
+			supr.liwonice = nice; // take it
+			supr.riverDistance = (nice != null) ? nice.riverDistance + 1 : 0; // number of steps to delta
+			surf.rivers.add(supr.neighbors.get(nice));
+			for (const beyond of supr.neighbors.keys()) { // then look for what comes next
+				if (beyond.liwonice === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
+					const drop = beyond.gawe - supr.gawe;
+					nadeQueue.push({nice: supr, supr: beyond, drop: drop});
+					supr.isSource = true;
+				}
+			}
+		}
+	}
+	surf.rivers.delete(undefined);
+
+	for (const vertex of surf.triangles)
+		vertex.liwe = 0; // define this temporary variable real quick...
+
+	const liweQueue = new TinyQueue(surf.triangles, (a, b) => b.riverDistance - a.riverDistance); // now we need to flow the water downhill
+	while (liweQueue.length > 0) {
+		const vertex = liweQueue.pop(); // at each river vertex
+		for (const tile of vertex.vertices)
+			vertex.liwe += tile.barxe*TILE_AREA/tile.neighbors.size; // compute the sum of rainfall and inflow
+		vertex.neighbors.get(vertex.liwonice).liwe = vertex.liwe; // and pass that flow onto the river
+		vertex.liwonice.liwe += vertex.liwe; // and the downstream tile
+	}
+
+	//TODO: add lakes to tiles with lots of Laplacian
+}
+
+
+/**
+ * assign biomes to all unassigned tiles according to simple rules.
+ * @param surf the surface to which we're doing this
+ */
+function setBiomes(surf) {
+	for (const node of surf.nodes) {
+		if (node.biome == null) {
+			if (node.terme < TUNDRA_TEMP)
+				node.biome = 'tundar';
+			else if (node.terme > DESERT_SLOPE*node.barxe + DESERT_INTERCEPT)
+				node.biome = 'registan';
+			else if (node.terme < TAIGA_TEMP)
+				node.biome = 'taige';
+			else if (node.terme > FLASH_TEMP)
+				node.biome = 'piristan';
+			else if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
+				node.biome = 'grasistan';
+			else if (node.terme < TROPIC_TEMP) {
+				if (node.barxe < MARSH_THRESH)
+					node.biome = 'jangal';
+				else
+					node.biome = 'potistan';
+			}
+			else {
+				node.biome = 'barxojangal';
+			}
+		}
+	}
 }
 
 function floodFrom(start, level) {

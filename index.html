@@ -113,14 +113,6 @@
                       <option value="268">Low</option>
                     </select>
                   </div>
-                  <div class="form-group">
-                    <label for="terrain-nade">Mean Rainfall</label>
-                    <select class="custom-select" id="terrain-nade">
-                      <option value="3.0">High</option>
-                      <option selected value="1.0">Normal</option>
-                      <option value="0.3">Low</option>
-                    </select>
-                  </div>
                   <button type="button" class="btn btn-block btn-primary" id="terrain-apply">Apply</button>
                 </form>
               </div>
@@ -132,6 +124,7 @@
                     <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
                   </filter>
                   <g id="terrain-tiles"></g>
+                  <g id="terrain-nade"></g>
                   <g id="terrain-shade" filter="url(#blur)"></g>
                 </svg>
               </div>
@@ -159,9 +152,6 @@
               <div class="col-xs-12 col-md-8 col-lg-9">
                 <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
                      viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
-                  <filter id="blur">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
-                  </filter>
                   <g id="history-tiles"></g>
                 </svg>
               </div>
