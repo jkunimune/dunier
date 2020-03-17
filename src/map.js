@@ -7,6 +7,107 @@ const AMBIENT_LIGHT = 0.2;
 
 
 /**
+ * create an ordered Iterator of segments that form all of these lines, aggregating where applicable.
+ * aggregation may behave unexpectedly if some members of lines contain nonendpoints that are endpoints of others.
+ * @param lines Set of lists of points to be combined and pathified.
+ */
+function trace(lines) {
+	const queue = [...lines];
+	const consolidated = new Set(); // first, consolidate
+	const heads = new Map(); // map from points to [lines beginning with endpoint]
+	const tails = new Map(); // map from points endpoints to [lines ending with endpoint]
+	const torsos = new Map(); // map from points to {containing: line containing point, index: index}
+	while (queue.length > 0) {
+		for (const l of consolidated) {
+			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
+				throw Error("up top!");
+			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
+				throw Error("up slightly lower!");
+		}
+		let line = queue.pop(); // check each given line
+		console.log('adding a line');
+		console.log(line);
+		console.log("here'z whut we got:");
+		console.log(heads);
+		console.log(tails);
+		console.log(torsos);
+		const head = line[0], tail = line[line.length-1];
+		consolidated.add(line); // add it to the list
+		if (!heads.has(head))  heads.set(head, []); // and connect it to these existing sets
+		heads.get(head).push(line);
+		if (!tails.has(tail))  tails.set(tail, []);
+		tails.get(tail).push(line);
+		for (let i = 1; i < line.length - 1; i ++)
+			torsos.set(line[i], {containing: line, index: i});
+
+		for (const l of consolidated)
+			if (!heads.has(l[0]) || !tails.has(l[l.length-1]))
+				throw Error("that was quick.");
+
+		for (const endpoint of [head, tail]) { // first, on either end...
+			if (torsos.has(endpoint)) { // does it run into the middle of another?
+				const {containing, index} = torsos.get(endpoint); // then that one must be cut in half
+				console.log(containing.length);
+				console.log(index);
+				const fragment = containing.slice(index);
+				containing.splice(index + 1);
+				console.log(containing.length);
+				consolidated.add(fragment);
+				if (endpoint === head)  tails.set(endpoint, []);
+				else                    heads.set(endpoint, []);
+				heads.get(endpoint).push(fragment);
+				tails.get(endpoint).push(containing);
+				tails.get(fragment[fragment.length-1])[tails.get(fragment[fragment.length-1]).indexOf(containing)] = fragment;
+				torsos.delete(endpoint);
+				for (let i = 1; i < fragment.length - 1; i ++)
+					torsos.set(fragment[i], {containing: fragment, index: i});
+				console.log(line[0].φ+' -> '+line[line.length-1].φ);
+				console.log(containing[0].φ+' -> '+containing[containing.length-1].φ);
+				console.log(fragment[0].φ+' -> '+fragment[fragment.length-1].φ);
+			}
+		}
+
+		for (const l of consolidated) {
+			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
+				throw Error(`i broke it ${l[0].φ} -> ${l[l.length-1].φ}`);
+			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
+				throw Error(`yoo broke it! ${l[0].φ} -> ${l[l.length-1].φ}`);
+		}
+
+		if (tails.has(head)) { // does its beginning connect to another?
+			console.log('wumbo');
+			if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
+				line = combine(tails.get(head).values().value, line); // put them together
+		}
+		if (heads.has(tail)) { // does its end connect to another?
+			console.log('i wumbo');
+			if (heads.get(tail).length === 1 && tails.get(tail).length === 1) // if these fit together exclusively
+				line = combine(line, heads.get(tail)[0]); // put them together
+		}
+	}
+
+	function combine(a, b) {
+		consolidated.delete(b); // delete b
+		heads.delete(b[0]);
+		tails.delete(b[0]);
+		tails.get(b[b.length-1])[tails.get(b[b.length-1]).indexOf(b)] = a; // repoint the tail reference from b to a
+		for (let i = 1; i < b.length; i ++) { // add b's elements to a
+			torsos.set(b[i-1], {containing: a, index: a.length - 1});
+			a.push(b[i]);
+		}
+		return a;
+	}
+
+	let output = [];
+	for (const line of consolidated) { // then do the conversion
+		output.push({type: 'M', args: [line[0].φ, line[0].λ]});
+		for (let i = 1; i < line.length; i ++)
+			output.push({type: 'L', args: [line[i].φ, line[i].λ]});
+	}
+	return output;
+}
+
+/**
  * create an ordered Iterator of segments that form the boundary of this.
  * @param nodes Set of Node that are part of this group.
  * @return Array of {type: String, args: [Number, Number]} that represents the
@@ -60,19 +161,29 @@ class Chart {
 	 * @param nodes Iterator of Node to be colored in.
 	 * @param svg SVG object on which to put the Path.
 	 * @param color String that HTML can interpret as a color.
+	 * @param strokeWidth the width of the outline to put around it (will match fill color).
+	 * @param smooth whether to apply Bezier smoothing to the outline
 	 * @return Path the newly created element encompassing these triangles.
 	 */
-	fill(nodes, svg, color, strokeWidth=0) {
+	fill(nodes, svg, color, strokeWidth=0, smooth=false) {
 		if (nodes.length <= 0)
 			return null;
-		return this.map(outline(nodes), svg).fill(color).stroke({color: color, width: strokeWidth, linejoin: 'round'});
+		return this.map(outline(nodes), svg, smooth, true)
+			.fill(color).stroke({color: color, width: strokeWidth, linejoin: 'round'});
 	}
 
-	stroke(edge, svg, color, width) {
-		return this.map([
-			{type: 'M', args: [edge.triangleL.φ, edge.triangleL.λ]},
-			{type: 'L', args: [edge.triangleR.φ, edge.triangleR.λ]},
-		], svg, false).fill('none').stroke({color: color, width: width, linecap: 'round'});
+	/**
+	 * draw a series of lines on the map with the giver color.
+	 * @param strokes the Iterable of lists of points to connect and draw.
+	 * @param svg SVG object on which to put the Path.
+	 * @param color String that HTML can interpret as a color.
+	 * @param width the width of the stroke
+	 * @param smooth whether to apply Bezier smoothing to the curve
+	 * @returns Path the newly created element comprising all these lines
+	 */
+	stroke(strokes, svg, color, width, smooth=false) {
+		return this.map(trace(strokes),svg, smooth, false)
+			.fill('none').stroke({color: color, width: width, linecap: 'round'});
 	}
 
 	/**
@@ -119,10 +230,11 @@ class Chart {
 	 * into an SVG.Path object, and add that Path to the given SVG.
 	 * @param segments ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
 	 * @param svg the SVG object on which to draw things
+	 * @param smooth an optional feature that will smooth the Path out into Bezier curves
 	 * @param closed if this is set to true, the map will make adjustments to account for its complete nature
 	 * @returns SVG.Path object
 	 */
-	map(segments, svg, closed=true) {
+	map(segments, svg, smooth, closed) {
 		let jinPoints = segments;
 
 		let loopIdx = jinPoints.length;
@@ -174,6 +286,19 @@ class Chart {
 					jinPoints.splice(i, 0, {type: 'L', args: [φ, λ]}); // add the midpoints to the polygon
 					cutPoints.splice(i, 0, {type: 'L', args: [x, y]});
 					i --; // and check again
+				}
+			}
+		}
+
+		if (smooth) { // smooth it, if desired
+			for (let i = cutPoints.length - 2; i >= 0; i --) {
+				const newEnd = [ // look ahead to the midpoint between this and the next
+					(cutPoints[i].args[0] + cutPoints[i+1].args[0])/2,
+					(cutPoints[i].args[1] + cutPoints[i+1].args[1])/2];
+				if (cutPoints[i].type === 'L' && cutPoints[i+1].type !== 'M') // look for points that are sharp angles
+					cutPoints[i] = {type: 'Q', args: [...cutPoints[i].args, ...newEnd]}; // and extend those lines into curves
+				else if (cutPoints[i].type === 'M' && cutPoints[i+1].type === 'Q') { // look for curves that start with Bezier curves
+					cutPoints.splice(i + 1, 0, {type: 'L', args: newEnd}); // assume we put it there and restore some linearity
 				}
 			}
 		}

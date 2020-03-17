@@ -20,8 +20,6 @@ const FOREST_INTERCEPT = -35;
 const FOREST_SLOPE = 37;
 const MARSH_THRESH = 3.5;
 
-const RIVER_EXISTENCE_THRESHOLD = 2e6; // km^2
-
 const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
 const OCEANIC_VARIATION = 1; // km
@@ -346,8 +344,6 @@ function fillOcean(level, surf) {
  * @param surf the Surface on which this takes place
  */
 function addRivers(surf) {
-	surf.rivers = new Set(); // a set of Edges
-
 	for (const vertex of surf.triangles) {
 		vertex.gawe = 0; // first define altitudes for vertices, which only matters for this one purpose
 		for (const tile of vertex.vertices)
@@ -358,8 +354,8 @@ function addRivers(surf) {
 	for (const vertex of surf.triangles) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
 		for (const tile of vertex.vertices) {
 			if (tile.biome === 'samud') {
-				nadeQueue.push({nice: null, supr: vertex, slope: Number.POSITIVE_INFINITY});
-				break;
+				tile.riverDistance = 0;
+				nadeQueue.push({nice: tile, supr: vertex, slope: Number.POSITIVE_INFINITY});
 			}
 		}
 	}
@@ -368,10 +364,12 @@ function addRivers(surf) {
 		const {nice, supr} = nadeQueue.pop(); // pick out the steepest potential river
 		if (supr.liwonice === undefined) { // if it's available
 			supr.liwonice = nice; // take it
-			supr.riverDistance = (nice != null) ? nice.riverDistance + 1 : 0; // number of steps to delta
+			supr.riverDistance = nice.riverDistance + 1; // number of steps to delta
 			for (const beyond of supr.neighbors.keys()) { // then look for what comes next
 				if (beyond.liwonice === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
-					const slope = (beyond.gawe - supr.gawe)/surface.distance(beyond, supr);
+					let slope = beyond.gawe - supr.gawe;
+					if (slope > 0)
+						slope = surface.distance(beyond, supr); // only normalize slope by run if it is downhill
 					nadeQueue.push({nice: supr, supr: beyond, slope: slope});
 					supr.isSource = true;
 				}
@@ -379,19 +377,24 @@ function addRivers(surf) {
 		}
 	}
 
-	for (const vertex of surf.triangles)
+	for (const vertex of surf.triangles) {
 		vertex.liwe = 0; // define this temporary variable real quick...
+		for (const edge of vertex.neighbors)
+			edge.liwe = 0;
+	}
+
+	surf.rivers = new Set();
 
 	const liweQueue = new TinyQueue([...surf.triangles], (a, b) => b.riverDistance - a.riverDistance); // now we need to flow the water downhill
 	while (liweQueue.length > 0) {
 		const vertex = liweQueue.pop(); // at each river vertex
-		if (vertex.liwonice != null) {
-			for (const tile of vertex.vertices)
-				vertex.liwe += (1 + tile.barxe + 0.5*tile.gawe/CLOUD_HEIGHT)*TILE_AREA/tile.neighbors.size; // compute the sum of rainfall and inflow
+		if (vertex.liwonice instanceof Triangle) {
+			for (const tile of vertex.vertices) // compute the sum of rainfall and inflow (with some adjustments)
+				vertex.liwe += (1 + tile.barxe + tile.gawe/CLOUD_HEIGHT) * TILE_AREA/tile.neighbors.size;
 			vertex.liwonice.liwe += vertex.liwe; // and pass that flow onto the downstream tile
-			if (vertex.liwe >= RIVER_EXISTENCE_THRESHOLD)
-				surf.rivers.add(vertex.neighbors.get(vertex.liwonice));
+			vertex.neighbors.get(vertex.liwonice).liwe = vertex.liwe;
 		}
+		surf.rivers.add([vertex, vertex.liwonice]);
 	}
 
 	//TODO: add lakes to tiles with lots of Laplacian
