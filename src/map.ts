@@ -1,5 +1,7 @@
-// map.js: all of the cartographic code
-'use strict';
+// map.ts: all of the cartographic code
+
+import {Nodo, Place, Surface, Triangle, Vector} from "./surface.js";
+import {linterp} from "./utils.js";
 
 const MAP_PRECISION = 1/6;
 const SUN_ELEVATION = 60/180*Math.PI;
@@ -11,12 +13,12 @@ const AMBIENT_LIGHT = 0.2;
  * aggregation may behave unexpectedly if some members of lines contain nonendpoints that are endpoints of others.
  * @param lines Set of lists of points to be combined and pathified.
  */
-function trace(lines) {
+function trace(lines: Iterable<Place[]>): PathSegment[] {
 	const queue = [...lines];
-	const consolidated = new Set(); // first, consolidate
-	const heads = new Map(); // map from points to [lines beginning with endpoint]
-	const tails = new Map(); // map from points endpoints to [lines ending with endpoint]
-	const torsos = new Map(); // map from points to {containing: line containing point, index: index}
+	const consolidated: Set<Place[]> = new Set(); // first, consolidate
+	const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
+	const tails: Map<Place, Place[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
+	const torsos: Map<Place, {containing: Place[], index: number}> = new Map(); // map from midpoints to line containing midpoint
 	while (queue.length > 0) {
 		for (const l of consolidated) {
 			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
@@ -77,7 +79,7 @@ function trace(lines) {
 		if (tails.has(head)) { // does its beginning connect to another?
 			console.log('wumbo');
 			if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
-				line = combine(tails.get(head).values().value, line); // put them together
+				line = combine(tails.get(head)[0], line); // put them together
 		}
 		if (heads.has(tail)) { // does its end connect to another?
 			console.log('i wumbo');
@@ -109,19 +111,15 @@ function trace(lines) {
 
 /**
  * create an ordered Iterator of segments that form the boundary of this.
- * @param nodes Set of Node that are part of this group.
- * @return Array of {type: String, args: [Number, Number]} that represents the
- * boundary as a series of Path segments, ordered widdershins.
+ * @param nodos Set of Node that are part of this group.
+ * @return Array of PathSegments, ordered widdershins.
  */
-function outline(nodes) {
-	if (!(nodes instanceof Set)) // first, cast this to a Set
-		nodes = new Set(nodes); // we're going to be making a _lot_ of calls to Set.has()
-
+function outline(nodos: Set<Nodo>): PathSegment[] {
 	const accountedFor = new Set(); // keep track of which Edge have been done
 	const output = [];
-	for (let ind of nodes) { // look at every included node
+	for (let ind of nodos) { // look at every included node
 		for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
-			if (nodes.has(way))    continue; // (really we only care about excluded way)
+			if (nodos.has(way))    continue; // (really we only care about excluded way)
 			let edge = ind.neighbors.get(way);
 			if (accountedFor.has(edge)) continue; // (and can ignore edges we've already hit)
 
@@ -132,8 +130,8 @@ function outline(nodes) {
 				const vertex = next.circumcenter; // pick out its circumcenter to plot
 				output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
 				accountedFor.add(edge); // check this edge off
-				if (nodes.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
-					ind = next.acrossFrom(edge); // advance one of the state nodes
+				if (nodos.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
+					ind = next.acrossFrom(edge); // advance one of the state nodos
 				else
 					way = next.acrossFrom(edge);
 				edge = ind.neighbors.get(way); // and update edge
@@ -149,26 +147,39 @@ function outline(nodes) {
 
 
 /**
+ * something that can be dropped into an SVG <path>.
+ */
+interface PathSegment {
+	type: string;
+	args: number[];
+}
+
+
+/**
  * a class to handle all of the graphical arrangement stuff.
  */
-class Chart {
-	constructor(projection) {
+export class Chart {
+	private projection: MapProjection;
+
+
+	constructor(projection: MapProjection) {
 		this.projection = projection;
 	}
 
 	/**
 	 * draw a region of the world on the map with the given color.
-	 * @param nodes Iterator of Node to be colored in.
+	 * @param nodos Iterator of Node to be colored in.
 	 * @param svg SVG object on which to put the Path.
 	 * @param color String that HTML can interpret as a color.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
 	 * @param smooth whether to apply Bezier smoothing to the outline
 	 * @return Path the newly created element encompassing these triangles.
 	 */
-	fill(nodes, svg, color, strokeWidth=0, smooth=false) {
-		if (nodes.length <= 0)
+	// @ts-ignore
+	fill(nodos: Nodo[], svg: SVG.Container, color: string, strokeWidth: number = 0, smooth: boolean = false): SVG.Element {
+		if (nodos.length <= 0)
 			return null;
-		return this.map(outline(nodes), svg, smooth, true)
+		return this.map(outline(new Set(nodos)), svg, smooth, true)
 			.fill(color).stroke({color: color, width: strokeWidth, linejoin: 'round'});
 	}
 
@@ -181,8 +192,9 @@ class Chart {
 	 * @param smooth whether to apply Bezier smoothing to the curve
 	 * @returns Path the newly created element comprising all these lines
 	 */
-	stroke(strokes, svg, color, width, smooth=false) {
-		return this.map(trace(strokes),svg, smooth, false)
+	// @ts-ignore
+	stroke(strokes: Iterable<Place[]>, svg: SVG.Container, color: string, width: number, smooth: boolean = false): SVG.Element {
+		return this.map(trace(strokes), svg, smooth, false)
 			.fill('none').stroke({color: color, width: width, linecap: 'round'});
 	}
 
@@ -190,15 +202,16 @@ class Chart {
 	 * create a relief layer for the given set of triangles.
 	 * @param triangles Array of Triangle to shade.
 	 * @param svg SVG object on which to shade.
-	 * @param attr String name of attribute to base the relief on.
+	 * @param attr name of attribute to base the relief on.
 	 */
-	shade(triangles, svg, attr) { // TODO use separate delaunay triangulation
+	// @ts-ignore
+	shade(triangles: Set<Triangle>, svg: SVG.Container, attr: string): SVG.Element { // TODO use separate delaunay triangulation
 		if (!triangles)
 			return;
 
 		const slopes = [];
 		let maxSlope = 0;
-		for (let i = 0; i < triangles.length; i ++) { // start by computing slopes of all of the things
+		for (let i = 0; i < triangles.size; i ++) { // start by computing slopes of all of the things
 			const p = [];
 			for (const node of triangles[i].vertices) {
 				const {x, y} = this.projection.project(node.φ, node.λ);
@@ -213,7 +226,7 @@ class Chart {
 
 		const heightScale = -Math.tan(2*SUN_ELEVATION)/maxSlope; // use that to normalize
 
-		for (let i = 0; i < triangles.length; i ++) { // for each triangle
+		for (let i = 0; i < triangles.size; i ++) { // for each triangle
 			const path = [];
 			for (const node of triangles[i].vertices)
 				path.push({type: 'L', args: [node.φ, node.λ]}); // put its values in a plottable form
@@ -221,7 +234,7 @@ class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes[i]))); // and use that to get a brightness
-			this.map(path, svg).fill({color: '#000', opacity: 1-brightness});
+			this.map(path, svg, false, true).fill({color: '#000', opacity: 1-brightness});
 		}
 	}
 
@@ -234,7 +247,8 @@ class Chart {
 	 * @param closed if this is set to true, the map will make adjustments to account for its complete nature
 	 * @returns SVG.Path object
 	 */
-	map(segments, svg, smooth, closed) {
+	// @ts-ignore
+	map(segments: PathSegment[], svg: SVG.Container, smooth: boolean, closed: boolean): SVG.Path {
 		let jinPoints = segments;
 
 		let loopIdx = jinPoints.length;
@@ -346,7 +360,9 @@ class Chart {
  * a class to manage the plotting of points from a Surface onto a plane.
  */
 class MapProjection {
-	constructor(surface) {
+	protected surface: Surface;
+
+	constructor(surface: Surface) {
 		this.surface = surface;
 	}
 
@@ -356,9 +372,9 @@ class MapProjection {
 	 * @param λ0
 	 * @param φ1
 	 * @param λ1
-	 * @return {{φ: number, λ: number}}
+	 * @return Point
 	 */
-	getMidpoint(φ0, λ0, φ1, λ1) {
+	getMidpoint(φ0: number, λ0: number, φ1: number, λ1: number): Place {
 		const pos0 = this.surface.xyz(φ0, λ0);
 		const pos1 = this.surface.xyz(φ1, λ1);
 		const posM = pos0.plus(pos1).over(2);
@@ -373,9 +389,9 @@ class MapProjection {
 	 * @param φ1
 	 * @param λ1
 	 * @param λX
-	 * @return {{φ: number, λ: number}}
+	 * @return Point
 	 */
-	getCrossing(φ0, λ0, φ1, λ1, λX) {
+	getCrossing(φ0: number, λ0: number, φ1:number, λ1: number, λX: number): Place {
 		const pos0 = this.surface.xyz(φ0, λ0-λX);
 		const pos1 = this.surface.xyz(φ1, λ1-λX);
 		const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
@@ -387,31 +403,31 @@ class MapProjection {
 	/**
 	 * transform the given parametric coordinates to Cartesian ones.
 	 */
-	project(φ, λ) {
+	project(φ: number, λ: number): {x: number, y: number} {
 		throw "unimplemented";
 	}
 
 	/**
 	 * generate some <path> segments to compensate for something enclosing the north pole.
-	 * @return Array containing [Array of String, Array of Array]
+	 * @return Array containing PathSegment
 	 */
-	mapNorthPole() {
+	mapNorthPole(): PathSegment[] {
 		throw "unimplemented";
 	}
 
 	/**
 	 * generate some <path> segments to compensate for something enclosing the south pole.
-	 * @return Array containing [Array of String, Array of Array]
+	 * @return Array containing PathSegment
 	 */
-	mapSouthPole() {
+	mapSouthPole(): PathSegment[] {
 		throw "unimplemented";
 	}
 }
 
 
-class Azimuthal extends MapProjection {
-	constructor(surface, svg) {
-		super(surface, svg);
+export class Azimuthal extends MapProjection {
+	constructor(surface: Surface) {
+		super(surface);
 	}
 
 	project(φ, λ) {

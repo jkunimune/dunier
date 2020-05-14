@@ -1,6 +1,7 @@
-// surface.js: defines the geometric classes
-'use strict';
+// surface.ts: defines the geometric classes
 
+import {Random} from "./random.js";
+import {delaunayTriangulate, legendreP2, legendreP4, legendreP6, linterp} from "./utils.js";
 
 const INTEGRATION_RESOLUTION = 32;
 const TILE_AREA = 30000; // typical area of a tile in km^2
@@ -9,9 +10,21 @@ const TILE_AREA = 30000; // typical area of a tile in km^2
 /**
  * Generic 3D collection of nodes and edges
  */
-class Surface {
-	constructor(φMin, φMax) {
-		this.nodes = new Set();
+export class Surface {
+	public nodos: Set<Nodo>;
+	public triangles: Set<Triangle>;
+	public rivers: Set<(Nodo | Triangle)[]>;
+	public area: number;
+	public height: number;
+	private readonly φMin: number;
+	private readonly φMax: number;
+	refLatitudes: number[];
+	cumulAreas: number[];
+	cumulDistances: number[];
+
+
+	constructor(φMin: number, φMax: number) {
+		this.nodos = new Set();
 		this.φMin = φMin;
 		this.φMax = φMax;
 	}
@@ -20,7 +33,7 @@ class Surface {
 	 * fill this.nodes with random nodes, spaced via numLloyd iterations of Lloyd
 	 * relaxation
 	 */
-	populate(rng) {
+	populate(rng: Random) {
 		this.refLatitudes = []; // fill in latitude-integrated values
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
@@ -39,24 +52,24 @@ class Surface {
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
-		const nodes = []; // remember to clear the old nodes, if necessary
+		const nodos = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
-			nodes.push(new Node(i, this.randomPoint(rng), this)); // push a bunch of new ones
-		this.nodes = new Set(nodes); // keep that list, but save it as a set as well
+			nodos.push(new Nodo(i, this.randomPoint(rng), this)); // push a bunch of new ones
+		this.nodos = new Set(nodos); // keep that list, but save it as a set as well
 		this.triangles = new Set(); // also start a new set for the triangles
 
 		delaunayTriangulate(this);
 
-		for (let i = 1; i < nodes.length; i ++) { // after all that's through, some nodes won't have any parents
-			if (nodes[i].parents.length === 0) { // if that's so,
-				const orphan = nodes[i];
+		for (let i = 1; i < nodos.length; i ++) { // after all that's through, some nodes won't have any parents
+			if (nodos[i].parents.length === 0) { // if that's so,
+				const orphan = nodos[i];
 				let closest = null; // the easiest thing to do is to just assign it the closest node that came before it using the list
 				let minDistance = Number.POSITIVE_INFINITY;
 				for (let j = 0; j < orphan.index; j ++) {
-					const distance = this.distance(nodes[j], orphan);
+					const distance = this.distance(nodos[j], orphan);
 					if (distance < minDistance) {
 						minDistance = distance;
-						closest = nodes[j];
+						closest = nodos[j];
 					}
 				}
 				orphan.parents = [closest];
@@ -79,7 +92,7 @@ class Surface {
 	 * return the coordinates of a point uniformly sampled from the Surface using the
 	 * given random number generator.
 	 */
-	randomPoint(rng) {
+	randomPoint(rng: Random): Place {
 		const λ = rng.uniform(-Math.PI, Math.PI);
 		const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
 		const φ = linterp(A, this.cumulAreas, this.refLatitudes);
@@ -89,7 +102,7 @@ class Surface {
 	/**
 	 * return a 2d array of x, y, z, and insolation.
 	 */
-	parameterize(resolution) {
+	parameterize(resolution: number): number[][] {
 		const n = 2*resolution, m = 4*resolution;
 		const X = [], Y = [], Z = [], S = [];
 		for (let i = 0; i <= n; i ++) {
@@ -116,56 +129,56 @@ class Surface {
 	 * completely cover this Surface. The mesh must never diverge from the surface farther
 	 * than the radius of curvature.
 	 */
-	partition() {
+	partition(): {nodos: Nodo[], triangles: Triangle[]} {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the local length-to-latitude rate
 	 */
-	dsdφ(φ) {
+	dsdφ(φ: number): number {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the local effective width
 	 */
-	dAds(φ) {
+	dAds(φ: number): number {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the amount of moisture accumulation at a latitude, normalized to peak at 1.
 	 */
-	windConvergence(φ) {
+	windConvergence(φ: number): number {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * for the purposes of the orographic effect, return a dimensionless tangent velocity.
 	 */
-	windVelocity(φ) {
+	windVelocity(φ: number): {n: number, d: number} {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the amount of solar radiation at a latitude, normalized to average to 1.
 	 */
-	insolation(φ) {
+	insolation(φ: number): number {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
-	xyz(φ, λ) {
+	xyz(φ: number, λ: number): Vector {
 		throw "Unimplemented";
 	}
 
 	/**
 	 * return the 2D parameterization corresponding to the given parameters
 	 */
-	φλ(x, y, z) {
+	φλ(x: number, y: number, z: number): Place {
 		throw "Unimplemented";
 	}
 
@@ -173,7 +186,7 @@ class Surface {
 	 * return the normalized vector pointing outward at this node. the node may be assumed
 	 * to be on this Surface.
 	 */
-	normal(node) {
+	normal(node: Place): Vector {
 		throw "Unimplemented";
 	}
 
@@ -181,13 +194,19 @@ class Surface {
 	 * orthodromic distance from A to B on the surface (it's okay if it's just
 	 * an approximation).
 	 */
-	distance(a, b) {
+	distance(a: Place, b: Place): number {
 		throw "Unimplemented";
 	}
 }
 
 
-class Spheroid extends Surface {
+export class Spheroid extends Surface {
+	private readonly radius: number;
+	private readonly aspectRatio: number;
+	private readonly flattening: number;
+	private readonly eccentricity: number;
+	private readonly obliquity: number;
+
 	constructor(radius, gravity, omega, obliquity) {
 		super(-Math.PI/2, Math.PI/2);
 		this.radius = radius; // keep radius in km
@@ -204,50 +223,50 @@ class Spheroid extends Surface {
 		const b = Math.atan(1/this.aspectRatio);
 		const m = Math.trunc(2*Math.PI/Math.hypot(Math.sin(b)/this.aspectRatio, 1 - Math.cos(b)));
 		const n = 4;
-		const nodes = [];
+		const nodos = [];
 		for (let i = 1; i < n; i ++) // construct a grid of points,
 			for (let j = 0; j < m; j ++)
-				nodes.push(new Node(null, {
+				nodos.push(new Nodo(null, {
 					φ: Math.PI*(i/n - .5),
 					λ: 2*Math.PI*(j + .5*(i%2))/m,
 				}, this));
-		const kS = nodes.length; // assign Nodes to the poles,
-		nodes.push(new Node(null, { φ: -Math.PI/2, λ: 0 }, this));
-		const kN = nodes.length;
-		nodes.push(new Node(null, { φ: Math.PI/2, λ: 0 }, this));
+		const kS = nodos.length; // assign Nodes to the poles,
+		nodos.push(new Nodo(null, { φ: -Math.PI/2, λ: 0 }, this));
+		const kN = nodos.length;
+		nodos.push(new Nodo(null, { φ: Math.PI/2, λ: 0 }, this));
 
 		const triangles = []; // and strew it all with triangles
 		for (let j = 0; j < m; j ++)
 			triangles.push(
-				new Triangle(nodes[kS], nodes[(j+1)%m], nodes[j]));
+				new Triangle(nodos[kS], nodos[(j+1)%m], nodos[j]));
 		for (let i = 1; i < n-1; i ++) {
 			for (let j = 0; j < m; j ++) {
 				if (i%2 === 1) {
 					triangles.push(new Triangle(
-						nodes[(i-1)*m + j],
-						nodes[i*m + (j+1)%m],
-						nodes[i*m + j]));
+						nodos[(i-1)*m + j],
+						nodos[i*m + (j+1)%m],
+						nodos[i*m + j]));
 					triangles.push(new Triangle(
-						nodes[(i-1)*m + j],
-						nodes[(i-1)*m + (j+1)%m],
-						nodes[i*m + (j+1)%m]));
+						nodos[(i-1)*m + j],
+						nodos[(i-1)*m + (j+1)%m],
+						nodos[i*m + (j+1)%m]));
 				}
 				else {
 					triangles.push(new Triangle(
-						nodes[(i-1)*m + j],
-						nodes[(i-1)*m + (j+1)%m],
-						nodes[i*m + j]));
+						nodos[(i-1)*m + j],
+						nodos[(i-1)*m + (j+1)%m],
+						nodos[i*m + j]));
 					triangles.push(new Triangle(
-						nodes[(i-1)*m + (j+1)%m],
-						nodes[i*m + (j+1)%m],
-						nodes[i*m + j]));
+						nodos[(i-1)*m + (j+1)%m],
+						nodos[i*m + (j+1)%m],
+						nodos[i*m + j]));
 				}
 			}
 		}
 		for (let j = 0; j < m; j ++)
 			triangles.push(
-				new Triangle(nodes[kN], nodes[(n-2)*m + j], nodes[(n-2)*m + (j+1)%m]));
-		return [nodes, triangles];
+				new Triangle(nodos[kN], nodos[(n-2)*m + j], nodos[(n-2)*m + (j+1)%m]));
+		return {nodos: nodos, triangles: triangles};
 	}
 
 	dsdφ(φ) {
@@ -317,7 +336,7 @@ class Spheroid extends Surface {
  * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the y direction
  * rather than the z.
  */
-class Sphere extends Spheroid {
+export class Sphere extends Spheroid {
 	constructor(radius) {
 		super(radius, 1, 0, Number.NaN);
 	}
@@ -352,8 +371,29 @@ class Sphere extends Spheroid {
 /**
  * A single delaunay vertex/voronoi polygon, which contains geographical information
  */
-class Node {
-	constructor(index, position, surface) {
+export class Nodo {
+	public surface: Surface;
+	public index: number;
+	public φ: number;
+	public λ: number;
+	public pos: Vector;
+	public normal: Vector;
+	public dong: Vector;
+	public nord: Vector;
+	public neighbors: Map<Nodo, Edge>;
+	public between: Nodo[][];
+	public parents: Nodo[];
+	public vertices: Triangle[];
+	public terme: number;
+	public barxe: number;
+	public gawe: number;
+	public biome: string;
+	public plate: number;
+	// public relSpeed: number;
+	public liwe: number;
+	public flag: boolean;
+	
+	constructor(index: number, position: Place, surface: Surface) {
 		this.surface = surface;
 		this.index = index;
 		this.φ = position.φ;
@@ -380,7 +420,7 @@ class Node {
 	/**
 	 * return the triangle which appears left of that from the point of view of this.
 	 */
-	leftOf(that) {
+	leftOf(that): Triangle {
 		if (this.neighbors.get(that).node0 === this)
 			return this.neighbors.get(that).triangleL;
 		else
@@ -390,7 +430,7 @@ class Node {
 	/**
 	 * return the triangle which appears right of that from the point of view of this.
 	 */
-	rightOf(that) {
+	rightOf(that): Triangle {
 		if (this.neighbors.get(that).node0 === this)
 			return this.neighbors.get(that).triangleR;
 		else
@@ -401,7 +441,7 @@ class Node {
 	 * check for the existence of a Triangle containing these three nodes in that order.
 	 * @returns boolean
 	 */
-	inTriangleWith(b, c) {
+	inTriangleWith(b, c): boolean {
 		if (!this.neighbors.has(b))
 			return false;
 		return this.leftOf(b).acrossFrom(this.neighbors.get(b)) === c;
@@ -410,7 +450,7 @@ class Node {
 	/**
 	 * return the Triangles that border this in widershins order.
 	 */
-	getPolygon() {
+	getPolygon(): Triangle[] {
 		if (this.vertices === undefined) { // don't compute this unless you must
 			this.vertices = [this.neighbors.values().next().value.triangleL]; // start with an arbitrary neighboring triangle
 			while (this.vertices.length < this.neighbors.size) {
@@ -425,9 +465,19 @@ class Node {
 
 
 /**
- * A single Delaunay triangle/voronoi vertex, which binds three Nodes
+ * A single Delaunay triangle/voronoi vertex, which binds three Nodos
  */
-class Triangle {
+export class Triangle {
+	public vertices: Nodo[];
+	public edges: Edge[];
+	public neighbors: Map<Triangle, Edge>;
+	public surface: Surface;
+	public children: Triangle[];
+	public circumcenter: Place;
+	public liwe: number;
+	public φ: number;
+	public λ: number;
+
 	constructor(a, b, c) {
 		this.vertices = [a, b, c]; // nodes, ordered widdershins
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
@@ -456,7 +506,7 @@ class Triangle {
 	 * hint at the direction of the surface. must return false for points outside the
 	 * triangle's circumcircle.
 	 */
-	contains(r) {
+	contains(r): boolean {
 		const totalNormal = this.vertices[0].normal.plus(
 			this.vertices[1].normal).plus(this.vertices[2].normal);
 		if (r.normal.dot(totalNormal) < 0)
@@ -504,14 +554,14 @@ class Triangle {
 			denominator += a.v * (b.u - c.u);
 			nSum += a.n;
 		}
-		const center = {
+		let center: any = {
 			v:  vNumerator/denominator/2,
 			u: -uNumerator/denominator/2,
-			n:  nSum/3};
-
-		center.x = vHat.x*center.v + uHat.x*center.u + nHat.x*center.n;
-		center.y = vHat.y*center.v + uHat.y*center.u + nHat.y*center.n;
-		center.z = vHat.z*center.v + uHat.z*center.u + nHat.z*center.n;
+			n:  nSum/3 };
+		center = {
+			x: vHat.x*center.v + uHat.x*center.u + nHat.x*center.n,
+			y: vHat.y*center.v + uHat.y*center.u + nHat.y*center.n,
+			z: vHat.z*center.v + uHat.z*center.u + nHat.z*center.n };
 		this.circumcenter = this.surface.φλ(center.x, center.y, center.z); // finally, put it back in φ-λ space
 
 		this.φ = this.circumcenter.φ; // and make these values a bit easier to access
@@ -521,7 +571,7 @@ class Triangle {
 	/**
 	 * Find and return the vertex across from the given edge.
 	 */
-	acrossFrom(edge) {
+	acrossFrom(edge): Nodo {
 		for (const vertex of this.vertices)
 			if (vertex !== edge.node0 && vertex !== edge.node1)
 				return vertex;
@@ -531,7 +581,7 @@ class Triangle {
 	/**
 	 * Find and return the vertex clockwise of the given edge.
 	 */
-	clockwiseOf(node) {
+	clockwiseOf(node): Nodo {
 		for (let i = 0; i < 3; i ++)
 			if (this.vertices[i] === node)
 				return this.vertices[(i+2)%3];
@@ -540,13 +590,13 @@ class Triangle {
 	/**
 	 * Find and return the vertex widershins of the given edge.
 	 */
-	widershinsOf(node) {
+	widershinsOf(node): Nodo {
 		for (let i = 0; i < 3; i ++)
 			if (this.vertices[i] === node)
 				return this.vertices[(i+1)%3];
 	}
 
-	toString() {
+	toString(): string {
 		return `${this.vertices[0].pos}--${this.vertices[1].pos}--${this.vertices[2].pos}`;
 	}
 }
@@ -555,7 +605,14 @@ class Triangle {
 /**
  * A line between two connected Nodes, and separating two triangles
  */
-class Edge {
+export class Edge {
+	public node0: Nodo;
+	public node1: Nodo;
+	public triangleL: Triangle;
+	public triangleR: Triangle;
+	public length: number;
+	public liwe: number;
+
 	constructor(node0, triangleR, node1, triangleL, length) {
 		this.node0 = node0; // save these new values for the edge
 		this.triangleR = triangleR;
@@ -572,73 +629,86 @@ class Edge {
 		this.node1.neighbors.delete(this.node0);
 	}
 
-	toString() {
+	toString(): string {
 		return `${this.node0.pos}--${this.node1.pos}`;
 	}
 }
 
 
 /**
+ * Similar to a Vector but in spherical coordinates
+ */
+export interface Place {
+	φ: number;
+	λ: number;
+}
+
+
+/**
  * A simple class to bind vector operations
  */
-class Vector {
+export class Vector {
+	public x: number;
+	public y: number;
+	public z: number;
+
 	constructor(x, y, z) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
 
-	times(a) {
+	times(a): Vector {
 		return new Vector(
 			this.x * a,
 			this.y * a,
 			this.z * a);
 	}
 
-	over(a) {
+	over(a): Vector {
 		return new Vector(
 			this.x / a,
 			this.y / a,
 			this.z / a);
 	}
 
-	plus(that) {
+	plus(that): Vector {
 		return new Vector(
 			this.x + that.x,
 			this.y + that.y,
 			this.z + that.z);
 	}
 
-	minus(that) {
+	minus(that): Vector {
 		return new Vector(
 			this.x - that.x,
 			this.y - that.y,
 			this.z - that.z);
 	}
 
-	dot(that) {
+	dot(that): number {
 		return (
 			this.x*that.x +
 			this.y*that.y +
 			this.z*that.z);
 	}
 
-	cross(that) {
+	cross(that): Vector {
 		return new Vector(
 			this.y*that.z - this.z*that.y,
 			this.z*that.x - this.x*that.z,
 			this.x*that.y - this.y*that.x);
 	}
 
-	sqr() {
+	sqr(): number {
 		return this.dot(this);
 	}
 
-	norm() {
+	norm(): Vector {
 		return this.times(Math.pow(this.sqr(), -0.5));
 	}
 
-	toString() {
+	toString(): string {
 		return `<${Math.trunc(this.x)}, ${Math.trunc(this.y)}, ${Math.trunc(this.z)}>`;
 	}
 }

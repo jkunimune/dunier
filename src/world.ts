@@ -1,11 +1,17 @@
-// world.js
-'use strict';
+// world.ts
+
+import {Nodo, Surface} from "./surface.js";
+import {Random} from "./random.js";
 
 
 /**
  * collection of civilizations and languages that goes on a planet
  */
-class World {
+export class World {
+	public planet: Surface;
+	public barbaria: Set<Nodo>;
+	public civs: Set<Civ>;
+
 	constructor(planet) {
 		this.planet = planet;
 		this.barbaria = new Set(planet.nodes); // list of tiles that are not politically united
@@ -18,9 +24,9 @@ class World {
 	 * @param surface
 	 * @param rng
 	 */
-	generateHistory(year, surface, rng) {
+	generateHistory(year: number, surface: Surface, rng: Random) {
 		let i = 0;
-		for (const tile of surface.nodes) {
+		for (const tile of surface.nodos) {
 			if (tile.biome !== 'samud' && rng.probability(0.04)) {
 				this.civs.add(new Civ(tile, i, this));
 				i ++;
@@ -31,11 +37,17 @@ class World {
 
 
 class Civ {
-	constructor(capital, id, world) {
+	public readonly id: number;
+	public nodos: Set<Nodo>;
+	public capital: Nodo;
+	public language: Language;
+	private world: World;
+
+	constructor(capital: Nodo, id: number, world: World) {
 		this.capital = capital;
 		this.id = id;
 		this.world = world;
-		this.nodes = new Set([capital]);
+		this.nodos = new Set([capital]);
 		world.barbaria.delete(capital); // this is no longer uncivilized
 		this.language = new Language();
 	}

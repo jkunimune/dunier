@@ -119,7 +119,7 @@
 
               <div class="col-xs-12 col-md-8 col-lg-9">
                 <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
+                     viewBox="0 0 2 2" width="100%" height="100%" id="terrain-map">
                   <filter id="blur">
                     <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
                   </filter>
@@ -151,7 +151,7 @@
 
               <div class="col-xs-12 col-md-8 col-lg-9">
                 <svg version="1.1" xmlns="http://www.w3.org/2000/svg"
-                     viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
+                     viewBox="0 0 2 2" width="100%" height="100%" id="history-map">
                   <g id="history-tiles"></g>
                 </svg>
               </div>
@@ -166,25 +166,16 @@
       </div>
     </div>
 
-    <!-- dependencies: JQuery, Bootstrap, Bootstrap Input Spinner, Plot.ly, SVG.js, TinyQueue -->
+    <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-    <script src="./src/bootstrap-input-spinner.js"></script>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@svgdotjs/svg.js@3.0/dist/svg.min.js"></script>
-    <script src="https://unpkg.com/tinyqueue@2.0.0/tinyqueue.min.js"></script>
+    <script src="./src/lib/bootstrap-input-spinner.js"></script>
     <script>
       $("input[type='number']").inputSpinner()
     </script>
 
     <!-- generation scripts -->
-    <script src="./src/utils.js"></script>
-    <script src="./src/random.js"></script>
-    <script src="./src/surface.js"></script>
-    <script src="./src/terrain.js"></script>
-    <script src="./src/world.js"></script>
-    <script src="./src/map.js"></script>
-    <script src="./src/index.js"></script>
+    <script src="./build/main.js" type="module"></script>
   </body>
 </html>

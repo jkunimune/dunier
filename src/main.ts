@@ -1,5 +1,20 @@
-// index.js: interfaces with forms and plots
-'use strict';
+// index.ts: interfaces with forms and plots
+
+import "../node_modules/jquery/dist/jquery.min.js";
+// @ts-ignore
+const $ = window.$; // why is this like this? I don't know.
+import "../node_modules/plotly.js/dist/plotly.js";
+// @ts-ignore
+const Plotly = window.Plotly;
+import "../node_modules/svg.js/dist/svg.min.js";
+// @ts-ignore
+const SVG = window.SVG;
+
+import {generateTerrain} from "./terrain.js";
+import {Sphere, Spheroid, Surface} from "./surface.js";
+import {World} from "./world.js";
+import {Azimuthal, Chart} from "./map.js";
+import {Random} from "./random.js";
 
 
 const TERRAIN_COLORMAP = [
@@ -71,14 +86,14 @@ const CATEGORY_COLORS = [
 const RIVER_DISPLAY_THRESHOLD = 2e6; // km^2
 
 
-let surface = undefined;
-let world = undefined;
+let surface: Surface = null;
+let world: World = null;
 
 
 /**
  * Once the page is ready, start the algorithm!
  */
-$( document ).ready(function() {
+$(document).ready(() => {
 	console.log("ready!");
 });
 
@@ -86,14 +101,13 @@ $( document ).ready(function() {
 /**
  * The "Toroid" option makes the "Tidally-locked" checkbox nonapplicable.
  */
-$( '#planet-type' ).on('click', function() {
+$('#planet-type').on('click', () => {
 	const checkbox = $('#planet-locked');
-	if (this.value === '1') { // if it's toroidal now
+	if ($('#planet-type').val() === '1') { // if it's toroidal now
 		if (checkbox.prop('checked')) // uncheck tidal locking if we need to
 			checkbox.click();
 		checkbox.prop('disabled', true); // and disable it
-	}
-	else { // if it's anything else
+	} else { // if it's anything else
 		checkbox.prop('disabled', false); // enable it
 	}
 });
@@ -102,50 +116,47 @@ $( '#planet-type' ).on('click', function() {
 /**
  * The "Tidally-locked" checkbox makes some other options nonapplicable.
  */
-$( '#planet-locked' ).on('click', function() {
-	$('#planet-day').prop('disabled', this.checked); // rotation period
-	$('#planet-tilt').prop('disabled', this.checked); // and obliquity are both irrelevant
+$('#planet-locked').on('changed', () => {
+	const value = $('#planet-locked').prop('checked');
+	$('#planet-day').prop('disabled', value); // rotation period
+	$('#planet-tilt').prop('disabled', value); // and obliquity are both irrelevant
 });
 
 
 /**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
-$( '#planet-apply' ).on('click', function() {
+$('#planet-apply').on('click', () => {
 	const planetType = $('#planet-type').val(); // read input
 	const tidallyLocked = $('#planet-locked').prop('checked');
-	const radius = $('#planet-size').val() / (2*Math.PI);
-	const gravity = $('#planet-gravity').val() * 9.8;
-	const spinRate = 1/$('#planet-day').val() * 2*Math.PI/3600;
-	const obliquity = $('#planet-tilt').val() * Math.PI/180;
+	const radius = <number> $('#planet-size').val() / (2 * Math.PI);
+	const gravity = <number> $('#planet-gravity').val() * 9.8;
+	const spinRate = 1 / <number> $('#planet-day').val() * 2 * Math.PI / 3600;
+	const obliquity = <number> $('#planet-tilt').val() * Math.PI / 180;
 
 	try { // create a surface
 		if (planetType === '0') { // spheroid
 			if (tidallyLocked) { // spherical
 				surface = new Sphere(
 					radius);
-			}
-			else { // oblate
+			} else { // oblate
 				surface = new Spheroid(
 					radius,
 					gravity,
 					spinRate,
 					obliquity);
 			}
-		}
-		else if (planetType === '1') { // toroid
+		} else if (planetType === '1') { // toroid
 			// surface = new Toroid(
 			// 	radius,
 			// 	gravity,
 			// 	spinRate,
 			// 	obliquity);
-		}
-		else if (planetType === '2') { // plane
+		} else if (planetType === '2') { // plane
 			if (tidallyLocked) { // with static sun
 				// surface = new StaticPlane(
 				// 	radius);
-			}
-			else { // with orbiting sun
+			} else { // with orbiting sun
 				// surface = new Plane(
 				// 	radius,
 				// 	obliquity);
@@ -161,15 +172,15 @@ $( '#planet-apply' ).on('click', function() {
 				"  </button>\n" +
 				"</div>");
 			return;
-		}
-		else
+		} else
 			throw err;
 	}
 
 	const [x, y, z, I] = surface.parameterize(18);
 	const mapDiv = $('#planet-map')[0];
+	// const data: Plotly.PlotData[] = [{
 	const data = [{
-		type: "surface",
+		type: 'surface',
 		x: x,
 		y: y,
 		z: z,
@@ -187,18 +198,18 @@ $( '#planet-apply' ).on('click', function() {
 	const config = {
 		responsive: true,
 	};
-	Plotly.react(mapDiv, data, layout, config);
+	Plotly.react(mapDiv, data, layout, config).then(() => {});
 });
 
 
 /**
  * Generate the heightmap and biomes on the planet's surface.
  */
-$( '#terrain-apply' ).on('click', function() {
-	const randomSeme = $('#terrain-seme').val();
-	const numContinents = $('#terrain-continents').val() * 2;
-	const seaLevel = $('#terrain-samud').val();
-	const avgTerme = $('#terrain-terme').val();
+$('#terrain-apply').on('click', () => {
+	const randomSeme = <number> $('#terrain-seme').val();
+	const numContinents = <number> $('#terrain-continents').val() * 2;
+	const seaLevel = <number> $('#terrain-samud').val();
+	const avgTerme = <number> $('#terrain-terme').val();
 
 	let rng = new Random(randomSeme); // use the random seed
 	surface.populate(rng); // finish constructing the surface
@@ -210,26 +221,26 @@ $( '#terrain-apply' ).on('click', function() {
 		surface, rng); // create the terrain!
 
 	const mapper = new Chart(new Azimuthal(surface));
-	const colorLayer = SVG('#terrain-tiles');
+	const colorLayer = SVG($('#terrain-tiles')[0]).viewbox(-1, -1, 2, 2);
 	colorLayer.clear();
 	for (const biome in BIOME_COLORS)
-		mapper.fill([...surface.nodes].filter(n => n.biome === biome), colorLayer, BIOME_COLORS[biome]);
-	const riverLayer = SVG('#terrain-nade');
+		mapper.fill([...surface.nodos].filter(n => n.biome === biome), colorLayer, BIOME_COLORS[biome]);
+	const riverLayer = SVG($('#terrain-nade')[0]).viewbox(-1, -1, 2, 2);
 	riverLayer.clear();
 	mapper.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD),
 		riverLayer, BIOME_COLORS['samud'], .003, true);
-	const reliefLayer = SVG('#terrain-shade');
+	const reliefLayer = SVG($('#terrain-shade')[0]).viewbox(-1, -1, 2, 2);
 	reliefLayer.clear();
-	mapper.shade(surface.triangles, reliefLayer, 'gawe');
+	// mapper.shade(surface.triangles, reliefLayer, 'gawe');
 });
 
 
 /**
  * Generate the countries on the planet's surface.
  */
-$( '#history-apply' ).on('click', function() {
-	const randomSeme = $('#history-seme').val();
-	const year = $('#history-nen').val();
+$('#history-apply').on('click', () => {
+	const randomSeme = <number> $('#history-seme').val();
+	const year = <number> $('#history-nen').val();
 
 	world = new World(surface);
 
@@ -239,14 +250,14 @@ $( '#history-apply' ).on('click', function() {
 		surface, rng); // create the terrain!
 
 	const mapper = new Chart(new Azimuthal(surface));
-	const colorLayer = SVG('#history-tiles');
+	const colorLayer = SVG($('#history-tiles')[0]).viewbox(-1, -1, 2, 2);
 	colorLayer.clear();
 	mapper.fill([...world.barbaria].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS['kale']);
 	for (const civ of world.civs)
-		mapper.fill([...civ.nodes].filter(n => n.biome !== 'samud'), colorLayer,
-			CATEGORY_COLORS[civ.id%CATEGORY_COLORS.length]);
-	mapper.fill([...surface.nodes].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS['samud']);
-	const reliefLayer = SVG('#terrain-shade');
+		mapper.fill([...civ.nodos].filter(n => n.biome !== 'samud'), colorLayer,
+			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length]);
+	mapper.fill([...surface.nodos].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS['samud']);
+	const reliefLayer = SVG($('#terrain-shade')[0]).viewbox(-1, -1, 2, 2);
 	reliefLayer.clear();
-	mapper.shade(surface.triangles, reliefLayer, 'gawe');
+	// mapper.shade(surface.triangles, reliefLayer, 'gawe');
 });

@@ -1,10 +1,12 @@
-// utils.js: some mathy methods that need not clutter up the other files
-'use strict';
+// utils.ts: some mathy methods that need not clutter up the other files
+
+import {Edge, Nodo, Surface, Triangle, Vector} from "./surface.js";
+
 
 /**
  * maximum index.
  */
-function argmax(arr) {
+export function argmax(arr: number[]): number {
 	let maxIdx = null;
 	for (let i = 0; i < arr.length; i ++)
 		if (maxIdx == null || arr[i] > arr[maxIdx])
@@ -15,28 +17,28 @@ function argmax(arr) {
 /**
  * second Legendre polynomial.
  */
-function legendreP2(y) {
+export function legendreP2(y: number): number {
 	return (3*y*y - 1)/2;
 }
 
 /**
  * second Legendre polynomial.
  */
-function legendreP4(y) {
+export function legendreP4(y: number): number {
 	return ((35*y*y - 30)*y*y + 3)/8;
 }
 
 /**
  * second Legendre polynomial.
  */
-function legendreP6(y) {
+export function legendreP6(y: number): number {
 	return (((231*y*y - 315)*y*y + 105)*y*y - 5)/16;
 }
 
 /**
  * linearly interpolate x from the sorted function X onto the corresponding output Y.
  */
-function linterp(x, X, Y) {
+export function linterp(x: number, X: number[], Y: number[]): number {
 	if (X.length !== Y.length)
 		throw "array lengths must match";
 
@@ -55,22 +57,22 @@ function linterp(x, X, Y) {
 /**
  * combine the two arrays and remove duplicates.
  */
-function union(a, b) {
-	a = [...a];
-	b = [...b];
-	return a.concat(b.filter(e => !a.includes(e)));
+export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
+	const aa = [...a];
+	const ba = [...b];
+	return aa.concat(ba.filter(e => !aa.includes(e)));
 }
 
 /**
  * set the triangles attribute of the surface, and set up all the Edges and references
  * and stuff
  */
-function delaunayTriangulate(surf) {
-	const [dummyNodes, partition] = surf.partition(); // load up a top-level set of triangles
-	const triangles = partition.slice(); // hold onto that list and make a copy
+export function delaunayTriangulate(surf: Surface) {
+	const partition = surf.partition(); // load up a top-level set of triangles
+	const triangles = partition.triangles.slice(); // hold onto that list and make a copy
 
-	for (const node of surf.nodes) { // for each node,
-		const containing = findSmallestEncompassing(node, partition, surf); // find out which triangle it's in
+	for (const node of surf.nodos) { // for each node,
+		const containing = findSmallestEncompassing(node, partition.triangles, surf); // find out which triangle it's in
 		for (let j = 0; j < 3; j ++) { // add the three new child triangles
 			triangles.push(new Triangle(
 				node,
@@ -92,7 +94,7 @@ function delaunayTriangulate(surf) {
 				node.between.push([edge.node0, edge.node1]);
 	}
 
-	for (const dummyNode of dummyNodes) { // now remove the original vertices
+	for (const dummyNode of partition.nodos) { // now remove the original vertices
 		triangles.push(...removeNode(dummyNode));
 	}
 
@@ -106,7 +108,7 @@ function delaunayTriangulate(surf) {
  * Triangles between the surrounding nodes to replace them.
  * @param node the dummy node to be removed
  */
-function removeNode(node) {
+function removeNode(node: Nodo) {
 	const oldTriangles = node.getPolygon();
 	let newTriangles, newEdges, flipQueue, flipImmune;
 	let foundGoodStart = false;
@@ -158,7 +160,7 @@ function removeNode(node) {
  * kept up to date.
  * @return Array of Edges that were flipped
  */
-function flipEdges(queue, immune, newestNode, allTriangles) {
+export function flipEdges(queue: Edge[], immune: Edge[], newestNode: Nodo, allTriangles: Triangle[]) {
 	const flipped = [];
 
 	while (queue.length > 0) { // go through that queue
@@ -200,7 +202,7 @@ function flipEdges(queue, immune, newestNode, allTriangles) {
 /**
  * Check whether a--c is a Delaunay edge in 2D given the existence of b and d
  */
-function isDelaunay(a, b, c, d) {
+function isDelaunay(a, b, c, d): boolean {
 	const mat = [
 		[a.x - d.x, a.y - d.y, a.x*a.x + a.y*a.y - d.x*d.x - d.y*d.y],
 		[b.x - d.x, b.y - d.y, b.x*b.x + b.y*b.y - d.x*d.x - d.y*d.y],
@@ -218,7 +220,7 @@ function isDelaunay(a, b, c, d) {
 /**
  * go down the chain of triangles to find the one that contains this point
  */
-function findSmallestEncompassing(node, partition, surf) {
+function findSmallestEncompassing(node: Nodo, partition: Triangle[], surf: Surface): Triangle {
 	for (const triangle of partition) {
 		if (triangle.contains(node)) {
 			if (triangle.children == null)

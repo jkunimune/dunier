@@ -12,7 +12,7 @@
     $.fn.val = function (value) {
         if (arguments.length >= 1) {
             if (this[0] && this[0]["bootstrap-input-spinner"] && this[0].setValue) {
-                var element = this[0];
+                var element = this[0]
                 setTimeout(function () {
                     element.setValue(value)
                 })
@@ -33,8 +33,7 @@
             autoDelay: 500, // ms holding before auto value change
             autoInterval: 100, // speed of auto value change
             boostThreshold: 10, // boost after these steps
-            boostMultiplier: "auto", // you can also set a constant number as multiplier
-            locale: null // the locale for number rendering; if null, the browsers language is used
+            boostMultiplier: "auto" // you can also set a constant number as multiplier
         }
         for (var option in options) {
             config[option] = options[option]
@@ -44,13 +43,13 @@
             '<div class="input-group-prepend">' +
             '<button style="min-width: ' + config.buttonsWidth + '" class="btn btn-decrement ' + config.buttonsClass + '" type="button">' + config.decrementButton + '</button>' +
             '</div>' +
-            '<input type="text" style="text-align: ' + config.textAlign + '" class="form-control"/>' +
+            '<input type="text" inputmode="decimal" style="text-align: ' + config.textAlign + '" class="form-control"/>' +
             '<div class="input-group-append">' +
             '<button style="min-width: ' + config.buttonsWidth + '" class="btn btn-increment ' + config.buttonsClass + '" type="button">' + config.incrementButton + '</button>' +
             '</div>' +
             '</div>'
 
-        var locale = config.locale || navigator.language || "en-US"
+        var locale = navigator.language || "en-US"
 
         this.each(function () {
 
@@ -209,6 +208,7 @@
                 // copy properties from original to the new input
                 $input.prop("required", $original.prop("required"))
                 $input.prop("placeholder", $original.prop("placeholder"))
+                $input.attr("inputmode", $original.attr("inputmode") || "decimal")
                 var disabled = $original.prop("disabled")
                 var readonly = $original.prop("readonly")
                 $input.prop("disabled", disabled)

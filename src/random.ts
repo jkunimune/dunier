@@ -1,12 +1,16 @@
-// defines a pseudorandom number generator
-'use strict';
+// random.ts: defines a pseudorandom number generator
 
 /**
  * a simple seedable pseudorandom number generator, capable of drawing from a handful of
  * useful distributions. seed must be an integer.
  */
-class Random {
-	constructor(seed) {
+export class Random {
+	private readonly seed: number;
+	private value: number;
+	private index: number;
+	private boxMullerBacklog: number;
+
+	constructor(seed: number) {
 		this.seed = seed;
 		this.value = seed;
 		this.index = 0;
@@ -15,20 +19,20 @@ class Random {
 			this.next(); // throw out the first few values, which are not random at all
 	}
 
-	next() {
+	next(): number {
 		this.value = (this.value * 0x19660D + 0x3C6EF35F) % 0x100000000;
 		return this.value / 0x100000000;
 	}
 
-	probability(p) {
+	probability(p: number): boolean {
 		return this.next() < p;
 	}
 
-	uniform(min, max) {
+	uniform(min: number, max: number): number {
 		return min + (max - min)*this.next();
 	}
 
-	normal(mean, std) {
+	normal(mean: number, std: number): number {
 		if (this.boxMullerBacklog != null) {
 			const z0 = this.boxMullerBacklog;
 			this.boxMullerBacklog = null;
@@ -42,11 +46,11 @@ class Random {
 		return std*z1 + mean;
 	}
 
-	exponential(mean) {
+	exponential(mean: number): number {
 		return mean*Math.log(this.next());
 	}
 
-	discrete(min, max) {
+	discrete(min: number, max: number): number {
 		return Math.trunc(this.uniform(min, max));
 	}
 
@@ -56,7 +60,7 @@ class Random {
 	 * the values of this one. this may be useful if one wants to produce multiple static
 	 * series of pseudorandom numbers where the lengths of the series are variable.
 	 */
-	reset() {
+	reset(): Random {
 		return new Random(this.seed + 1);
 	}
 }
