@@ -9,47 +9,102 @@ import {Random} from "./random.js";
  */
 export class World {
 	public planet: Surface;
-	public barbaria: Set<Nodo>;
-	public civs: Set<Civ>;
+	public civs: Set<Civi>;
+	private numCivs: number = 0;
 
 	constructor(planet) {
 		this.planet = planet;
-		this.barbaria = new Set(planet.nodes); // list of tiles that are not politically united
 		this.civs = new Set(); // list of countries in the world
 	}
 
 	/**
 	 * populate the World with all the civs and stuff.
-	 * @param year
-	 * @param surface
-	 * @param rng
+	 * @param century the number of timesteps
+	 * @param rng the random number generator to use
 	 */
-	generateHistory(year: number, surface: Surface, rng: Random) {
-		let i = 0;
-		for (const tile of surface.nodos) {
-			if (tile.biome !== 'samud' && rng.probability(0.04)) {
-				this.civs.add(new Civ(tile, i, this));
-				i ++;
+	generateHistory(century: number, rng: Random) {
+		for (let i = 0; i < century; i ++) {
+			this.spawnCivs(rng);
+			this.spreadCivs(rng);
+		}
+	}
+
+	/**
+	 * generate a few new civs in uninhabited territory
+	 * @param rng the random number generator to use
+	 */
+	spawnCivs(rng: Random) {
+		for (const tile of this.planet.nodos) {
+			if (tile.biome !== 'samud' && this.currentRuler(tile) == null) {
+				const canivia = 0.01;
+				if (rng.probability(canivia)) {
+					this.civs.add(new Civi(tile, this.numCivs, this));
+					this.numCivs++;
+				}
 			}
 		}
+	}
+
+	/**
+	 * expand the territories of expansionist civs
+	 * @param rng the random number generator to use
+	 */
+	spreadCivs(rng: Random) {
+		for (const here of this.planet.nodos) {
+			if (this.currentRuler(here) == null) {
+				for (const there of here.neighbors.keys()) {
+					if (this.currentRuler(there) != null) {
+						if (rng.probability(0.5)) {
+							this.currentRuler(there).conquer(here);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * determine the current Civi of this tile
+	 */
+	currentRuler(tile: Nodo): Civi {
+		for (const civ of this.civs)
+			if (civ.nodos.has(tile))
+				return civ;
+		return null;
 	}
 }
 
 
-class Civ {
+/**
+ * a single political entity
+ */
+class Civi {
 	public readonly id: number;
-	public nodos: Set<Nodo>;
-	public capital: Nodo;
-	public language: Language;
+	public nodos: Set<Nodo>; // the tiles it owns
+	public capital: Nodo; // the capital city
+	public language: Language; // the official language
+	private kenare: Set<Nodo>; // the tiles adjacent to tiles it owns (this always contains all adjacent lands and no owned lands)
 	private world: World;
 
 	constructor(capital: Nodo, id: number, world: World) {
-		this.capital = capital;
-		this.id = id;
 		this.world = world;
-		this.nodos = new Set([capital]);
-		world.barbaria.delete(capital); // this is no longer uncivilized
+		this.id = id;
+		this.nodos = new Set();
+		this.kenare = new Set();
+		this.conquer(capital);
+		this.capital = capital;
 		this.language = new Language();
+	}
+
+	conquer(tile: Nodo) {
+		this.nodos.add(tile);
+		this.kenare.delete(tile);
+		for (const neighbor of tile.neighbors.keys()) {
+			if (this.world.currentRuler(neighbor) != this) {
+				this.kenare.add(neighbor);
+			}
+		}
 	}
 }
 

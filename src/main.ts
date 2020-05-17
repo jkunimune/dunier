@@ -240,19 +240,19 @@ $('#terrain-apply').on('click', () => {
  */
 $('#history-apply').on('click', () => {
 	const randomSeme = <number> $('#history-seme').val();
-	const year = <number> $('#history-nen').val();
+	const centuries = <number> $('#history-nen').val() / 100 + 30;
 
 	world = new World(surface);
 
 	let rng = new Random(randomSeme); // use the random seed
 	world.generateHistory(
-		year,
-		surface, rng); // create the terrain!
+		centuries,
+		rng); // create the terrain!
 
 	const mapper = new Chart(new Azimuthal(surface));
 	const colorLayer = SVG($('#history-tiles')[0]).viewbox(-1, -1, 2, 2);
 	colorLayer.clear();
-	mapper.fill([...world.barbaria].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS['kale']);
+	mapper.fill([...surface.nodos].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS['kale']);
 	for (const civ of world.civs)
 		mapper.fill([...civ.nodos].filter(n => n.biome !== 'samud'), colorLayer,
 			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length]);

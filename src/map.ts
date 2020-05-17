@@ -27,12 +27,6 @@ function trace(lines: Iterable<Place[]>): PathSegment[] {
 				throw Error("up slightly lower!");
 		}
 		let line = queue.pop(); // check each given line
-		console.log('adding a line');
-		console.log(line);
-		console.log("here'z whut we got:");
-		console.log(heads);
-		console.log(tails);
-		console.log(torsos);
 		const head = line[0], tail = line[line.length-1];
 		consolidated.add(line); // add it to the list
 		if (!heads.has(head))  heads.set(head, []); // and connect it to these existing sets
@@ -49,11 +43,8 @@ function trace(lines: Iterable<Place[]>): PathSegment[] {
 		for (const endpoint of [head, tail]) { // first, on either end...
 			if (torsos.has(endpoint)) { // does it run into the middle of another?
 				const {containing, index} = torsos.get(endpoint); // then that one must be cut in half
-				console.log(containing.length);
-				console.log(index);
 				const fragment = containing.slice(index);
 				containing.splice(index + 1);
-				console.log(containing.length);
 				consolidated.add(fragment);
 				if (endpoint === head)  tails.set(endpoint, []);
 				else                    heads.set(endpoint, []);
@@ -63,9 +54,6 @@ function trace(lines: Iterable<Place[]>): PathSegment[] {
 				torsos.delete(endpoint);
 				for (let i = 1; i < fragment.length - 1; i ++)
 					torsos.set(fragment[i], {containing: fragment, index: i});
-				console.log(line[0].φ+' -> '+line[line.length-1].φ);
-				console.log(containing[0].φ+' -> '+containing[containing.length-1].φ);
-				console.log(fragment[0].φ+' -> '+fragment[fragment.length-1].φ);
 			}
 		}
 
@@ -77,12 +65,10 @@ function trace(lines: Iterable<Place[]>): PathSegment[] {
 		}
 
 		if (tails.has(head)) { // does its beginning connect to another?
-			console.log('wumbo');
 			if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
 				line = combine(tails.get(head)[0], line); // put them together
 		}
 		if (heads.has(tail)) { // does its end connect to another?
-			console.log('i wumbo');
 			if (heads.get(tail).length === 1 && tails.get(tail).length === 1) // if these fit together exclusively
 				line = combine(line, heads.get(tail)[0]); // put them together
 		}
