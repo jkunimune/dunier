@@ -9,19 +9,33 @@ import {Random} from "./random.js";
 
 
 const TIME_STEP = 100; // year
-const INVASION_SPEED = 10; // km/year
+const SPAWN_RATE = .00000001; // 1/year/km^2
+const INVASION_SPEED = 50; // km/year
+const DOMUBLIA = { // terrain modifiers for civ spawning and population growth
+	'samud':       0.0,
+	'potistan':    0.3,
+	'barxojangal': 0.3,
+	'jangal':      3.0,
+	'lage':        0.0,
+	'taige':       0.3,
+	'piristan':    0.1,
+	'grasistan':   1.0,
+	'registan':    0.1,
+	'tundar':      0.1,
+	null:          NaN,
+};
 const PASABLIA = { // terrain modifiers for invasion speed
-	'samud':       .5,
-	'potistan':    '#444921',
-	'barxojangal': .3,
-	'jangal':      1,
-	'lage':        1,
-	'taige':       1,
-	'piristan':    .5,
-	'grasistan':   1.5,
-	'registan':    .3,
-	'tundar':      .5,
-	null:         NaN,
+	'samud':       0.3,
+	'potistan':    0.1,
+	'barxojangal': 0.1,
+	'jangal':      1.0,
+	'lage':        1.0,
+	'taige':       1.0,
+	'piristan':    0.3,
+	'grasistan':   3.0,
+	'registan':    0.1,
+	'tundar':      0.3,
+	null:          NaN,
 };
 
 
@@ -56,8 +70,8 @@ export class World {
 	 */
 	spawnCivs(rng: Random) {
 		for (const tile of this.planet.nodos) {
-			if (tile.biome !== 'samud' && this.currentRuler(tile) == null) {
-				const canivia = 0.005;
+			if (this.currentRuler(tile) == null) {
+				const canivia = SPAWN_RATE*TIME_STEP*tile.surface.area/tile.surface.nodos.size*DOMUBLIA[tile.biome];
 				if (rng.probability(canivia)) {
 					this.civs.add(new Civ(tile, this.numCivs, this, rng));
 					this.numCivs ++;
