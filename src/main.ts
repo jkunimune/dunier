@@ -129,10 +129,10 @@ $('#planet-locked').on('changed', () => {
 $('#planet-apply').on('click', () => {
 	const planetType = $('#planet-type').val(); // read input
 	const tidallyLocked = $('#planet-locked').prop('checked');
-	const radius = <number> $('#planet-size').val() / (2 * Math.PI);
-	const gravity = <number> $('#planet-gravity').val() * 9.8;
-	const spinRate = 1 / <number> $('#planet-day').val() * 2 * Math.PI / 3600;
-	const obliquity = <number> $('#planet-tilt').val() * Math.PI / 180;
+	const radius = Number($('#planet-size').val()) / (2 * Math.PI);
+	const gravity = Number($('#planet-gravity').val()) * 9.8;
+	const spinRate = 1 / Number($('#planet-day').val()) * 2 * Math.PI / 3600;
+	const obliquity = Number($('#planet-tilt').val()) * Math.PI / 180;
 
 	try { // create a surface
 		if (planetType === '0') { // spheroid
@@ -206,10 +206,10 @@ $('#planet-apply').on('click', () => {
  * Generate the heightmap and biomes on the planet's surface.
  */
 $('#terrain-apply').on('click', () => {
-	const randomSeme = <number> $('#terrain-seme').val();
-	const numContinents = <number> $('#terrain-continents').val() * 2;
-	const seaLevel = <number> $('#terrain-samud').val();
-	const avgTerme = <number> $('#terrain-terme').val();
+	const randomSeme = Number($('#terrain-seme').val());
+	const numContinents = Number($('#terrain-continents').val()) * 2;
+	const seaLevel = Number($('#terrain-samud').val());
+	const avgTerme = Number($('#terrain-terme').val());
 
 	let rng = new Random(randomSeme); // use the random seed
 	surface.populate(rng); // finish constructing the surface
@@ -239,14 +239,14 @@ $('#terrain-apply').on('click', () => {
  * Generate the countries on the planet's surface.
  */
 $('#history-apply').on('click', () => {
-	const randomSeme = <number> $('#history-seme').val();
-	const centuries = <number> $('#history-nen').val() / 100 + 30;
+	const randomSeme = Number($('#history-seme').val());
+	const years = Number($('#history-nen').val()) + 3000;
 
 	world = new World(surface);
 
 	let rng = new Random(randomSeme); // use the random seed
 	world.generateHistory(
-		centuries,
+		years,
 		rng); // create the terrain!
 
 	const mapper = new Chart(new Azimuthal(surface));

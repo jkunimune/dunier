@@ -19,19 +19,36 @@ export class Random {
 			this.next(); // throw out the first few values, which are not random at all
 	}
 
+	/**
+	 * return a pseudorandom number in [0, 1)
+	 */
 	next(): number {
 		this.value = (this.value * 0x19660D + 0x3C6EF35F) % 0x100000000;
 		return this.value / 0x100000000;
 	}
 
+	/**
+	 * the red ball fraction of this returning true is p.
+	 * @param p the probability of returning true
+	 */
 	probability(p: number): boolean {
 		return this.next() < p;
 	}
 
+	/**
+	 * return a pseudorandom number in [min, max)
+	 * @param min inclusive minimum value
+	 * @param max exclusive maximum value
+	 */
 	uniform(min: number, max: number): number {
 		return min + (max - min)*this.next();
 	}
 
+	/**
+	 * return a pseudorandom number drawn from a normal distribution
+	 * @param mean the center of the distribution
+	 * @param std the scale of the distribution
+	 */
 	normal(mean: number, std: number): number {
 		if (this.boxMullerBacklog != null) {
 			const z0 = this.boxMullerBacklog;
@@ -46,10 +63,19 @@ export class Random {
 		return std*z1 + mean;
 	}
 
+	/**
+	 * return a pseudorandom number drawn from an exponential distribution
+	 * @param mean the scale of the distribution
+	 */
 	exponential(mean: number): number {
 		return mean*Math.log(this.next());
 	}
 
+	/**
+	 * return a pseudorandom integer between min (inclusive) and max (exclusive)
+	 * @param min inclusive minimum value
+	 * @param max exclusive maximum value
+	 */
 	discrete(min: number, max: number): number {
 		return Math.trunc(this.uniform(min, max));
 	}
