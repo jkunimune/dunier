@@ -253,9 +253,12 @@ $('#history-apply').on('click', () => {
 	const colorLayer = SVG($('#history-tiles')[0]).viewbox(-1, -1, 2, 2);
 	colorLayer.clear();
 	mapper.fill([...surface.nodos].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS['kale']);
-	for (const civ of world.civs)
-		mapper.fill([...civ.nodos].filter(n => n.biome !== 'samud'), colorLayer,
+	for (const civ of world.civs) {
+		const g = colorLayer.group();
+		g.element('title').words(civ.getName());
+		mapper.fill([...civ.nodos].filter(n => n.biome !== 'samud'), g,
 			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length]);
+	}
 	mapper.fill([...surface.nodos].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS['samud']);
 	const reliefLayer = SVG($('#terrain-shade')[0]).viewbox(-1, -1, 2, 2);
 	reliefLayer.clear();

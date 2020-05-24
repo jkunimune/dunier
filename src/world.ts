@@ -45,7 +45,6 @@ const PASABLIA = { // terrain modifiers for invasion speed
 export class World {
 	public planet: Surface;
 	public civs: Set<Civ>;
-	private numCivs: number = 0;
 
 	constructor(planet) {
 		this.planet = planet;
@@ -59,6 +58,8 @@ export class World {
 	 */
 	generateHistory(year: number, rng: Random) {
 		for (let t = 0; t < year; t += TIME_STEP) {
+			for (const civ of this.civs)
+				civ.update(rng);
 			this.spawnCivs(rng);
 			this.spreadCivs(rng);
 		}
@@ -73,8 +74,7 @@ export class World {
 			if (this.currentRuler(tile) == null) {
 				const canivia = SPAWN_RATE*TIME_STEP*tile.surface.area/tile.surface.nodos.size*DOMUBLIA[tile.biome];
 				if (rng.probability(canivia)) {
-					this.civs.add(new Civ(tile, this.numCivs, this, rng));
-					this.numCivs ++;
+					this.civs.add(new Civ(tile, this.civs.size, this, rng));
 				}
 			}
 		}
@@ -148,6 +148,7 @@ class Civ {
 	public kenare; // the list of tiles it wants to invade
 	public language: Language; // the official language
 	private world: World;
+	private name: number; // its name index
 
 	public expansionism: number; // how many tiles it can invade at once
 	public militarism: number; // base military strength
@@ -167,7 +168,9 @@ class Civ {
 		this.kenare = new TinyQueue([], (a, b) => a.index - b.index);
 		this.capital = capital;
 		this.conquer(capital);
-		this.language = new Language();
+
+		this.language = new ProtoLanguage(rng);
+		this.name = rng.discrete(250, 1000);
 
 		this.expansionism = rng.discrete(0, 4);
 		this.militarism = rng.exponential(1);
@@ -207,13 +210,80 @@ class Civ {
 			this.expansionism = 0;
 	}
 
+	/**
+	 * change with the passing of the centuries
+	 * @param rng
+	 */
+	update(rng: Random) {
+		if (this.nodos.size > 0) {
+			this.language = new DeuteroLanguage(this.language, rng);
+		}
+	}
+
+	getName(): string {
+		return this.language.getWord(this.name);
+	}
+
 	getStrength() : number {
 		return this.militarism*Math.exp(this.enlightenment/20);
 	}
 }
 
 
-class Language {
-	constructor() {
+interface Language {
+	getWord(i: number): string
+}
+
+class ProtoLanguage {
+	private leksoliste: string[];
+
+	constructor(rng: Random) {
+		this.leksoliste = [];
+		for (let i = 0; i < 1000; i ++) {
+			let lekse = "";
+			for (let j = 0; j < 6; j ++)
+				lekse += "abcdefghijklmnoprstuwxy".charAt(rng.uniform(0,23));
+			this.leksoliste.push(lekse);
+		}
+	}
+
+	getWord(i) {
+		return this.leksoliste[i];
+	}
+}
+
+class DeuteroLanguage {
+	private parent: Language;
+	private changes: SoundChange[];
+
+	constructor(parent: Language, rng: Random) {
+		this.parent = parent;
+		this.changes = [];
+		for (let i = 0; i < 6; i ++)
+			this.changes.push(new SoundChange(rng));
+	}
+
+	getWord(i) {
+		let lekse = this.parent.getWord(i);
+		for (const change of this.changes)
+			lekse = change.apply(lekse);
+		return lekse;
+	}
+}
+
+class SoundChange {
+	private readonly ca: RegExp; // original value
+	private readonly pa: string; // target value
+	private chance: number; // number of cases in which it changes once
+
+	constructor(rng: Random) {
+		this.ca = /./g;
+		this.pa = "a";
+		this.chance = 1/36;
+	}
+
+	apply(old: string): string {
+		// return old.replace(this.ca, this.pa);
+		return old;
 	}
 }
