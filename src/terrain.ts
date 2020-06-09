@@ -23,7 +23,7 @@ const DESERT_SLOPE = 60;
 const TAIGA_TEMP = +5;
 const FLASH_TEMP = +50;
 const TROPIC_TEMP = +22;
-const FOREST_INTERCEPT = -35;
+const FOREST_INTERCEPT = -40;
 const FOREST_SLOPE = 37;
 const MARSH_THRESH = 3.5;
 
