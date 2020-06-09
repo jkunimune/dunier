@@ -155,18 +155,18 @@ export class Chart {
 	/**
 	 * draw a region of the world on the map with the given color.
 	 * @param nodos Iterator of Node to be colored in.
-	 * @param svg SVG object on which to put the Path.
+	 * @param svg object on which to put the Path.
 	 * @param color String that HTML can interpret as a color.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
 	 * @param smooth whether to apply Bezier smoothing to the outline
-	 * @return Path the newly created element encompassing these triangles.
+	 * @return the newly created element encompassing these triangles.
 	 */
-	// @ts-ignore
-	fill(nodos: Nodo[], svg: SVG.Container, color: string, strokeWidth: number = 0, smooth: boolean = false): SVG.Element {
+	fill(nodos: Nodo[], svg: SVGGElement, color: string, strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
 		if (nodos.length <= 0)
 			return null;
-		return this.map(outline(new Set(nodos)), svg, smooth, true)
-			.fill(color).stroke({color: color, width: strokeWidth, linejoin: 'round'});
+		const path = this.map(outline(new Set(nodos)), svg, smooth, true);
+		path.setAttribute('style',
+			`fill: ${color}; stroke: ${color}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
 	}
 
 	/**
@@ -176,12 +176,13 @@ export class Chart {
 	 * @param color String that HTML can interpret as a color.
 	 * @param width the width of the stroke
 	 * @param smooth whether to apply Bezier smoothing to the curve
-	 * @returns Path the newly created element comprising all these lines
+	 * @returns the newly created element comprising all these lines
 	 */
-	// @ts-ignore
-	stroke(strokes: Iterable<Place[]>, svg: SVG.Container, color: string, width: number, smooth: boolean = false): SVG.Element {
-		return this.map(trace(strokes), svg, smooth, false)
-			.fill('none').stroke({color: color, width: width, linecap: 'round'});
+	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number, smooth: boolean = false): SVGPathElement {
+		const path = this.map(trace(strokes), svg, smooth, false);
+		path.setAttribute('style',
+			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: round; stroke-linecap: round;`);
+		return path;
 	}
 
 	/**
@@ -190,8 +191,7 @@ export class Chart {
 	 * @param svg SVG object on which to shade.
 	 * @param attr name of attribute to base the relief on.
 	 */
-	// @ts-ignore
-	shade(triangles: Set<Triangle>, svg: SVG.Container, attr: string): SVG.Element { // TODO use separate delaunay triangulation
+	shade(triangles: Set<Triangle>, svg: SVGGElement, attr: string) { // TODO use separate delaunay triangulation
 		if (!triangles)
 			return;
 
@@ -220,7 +220,8 @@ export class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes[i]))); // and use that to get a brightness
-			this.map(path, svg, false, true).fill({color: '#000', opacity: 1-brightness});
+			this.map(path, svg, false, true).setAttribute('style',
+				`fill: '#000'; fill-opacity: ${1-brightness};`);
 		}
 	}
 
@@ -233,8 +234,7 @@ export class Chart {
 	 * @param closed if this is set to true, the map will make adjustments to account for its complete nature
 	 * @returns SVG.Path object
 	 */
-	// @ts-ignore
-	map(segments: PathSegment[], svg: SVG.Container, smooth: boolean, closed: boolean): SVG.Path {
+	map(segments: PathSegment[], svg: Element, smooth: boolean, closed: boolean): SVGPathElement {
 		let jinPoints = segments;
 
 		let loopIdx = jinPoints.length;
@@ -337,7 +337,10 @@ export class Chart {
 		let str = ''; // finally, put it in the <path>
 		for (let i = 0; i < cutPoints.length; i ++)
 			str += cutPoints[i].type + cutPoints[i].args.join(',') + ' ';
-		return svg.path(str);
+
+		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+		path.setAttribute('d', str);
+		return svg.appendChild(path);
 	}
 }
 

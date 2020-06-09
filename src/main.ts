@@ -6,9 +6,6 @@ const $ = window.$; // why is this like this? I don't know.
 import "../node_modules/plotly.js/dist/plotly.js";
 // @ts-ignore
 const Plotly = window.Plotly;
-import "../node_modules/svg.js/dist/svg.min.js";
-// @ts-ignore
-const SVG = window.SVG;
 
 import {generateTerrain} from "./terrain.js";
 import {Sphere, Spheroid, Surface} from "./surface.js";
@@ -221,16 +218,16 @@ $('#terrain-apply').on('click', () => {
 		surface, rng); // create the terrain!
 
 	const mapper = new Chart(new Azimuthal(surface));
-	const colorLayer = SVG($('#terrain-tiles')[0]).viewbox(-1, -1, 2, 2);
-	colorLayer.clear();
+	const colorLayer = $('#terrain-tiles')[0]; // get terrain layer
+	colorLayer.textContent = ''; // clear existing terrain
 	for (const biome in BIOME_COLORS)
 		mapper.fill([...surface.nodos].filter(n => n.biome === biome), colorLayer, BIOME_COLORS[biome]);
-	const riverLayer = SVG($('#terrain-nade')[0]).viewbox(-1, -1, 2, 2);
-	riverLayer.clear();
+	const riverLayer = $('#terrain-nade')[0];
+	riverLayer.textContent = '';
 	mapper.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD),
 		riverLayer, BIOME_COLORS['samud'], .003, true);
-	const reliefLayer = SVG($('#terrain-shade')[0]).viewbox(-1, -1, 2, 2);
-	reliefLayer.clear();
+	const reliefLayer = $('#terrain-shade')[0];
+	reliefLayer.textContent = '';
 	// mapper.shade(surface.triangles, reliefLayer, 'gawe');
 });
 
@@ -250,7 +247,7 @@ $('#history-apply').on('click', () => {
 		rng); // create the terrain!
 
 	const mapper = new Chart(new Azimuthal(surface));
-	const colorLayer = SVG($('#history-tiles')[0]).viewbox(-1, -1, 2, 2);
+	const colorLayer = $('#history-tiles')[0];
 	colorLayer.clear();
 	mapper.fill([...surface.nodos].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS['kale']);
 	for (const civ of world.civs) {
@@ -260,7 +257,7 @@ $('#history-apply').on('click', () => {
 			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length]);
 	}
 	mapper.fill([...surface.nodos].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS['samud']);
-	const reliefLayer = SVG($('#terrain-shade')[0]).viewbox(-1, -1, 2, 2);
+	const reliefLayer = $('#terrain-shade')[0];
 	reliefLayer.clear();
 	// mapper.shade(surface.triangles, reliefLayer, 'gawe');
 });
