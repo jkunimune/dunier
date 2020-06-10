@@ -6,6 +6,7 @@ const TinyQueue = window.TinyQueue;
 
 import {Nodo, Surface} from "./surface.js";
 import {Random} from "./random.js";
+import {Language, ProtoLanguage, DeuteroLanguage, romanize} from "./language.js";
 
 
 const TIME_STEP = 100; // year
@@ -221,7 +222,7 @@ class Civ {
 	}
 
 	getName(): string {
-		return this.language.getWord(this.name);
+		return romanize(this.language.getWord(this.name));
 	}
 
 	getStrength() : number {
@@ -229,61 +230,3 @@ class Civ {
 	}
 }
 
-
-interface Language {
-	getWord(i: number): string
-}
-
-class ProtoLanguage {
-	private leksoliste: string[];
-
-	constructor(rng: Random) {
-		this.leksoliste = [];
-		for (let i = 0; i < 1000; i ++) {
-			let lekse = "";
-			for (let j = 0; j < 6; j ++)
-				lekse += "abcdefghijklmnoprstuwxy".charAt(rng.uniform(0,23));
-			this.leksoliste.push(lekse);
-		}
-	}
-
-	getWord(i) {
-		return this.leksoliste[i];
-	}
-}
-
-class DeuteroLanguage {
-	private parent: Language;
-	private changes: SoundChange[];
-
-	constructor(parent: Language, rng: Random) {
-		this.parent = parent;
-		this.changes = [];
-		for (let i = 0; i < 6; i ++)
-			this.changes.push(new SoundChange(rng));
-	}
-
-	getWord(i) {
-		let lekse = this.parent.getWord(i);
-		for (const change of this.changes)
-			lekse = change.apply(lekse);
-		return lekse;
-	}
-}
-
-class SoundChange {
-	private readonly ca: RegExp; // original value
-	private readonly pa: string; // target value
-	private chance: number; // number of cases in which it changes once
-
-	constructor(rng: Random) {
-		this.ca = /./g;
-		this.pa = "a";
-		this.chance = 1/36;
-	}
-
-	apply(old: string): string {
-		// return old.replace(this.ca, this.pa);
-		return old;
-	}
-}

@@ -81,6 +81,14 @@ export class Random {
 	}
 
 	/**
+	 * return a random choice from this list
+	 * @param options the elements from which we choose
+	 */
+	choice(options: any[]): any {
+		return options[this.discrete(0, options.length)];
+	}
+
+	/**
 	 * return a new Random based on this one. it will be seeded by a random number
 	 * dependent on this.seed, but the values it produces will be pseudoindependent of
 	 * the values of this one. this may be useful if one wants to produce multiple static
