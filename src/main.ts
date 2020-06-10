@@ -248,16 +248,20 @@ $('#history-apply').on('click', () => {
 
 	const mapper = new Chart(new Azimuthal(surface));
 	const colorLayer = $('#history-tiles')[0];
-	colorLayer.clear();
+	colorLayer.textContent = '';
 	mapper.fill([...surface.nodos].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS['kale']);
 	for (const civ of world.civs) {
-		const g = colorLayer.group();
-		g.element('title').words(civ.getName());
+		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+		const text = document.createTextNode(civ.getName());
+		hover.appendChild(text);
+		g.appendChild(hover);
+		colorLayer.appendChild(g);
 		mapper.fill([...civ.nodos].filter(n => n.biome !== 'samud'), g,
 			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length]);
 	}
 	mapper.fill([...surface.nodos].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS['samud']);
 	const reliefLayer = $('#terrain-shade')[0];
-	reliefLayer.clear();
+	reliefLayer.textContent = '';
 	// mapper.shade(surface.triangles, reliefLayer, 'gawe');
 });
