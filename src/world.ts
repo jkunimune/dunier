@@ -171,7 +171,8 @@ class Civ {
 		this.conquer(capital);
 
 		this.language = new ProtoLanguage(rng);
-		this.name = rng.discrete(250, 1000);
+		console.log(this.language);
+		this.name = rng.discrete(0, 100);
 
 		this.expansionism = rng.discrete(0, 4);
 		this.militarism = rng.exponential(1);
@@ -222,7 +223,7 @@ class Civ {
 	}
 
 	getName(): string {
-		return romanize(this.language.getWord(this.name));
+		return romanize(this.language.getCountryName(this.name));
 	}
 
 	getStrength() : number {
