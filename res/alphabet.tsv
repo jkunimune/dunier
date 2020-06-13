@@ -1,0 +1,87 @@
+i	vokale	5	2	u
+y	vokale	5	2	r
+ɨ	vokale	5	1	u
+ʉ	vokale	5	1	r
+ɯ	vokale	5	0	u
+u	vokale	5	0	r
+ɪ	vokale	4	2	u
+ʏ	vokale	4	2	r
+ʊ	vokale	4	0	r
+e	vokale	3	2	u
+ø	vokale	3	2	r
+ɘ	vokale	3	1	u
+ɵ	vokale	3	1	r
+ɤ	vokale	3	0	u
+o	vokale	3	0	r
+ɛ	vokale	2	2	u
+œ	vokale	2	2	r
+ɜ	vokale	2	1	u
+ɞ	vokale	2	1	r
+ʌ	vokale	2	0	u
+ɔ	vokale	2	0	r
+æ	vokale	1	2	u
+ɐ	vokale	1	1	r
+a	vokale	0	1	u
+ɑ	vokale	0	0	u
+ɒ	vokale	0	0	r
+m	konson	bl	n	c	v
+ɱ	konson	ld	n	c	v
+n	konson	ar	n	c	v
+ɳ	konson	rf	n	c	v
+ɲ	konson	hp	n	c	v
+ŋ	konson	vl	n	c	v
+ɴ	konson	uv	n	c	v
+p	konson	bl	p	c	u
+b	konson	bl	p	c	v
+t	konson	ar	p	c	u
+d	konson	ar	p	c	v
+ʈ	konson	rf	p	c	u
+ɖ	konson	rf	p	c	v
+c	konson	hp	p	c	u
+ɟ	konson	hp	p	c	v
+k	konson	vl	p	c	u
+ɡ	konson	vl	p	c	v
+q	konson	uv	p	c	u
+ɢ	konson	uv	p	c	v
+ʡ	konson	eg	p	c	u
+ʔ	konson	gl	p	c	u
+ɸ	konson	bl	f	c	u
+β	konson	bl	f	c	v
+f	konson	ld	f	c	u
+v	konson	ld	f	c	v
+θ	konson	dn	f	c	u
+ð	konson	dn	f	c	v
+s	konson	ar	f	c	u
+z	konson	ar	f	c	v
+ʃ	konson	pa	f	c	u
+ʒ	konson	pa	f	c	v
+ʂ	konson	rf	f	c	u
+ʐ	konson	rf	f	c	v
+ç	konson	hp	f	c	u
+ʝ	konson	hp	f	c	v
+x	konson	vl	f	c	u
+ɣ	konson	vl	f	c	v
+χ	konson	uv	f	c	u
+ʁ	konson	uv	f	c	v
+ħ	konson	eg	f	c	u
+ʕ	konson	eg	f	c	v
+h	konson	gl	f	c	u
+ɦ	konson	gl	f	c	v
+ʋ	konson	ld	a	c	v
+ɹ	konson	ar	a	c	v
+ɻ	konson	rf	a	c	v
+j	konson	hp	a	c	v
+ɰ	konson	vl	a	c	v
+ⱱ	konson	ld	t	c	v
+ɾ	konson	ar	t	c	v
+ɽ	konson	rf	t	c	v
+ʙ	konson	bl	r	c	v
+r	konson	ar	r	c	v
+ʀ	konson	uv	r	c	v
+ɬ	konson	ar	f	l	u
+ɮ	konson	ar	f	l	v
+l	konson	ar	a	l	v
+ɭ	konson	rf	a	l	v
+ʎ	konson	hp	a	l	v
+ʟ	konson	vl	a	l	v
+ɺ	konson	ar	t	l	v

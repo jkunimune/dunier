@@ -3,28 +3,30 @@
 import {Random} from "./random";
 
 
-enum Fonogawia {
+enum Gawia {
 	ANY,
 	TALI,
+	YAGOTALI,
 	MEDOTALI,
 	MEDOGAWI,
+	YAGOGAWI,
 	GAWI,
 }
 
-enum Fonopredia {
+enum Predia {
 	ANY,
 	BADI,
 	MEDI,
 	PREDI,
 }
 
-enum Fonocirkia {
+enum Cirkia {
 	ANY,
 	CIRKI,
 	KAYI,
 }
 
-enum Fonavoze {
+enum Avoze {
 	ANY,
 	AVOZI,
 	KIRIKAVOZE,
@@ -33,7 +35,7 @@ enum Fonavoze {
 	TUHI,
 }
 
-enum Fonotone {
+enum Tone {
 	ANY,
 	TALI,
 	MEDI,
@@ -42,13 +44,13 @@ enum Fonotone {
 	ZAYO_GAWI,
 }
 
-enum Fononosia {
+enum Nosia {
 	ANY,
 	NOSI,
 	SAFI,
 }
 
-enum Fonoloke {
+enum Loke {
 	ANY,
 	DULOLABI,
 	LABODANTI,
@@ -63,7 +65,7 @@ enum Fonoloke {
 	GALOMUNI,
 }
 
-enum Fonoforme {
+enum Forme {
 	ANY,
 	NOSI,
 	TINGI,
@@ -75,7 +77,7 @@ enum Fonoforme {
 	KLIKI,
 }
 
-enum Fonolatia {
+enum Latia {
 	ANY,
 	JUNGI,
 	LATI,
@@ -83,12 +85,12 @@ enum Fonolatia {
 
 
 class Vokale {
-	public gawia: Fonogawia;
-	public predia: Fonopredia;
-	public cirkia: Fonocirkia;
-	public avoze: Fonavoze;
+	public gawia: Gawia;
+	public predia: Predia;
+	public cirkia: Cirkia;
+	public avoze: Avoze;
 
-	constructor(gawia: Fonogawia, predia: Fonopredia, cirkia: Fonocirkia = Fonocirkia.ANY, avoze: Fonavoze = Fonavoze.ANY) {
+	constructor(gawia: Gawia, predia: Predia, cirkia: Cirkia = Cirkia.ANY, avoze: Avoze = Avoze.ANY) {
 		this.gawia = gawia;
 		this.predia = predia;
 		this.cirkia = cirkia;
@@ -102,12 +104,12 @@ class Vokale {
 
 
 class Konsone {
-	public loke: Fonoloke;
-	public forme: Fonoforme;
-	public latia: Fonolatia;
-	public avoze: Fonavoze;
+	public loke: Loke;
+	public forme: Forme;
+	public latia: Latia;
+	public avoze: Avoze;
 
-	constructor(loke: Fonoloke, forme: Fonoforme, latia: Fonolatia = Fonolatia.ANY, avoze: Fonavoze = Fonavoze.ANY) {
+	constructor(loke: Loke, forme: Forme, latia: Latia = Latia.ANY, avoze: Avoze = Avoze.ANY) {
 		this.loke = loke;
 		this.forme = forme;
 		this.latia = latia;
@@ -120,78 +122,36 @@ class Konsone {
 }
 
 
-const IPA_TABLE = [
-	['i', new Vokale(Fonogawia.GAWI, Fonopredia.PREDI, Fonocirkia.KAYI, Fonavoze.AVOZI)],
-	['y', new Vokale(Fonogawia.GAWI, Fonopredia.PREDI, Fonocirkia.CIRKI, Fonavoze.AVOZI)],
-	['ɯ', new Vokale(Fonogawia.GAWI, Fonopredia.BADI, Fonocirkia.KAYI, Fonavoze.AVOZI)],
-	['u', new Vokale(Fonogawia.GAWI, Fonopredia.BADI, Fonocirkia.CIRKI, Fonavoze.AVOZI)],
-	['e', new Vokale(Fonogawia.MEDOGAWI, Fonopredia.PREDI, Fonocirkia.KAYI, Fonavoze.AVOZI)],
-	['ø', new Vokale(Fonogawia.MEDOGAWI, Fonopredia.PREDI, Fonocirkia.CIRKI, Fonavoze.AVOZI)],
-	['ɤ', new Vokale(Fonogawia.MEDOGAWI, Fonopredia.BADI, Fonocirkia.KAYI, Fonavoze.AVOZI)],
-	['o', new Vokale(Fonogawia.MEDOGAWI, Fonopredia.BADI, Fonocirkia.CIRKI, Fonavoze.AVOZI)],
-	['a', new Vokale(Fonogawia.TALI, Fonopredia.MEDI, Fonocirkia.KAYI, Fonavoze.AVOZI)],
-	['m', new Konsone(Fonoloke.DULOLABI, Fonoforme.NOSI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɱ', new Konsone(Fonoloke.LABODANTI, Fonoforme.NOSI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['n', new Konsone(Fonoloke.PIZOKULI, Fonoforme.NOSI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɳ', new Konsone(Fonoloke.RETROKURBI, Fonoforme.NOSI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɲ', new Konsone(Fonoloke.BOKOCATI, Fonoforme.NOSI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ŋ', new Konsone(Fonoloke.BOKOKOMALI, Fonoforme.NOSI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɴ', new Konsone(Fonoloke.BOKOPENDI, Fonoforme.NOSI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['p', new Konsone(Fonoloke.DULOLABI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['b', new Konsone(Fonoloke.DULOLABI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['t', new Konsone(Fonoloke.PIZOKULI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['d', new Konsone(Fonoloke.PIZOKULI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ʈ', new Konsone(Fonoloke.RETROKURBI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ɖ', new Konsone(Fonoloke.RETROKURBI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['c', new Konsone(Fonoloke.BOKOCATI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ɟ', new Konsone(Fonoloke.BOKOCATI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['k', new Konsone(Fonoloke.BOKOKOMALI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ɡ', new Konsone(Fonoloke.BOKOKOMALI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['q', new Konsone(Fonoloke.BOKOPENDI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ɢ', new Konsone(Fonoloke.BOKOPENDI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ʡ', new Konsone(Fonoloke.SUPROMUNI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ʔ', new Konsone(Fonoloke.GALOMUNI, Fonoforme.TINGI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ɸ', new Konsone(Fonoloke.DULOLABI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['β', new Konsone(Fonoloke.DULOLABI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['f', new Konsone(Fonoloke.LABODANTI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['v', new Konsone(Fonoloke.LABODANTI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['θ', new Konsone(Fonoloke.DANTI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ð', new Konsone(Fonoloke.DANTI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['s', new Konsone(Fonoloke.PIZOKULI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['z', new Konsone(Fonoloke.PIZOKULI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ʃ', new Konsone(Fonoloke.BADOPIZI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ʒ', new Konsone(Fonoloke.BADOPIZI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ʂ', new Konsone(Fonoloke.RETROKURBI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ʐ', new Konsone(Fonoloke.RETROKURBI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ç', new Konsone(Fonoloke.BOKOCATI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ʝ', new Konsone(Fonoloke.BOKOCATI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['x', new Konsone(Fonoloke.BOKOKOMALI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ɣ', new Konsone(Fonoloke.BOKOKOMALI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['χ', new Konsone(Fonoloke.BOKOPENDI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ʁ', new Konsone(Fonoloke.BOKOPENDI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ħ', new Konsone(Fonoloke.SUPROMUNI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ʕ', new Konsone(Fonoloke.SUPROMUNI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['h', new Konsone(Fonoloke.GALOMUNI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.NOLAVOZI)],
-	['ɦ', new Konsone(Fonoloke.GALOMUNI, Fonoforme.FRIKI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ʋ', new Konsone(Fonoloke.LABODANTI, Fonoforme.KARIBI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɹ', new Konsone(Fonoloke.PIZOKULI, Fonoforme.KARIBI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɻ', new Konsone(Fonoloke.RETROKURBI, Fonoforme.KARIBI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['j', new Konsone(Fonoloke.BOKOCATI, Fonoforme.KARIBI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɰ', new Konsone(Fonoloke.BOKOKOMALI, Fonoforme.KARIBI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ⱱ', new Konsone(Fonoloke.LABODANTI, Fonoforme.TOCI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɾ', new Konsone(Fonoloke.PIZOKULI, Fonoforme.TOCI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɽ', new Konsone(Fonoloke.RETROKURBI, Fonoforme.TOCI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ʙ', new Konsone(Fonoloke.DULOLABI, Fonoforme.DALALI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['r', new Konsone(Fonoloke.PIZOKULI, Fonoforme.DALALI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ʀ', new Konsone(Fonoloke.BOKOPENDI, Fonoforme.DALALI, Fonolatia.JUNGI, Fonavoze.AVOZI)],
-	['ɬ', new Konsone(Fonoloke.PIZOKULI, Fonoforme.FRIKI, Fonolatia.LATI, Fonavoze.NOLAVOZI)],
-	['ɮ', new Konsone(Fonoloke.PIZOKULI, Fonoforme.FRIKI, Fonolatia.LATI, Fonavoze.AVOZI)],
-	['l', new Konsone(Fonoloke.PIZOKULI, Fonoforme.KARIBI, Fonolatia.LATI, Fonavoze.AVOZI)],
-	['ɭ', new Konsone(Fonoloke.RETROKURBI, Fonoforme.KARIBI, Fonolatia.LATI, Fonavoze.AVOZI)],
-	['ʎ', new Konsone(Fonoloke.BOKOCATI, Fonoforme.KARIBI, Fonolatia.LATI, Fonavoze.AVOZI)],
-	['ʟ', new Konsone(Fonoloke.BOKOKOMALI, Fonoforme.KARIBI, Fonolatia.LATI, Fonavoze.AVOZI)],
-	['ɺ', new Konsone(Fonoloke.PIZOKULI, Fonoforme.TOCI, Fonolatia.LATI, Fonavoze.AVOZI)],
-]; // TODO move this to a data file and make it a Map
+const FROM_IPA: Map<string, Vokale | Konsone> = new Map(); // load the IPA table from static res
+const TO_TEXT: Map<number, string[]> = new Map();
+let result = null;
+const xmlHttp = new XMLHttpRequest();
+xmlHttp.open("GET", "./res/alphabet.tsv", false);
+xmlHttp.send();
+if (xmlHttp.status != 200)
+	throw `${xmlHttp.status} error while loading alphabet file: ${xmlHttp.statusText}`;
+for (const line of xmlHttp.responseText.split('\n')) {
+	const row = line.split('\t');
+	const grafeme = row.slice(0, 1);
+	let foneme: Vokale | Konsone;
+	if (row[1] == 'vokale') {
+		const gawia = [Gawia.TALI, Gawia.YAGOTALI, Gawia.MEDOTALI, Gawia.MEDOGAWI, Gawia.YAGOGAWI, Gawia.GAWI][row[2]];
+		const predia = [Predia.BADI, Predia.MEDI, Predia.PREDI][row[3]];
+		const cirkia = {u:Cirkia.KAYI, r:Cirkia.CIRKI}[row[4]];
+		foneme = new Vokale(gawia, predia, cirkia, Avoze.AVOZI);
+	}
+	else {
+		const loke = {bl:Loke.DULOLABI, ld:Loke.LABODANTI, dn:Loke.DANTI, ar:Loke.PIZOKULI,
+			pa:Loke.BADOPIZI, rf:Loke.RETROKURBI, hp:Loke.BOKOCATI, vl:Loke.BOKOKOMALI,
+			uv:Loke.BOKOPENDI, eg:Loke.SUPROMUNI, gl:Loke.GALOMUNI}[row[2]];
+		const forme = {n:Forme.NOSI, p:Forme.TINGI, f:Forme.FRIKI, a:Forme.KARIBI, t:Forme.TOCI, r:Forme.DALALI}[row[3]];
+		const latia = {c:Latia.JUNGI, l: Latia.LATI}[row[4]];
+		const avoze = {u:Avoze.NOLAVOZI, v:Avoze.AVOZI}[row[5]];
+		foneme = new Konsone(loke, forme, latia, avoze);
+	}
+	FROM_IPA.set(grafeme[0], foneme);
+	TO_TEXT.set(foneme.hash(), grafeme);
+}
 
 
 /**
@@ -201,16 +161,26 @@ const IPA_TABLE = [
 function ipa(ipa: string): (Vokale | Konsone)[] {
 	const output = [];
 	for (let i = 0; i < ipa.length; i ++) { // TODO: parse affricates and diacritics
-		for (const [char, foneme] of IPA_TABLE) {
-			if (char === ipa[i]) { // look for a character that matches
-				output.push(foneme);
-				break;
-			}
-		}
-		if (output.length <= i) // if nothing got added
-			throw new Error(`did not recognize ${ipa[i]} as an IPA character`);
+		if (FROM_IPA.has(ipa.charAt(i)))
+			output.push(FROM_IPA.get(ipa.charAt(i)));
+		else
+			throw `could not interpret '${ipa.charAt(i)}' as an IPA symbol`;
 	}
 	return output;
+}
+
+/**
+ * does this phoneme ever occur in any actual language?
+ * @param foneme
+ */
+function isPossible(foneme: Konsone): boolean {
+	return !(
+		(foneme.forme === Forme.NOSI && foneme.loke >= Loke.SUPROMUNI) ||
+		(foneme.forme === Forme.KARIBI && foneme.loke === Loke.GALOMUNI) ||
+		(foneme.forme === Forme.TOCI && ![Loke.LABODANTI, Loke.PIZOKULI, Loke.RETROKURBI].includes(foneme.loke)) ||
+		(foneme.forme === Forme.DALALI && ![Loke.DULOLABI, Loke.PIZOKULI, Loke.BOKOPENDI].includes(foneme.loke)) ||
+		(foneme.latia === Latia.LATI) && (foneme.loke <= Loke.LABODANTI || foneme.loke >= Loke.BOKOPENDI) ||
+		(foneme.avoze === Avoze.AVOZI) && (foneme.loke === Loke.GALOMUNI));
 }
 
 /**
@@ -222,26 +192,26 @@ function fits(foneme: Vokale | Konsone, mold: Vokale | Konsone): boolean {
 	if (foneme instanceof Vokale) {
 		if (!(mold instanceof Vokale))
 			return false;
-		else if (mold.gawia !== Fonogawia.ANY && mold.gawia !== foneme.gawia)
+		else if (mold.gawia !== Gawia.ANY && mold.gawia !== foneme.gawia)
 			return false;
-		else if (mold.predia !== Fonopredia.ANY && mold.predia !== foneme.predia)
+		else if (mold.predia !== Predia.ANY && mold.predia !== foneme.predia)
 			return false;
-		else if (mold.cirkia !== Fonocirkia.ANY && mold.cirkia !== foneme.cirkia)
+		else if (mold.cirkia !== Cirkia.ANY && mold.cirkia !== foneme.cirkia)
 			return false;
-		else if (mold.avoze !== Fonavoze.ANY && mold.avoze !== foneme.avoze)
+		else if (mold.avoze !== Avoze.ANY && mold.avoze !== foneme.avoze)
 			return false;
 		return true;
 	}
 	else {
 		if (!(mold instanceof Konsone))
 			return false;
-		else if (mold.loke !== Fonoloke.ANY && mold.loke !== foneme.loke)
+		else if (mold.loke !== Loke.ANY && mold.loke !== foneme.loke)
 			return false;
-		else if (mold.forme !== Fonoforme.ANY && mold.forme !== foneme.forme)
+		else if (mold.forme !== Forme.ANY && mold.forme !== foneme.forme)
 			return false;
-		else if (mold.latia !== Fonolatia.ANY && mold.latia !== foneme.latia)
+		else if (mold.latia !== Latia.ANY && mold.latia !== foneme.latia)
 			return false;
-		else if (mold.avoze !== Fonavoze.ANY && mold.avoze !== foneme.avoze)
+		else if (mold.avoze !== Avoze.ANY && mold.avoze !== foneme.avoze)
 			return false;
 		return true;
 	}
@@ -256,20 +226,21 @@ function fit(foneme: Vokale | Konsone, mold: Vokale | Konsone): Vokale | Konsone
 	if (foneme instanceof Vokale) {
 		if (!(mold instanceof Vokale))
 			throw new TypeError("Cannot cast a vowel to a consonant.");
-		const gawia = (mold.gawia !== Fonogawia.ANY) ? mold.gawia : foneme.gawia;
-		const predia = (mold.predia !== Fonopredia.ANY) ? mold.predia : foneme.predia;
-		const cirkia = (mold.cirkia !== Fonocirkia.ANY) ? mold.cirkia : foneme.cirkia;
-		const avoze = (mold.avoze !== Fonavoze.ANY) ? mold.avoze : foneme.avoze;
+		const gawia = (mold.gawia !== Gawia.ANY) ? mold.gawia : foneme.gawia;
+		const predia = (mold.predia !== Predia.ANY) ? mold.predia : foneme.predia;
+		const cirkia = (mold.cirkia !== Cirkia.ANY) ? mold.cirkia : foneme.cirkia;
+		const avoze = (mold.avoze !== Avoze.ANY) ? mold.avoze : foneme.avoze;
 		return new Vokale(gawia, predia, cirkia, avoze);
 	}
 	else {
 		if (!(mold instanceof Konsone))
 			throw new TypeError("Cannot cast a consonant to a vowel.");
-		const loke = (mold.loke !== Fonoloke.ANY) ? mold.loke : foneme.loke;
-		const forme = (mold.forme !== Fonoforme.ANY) ? mold.forme : foneme.forme;
-		const latia = (mold.latia !== Fonolatia.ANY) ? mold.latia : foneme.latia;
-		const avoze = (mold.avoze !== Fonavoze.ANY) ? mold.avoze : foneme.avoze;
-		return new Konsone(loke, forme, latia, avoze);
+		const loke = (mold.loke !== Loke.ANY) ? mold.loke : foneme.loke;
+		const forme = (mold.forme !== Forme.ANY) ? mold.forme : foneme.forme;
+		const latia = (mold.latia !== Latia.ANY) ? mold.latia : foneme.latia;
+		const avoze = (mold.avoze !== Avoze.ANY) ? mold.avoze : foneme.avoze;
+		const kon = new Konsone(loke, forme, latia, avoze);
+		return isPossible(kon) ? kon : foneme;
 	}
 }
 
@@ -277,7 +248,7 @@ function fit(foneme: Vokale | Konsone, mold: Vokale | Konsone): Vokale | Konsone
 const CHANGE_OPTIONS = [
 	{ca: ipa("u"), pa: ipa("y")},
 	{ca: ipa("y"), pa: ipa("u")},
-	{ca: [new Konsone(Fonoloke.PIZOKULI, 0), new Vokale(0, Fonopredia.PREDI)], pa:[new Konsone(Fonoloke.BOKOCATI, 0), new Vokale(0, Fonopredia.PREDI)]}
+	{ca: [new Konsone(Loke.PIZOKULI, 0), new Vokale(0, Predia.PREDI)], pa:[new Konsone(Loke.BOKOCATI, 0), new Vokale(0, Predia.PREDI)]}
 ]
 
 
@@ -297,7 +268,7 @@ class SoundChange {
 	}
 
 	apply(old: (Vokale | Konsone)[]): (Vokale | Konsone)[] {
-		const nov = [];
+		const nov: (Vokale | Konsone)[] = [];
 		while (nov.length < old.length) {
 			const i = nov.length;
 			let match = true; // check if the current point in old matches this.ca
@@ -307,9 +278,17 @@ class SoundChange {
 					break;
 				}
 			}
-			if (match) // if it does,
-				for (let j = 0; j < this.ca.length; j ++)
-					nov.push(fit(old[i+j], this.pa[j])); // add this.pa to nov
+			if (match) { // if it does,
+				for (let j = 0; j < this.ca.length; j++)
+					nov.push(fit(old[i + j], this.pa[j])); // add this.pa to nov
+				if (nov[nov.length - 1] instanceof Konsone && (<Konsone>nov[nov.length - 1]).latia === 0) {
+					console.log(old.slice(i, i + this.ca.length));
+					console.log(this.pa);
+					for (let j = 0; j < this.ca.length; j++)
+						console.log(fit(old[i + j], this.pa[j]));
+					throw "WHYHYHYYY";
+				}
+			}
 			else // otherwise
 				nov.push(old[i]); // just add the next character of old
 		}
@@ -327,7 +306,7 @@ export interface Language {
 
 export class ProtoLanguage {
 	private static initialVowels = ipa("iueoa");
-	private static initialConsonants = ipa("mnŋpbtdkɡʔfθszʃxʋrjl");
+	private static initialConsonants = ipa("mnpbtdkɡʔfθszʃxʋrjl");
 	private readonly putong: (Vokale | Konsone)[][];
 	private readonly renonam: (Vokale | Konsone)[][];
 	private readonly sitonam: (Vokale | Konsone)[][];
@@ -420,14 +399,12 @@ export class DeuteroLanguage {
 export function romanize(lekse: (Vokale | Konsone)[]): string {
 	let output = "";
 	for (let i = 0; i < lekse.length; i ++) {
-		for (const [grafeme, foneme] of IPA_TABLE) {
-			if (lekse[i].hash() === (<Vokale | Konsone>foneme).hash()) {
-				output += grafeme;
-				break;
-			}
+		if (TO_TEXT.has(lekse[i].hash()))
+			output += TO_TEXT.get(lekse[i].hash())[0];
+		else {
+			console.log(lekse[i]);
+			throw `could not transcribe ${lekse[i]}, ${lekse[i].hash()}`;
 		}
-		if (output.length <= i)
-			throw `Cannot transcribe phoneme`;
 	}
 	return output;
 }

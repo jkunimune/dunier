@@ -171,7 +171,6 @@ class Civ {
 		this.conquer(capital);
 
 		this.language = new ProtoLanguage(rng);
-		console.log(this.language);
 		this.name = rng.discrete(0, 100);
 
 		this.expansionism = rng.discrete(0, 4);
