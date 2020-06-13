@@ -228,7 +228,7 @@ $('#terrain-apply').on('click', () => {
 		riverLayer, BIOME_COLORS['samud'], .003, true);
 	const reliefLayer = $('#terrain-shade')[0];
 	reliefLayer.textContent = '';
-	// mapper.shade(surface.triangles, reliefLayer, 'gawe');
+	mapper.shade(surface.triangles, reliefLayer, 'gawe');
 });
 
 
@@ -261,7 +261,7 @@ $('#history-apply').on('click', () => {
 			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length]);
 	}
 	mapper.fill([...surface.nodos].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS['samud']);
-	const reliefLayer = $('#terrain-shade')[0];
-	reliefLayer.textContent = '';
+	// const reliefLayer = $('#history-shade')[0];
+	// reliefLayer.textContent = '';
 	// mapper.shade(surface.triangles, reliefLayer, 'gawe');
 });

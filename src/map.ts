@@ -195,31 +195,31 @@ export class Chart {
 		if (!triangles)
 			return;
 
-		const slopes = [];
+		const slopes: Map<Triangle, number> = new Map();
 		let maxSlope = 0;
-		for (let i = 0; i < triangles.size; i ++) { // start by computing slopes of all of the things
+		for (const t of triangles) { // start by computing slopes of all of the things
 			const p = [];
-			for (const node of triangles[i].vertices) {
+			for (const node of t.vertices) {
 				const {x, y} = this.projection.project(node.φ, node.λ);
 				const z = Math.max(0, node[attr]);
 				p.push(new Vector(x, -y, z));
 			}
 			let n = p[1].minus(p[0]).cross(p[2].minus(p[0])).norm();
-			slopes.push(n.y/n.z);
-			if (n.z > 0 && slopes[i] > maxSlope)
-				maxSlope = slopes[i];
+			slopes.set(t, n.y/n.z);
+			if (n.z > 0 && slopes.get(t) > maxSlope)
+				maxSlope = slopes.get(t);
 		}
 
 		const heightScale = -Math.tan(2*SUN_ELEVATION)/maxSlope; // use that to normalize
 
-		for (let i = 0; i < triangles.size; i ++) { // for each triangle
+		for (const t of triangles) { // for each triangle
 			const path = [];
-			for (const node of triangles[i].vertices)
+			for (const node of t.vertices)
 				path.push({type: 'L', args: [node.φ, node.λ]}); // put its values in a plottable form
 			path.push({type: 'L', args: [...path[0].args]});
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
-				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes[i]))); // and use that to get a brightness
+				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
 			this.map(path, svg, false, true).setAttribute('style',
 				`fill: '#000'; fill-opacity: ${1-brightness};`);
 		}
