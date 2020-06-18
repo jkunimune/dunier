@@ -11,7 +11,7 @@ import {Language, ProtoLanguage, DeuteroLanguage, romanize} from "./language.js"
 
 const TIME_STEP = 100; // year
 const SPAWN_RATE = .00000001; // 1/year/km^2
-const INVASION_SPEED = 50; // km/year
+const INVASION_SPEED = .1; // km/year
 const DOMUBLIA = { // terrain modifiers for civ spawning and population growth
 	'samud':       0.0,
 	'potistan':    0.3,
@@ -26,7 +26,7 @@ const DOMUBLIA = { // terrain modifiers for civ spawning and population growth
 	null:          NaN,
 };
 const PASABLIA = { // terrain modifiers for invasion speed
-	'samud':       0.3,
+	'samud':       0.1,
 	'potistan':    0.1,
 	'barxojangal': 0.1,
 	'jangal':      1.0,
@@ -62,7 +62,7 @@ export class World {
 			for (const civ of this.civs)
 				civ.update(rng);
 			this.spawnCivs(rng);
-			this.spreadCivs(rng);
+			this.spreadCivs(rng); // TODO: population
 		}
 	}
 
@@ -70,8 +70,8 @@ export class World {
 	 * generate a few new civs in uninhabited territory
 	 * @param rng the random number generator to use
 	 */
-	spawnCivs(rng: Random) {
-		for (const tile of this.planet.nodos) {
+	spawnCivs(rng: Random) { // TODO: rebellions
+		for (const tile of this.planet.nodos) { // TODO: bonus from rivers and lakes
 			if (this.currentRuler(tile) == null) {
 				const canivia = SPAWN_RATE*TIME_STEP*tile.surface.area/tile.surface.nodos.size*DOMUBLIA[tile.biome];
 				if (rng.probability(canivia)) {
@@ -85,26 +85,26 @@ export class World {
 	 * expand the territories of expansionist civs
 	 * @param rng the random number generator to use
 	 */
-	spreadCivs(rng: Random) {
+	spreadCivs(rng: Random) { // TODO: detriment from mountains
 		const invasions	= new TinyQueue([], (a, b) => a.end - b.end); // keep track of all current invasions
 		for (const invader of this.civs) {
-			for (let i = 0; i < invader.expansionism; i ++) { // each civ initiates some number of invasions
-				if (invader.kenare.length > 0) {
-					const tile = invader.kenare.pop();
-					const time = this.estimateInvasionTime(invader, tile, rng); // figure out when they will be done
-					if (time <= TIME_STEP) // if that time is finite and positive
-						invasions.push({end: time, invader: invader, tile: tile}); // start on it
-				}
+			for (const tile of invader.kenare) { // each civ initiates all its invasions
+				const time = this.estimateInvasionTime(invader, tile, rng); // figure out when they will be done
+				if (time <= TIME_STEP) // if that goal is within reach
+					invasions.push({end: time, invader: invader, tile: tile}); // start on it
 			}
 		}
 		while (invasions.length > 0) {
 			let {end, invader, tile} = invasions.pop(); // as invasions finish
-			invader.conquer(tile); // update the game state
-			if (invader.kenare.length > 0) {
-				tile = invader.kenare.pop(); // and move onto the next one
-				end = end + this.estimateInvasionTime(invader, tile, rng);
-				if (end <= TIME_STEP) // assuming it is possible
-					invasions.push({end: end, invader: invader, tile: tile});
+			if (invader.kenare.has(tile)) { // check that they're still doable
+				invader.conquer(tile); // update the game state
+				for (const neighbor of tile.neighbors.keys()) { // and move on
+					if (invader.kenare.has(neighbor)) { // note that this check can refresh stalled invasions, thus giving the invader advantage on adjacent fronts
+						end = end + this.estimateInvasionTime(invader, neighbor, rng);
+						if (end <= TIME_STEP) // assuming it is possible
+							invasions.push({end: end, invader: invader, tile: neighbor});
+					}
+				}
 			}
 		}
 	}
@@ -118,20 +118,19 @@ export class World {
 	estimateInvasionTime(invader: Civ, site: Nodo, rng: Random) {
 		const invadee = this.currentRuler(site);
 		const momentum = invader.getStrength();
-		const resistance = (invadee != null) ? invadee.getStrength() : 1;
-		const distance = Math.sqrt(site.surface.area/site.surface.nodos.size)/PASABLIA[site.biome];
-		const time = distance/INVASION_SPEED/(momentum - resistance*rng.exponential(1/Math.log(2)));
-		if (time > 0)
-			return time;
+		const resistance = (invadee != null) ? invadee.getStrength() : 0;
+		const distance = Math.sqrt(site.surface.area/site.surface.nodos.size)/PASABLIA[site.biome]; // TODO: bonus to same-language invasions
+		if (momentum > resistance)
+			return rng.exponential(distance/INVASION_SPEED/(momentum - resistance));
 		else
-			return TIME_STEP+1;
+			return Infinity;
 	}
 
 	/**
 	 * determine the current Civ of this tile
 	 */
 	currentRuler(tile: Nodo): Civ {
-		for (const civ of this.civs)
+		for (const civ of this.civs) // TODO: does this take a lot of time?
 			if (civ.nodos.has(tile))
 				return civ;
 		return null;
@@ -144,14 +143,13 @@ export class World {
  */
 class Civ {
 	public readonly id: number;
+	private readonly name: number; // its name index
 	public capital: Nodo; // the capital city
 	public nodos: Set<Nodo>; // the tiles it owns
-	public kenare; // the list of tiles it wants to invade
+	public kenare: Set<Nodo>; // the set of tiles adjacent to nodos
 	public language: Language; // the official language
 	private world: World;
-	private name: number; // its name index
 
-	public expansionism: number; // how many tiles it can invade at once
 	public militarism: number; // base military strength
 	public enlightenment: number; // technological military modifier
 
@@ -166,14 +164,13 @@ class Civ {
 		this.world = world;
 		this.id = id;
 		this.nodos = new Set();
-		this.kenare = new TinyQueue([], (a, b) => a.index - b.index);
+		this.kenare = new Set<Nodo>();
 		this.capital = capital;
 		this.conquer(capital);
 
 		this.language = new ProtoLanguage(rng);
 		this.name = rng.discrete(0, 100);
 
-		this.expansionism = rng.discrete(0, 4);
 		this.militarism = rng.exponential(1);
 		this.enlightenment = 0;
 	}
@@ -187,17 +184,12 @@ class Civ {
 		if (loser != null)
 			loser.lose(tile);
 
-		// if (loser == null) {
-			this.nodos.add(tile);
-			for (const neighbor of tile.neighbors.keys()) {
-				if (this.world.currentRuler(neighbor) != this) {
-					this.kenare.push(neighbor);
-				}
+		this.nodos.add(tile);
+		for (const neighbor of tile.neighbors.keys()) {
+			if (this.world.currentRuler(neighbor) != this) {
+				this.kenare.add(neighbor);
 			}
-		// }
-		// else {
-		// 	this.kenare.push(tile);
-		// }
+		}
 	}
 
 	/**
@@ -205,10 +197,20 @@ class Civ {
 	 * @param tile the land being taken
 	 */
 	lose(tile: Nodo) {
-		this.nodos.delete(tile);
-		this.kenare.push(tile);
+		this.nodos.delete(tile); // remove it from nodos
+		for (const neighbor of tile.neighbors.keys()) {
+			this.kenare.delete(neighbor); // remove its neighbors from kenare
+			if (this.world.currentRuler(neighbor) === this) {
+				this.kenare.add(tile); // add this to kenare if there are other adjacencies
+			}
+			else {
+				for (const further of neighbor.neighbors.keys())
+					if (this.world.currentRuler(further) === this)
+						this.kenare.add(neighbor); // check if you need to re-add these
+			}
+		}
 		if (!this.nodos.has(this.capital)) // kill it when it loses its capital
-			this.expansionism = 0;
+			this.militarism = 0;
 	}
 
 	/**
@@ -218,7 +220,8 @@ class Civ {
 	update(rng: Random) {
 		if (this.nodos.size > 0) {
 			this.language = new DeuteroLanguage(this.language, rng);
-		}
+			this.militarism = rng.exponential(1); // TODO: finite personality drift speed
+		} // TODO: scientific advancement
 	}
 
 	getName(): string {
@@ -226,7 +229,7 @@ class Civ {
 	}
 
 	getStrength() : number {
-		return this.militarism*Math.exp(this.enlightenment/20);
+		return this.militarism*Math.exp(this.enlightenment/20); // TODO: put this 20 in the header
 	}
 }
 

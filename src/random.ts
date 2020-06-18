@@ -68,7 +68,7 @@ export class Random {
 	 * @param mean the scale of the distribution
 	 */
 	exponential(mean: number): number {
-		return mean*Math.log(this.next());
+		return -mean*Math.log(this.next());
 	}
 
 	/**
