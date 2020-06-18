@@ -10,8 +10,9 @@ import {Language, ProtoLanguage, DeuteroLanguage, romanize} from "./language.js"
 
 
 const TIME_STEP = 100; // year
-const SPAWN_RATE = .00000001; // 1/year/km^2
+const SPAWN_RATE = 1e-8; // 1/year/km^2
 const INVASION_SPEED = .1; // km/year
+const CARRYING_CAPACITY = 1000; // people that can live in a tile of grassland with entry-level technology
 const DOMUBLIA = { // terrain modifiers for civ spawning and population growth
 	'samud':       0.0,
 	'potistan':    0.3,
@@ -144,6 +145,7 @@ export class World {
 class Civ {
 	public readonly id: number;
 	private readonly name: number; // its name index
+	public livableLand: number; // the population, pre technology modifier
 	public capital: Nodo; // the capital city
 	public nodos: Set<Nodo>; // the tiles it owns
 	public kenare: Set<Nodo>; // the set of tiles adjacent to nodos
@@ -163,6 +165,7 @@ class Civ {
 	constructor(capital: Nodo, id: number, world: World, rng: Random) {
 		this.world = world;
 		this.id = id;
+		this.livableLand = 0;
 		this.nodos = new Set();
 		this.kenare = new Set<Nodo>();
 		this.capital = capital;
@@ -172,7 +175,7 @@ class Civ {
 		this.name = rng.discrete(0, 100);
 
 		this.militarism = rng.exponential(1);
-		this.enlightenment = 0;
+		this.enlightenment = 1;
 	}
 
 	/**
@@ -190,6 +193,7 @@ class Civ {
 				this.kenare.add(neighbor);
 			}
 		}
+		this.livableLand += DOMUBLIA[tile.biome];
 	}
 
 	/**
@@ -209,6 +213,7 @@ class Civ {
 						this.kenare.add(neighbor); // check if you need to re-add these
 			}
 		}
+		this.livableLand -= DOMUBLIA[tile.biome];
 		if (!this.nodos.has(this.capital)) // kill it when it loses its capital
 			this.militarism = 0;
 	}
@@ -224,12 +229,16 @@ class Civ {
 		} // TODO: scientific advancement
 	}
 
-	getName(): string {
-		return romanize(this.language.getCountryName(this.name));
+	getStrength() : number {
+		return this.militarism*this.enlightenment; // TODO: put this 20 in the header
 	}
 
-	getStrength() : number {
-		return this.militarism*Math.exp(this.enlightenment/20); // TODO: put this 20 in the header
+	getPopulation(): number {
+		return CARRYING_CAPACITY*this.livableLand*this.enlightenment;
+	}
+
+	getName(): string {
+		return romanize(this.language.getCountryName(this.name));
 	}
 }
 
