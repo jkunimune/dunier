@@ -4,7 +4,7 @@ import "../node_modules/tinyqueue/tinyqueue.min.js"
 //@ts-ignore
 const TinyQueue = window.TinyQueue;
 
-import {Surface, Triangle, Vector} from "./surface.js";
+import {Surface, Triangle, Nodo, Vector} from "./surface.js";
 import {Random} from "./random.js";
 import {argmax, union} from "./utils.js";
 
@@ -50,7 +50,7 @@ const OCEAN_SIZE = 0.25; // as a fraction of continental length scale
  * @param surf the surface to modify
  * @param rng the seeded random number generator to use
  */
-export function generateTerrain(numContinents, seaLevel, avgTerme, surf, rng) {
+export function generateTerrain(numContinents: number, seaLevel: number, avgTerme: number, surf: Surface, rng: Random) {
 	generateContinents(numContinents, surf, rng);
 	rng = rng.reset();
 	movePlates(surf, rng);
@@ -61,7 +61,7 @@ export function generateTerrain(numContinents, seaLevel, avgTerme, surf, rng) {
 	setBiomes(surf);
 }
 
-function generateClimate(avgTerme, surf, rng) {
+function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
 	for (const node of surf.nodos) { // assign each node random values
 		node.terme = getNoiseFunction(node, node.parents, 'terme', surf, rng,
@@ -76,24 +76,23 @@ function generateClimate(avgTerme, surf, rng) {
 			1/4.)*avgTerme - 273;
 		node.barxe += surf.windConvergence(node.φ);
 		const {n, d} = surf.windVelocity(node.φ);
-		node.hawe = node.nord.times(n).plus(node.dong.times(d));
+		node.windVelocity = node.nord.times(n).plus(node.dong.times(d));
 	}
 
 	for (const node of surf.nodos)
 		node.downwind = [];
 	const queue = [];
 	for (const node of surf.nodos) {
-		let bestDix = null; // define node.upwind as the neighbor that is in the upwindest direction of each node
+		let bestNode = null, bestDixe = null; // define node.upwind as the neighbor that is in the upwindest direction of each node
 		for (const neighbor of node.neighbors.keys()) {
 			const dix = neighbor.pos.minus(node.pos).norm();
-			if (bestDix == null ||
-				dix.dot(node.hawe) < bestDix.dot(node.hawe)) {
-				bestDix = dix;
-				node.upwind = neighbor;
-				node.windSpeed = -dix.dot(node.hawe);
+			if (bestDixe == null ||
+				dix.dot(node.windVelocity) < bestDixe.dot(node.windVelocity)) {
+				bestNode = neighbor;
+				bestDixe = dix;
 			}
 		}
-		node.upwind.downwind.push(node); // and make sure that all nodes know who is downwind of them
+		bestNode.downwind.push(node); // and make sure that all nodes know who is downwind of them
 		if (node.biome === 'samud') // also seed the orographic effect in the oceans
 			queue.push({node: node, moisture: OROGRAPHIC_MAGNITUDE});
 		if (node.gawe > CLOUD_HEIGHT) // and also remove some moisture from mountains
@@ -107,7 +106,7 @@ function generateClimate(avgTerme, surf, rng) {
 				const distance = node.neighbors.get(downwind).length;
 				queue.push({
 					node: downwind,
-					moisture: moisture*(1 - distance/OROGRAPHIC_RANGE/downwind.windSpeed)}); // receive slightly less moisture than this one got
+					moisture: moisture*(1 - distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
 			}
 		}
 	}
@@ -129,7 +128,7 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random) {
 			rng.discrete(0, 0); // but call rng anyway to keep things consistent
 		}
 		else { // and the rest with a method similar to that above
-			const prefParents = [];
+			const prefParents: Nodo[] = [];
 			for (const pair of node.between) { // if this node is directly between two nodes
 				if (pair[0].plate === pair[1].plate) { // of the same plate
 					if (!prefParents.includes(pair[0]))
@@ -188,8 +187,8 @@ function movePlates(surf: Surface, rng: Random) {
 
 	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
 
-	const hpQueue = new TinyQueue([], (a, b) => a.distance - b.distance);
-	const lpQueue = new TinyQueue([], (a, b) => a.distance - b.distance);
+	const hpQueue = new TinyQueue([], (a: {distance: number}, b: {distance: number}) => a.distance - b.distance);
+	const lpQueue = new TinyQueue([], (a: {distance: number}, b: {distance: number}) => a.distance - b.distance);
 	for (const node of surf.nodos) { // now for phase 2:
 		let fault = null;
 		let minDistance = Number.POSITIVE_INFINITY;
@@ -350,18 +349,20 @@ function fillOcean(level: number, surf: Surface) {
  * give the surface some rivers to draw, and also set up some nearby lakes.
  * @param surf the Surface on which this takes place
  */
-function addRivers(surf) {
+function addRivers(surf: Surface) {
 	for (const vertex of surf.triangles) {
 		vertex.gawe = 0; // first define altitudes for vertices, which only matters for this one purpose
 		for (const tile of vertex.vertices)
 			vertex.gawe += tile.gawe/vertex.vertices.length;
 	}
 
-	const nadeQueue = new TinyQueue([], (a, b) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
+	const riverDistance: Map<Nodo | Triangle, number> = new Map();
+
+	const nadeQueue = new TinyQueue([], (a: {slope: number}, b: {slope: number}) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
 	for (const vertex of surf.triangles) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
 		for (const tile of vertex.vertices) {
 			if (tile.biome === 'samud') {
-				tile.riverDistance = 0;
+				riverDistance.set(tile, 0);
 				nadeQueue.push({nice: tile, supr: vertex, slope: Number.POSITIVE_INFINITY});
 			}
 		}
@@ -371,7 +372,7 @@ function addRivers(surf) {
 		const {nice, supr} = nadeQueue.pop(); // pick out the steepest potential river
 		if (supr.liwonice === undefined) { // if it's available
 			supr.liwonice = nice; // take it
-			supr.riverDistance = nice.riverDistance + 1; // number of steps to delta
+			riverDistance.set(supr, riverDistance.get(nice) + 1); // number of steps to delta
 			for (const beyond of supr.neighbors.keys()) { // then look for what comes next
 				if (beyond.liwonice === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
 					let slope = beyond.gawe - supr.gawe;
@@ -392,7 +393,8 @@ function addRivers(surf) {
 
 	surf.rivers = new Set();
 
-	const liweQueue = new TinyQueue([...surf.triangles], (a, b) => b.riverDistance - a.riverDistance); // now we need to flow the water downhill
+	const liweQueue = new TinyQueue([...surf.triangles],
+		(a: Triangle, b: Triangle) => riverDistance.get(b) - riverDistance.get(a)); // now we need to flow the water downhill
 	const unitArea = surf.area/surf.nodos.size;
 	while (liweQueue.length > 0) {
 		const vertex = liweQueue.pop(); // at each river vertex
@@ -413,7 +415,7 @@ function addRivers(surf) {
  * assign biomes to all unassigned tiles according to simple rules.
  * @param surf the surface to which we're doing this
  */
-function setBiomes(surf) {
+function setBiomes(surf: Surface) {
 	for (const node of surf.nodos) {
 		if (node.biome == null) {
 			if (node.terme < TUNDRA_TEMP)
@@ -439,9 +441,15 @@ function setBiomes(surf) {
 	}
 }
 
-function floodFrom(start, level) {
+/**
+ * fill all tiles that are connected to start by a chain of nodes that are at or below level with ocean. then, return
+ * the number of tiles that could be flooded this way.
+ * @param start
+ * @param level
+ */
+function floodFrom(start: Nodo, level: number): number {
 	let numFilled = 0;
-	const queue = new TinyQueue([start], (a, b) => a.gawe - b.gawe); // it shall seed our ocean
+	const queue = new TinyQueue([start], (a: Nodo, b: Nodo) => a.gawe - b.gawe); // it shall seed our ocean
 	while (queue.length > 0 && queue.peek().gawe <= level) { // flood all available nodes
 		const next = queue.pop();
 		if (next.biome !== 'samud') {
@@ -460,20 +468,26 @@ function floodFrom(start, level) {
  * compute the diamond square noise algorithm to one node, given its parents.
  * @param node Node to be changed
  * @param parents Array of Nodos that will influence it
- * @param attr String identifier of attribute that is being compared and set
+ * @param attr identifier of attribute that is being compared and set
  * @param surf Surface on which the algorithm takes place
  * @param rng Random to use for the values
  * @param maxScale the scale above which values are not correlated
- * @param level number noise magnitude scalar
- * @param slope number logarithmic rate at which noise dies off with distance
- * @return number the value of attr this node should take
+ * @param level noise magnitude scalar
+ * @param slope logarithmic rate at which noise dies off with distance
+ * @return the value of attr this node should take
  */
-function getNoiseFunction(node, parents, attr, surf, rng, maxScale, level, slope) {
+function getNoiseFunction(node: Nodo, parents: Nodo[], attr: string, surf: Surface, rng: Random,
+						  maxScale: number, level: number, slope: number) {
 	let scale = 0;
 	let weightSum = 0;
 	let value = 0;
 	for (const parent of parents) {
 		const dist = surf.distance(node, parent); // look at parent distances
+		let parentValue;
+		if (attr === 'gawe')       parentValue = parent.gawe;
+		else if (attr === 'terme') parentValue = parent.terme;
+		else if (attr === 'barxe') parentValue = parent.barxe;
+		else throw `no funcubli sife - parent.${attr}`;
 		scale += dist/parents.length; // compute the mean scale // TODO might save some time if I save these distances
 		weightSum += 1/dist;
 		value += parent[attr]/dist; // compute the weighted average of them
@@ -491,14 +505,14 @@ function getNoiseFunction(node, parents, attr, surf, rng, maxScale, level, slope
 }
 
 
-function bellCurve(x) {
+function bellCurve(x: number) {
 	return (1 - x*x*(1 - x*x/4));
 }
 
-function digibbalCurve(x) {
+function digibbalCurve(x: number) {
 	return Math.sqrt(3125/512)*x*(1 - x*x*(1 - x*x/4));
 }
 
-function wibbleCurve(x) {
+function wibbleCurve(x: number) {
 	return 1 + Math.cos(12*Math.PI*x)/6;
 }

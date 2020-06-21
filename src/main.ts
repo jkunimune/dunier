@@ -28,34 +28,20 @@ const TERRAIN_COLORMAP = [
 	[1.0, 'rgb( 85,  61,   3)'],
 ];
 
-// const TERRAIN_COLORMAP = [
-// 	[0.0, 'rgb(  0,   0,   0)'],
-// 	[0.1, 'rgb( 35,  11,  15)'],
-// 	[0.2, 'rgb( 74,  21,  30)'],
-// 	[0.3, 'rgb(115,  22,  40)'],
-// 	[0.4, 'rgb(161,   5,  39)'],
-// 	[0.5, 'rgb(197,  32,  19)'],
-// 	[0.6, 'rgb(217,  77,   3)'],
-// 	[0.7, 'rgb(232, 117,   5)'],
-// 	[0.8, 'rgb(242, 159,  34)'],
-// 	[0.9, 'rgb(246, 202,  78)'],
-// 	[1.0, 'rgb(249, 242, 144)'],
-// ];
-
-const BIOME_COLORS = {
-	'samud':       '#06267f',
-	'potistan':    '#444921',
-	'barxojangal': '#176D0D',
-	'jangal':      '#647F45',
-	'lage':        '#2987D8',
-	'taige':       '#4EA069',
-	'piristan':    '#DD9C6F',
-	'grasistan':   '#BED042',
-	'registan':    '#F5E292',
-	'tundar':      '#FFFFFF',
-	'kale':        '#FAF2E4',
-	 null:         '#000000',
-};
+const BIOME_COLORS = new Map([
+	['samud',       '#06267f'],
+	['potistan',    '#444921'],
+	['barxojangal', '#176D0D'],
+	['jangal',      '#647F45'],
+	['lage',        '#2987D8'],
+	['taige',       '#4EA069'],
+	['piristan',    '#DD9C6F'],
+	['grasistan',   '#BED042'],
+	['registan',    '#F5E292'],
+	['tundar',      '#FFFFFF'],
+	['kale',        '#FAF2E4'],
+	[null,          '#000000'],
+]);
 
 const CATEGORY_COLORS = [
 	'rgb( 96, 189, 218)',
@@ -113,7 +99,7 @@ $('#planet-type').on('click', () => {
 /**
  * The "Tidally-locked" checkbox makes some other options nonapplicable.
  */
-$('#planet-locked').on('changed', () => {
+$('#planet-locked').on('click', () => {
 	const value = $('#planet-locked').prop('checked');
 	$('#planet-day').prop('disabled', value); // rotation period
 	$('#planet-tilt').prop('disabled', value); // and obliquity are both irrelevant
@@ -173,7 +159,7 @@ $('#planet-apply').on('click', () => {
 			throw err;
 	}
 
-	const [x, y, z, I] = surface.parameterize(18);
+	const {x, y, z, I} = surface.parameterize(18);
 	const mapDiv = $('#planet-map')[0];
 	// const data: Plotly.PlotData[] = [{
 	const data = [{
@@ -220,15 +206,15 @@ $('#terrain-apply').on('click', () => {
 	const mapper = new Chart(new Azimuthal(surface));
 	const colorLayer = $('#terrain-tiles')[0]; // get terrain layer
 	colorLayer.textContent = ''; // clear existing terrain
-	for (const biome in BIOME_COLORS)
-		mapper.fill([...surface.nodos].filter(n => n.biome === biome), colorLayer, BIOME_COLORS[biome]);
+	for (const biome of BIOME_COLORS.keys())
+		mapper.fill([...surface.nodos].filter(n => n.biome === biome), colorLayer, BIOME_COLORS.get(biome));
 	const riverLayer = $('#terrain-nade')[0];
 	riverLayer.textContent = '';
 	mapper.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD),
-		riverLayer, BIOME_COLORS['samud'], .003, true);
+		riverLayer, BIOME_COLORS.get('samud'), .003, true);
 	const reliefLayer = $('#terrain-shade')[0];
 	reliefLayer.textContent = '';
-	mapper.shade(surface.triangles, reliefLayer, 'gawe');
+	mapper.shade(surface.triangles, reliefLayer);
 });
 
 
@@ -249,7 +235,7 @@ $('#history-apply').on('click', () => {
 	const mapper = new Chart(new Azimuthal(surface));
 	const colorLayer = $('#history-tiles')[0];
 	colorLayer.textContent = '';
-	mapper.fill([...surface.nodos].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS['kale']);
+	mapper.fill([...surface.nodos].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS.get('kale'));
 	for (const civ of world.civs) {
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 		const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
@@ -260,7 +246,7 @@ $('#history-apply').on('click', () => {
 		mapper.fill([...civ.nodos].filter(n => n.biome !== 'samud'), g,
 			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length]);
 	}
-	mapper.fill([...surface.nodos].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS['samud']);
+	mapper.fill([...surface.nodos].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS.get('samud'));
 	// const reliefLayer = $('#history-shade')[0];
 	// reliefLayer.textContent = '';
 	// mapper.shade(surface.triangles, reliefLayer, 'gawe');

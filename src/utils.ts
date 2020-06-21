@@ -110,7 +110,8 @@ export function delaunayTriangulate(surf: Surface) {
  */
 function removeNode(node: Nodo) {
 	const oldTriangles = node.getPolygon();
-	let newTriangles, newEdges, flipQueue, flipImmune;
+	let newTriangles: Triangle[], newEdges: Edge[]
+	let flipQueue: Edge[], flipImmune: Edge[];
 	let foundGoodStart = false;
 	arbitrationLoop:
 	for (let i0 = 0; i0 < oldTriangles.length; i0 ++) { // we have to pick an arbitrary border node to start this process
@@ -141,9 +142,6 @@ function removeNode(node: Nodo) {
 		} // if you make it to the end of the for loop, then arbitrary was a fine choice
 		foundGoodStart = true;
 		break; // and we can proceed
-	}
-	if (!foundGoodStart) { // TODO remove this when I'm confident in this algorithm
-		throw 'welp;';
 	}
 
 	flipEdges(flipQueue, flipImmune, null, newTriangles);
@@ -202,7 +200,8 @@ export function flipEdges(queue: Edge[], immune: Edge[], newestNode: Nodo, allTr
 /**
  * Check whether a--c is a Delaunay edge in 2D given the existence of b and d
  */
-function isDelaunay(a, b, c, d): boolean {
+function isDelaunay(a: {x: number, y: number}, b: {x: number, y: number},
+					c: {x: number, y: number}, d: {x: number, y: number}): boolean {
 	const mat = [
 		[a.x - d.x, a.y - d.y, a.x*a.x + a.y*a.y - d.x*d.x - d.y*d.y],
 		[b.x - d.x, b.y - d.y, b.x*b.x + b.y*b.y - d.x*d.x - d.y*d.y],

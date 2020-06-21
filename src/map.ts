@@ -74,7 +74,7 @@ function trace(lines: Iterable<Place[]>): PathSegment[] {
 		}
 	}
 
-	function combine(a, b) {
+	function combine(a: Place[], b: Place[]): Place[] {
 		consolidated.delete(b); // delete b
 		heads.delete(b[0]);
 		tails.delete(b[0]);
@@ -102,7 +102,7 @@ function trace(lines: Iterable<Place[]>): PathSegment[] {
  */
 function outline(nodos: Set<Nodo>): PathSegment[] {
 	const accountedFor = new Set(); // keep track of which Edge have been done
-	const output = [];
+	const output: PathSegment[] = [];
 	for (let ind of nodos) { // look at every included node
 		for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
 			if (nodos.has(way))    continue; // (really we only care about excluded way)
@@ -167,6 +167,7 @@ export class Chart {
 		const path = this.map(outline(new Set(nodos)), svg, smooth, true);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${color}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
+		return path;
 	}
 
 	/**
@@ -189,9 +190,8 @@ export class Chart {
 	 * create a relief layer for the given set of triangles.
 	 * @param triangles Array of Triangle to shade.
 	 * @param svg SVG object on which to shade.
-	 * @param attr name of attribute to base the relief on.
 	 */
-	shade(triangles: Set<Triangle>, svg: SVGGElement, attr: string) { // TODO use separate delaunay triangulation
+	shade(triangles: Set<Triangle>, svg: SVGGElement) { // TODO use separate delaunay triangulation
 		if (!triangles)
 			return;
 
@@ -201,7 +201,7 @@ export class Chart {
 			const p = [];
 			for (const node of t.vertices) {
 				const {x, y} = this.projection.project(node.φ, node.λ);
-				const z = Math.max(0, node[attr]);
+				const z = Math.max(0, node.gawe);
 				p.push(new Vector(x, -y, z));
 			}
 			let n = p[1].minus(p[0]).cross(p[2].minus(p[0])).norm();
@@ -267,7 +267,7 @@ export class Chart {
 			}
 		}
 
-		const cutPoints = [];
+		const cutPoints: PathSegment[] = [];
 		for (const {type, args} of jinPoints) {
 			const [φ, λ] = args;
 			const {x, y} = this.projection.project(φ, λ); // project each point to the plane
@@ -401,7 +401,7 @@ class MapProjection {
 	 * @return Array containing PathSegment
 	 */
 	mapNorthPole(): PathSegment[] {
-		throw "unimplemented";
+		return [];
 	}
 
 	/**
@@ -409,7 +409,7 @@ class MapProjection {
 	 * @return Array containing PathSegment
 	 */
 	mapSouthPole(): PathSegment[] {
-		throw "unimplemented";
+		return [];
 	}
 }
 
@@ -419,17 +419,13 @@ export class Azimuthal extends MapProjection {
 		super(surface);
 	}
 
-	project(φ, λ) {
+	project(φ: number, λ: number): {x: number, y: number} {
 		const p = linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
 		const r = 1 - p/this.surface.height;
 		return {x: r*Math.sin(λ), y: r*Math.cos(λ)};
 	}
 
-	mapNorthPole() {
-		return [];
-	}
-
-	mapSouthPole() {
+	mapSouthPole(): PathSegment[] {
 		return [
 			{type: 'M', args: [0, -1]},
 			{type: 'A', args: [1, 1, 0, 1, 0, 0, 1]},

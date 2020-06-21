@@ -124,6 +124,26 @@ class Konsone {
 
 const FROM_IPA: Map<string, Vokale | Konsone> = new Map(); // load the IPA table from static res
 const TO_TEXT: Map<number, string[]> = new Map();
+const LOKE_KODE = new Map([
+	['bl', Loke.DULOLABI],
+	['ld', Loke.LABODANTI],
+	['dn', Loke.DANTI],
+	['ar', Loke.PIZOKULI],
+	['pa', Loke.BADOPIZI],
+	['rf', Loke.RETROKURBI],
+	['hp', Loke.BOKOCATI],
+	['vl', Loke.BOKOKOMALI],
+	['uv', Loke.BOKOPENDI],
+	['eg', Loke.SUPROMUNI],
+	['gl', Loke.GALOMUNI],
+])
+const FORME_KODE = new Map([
+	['n', Forme.NOSI],
+	['p', Forme.FRIKI],
+	['a', Forme.KARIBI],
+	['t', Forme.TOCI],
+	['r', Forme.DALALI],
+]);
 let result = null;
 const xmlHttp = new XMLHttpRequest();
 xmlHttp.open("GET", "./res/alphabet.tsv", false);
@@ -135,18 +155,16 @@ for (const line of xmlHttp.responseText.split('\n')) {
 	const grafeme = row.slice(0, 1);
 	let foneme: Vokale | Konsone;
 	if (row[1] == 'vokale') {
-		const gawia = [Gawia.TALI, Gawia.YAGOTALI, Gawia.MEDOTALI, Gawia.MEDOGAWI, Gawia.YAGOGAWI, Gawia.GAWI][row[2]];
-		const predia = [Predia.BADI, Predia.MEDI, Predia.PREDI][row[3]];
-		const cirkia = {u:Cirkia.KAYI, r:Cirkia.CIRKI}[row[4]];
+		const gawia = [Gawia.TALI, Gawia.YAGOTALI, Gawia.MEDOTALI, Gawia.MEDOGAWI, Gawia.YAGOGAWI, Gawia.GAWI][parseInt(row[2])];
+		const predia = [Predia.BADI, Predia.MEDI, Predia.PREDI][parseInt(row[3])];
+		const cirkia = (row[4] === 'r') ? Cirkia.CIRKI : Cirkia.KAYI;
 		foneme = new Vokale(gawia, predia, cirkia, Avoze.AVOZI);
 	}
 	else {
-		const loke = {bl:Loke.DULOLABI, ld:Loke.LABODANTI, dn:Loke.DANTI, ar:Loke.PIZOKULI,
-			pa:Loke.BADOPIZI, rf:Loke.RETROKURBI, hp:Loke.BOKOCATI, vl:Loke.BOKOKOMALI,
-			uv:Loke.BOKOPENDI, eg:Loke.SUPROMUNI, gl:Loke.GALOMUNI}[row[2]];
-		const forme = {n:Forme.NOSI, p:Forme.TINGI, f:Forme.FRIKI, a:Forme.KARIBI, t:Forme.TOCI, r:Forme.DALALI}[row[3]];
-		const latia = {c:Latia.JUNGI, l: Latia.LATI}[row[4]];
-		const avoze = {u:Avoze.NOLAVOZI, v:Avoze.AVOZI}[row[5]];
+		const loke = LOKE_KODE.get(row[2]);
+		const forme = FORME_KODE.get(row[3]);
+		const latia = (row[4] === 'l') ? Latia.LATI: Latia.JUNGI;
+		const avoze = (row[5] === 'v') ? Avoze.AVOZI : Avoze.NOLAVOZI;
 		foneme = new Konsone(loke, forme, latia, avoze);
 	}
 	FROM_IPA.set(grafeme[0], foneme);
@@ -328,19 +346,19 @@ export class ProtoLanguage {
 		this.putong[0] = ipa("ia");
 	}
 
-	getCommonNoun(i) {
+	getCommonNoun(i: number): (Vokale | Konsone)[] {
 		return this.putong[i];
 	}
 
-	getPersonalName(i) {
+	getPersonalName(i: number): (Vokale | Konsone)[] {
 		return this.renonam[i];
 	}
 
-	getCityName(i) {
+	getCityName(i: number): (Vokale | Konsone)[] {
 		return this.sitonam[i];
 	}
 
-	getCountryName(i) {
+	getCountryName(i: number): (Vokale | Konsone)[] {
 		return this.dexonam[i];
 	}
 
@@ -368,19 +386,19 @@ export class DeuteroLanguage {
 			this.changes.push(new SoundChange(rng));
 	}
 
-	getCommonNoun(i) {
+	getCommonNoun(i: number): (Vokale | Konsone)[] {
 		return this.applyChanges(this.parent.getCommonNoun(i));
 	}
 
-	getPersonalName(i) {
+	getPersonalName(i: number): (Vokale | Konsone)[] {
 		return this.applyChanges(this.parent.getPersonalName(i));
 	}
 
-	getCityName(i) {
+	getCityName(i: number): (Vokale | Konsone)[] {
 		return this.applyChanges(this.parent.getCityName(i));
 	}
 
-	getCountryName(i) {
+	getCountryName(i: number): (Vokale | Konsone)[] {
 		return this.applyChanges(this.parent.getCountryName(i));
 	}
 
@@ -401,10 +419,8 @@ export function romanize(lekse: (Vokale | Konsone)[]): string {
 	for (let i = 0; i < lekse.length; i ++) {
 		if (TO_TEXT.has(lekse[i].hash()))
 			output += TO_TEXT.get(lekse[i].hash())[0];
-		else {
-			console.log(lekse[i]);
+		else
 			throw `could not transcribe ${lekse[i]}, ${lekse[i].hash()}`;
-		}
 	}
 	return output;
 }

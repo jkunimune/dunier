@@ -100,9 +100,9 @@ export class Surface {
 	}
 
 	/**
-	 * return a 2d array of x, y, z, and insolation.
+	 * return 2d arrays of x, y, z, and insolation.
 	 */
-	parameterize(resolution: number): number[][] {
+	parameterize(resolution: number): {x: number[][], y: number[][], z: number[][], I: number[][]} {
 		const n = 2*resolution, m = 4*resolution;
 		const X = [], Y = [], Z = [], S = [];
 		for (let i = 0; i <= n; i ++) {
@@ -121,7 +121,7 @@ export class Surface {
 				S[i].push(s);
 			}
 		}
-		return [X, Y, Z, S];
+		return {x: X, y: Y, z: Z, I: S};
 	}
 
 	/**
@@ -207,7 +207,7 @@ export class Spheroid extends Surface {
 	private readonly eccentricity: number;
 	private readonly obliquity: number;
 
-	constructor(radius, gravity, omega, obliquity) {
+	constructor(radius: number, gravity: number, omega: number, obliquity: number) {
 		super(-Math.PI/2, Math.PI/2);
 		this.radius = radius; // keep radius in km
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
@@ -219,7 +219,7 @@ export class Spheroid extends Surface {
 		this.obliquity = obliquity;
 	}
 
-	partition() {
+	partition(): {triangles: Triangle[]; nodos: Nodo[]} {
 		const b = Math.atan(1/this.aspectRatio);
 		const m = Math.trunc(2*Math.PI/Math.hypot(Math.sin(b)/this.aspectRatio, 1 - Math.cos(b)));
 		const n = 4;
@@ -269,7 +269,7 @@ export class Spheroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	dsdφ(φ) {
+	dsdφ(φ: number): number {
 		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
 		const dβdφ = this.aspectRatio/(
 			Math.pow(Math.sin(φ), 2) +
@@ -279,27 +279,27 @@ export class Spheroid extends Surface {
 		return dsdβ*dβdφ;
 	}
 
-	dAds(φ) {
+	dAds(φ: number): number {
 		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
 		return 2*Math.PI*this.radius*Math.cos(β);
 	}
 
-	insolation(φ) {
+	insolation(φ: number): number {
 		return 1 -
 			5/8.*legendreP2(Math.cos(this.obliquity))*legendreP2(Math.sin(φ)) -
 			9/64.*legendreP4(Math.cos(this.obliquity))*legendreP4(Math.sin(φ)) -
 			65/1024.*legendreP6(Math.cos(this.obliquity))*legendreP6(Math.sin(φ));
 	}
 
-	windConvergence(φ) {
+	windConvergence(φ: number): number {
 		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
 	}
 
-	windVelocity(φ) {
+	windVelocity(φ: number): {n: number, d: number} {
 		return {n: 0, d: Math.cos(φ)};
 	}
 
-	xyz(φ, λ) {
+	xyz(φ: number, λ: number): Vector {
 		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
 		return new Vector(
 			-this.radius*Math.cos(β)*Math.sin(λ),
@@ -307,20 +307,20 @@ export class Spheroid extends Surface {
 			 this.radius*Math.sin(β)/this.aspectRatio);
 	}
 
-	φλ(x, y, z) {
+	φλ(x: number, y: number, z: number): {φ: number, λ: number} {
 		const β = Math.atan2(this.aspectRatio*z, Math.hypot(x, y));
 		const λ = Math.atan2(-x, y);
 		return {φ: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
 	}
 
-	normal(node) {
+	normal(node: Place): Vector {
 		return new Vector(
 			-Math.cos(node.φ)*Math.sin(node.λ),
 			 Math.cos(node.φ)*Math.cos(node.λ),
 			 Math.sin(node.φ));
 	}
 
-	distance(a, b) {
+	distance(a: Place, b: Place): number {
 		const s = Math.acos(Math.sin(a.φ)*Math.sin(b.φ) +
 			Math.cos(a.φ)*Math.cos(b.φ)*Math.cos(a.λ - b.λ));
 		const p = (a.φ + b.φ)/2;
@@ -337,32 +337,32 @@ export class Spheroid extends Surface {
  * rather than the z.
  */
 export class Sphere extends Spheroid {
-	constructor(radius) {
+	constructor(radius: number) {
 		super(radius, 1, 0, Number.NaN);
 	}
 
-	insolation(φ) {
+	insolation(φ: number): number {
 		return 1.5*Math.max(0, Math.sin(φ));
 	}
 
-	windConvergence(φ) {
+	windConvergence(φ: number): number {
 		return Math.cos(φ);
 	}
 
-	windVelocity(φ) {
+	windVelocity(φ: number): {n: number, d: number} {
 		return {n: -Math.cos(φ), d: 0};
 	}
 
-	xyz(φ, λ) {
+	xyz(φ: number, λ: number): Vector {
 		const {x, y, z} = super.xyz(φ, λ);
 		return new Vector(x, z, -y);
 	}
 
-	φλ(x, y, z) {
+	φλ(x: number, y: number, z: number): {φ: number, λ: number} {
 		return super.φλ(x, -z, y);
 	}
 
-	normal(node) {
+	normal(node: Nodo): Vector {
 		return node.pos.norm();
 	}
 }
@@ -384,12 +384,14 @@ export class Nodo {
 	public between: Nodo[][];
 	public parents: Nodo[];
 	public vertices: Triangle[];
+
+	public gawe: number;
 	public terme: number;
 	public barxe: number;
-	public gawe: number;
 	public biome: string;
 	public plate: number;
-	// public relSpeed: number;
+	public windVelocity: Vector;
+	public downwind: Nodo[];
 	public liwe: number;
 	public flag: boolean;
 	
@@ -420,7 +422,7 @@ export class Nodo {
 	/**
 	 * return the triangle which appears left of that from the point of view of this.
 	 */
-	leftOf(that): Triangle {
+	leftOf(that: Nodo): Triangle {
 		if (this.neighbors.get(that).node0 === this)
 			return this.neighbors.get(that).triangleL;
 		else
@@ -430,7 +432,7 @@ export class Nodo {
 	/**
 	 * return the triangle which appears right of that from the point of view of this.
 	 */
-	rightOf(that): Triangle {
+	rightOf(that: Nodo): Triangle {
 		if (this.neighbors.get(that).node0 === this)
 			return this.neighbors.get(that).triangleR;
 		else
@@ -441,7 +443,7 @@ export class Nodo {
 	 * check for the existence of a Triangle containing these three nodes in that order.
 	 * @returns boolean
 	 */
-	inTriangleWith(b, c): boolean {
+	inTriangleWith(b: Nodo, c: Nodo): boolean {
 		if (!this.neighbors.has(b))
 			return false;
 		return this.leftOf(b).acrossFrom(this.neighbors.get(b)) === c;
@@ -468,17 +470,20 @@ export class Nodo {
  * A single Delaunay triangle/voronoi vertex, which binds three Nodos
  */
 export class Triangle {
+	public φ: number;
+	public λ: number;
 	public vertices: Nodo[];
 	public edges: Edge[];
 	public neighbors: Map<Triangle, Edge>;
 	public surface: Surface;
 	public children: Triangle[];
 	public circumcenter: Place;
-	public liwe: number;
-	public φ: number;
-	public λ: number;
 
-	constructor(a, b, c) {
+	public gawe: number
+	public liwe: number;
+	public liwonice: Triangle;
+
+	constructor(a: Nodo, b: Nodo, c: Nodo) {
 		this.vertices = [a, b, c]; // nodes, ordered widdershins
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
 		this.neighbors = new Map(); // adjacent triangles
@@ -506,7 +511,7 @@ export class Triangle {
 	 * hint at the direction of the surface. must return false for points outside the
 	 * triangle's circumcircle.
 	 */
-	contains(r): boolean {
+	contains(r: Nodo): boolean {
 		const totalNormal = this.vertices[0].normal.plus(
 			this.vertices[1].normal).plus(this.vertices[2].normal);
 		if (r.normal.dot(totalNormal) < 0)
@@ -571,7 +576,7 @@ export class Triangle {
 	/**
 	 * Find and return the vertex across from the given edge.
 	 */
-	acrossFrom(edge): Nodo {
+	acrossFrom(edge: Edge): Nodo {
 		for (const vertex of this.vertices)
 			if (vertex !== edge.node0 && vertex !== edge.node1)
 				return vertex;
@@ -581,19 +586,21 @@ export class Triangle {
 	/**
 	 * Find and return the vertex clockwise of the given edge.
 	 */
-	clockwiseOf(node): Nodo {
+	clockwiseOf(node: Nodo): Nodo {
 		for (let i = 0; i < 3; i ++)
 			if (this.vertices[i] === node)
 				return this.vertices[(i+2)%3];
+		throw "This node isn't even in this triangle.";
 	}
 
 	/**
 	 * Find and return the vertex widershins of the given edge.
 	 */
-	widershinsOf(node): Nodo {
+	widershinsOf(node: Nodo): Nodo {
 		for (let i = 0; i < 3; i ++)
 			if (this.vertices[i] === node)
 				return this.vertices[(i+1)%3];
+		throw "This node isn't even in this triangle.";
 	}
 
 	toString(): string {
@@ -613,7 +620,7 @@ export class Edge {
 	public length: number;
 	public liwe: number;
 
-	constructor(node0, triangleR, node1, triangleL, length) {
+	constructor(node0: Nodo, triangleR: Triangle, node1: Nodo, triangleL: Triangle, length: number) {
 		this.node0 = node0; // save these new values for the edge
 		this.triangleR = triangleR;
 		this.node1 = node1;
@@ -652,48 +659,48 @@ export class Vector {
 	public y: number;
 	public z: number;
 
-	constructor(x, y, z) {
+	constructor(x: number, y: number, z: number) {
 		this.x = x;
 		this.y = y;
 		this.z = z;
 	}
 
-	times(a): Vector {
+	times(a: number): Vector {
 		return new Vector(
 			this.x * a,
 			this.y * a,
 			this.z * a);
 	}
 
-	over(a): Vector {
+	over(a: number): Vector {
 		return new Vector(
 			this.x / a,
 			this.y / a,
 			this.z / a);
 	}
 
-	plus(that): Vector {
+	plus(that: Vector): Vector {
 		return new Vector(
 			this.x + that.x,
 			this.y + that.y,
 			this.z + that.z);
 	}
 
-	minus(that): Vector {
+	minus(that: Vector): Vector {
 		return new Vector(
 			this.x - that.x,
 			this.y - that.y,
 			this.z - that.z);
 	}
 
-	dot(that): number {
+	dot(that: Vector): number {
 		return (
 			this.x*that.x +
 			this.y*that.y +
 			this.z*that.z);
 	}
 
-	cross(that): Vector {
+	cross(that: Vector): Vector {
 		return new Vector(
 			this.y*that.z - this.z*that.y,
 			this.z*that.x - this.x*that.z,

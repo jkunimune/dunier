@@ -17,32 +17,30 @@ const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an 
 const VALUE_OF_KNOWLEDGE = .17; // [] value of a single technological advancement
 const POWER_OF_MEMES = .05; // [1/year] probability that an idea spreads across a border in a year
 
-const DOMUBLIA = { // terrain modifiers for civ spawning and population growth
-	'samud':       0.0,
-	'potistan':    0.3,
-	'barxojangal': 0.3,
-	'jangal':      3.0,
-	'lage':        0.0,
-	'taige':       0.3,
-	'piristan':    0.1,
-	'grasistan':   1.0,
-	'registan':    0.1,
-	'tundre':      0.1,
-	null:          NaN,
-};
-const PASABLIA = { // terrain modifiers for invasion speed
-	'samud':       0.1,
-	'potistan':    0.1,
-	'barxojangal': 0.1,
-	'jangal':      1.0,
-	'lage':        1.0,
-	'taige':       1.0,
-	'piristan':    0.3,
-	'grasistan':   3.0,
-	'registan':    0.1,
-	'tundre':      0.3,
-	null:          NaN,
-};
+const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth
+	['samud',       0.0],
+	['potistan',    0.1],
+	['barxojangal', 0.3],
+	['jangal',      3.0],
+	['lage',        0.0],
+	['taige',       0.3],
+	['piristan',    0.1],
+	['grasistan',   1.0],
+	['registan',    0.1],
+	['tundre',      0.1],
+]);
+const PASABLIA = new Map([ // terrain modifiers for invasion speed
+	['samud',       0.1],
+	['potistan',    0.1],
+	['barxojangal', 0.1],
+	['jangal',      1.0],
+	['lage',        1.0],
+	['taige',       1.0],
+	['piristan',    0.3],
+	['grasistan',   3.0],
+	['registan',    0.1],
+	['tundre',      0.3],
+]);
 
 
 /**
@@ -52,7 +50,7 @@ export class World {
 	public planet: Surface;
 	public civs: Set<Civ>;
 
-	constructor(planet) {
+	constructor(planet: Surface) {
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
 	}
@@ -79,7 +77,7 @@ export class World {
 	spawnCivs(rng: Random) { // TODO: rebellions
 		for (const tile of this.planet.nodos) { // TODO: bonus from rivers and lakes
 			if (this.currentRuler(tile) == null) {
-				const canivia = HUMANITY_SUBJUGATION_DESIRE*TIME_STEP*tile.surface.area/tile.surface.nodos.size*DOMUBLIA[tile.biome];
+				const canivia = HUMANITY_SUBJUGATION_DESIRE*TIME_STEP*tile.surface.area/tile.surface.nodos.size*DOMUBLIA.get(tile.biome);
 				if (rng.probability(canivia)) {
 					this.civs.add(new Civ(tile, this.civs.size, this, rng));
 				}
@@ -92,7 +90,7 @@ export class World {
 	 * @param rng the random number generator to use
 	 */
 	spreadCivs(rng: Random) { // TODO: detriment from mountains
-		const invasions	= new TinyQueue([], (a, b) => a.end - b.end); // keep track of all current invasions
+		const invasions	= new TinyQueue([], (a: {end: number}, b: {end: number}) => a.end - b.end); // keep track of all current invasions
 		for (const invader of this.civs) {
 			for (const tile of invader.kenare) { // each civ initiates all its invasions
 				const time = this.estimateInvasionTime(invader, tile, rng); // figure out when they will be done
@@ -150,7 +148,7 @@ export class World {
 		const invadee = this.currentRuler(site);
 		const momentum = invader.getStrength();
 		const resistance = (invadee != null) ? invadee.getStrength() : 0;
-		const distance = Math.sqrt(site.surface.area/site.surface.nodos.size)/PASABLIA[site.biome]; // TODO: bonus to same-language invasions
+		const distance = Math.sqrt(site.surface.area/site.surface.nodos.size)/PASABLIA.get(site.biome); // TODO: bonus to same-language invasions
 		if (momentum > resistance)
 			return rng.exponential(distance/IMPERIALISM/(momentum - resistance));
 		else
@@ -223,7 +221,7 @@ class Civ {
 				this.kenare.add(neighbor);
 			}
 		}
-		this.arableLand += DOMUBLIA[tile.biome];
+		this.arableLand += DOMUBLIA.get(tile.biome);
 	}
 
 	/**
@@ -243,7 +241,7 @@ class Civ {
 						this.kenare.add(neighbor); // check if you need to re-add these
 			}
 		}
-		this.arableLand -= DOMUBLIA[tile.biome];
+		this.arableLand -= DOMUBLIA.get(tile.biome);
 		if (this.arableLand < 0)
 			this.arableLand = 0;
 		if (!this.nodos.has(this.capital)) // kill it when it loses its capital
