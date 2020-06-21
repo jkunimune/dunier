@@ -27,7 +27,7 @@ const DOMUBLIA = { // terrain modifiers for civ spawning and population growth
 	'piristan':    0.1,
 	'grasistan':   1.0,
 	'registan':    0.1,
-	'tundar':      0.1,
+	'tundre':      0.1,
 	null:          NaN,
 };
 const PASABLIA = { // terrain modifiers for invasion speed
@@ -40,7 +40,7 @@ const PASABLIA = { // terrain modifiers for invasion speed
 	'piristan':    0.3,
 	'grasistan':   3.0,
 	'registan':    0.1,
-	'tundar':      0.3,
+	'tundre':      0.3,
 	null:          NaN,
 };
 

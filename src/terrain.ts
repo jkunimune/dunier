@@ -417,7 +417,7 @@ function setBiomes(surf) {
 	for (const node of surf.nodos) {
 		if (node.biome == null) {
 			if (node.terme < TUNDRA_TEMP)
-				node.biome = 'tundar';
+				node.biome = 'tundre';
 			else if (node.terme > DESERT_SLOPE*node.barxe + DESERT_INTERCEPT)
 				node.biome = 'registan';
 			else if (node.terme < TAIGA_TEMP)
@@ -426,14 +426,14 @@ function setBiomes(surf) {
 				node.biome = 'piristan';
 			else if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
 				node.biome = 'grasistan';
-			else if (node.terme < TROPIC_TEMP) {
-				if (node.barxe < MARSH_THRESH)
+			else if (node.barxe < MARSH_THRESH) {
+				if (node.terme < TROPIC_TEMP)
 					node.biome = 'jangal';
 				else
-					node.biome = 'potistan';
+					node.biome = 'barxojangal';
 			}
 			else {
-				node.biome = 'barxojangal';
+				node.biome = 'potistan';
 			}
 		}
 	}
