@@ -9,10 +9,14 @@ import {Random} from "./random.js";
 import {Language, ProtoLanguage, DeuteroLanguage, romanize} from "./language.js";
 
 
-const TIME_STEP = 100; // year
-const SPAWN_RATE = 1e-8; // 1/year/km^2
-const INVASION_SPEED = .1; // km/year
-const CARRYING_CAPACITY = 1000; // people that can live in a tile of grassland with entry-level technology
+const TIME_STEP = 100; // [year]
+const HUMANITY_SUBJUGATION_DESIRE = 1e-8; // [1/year/km^2] rate at which tribes coalesce into kingdoms
+const IMPERIALISM = .1; // [km/year] rate at which the average empire spreads without organized resistance
+const CARRYING_CAPACITY = .05; // [1/km] density of people that can live in a grassland with entry-level technology
+const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
+const VALUE_OF_KNOWLEDGE = .17; // [] value of a single technological advancement
+const POWER_OF_MEMES = .05; // [1/year] probability that an idea spreads across a border in a year
+
 const DOMUBLIA = { // terrain modifiers for civ spawning and population growth
 	'samud':       0.0,
 	'potistan':    0.3,
@@ -63,7 +67,8 @@ export class World {
 			for (const civ of this.civs)
 				civ.update(rng);
 			this.spawnCivs(rng);
-			this.spreadCivs(rng); // TODO: population
+			this.spreadCivs(rng);
+			this.spreadIdeas(rng);
 		}
 	}
 
@@ -74,7 +79,7 @@ export class World {
 	spawnCivs(rng: Random) { // TODO: rebellions
 		for (const tile of this.planet.nodos) { // TODO: bonus from rivers and lakes
 			if (this.currentRuler(tile) == null) {
-				const canivia = SPAWN_RATE*TIME_STEP*tile.surface.area/tile.surface.nodos.size*DOMUBLIA[tile.biome];
+				const canivia = HUMANITY_SUBJUGATION_DESIRE*TIME_STEP*tile.surface.area/tile.surface.nodos.size*DOMUBLIA[tile.biome];
 				if (rng.probability(canivia)) {
 					this.civs.add(new Civ(tile, this.civs.size, this, rng));
 				}
@@ -111,6 +116,31 @@ export class World {
 	}
 
 	/**
+	 * carry technology across borders. every civ has a chance to gain each technology at least one of their neighors have that they don't
+	 * @param rng
+	 */
+	spreadIdeas(rng: Random) {
+		const visibleTechnology: Map<Civ, number> = new Map(); // how much advanced technology can they access?
+		for (const civ of this.civs) {
+			visibleTechnology.set(civ, civ.technology); // well, any technology they _have_, for one
+			for (const other of this.civs) { // look at every other civ
+				if (other.technology > visibleTechnology.get(civ)) { // if they have something we don't
+					for (const node of civ.kenare) { // check our borders
+						if (other.nodos.has(node)) { // to see if we share any with them
+							visibleTechnology.set(civ, other.technology); // if so, we can access their technology
+						}
+					}
+				}
+			}
+		}
+		const spreadChance = Math.exp(-TIME_STEP*POWER_OF_MEMES);
+		for (const civ of this.civs) {
+			if (visibleTechnology.get(civ) > civ.technology)
+				civ.technology += rng.binomial(visibleTechnology.get(civ) - civ.technology, spreadChance);
+		}
+	}
+
+	/**
 	 * how many years will it take this Civ to invade this Node?
 	 * @param invader the invading party
 	 * @param site the tile being invaded
@@ -122,7 +152,7 @@ export class World {
 		const resistance = (invadee != null) ? invadee.getStrength() : 0;
 		const distance = Math.sqrt(site.surface.area/site.surface.nodos.size)/PASABLIA[site.biome]; // TODO: bonus to same-language invasions
 		if (momentum > resistance)
-			return rng.exponential(distance/INVASION_SPEED/(momentum - resistance));
+			return rng.exponential(distance/IMPERIALISM/(momentum - resistance));
 		else
 			return Infinity;
 	}
@@ -145,7 +175,7 @@ export class World {
 class Civ {
 	public readonly id: number;
 	private readonly name: number; // its name index
-	public livableLand: number; // the population, pre technology modifier
+	public arableLand: number; // the population, pre technology modifier
 	public capital: Nodo; // the capital city
 	public nodos: Set<Nodo>; // the tiles it owns
 	public kenare: Set<Nodo>; // the set of tiles adjacent to nodos
@@ -153,7 +183,7 @@ class Civ {
 	private world: World;
 
 	public militarism: number; // base military strength
-	public enlightenment: number; // technological military modifier
+	public technology: number; // technological military modifier
 
 	/**
 	 * create a new civilization
@@ -165,7 +195,7 @@ class Civ {
 	constructor(capital: Nodo, id: number, world: World, rng: Random) {
 		this.world = world;
 		this.id = id;
-		this.livableLand = 0;
+		this.arableLand = 0;
 		this.nodos = new Set();
 		this.kenare = new Set<Nodo>();
 		this.capital = capital;
@@ -175,7 +205,7 @@ class Civ {
 		this.name = rng.discrete(0, 100);
 
 		this.militarism = rng.exponential(1);
-		this.enlightenment = 1;
+		this.technology = 1;
 	}
 
 	/**
@@ -193,7 +223,7 @@ class Civ {
 				this.kenare.add(neighbor);
 			}
 		}
-		this.livableLand += DOMUBLIA[tile.biome];
+		this.arableLand += DOMUBLIA[tile.biome];
 	}
 
 	/**
@@ -213,7 +243,9 @@ class Civ {
 						this.kenare.add(neighbor); // check if you need to re-add these
 			}
 		}
-		this.livableLand -= DOMUBLIA[tile.biome];
+		this.arableLand -= DOMUBLIA[tile.biome];
+		if (this.arableLand < 0)
+			this.arableLand = 0;
 		if (!this.nodos.has(this.capital)) // kill it when it loses its capital
 			this.militarism = 0;
 	}
@@ -226,15 +258,17 @@ class Civ {
 		if (this.nodos.size > 0) {
 			this.language = new DeuteroLanguage(this.language, rng);
 			this.militarism = rng.exponential(1); // TODO: finite personality drift speed
-		} // TODO: scientific advancement
+		}
+
+		this.technology += VALUE_OF_KNOWLEDGE*rng.poisson(HUMAN_INTELLIGENCE*TIME_STEP*this.getPopulation());
 	}
 
 	getStrength() : number {
-		return this.militarism*this.enlightenment; // TODO: put this 20 in the header
+		return this.militarism*this.technology;
 	}
 
 	getPopulation(): number {
-		return CARRYING_CAPACITY*this.livableLand*this.enlightenment;
+		return CARRYING_CAPACITY*this.arableLand*this.technology;
 	}
 
 	getName(): string {

@@ -81,6 +81,52 @@ export class Random {
 	}
 
 	/**
+	 * return a pseudorandom number drawn from a Poisson distribution (approximate for means >= 36)
+	 * @param mean
+	 */
+	poisson(mean: number): number {
+		if (mean === 0) {
+			return 0;
+		} else if (mean < 36) {
+			const expMean = Math.exp(-mean);
+			let u = this.next();
+			let k = 0;
+			let kFact = 1;
+			while (true) {
+				const pk = Math.pow(mean, k) * expMean / kFact;
+				if (u < pk)
+					return k;
+				else
+					u -= pk;
+				k++;
+				kFact *= k;
+			}
+		}
+		else {
+			return Math.max(0, Math.round(this.normal(mean, Math.sqrt(mean))));
+		}
+	}
+
+	/**
+	 * return a pseudorandom number drawn from a Binomial distribution (inefficient for large nums)
+	 * @param num
+	 * @param prob
+	 */
+	binomial(num: number, prob: number): number {
+		let u = this.next();
+		let nCk = 1;
+		for (let k = 0; k <= num; k ++) {
+			const pk = nCk*Math.pow(prob, k)*Math.pow(1 - prob, num - k);
+			if (u < pk)
+				return k;
+			else
+				u -= pk;
+			nCk *= (num - k)/(k + 1);
+		}
+		throw "Math is borken.";
+	}
+
+	/**
 	 * return a random choice from this list
 	 * @param options the elements from which we choose
 	 */
