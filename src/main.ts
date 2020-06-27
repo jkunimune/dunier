@@ -245,7 +245,7 @@ $('#history-apply').on('click', () => {
 		g.appendChild(hover);
 		colorLayer.appendChild(g);
 		mapper.fill([...civ.nodos].filter(n => n.biome !== 'samud'), g,
-			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length]);
+			CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length], '#000', .001);
 	}
 	mapper.fill([...surface.nodos].filter(n => n.biome === 'samud'), colorLayer, BIOME_COLORS.get('samud'));
 	// const reliefLayer = $('#history-shade')[0];

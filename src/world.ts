@@ -10,9 +10,10 @@ import {Language, ProtoLanguage, DeuteroLanguage, romanize} from "./language.js"
 
 
 const TIME_STEP = 100; // [year]
-const HUMANITY_SUBJUGATION_DESIRE = 1e-8; // [1/year/km^2] rate at which tribes coalesce into kingdoms
+const AUTHORITARIANISM = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
+const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
 const IMPERIALISM = .1; // [km/year] rate at which the average empire spreads without organized resistance
-const CARRYING_CAPACITY = .05; // [1/km] density of people that can live in a grassland with entry-level technology
+const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
 const VALUE_OF_KNOWLEDGE = .17; // [] value of a single technological advancement
 const POWER_OF_MEMES = .05; // [1/year] probability that an idea spreads across a border in a year
@@ -76,12 +77,19 @@ export class World {
 	 * generate a few new civs in uninhabited territory
 	 * @param rng the random number generator to use
 	 */
-	spawnCivs(rng: Random) { // TODO: rebellions
+	spawnCivs(rng: Random) {
 		for (const tile of this.planet.nodos) { // TODO: bonus from rivers and lakes
-			if (this.currentRuler(tile) == null) {
-				const canivia = HUMANITY_SUBJUGATION_DESIRE*TIME_STEP*tile.surface.area/tile.surface.nodos.size*DOMUBLIA.get(tile.biome);
-				if (rng.probability(canivia)) {
+			const demomultia = CARRYING_CAPACITY*DOMUBLIA.get(tile.biome)*tile.surface.area/tile.surface.nodos.size;
+			const ruler = this.currentRuler(tile);
+			if (ruler == null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
+				if (rng.probability(AUTHORITARIANISM*TIME_STEP*demomultia)) {
 					this.civs.add(new Civ(tile, this.civs.size, this, rng));
+				}
+			}
+			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
+				if (rng.probability(LIBERTARIANISM*TIME_STEP*demomultia)) { // use the population without technology correction for balancing
+					ruler.lose(tile);
+					this.civs.add(new Civ(tile, this.civs.size, this, rng, ruler.technology));
 				}
 			}
 		}
@@ -187,12 +195,13 @@ class Civ {
 
 	/**
 	 * create a new civilization
-	 * @param capital
-	 * @param id
-	 * @param world
-	 * @param rng
+	 * @param capital the home tile, with which this empire starts
+	 * @param id a nonnegative integer unique to this civ
+	 * @param world the world in which this civ lives
+	 * @param rng a random number generator
+	 * @param technology
 	 */
-	constructor(capital: Nodo, id: number, world: World, rng: Random) {
+	constructor(capital: Nodo, id: number, world: World, rng: Random, technology: number = 1) {
 		this.world = world;
 		this.id = id;
 		this.arableLand = 0;
@@ -201,11 +210,11 @@ class Civ {
 		this.capital = capital;
 		this.conquer(capital);
 
-		this.language = new ProtoLanguage(rng);
+		this.language = new ProtoLanguage(rng); // TODO associate languages with tiles, not countries, and also stamp them out
 		this.name = rng.discrete(0, 100);
 
 		this.militarism = rng.exponential(1);
-		this.technology = 1;
+		this.technology = technology;
 	}
 
 	/**
@@ -255,10 +264,8 @@ class Civ {
 	 * @param rng
 	 */
 	update(rng: Random) {
-		if (this.nodos.size > 0) {
+		if (this.nodos.size > 0)
 			this.language = new DeuteroLanguage(this.language, rng);
-			this.militarism = rng.exponential(1); // TODO: finite personality drift speed
-		}
 
 		this.technology += VALUE_OF_KNOWLEDGE*rng.poisson(HUMAN_INTELLIGENCE*TIME_STEP*this.getPopulation());
 	}

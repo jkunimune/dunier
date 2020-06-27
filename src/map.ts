@@ -156,17 +156,19 @@ export class Chart {
 	 * draw a region of the world on the map with the given color.
 	 * @param nodos Iterator of Node to be colored in.
 	 * @param svg object on which to put the Path.
-	 * @param color String that HTML can interpret as a color.
+	 * @param color color of the interior.
+	 * @param stroke color of the outline.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
 	 * @param smooth whether to apply Bezier smoothing to the outline
 	 * @return the newly created element encompassing these triangles.
 	 */
-	fill(nodos: Nodo[], svg: SVGGElement, color: string, strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
+	fill(nodos: Nodo[], svg: SVGGElement, color: string,
+		 stroke: string = 'none', strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
 		if (nodos.length <= 0)
 			return null;
 		const path = this.map(outline(new Set(nodos)), svg, smooth, true);
 		path.setAttribute('style',
-			`fill: ${color}; stroke: ${color}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
+			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
 		return path;
 	}
 
@@ -179,7 +181,8 @@ export class Chart {
 	 * @param smooth whether to apply Bezier smoothing to the curve
 	 * @returns the newly created element comprising all these lines
 	 */
-	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number, smooth: boolean = false): SVGPathElement {
+	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number,
+		   smooth: boolean = false): SVGPathElement {
 		const path = this.map(trace(strokes), svg, smooth, false);
 		path.setAttribute('style',
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: round; stroke-linecap: round;`);
