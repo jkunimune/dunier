@@ -30,10 +30,10 @@ const TERRAIN_COLORMAP = [
 
 const BIOME_COLORS = new Map([
 	['samud',       '#06267f'],
+	['lage',        '#06267f'],
 	['potistan',    '#444921'],
 	['barxojangal', '#176D0D'],
 	['jangal',      '#647F45'],
-	['lage',        '#2987D8'],
 	['taige',       '#4EA069'],
 	['piristan',    '#DD9C6F'],
 	['grasistan',   '#BED042'],
@@ -66,7 +66,7 @@ const CATEGORY_COLORS = [
 	'rgb(166, 192, 158)',
 ];
 
-const RIVER_DISPLAY_THRESHOLD = 2e6; // km^2
+const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2
 
 
 let surface: Surface = null;

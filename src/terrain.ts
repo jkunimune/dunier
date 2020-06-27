@@ -26,6 +26,7 @@ const TROPIC_TEMP = +22;
 const FOREST_INTERCEPT = -40;
 const FOREST_SLOPE = 37;
 const MARSH_THRESH = 3.5;
+const LAKE_THRESH = -0.1; // km
 
 const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
@@ -364,6 +365,7 @@ function addRivers(surf: Surface) {
 			if (tile.biome === 'samud') {
 				riverDistance.set(tile, 0);
 				nadeQueue.push({nice: tile, supr: vertex, slope: Number.POSITIVE_INFINITY});
+				break;
 			}
 		}
 	}
@@ -379,7 +381,6 @@ function addRivers(surf: Surface) {
 					if (slope > 0)
 						slope = surf.distance(beyond, supr); // only normalize slope by run if it is downhill
 					nadeQueue.push({nice: supr, supr: beyond, slope: slope});
-					supr.isSource = true;
 				}
 			}
 		}
@@ -407,7 +408,44 @@ function addRivers(surf: Surface) {
 		surf.rivers.add([vertex, vertex.liwonice]);
 	}
 
-	//TODO: add lakes to tiles with lots of Laplacian
+	const lageQueue = [...surf.nodos];
+	queue:
+	while (lageQueue.length > 0) { // now look at the tiles
+		const tile = lageQueue.pop();
+		if (tile.biome === 'samud' || tile.biome === 'lage')
+			continue; // ignoring things that are already water
+
+		let seenRightEdge = false; // check that there is up to 1 continuous body of water at its border
+		let outflow = null; // and while you're at it, locate the largest river flowing away
+		const start = <Nodo>tile.neighbors.keys()[Symbol.iterator]().next().value; // pick an arbitrary neighbor
+		let last = start;
+		do {
+			const vertex = tile.leftOf(last); // look at the vertex next to it
+			const next = vertex.widershinsOf(last);
+			if (next.biome === 'samud') // ocean adjacent tiles have a slight possibility of become lakes.
+				continue queue; // don't let it happen
+			const lastIsWater = tile.neighbors.get(last).liwe > 0 || last.biome === 'lage';
+			const nextIsWater = tile.neighbors.get(next).liwe > 0 || next.biome === 'lage';
+			const betweenIsWater = last.neighbors.get(next).liwe > 0;
+			if ((!lastIsWater && nextIsWater) || (!lastIsWater && !nextIsWater && betweenIsWater)) { // if this has the right edge of a body of water
+				if (seenRightEdge) // if there's already been a right edge
+					continue queue; // then it's not contiguous and this tile is not eligible
+				else
+					seenRightEdge = true;
+			}
+			if (outflow === null || riverDistance.get(vertex) < riverDistance.get(outflow)) // find the vertex with the most ultimate flow
+				outflow = vertex;
+			last = next;
+		} while (last !== start);
+		if (!seenRightEdge) // if there wasn't _any_ adjacent water
+			continue; // then there's nothing to feed the lake
+
+		if (outflow !== null && outflow.gawe - outflow.liwonice.gawe < LAKE_THRESH) { // if we made it through all that, make an altitude check
+			tile.biome = 'lage'; // and assign lake status. you've earned it, tile.
+			for (const neighbor of tile.neighbors.keys())
+				lageQueue.push(); // tell your friends.
+		}
+	}
 }
 
 

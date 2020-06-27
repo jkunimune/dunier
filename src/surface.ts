@@ -18,7 +18,7 @@ export class Surface {
 	public height: number;
 	private readonly φMin: number;
 	private readonly φMax: number;
-	readonly axis: Vector; // orientation of geodesic coordinate system
+	readonly axis: Vector; // orientation of geodetic coordinate system
 	refLatitudes: number[];
 	cumulAreas: number[];
 	cumulDistances: number[];
@@ -483,7 +483,7 @@ export class Triangle {
 
 	public gawe: number
 	public liwe: number;
-	public liwonice: Triangle;
+	public liwonice: Triangle | Nodo;
 
 	constructor(a: Nodo, b: Nodo, c: Nodo) {
 		this.vertices = [a, b, c]; // nodes, ordered widdershins
