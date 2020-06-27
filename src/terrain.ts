@@ -461,6 +461,11 @@ function addRivers(surf: Surface) {
  */
 function setBiomes(surf: Surface) {
 	for (const node of surf.nodos) {
+		let adjacentWater = false;
+		for (const neighbor of node.neighbors.keys())
+			if (neighbor.biome === 'samud' || neighbor.biome === 'lage')
+				adjacentWater = true;
+
 		if (node.biome == null) {
 			if (node.terme < RIVER_THRESH)
 				node.biome = 'aise';
@@ -474,15 +479,12 @@ function setBiomes(surf: Surface) {
 				node.biome = 'piristan';
 			else if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
 				node.biome = 'grasistan';
-			else if (node.barxe < MARSH_THRESH) {
-				if (node.terme < TROPIC_TEMP)
-					node.biome = 'jangal';
-				else
-					node.biome = 'barxojangal';
-			}
-			else {
+			else if (node.barxe >= MARSH_THRESH && node.gawe < CLOUD_HEIGHT && adjacentWater)
 				node.biome = 'potistan';
-			}
+			else if (node.terme < TROPIC_TEMP)
+				node.biome = 'jangal';
+			else
+				node.biome = 'barxojangal';
 		}
 	}
 }
