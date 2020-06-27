@@ -18,6 +18,7 @@ export class Surface {
 	public height: number;
 	private readonly φMin: number;
 	private readonly φMax: number;
+	readonly axis: Vector; // orientation of geodesic coordinate system
 	refLatitudes: number[];
 	cumulAreas: number[];
 	cumulDistances: number[];
@@ -27,6 +28,7 @@ export class Surface {
 		this.nodos = new Set();
 		this.φMin = φMin;
 		this.φMax = φMax;
+		this.axis = this.xyz(0, 0).cross(this.xyz(0, Math.PI/2)).norm();
 	}
 
 	/**
@@ -307,7 +309,7 @@ export class Spheroid extends Surface {
 			 this.radius*Math.sin(β)/this.aspectRatio);
 	}
 
-	φλ(x: number, y: number, z: number): {φ: number, λ: number} {
+	φλ(x: number, y: number, z: number): Place {
 		const β = Math.atan2(this.aspectRatio*z, Math.hypot(x, y));
 		const λ = Math.atan2(-x, y);
 		return {φ: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
@@ -358,7 +360,7 @@ export class Sphere extends Spheroid {
 		return new Vector(x, z, -y);
 	}
 
-	φλ(x: number, y: number, z: number): {φ: number, λ: number} {
+	φλ(x: number, y: number, z: number): Place {
 		return super.φλ(x, -z, y);
 	}
 
@@ -402,7 +404,7 @@ export class Nodo {
 		this.λ = position.λ;
 		this.pos = surface.xyz(this.φ, this.λ);
 		this.normal = surface.normal(this);
-		this.dong = this.normal.cross(new Vector(0, 0, -1)).norm();
+		this.dong = this.surface.axis.cross(this.normal).norm();
 		if (Number.isNaN(this.dong.x)) {
 			this.dong = this.normal.cross(this.pos).norm();
 			if (Number.isNaN(this.dong.x))

@@ -490,7 +490,7 @@ function getNoiseFunction(node: Nodo, parents: Nodo[], attr: string, surf: Surfa
 		else throw `no funcubli sife - parent.${attr}`;
 		scale += dist/parents.length; // compute the mean scale // TODO might save some time if I save these distances
 		weightSum += 1/dist;
-		value += parent[attr]/dist; // compute the weighted average of them
+		value += parentValue/dist; // compute the weighted average of them
 	}
 	value /= weightSum; // normalize
 
