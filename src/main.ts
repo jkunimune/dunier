@@ -39,7 +39,8 @@ const BIOME_COLORS = new Map([
 	['grasistan',   '#BED042'],
 	['registan',    '#F5E292'],
 	['tundar',      '#FFFFFF'],
-	['kale',        '#FAF2E4'],
+	['aise',        '#FFFFFF'],
+	['kagaze',      '#FAF2E4'],
 	[null,          '#000000'],
 ]);
 
@@ -235,7 +236,7 @@ $('#history-apply').on('click', () => {
 	const mapper = new Chart(new Azimuthal(surface));
 	const colorLayer = $('#history-tiles')[0];
 	colorLayer.textContent = '';
-	mapper.fill([...surface.nodos].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS.get('kale'));
+	mapper.fill([...surface.nodos].filter(n => n.biome !== 'samud'), colorLayer, BIOME_COLORS.get('kagaze'));
 	for (const civ of world.civs) {
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 		const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');

@@ -17,15 +17,16 @@ const CLOUD_HEIGHT = 2; // km
 const OROGRAPHIC_MAGNITUDE = 1;
 const OROGRAPHIC_RANGE = 8000; // km
 
-const TUNDRA_TEMP = -10;
-const DESERT_INTERCEPT = -30;
-const DESERT_SLOPE = 60;
-const TAIGA_TEMP = +5;
-const FLASH_TEMP = +50;
-const TROPIC_TEMP = +22;
-const FOREST_INTERCEPT = -40;
-const FOREST_SLOPE = 37;
-const MARSH_THRESH = 3.5;
+const TUNDRA_TEMP = -10; // °C
+const DESERT_INTERCEPT = -30; // °C
+const DESERT_SLOPE = 60; // °C/u
+const TAIGA_TEMP = +5; // °C
+const FLASH_TEMP = +50; // °C
+const TROPIC_TEMP = +22; // °C
+const FOREST_INTERCEPT = -40; // °C
+const FOREST_SLOPE = 37; // °C/u
+const MARSH_THRESH = 3.5; // u
+const RIVER_THRESH = -25; // °C
 const LAKE_THRESH = -0.1; // km
 
 const OCEAN_DEPTH = 4; // km
@@ -400,8 +401,13 @@ function addRivers(surf: Surface) {
 	while (liweQueue.length > 0) {
 		const vertex = liweQueue.pop(); // at each river vertex
 		if (vertex.liwonice instanceof Triangle) {
-			for (const tile of vertex.vertices) // compute the sum of rainfall and inflow (with some adjustments)
-				vertex.liwe += (1 + tile.barxe + tile.gawe/CLOUD_HEIGHT) * unitArea/tile.neighbors.size;
+			for (const tile of vertex.vertices) { // compute the sum of rainfall and inflow (with some adjustments)
+				let nadasle = 1; // base river yield is 1 per tile
+				nadasle += tile.barxe - (tile.terme - DESERT_INTERCEPT) / DESERT_SLOPE; // add in biome factor
+				nadasle += tile.gawe / CLOUD_HEIGHT; // add in mountain sources
+				if (nadasle > 0 && tile.terme >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
+					vertex.liwe += nadasle * unitArea/tile.neighbors.size;
+			}
 			vertex.liwonice.liwe += vertex.liwe; // and pass that flow onto the downstream tile
 			vertex.neighbors.get(vertex.liwonice).liwe = vertex.liwe;
 		}
@@ -412,8 +418,8 @@ function addRivers(surf: Surface) {
 	queue:
 	while (lageQueue.length > 0) { // now look at the tiles
 		const tile = lageQueue.pop();
-		if (tile.biome === 'samud' || tile.biome === 'lage')
-			continue; // ignoring things that are already water
+		if (tile.biome === 'samud' || tile.biome === 'lage' || tile.terme < RIVER_THRESH)
+			continue; // ignoring things that are already water or too cold for this
 
 		let seenRightEdge = false; // check that there is up to 1 continuous body of water at its border
 		let outflow = null; // and while you're at it, locate the largest river flowing away
@@ -456,7 +462,9 @@ function addRivers(surf: Surface) {
 function setBiomes(surf: Surface) {
 	for (const node of surf.nodos) {
 		if (node.biome == null) {
-			if (node.terme < TUNDRA_TEMP)
+			if (node.terme < RIVER_THRESH)
+				node.biome = 'aise';
+			else if (node.terme < TUNDRA_TEMP)
 				node.biome = 'tundre';
 			else if (node.terme > DESERT_SLOPE*node.barxe + DESERT_INTERCEPT)
 				node.biome = 'registan';

@@ -28,6 +28,7 @@ const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population 
 	['grasistan',   1.0],
 	['registan',    0.1],
 	['tundre',      0.1],
+	['aise',        0.0],
 ]);
 const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['samud',       0.1],
@@ -40,6 +41,7 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['grasistan',   3.0],
 	['registan',    0.1],
 	['tundre',      0.3],
+	['aise',        0.1],
 ]);
 
 
