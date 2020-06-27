@@ -16,9 +16,9 @@ export class Surface {
 	public rivers: Set<(Nodo | Triangle)[]>;
 	public area: number;
 	public height: number;
+	public axis: Vector; // orientation of geodetic coordinate system
 	private readonly φMin: number;
 	private readonly φMax: number;
-	readonly axis: Vector; // orientation of geodetic coordinate system
 	refLatitudes: number[];
 	cumulAreas: number[];
 	cumulDistances: number[];
@@ -28,12 +28,11 @@ export class Surface {
 		this.nodos = new Set();
 		this.φMin = φMin;
 		this.φMax = φMax;
-		this.axis = this.xyz(0, 0).cross(this.xyz(0, Math.PI/2)).norm();
+		this.axis = null;
 	}
 
 	/**
-	 * fill this.nodes with random nodes, spaced via numLloyd iterations of Lloyd
-	 * relaxation
+	 * fill this.nodes with random nodes
 	 */
 	populate(rng: Random) {
 		this.refLatitudes = []; // fill in latitude-integrated values
@@ -53,6 +52,9 @@ export class Surface {
 		}
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
+
+		this.axis = this.xyz(0, Math.PI/2).minus(this.xyz(0, 0)).cross(
+			this.xyz(0, Math.PI).minus(this.xyz(0, Math.PI/2))).norm(); // figure out which way the coordinate system points
 
 		const nodos = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
@@ -408,7 +410,7 @@ export class Nodo {
 		if (Number.isNaN(this.dong.x)) {
 			this.dong = this.normal.cross(this.pos).norm();
 			if (Number.isNaN(this.dong.x))
-				this.dong = this.normal.cross(new Vector(1, 0, 0)).norm();
+				this.dong = new Vector(1, 0, 0);
 		}
 		this.nord = this.normal.cross(this.dong);
 
