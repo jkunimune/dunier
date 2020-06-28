@@ -6,7 +6,7 @@ const TinyQueue = window.TinyQueue;
 
 import {Nodo, Surface} from "./surface.js";
 import {Random} from "./random.js";
-import {Language, ProtoLanguage, DeuteroLanguage, romanize} from "./language.js";
+import {Language, ProtoLanguage, DeuteroLanguage, Convention, romanize} from "./language.js";
 
 
 const TIME_STEP = 100; // [year]
@@ -36,7 +36,7 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['potistan',    0.1],
 	['barxojangal', 0.1],
 	['jangal',      1.0],
-	['lage',        1.0],
+	['lage',        0.3],
 	['taige',       1.0],
 	['piristan',    0.3],
 	['grasistan',   3.0],
@@ -159,7 +159,7 @@ export class World {
 		const momentum = invader.getStrength();
 		const resistance = (invadee != null) ? invadee.getStrength() : 0;
 		const distance = Math.sqrt(site.surface.area/site.surface.nodos.size)/PASABLIA.get(site.biome); // TODO: bonus to same-language invasions
-		if (momentum > resistance)
+		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
 			return rng.exponential(distance/IMPERIALISM/(momentum - resistance));
 		else
 			return Infinity;
@@ -278,8 +278,8 @@ class Civ {
 		return CARRYING_CAPACITY*this.arableLand*this.technology;
 	}
 
-	getName(): string {
-		return romanize(this.language.getCountryName(this.name));
+	getName(convention: Convention = Convention.NASOMEDI): string {
+		return romanize(this.language.getCountryName(this.name), convention);
 	}
 }
 

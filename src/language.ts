@@ -3,6 +3,15 @@
 import {Random} from "./random";
 
 
+const NUM_CONVENTIONS = 4;
+export enum Convention {
+	NASOMEDI,
+	LATINI,
+	ENGLI,
+	NOVOYANGI
+}
+
+
 enum Gawia {
 	ANY,
 	TALI,
@@ -144,27 +153,28 @@ const FORME_KODE = new Map([
 	['t', Forme.TOCI],
 	['r', Forme.DALALI],
 ]);
-let result = null;
 const xmlHttp = new XMLHttpRequest();
 xmlHttp.open("GET", "./res/alphabet.tsv", false);
 xmlHttp.send();
 if (xmlHttp.status != 200)
 	throw `${xmlHttp.status} error while loading alphabet file: ${xmlHttp.statusText}`;
 for (const line of xmlHttp.responseText.split('\n')) {
+	if (line.length === 0)  break;
 	const row = line.split('\t');
-	const grafeme = row.slice(0, 1);
+	const grafeme = row.slice(0, NUM_CONVENTIONS);
+	const sife = row.slice(NUM_CONVENTIONS);
 	let foneme: Vokale | Konsone;
-	if (row[1] == 'vokale') {
-		const gawia = [Gawia.TALI, Gawia.YAGOTALI, Gawia.MEDOTALI, Gawia.MEDOGAWI, Gawia.YAGOGAWI, Gawia.GAWI][parseInt(row[2])];
-		const predia = [Predia.BADI, Predia.MEDI, Predia.PREDI][parseInt(row[3])];
-		const cirkia = (row[4] === 'r') ? Cirkia.CIRKI : Cirkia.KAYI;
+	if (sife[0] == 'vokale') {
+		const gawia = [Gawia.TALI, Gawia.YAGOTALI, Gawia.MEDOTALI, Gawia.MEDOGAWI, Gawia.YAGOGAWI, Gawia.GAWI][parseInt(sife[1])];
+		const predia = [Predia.BADI, Predia.MEDI, Predia.PREDI][parseInt(sife[2])];
+		const cirkia = (sife[3] === 'r') ? Cirkia.CIRKI : Cirkia.KAYI;
 		foneme = new Vokale(gawia, predia, cirkia, Avoze.AVOZI);
 	}
 	else {
-		const loke = LOKE_KODE.get(row[2]);
-		const forme = FORME_KODE.get(row[3]);
-		const latia = (row[4] === 'l') ? Latia.LATI: Latia.JUNGI;
-		const avoze = (row[5] === 'v') ? Avoze.AVOZI : Avoze.NOLAVOZI;
+		const loke = LOKE_KODE.get(sife[1]);
+		const forme = FORME_KODE.get(sife[2]);
+		const latia = (sife[3] === 'l') ? Latia.LATI: Latia.JUNGI;
+		const avoze = (sife[4] === 'v') ? Avoze.AVOZI : Avoze.NOLAVOZI;
 		foneme = new Konsone(loke, forme, latia, avoze);
 	}
 	FROM_IPA.set(grafeme[0], foneme);
@@ -413,14 +423,39 @@ export class DeuteroLanguage {
 /**
  * convert a phonetic word to a unicode string somehow.
  * @param lekse
+ * @param convention
  */
-export function romanize(lekse: (Vokale | Konsone)[]): string {
-	let output = "";
+export function romanize(lekse: (Vokale | Konsone)[], convention: Convention = Convention.NASOMEDI): string {
+	let bazi = "";
 	for (let i = 0; i < lekse.length; i ++) {
 		if (TO_TEXT.has(lekse[i].hash()))
-			output += TO_TEXT.get(lekse[i].hash())[0];
+			bazi += TO_TEXT.get(lekse[i].hash())[convention];
 		else
 			throw `could not transcribe ${lekse[i]}, ${lekse[i].hash()}`;
 	}
-	return output;
+
+	let muti = "";
+	if (convention === Convention.ENGLI) {
+		for (let i = 0; i < bazi.length; i ++) { // TODO: diphthongs, endings, j and w gemination, y->i, capitalization, consonant cluster simplifaciotn
+			if (i+1 < bazi.length && bazi[i] === "c" && 'eiy'.includes(bazi[i+1]))
+				muti += "k";
+			else if (bazi[i] === '-') {
+				if ((i+2 < bazi.length && !'aeiouy'.includes(bazi[i+1]) && !'aeiouy'.includes(bazi[i+2])) ||
+					(i+2 === bazi.length && !'aeiouy'.includes(bazi[i+1])))
+					muti += (bazi[i-1] === 'a') ? 'i' : (bazi[i-1] === 'o') ? 'a' : (bazi[i-1] === 'i') ? '' : 'e';
+			}
+			else if (bazi[i] === '*') {
+				if (i+2 < bazi.length && !'aeiouy'.includes(bazi[i+1]) && 'aeiouy'.includes(bazi[i+2]))
+					muti += bazi[i+1];
+				else if (i+1 < bazi.length && bazi[i] === 'i' && 'aeiouy'.includes(bazi[i+1]))
+					muti = muti.substring(0, muti.length-1) + 'e';
+			}
+			else
+				muti += bazi[i];
+		}
+	}
+	else
+		muti = bazi;
+
+	return muti;
 }

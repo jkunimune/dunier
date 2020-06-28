@@ -10,6 +10,7 @@ const Plotly = window.Plotly;
 import {generateTerrain} from "./terrain.js";
 import {Sphere, Spheroid, Surface} from "./surface.js";
 import {World} from "./world.js";
+import {Convention} from "./language.js";
 import {Azimuthal, Chart} from "./map.js";
 import {Random} from "./random.js";
 
@@ -240,7 +241,8 @@ $('#history-apply').on('click', () => {
 	for (const civ of world.civs) {
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 		const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-		const text = document.createTextNode(civ.getName());
+		const text = document.createTextNode(
+			`${civ.getName(Convention.ENGLI)}\n[${civ.getName(Convention.NASOMEDI)}]`);
 		hover.appendChild(text);
 		g.appendChild(hover);
 		colorLayer.appendChild(g);
