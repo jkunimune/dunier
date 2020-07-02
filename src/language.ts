@@ -1,6 +1,7 @@
 // language.ts
 
-import {Random} from "./random";
+import {Random} from "./random.js";
+import {loadTSV} from "./utils.js";
 
 
 const NUM_CONVENTIONS = 4;
@@ -153,14 +154,8 @@ const FORME_KODE = new Map([
 	['t', Forme.TOCI],
 	['r', Forme.DALALI],
 ]);
-const xmlHttp = new XMLHttpRequest();
-xmlHttp.open("GET", "./res/alphabet.tsv", false);
-xmlHttp.send();
-if (xmlHttp.status != 200)
-	throw `${xmlHttp.status} error while loading alphabet file: ${xmlHttp.statusText}`;
-for (const line of xmlHttp.responseText.split('\n')) {
-	if (line.length === 0)  break;
-	const row = line.split('\t');
+const abociTable = loadTSV('alphabet.tsv');
+for (const row of abociTable) {
 	const grafeme = row.slice(0, NUM_CONVENTIONS);
 	const sife = row.slice(NUM_CONVENTIONS);
 	let foneme: Vokale | Konsone;
@@ -420,6 +415,8 @@ export class DeuteroLanguage {
 }
 
 
+const ENGLI_VISE = loadTSV('kanune-engli.tsv')
+
 /**
  * convert a phonetic word to a unicode string somehow.
  * @param lekse
@@ -434,8 +431,24 @@ export function romanize(lekse: (Vokale | Konsone)[], convention: Convention = C
 			throw `could not transcribe ${lekse[i]}, ${lekse[i].hash()}`;
 	}
 
-	let muti = "";
 	if (convention === Convention.ENGLI) {
+		let muti = "";
+		characterLoop:
+		for (let i = bazi.length; i > 0; i --) { // go through the string back-to-front
+			for (const vise of ENGLI_VISE) {
+				for (let j = 1; j < vise.length; j ++) { // and look through the replacements in ENGLI_VISE
+					if (i-vise[j].length >= 0 && bazi.substring(i-vise[j].length, i) === vise[j]) {
+						muti += vise[0].split("").reverse().join("");
+						i -= vise[j].length-1;
+						continue characterLoop;
+					}
+				}
+			}
+			muti += bazi[i-1]; // if you don't find any, just keep the character and move on
+		}
+		bazi = muti.split("").reverse().join("");
+
+		muti = "";
 		for (let i = 0; i < bazi.length; i ++) { // TODO: diphthongs, endings, j and w gemination, y->i, capitalization, consonant cluster simplifaciotn
 			if (i+1 < bazi.length && bazi[i] === "c" && 'eiy'.includes(bazi[i+1]))
 				muti += "k";
@@ -446,16 +459,26 @@ export function romanize(lekse: (Vokale | Konsone)[], convention: Convention = C
 			}
 			else if (bazi[i] === '*') {
 				if (i+2 < bazi.length && !'aeiouy'.includes(bazi[i+1]) && 'aeiouy'.includes(bazi[i+2]))
-					muti += bazi[i+1];
+					muti += (bazi[i+1] === 'k') ? 'c' : (bazi[i+1] === 'j') ? 'd' : (bazi[i+1] === 'h') ? '' : bazi[i+1];
 				else if (i+1 < bazi.length && bazi[i] === 'i' && 'aeiouy'.includes(bazi[i+1]))
 					muti = muti.substring(0, muti.length-1) + 'e';
 			}
 			else
 				muti += bazi[i];
 		}
+		bazi = muti;
 	}
-	else
-		muti = bazi;
 
-	return muti;
+	if (convention !== Convention.NASOMEDI) {
+		let muti = "";
+		for (let i = 0; i < bazi.length; i ++) {
+			if (i === 0 || bazi[i-1] === ' ')
+				muti += bazi[i].toUpperCase();
+			else
+				muti += bazi[i];
+		}
+		bazi = muti;
+	}
+
+	return bazi;
 }

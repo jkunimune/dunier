@@ -230,3 +230,21 @@ function findSmallestEncompassing(node: Nodo, partition: Triangle[], surf: Surfa
 	}
 	throw "no eureka tinogon da indu.";
 }
+
+/**
+ * load a static TSV resource
+ * @param filename
+ */
+export function loadTSV(filename: string): string[][] {
+	const xmlHttp = new XMLHttpRequest();
+	xmlHttp.open("GET", `./res/${filename}`, false);
+	xmlHttp.send();
+	if (xmlHttp.status != 200)
+		throw `${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`;
+	const arr = [];
+	for (const line of xmlHttp.responseText.split('\n')) {
+		if (line.length === 0)  break;
+		else                    arr.push(line.split('\t'));
+	}
+	return arr;
+}
