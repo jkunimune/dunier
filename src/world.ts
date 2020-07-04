@@ -15,8 +15,8 @@ const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into
 const IMPERIALISM = .1; // [km/year] rate at which the average empire spreads without organized resistance
 const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
-const VALUE_OF_KNOWLEDGE = .17; // [] value of a single technological advancement
-const POWER_OF_MEMES = .05; // [1/year] probability that an idea spreads across a border in a year
+const VALUE_OF_KNOWLEDGE = 0.5; // [] value of a single technological advancement
+const POWER_OF_MEMES = .02; // [1/year] probability that an idea spreads across a border in a year
 
 const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth
 	['samud',       0.0],
@@ -213,7 +213,7 @@ class Civ {
 		this.language = new ProtoLanguage(rng); // TODO associate languages with tiles, not countries, and also stamp them out
 		this.name = rng.discrete(0, 100);
 
-		this.militarism = rng.exponential(1);
+		this.militarism = rng.exponential(1); // TODO: decide if this is really the PDF I want
 		this.technology = technology;
 	}
 
