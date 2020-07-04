@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-    <title>dun-hamar &ndash; jena fantazi karte</title>
+    <title>Dun-Hamar &ndash; fantasy map generator</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
   </head>
@@ -20,7 +20,7 @@
           <img src="/res/logo.svg" width="30" height="30" alt="">
           dun-hamar
         </a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="sira/xowa faxe da daw-eurekia">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="Toggle navigation bar">
           <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="siri-daweurekia">
@@ -32,7 +32,7 @@
           <div class="navbar-nav ml-auto">
             <div class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false">
-                🌐 pandunia
+                🌐 English
               </a>
               <div class="dropdown-menu" aria-labelledby="lang-dropdown">
                 <a class="dropdown-item" href="/bax/en/">English</a>
@@ -53,16 +53,16 @@
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
           <li class="nav-item nav-fill">
-            <a class="nav-link active" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet" aria-selected="true">planete</a>
+            <a class="nav-link active" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet" aria-selected="true">Planet</a>
           </li>
           <li class="nav-item nav-fill">
-            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain" aria-selected="false">zem-forme</a>
+            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain" aria-selected="false">Terrain</a>
           </li>
           <li class="nav-item nav-fill">
-            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history" aria-selected="false">histore</a>
+            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history" aria-selected="false">History</a>
           </li>
           <li class="nav-item nav-fill">
-            <a class="nav-link" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map" aria-selected="false">karte</a>
+            <a class="nav-link" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map" aria-selected="false">Map</a>
           </li>
         </ul>
 
@@ -74,33 +74,33 @@
                 <div class="col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
-                      <label for="planet-type">forme</label>
+                      <label for="planet-type">Shape</label>
                       <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value)">
-                        <option selected value="0">bol</option>
-                        <option value="1">wen</option>
-                        <option value="2">plate</option>
+                        <option selected value="0">Spheroid</option>
+                        <option value="1">Toroid</option>
+                        <option value="2">Plane</option>
                       </select>
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.value)">
-                        <label class="custom-control-label" for="planet-locked">cawo sori</label>
+                        <label class="custom-control-label" for="planet-locked">Tidally-locked</label>
                       </div>
                     </div>
                     <div class="form-group">
-                      <label for="planet-size">cirk-mete</label>
+                      <label for="planet-size">Circumference</label>
                       <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-gravity">fasi baria</label>
+                      <label for="planet-gravity">Surface gravity</label>
                       <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-day">dure da den</label>
+                      <label for="planet-day">Day length</label>
                       <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="h" id="planet-day"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-tilt">tercia da akse</label>
+                      <label for="planet-tilt">Axial tilt</label>
                       <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="planet-apply">Apply</button>
@@ -119,34 +119,34 @@
                 <div class="col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
-                      <label for="terrain-seme">fals-zari seme</label>
+                      <label for="terrain-seme">Random seed</label>
                       <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-seme"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-continents">nombre da day-nese</label>
+                      <label for="terrain-continents">Number of continents</label>
                       <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-samud">gawia da samude</label>
+                      <label for="terrain-samud">Sea level</label>
                       <select class="custom-select" id="terrain-samud">
-                        <option value="4">dayo gawi</option>
-                        <option value="3">gawi</option>
-                        <option value="2">lilo gawi</option>
-                        <option selected value="1.5">norme</option>
-                        <option value="1">lilo tali</option>
-                        <option value="-0.5">tali</option>
-                        <option value="-1.5">day tali</option>
+                        <option value="4">Extremely high</option>
+                        <option value="3">Extra high</option>
+                        <option value="2">High</option>
+                        <option selected value="1.5">Normal</option>
+                        <option value="1">Low</option>
+                        <option value="-0.5">Extra low</option>
+                        <option value="-1.5">Extremely low</option>
                       </select>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-terme">med-darji terme</label>
+                      <label for="terrain-terme">Mean temperature</label>
                       <select class="custom-select" id="terrain-terme">
-                        <option value="308">garmi</option>
-                        <option selected value="288">norme</option>
-                        <option value="268">tali</option>
+                        <option value="308">High</option>
+                        <option selected value="288">Normal</option>
+                        <option value="268">Low</option>
                       </select>
                     </div>
-                    <button type="button" class="btn btn-block btn-primary" id="terrain-apply">nova</button>
+                    <button type="button" class="btn btn-block btn-primary" id="terrain-apply">Update</button>
                   </form>
                 </div>
 
@@ -171,14 +171,14 @@
                 <div class="col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
-                      <label for="history-seme">fals-zari seme</label>
+                      <label for="history-seme">Random seed</label>
                       <input type="number" value="0" min="0" max="99999999" step="1" id="history-seme"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-nen">nen</label>
+                      <label for="history-nen">Year</label>
                       <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="" id="history-nen"/>
                     </div>
-                    <button type="button" class="btn btn-block btn-primary" id="history-apply">nova</button>
+                    <button type="button" class="btn btn-block btn-primary" id="history-apply">Update</button>
                   </form>
                 </div>
 
@@ -204,7 +204,7 @@
       </div>
     </main>
 	
-	<div id="baxe" style="display: none;">pd</div>
+	<div id="baxe" style="display: none;">en</div>
 
     <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
