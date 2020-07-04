@@ -18,3 +18,10 @@ many fine details like mine locations and diplomatic relations. It does, however
 account for several features missing in other generators that are noticeable on the
 macroscopic scale, such as planetary curvature, plate tectonics, and linguistic
 drift.
+
+# Credits
+
+This project drew heavy inspiration from
+[Azgaar's similar fantasy map generator](azgaar.github.io/fantasy-map-generator/). The slick aesthetic comes courtesy of
+[the Bootstrap library](https://getbootstrap.com/) and
+[HatScripts' circular flag collection](https://github.com/HatScripts/circle-flags).
