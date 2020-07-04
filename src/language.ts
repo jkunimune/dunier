@@ -4,11 +4,14 @@ import {Random} from "./random.js";
 import {loadTSV} from "./utils.js";
 
 
-const NUM_CONVENTIONS = 4;
+const NUM_CONVENTIONS = 7;
 export enum Convention {
 	NASOMEDI,
 	LATINI,
+	ESPANI,
 	ENGLI,
+	NIPONI,
+	PANDUNI,
 	NOVOYANGI
 }
 
@@ -149,7 +152,9 @@ const LOKE_KODE = new Map([
 ])
 const FORME_KODE = new Map([
 	['n', Forme.NOSI],
-	['p', Forme.FRIKI],
+	['p', Forme.TINGI],
+	['f', Forme.FRIKI],
+	['pf', Forme.TINGOFRIKI],
 	['a', Forme.KARIBI],
 	['t', Forme.TOCI],
 	['r', Forme.DALALI],
