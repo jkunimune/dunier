@@ -1,6 +1,6 @@
 // world.ts
 
-import "../node_modules/tinyqueue/tinyqueue.min.js"
+import "./lib/tinyqueue.js"
 //@ts-ignore
 const TinyQueue = window.TinyQueue;
 

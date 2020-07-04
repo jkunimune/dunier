@@ -4,14 +4,13 @@
     "module": "ES6",
     "sourceMap": true,
     "lib": ["es2016", "DOM"],
-    "outDir": "build",
+    "outDir": ".",
     "downlevelIteration": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noImplicitThis": true
   },
   "exclude": [
-    "src/lib",
-    "node_modules"
+    "lib",
   ]
 }

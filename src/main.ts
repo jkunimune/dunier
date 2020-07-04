@@ -1,9 +1,9 @@
 // index.ts: interfaces with forms and plots
 
-import "../node_modules/jquery/dist/jquery.min.js";
+import "./lib/jquery.min.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
-import "../node_modules/plotly.js/dist/plotly.js";
+import "./lib/plotly.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -80,31 +80,6 @@ let world: World = null;
  */
 $(document).ready(() => {
 	console.log("ready!");
-});
-
-
-/**
- * The "Toroid" option makes the "Tidally-locked" checkbox nonapplicable.
- */
-$('#planet-type').on('click', () => {
-	const checkbox = $('#planet-locked');
-	if ($('#planet-type').val() === '1') { // if it's toroidal now
-		if (checkbox.prop('checked')) // uncheck tidal locking if we need to
-			checkbox.click();
-		checkbox.prop('disabled', true); // and disable it
-	} else { // if it's anything else
-		checkbox.prop('disabled', false); // enable it
-	}
-});
-
-
-/**
- * The "Tidally-locked" checkbox makes some other options nonapplicable.
- */
-$('#planet-locked').on('click', () => {
-	const value = $('#planet-locked').prop('checked');
-	$('#planet-day').prop('disabled', value); // rotation period
-	$('#planet-tilt').prop('disabled', value); // and obliquity are both irrelevant
 });
 
 

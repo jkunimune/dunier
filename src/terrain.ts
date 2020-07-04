@@ -1,6 +1,6 @@
 // terrain.ts: terrain generation functions
 
-import "../node_modules/tinyqueue/tinyqueue.min.js"
+import "./lib/tinyqueue.js"
 //@ts-ignore
 const TinyQueue = window.TinyQueue;
 
