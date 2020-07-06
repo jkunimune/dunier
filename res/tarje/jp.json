@@ -1,7 +1,7 @@
 {
 	"baxe.kode":"jp",
 	"baxe.nam":"日本語",
-	"kitabe.tem-nam":"ドゥンハマル &ndash; ファンタジーの地図生成器",
+	"kitabe.tem-nam":"ドゥンハマル・ファンタジーの地図生成器",
 	"menuw.baxe":"言語",
 	"menuw.dome":"ホーム",
 	"menuw.tema":"について",
@@ -39,6 +39,7 @@
 	"menuw.kara":"登録",
 	"menuw.bada":"次へ",
 	"menuw.preda":"戻る",
+	"menuw.zay":"現行",
 	"menuw.toggle-faxe":"ナビゲーションのトグル",
 	"un-mete.hor":"時間",
 	"un-mete.nen":"年"

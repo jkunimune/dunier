@@ -15,7 +15,7 @@
 	"menuw.bol":"bol",
 	"menuw.wen":"wen",
 	"menuw.plate":"plate",
-	"menuw.sori":"cawo sori",
+	"menuw.sori":"cawo sat-sami",
 	"menuw.cirk-mete":"cirk-mete",
 	"menuw.baria":"fasi baria",
 	"menuw.den":"dure da den",
@@ -39,6 +39,7 @@
 	"menuw.kara":"nova",
 	"menuw.bada":"bada",
 	"menuw.preda":"preda",
+	"menuw.zay":"zay",
 	"menuw.toggle-faxe":"sira/xowa faxe da daw-eurekia",
 	"un-mete.hor":"h",
 	"un-mete.nen":""

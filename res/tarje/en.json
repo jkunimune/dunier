@@ -3,6 +3,9 @@
 	"baxe.nam":"English",
 	"kitabe.tem-nam":"Dun-Hamar &ndash; fantasy map generator",
 	"menuw.baxe":"Language",
+	"menuw.dome":"Home",
+	"menuw.tema":"About",
+	"menuw.poste":"Contact",
 	"menuw.planete":"Planet",
 	"menuw.zem-forme":"Terrain",
 	"menuw.histore":"History",
@@ -36,6 +39,7 @@
 	"menuw.kara":"Update",
 	"menuw.bada":"Next",
 	"menuw.preda":"Back",
+	"menuw.zay":"current",
 	"menuw.toggle-faxe":"Toggle navigation bar",
 	"un-mete.hor":"h",
 	"un-mete.nen":""

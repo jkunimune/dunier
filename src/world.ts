@@ -1,8 +1,7 @@
 // world.ts
 
-import "./lib/tinyqueue.js"
-//@ts-ignore
-const TinyQueue = window.TinyQueue;
+// @ts-ignore
+import TinyQueue from './lib/tinyqueue.js';
 
 import {Nodo, Surface} from "./surface.js";
 import {Random} from "./random.js";

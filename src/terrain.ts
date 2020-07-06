@@ -1,8 +1,7 @@
 // terrain.ts: terrain generation functions
 
-import "./lib/tinyqueue.js"
-//@ts-ignore
-const TinyQueue = window.TinyQueue;
+// @ts-ignore
+import TinyQueue from './lib/tinyqueue.js';
 
 import {Surface, Triangle, Nodo, Vector} from "./surface.js";
 import {Random} from "./random.js";
