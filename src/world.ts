@@ -30,6 +30,9 @@ const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population 
 	['tundre',      0.1],
 	['aise',        0.0],
 ]);
+const RIVER_UTILITY_THRESHOLD = 1e6;
+const RIVER_UTILITY = 0.3;
+const OCEAN_UTILITY = 0.1;
 const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['samud',       0.1],
 	['potistan',    0.1],
@@ -66,7 +69,7 @@ export class World {
 		for (let t = 0; t < year; t += TIME_STEP) {
 			for (const civ of this.civs)
 				civ.update(rng);
-			this.spawnCivs(rng);
+			this.spawnCivs(rng); // TODO: build cities
 			this.spreadCivs(rng);
 			this.spreadIdeas(rng);
 		}
@@ -78,7 +81,7 @@ export class World {
 	 */
 	spawnCivs(rng: Random) {
 		for (const tile of this.planet.nodos) { // TODO: bonus from rivers and lakes
-			const demomultia = CARRYING_CAPACITY*DOMUBLIA.get(tile.biome)*tile.surface.area/tile.surface.nodos.size;
+			const demomultia = CARRYING_CAPACITY*getDomublia(tile);
 			const ruler = this.currentRuler(tile);
 			if (ruler == null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(AUTHORITARIANISM*TIME_STEP*demomultia)) {
@@ -282,3 +285,15 @@ class Civ {
 	}
 }
 
+function getDomublia(tile: Nodo): number {
+	let val = DOMUBLIA.get(tile.biome);
+	if (val > 0) {
+		for (const neighbor of tile.neighbors.keys()) {
+			if (tile.neighbors.get(neighbor).liwe > RIVER_UTILITY_THRESHOLD)
+				val += RIVER_UTILITY;
+			if (neighbor.biome === 'samud' || neighbor.biome === 'lage')
+				val += OCEAN_UTILITY;
+		}
+	}
+	return val*tile.surface.area/tile.surface.nodos.size;
+}
