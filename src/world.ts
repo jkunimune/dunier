@@ -16,6 +16,7 @@ const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a 
 const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
 const VALUE_OF_KNOWLEDGE = 0.5; // [] value of a single technological advancement
 const POWER_OF_MEMES = .02; // [1/year] probability that an idea spreads across a border in a year
+const HUMAN_WEIGHT = 100; // [] multiplier on vertical distances
 
 const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth
 	['samud',       0.0],
@@ -31,8 +32,8 @@ const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population 
 	['aise',        0.0],
 ]);
 const RIVER_UTILITY_THRESHOLD = 1e6;
-const RIVER_UTILITY = 0.3;
-const OCEAN_UTILITY = 0.1;
+const RIVER_UTILITY = 1.0;
+const OCEAN_UTILITY = 1.0;
 const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['samud',       0.1],
 	['potistan',    0.1],
@@ -102,23 +103,25 @@ export class World {
 	 * @param rng the random number generator to use
 	 */
 	spreadCivs(rng: Random) { // TODO: detriment from mountains
-		const invasions	= new TinyQueue([], (a: {end: number}, b: {end: number}) => a.end - b.end); // keep track of all current invasions
+		const invasions	= new TinyQueue([], (a: {time: number}, b: {time: number}) => a.time - b.time); // keep track of all current invasions
 		for (const invader of this.civs) {
-			for (const tile of invader.kenare) { // each civ initiates all its invasions
-				const time = this.estimateInvasionTime(invader, tile, rng); // figure out when they will be done
-				if (time <= TIME_STEP) // if that goal is within reach
-					invasions.push({end: time, invader: invader, tile: tile}); // start on it
+			for (const ourTile of invader.kenare.keys()) { // each civ initiates all its invasions
+				for (const theirTile of invader.kenare.get(ourTile)) {
+					const time = this.estimateInvasionTime(invader, ourTile, theirTile, rng); // figure out when they will be done
+					if (time <= TIME_STEP) // if that goal is within reach
+						invasions.push({time: time, invader: invader, start: ourTile, end: theirTile}); // start on it
+				}
 			}
 		}
 		while (invasions.length > 0) {
-			let {end, invader, tile} = invasions.pop(); // as invasions finish
-			if (invader.kenare.has(tile)) { // check that they're still doable
-				invader.conquer(tile); // update the game state
-				for (const neighbor of tile.neighbors.keys()) { // and move on
-					if (invader.kenare.has(neighbor)) { // note that this check can refresh stalled invasions, thus giving the invader advantage on adjacent fronts
-						end = end + this.estimateInvasionTime(invader, neighbor, rng);
+			let {time, invader, start, end} = invasions.pop(); // as invasions finish
+			if (invader.nodos.has(start) && !invader.nodos.has(end)) { // check that they're still doable
+				invader.conquer(end); // update the game state
+				for (const neighbor of end.neighbors.keys()) { // and move on
+					if (!invader.nodos.has(neighbor)) {
+						time = time + this.estimateInvasionTime(invader, end, neighbor, rng);
 						if (end <= TIME_STEP) // assuming it is possible
-							invasions.push({end: end, invader: invader, tile: neighbor});
+							invasions.push({time: time, invader: invader, start: end, end:neighbor});
 					}
 				}
 			}
@@ -135,9 +138,11 @@ export class World {
 			visibleTechnology.set(civ, civ.technology); // well, any technology they _have_, for one
 			for (const other of this.civs) { // look at every other civ
 				if (other.technology > visibleTechnology.get(civ)) { // if they have something we don't
-					for (const node of civ.kenare) { // check our borders
-						if (other.nodos.has(node)) { // to see if we share any with them
-							visibleTechnology.set(civ, other.technology); // if so, we can access their technology
+					for (const tiles of civ.kenare.values()) { // check our borders
+						for (const tile of tiles) {
+							if (other.nodos.has(tile)) { // to see if we share any with them
+								visibleTechnology.set(civ, other.technology); // if so, we can access their technology
+							}
 						}
 					}
 				}
@@ -146,23 +151,28 @@ export class World {
 		const spreadChance = Math.exp(-TIME_STEP*POWER_OF_MEMES);
 		for (const civ of this.civs) {
 			if (visibleTechnology.get(civ) > civ.technology)
-				civ.technology += rng.binomial(visibleTechnology.get(civ) - civ.technology, spreadChance);
+				civ.technology += VALUE_OF_KNOWLEDGE*rng.binomial(
+					(visibleTechnology.get(civ) - civ.technology)/VALUE_OF_KNOWLEDGE,
+					spreadChance);
 		}
 	}
 
 	/**
 	 * how many years will it take this Civ to invade this Node?
 	 * @param invader the invading party
-	 * @param site the tile being invaded
+	 * @param start the source of the invaders
+	 * @param end the place being invaded
 	 * @param rng the random number generator to use to determine the battle outcome
 	 */
-	estimateInvasionTime(invader: Civ, site: Nodo, rng: Random) {
-		const invadee = this.currentRuler(site);
+	estimateInvasionTime(invader: Civ, start: Nodo, end: Nodo, rng: Random) {
+		const invadee = this.currentRuler(end);
 		const momentum = invader.getStrength();
 		const resistance = (invadee != null) ? invadee.getStrength() : 0;
-		const distance = Math.sqrt(site.surface.area/site.surface.nodos.size)/PASABLIA.get(site.biome); // TODO: bonus to same-language invasions
+		const distance = start.neighbors.get(end).length/PASABLIA.get(end.biome); // TODO: bonus to same-language invasions
+		const elevation = start.gawe - end.gawe;
+		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation);
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
-			return rng.exponential(distance/IMPERIALISM/(momentum - resistance));
+			return rng.exponential(distanceEff/IMPERIALISM/(momentum - resistance));
 		else
 			return Infinity;
 	}
@@ -188,7 +198,7 @@ class Civ {
 	public arableLand: number; // the population, pre technology modifier
 	public capital: Nodo; // the capital city
 	public nodos: Set<Nodo>; // the tiles it owns
-	public kenare: Set<Nodo>; // the set of tiles adjacent to nodos
+	public kenare: Map<Nodo, Set<Nodo>>; // the set of tiles it owns that are adjacent to tiles it doesn't
 	public language: Language; // the official language
 	private world: World;
 
@@ -208,7 +218,7 @@ class Civ {
 		this.id = id;
 		this.arableLand = 0;
 		this.nodos = new Set();
-		this.kenare = new Set<Nodo>();
+		this.kenare = new Map<Nodo, Set<Nodo>>();
 		this.capital = capital;
 		this.conquer(capital);
 
@@ -229,12 +239,18 @@ class Civ {
 			loser.lose(tile);
 
 		this.nodos.add(tile);
+		this.kenare.set(tile, new Set<Nodo>());
 		for (const neighbor of tile.neighbors.keys()) {
-			if (this.world.currentRuler(neighbor) != this) {
-				this.kenare.add(neighbor);
+			if (this.kenare.has(neighbor) && this.kenare.get(neighbor).has(tile)) {
+				this.kenare.get(neighbor).delete(tile);
+				if (this.kenare.get(neighbor).size === 0)
+					this.kenare.delete(neighbor);
 			}
+			else if (!this.nodos.has(neighbor))
+				this.kenare.get(tile).add(neighbor);
 		}
-		this.arableLand += DOMUBLIA.get(tile.biome);
+
+		this.arableLand += getDomublia(tile);
 	}
 
 	/**
@@ -243,18 +259,16 @@ class Civ {
 	 */
 	lose(tile: Nodo) {
 		this.nodos.delete(tile); // remove it from nodos
+		this.kenare.delete(tile);
 		for (const neighbor of tile.neighbors.keys()) {
-			this.kenare.delete(neighbor); // remove its neighbors from kenare
-			if (this.world.currentRuler(neighbor) === this) {
-				this.kenare.add(tile); // add this to kenare if there are other adjacencies
-			}
-			else {
-				for (const further of neighbor.neighbors.keys())
-					if (this.world.currentRuler(further) === this)
-						this.kenare.add(neighbor); // check if you need to re-add these
+			if (this.nodos.has(neighbor)) {
+				if (!this.kenare.has(neighbor))
+					this.kenare.set(neighbor, new Set<Nodo>());
+				this.kenare.get(neighbor).add(tile);
 			}
 		}
-		this.arableLand -= DOMUBLIA.get(tile.biome);
+
+		this.arableLand -= getDomublia(tile);
 		if (this.arableLand < 0)
 			this.arableLand = 0;
 		if (!this.nodos.has(this.capital)) // kill it when it loses its capital
