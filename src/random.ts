@@ -108,22 +108,34 @@ export class Random {
 	}
 
 	/**
-	 * return a pseudorandom number drawn from a Binomial distribution (inefficient for large nums)
+	 * return a pseudorandom number drawn from a Binomial distribution (approximate for large numbers)
 	 * @param num
 	 * @param prob
 	 */
 	binomial(num: number, prob: number): number {
-		let u = this.next();
-		let nCk = 1;
-		for (let k = 0; k <= num; k ++) {
-			const pk = nCk*Math.pow(prob, k)*Math.pow(1 - prob, num - k);
-			if (u < pk)
-				return k;
-			else
-				u -= pk;
-			nCk *= (num - k)/(k + 1);
+		if (prob === 0) {
+			return 0;
 		}
-		throw "Math is borken.";
+		else if (prob === 1) {
+			return num;
+		}
+		else if (num*prob < 36 || num*prob > num - 36) {
+			let u = this.next();
+			let nCk = 1;
+			for (let k = 0; k <= num; k++) {
+				const pk = nCk * Math.pow(prob, k) * Math.pow(1 - prob, num - k);
+				if (u < pk)
+					return k;
+				else
+					u -= pk;
+				nCk *= (num - k) / (k + 1);
+			}
+			throw `Math is borken: ${num}, ${prob} left ${u}`;
+		}
+		else {
+			return Math.max(0, Math.min(num, Math.round(
+				this.normal(num*prob, Math.sqrt(num*prob*(1 - prob))))));
+		}
 	}
 
 	/**
