@@ -12,6 +12,7 @@ const TIME_STEP = 100; // [year]
 const AUTHORITARIANISM = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
 const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
 const IMPERIALISM = .1; // [km/year] rate at which the average empire spreads without organized resistance
+const SOCIAL_DECAY_PERIOD = 500; // [year] time it takes for an empire's might to decay by 2.7
 const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
 const VALUE_OF_KNOWLEDGE = 0.5; // [] value of a single technological advancement
@@ -283,6 +284,7 @@ class Civ {
 		if (this.nodos.size > 0)
 			this.language = new DeuteroLanguage(this.language, rng);
 
+		this.militarism *= Math.exp(-TIME_STEP/SOCIAL_DECAY_PERIOD);
 		this.technology += VALUE_OF_KNOWLEDGE*rng.poisson(HUMAN_INTELLIGENCE*TIME_STEP*this.getPopulation());
 	}
 
