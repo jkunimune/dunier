@@ -18,7 +18,7 @@
       <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
           <a class="navbar-brand" href="#">
-            <img src="/res/logo.svg" width="30" height="30" alt="">
+            <img src="/res/logo.svg" width="35" height="35" alt="">
             dun-hamar
           </a>
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="Toggle navigation bar">
@@ -32,23 +32,25 @@
             </div>
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false">
-                  <i data-feather="globe"></i>
+                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="Language">
+                  <svg class="bi" width="20" viewBox="-38 -38 76 86" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="none" stroke-width="4" d="M0,-36 A36,36,0,0,0,0,36 A18,36,0,0,0,0,-36 A18,36,0,0,0,0,36 A36,36,0,0,0,0,-36 L0,36 M-36,0 L36,0 M-25.5,25.5 A36,36,0,0,1,25.5,25.5 M-25.5,-25.5 A36,36,0,0,0,25.5,-25.5"/>
+                  </svg>
                 </a>
-                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="lang-dropdown">
-                  <a class="dropdown-item" href="/bax/en/">
+                <div class="dropdown-menu dropdown-menu-right" role="menu" aria-orientation="vertical">
+                  <a class="dropdown-item" href="/bax/en/" role="menuitem">
                     <img src="/res/flags/gb-eng.svg" width="20" height="20" alt="">&nbsp;
                     English
                   </a>
-                  <a class="dropdown-item" href="/bax/es/">
+                  <a class="dropdown-item" href="/bax/es/" role="menuitem">
                     <img src="/res/flags/es.svg" width="20" height="20" alt="">&nbsp;
                     español
                   </a>
-                  <a class="dropdown-item" href="/bax/jp/">
+                  <a class="dropdown-item" href="/bax/jp/" role="menuitem">
                     <img src="/res/flags/jp.svg" width="20" height="20" alt="">&nbsp;
                     日本語
                   </a>
-                  <a class="dropdown-item" href="/bax/pd/">
+                  <a class="dropdown-item" href="/bax/pd/" role="menuitem">
                     <img src="/res/flags/pandunia.svg" width="20" height="20" alt="">&nbsp;
                     pandunia
                   </a>
@@ -217,8 +219,8 @@
         </div>
       </div>
     </main>
-	
-	<div id="baxe" style="display: none;">en</div>
+
+    <div id="baxe" style="display: none;">en</div>
 
     <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
