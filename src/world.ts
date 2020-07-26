@@ -11,13 +11,14 @@ import {Language, ProtoLanguage, DeuteroLanguage, Convention, transcribe} from "
 const TIME_STEP = 100; // [year]
 const AUTHORITARIANISM = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
 const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
-const IMPERIALISM = .1; // [km/year] rate at which the average empire spreads without organized resistance
+const IMPERIALISM = .10; // [km/year] rate at which the average empire spreads without organized resistance
+const NATIONALISM = 3.0; // [] factor by which a military is stronger if conquering people to whom they can talk
 const SOCIAL_DECAY_PERIOD = 500; // [year] time it takes for an empire's might to decay by 2.7
 const CULTURAL_MEMORY = 160; // [year] time it takes to erase a people's language
 const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
-const VALUE_OF_KNOWLEDGE = 0.5; // [] value of a single technological advancement
-const POWER_OF_MEMES = .02; // [1/year] probability that an idea spreads across a border in a year
+const VALUE_OF_KNOWLEDGE = .50; // [] value of a single technological advancement
+const POWER_OF_MEMES = .020; // [1/year] probability that an idea spreads across a border in a year
 const HUMAN_WEIGHT = 100; // [] multiplier on vertical distances
 
 const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth
@@ -73,7 +74,7 @@ export class World {
 			for (const civ of this.civs)
 				civ.update(rng);
 			this.spawnCivs(rng); // TODO: build cities
-			this.spreadCivs(rng);
+			this.spreadCivs(rng); // TODO: add cataclysms
 			this.spreadIdeas(rng);
 		}
 	}
@@ -119,8 +120,9 @@ export class World {
 				for (const neighbor of end.neighbors.keys()) { // and move on
 					if (!invader.nodos.has(neighbor)) {
 						time = time + this.estimateInvasionTime(invader, end, neighbor, rng);
-						if (end <= TIME_STEP) // assuming it is possible
-							invasions.push({time: time, invader: invader, start: end, end:neighbor});
+						if (end <= TIME_STEP) { // assuming it is possible
+							invasions.push({time: time, invader: invader, start: end, end: neighbor});
+						}
 					}
 				}
 			}
@@ -165,11 +167,11 @@ export class World {
 	 */
 	estimateInvasionTime(invader: Civ, start: Nodo, end: Nodo, rng: Random) {
 		const invadee = this.currentRuler(end);
-		const momentum = invader.getStrength();
-		const resistance = (invadee != null) ? invadee.getStrength() : 0;
-		const distance = start.neighbors.get(end).length/PASABLIA.get(end.biome); // TODO: bonus to same-language invasions
+		const momentum = invader.getStrength(invadee, end);
+		const resistance = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
+		const distance = start.neighbors.get(end).length; // TODO: bonus to same-language invasions
 		const elevation = start.gawe - end.gawe;
-		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation);
+		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation)/PASABLIA.get(end.biome);
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
 			return rng.exponential(distanceEff/IMPERIALISM/(momentum - resistance));
 		else
@@ -316,8 +318,11 @@ class Civ {
 		}
 	}
 
-	getStrength() : number {
-		return this.militarism*this.technology;
+	getStrength(kontra: Civ, sa: Nodo) : number {
+		let linguisticModifier = 1;
+		if (kontra != null && kontra.languages.get(sa).isIntelligible(this.officialLanguage))
+			linguisticModifier = NATIONALISM;
+		return this.militarism*this.technology*linguisticModifier;
 	}
 
 	getPopulation(): number {
