@@ -119,6 +119,9 @@ export class Random {
 		else if (prob === 1) {
 			return num;
 		}
+		else if (prob > 0.5) {
+			return num - this.binomial(num, 1 - prob);
+		}
 		else if (num*prob < 36 || num*prob > num - 36) {
 			let u = this.next();
 			let nCk = 1;

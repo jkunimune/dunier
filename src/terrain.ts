@@ -37,7 +37,7 @@ const RIFT_HEIGHT = 2; // km
 const TRENCH_DEPTH = 4; // km
 const MOUNTAIN_WIDTH = 400; // km
 const TRENCH_WIDTH = 100; // km
-const SLOPE_WIDTH = 400; // km
+const SLOPE_WIDTH = 200; // km
 const RIFT_WIDTH = 800; // km
 const OCEAN_SIZE = 0.2; // as a fraction of continental length scale
 
