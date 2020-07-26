@@ -4,6 +4,9 @@ import {Random} from "./random.js";
 import {loadTSV} from "./utils.js";
 
 
+const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
+
+
 const NUM_CONVENTIONS = 7;
 export enum Convention {
 	NASOMEDI,
@@ -330,6 +333,8 @@ export interface Language {
 	getPersonalName(i: number): (Vokale | Konsone)[]
 	getCityName(i: number): (Vokale | Konsone)[]
 	getCountryName(i: number): (Vokale | Konsone)[]
+	getAncestor(n: number): Language
+	isIntelligible(lang: Language): boolean
 }
 
 export class ProtoLanguage {
@@ -383,6 +388,14 @@ export class ProtoLanguage {
 		}
 		return lekse;
 	}
+
+	getAncestor(n: number): Language {
+		return this;
+	}
+
+	isIntelligible(lang: Language): boolean {
+		return this === lang;
+	}
 }
 
 export class DeuteroLanguage {
@@ -416,6 +429,17 @@ export class DeuteroLanguage {
 		for (const change of this.changes)
 			lekse = change.apply(lekse);
 		return lekse;
+	}
+
+	getAncestor(n: number): Language {
+		if (n <= 0)
+			return this;
+		else
+			return this.parent.getAncestor(n - 1);
+	}
+
+	isIntelligible(lang: Language): boolean {
+		return this.getAncestor(DEVIATION_TIME) === lang.getAncestor(DEVIATION_TIME);
 	}
 }
 

@@ -79,8 +79,8 @@ let world: World = null;
  * Once the page is ready, start the algorithm!
  */
 $(document).ready(() => {
-	console.log("ready!");
-});
+	console.log("ready!"); // TODO: automatically generate the first map
+}); // TODO: warn before leaving page
 
 
 /**

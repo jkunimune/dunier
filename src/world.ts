@@ -13,6 +13,7 @@ const AUTHORITARIANISM = 1e-7; // [1/year/km^2] rate at which people coalesce in
 const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
 const IMPERIALISM = .1; // [km/year] rate at which the average empire spreads without organized resistance
 const SOCIAL_DECAY_PERIOD = 500; // [year] time it takes for an empire's might to decay by 2.7
+const CULTURAL_MEMORY = 160; // [year] time it takes to erase a people's language
 const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
 const VALUE_OF_KNOWLEDGE = 0.5; // [] value of a single technological advancement
@@ -86,15 +87,12 @@ export class World {
 			const demomultia = CARRYING_CAPACITY*getDomublia(tile);
 			const ruler = this.currentRuler(tile);
 			if (ruler == null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
-				if (rng.probability(AUTHORITARIANISM*TIME_STEP*demomultia)) {
+				if (rng.probability(AUTHORITARIANISM*TIME_STEP*demomultia))
 					this.civs.add(new Civ(tile, this.civs.size, this, rng));
-				}
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
-				if (rng.probability(LIBERTARIANISM*TIME_STEP*demomultia)) { // use the population without technology correction for balancing
-					ruler.lose(tile);
+				if (rng.probability(LIBERTARIANISM*TIME_STEP*demomultia)) // use the population without technology correction for balancing
 					this.civs.add(new Civ(tile, this.civs.size, this, rng, ruler.technology));
-				}
 			}
 		}
 	}
@@ -196,12 +194,13 @@ export class World {
 class Civ {
 	public readonly id: number;
 	private readonly name: number; // its name index
-	public arableLand: number; // the population, pre technology modifier
-	public capital: Nodo; // the capital city
-	public nodos: Set<Nodo>; // the tiles it owns
-	public kenare: Map<Nodo, Set<Nodo>>; // the set of tiles it owns that are adjacent to tiles it doesn't
-	public language: Language; // the official language
-	private world: World;
+	private arableLand: number; // the population, pre technology modifier
+	public languages: Map<Nodo, Language>; // the languages of this country
+	public officialLanguage: Language;
+	public readonly capital: Nodo; // the capital city
+	public readonly nodos: Set<Nodo>; // the tiles it owns
+	public readonly kenare: Map<Nodo, Set<Nodo>>; // the set of tiles it owns that are adjacent to tiles it doesn't
+	private readonly world: World;
 
 	public militarism: number; // base military strength
 	public technology: number; // technological military modifier
@@ -215,16 +214,22 @@ class Civ {
 	 * @param technology
 	 */
 	constructor(capital: Nodo, id: number, world: World, rng: Random, technology: number = 1) {
-		this.world = world;
+		this.world = world; // TODO if every Civ has its own rng, it would make things a bit more stable
 		this.id = id;
 		this.arableLand = 0;
 		this.nodos = new Set();
 		this.kenare = new Map<Nodo, Set<Nodo>>();
+		this.languages = new Map();
+
+		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
+			this.officialLanguage = new ProtoLanguage(rng); // make up a language
+		else // if it's based on an existing one
+			this.officialLanguage = null; // the language will get automatically set when the capital is conquered
+
 		this.capital = capital;
 		this.conquer(capital);
 
-		this.language = new ProtoLanguage(rng); // TODO associate languages with tiles, not countries, and also stamp them out
-		this.name = rng.discrete(0, 100);
+		this.name = rng.discrete(0, 100); // TODO make it so countries can borrow names from each other
 
 		this.militarism = rng.exponential(1); // TODO: decide if this is really the PDF I want
 		this.technology = technology;
@@ -236,11 +241,19 @@ class Civ {
 	 */
 	conquer(tile: Nodo) {
 		const loser = this.world.currentRuler(tile);
-		if (loser != null)
-			loser.lose(tile);
+		if (loser !== null) {
+			const language = loser.languages.get(tile); // update the language state
+			this.languages.set(tile, language);
+			if (this.officialLanguage === null)
+				this.officialLanguage = language; // and take it as our official language if we don't have one already
+			loser.lose(tile); // then make it neutral territory
+		}
+		else {
+			this.languages.set(tile, this.officialLanguage);
+		}
 
-		this.nodos.add(tile);
-		this.kenare.set(tile, new Set<Nodo>());
+		this.nodos.add(tile); // add it to nodos
+		this.kenare.set(tile, new Set<Nodo>()); // adjust the border map as necessary
 		for (const neighbor of tile.neighbors.keys()) {
 			if (this.kenare.has(neighbor) && this.kenare.get(neighbor).has(tile)) {
 				this.kenare.get(neighbor).delete(tile);
@@ -251,7 +264,7 @@ class Civ {
 				this.kenare.get(tile).add(neighbor);
 		}
 
-		this.arableLand += getDomublia(tile);
+		this.arableLand += getDomublia(tile); // adjust population
 	}
 
 	/**
@@ -259,8 +272,10 @@ class Civ {
 	 * @param tile the land being taken
 	 */
 	lose(tile: Nodo) {
+		this.languages.delete(tile); // remove it from the language map
+
 		this.nodos.delete(tile); // remove it from nodos
-		this.kenare.delete(tile);
+		this.kenare.delete(tile); // adjust the border map
 		for (const neighbor of tile.neighbors.keys()) {
 			if (this.nodos.has(neighbor)) {
 				if (!this.kenare.has(neighbor))
@@ -281,11 +296,24 @@ class Civ {
 	 * @param rng
 	 */
 	update(rng: Random) {
-		if (this.nodos.size > 0)
-			this.language = new DeuteroLanguage(this.language, rng);
+		const newLects: Map<Language, DeuteroLanguage> = new Map();
+		for (const nodo of this.nodos) {
+			if (this.languages.get(nodo) !== this.officialLanguage)
+				if (this.languages.get(nodo).isIntelligible(this.officialLanguage) ||
+						rng.probability(TIME_STEP/CULTURAL_MEMORY))
+					this.languages.set(nodo, this.officialLanguage);
+			const currentLect = this.languages.get(nodo);
+			if (!newLects.has(currentLect))
+				newLects.set(currentLect, new DeuteroLanguage(currentLect, rng));
+			this.languages.set(nodo, newLects.get(currentLect));
+		}
+		if (this.nodos.has(this.capital))
+			this.officialLanguage = this.languages.get(this.capital);
 
-		this.militarism *= Math.exp(-TIME_STEP/SOCIAL_DECAY_PERIOD);
-		this.technology += VALUE_OF_KNOWLEDGE*rng.poisson(HUMAN_INTELLIGENCE*TIME_STEP*this.getPopulation());
+		if (this.nodos.size > 0) {
+			this.militarism *= Math.exp(-TIME_STEP / SOCIAL_DECAY_PERIOD);
+			this.technology += VALUE_OF_KNOWLEDGE * rng.poisson(HUMAN_INTELLIGENCE * TIME_STEP * this.getPopulation());
+		}
 	}
 
 	getStrength() : number {
