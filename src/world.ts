@@ -5,7 +5,7 @@ import TinyQueue from './lib/tinyqueue.js';
 
 import {Nodo, Surface} from "./surface.js";
 import {Random} from "./random.js";
-import {Language, ProtoLanguage, DeuteroLanguage, Convention, romanize} from "./language.js";
+import {Language, ProtoLanguage, DeuteroLanguage, Convention, transcribe} from "./language.js";
 
 
 const TIME_STEP = 100; // [year]
@@ -325,7 +325,7 @@ class Civ {
 	}
 
 	getName(convention: Convention = Convention.NASOMEDI): string {
-		return romanize(this.language.getCountryName(this.name), convention);
+		return transcribe(this.officialLanguage.getCountryName(this.name), convention);
 	}
 }
 

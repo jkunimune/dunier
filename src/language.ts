@@ -451,63 +451,59 @@ const ENGLI_VISE = loadTSV('kanune-engli.tsv')
  * @param lekse
  * @param convention
  */
-export function romanize(lekse: (Vokale | Konsone)[], convention: Convention = Convention.NASOMEDI): string {
-	let bazi = "";
+export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention = Convention.NASOMEDI): string {
+	let asli = "";
 	for (let i = 0; i < lekse.length; i ++) {
 		if (TO_TEXT.has(lekse[i].hash()))
-			bazi += TO_TEXT.get(lekse[i].hash())[convention];
+			asli += TO_TEXT.get(lekse[i].hash())[convention];
 		else
 			throw `could not transcribe ${lekse[i]}, ${lekse[i].hash()}`;
 	}
 
 	if (convention === Convention.ENGLI) {
-		let muti = "";
-		characterLoop:
-		for (let i = bazi.length; i > 0; i --) { // go through the string back-to-front
+		let muti = "#"+asli+"#";
+		for (let i = 1; i <= muti.length; i ++) { // go through the string
 			for (const vise of ENGLI_VISE) {
 				for (let j = 1; j < vise.length; j ++) { // and look through the replacements in ENGLI_VISE
-					if (i-vise[j].length >= 0 && bazi.substring(i-vise[j].length, i) === vise[j]) {
-						muti += vise[0].split("").reverse().join("");
-						i -= vise[j].length-1;
-						continue characterLoop;
+					if (i-vise[j].length >= 0 && muti.substring(i-vise[j].length, i) === vise[j]) {
+						muti = muti.substring(0, i-vise[j].length) + vise[0] + muti.substring(i);
 					}
 				}
 			}
-			muti += bazi[i-1]; // if you don't find any, just keep the character and move on
 		}
-		bazi = muti.split("").reverse().join("");
+		asli = muti.substring(1, muti.length-1);
 
 		muti = "";
-		for (let i = 0; i < bazi.length; i ++) { // TODO: diphthongs, endings, j and w gemination, y->i, capitalization, consonant cluster simplifaciotn
-			if (i+1 < bazi.length && bazi[i] === "c" && 'eiy'.includes(bazi[i+1]))
+		for (let i = 0; i < asli.length; i ++) { // TODO: j and w gemination, sy->si, capitalization, consonant cluster simplifaciotn, soft g
+			if (i+1 < asli.length && asli[i] === "c" && 'eiy'.includes(asli[i+1]))
 				muti += "k";
-			else if (bazi[i] === '-') {
-				if ((i+2 < bazi.length && !'aeiouy'.includes(bazi[i+1]) && !'aeiouy'.includes(bazi[i+2])) ||
-					(i+2 === bazi.length && !'aeiouy'.includes(bazi[i+1])))
-					muti += (bazi[i-1] === 'a') ? 'i' : (bazi[i-1] === 'o') ? 'a' : (bazi[i-1] === 'i') ? '' : 'e';
+			else if (asli[i] === '-') {
+				if ((i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && !'aeiouy'.includes(asli[i+2])) ||
+					(i+2 === asli.length && !'aeiouy'.includes(asli[i+1])))
+					muti += (asli[i-1] === 'a') ? 'i' : (asli[i-1] === 'o') ? 'a' : (asli[i-1] === 'i') ? '' : 'e';
 			}
-			else if (bazi[i] === '*') {
-				if (i+2 < bazi.length && !'aeiouy'.includes(bazi[i+1]) && 'aeiouy'.includes(bazi[i+2]))
-					muti += (bazi[i+1] === 'k') ? 'c' : (bazi[i+1] === 'j') ? 'd' : (bazi[i+1] === 'h') ? '' : bazi[i+1];
-				else if (i+1 < bazi.length && bazi[i] === 'i' && 'aeiouy'.includes(bazi[i+1]))
+			else if (asli[i] === '*') {
+				if (i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && 'aeiouy'.includes(asli[i+2]))
+					muti += (asli[i+1] === 'k') ? 'c' : (asli[i+1] === 'j') ? 'd' : (asli[i+1] === 'h') ? '' : asli[i+1];
+				else if (i+1 < asli.length && asli[i] === 'i' && 'aeiouy'.includes(asli[i+1]))
 					muti = muti.substring(0, muti.length-1) + 'e';
 			}
 			else
-				muti += bazi[i];
+				muti += asli[i];
 		}
-		bazi = muti;
+		asli = muti;
 	}
 
 	if (convention !== Convention.NASOMEDI) {
 		let muti = "";
-		for (let i = 0; i < bazi.length; i ++) {
-			if (i === 0 || bazi[i-1] === ' ')
-				muti += bazi[i].toUpperCase();
+		for (let i = 0; i < asli.length; i ++) {
+			if (i === 0 || asli[i-1] === ' ')
+				muti += asli[i].toUpperCase();
 			else
-				muti += bazi[i];
+				muti += asli[i];
 		}
-		bazi = muti;
+		asli = muti;
 	}
 
-	return bazi;
+	return asli;
 }
