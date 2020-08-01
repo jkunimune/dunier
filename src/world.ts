@@ -13,7 +13,7 @@ const AUTHORITARIANISM = 1e-7; // [1/year/km^2] rate at which people coalesce in
 const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
 const IMPERIALISM = .10; // [km/year] rate at which the average empire spreads without organized resistance
 const NATIONALISM = 3.0; // [] factor by which a military is stronger if conquering people to whom they can talk
-const SOCIAL_DECAY_PERIOD = 500; // [year] time it takes for an empire's might to decay by 2.7
+const SOCIAL_DECAY_PERIOD = 1000; // [year] time it takes for an empire's might to decay by 2.7
 const CULTURAL_MEMORY = 160; // [year] time it takes to erase a people's language
 const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
@@ -233,7 +233,7 @@ class Civ {
 
 		this.name = rng.discrete(0, 100); // TODO make it so countries can borrow names from each other
 
-		this.militarism = rng.exponential(1); // TODO: decide if this is really the PDF I want
+		this.militarism = rng.erlang(4, 1); // TODO: decide if this is really the PDF I want
 		this.technology = technology;
 	}
 

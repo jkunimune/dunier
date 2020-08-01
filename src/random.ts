@@ -72,6 +72,18 @@ export class Random {
 	}
 
 	/**
+	 * return a pseudorandom number drawn from an erlang distribution (inefficient for large shape)
+	 * @param shape the shape parameter
+	 * @param mean the scale of the distribution
+	 */
+	erlang(shape: number, mean: number): number {
+		let x = 0;
+		for (let i = 0; i < shape; i ++)
+			x += this.exponential(mean/shape);
+		return x;
+	}
+
+	/**
 	 * return a pseudorandom integer between min (inclusive) and max (exclusive)
 	 * @param min inclusive minimum value
 	 * @param max exclusive maximum value
