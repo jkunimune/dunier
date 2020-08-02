@@ -1,11 +1,11 @@
 i	i	i	e-	i	i	i	vokale	5	2	u
-y	y	i	ew	yu	ü	i	vokale	5	2	r
+y	y	i	u-	yu	ü	i	vokale	5	2	r
 ɨ	y	i	i*	i	ï	i	vokale	5	1	u
 ʉ	y	u	u*	u	ü	u	vokale	5	1	r
 ɯ	u	u	oo	u	ï	u	vokale	5	0	u
 u	u	u	oo	u	u	u	vokale	5	0	r
 ɪ	i	i	i*	i	i	i	vokale	4	2	u
-ʏ	y	i	ew	yu	ü	i	vokale	4	2	r
+ʏ	y	i	yu*	yu	ü	i	vokale	4	2	r
 ʊ	u	u	u*	u	u	u	vokale	4	0	r
 e	e	e	e*	e	e	e	vokale	3	2	u
 ø	œ	e	ur	e	ö	e	vokale	3	2	r
@@ -37,7 +37,7 @@ t	t	t	t	t	t	t	konson	ar	p	c	u
 d	d	d	d	d	d	d	konson	ar	p	c	v
 ʈ	t	t	t	t	ṭ	t	konson	rf	p	c	u
 ɖ	d	d	d	d	ḍ	d	konson	rf	p	c	v
-c	ci	ci	ky	ky	ky	ky	konson	hp	p	c	u
+c	ci	ci	c	ky	ky	ky	konson	hp	p	c	u
 ɟ	j	y	j	dy	gy	gy	konson	hp	p	c	v
 k	c	c	c	k	k	k	konson	vl	p	c	u
 ɡ	g	g	g	g	g	g	konson	vl	p	c	v
@@ -73,13 +73,13 @@ z	z	z	z	z	z	z	konson	ar	f	c	v
 ʐ	z	y	j	zy	ẓ	j	konson	rf	f	c	v
 ç	hi	ji	sh	hy	hy	hy	konson	hp	f	c	u
 ʝ	j	y	y	y	y	y	konson	hp	f	c	v
-x	ch	j	h	h	kh	h	konson	vl	f	c	u
+x	ch	j	ɦ	h	kh	h	konson	vl	f	c	u
 ɣ	g	g	g	g	gh	g	konson	vl	f	c	v
-χ	ch	j	h	h	qh	h	konson	uv	f	c	u
+χ	ch	j	ɦ	h	qh	h	konson	uv	f	c	u
 ʁ	r	r	r	r	r	r	konson	uv	f	c	v
-ħ	h	j	h	h	h	h	konson	eg	f	c	u
+ħ	h	j	ɦ	h	h	h	konson	eg	f	c	u
 ʕ		h			h		konson	eg	f	c	v
-h	h	j	h	h	h	h	konson	gl	f	c	u
+h	h	j	ɦ	h	h	h	konson	gl	f	c	u
 ʋ	v	u	w	u	w	w	konson	ld	a	c	v
 ɹ	r	r	r	r	r	r	konson	ar	a	c	v
 ɻ	r	r	r	r	ṛ	r	konson	rf	a	c	v

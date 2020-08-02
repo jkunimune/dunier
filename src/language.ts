@@ -473,25 +473,58 @@ export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention =
 		}
 		asli = muti.substring(1, muti.length-1);
 
+		if (asli[asli.length-1] === 'ɦ' && '*-aeiouyw'.includes(asli[asli.length-2]))
+			asli = asli.substring(0, asli.length-1) + "gh";
+		else if ('bcdfgjklmnpqrstvz'.includes(asli[asli.length-1]) && asli[asli.length-2] === '-')
+			asli += 'e';
+
 		muti = "";
-		for (let i = 0; i < asli.length; i ++) { // TODO: j and w gemination, sy->si, capitalization, consonant cluster simplifaciotn, soft g
-			if (i+1 < asli.length && asli[i] === "c" && 'eiy'.includes(asli[i+1]))
+		for (let i = 0; i < asli.length; i ++) { // TODO: j and w gemination, qu, x
+			if (asli[i] === "c" &&
+				((i+1 < asli.length && 'eiy'.includes(asli[i+1])) || (i-1 >= 0 && !'aeiou'.includes(asli[i-1]))))
 				muti += "k";
+			else if (i+1 < asli.length && asli[i] === "j" && 'eiy'.includes(asli[i+1])) {
+				let harfe = "g";
+				for (let j = i+1; j < asli.length; j ++) {
+					if (!'aeiouy'.includes(asli[j])) {
+						harfe = "j";
+						break;
+					}
+				}
+				muti += harfe;
+			}
+			else if (asli[i] === "ɦ" &&
+				((i+1 < asli.length && !'aeiouyw'.includes(asli[i+1])) || (i-1 >= 0 && !'*-aeiouyw'.includes(asli[i-1]))))
+				muti += "";
+			else if (asli[i] === "y") {
+				if (i+1 === asli.length || (i+1 < asli.length && asli[i+1] === "i") || (i-1 >= 0 && asli[i-1] === "i"))
+					muti += "y";
+				else if ((i+1 < asli.length && !'aeiou'.includes(asli[i+1])) || (i-1 >= 0 && !'aeiou'.includes(asli[i-1])))
+					muti += "i";
+				else
+					muti += "y";
+			}
+			else if (i+1 < asli.length && asli[i] === "w" && !"aeiou".includes(asli[i+1]))
+				muti += "u";
 			else if (asli[i] === '-') {
-				if ((i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && !'aeiouy'.includes(asli[i+2])) ||
+				if ((i+1 < asli.length && asli[i+1] === 'ɦ') ||
+					(i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && !'aeiouy'.includes(asli[i+2])) ||
 					(i+2 === asli.length && !'aeiouy'.includes(asli[i+1])))
 					muti += (asli[i-1] === 'a') ? 'i' : (asli[i-1] === 'o') ? 'a' : (asli[i-1] === 'i') ? '' : 'e';
 			}
 			else if (asli[i] === '*') {
-				if (i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && 'aeiouy'.includes(asli[i+2]))
-					muti += (asli[i+1] === 'k') ? 'c' : (asli[i+1] === 'j') ? 'd' : (asli[i+1] === 'h') ? '' : asli[i+1];
-				else if (i+1 < asli.length && asli[i] === 'i' && 'aeiouy'.includes(asli[i+1]))
-					muti = muti.substring(0, muti.length-1) + 'e';
+				// if (i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && 'aeiouy'.includes(asli[i+2]))
+				// 	muti += (asli[i+1] === 'k') ? 'c' : (asli[i+1] === 'j') ? '' : (asli[i+1] === 'h') ? '' : asli[i+1];
+				// else if (i+1 < asli.length && asli[i] === 'i' && 'aeiouy'.includes(asli[i+1]))
+				// 	muti = muti.substring(0, muti.length-1) + 'e';
+				muti += "";
 			}
 			else
 				muti += asli[i];
 		}
 		asli = muti;
+
+		asli = asli.replace(/shk/g, "sk").replace(/ɦw/g, "wh").replace(/ɦ/g, "h");
 	}
 
 	if (convention !== Convention.NASOMEDI) {
