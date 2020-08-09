@@ -8,7 +8,7 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-    <title>dun-hamar &ndash; jena fantazi karte</title>
+    <title>dunhamar &ndash; jena fantazi karte</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
   </head>
@@ -19,15 +19,15 @@
         <div class="container">
           <a class="navbar-brand" href="#">
             <img src="/res/logo.svg" width="35" height="35" alt="">
-            dun-hamar
+            dunhamar
           </a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="sira/xowa faxe da daw-eurekia">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="sira/xowa faxe da daweurekia">
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="siri-daweurekia">
             <div class="navbar-nav">
               <a class="nav-item nav-link" href="#">dome<span class="sr-only"> (zay)</span></a>
-              <a class="nav-item nav-link" href="#">tema</a>
+              <a class="nav-item nav-link" href="./tema.html">tema</a>
               <a class="nav-item nav-link" href="#">poste</a>
             </div>
             <div class="navbar-nav ml-auto">
@@ -72,7 +72,7 @@
             <a class="nav-link active" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet" aria-selected="true">planete</a>
           </li>
           <li class="nav-item nav-fill">
-            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain" aria-selected="false">zem-forme</a>
+            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain" aria-selected="false">zemforme</a>
           </li>
           <li class="nav-item nav-fill">
             <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history" aria-selected="false">histore</a>
@@ -93,19 +93,19 @@
                       <label for="planet-type">forme</label>
                       <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value)">
                         <option selected value="0">bol</option>
-                        <option value="1">wen</option>
+                        <option value="1">wene</option>
                         <option value="2">plate</option>
                       </select>
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.value)">
-                        <label class="custom-control-label" for="planet-locked">cawo sat-sami</label>
+                        <label class="custom-control-label" for="planet-locked">cawo satosami</label>
                       </div>
                     </div>
                     <div class="form-group">
-                      <label for="planet-size">cirk-mete</label>
                       <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
+                      <label for="planet-size">cirkomete</label>
                     </div>
                     <div class="form-group">
                       <label for="planet-gravity">fasi baria</label>
@@ -135,12 +135,12 @@
                 <div class="col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
-                      <label for="terrain-seme">fals-zari seme</label>
+                      <label for="terrain-seme">falsozari seme</label>
                       <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-seme"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-continents">nombre da day-nese</label>
                       <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
+                      <label for="terrain-continents">nombre da daynese</label>
                     </div>
                     <div class="form-group">
                       <label for="terrain-samud">gawia da samude</label>
@@ -155,7 +155,7 @@
                       </select>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-terme">med-darji terme</label>
+                      <label for="terrain-terme">medodarji terme</label>
                       <select class="custom-select" id="terrain-terme">
                         <option value="308">garmi</option>
                         <option selected value="288">normi</option>
@@ -187,7 +187,7 @@
                 <div class="col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
-                      <label for="history-seme">fals-zari seme</label>
+                      <label for="history-seme">falsozari seme</label>
                       <input type="number" value="0" min="0" max="99999999" step="1" id="history-seme"/>
                     </div>
                     <div class="form-group">
