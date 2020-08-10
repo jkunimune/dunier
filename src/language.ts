@@ -312,13 +312,6 @@ class SoundChange {
 			if (match) { // if it does,
 				for (let j = 0; j < this.ca.length; j++)
 					nov.push(fit(old[i + j], this.pa[j])); // add this.pa to nov
-				if (nov[nov.length - 1] instanceof Konsone && (<Konsone>nov[nov.length - 1]).latia === 0) {
-					console.log(old.slice(i, i + this.ca.length));
-					console.log(this.pa);
-					for (let j = 0; j < this.ca.length; j++)
-						console.log(fit(old[i + j], this.pa[j]));
-					throw "WHYHYHYYY";
-				}
 			}
 			else // otherwise
 				nov.push(old[i]); // just add the next character of old
@@ -465,11 +458,10 @@ export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention =
 		for (let i = 1; i <= muti.length; i ++) { // go through the string
 			for (const vise of ENGLI_VISE) {
 				for (let j = 1; j < vise.length; j ++) { // and look through the replacements in ENGLI_VISE
-					if (i-vise[j].length >= 0 && muti.substring(i-vise[j].length, i) === vise[j]) {
+					if (i-vise[j].length >= 0 && muti.substring(i-vise[j].length, i) === vise[j])
 						muti = muti.substring(0, i-vise[j].length) + vise[0] + muti.substring(i);
-					}
 				}
-			}
+		}
 		}
 		asli = muti.substring(1, muti.length-1);
 
@@ -479,9 +471,9 @@ export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention =
 			asli += 'e';
 
 		muti = "";
-		for (let i = 0; i < asli.length; i ++) { // TODO: j and w gemination, qu, x
+		for (let i = 0; i < asli.length; i ++) {
 			if (asli[i] === "c" &&
-				((i+1 < asli.length && 'eiy'.includes(asli[i+1])) || (i-1 >= 0 && !'aeiou'.includes(asli[i-1]))))
+				((i+1 < asli.length && 'eiy#'.includes(asli[i+1]))))
 				muti += "k";
 			else if (i+1 < asli.length && asli[i] === "j" && 'eiy'.includes(asli[i+1])) {
 				let harfe = "g";
@@ -504,7 +496,7 @@ export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention =
 				else
 					muti += "y";
 			}
-			else if (i+1 < asli.length && asli[i] === "w" && !"aeiou".includes(asli[i+1]))
+			else if (i+1 < asli.length && asli[i] === "w" && !"aeiouy".includes(asli[i+1]))
 				muti += "u";
 			else if (asli[i] === '-') {
 				if ((i+1 < asli.length && asli[i+1] === 'ɦ') ||
@@ -524,7 +516,8 @@ export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention =
 		}
 		asli = muti;
 
-		asli = asli.replace(/shk/g, "sk").replace(/ɦw/g, "wh").replace(/ɦ/g, "h");
+		for (const [ca, pa] of [[/cw/g, "qu"], [/[ck]s/g, "x"], [/yy/g, "y"], [/ww/g, "w"], [/sh[ck]/g, "sc"], [/ɦw/g, "wh"], [/ɦ/g, "h"]])
+			asli = asli.replace(ca, <string> pa);
 	}
 
 	if (convention !== Convention.NASOMEDI) {
