@@ -35,7 +35,7 @@ const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population 
 	['aise',        0.0],
 ]);
 const RIVER_UTILITY_THRESHOLD = 1e6;
-const RIVER_UTILITY = 1.0;
+const RIVER_UTILITY = 0.3;
 const OCEAN_UTILITY = 1.0;
 const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['samud',       0.1],
@@ -84,7 +84,7 @@ export class World {
 	 * @param rng the random number generator to use
 	 */
 	spawnCivs(rng: Random) {
-		for (const tile of this.planet.nodos) { // TODO: bonus from rivers and lakes
+		for (const tile of this.planet.nodos) {
 			const demomultia = CARRYING_CAPACITY*getDomublia(tile);
 			const ruler = this.currentRuler(tile);
 			if (ruler == null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
@@ -115,7 +115,9 @@ export class World {
 		}
 		while (invasions.length > 0) {
 			let {time, invader, start, end} = invasions.pop(); // as invasions finish
-			if (invader.nodos.has(start) && !invader.nodos.has(end)) { // check that they're still doable
+			const invadee = this.currentRuler(end);
+			if (invader.nodos.has(start) && !invader.nodos.has(end) &&
+					invader.getStrength(invadee, end) > invadee.getStrength(invadee, end)) { // check that they're still doable
 				invader.conquer(end); // update the game state
 				for (const neighbor of end.neighbors.keys()) { // and move on
 					if (!invader.nodos.has(neighbor)) {
@@ -169,7 +171,7 @@ export class World {
 		const invadee = this.currentRuler(end);
 		const momentum = invader.getStrength(invadee, end);
 		const resistance = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
-		const distance = start.neighbors.get(end).length; // TODO: bonus to same-language invasions
+		const distance = start.neighbors.get(end).length;
 		const elevation = start.gawe - end.gawe;
 		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation)/PASABLIA.get(end.biome);
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
