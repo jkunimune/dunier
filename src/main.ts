@@ -201,8 +201,8 @@ $('#terrain-apply').on('click', () => {
 $('#history-apply').on('click', () => {
 	const randomSeme = Number($('#history-seme').val());
 	const years = Number($('#history-nen').val()) + 3000;
-	const imperistia = Number($('#history-imperistia').val());
-	const injenivia = Number($('#injenivia').val());
+	const imperistia = Number($('#history-imperistia').val()) / 1e3; // km/year
+	const injenivia = Number($('#history-injenivia').val()) / 1e9; // 1/y
 	const katastrofe = Number($('#history-katastrofe').val());
 
 	world = new World(imperistia, injenivia, katastrofe, surface);

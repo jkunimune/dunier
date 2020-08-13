@@ -33,7 +33,7 @@
 	"menuw.garmi":"Alta",
 	"menuw.lengi":"Baja",
 	"menuw.nen-mes-den":"Año",
-	"menuw.imperistia":"Ritmo de expansión imperial",
+	"menuw.imper-istia":"Ritmo de expansión imperial",
 	"menuw.injenivia":"Ritmo de ideas nuevas",
 	"menuw.katastrofe":"Cataclismos",
 	"menuw.nol":"Nunca",
@@ -49,7 +49,7 @@
 	"un-mete.hor":"h",
 	"un-mete.nen":"",
 	"un-mete.metre-mey-nen":"m/a",
-	"un-mete.mey-megonen":"1/Ma",
+	"un-mete.mey-gigonen":"1/Ga",
 	"kitabe.tem-nam":"Dunhamar &ndash; generador de mapa fantástico",
 	"kitabe.tema":"Cerca Dunhamar",
 	"kitabe.sife":"<p>Dunhamar es herramienta para ayudar autores, directores de juego, y creadores de lenguas construidas fabricar realistas mundos en el cual sus creaziones pueden desarrollarse bien. Él toma semilla aleatoria y unos parámetros, y produce un estilizado mapa, una cronología historial, y hojas informativas por cada país y lengua. Aunque no programa de computadora puede reemplezar la alegría y creatividad del proceso del entero proceso de creación de mundos, Dunhamar puede llevar las partes que no todos seres humanos pueden o quieren hacer.</p> <p>Dunhamar está inspirado por generadores de mapas fantásticos anterior, como <a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">ese de Azgaar</a>, pero tiene más hincapié en realismo. Él no es tan interactivo como otros, y él no genera tantos finos detalles, como las ubicaciónes de las minas y relaciónes diplomáticas. Sin embargo, él sí tiene en cuenta varias características que otros generadores falta, tal como curvatura planetaria, tectónica de placas, y cambio lingüistico.</p>"

@@ -60,6 +60,8 @@ export class World {
 	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
 	public civs: Set<Civ>;
+	politicalMap: Map<Nodo, Civ>;
+
 
 	constructor(imperialism: number, intelligence: number, cataclysms: number, planet: Surface) {
 		this.imperialism = imperialism;
@@ -67,6 +69,7 @@ export class World {
 		this.cataclysms = cataclysms;
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
+		this.politicalMap = new Map();
 	}
 
 	/**
@@ -121,8 +124,10 @@ export class World {
 		while (invasions.length > 0) {
 			let {time, invader, start, end} = invasions.pop(); // as invasions finish
 			const invadee = this.currentRuler(end);
-			if (invader.nodos.has(start) && !invader.nodos.has(end) && invadee !== null &&
-					invader.getStrength(invadee, end) > invadee.getStrength(invadee, end)) { // check that they're still doable
+			const invaderStrength = invader.getStrength(invadee, end);
+			const invadeeStrength = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
+			if (invader.nodos.has(start) && !invader.nodos.has(end) &&
+					invaderStrength > invadeeStrength) { // check that they're still doable
 				invader.conquer(end); // update the game state
 				for (const neighbor of end.neighbors.keys()) { // and move on
 					if (!invader.nodos.has(neighbor)) {
@@ -144,14 +149,11 @@ export class World {
 		const visibleTechnology: Map<Civ, number> = new Map(); // how much advanced technology can they access?
 		for (const civ of this.civs) {
 			visibleTechnology.set(civ, civ.technology); // well, any technology they _have_, for one
-			for (const other of this.civs) { // look at every other civ
-				if (other.technology > visibleTechnology.get(civ)) { // if they have something we don't
-					for (const tiles of civ.kenare.values()) { // check our borders
-						for (const tile of tiles) {
-							if (other.nodos.has(tile)) { // to see if we share any with them
-								visibleTechnology.set(civ, other.technology); // if so, we can access their technology
-							}
-						}
+			for (const tiles of civ.kenare.values()) { // check our borders
+				for (const tile of tiles) {
+					const other = this.currentRuler(tile);
+					if (other !== null && other.technology > visibleTechnology.get(civ)) { // if they have something we don't
+						visibleTechnology.set(civ, other.technology); // if so, we can access their technology
 					}
 				}
 			}
@@ -189,10 +191,10 @@ export class World {
 	 * determine the current Civ of this tile
 	 */
 	currentRuler(tile: Nodo): Civ {
-		for (const civ of this.civs) // TODO: does this take a lot of time?
-			if (civ.nodos.has(tile))
-				return civ;
-		return null;
+		if (this.politicalMap.has(tile))
+			return this.politicalMap.get(tile);
+		else
+			return null;
 	}
 }
 
@@ -274,6 +276,7 @@ class Civ {
 		}
 
 		this.arableLand += getDomublia(tile); // adjust population
+		this.world.politicalMap.set(tile, this);
 	}
 
 	/**
@@ -296,6 +299,8 @@ class Civ {
 		this.arableLand -= getDomublia(tile);
 		if (this.arableLand < 0)
 			this.arableLand = 0;
+		this.world.politicalMap.delete(tile);
+
 		if (!this.nodos.has(this.capital)) // kill it when it loses its capital
 			this.militarism = 0;
 	}
