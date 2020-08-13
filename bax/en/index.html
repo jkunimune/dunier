@@ -194,6 +194,23 @@
                       <label for="history-nen">Year</label>
                       <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="" id="history-nen"/>
                     </div>
+                    <div class="form-group">
+                      <label for="history-imperistia">Number of continents</label>
+                      <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="m/y" id="history-imperistia"/>
+                    </div>
+                    <div class="form-group">
+                      <label for="history-injenivia">Number of continents</label>
+                      <input type="number" value="10" data-decimals="0" min="1" max="100" step="1" data-suffix="1/My" id="history-injenivia"/>
+                    </div>
+                    <div class="form-group">
+                      <label for="history-katastrofe">Cataclysms</label>
+                      <select class="custom-select" id="history-katastrofe">
+                        <option selected value="0">None</option>
+                        <option value="1e-4">One</option>
+                        <option value="1e-3">Once per millenium</option>
+                        <option value="1e-2">Once per century</option>
+                      </select>
+                    </div>
                     <button type="button" class="btn btn-block btn-primary" id="history-apply">Update</button>
                   </form>
                 </div>

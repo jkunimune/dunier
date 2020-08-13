@@ -194,6 +194,23 @@
                       <label for="history-nen">時代</label>
                       <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="年" id="history-nen"/>
                     </div>
+                    <div class="form-group">
+                      <label for="history-imperistia">大陸の数</label>
+                      <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="m/y" id="history-imperistia"/>
+                    </div>
+                    <div class="form-group">
+                      <label for="history-injenivia">大陸の数</label>
+                      <input type="number" value="10" data-decimals="0" min="1" max="100" step="1" data-suffix="1/My" id="history-injenivia"/>
+                    </div>
+                    <div class="form-group">
+                      <label for="history-katastrofe">大変革</label>
+                      <select class="custom-select" id="history-katastrofe">
+                        <option selected value="0">無</option>
+                        <option value="1e-4">一つ</option>
+                        <option value="1e-3">一つ毎年</option>
+                        <option value="1e-2">一つ毎百年</option>
+                      </select>
+                    </div>
                     <button type="button" class="btn btn-block btn-primary" id="history-apply">登録</button>
                   </form>
                 </div>
