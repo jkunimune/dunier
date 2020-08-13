@@ -11,15 +11,14 @@ import {Language, ProtoLanguage, DeuteroLanguage, Convention, transcribe} from "
 const TIME_STEP = 100; // [year]
 const AUTHORITARIANISM = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
 const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
-const IMPERIALISM = .10; // [km/year] rate at which the average empire spreads without organized resistance
 const NATIONALISM = 3.0; // [] factor by which a military is stronger if conquering people to whom they can talk
 const SOCIAL_DECAY_PERIOD = 1000; // [year] time it takes for an empire's might to decay by 2.7
 const CULTURAL_MEMORY = 160; // [year] time it takes to erase a people's language
 const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
-const HUMAN_INTELLIGENCE = 1e-7; // [1/year] probability that one person has an idea in a year
 const VALUE_OF_KNOWLEDGE = .50; // [] value of a single technological advancement
 const POWER_OF_MEMES = .020; // [1/year] probability that an idea spreads across a border in a year
 const HUMAN_WEIGHT = 100; // [] multiplier on vertical distances
+const APOCALYPSE_SURVIVAL_RATE = 0.5;
 
 const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth
 	['samud',       0.0],
@@ -56,10 +55,16 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
  * collection of civilizations and languages that goes on a planet
  */
 export class World {
+	public readonly imperialism: number; // [km/y] the rate at which denizens conquer
+	public readonly intelligence: number; // [1/y] the rate at which denizens have good ideas
+	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
 	public civs: Set<Civ>;
 
-	constructor(planet: Surface) {
+	constructor(imperialism: number, intelligence: number, cataclysms: number, planet: Surface) {
+		this.imperialism = imperialism;
+		this.intelligence = intelligence;
+		this.cataclysms = cataclysms;
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
 	}
@@ -102,7 +107,7 @@ export class World {
 	 * expand the territories of expansionist civs
 	 * @param rng the random number generator to use
 	 */
-	spreadCivs(rng: Random) { // TODO: detriment from mountains
+	spreadCivs(rng: Random) {
 		const invasions	= new TinyQueue([], (a: {time: number}, b: {time: number}) => a.time - b.time); // keep track of all current invasions
 		for (const invader of this.civs) {
 			for (const ourTile of invader.kenare.keys()) { // each civ initiates all its invasions
@@ -116,7 +121,7 @@ export class World {
 		while (invasions.length > 0) {
 			let {time, invader, start, end} = invasions.pop(); // as invasions finish
 			const invadee = this.currentRuler(end);
-			if (invader.nodos.has(start) && !invader.nodos.has(end) &&
+			if (invader.nodos.has(start) && !invader.nodos.has(end) && invadee !== null &&
 					invader.getStrength(invadee, end) > invadee.getStrength(invadee, end)) { // check that they're still doable
 				invader.conquer(end); // update the game state
 				for (const neighbor of end.neighbors.keys()) { // and move on
@@ -175,7 +180,7 @@ export class World {
 		const elevation = start.gawe - end.gawe;
 		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation)/PASABLIA.get(end.biome);
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
-			return rng.exponential(distanceEff/IMPERIALISM/(momentum - resistance));
+			return rng.exponential(distanceEff/this.imperialism/(momentum - resistance));
 		else
 			return Infinity;
 	}
@@ -235,7 +240,7 @@ class Civ {
 
 		this.name = rng.discrete(0, 100); // TODO make it so countries can borrow names from each other
 
-		this.militarism = rng.erlang(4, 1); // TODO: decide if this is really the PDF I want
+		this.militarism = rng.erlang(4, 1);
 		this.technology = technology;
 	}
 
@@ -316,7 +321,8 @@ class Civ {
 
 		if (this.nodos.size > 0) {
 			this.militarism *= Math.exp(-TIME_STEP / SOCIAL_DECAY_PERIOD);
-			this.technology += VALUE_OF_KNOWLEDGE * rng.poisson(HUMAN_INTELLIGENCE * TIME_STEP * this.getPopulation());
+			this.technology += VALUE_OF_KNOWLEDGE * rng.poisson(
+				this.world.intelligence*TIME_STEP*this.getPopulation());
 		}
 	}
 

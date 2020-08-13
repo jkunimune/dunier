@@ -201,8 +201,11 @@ $('#terrain-apply').on('click', () => {
 $('#history-apply').on('click', () => {
 	const randomSeme = Number($('#history-seme').val());
 	const years = Number($('#history-nen').val()) + 3000;
+	const imperistia = Number($('#history-imperistia').val());
+	const injenivia = Number($('#injenivia').val());
+	const katastrofe = Number($('#history-katastrofe').val());
 
-	world = new World(surface);
+	world = new World(imperistia, injenivia, katastrofe, surface);
 
 	let rng = new Random(randomSeme); // use the random seed
 	world.generateHistory(
