@@ -468,7 +468,7 @@ export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention =
 		if (asli[asli.length-1] === 'ɦ' && '*-aeiouyw'.includes(asli[asli.length-2]))
 			asli = asli.substring(0, asli.length-1) + "gh";
 		else if ('bcdfgjklmnpqrstvz'.includes(asli[asli.length-1]) && asli[asli.length-2] === '-')
-			asli += 'e';
+			asli += 'ia';
 
 		muti = "";
 		for (let i = 0; i < asli.length; i ++) {

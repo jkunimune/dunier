@@ -9,6 +9,7 @@ import {Language, ProtoLanguage, DeuteroLanguage, Convention, transcribe} from "
 
 
 const TIME_STEP = 100; // [year]
+const START_OF_HUMAN_HISTORY = -3000; // [BCE]
 const AUTHORITARIANISM = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
 const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
 const NATIONALISM = 3.0; // [] factor by which a military is stronger if conquering people to whom they can talk
@@ -78,12 +79,14 @@ export class World {
 	 * @param rng the random number generator to use
 	 */
 	generateHistory(year: number, rng: Random) {
-		for (let t = 0; t < year; t += TIME_STEP) {
+		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
 			for (const civ of this.civs)
 				civ.update(rng);
 			this.spawnCivs(rng); // TODO: build cities
-			this.spreadCivs(rng); // TODO: add cataclysms
+			this.spreadCivs(rng);
 			this.spreadIdeas(rng);
+			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
+				this.haveCataclysm(rng);
 		}
 	}
 
@@ -142,7 +145,8 @@ export class World {
 	}
 
 	/**
-	 * carry technology across borders. every civ has a chance to gain each technology at least one of their neighors have that they don't
+	 * carry technology across borders. every civ has a chance to gain each technology at least one of their neighors
+	 * have that they don't
 	 * @param rng
 	 */
 	spreadIdeas(rng: Random) {
@@ -164,6 +168,20 @@ export class World {
 				civ.technology += VALUE_OF_KNOWLEDGE*rng.binomial(
 					(visibleTechnology.get(civ) - civ.technology)/VALUE_OF_KNOWLEDGE,
 					spreadChance);
+		}
+	}
+
+	/**
+	 * devastate the entire world. the details of how are fuzzy, but in a nutshell half of all people die (well, more
+	 * accurately, half of all provinces are depopulated, and half of all technologies are lost.
+	 * @param rng
+	 */
+	haveCataclysm(rng: Random) {
+		for (const civ of this.civs) {
+			for (const nodo of civ.nodos)
+				if (!rng.probability(APOCALYPSE_SURVIVAL_RATE))
+					civ.lose(nodo);
+			civ.technology = VALUE_OF_KNOWLEDGE*rng.binomial(civ.technology/VALUE_OF_KNOWLEDGE, APOCALYPSE_SURVIVAL_RATE);
 		}
 	}
 

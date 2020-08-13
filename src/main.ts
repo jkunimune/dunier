@@ -200,7 +200,7 @@ $('#terrain-apply').on('click', () => {
  */
 $('#history-apply').on('click', () => {
 	const randomSeme = Number($('#history-seme').val());
-	const years = Number($('#history-nen').val()) + 3000;
+	const year = Number($('#history-nen').val());
 	const imperistia = Number($('#history-imperistia').val()) / 1e3; // km/year
 	const injenivia = Number($('#history-injenivia').val()) / 1e9; // 1/y
 	const katastrofe = Number($('#history-katastrofe').val());
@@ -209,7 +209,7 @@ $('#history-apply').on('click', () => {
 
 	let rng = new Random(randomSeme); // use the random seed
 	world.generateHistory(
-		years,
+		year,
 		rng); // create the terrain!
 
 	const mapper = new Chart(new Azimuthal(surface));

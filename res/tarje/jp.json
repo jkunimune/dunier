@@ -49,7 +49,7 @@
 	"un-mete.hor":"時間",
 	"un-mete.nen":"年",
 	"un-mete.metre-mey-nen":"m/y",
-	"un-mete.mey-gigonen":"1/Gy",
+	"un-mete.mey-gigonen":"/Gy",
 	"kitabe.tem-nam":"ドゥンハマル・ファンタジーの地図生成器",
 	"kitabe.tema":"dunhamarについて",
 	"kitabe.sife":"<p>dunhamarは作家やゲームマスターや言語を作る人の創作を振るれる迫真な世界を作り上げるのを手伝うツールです。擬似乱数列の初期値と他の色々なパラメタを入って、それから世界地図と年表とすべての国と言語のインフォがあるページが出ます。算譜はすべてのワールドビルジンぐの喜びの創造的な工程に取って代われませんけど、dunhamarは何人か出来ないまたはしたくないことを営めます。</p> <p>dunhamarは<a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">アズガアルさんの物</a>とか前のファンタジーの地図生成器がきっかけを与えましたが、dunhamarは写実を強めます。dunhamarは他のものほど対話的ではなくて鉱山の位置とか外交関係とか小さい詳細を作りませんけど。でも、惑星曲率とかプレートテクトニクスとか言語変化とか巨視的な特徴を汲みます。</p>"

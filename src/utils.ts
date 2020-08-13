@@ -237,7 +237,7 @@ function findSmallestEncompassing(node: Nodo, partition: Triangle[], surf: Surfa
  */
 export function loadTSV(filename: string): string[][] {
 	const xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", `./res/${filename}`, false);
+	xmlHttp.open("GET", `/res/${filename}`, false);
 	xmlHttp.send();
 	if (xmlHttp.status != 200)
 		throw `${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`;

@@ -125,7 +125,7 @@ export class Random {
 	 * @param prob
 	 */
 	binomial(num: number, prob: number): number {
-		if (prob === 0) {
+		if (num === 0 || prob === 0) {
 			return 0;
 		}
 		else if (prob === 1) {
