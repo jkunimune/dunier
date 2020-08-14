@@ -14,8 +14,8 @@ export enum Convention {
 	ESPANI,
 	ENGLI,
 	NIPONI,
+	NOVOYANGI,
 	PANDUNI,
-	NOVOYANGI
 }
 
 
