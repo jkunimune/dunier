@@ -59,7 +59,6 @@ const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2
  */
 function trace(lines: Iterable<Place[]>): PathSegment[] {
 	const queue = [...lines];
-	console.log(queue.length);
 	const consolidated: Set<Place[]> = new Set(); // first, consolidate
 	const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
 	const tails: Map<Place, Place[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
@@ -71,7 +70,7 @@ function trace(lines: Iterable<Place[]>): PathSegment[] {
 			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
 				throw Error("up slightly lower!");
 		}
-		let line = queue.pop(); // check each given line
+		let line = [...queue.pop()]; // check each given line (we've only shallow-copied until now, so make sure you don't alter the input lines themselves)
 		const head = line[0], tail = line[line.length-1];
 		consolidated.add(line); // add it to the list
 		if (!heads.has(head))  heads.set(head, []); // and connect it to these existing sets
@@ -246,7 +245,7 @@ export class Chart {
 		if (marorang === 'nili') { // color the sea deep blue
 			this.fill([...surface.nodos].filter(n => n.biome === 'samud'), g, BIOME_COLORS.get('samud'));
 			this.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD),
-				g, BIOME_COLORS.get('samud'), .003, true);
+				g, BIOME_COLORS.get('samud'), 1.5, true);
 		}
 
 		if (shade) { // add relief shadows
@@ -400,7 +399,6 @@ export class Chart {
 			else if (Math.abs(jinPoints[jinPoints.length-1].args[1]) === Math.PI) { // if it is and we ended hitting a wall
 				const dix = Math.sign(end[1]);
 				const possibleStarts = sections.map((s) => s[0].args).concat([supersectionStart]);
-				console.log(possibleStarts);
 				let bestSection = null, bestDistance = Number.POSITIVE_INFINITY;
 				for (let i = 0; i < possibleStarts.length; i ++) { // check the remaining sections
 					const start = possibleStarts[i];
@@ -423,8 +421,6 @@ export class Chart {
 				if (!Number.isFinite(bestDistance)) {
 					throw new Error(`There was nowhither left to go. I was at ${end}, and the only options you gave me were ${possibleStarts}!`);
 				}
-				console.log(dix);
-				console.log(bestDistance);
 				if (dix > 0) { // go around the edge to get to the next start point
 					cutPoints.push(
 						...this.projection.outlineRightEdge(end[0], Math.min(end[0] + bestDistance, this.projection.surface.φMax)));
