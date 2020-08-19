@@ -172,9 +172,6 @@
                     <filter id="blur">
                       <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
                     </filter>
-                    <g id="terrain-tiles"></g>
-                    <g id="terrain-nade"></g>
-                    <g id="terrain-shade" filter="url(#blur)"></g>
                   </svg>
                 </div>
               </div>
@@ -221,8 +218,6 @@
                     <filter id="blur">
                       <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
                     </filter>
-                    <g id="history-tiles"></g>
-                    <g id="history-shade" filter="url(#blur)"></g>
                   </svg>
                 </div>
               </div>
@@ -230,7 +225,136 @@
           </div>
 
           <div class="tab-pane fade" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
-            This is where you download the map.
+            <div class="container mt-2">
+              <div class="row">
+                <div class="col-xs-12 col-md-4 col-lg-3">
+                  <form>
+                    <div class="form-group">
+                      <label for="map-projection">Proyección</label>
+                      <select class="custom-select" id="map-projection">
+                        <option selected value="equirectangular">Básico</option>
+                        <option value="mercator">Navigacional</option>
+                        <option value="azimuthal-equidistant">Polar</option>
+                        <option value="eckert">Equivalente</option>
+                        <option value="bonne">Regional (medieval)</option>
+                        <option value="conformal-conic">Regional (moderno)</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="map-dixe">Orientación</label>
+                      <select class="custom-select" id="map-dixe">
+                        <option selected value="norde">Con el norte arriba</option>
+                        <option value="sude">Con el sur arriba</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="map-dongwestia">Meridiano central</label>
+                      <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
+                    </div>
+                    <div class="form-group">
+                      <label for="map-zemrang">Color del tierra</label>
+                      <select class="custom-select" id="map-zemrang">
+                        <option value="baki">Blanco</option>
+                        <option selected value="lugi">Verde</option>
+                        <option value="jivi">Biomas</option>
+                        <option value="politiki">Naciones</option>
+                         <option value="gawia">Altitudes</option>
+                     </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="map-marorang">Color del mar</label>
+                      <select class="custom-select" id="map-marorang">
+                        <option value="baki">Blanco</option>
+                        <option value="huyi">Gris</option>
+                        <option selected value="nili">Azul</option>
+                        <option value="cerni">Negro</option>
+                        <option value="gawia">Altitudes</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="map-filter">Filtro</label>
+                      <select class="custom-select" id="map-filter">
+                        <option selected value="nol">Nunca</option>
+                        <option value="pili">Sepia</option>
+                        <option value="bakocerni">Blanco y Negro</option>
+                        <option value="mirdi">Opaco</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <h6>Estilo de tierra</h6>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
+                        <label class="form-check-label" for="map-zemforme-kale">Liso</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
+                        <label class="form-check-label" for="map-zemforme-desene">Textura</label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <h6>Estilo de mar</h6>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
+                        <label class="form-check-label" for="map-mar-kale">Liso</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
+                        <label class="form-check-label" for="map-mar-linye">Textura</label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <h6>Estilo de ciudades</h6>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
+                        <label class="form-check-label" for="map-site-nol">Liso</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
+                        <label class="form-check-label" for="map-site-binde">Puntos</label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
+                        <label class="form-check-label" for="map-site-grafe">Textura</label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="map-saye">
+                        <label class="custom-control-label" for="map-saye">Relieve sombreado</label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="map-zemnete">
+                        <label class="custom-control-label" for="map-zemnete">Retícula</label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="map-dawnete">
+                        <label class="custom-control-label" for="map-dawnete">Red de rumbos</label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="map-pontopine">
+                        <label class="custom-control-label" for="map-pontopine">Rosa de los vientos</label>
+                      </div>
+                    </div>
+                    <button type="button" class="btn btn-block btn-primary" id="map-apply">Aplicar</button>
+                  </form>
+                </div>
+
+                <div class="col-xs-12 col-md-8 col-lg-9">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                       viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
+                    <filter id="blur">
+                      <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
+                    </filter>
+                  </svg>
+                </div>
+              </div>
+            </div>
           </div>
 
         </div>

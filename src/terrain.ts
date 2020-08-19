@@ -129,7 +129,7 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random) {
 			rng.discrete(0, 0); // but call rng anyway to keep things consistent
 		}
 		else { // and the rest with a method similar to that above
-			const prefParents: Nodo[] = [];
+			const prefParents: Nodo[] = []; // TODO: sort possible parents by altitude
 			for (const pair of node.between) { // if this node is directly between two nodes
 				if (pair[0].plate === pair[1].plate) { // of the same plate
 					if (!prefParents.includes(pair[0]))
@@ -221,7 +221,7 @@ function movePlates(surf: Surface, rng: Random) {
 			const relVelocity = velocities[node.plate].minus(velocities[fault.plate]);
 			const relSpeed = relPosition.norm().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
 			let type, width; // and whether these are both continents or if this is a top or a bottom or what
-			if (relSpeed < 0) {
+			if (relSpeed < 0) { // TODO: make relspeed also depend on adjacent tiles to smooth out the fault lines and make better oceans
 				if (node.gawe > 0 && fault.gawe > 0) {
 					type = 'xan'; // continental collision
 					width = -relSpeed*MOUNTAIN_WIDTH*Math.sqrt(2);

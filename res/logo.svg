@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<!-- Created with matplotlib (https://matplotlib.org/) -->
 <svg version="1.1" viewBox="-6 -6 12 12" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 	<g transform="rotate(30)">
 		<circle style="fill:#06267f" cx="0" cy="0" r="6"></circle>
 		<clipPath id="clip">
 			<circle r="6"></circle>
 		</clipPath>
-		<path style="fill:#84f248" d="M.8,6, L.8,0, L3.0,0, Q3.5,0, 3.5,-0.5, L3.5,-2.5, Q3.5,-3, 3.0,-3, L-2.7,-3 Q-3,-3, -3.166,-2.750, L-4.612,-0.582, Q-5,0, -4.3,0, L-.8,0, -.8,6" clip-path="url(#clip)"></path>
+		<path style="fill:#93d953" d="M.8,6, L.8,0, L3.0,0, Q3.5,0, 3.5,-0.5, L3.5,-2.5, Q3.5,-3, 3.0,-3, L-2.7,-3 Q-3,-3, -3.166,-2.750, L-4.612,-0.582, Q-5,0, -4.3,0, L-.8,0, -.8,6" clip-path="url(#clip)"></path>
 	</g>
 </svg>

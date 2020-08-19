@@ -260,7 +260,7 @@ class Civ {
 
 		this.name = rng.discrete(0, 100); // TODO make it so countries can borrow names from each other
 
-		this.militarism = rng.erlang(4, 1);
+		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
 		this.technology = technology;
 	}
 
@@ -345,7 +345,7 @@ class Civ {
 		if (this.nodos.size > 0) {
 			this.militarism *= Math.exp(-TIME_STEP / SOCIAL_DECAY_PERIOD);
 			this.technology += VALUE_OF_KNOWLEDGE * rng.poisson(
-				this.world.intelligence*TIME_STEP*this.getPopulation());
+				this.world.intelligence*TIME_STEP*this.getPopulation()); // TODO: subsequent technologies should be harder to reach, making this truly exponential
 		}
 	}
 

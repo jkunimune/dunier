@@ -17,8 +17,8 @@ export class Surface {
 	public area: number;
 	public height: number;
 	public axis: Vector; // orientation of geodetic coordinate system
-	private readonly φMin: number;
-	private readonly φMax: number;
+	readonly φMin: number;
+	readonly φMax: number;
 	refLatitudes: number[];
 	cumulAreas: number[];
 	cumulDistances: number[];
