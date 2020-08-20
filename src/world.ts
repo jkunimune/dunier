@@ -35,7 +35,7 @@ const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population 
 	['aise',        0.0],
 ]);
 const RIVER_UTILITY_THRESHOLD = 1e6;
-const RIVER_UTILITY = 0.3;
+const RIVER_UTILITY = 0.1;
 const OCEAN_UTILITY = 1.0;
 const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['samud',       0.1],
@@ -220,7 +220,7 @@ export class World {
 /**
  * a single political entity
  */
-class Civ {
+export class Civ {
 	public readonly id: number;
 	private readonly name: number; // its name index
 	private arableLand: number; // the population, pre technology modifier

@@ -1,13 +1,17 @@
 // map.ts: all of the cartographic code
 
+// @ts-ignore
+import TinyQueue from './lib/tinyqueue.js';
+
 import {Nodo, Place, Surface, Triangle, Vector} from "./surface.js";
 import {linterp} from "./utils.js";
 import {Convention} from "./language.js";
-import {World} from "./world.js";
+import {Civ, World} from "./world.js";
 
 const MAP_PRECISION = 1e-1;
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
+const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2
 
 const BIOME_COLORS = new Map([
 	['zeme',        '#93d953'],
@@ -26,7 +30,7 @@ const BIOME_COLORS = new Map([
 	[null,          '#000000'],
 ]);
 
-const CATEGORY_COLORS = [
+const COUNTRY_COLORS = [
 	'rgb( 96, 189, 218)',
 	'rgb(182, 161,  92)',
 	'rgb(173, 132, 198)',
@@ -48,8 +52,6 @@ const CATEGORY_COLORS = [
 	'rgb(133, 171, 233)',
 	'rgb(166, 192, 158)',
 ];
-
-const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2
 
 
 /**
@@ -227,18 +229,21 @@ export class Chart {
 		}
 		else if (zemrang === 'politiki') { // draw the countries
 			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('kagaze'));
-			for (const civ of world.civs) {
-				if (civ.nodos && (drawSmallCountries || civ.nodos.size > 2)) {
-					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-					const text = document.createTextNode(
-						`${civ.getName(Convention.NOVOYANGI)}\n[${civ.getName(Convention.NASOMEDI)}]`);
-					hover.appendChild(text);
-					titledG.appendChild(hover);
-					g.appendChild(titledG);
-					this.fill([...civ.nodos].filter(n => n.biome !== 'samud'), titledG,
-						CATEGORY_COLORS[civ.id % CATEGORY_COLORS.length], '#000', 1);
-				}
+			const biggestCivs = new TinyQueue([...world.civs],
+				(a: Civ, b: Civ) => b.getPopulation() - a.getPopulation());
+			for (let i = 0; i < biggestCivs.length; i ++) {
+				const civ = biggestCivs.pop();
+				if (!drawSmallCountries && i >= COUNTRY_COLORS.length)
+					break;
+				const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+				const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+				const text = document.createTextNode(
+					`${civ.getName(Convention.NOVOYANGI)}\n[${civ.getName(Convention.NASOMEDI)}]`);
+				hover.appendChild(text);
+				titledG.appendChild(hover);
+				g.appendChild(titledG);
+				this.fill([...civ.nodos].filter(n => n.biome !== 'samud'), titledG,
+					(i < COUNTRY_COLORS.length) ? COUNTRY_COLORS[i] : 'none', '#000', 1);
 			}
 		}
 
