@@ -53,6 +53,23 @@ const COUNTRY_COLORS = [
 	'rgb(166, 192, 158)',
 ];
 
+const ALTITUDE_STEP = 0.5;
+const ALTITUDE_COLORS = [
+	'rgb(52, 103, 29)',
+	'rgb(96, 130, 6)',
+	'rgb(152, 152, 34)',
+	'rgb(203, 175, 78)',
+	'rgb(230, 212, 149)',
+	'rgb(254, 253, 220)',
+];
+const DEPTH_STEP = 1.0;
+const DEPTH_COLORS = [
+	'rgb(111, 209, 232)',
+	'rgb(57, 150, 197)',
+	'rgb(17, 94, 164)',
+	'rgb(23, 34, 118)',
+];
+
 
 /**
  * create an ordered Iterator of segments that form all of these lines, aggregating where applicable.
@@ -224,6 +241,15 @@ export class Chart {
 			this.fill([...surface.nodos].filter(n => n.biome === 'samud'), g, BIOME_COLORS.get('samud'));
 			nadorang = BIOME_COLORS.get('samud');
 		}
+		else if (marorang === 'gawia') { // color the sea by altitude
+			for (let i = 0; i < DEPTH_COLORS.length; i ++) {
+				const min = (i !== 0) ? i*DEPTH_STEP : Number.NEGATIVE_INFINITY;
+				const max = (i !== DEPTH_COLORS.length-1) ? (i+1)*DEPTH_STEP : Number.POSITIVE_INFINITY;
+				this.fill([...surface.nodos].filter(n => n.biome === 'samud' && -n.gawe >= min && -n.gawe < max),
+					g, DEPTH_COLORS[i]);
+			}
+			nadorang = DEPTH_COLORS[0];
+		}
 
 		if (zemrang === 'lugi') { // color the land light green
 			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('zeme'));
@@ -239,6 +265,15 @@ export class Chart {
 				(a: Civ, b: Civ) => b.getPopulation() - a.getPopulation());
 			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i ++)
 				this.fill([...biggestCivs.pop().nodos].filter(n => n.biome !== 'samud'), g, COUNTRY_COLORS[i]);
+		}
+		else if (zemrang === 'gawia') { // color the sea by altitude
+			for (let i = 0; i < ALTITUDE_COLORS.length; i ++) {
+				const min = (i !== 0) ? i*ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
+				const max = (i !== ALTITUDE_COLORS.length-1) ? (i+1)*ALTITUDE_STEP : Number.POSITIVE_INFINITY;
+				this.fill([...surface.nodos].filter(n => n.biome !== 'samud' && n.gawe >= min && n.gawe < max),
+					g, ALTITUDE_COLORS[i]);
+			}
+			nadorang = DEPTH_COLORS[0];
 		}
 
 		if (nade) {
