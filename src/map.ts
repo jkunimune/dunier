@@ -206,18 +206,24 @@ export class Chart {
 	 * @param zemrang the color scheme for the land areas
 	 * @param marorang the color scheme for the ocean areas
 	 * @param filter the color filter to apply
+	 * @param nade whether to add rivers
+	 * @param kenare whether to add state borders
 	 * @param shade whether to add shaded relief
-	 * @param drawSmallCountries whether to draw countries that own two or fewer tiles
 	 */
-	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol', shade: boolean = false, drawSmallCountries: boolean = false) {
+	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol', nade: boolean = true, kenare: boolean = true, shade: boolean = false) {
 		svg.textContent = ''; // clear the layer
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 		const cx = (this.projection.right + this.projection.left)/2;
 		const cy = (this.projection.bottom + this.projection.top)/2;
 		const s = Math.max(this.projection.right - this.projection.left, this.projection.bottom - this.projection.top);
-		g.setAttributeNS(null, 'transform',
-			`scale(${2/s}, ${2/s}) translate(${-cx}, ${-cy})`);
+		g.setAttribute('transform', `scale(${2/s}, ${2/s}) translate(${-cx}, ${-cy})`);
 		svg.appendChild(g);
+
+		let nadorang = 'none';
+		if (marorang === 'nili') { // color the sea deep blue
+			this.fill([...surface.nodos].filter(n => n.biome === 'samud'), g, BIOME_COLORS.get('samud'));
+			nadorang = BIOME_COLORS.get('samud');
+		}
 
 		if (zemrang === 'lugi') { // color the land light green
 			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('zeme'));
@@ -227,30 +233,34 @@ export class Chart {
 				if (biome !== 'samud')
 					this.fill([...surface.nodos].filter(n => n.biome === biome), g, BIOME_COLORS.get(biome));
 		}
-		else if (zemrang === 'politiki') { // draw the countries
+		else if (zemrang === 'politiki' && world !== null) { // draw the countries
 			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('kagaze'));
 			const biggestCivs = new TinyQueue([...world.civs],
 				(a: Civ, b: Civ) => b.getPopulation() - a.getPopulation());
-			for (let i = 0; i < biggestCivs.length; i ++) {
-				const civ = biggestCivs.pop();
-				if (!drawSmallCountries && i >= COUNTRY_COLORS.length)
-					break;
-				const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-				const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-				const text = document.createTextNode(
-					`${civ.getName(Convention.NOVOYANGI)}\n[${civ.getName(Convention.NASOMEDI)}]`);
-				hover.appendChild(text);
-				titledG.appendChild(hover);
-				g.appendChild(titledG);
-				this.fill([...civ.nodos].filter(n => n.biome !== 'samud'), titledG,
-					(i < COUNTRY_COLORS.length) ? COUNTRY_COLORS[i] : 'none', '#000', 1);
-			}
+			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i ++)
+				this.fill([...biggestCivs.pop().nodos].filter(n => n.biome !== 'samud'), g, COUNTRY_COLORS[i]);
 		}
 
-		if (marorang === 'nili') { // color the sea deep blue
-			this.fill([...surface.nodos].filter(n => n.biome === 'samud'), g, BIOME_COLORS.get('samud'));
+		if (nade) {
 			this.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD),
-				g, BIOME_COLORS.get('samud'), 1.5, true);
+				g, nadorang, 1.5, true);
+		}
+
+		if (kenare && world !== null) {
+			for (const civ of world.civs) {
+				if (civ.getPopulation() > 0) {
+					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+					const text = document.createTextNode(
+						`${civ.getName(Convention.NOVOYANGI)}\n[${civ.getName(Convention.NASOMEDI)}]`);
+					hover.appendChild(text);
+					titledG.appendChild(hover);
+					g.appendChild(titledG);
+					console.assert([...civ.nodos].filter(n => n.biome !== 'samud').length > 0, civ.getPopulation(), [...civ.nodos].filter(n => n.biome !== 'samud'));
+					this.fill([...civ.nodos].filter(n => n.biome !== 'samud'), titledG,
+						'none', '#000', 0.7).setAttribute('pointer-events', 'all');
+				}
+			}
 		}
 
 		if (shade) { // add relief shadows

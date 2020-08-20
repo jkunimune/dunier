@@ -185,6 +185,8 @@ $('#map-apply').on('click', () => {
 	const zemrang = $('#map-zemrang').val();
 	const marorang = $('#map-marorang').val();
 	const filter = $('#map-filter').val();
+	const nade = $('#map-nade').prop('checked');
+	const kenare = $('#map-kenare').prop('checked');
 	const shade = $('#map-saye').prop('checked');
 
 	let mapper;
@@ -195,6 +197,6 @@ $('#map-apply').on('click', () => {
 	else
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 
-	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, shade);
+	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade);
 	console.log("fina!");
 });

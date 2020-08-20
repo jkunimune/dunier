@@ -255,6 +255,7 @@
                       <label for="map-zemrang">Terrain color</label>
                       <select class="custom-select" id="map-zemrang">
                         <option value="baki">White</option>
+                        <option value="huyi">Gray</option>
                         <option selected value="lugi">Green</option>
                         <option value="jivi">Biomes</option>
                         <option value="politiki">Political</option>
@@ -319,6 +320,18 @@
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="map-nade">
+                        <label class="custom-control-label" for="map-nade">Rivers</label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="map-kenare">
+                        <label class="custom-control-label" for="map-kenare">Borders</label>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="map-saye">
                         <label class="custom-control-label" for="map-saye">Shaded relief</label>
                       </div>
@@ -332,13 +345,13 @@
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                        <label class="custom-control-label" for="map-dawnete">Rhumbline network</label>
+                        <label class="custom-control-label" for="map-dawnete">Windrose network</label>
                       </div>
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                        <label class="custom-control-label" for="map-pontopine">Compass Rose</label>
+                        <label class="custom-control-label" for="map-pontopine">Windrose</label>
                       </div>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="map-apply">Update</button>

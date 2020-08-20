@@ -315,7 +315,7 @@ export class Civ {
 		}
 
 		this.arableLand -= getDomublia(tile);
-		if (this.arableLand < 0)
+		if (this.arableLand < 1e-8)
 			this.arableLand = 0;
 		this.world.politicalMap.delete(tile);
 
