@@ -138,14 +138,14 @@ export class Surface {
 	}
 
 	/**
-	 * return the local length-to-latitude rate
+	 * return the local length-to-latitude rate [km]
 	 */
 	dsdφ(φ: number): number {
 		throw "Unimplemented";
 	}
 
 	/**
-	 * return the local effective width
+	 * return the local effective width [km]
 	 */
 	dAds(φ: number): number {
 		throw "Unimplemented";

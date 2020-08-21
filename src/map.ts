@@ -708,6 +708,9 @@ class MapProjection {
 }
 
 
+/**
+ * a Plate-Caree projection, primarily for interfacing with other mapping software.
+ */
 export class Equirectangular extends MapProjection {
 	constructor(surface: Surface) {
 		super(surface, -Math.PI, Math.PI, -surface.φMax, -surface.φMin);
@@ -718,7 +721,76 @@ export class Equirectangular extends MapProjection {
 	}
 }
 
+/**
+ * a pseudocylindrical equal-area projection similar to Eckert IV or Natural Earth
+ */
+export class EqualArea extends MapProjection {
+	private readonly φRef: number[];
+	private readonly xRef: number[];
+	private readonly yRef: number[];
 
+	constructor(surface: Surface) {
+		super(surface, null, null, null, 0);
+		let avgWidth = 0;
+		for (let i = 1; i < surface.refLatitudes.length; i ++) // first measure the typical width of the surface
+			avgWidth += surface.dAds((surface.refLatitudes[i-1] + surface.refLatitudes[i])/2)*
+				(surface.cumulAreas[i] - surface.cumulAreas[i-1])/surface.area;
+
+		this.φRef = surface.refLatitudes;
+		this.xRef = [];
+		this.yRef = [0];
+		for (let i = 0; i < this.φRef.length; i ++) {
+			this.xRef.push((surface.dAds(this.φRef[i]) + avgWidth)/4);
+			if (i > 0) {
+				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
+				this.yRef.push(this.yRef[i-1] - verAre / (2*(this.xRef[i-1] + this.xRef[i])/2));
+			}
+		}
+
+		let maxX = 0;
+		for (const x of this.xRef)
+			if (x > maxX)
+				maxX = x;
+		this.left = -maxX;
+		this.right = maxX;
+		this.bottom = this.yRef[0];
+		this.top = this.yRef[this.yRef.length-1];
+	}
+
+	project(φ: number, λ: number): {x: number, y: number} {
+		return {x: λ/Math.PI*linterp(φ, this.φRef, this.xRef), y: linterp(φ, this.φRef, this.yRef)};
+	}
+
+	outlineLeftEdge(φ0: number = this.surface.φMax, φ1: number = this.surface.φMin): PathSegment[] {
+		const edge = [];
+		const i0 = Math.ceil(
+			(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
+		const i1 = Math.floor(
+			(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
+		for (let i = i0 - 1; i > i1; i --)
+			edge.push({type: 'L', args: [-this.xRef[i], this.yRef[i]]});
+		const {x, y} = this.project(φ1, -Math.PI);
+		edge.push({type: 'L', args: [x, y]});
+		return edge;
+	}
+
+	outlineRightEdge(φ0: number = this.surface.φMin, φ1: number = this.surface.φMax): PathSegment[] {
+		const edge = [];
+		const i0 = Math.floor(
+			(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
+		const i1 = Math.ceil(
+			(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
+		for (let i = i0 + 1; i < i1; i ++)
+			edge.push({type: 'L', args: [this.xRef[i], this.yRef[i]]});
+		const {x, y} = this.project(φ1, Math.PI);
+		edge.push({type: 'L', args: [x, y]});
+		return edge;
+	}
+}
+
+/**
+ * an azimuthal equidistant projection
+ */
 export class Azimuthal extends MapProjection {
 	constructor(surface: Surface) {
 		super(surface, -surface.height, surface.height, -surface.height, surface.height);
