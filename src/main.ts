@@ -11,7 +11,7 @@ import {generateTerrain} from "./terrain.js";
 import {Sphere, Spheroid, Surface} from "./surface.js";
 import {World} from "./world.js";
 import {Convention} from "./language.js";
-import {Azimuthal, Chart, EqualArea, Equirectangular} from "./map.js";
+import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
 import {Random} from "./random.js";
 
 
@@ -194,6 +194,8 @@ $('#map-apply').on('click', () => {
 		mapper = new Chart(new Equirectangular(surface));
 	else if (projection === 'azimuthal-equidistant')
 		mapper = new Chart(new Azimuthal(surface));
+	else if (projection == 'mercator')
+		mapper = new Chart(new Mercator(surface));
 	else if (projection == 'eckert')
 		mapper = new Chart(new EqualArea(surface));
 	else
