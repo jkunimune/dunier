@@ -8,6 +8,8 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+    <link rel="stylesheet" href="style.css">
+
     <title>{{kitabe.tem-nam}}</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
@@ -87,7 +89,7 @@
           <div class="tab-pane fade show active" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="planet-type">{{menuw.forme}}</label>
@@ -123,7 +125,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9" id="planet-map">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9" id="planet-map">
                 </div>
               </div>
             </div>
@@ -132,7 +134,7 @@
           <div class="tab-pane fade" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="terrain-seme">{{menuw.seme}}</label>
@@ -166,7 +168,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
                     <filter id="blur">
@@ -181,7 +183,7 @@
           <div class="tab-pane fade" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="history-seme">{{menuw.seme}}</label>
@@ -212,7 +214,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
                     <filter id="blur">
@@ -228,137 +230,139 @@
             <div class="container mt-2">
               <div class="row">
                 <div class="col-xs-12 col-md-4 col-lg-3">
-                  <form>
-                    <div class="form-group">
-                      <label for="map-projection">{{menuw.lancografe}}</label>
-                      <select class="custom-select" id="map-projection">
-                        <option value="equirectangular">{{menuw.cargone}}</option>
-                        <option value="mercator">{{menuw.merkator}}</option>
-                        <option value="azimuthal-equidistant">{{menuw.asimuti}}</option>
-                        <option selected value="eckert">{{menuw.ekerte}}</option>
-                        <option value="bonne">{{menuw.bone}}</option>
-                        <option value="conformal-conic">{{menuw.konusi}}</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-dixe">{{menuw.dixe}}</label>
-                      <select class="custom-select" id="map-dixe">
-                        <option selected value="norde">{{menuw.norde}}</option>
-                        <option value="sude">{{menuw.sude}}</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-dongwestia">{{menuw.dongwestia}}</label>
-                      <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-zemrang">{{menuw.zemrang}}</label>
-                      <select class="custom-select" id="map-zemrang">
-                        <option value="baki">{{menuw.baki}}</option>
-                        <option value="huyi">{{menuw.huyi}}</option>
-                        <option selected value="lugi">{{menuw.lugi}}</option>
-                        <option value="jivi">{{menuw.jivi}}</option>
-                        <option value="politiki">{{menuw.politiki}}</option>
-                         <option value="gawia">{{menuw.gawia}}</option>
-                     </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-marorang">{{menuw.marorang}}</label>
-                      <select class="custom-select" id="map-marorang">
-                        <option value="baki">{{menuw.baki}}</option>
-                        <option value="huyi">{{menuw.huyi}}</option>
-                        <option selected value="nili">{{menuw.nili}}</option>
-                        <option value="cerni">{{menuw.cerni}}</option>
-                        <option value="gawia">{{menuw.gawia}}</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-filter">{{menuw.filter}}</label>
-                      <select class="custom-select" id="map-filter">
-                        <option selected value="nol">{{menuw.nol}}</option>
-                        <option value="pili">{{menuw.pili}}</option>
-                        <option value="bakocerni">{{menuw.bakocerni}}</option>
-                        <option value="mirdi">{{menuw.mirdi}}</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <h6>{{menuw.zemforme}}</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
-                        <label class="form-check-label" for="map-zemforme-kale">{{menuw.kale}}</label>
+                  <div class="scrolling-sidebar">
+                    <form>
+                      <div class="form-group">
+                        <label for="map-projection">{{menuw.lancografe}}</label>
+                        <select class="custom-select" id="map-projection">
+                          <option value="equirectangular">{{menuw.cargone}}</option>
+                          <option value="mercator">{{menuw.merkator}}</option>
+                          <option value="azimuthal-equidistant">{{menuw.asimuti}}</option>
+                          <option selected value="eckert">{{menuw.ekerte}}</option>
+                          <option value="bonne">{{menuw.bone}}</option>
+                          <option value="conformal-conic">{{menuw.konusi}}</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
-                        <label class="form-check-label" for="map-zemforme-desene">{{menuw.desene}}</label>
+                      <div class="form-group">
+                        <label for="map-dixe">{{menuw.dixe}}</label>
+                        <select class="custom-select" id="map-dixe">
+                          <option selected value="norde">{{menuw.norde}}</option>
+                          <option value="sude">{{menuw.sude}}</option>
+                        </select>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <h6>{{menuw.mare}}</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
-                        <label class="form-check-label" for="map-mar-kale">{{menuw.kale}}</label>
+                      <div class="form-group">
+                        <label for="map-dongwestia">{{menuw.dongwestia}}</label>
+                        <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
-                        <label class="form-check-label" for="map-mar-linye">{{menuw.desene}}</label>
+                      <div class="form-group">
+                        <label for="map-zemrang">{{menuw.zemrang}}</label>
+                        <select class="custom-select" id="map-zemrang">
+                          <option value="baki">{{menuw.baki}}</option>
+                          <option value="huyi">{{menuw.huyi}}</option>
+                          <option selected value="lugi">{{menuw.lugi}}</option>
+                          <option value="jivi">{{menuw.jivi}}</option>
+                          <option value="politiki">{{menuw.politiki}}</option>
+                           <option value="gawia">{{menuw.gawia}}</option>
+                       </select>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <h6>{{menuw.site}}</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
-                        <label class="form-check-label" for="map-site-nol">{{menuw.kale}}</label>
+                      <div class="form-group">
+                        <label for="map-marorang">{{menuw.marorang}}</label>
+                        <select class="custom-select" id="map-marorang">
+                          <option value="baki">{{menuw.baki}}</option>
+                          <option value="huyi">{{menuw.huyi}}</option>
+                          <option selected value="nili">{{menuw.nili}}</option>
+                          <option value="cerni">{{menuw.cerni}}</option>
+                          <option value="gawia">{{menuw.gawia}}</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                        <label class="form-check-label" for="map-site-binde">{{menuw.binde}}</label>
+                      <div class="form-group">
+                        <label for="map-filter">{{menuw.filter}}</label>
+                        <select class="custom-select" id="map-filter">
+                          <option selected value="nol">{{menuw.nol}}</option>
+                          <option value="pili">{{menuw.pili}}</option>
+                          <option value="bakocerni">{{menuw.bakocerni}}</option>
+                          <option value="mirdi">{{menuw.mirdi}}</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
-                        <label class="form-check-label" for="map-site-grafe">{{menuw.desene}}</label>
+                      <div class="form-group">
+                        <h6>{{menuw.zemforme}}</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
+                          <label class="form-check-label" for="map-zemforme-kale">{{menuw.kale}}</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
+                          <label class="form-check-label" for="map-zemforme-desene">{{menuw.desene}}</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-nade">
-                        <label class="custom-control-label" for="map-nade">{{menuw.nade}}</label>
+                      <div class="form-group">
+                        <h6>{{menuw.mare}}</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
+                          <label class="form-check-label" for="map-mar-kale">{{menuw.kale}}</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
+                          <label class="form-check-label" for="map-mar-linye">{{menuw.desene}}</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-kenare">
-                        <label class="custom-control-label" for="map-kenare">{{menuw.kenare}}</label>
+                      <div class="form-group">
+                        <h6>{{menuw.site}}</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
+                          <label class="form-check-label" for="map-site-nol">{{menuw.kale}}</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
+                          <label class="form-check-label" for="map-site-binde">{{menuw.binde}}</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
+                          <label class="form-check-label" for="map-site-grafe">{{menuw.desene}}</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-saye">
-                        <label class="custom-control-label" for="map-saye">{{menuw.saye}}</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-nade">
+                          <label class="custom-control-label" for="map-nade">{{menuw.nade}}</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                        <label class="custom-control-label" for="map-zemnete">{{menuw.zemnete}}</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-kenare">
+                          <label class="custom-control-label" for="map-kenare">{{menuw.kenare}}</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                        <label class="custom-control-label" for="map-dawnete">{{menuw.dawnete}}</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-saye">
+                          <label class="custom-control-label" for="map-saye">{{menuw.saye}}</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                        <label class="custom-control-label" for="map-pontopine">{{menuw.pontopine}}</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-zemnete">
+                          <label class="custom-control-label" for="map-zemnete">{{menuw.zemnete}}</label>
+                        </div>
                       </div>
-                    </div>
-                    <button type="button" class="btn btn-block btn-primary" id="map-apply">{{menuw.kara}}</button>
-                  </form>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-dawnete">
+                          <label class="custom-control-label" for="map-dawnete">{{menuw.dawnete}}</label>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-pontopine">
+                          <label class="custom-control-label" for="map-pontopine">{{menuw.pontopine}}</label>
+                        </div>
+                      </div>
+                      <button type="button" class="btn btn-block btn-primary" id="map-apply">{{menuw.kara}}</button>
+                    </form>
+                  </div>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
                     <filter id="blur">
@@ -404,8 +408,8 @@
       }
 
       function disableRotationParams(locked) {
-        $('#planet-day').prop('disabled', locked); // rotation period
-        $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
+          $('#planet-day').prop('disabled', locked); // rotation period
+          $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
       }
     </script>
   </body>

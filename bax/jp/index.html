@@ -8,6 +8,8 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+    <link rel="stylesheet" href="style.css">
+
     <title>ドゥンハマル・ファンタジーの地図生成器</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
@@ -87,7 +89,7 @@
           <div class="tab-pane fade show active" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="planet-type">形態</label>
@@ -99,7 +101,7 @@
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.value)">
+                        <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked)">
                         <label class="custom-control-label" for="planet-locked">同期自転</label>
                       </div>
                     </div>
@@ -123,7 +125,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9" id="planet-map">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9" id="planet-map">
                 </div>
               </div>
             </div>
@@ -132,7 +134,7 @@
           <div class="tab-pane fade" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="terrain-seme">擬似乱数列の初期値</label>
@@ -166,7 +168,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
                     <filter id="blur">
@@ -181,7 +183,7 @@
           <div class="tab-pane fade" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="history-seme">擬似乱数列の初期値</label>
@@ -212,7 +214,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
                     <filter id="blur">
@@ -228,137 +230,139 @@
             <div class="container mt-2">
               <div class="row">
                 <div class="col-xs-12 col-md-4 col-lg-3">
-                  <form>
-                    <div class="form-group">
-                      <label for="map-projection">投影法</label>
-                      <select class="custom-select" id="map-projection">
-                        <option value="equirectangular">円筒</option>
-                        <option value="mercator">航海</option>
-                        <option value="azimuthal-equidistant">丸い</option>
-                        <option selected value="eckert">正積</option>
-                        <option value="bonne">地域的　（中世）</option>
-                        <option value="conformal-conic">地域的　（現代）</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-dixe">方向</label>
-                      <select class="custom-select" id="map-dixe">
-                        <option selected value="norde">北は上</option>
-                        <option value="sude">南は上</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-dongwestia">中経線</label>
-                      <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-zemrang">地の色</label>
-                      <select class="custom-select" id="map-zemrang">
-                        <option value="baki">白色</option>
-                        <option value="huyi">灰色</option>
-                        <option selected value="lugi">青色</option>
-                        <option value="jivi">生物群系</option>
-                        <option value="politiki">政治</option>
-                         <option value="gawia">高度</option>
-                     </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-marorang">海の色</label>
-                      <select class="custom-select" id="map-marorang">
-                        <option value="baki">白色</option>
-                        <option value="huyi">灰色</option>
-                        <option selected value="nili">青色</option>
-                        <option value="cerni">黒色</option>
-                        <option value="gawia">高度</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-filter">フィルター</label>
-                      <select class="custom-select" id="map-filter">
-                        <option selected value="nol">無</option>
-                        <option value="pili">セピア</option>
-                        <option value="bakocerni">白黒</option>
-                        <option value="mirdi">鈍</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <h6>地の様式</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
-                        <label class="form-check-label" for="map-zemforme-kale">空</label>
+                  <div class="scrolling-sidebar">
+                    <form>
+                      <div class="form-group">
+                        <label for="map-projection">投影法</label>
+                        <select class="custom-select" id="map-projection">
+                          <option value="equirectangular">円筒</option>
+                          <option value="mercator">航海</option>
+                          <option value="azimuthal-equidistant">丸い</option>
+                          <option selected value="eckert">正積</option>
+                          <option value="bonne">地域的　（中世）</option>
+                          <option value="conformal-conic">地域的　（現代）</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
-                        <label class="form-check-label" for="map-zemforme-desene">模様</label>
+                      <div class="form-group">
+                        <label for="map-dixe">方向</label>
+                        <select class="custom-select" id="map-dixe">
+                          <option selected value="norde">北は上</option>
+                          <option value="sude">南は上</option>
+                        </select>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <h6>海の様式</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
-                        <label class="form-check-label" for="map-mar-kale">空</label>
+                      <div class="form-group">
+                        <label for="map-dongwestia">中経線</label>
+                        <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
-                        <label class="form-check-label" for="map-mar-linye">模様</label>
+                      <div class="form-group">
+                        <label for="map-zemrang">地の色</label>
+                        <select class="custom-select" id="map-zemrang">
+                          <option value="baki">白色</option>
+                          <option value="huyi">灰色</option>
+                          <option selected value="lugi">青色</option>
+                          <option value="jivi">生物群系</option>
+                          <option value="politiki">政治</option>
+                           <option value="gawia">高度</option>
+                       </select>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <h6>市の様式</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
-                        <label class="form-check-label" for="map-site-nol">空</label>
+                      <div class="form-group">
+                        <label for="map-marorang">海の色</label>
+                        <select class="custom-select" id="map-marorang">
+                          <option value="baki">白色</option>
+                          <option value="huyi">灰色</option>
+                          <option selected value="nili">青色</option>
+                          <option value="cerni">黒色</option>
+                          <option value="gawia">高度</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                        <label class="form-check-label" for="map-site-binde">点</label>
+                      <div class="form-group">
+                        <label for="map-filter">フィルター</label>
+                        <select class="custom-select" id="map-filter">
+                          <option selected value="nol">無</option>
+                          <option value="pili">セピア</option>
+                          <option value="bakocerni">白黒</option>
+                          <option value="mirdi">鈍</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
-                        <label class="form-check-label" for="map-site-grafe">模様</label>
+                      <div class="form-group">
+                        <h6>地の様式</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
+                          <label class="form-check-label" for="map-zemforme-kale">空</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
+                          <label class="form-check-label" for="map-zemforme-desene">模様</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-nade">
-                        <label class="custom-control-label" for="map-nade">川</label>
+                      <div class="form-group">
+                        <h6>海の様式</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
+                          <label class="form-check-label" for="map-mar-kale">空</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
+                          <label class="form-check-label" for="map-mar-linye">模様</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-kenare">
-                        <label class="custom-control-label" for="map-kenare">国境</label>
+                      <div class="form-group">
+                        <h6>市の様式</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
+                          <label class="form-check-label" for="map-site-nol">空</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
+                          <label class="form-check-label" for="map-site-binde">点</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
+                          <label class="form-check-label" for="map-site-grafe">模様</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-saye">
-                        <label class="custom-control-label" for="map-saye">地形の影</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-nade">
+                          <label class="custom-control-label" for="map-nade">川</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                        <label class="custom-control-label" for="map-zemnete">経緯線網</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-kenare">
+                          <label class="custom-control-label" for="map-kenare">国境</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                        <label class="custom-control-label" for="map-dawnete">航路網</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-saye">
+                          <label class="custom-control-label" for="map-saye">地形の影</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                        <label class="custom-control-label" for="map-pontopine">羅針図</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-zemnete">
+                          <label class="custom-control-label" for="map-zemnete">経緯線網</label>
+                        </div>
                       </div>
-                    </div>
-                    <button type="button" class="btn btn-block btn-primary" id="map-apply">登録</button>
-                  </form>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-dawnete">
+                          <label class="custom-control-label" for="map-dawnete">航路網</label>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-pontopine">
+                          <label class="custom-control-label" for="map-pontopine">羅針図</label>
+                        </div>
+                      </div>
+                      <button type="button" class="btn btn-block btn-primary" id="map-apply">登録</button>
+                    </form>
+                  </div>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
                     <filter id="blur">
@@ -404,8 +408,8 @@
       }
 
       function disableRotationParams(locked) {
-        $('#planet-day').prop('disabled', locked); // rotation period
-        $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
+          $('#planet-day').prop('disabled', locked); // rotation period
+          $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
       }
     </script>
   </body>

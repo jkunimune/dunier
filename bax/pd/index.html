@@ -8,6 +8,8 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+    <link rel="stylesheet" href="style.css">
+
     <title>dunhamar &ndash; jena fantazi karte</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
@@ -87,7 +89,7 @@
           <div class="tab-pane fade show active" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="planet-type">forme</label>
@@ -99,7 +101,7 @@
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.value)">
+                        <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked)">
                         <label class="custom-control-label" for="planet-locked">cawo satosami</label>
                       </div>
                     </div>
@@ -123,7 +125,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9" id="planet-map">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9" id="planet-map">
                 </div>
               </div>
             </div>
@@ -132,7 +134,7 @@
           <div class="tab-pane fade" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="terrain-seme">falsozari seme</label>
@@ -166,7 +168,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
                     <filter id="blur">
@@ -181,7 +183,7 @@
           <div class="tab-pane fade" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="history-seme">falsozari seme</label>
@@ -212,7 +214,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
                     <filter id="blur">
@@ -228,137 +230,139 @@
             <div class="container mt-2">
               <div class="row">
                 <div class="col-xs-12 col-md-4 col-lg-3">
-                  <form>
-                    <div class="form-group">
-                      <label for="map-projection">graflanci metode</label>
-                      <select class="custom-select" id="map-projection">
-                        <option value="equirectangular">bazi</option>
-                        <option value="mercator">daweureki</option>
-                        <option value="azimuthal-equidistant">aksi</option>
-                        <option selected value="eckert">egali are</option>
-                        <option value="bonne">feni (puranyangi)</option>
-                        <option value="conformal-conic">feni (novyangi)</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-dixe">rote</label>
-                      <select class="custom-select" id="map-dixe">
-                        <option selected value="norde">norde gawi</option>
-                        <option value="sude">sude gawi</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-dongwestia">jungi dongwestia</label>
-                      <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-zemrang">rang da zeme</label>
-                      <select class="custom-select" id="map-zemrang">
-                        <option value="baki">baki</option>
-                        <option value="huyi">huyi</option>
-                        <option selected value="lugi">lugi</option>
-                        <option value="jivi">jivosisteme</option>
-                        <option value="politiki">dexe</option>
-                         <option value="gawia">gawia</option>
-                     </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-marorang">rang da mare</label>
-                      <select class="custom-select" id="map-marorang">
-                        <option value="baki">baki</option>
-                        <option value="huyi">huyi</option>
-                        <option selected value="nili">nili</option>
-                        <option value="cerni">cerni</option>
-                        <option value="gawia">gawia</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-filter">filter da rang</label>
-                      <select class="custom-select" id="map-filter">
-                        <option selected value="nol">nol</option>
-                        <option value="pili">pilrangi</option>
-                        <option value="bakocerni">bakocerni</option>
-                        <option value="mirdi">mirdi</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <h6>rupe da zeme</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
-                        <label class="form-check-label" for="map-zemforme-kale">kali</label>
+                  <div class="scrolling-sidebar">
+                    <form>
+                      <div class="form-group">
+                        <label for="map-projection">graflanci metode</label>
+                        <select class="custom-select" id="map-projection">
+                          <option value="equirectangular">bazi</option>
+                          <option value="mercator">daweureki</option>
+                          <option value="azimuthal-equidistant">aksi</option>
+                          <option selected value="eckert">egali are</option>
+                          <option value="bonne">feni (puranyangi)</option>
+                          <option value="conformal-conic">feni (novyangi)</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
-                        <label class="form-check-label" for="map-zemforme-desene">grafi</label>
+                      <div class="form-group">
+                        <label for="map-dixe">rote</label>
+                        <select class="custom-select" id="map-dixe">
+                          <option selected value="norde">norde gawi</option>
+                          <option value="sude">sude gawi</option>
+                        </select>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <h6>rupe da mare</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
-                        <label class="form-check-label" for="map-mar-kale">kali</label>
+                      <div class="form-group">
+                        <label for="map-dongwestia">jungi dongwestia</label>
+                        <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
-                        <label class="form-check-label" for="map-mar-linye">grafi</label>
+                      <div class="form-group">
+                        <label for="map-zemrang">rang da zeme</label>
+                        <select class="custom-select" id="map-zemrang">
+                          <option value="baki">baki</option>
+                          <option value="huyi">huyi</option>
+                          <option selected value="lugi">lugi</option>
+                          <option value="jivi">jivosisteme</option>
+                          <option value="politiki">dexe</option>
+                           <option value="gawia">gawia</option>
+                       </select>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <h6>rupe da site</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
-                        <label class="form-check-label" for="map-site-nol">kali</label>
+                      <div class="form-group">
+                        <label for="map-marorang">rang da mare</label>
+                        <select class="custom-select" id="map-marorang">
+                          <option value="baki">baki</option>
+                          <option value="huyi">huyi</option>
+                          <option selected value="nili">nili</option>
+                          <option value="cerni">cerni</option>
+                          <option value="gawia">gawia</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                        <label class="form-check-label" for="map-site-binde">bindi</label>
+                      <div class="form-group">
+                        <label for="map-filter">filter da rang</label>
+                        <select class="custom-select" id="map-filter">
+                          <option selected value="nol">nol</option>
+                          <option value="pili">pilrangi</option>
+                          <option value="bakocerni">bakocerni</option>
+                          <option value="mirdi">mirdi</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
-                        <label class="form-check-label" for="map-site-grafe">grafi</label>
+                      <div class="form-group">
+                        <h6>rupe da zeme</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
+                          <label class="form-check-label" for="map-zemforme-kale">kali</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
+                          <label class="form-check-label" for="map-zemforme-desene">grafi</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-nade">
-                        <label class="custom-control-label" for="map-nade">nade</label>
+                      <div class="form-group">
+                        <h6>rupe da mare</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
+                          <label class="form-check-label" for="map-mar-kale">kali</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
+                          <label class="form-check-label" for="map-mar-linye">grafi</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-kenare">
-                        <label class="custom-control-label" for="map-kenare">dexi kenare</label>
+                      <div class="form-group">
+                        <h6>rupe da site</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
+                          <label class="form-check-label" for="map-site-nol">kali</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
+                          <label class="form-check-label" for="map-site-binde">bindi</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
+                          <label class="form-check-label" for="map-site-grafe">grafi</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-saye">
-                        <label class="custom-control-label" for="map-saye">xani saye</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-nade">
+                          <label class="custom-control-label" for="map-nade">nade</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                        <label class="custom-control-label" for="map-zemnete">nete da lokonombre</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-kenare">
+                          <label class="custom-control-label" for="map-kenare">dexi kenare</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                        <label class="custom-control-label" for="map-dawnete">nete da marorute</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-saye">
+                          <label class="custom-control-label" for="map-saye">xani saye</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                        <label class="custom-control-label" for="map-pontopine">pontopine</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-zemnete">
+                          <label class="custom-control-label" for="map-zemnete">nete da lokonombre</label>
+                        </div>
                       </div>
-                    </div>
-                    <button type="button" class="btn btn-block btn-primary" id="map-apply">nova</button>
-                  </form>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-dawnete">
+                          <label class="custom-control-label" for="map-dawnete">nete da marorute</label>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-pontopine">
+                          <label class="custom-control-label" for="map-pontopine">pontopine</label>
+                        </div>
+                      </div>
+                      <button type="button" class="btn btn-block btn-primary" id="map-apply">nova</button>
+                    </form>
+                  </div>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
                     <filter id="blur">
@@ -404,8 +408,8 @@
       }
 
       function disableRotationParams(locked) {
-        $('#planet-day').prop('disabled', locked); // rotation period
-        $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
+          $('#planet-day').prop('disabled', locked); // rotation period
+          $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
       }
     </script>
   </body>

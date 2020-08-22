@@ -244,12 +244,11 @@ export class Chart {
 	 * @param shade whether to add shaded relief
 	 */
 	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol', nade: boolean = true, kenare: boolean = true, shade: boolean = false) {
+		svg.setAttribute('viewBox',
+			`${this.projection.left} ${this.projection.top}
+			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
 		svg.textContent = ''; // clear the layer
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-		const cx = (this.projection.right + this.projection.left)/2;
-		const cy = (this.projection.bottom + this.projection.top)/2;
-		const s = Math.max(this.projection.right - this.projection.left, this.projection.bottom - this.projection.top);
-		g.setAttribute('transform', `scale(${2/s}, ${2/s}) translate(${-cx}, ${-cy})`);
 		svg.appendChild(g);
 
 		let nadorang = 'none';
@@ -262,9 +261,9 @@ export class Chart {
 				const min = (i !== 0) ? i*DEPTH_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== DEPTH_COLORS.length-1) ? (i+1)*DEPTH_STEP : Number.POSITIVE_INFINITY;
 				this.fill([...surface.nodos].filter(n => n.biome === 'samud' && -n.gawe >= min && -n.gawe < max),
-					g, DEPTH_COLORS[i]);
+					g, DEPTH_COLORS[i]); // TODO: enforce contiguity of shallow ocean?
 			}
-			nadorang = DEPTH_COLORS[0];
+			nadorang = DEPTH_COLORS[0]; // TODO: outline ocean + cerni nade?
 		}
 
 		if (zemrang === 'lugi') { // color the land light green
@@ -307,7 +306,6 @@ export class Chart {
 					hover.appendChild(text);
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
-					console.assert([...civ.nodos].filter(n => n.biome !== 'samud').length > 0, civ.getPopulation(), [...civ.nodos].filter(n => n.biome !== 'samud'));
 					this.fill([...civ.nodos].filter(n => n.biome !== 'samud'), titledG,
 						'none', '#000', 0.7).setAttribute('pointer-events', 'all');
 				}

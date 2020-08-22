@@ -8,6 +8,8 @@
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
+    <link rel="stylesheet" href="style.css">
+
     <title>Dunhamar &ndash; fantasy map generator</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
@@ -87,7 +89,7 @@
           <div class="tab-pane fade show active" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="planet-type">Shape</label>
@@ -99,7 +101,7 @@
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.value)">
+                        <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked)">
                         <label class="custom-control-label" for="planet-locked">Tidally-locked</label>
                       </div>
                     </div>
@@ -123,7 +125,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9" id="planet-map">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9" id="planet-map">
                 </div>
               </div>
             </div>
@@ -132,7 +134,7 @@
           <div class="tab-pane fade" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="terrain-seme">Random seed</label>
@@ -166,7 +168,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
                     <filter id="blur">
@@ -181,7 +183,7 @@
           <div class="tab-pane fade" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
             <div class="container mt-2">
               <div class="row">
-                <div class="col-xs-12 col-md-4 col-lg-3">
+                <div class="scrolling-sidebar col-xs-12 col-md-4 col-lg-3">
                   <form>
                     <div class="form-group">
                       <label for="history-seme">Random seed</label>
@@ -212,7 +214,7 @@
                   </form>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
                     <filter id="blur">
@@ -228,137 +230,139 @@
             <div class="container mt-2">
               <div class="row">
                 <div class="col-xs-12 col-md-4 col-lg-3">
-                  <form>
-                    <div class="form-group">
-                      <label for="map-projection">Projection</label>
-                      <select class="custom-select" id="map-projection">
-                        <option value="equirectangular">Basic</option>
-                        <option value="mercator">Navigational</option>
-                        <option value="azimuthal-equidistant">Polar</option>
-                        <option selected value="eckert">Equal-area</option>
-                        <option value="bonne">Regional (classical)</option>
-                        <option value="conformal-conic">Regional (modern)</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-dixe">Orientation</label>
-                      <select class="custom-select" id="map-dixe">
-                        <option selected value="norde">North-up</option>
-                        <option value="sude">South-up</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-dongwestia">Central meridian</label>
-                      <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-zemrang">Terrain color</label>
-                      <select class="custom-select" id="map-zemrang">
-                        <option value="baki">White</option>
-                        <option value="huyi">Gray</option>
-                        <option selected value="lugi">Green</option>
-                        <option value="jivi">Biomes</option>
-                        <option value="politiki">Political</option>
-                         <option value="gawia">Heightmap</option>
-                     </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-marorang">Sea color</label>
-                      <select class="custom-select" id="map-marorang">
-                        <option value="baki">White</option>
-                        <option value="huyi">Gray</option>
-                        <option selected value="nili">Blue</option>
-                        <option value="cerni">Black</option>
-                        <option value="gawia">Heightmap</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="map-filter">Color filter</label>
-                      <select class="custom-select" id="map-filter">
-                        <option selected value="nol">None</option>
-                        <option value="pili">Sepia</option>
-                        <option value="bakocerni">Grayscale</option>
-                        <option value="mirdi">Pastel</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <h6>Terrain style</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
-                        <label class="form-check-label" for="map-zemforme-kale">Plain</label>
+                  <div class="scrolling-sidebar">
+                    <form>
+                      <div class="form-group">
+                        <label for="map-projection">Projection</label>
+                        <select class="custom-select" id="map-projection">
+                          <option value="equirectangular">Basic</option>
+                          <option value="mercator">Navigational</option>
+                          <option value="azimuthal-equidistant">Polar</option>
+                          <option selected value="eckert">Equal-area</option>
+                          <option value="bonne">Regional (classical)</option>
+                          <option value="conformal-conic">Regional (modern)</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
-                        <label class="form-check-label" for="map-zemforme-desene">Textured</label>
+                      <div class="form-group">
+                        <label for="map-dixe">Orientation</label>
+                        <select class="custom-select" id="map-dixe">
+                          <option selected value="norde">North-up</option>
+                          <option value="sude">South-up</option>
+                        </select>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <h6>Sea style</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
-                        <label class="form-check-label" for="map-mar-kale">Plain</label>
+                      <div class="form-group">
+                        <label for="map-dongwestia">Central meridian</label>
+                        <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
-                        <label class="form-check-label" for="map-mar-linye">Textured</label>
+                      <div class="form-group">
+                        <label for="map-zemrang">Terrain color</label>
+                        <select class="custom-select" id="map-zemrang">
+                          <option value="baki">White</option>
+                          <option value="huyi">Gray</option>
+                          <option selected value="lugi">Green</option>
+                          <option value="jivi">Biomes</option>
+                          <option value="politiki">Political</option>
+                           <option value="gawia">Heightmap</option>
+                       </select>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <h6>City style</h6>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
-                        <label class="form-check-label" for="map-site-nol">Plain</label>
+                      <div class="form-group">
+                        <label for="map-marorang">Sea color</label>
+                        <select class="custom-select" id="map-marorang">
+                          <option value="baki">White</option>
+                          <option value="huyi">Gray</option>
+                          <option selected value="nili">Blue</option>
+                          <option value="cerni">Black</option>
+                          <option value="gawia">Heightmap</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                        <label class="form-check-label" for="map-site-binde">Dots</label>
+                      <div class="form-group">
+                        <label for="map-filter">Color filter</label>
+                        <select class="custom-select" id="map-filter">
+                          <option selected value="nol">None</option>
+                          <option value="pili">Sepia</option>
+                          <option value="bakocerni">Grayscale</option>
+                          <option value="mirdi">Pastel</option>
+                        </select>
                       </div>
-                      <div class="form-check">
-                        <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
-                        <label class="form-check-label" for="map-site-grafe">Textured</label>
+                      <div class="form-group">
+                        <h6>Terrain style</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
+                          <label class="form-check-label" for="map-zemforme-kale">Plain</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
+                          <label class="form-check-label" for="map-zemforme-desene">Textured</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-nade">
-                        <label class="custom-control-label" for="map-nade">Rivers</label>
+                      <div class="form-group">
+                        <h6>Sea style</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
+                          <label class="form-check-label" for="map-mar-kale">Plain</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
+                          <label class="form-check-label" for="map-mar-linye">Textured</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-kenare">
-                        <label class="custom-control-label" for="map-kenare">Borders</label>
+                      <div class="form-group">
+                        <h6>City style</h6>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
+                          <label class="form-check-label" for="map-site-nol">Plain</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
+                          <label class="form-check-label" for="map-site-binde">Dots</label>
+                        </div>
+                        <div class="form-check">
+                          <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
+                          <label class="form-check-label" for="map-site-grafe">Textured</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-saye">
-                        <label class="custom-control-label" for="map-saye">Shaded relief</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-nade">
+                          <label class="custom-control-label" for="map-nade">Rivers</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                        <label class="custom-control-label" for="map-zemnete">Graticule</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-kenare">
+                          <label class="custom-control-label" for="map-kenare">Borders</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                        <label class="custom-control-label" for="map-dawnete">Windrose network</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-saye">
+                          <label class="custom-control-label" for="map-saye">Shaded relief</label>
+                        </div>
                       </div>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                        <label class="custom-control-label" for="map-pontopine">Windrose</label>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-zemnete">
+                          <label class="custom-control-label" for="map-zemnete">Graticule</label>
+                        </div>
                       </div>
-                    </div>
-                    <button type="button" class="btn btn-block btn-primary" id="map-apply">Update</button>
-                  </form>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-dawnete">
+                          <label class="custom-control-label" for="map-dawnete">Windrose network</label>
+                        </div>
+                      </div>
+                      <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                          <input type="checkbox" class="custom-control-input" id="map-pontopine">
+                          <label class="custom-control-label" for="map-pontopine">Windrose</label>
+                        </div>
+                      </div>
+                      <button type="button" class="btn btn-block btn-primary" id="map-apply">Update</button>
+                    </form>
+                  </div>
                 </div>
 
-                <div class="col-xs-12 col-md-8 col-lg-9">
+                <div class="zemgrafe col-xs-12 col-md-8 col-lg-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
                     <filter id="blur">
@@ -404,8 +408,8 @@
       }
 
       function disableRotationParams(locked) {
-        $('#planet-day').prop('disabled', locked); // rotation period
-        $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
+          $('#planet-day').prop('disabled', locked); // rotation period
+          $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
       }
     </script>
   </body>
