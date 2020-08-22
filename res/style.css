@@ -1,5 +1,6 @@
 .scrolling-sidebar {
     overflow: auto;
+    padding-bottom: 1em;
 }
 
 .zemgrafe {
@@ -7,9 +8,12 @@
 }
 
 @media screen and (min-width: 768px) {
-    .scrolling-sidebar, .zemgrafe {
-        padding-bottom: 1em;
+    .scrolling-sidebar {
         padding-right: 1em;
-        height: 80vh;
+        height: 75vh;
+    }
+
+    .zemgrafe {
+        height: 75vh;
     }
 }
