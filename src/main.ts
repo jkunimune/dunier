@@ -118,36 +118,9 @@ function planetApply() {
 
 
 /**
- * Once the page is ready, start the algorithm!
- */
-$(document).ready(() => {
-	console.log("ready!"); // TODO: automatically generate the first map
-}); // TODO: warn before leaving page
-
-
-/**
- * When the planet button is clicked, call its function
- */
-$('#planet-apply').on('click', () => {
-	const btn = $('#planet-apply');
-	const rediLoge = $('#planet-redi');
-	const ladaLoge = $('#planet-lada');
-	btn.prop('disabled', true);
-	rediLoge.hide();
-	ladaLoge.show();
-	setTimeout(() => {
-		planetApply()
-		btn.prop('disabled', false);
-		ladaLoge.hide();
-		rediLoge.show();
-	}, 0);
-});
-
-
-/**
  * Generate the heightmap and biomes on the planet's surface.
  */
-$('#terrain-apply').on('click', () => {
+function terrainApply() {
 	console.log("jena zemforme...");
 	const randomSeme = Number($('#terrain-seme').val());
 	const numContinents = Number($('#terrain-continents').val()) * 2;
@@ -168,13 +141,13 @@ $('#terrain-apply').on('click', () => {
 	mapper.depict(surface, null, $('#terrain-map')[0], 'jivi', 'nili');
 
 	console.log("fina!");
-});
+}
 
 
 /**
  * Generate the countries on the planet's surface.
  */
-$('#history-apply').on('click', () => {
+function historyApply() {
 	console.log("jena histore...");
 	const randomSeme = Number($('#history-seme').val());
 	const year = Number($('#history-nen').val());
@@ -193,13 +166,13 @@ $('#history-apply').on('click', () => {
 	const mapper = new Chart(new Azimuthal(surface));
 	mapper.depict(surface, world, $('#history-map')[0], 'politiki', 'nili');
 	console.log("fina!");
-});
+}
 
 
 /**
  * Generate a final formatted map.
  */
-$('#map-apply').on('click', () => {
+function mapApply() {
 	console.log("grafa zemgrafe...");
 	const projection = $('#map-projection').val();
 	const zemrang = $('#map-zemrang').val();
@@ -223,4 +196,88 @@ $('#map-apply').on('click', () => {
 
 	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade);
 	console.log("fina!");
+}
+
+
+/**
+ * Once the page is ready, start the algorithm!
+ */
+$(document).ready(() => {
+	console.log("ready!"); // TODO: automatically generate the first map
+}); // TODO: warn before leaving page
+
+
+/**
+ * When the planet button is clicked, call its function
+ */
+$('#planet-apply').on('click', () => {
+	const btn = $('#planet-apply');
+	const rediLoge = $('#planet-redi');
+	const ladaLoge = $('#planet-lada');
+	btn.prop('disabled', true);
+	rediLoge.hide();
+	ladaLoge.show();
+	setTimeout(() => {
+		planetApply();
+		btn.prop('disabled', false);
+		ladaLoge.hide();
+		rediLoge.show();
+	}, 1);
+});
+
+
+/**
+ * When the terrain button is clicked, do its thing
+ */
+$('#terrain-apply').on('click', () => {
+	const btn = $('#terrain-apply');
+	const rediLoge = $('#terrain-redi');
+	const ladaLoge = $('#terrain-lada');
+	btn.prop('disabled', true);
+	rediLoge.hide();
+	ladaLoge.show();
+	setTimeout(() => {
+		terrainApply();
+		btn.prop('disabled', false);
+		ladaLoge.hide();
+		rediLoge.show();
+	}, 1);
+});
+
+
+/**
+ * When the history button is clicked, activate its purpose.
+ */
+$('#history-apply').on('click', () => {
+	const btn = $('#history-apply');
+	const rediLoge = $('#history-redi');
+	const ladaLoge = $('#history-lada');
+	btn.prop('disabled', true);
+	rediLoge.hide();
+	ladaLoge.show();
+	setTimeout(() => {
+		historyApply();
+		btn.prop('disabled', false);
+		ladaLoge.hide();
+		rediLoge.show();
+	}, 1);
+});
+
+
+/**
+ * When the map button is clicked, reveal its true form.
+ */
+$('#map-apply').on('click', () => {
+	const btn = $('#map-apply');
+	const rediLoge = $('#map-redi');
+	const ladaLoge = $('#map-lada');
+	btn.prop('disabled', true);
+	rediLoge.hide();
+	ladaLoge.show();
+	setTimeout(() => {
+		mapApply();
+		btn.prop('disabled', false);
+		ladaLoge.hide();
+		rediLoge.show();
+	}, 1);
 });
