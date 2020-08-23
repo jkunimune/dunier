@@ -35,17 +35,9 @@ let world: World = null;
 
 
 /**
- * Once the page is ready, start the algorithm!
- */
-$(document).ready(() => {
-	console.log("ready!"); // TODO: automatically generate the first map
-}); // TODO: warn before leaving page
-
-
-/**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
-$('#planet-apply').on('click', () => {
+function planetApply() {
 	console.log("jena planete...");
 	const planetType = $('#planet-type').val(); // read input
 	const tidallyLocked = $('#planet-locked').prop('checked');
@@ -119,8 +111,36 @@ $('#planet-apply').on('click', () => {
 		{
 			responsive: true,
 		}
-	).then(() => {});
+	).then(() => {
+	});
 	console.log("fina!");
+}
+
+
+/**
+ * Once the page is ready, start the algorithm!
+ */
+$(document).ready(() => {
+	console.log("ready!"); // TODO: automatically generate the first map
+}); // TODO: warn before leaving page
+
+
+/**
+ * When the planet button is clicked, call its function
+ */
+$('#planet-apply').on('click', () => {
+	const btn = $('#planet-apply');
+	const rediLoge = $('#planet-redi');
+	const ladaLoge = $('#planet-lada');
+	btn.prop('disabled', true);
+	rediLoge.hide();
+	ladaLoge.show();
+	setTimeout(() => {
+		planetApply()
+		btn.prop('disabled', false);
+		ladaLoge.hide();
+		rediLoge.show();
+	}, 0);
 });
 
 

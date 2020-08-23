@@ -121,7 +121,15 @@
                       <label for="planet-tilt">Inclinación axial</label>
                       <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
                     </div>
-                    <button type="button" class="btn btn-block btn-primary" id="planet-apply">Aplicar</button>
+                    <button type="button" class="btn btn-block btn-primary" id="planet-apply">
+                      <span id="planet-redi" style="display: inline">
+                        Aplicar
+                      </span>
+                      <span id="planet-lada" style="display: none">
+                        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                        Trabajando…
+                      </span>
+                    </button>
                   </form>
                 </div>
 
