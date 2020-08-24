@@ -249,7 +249,11 @@ $('#planet-apply, #planet-tab').on('click', () => {
 	rediLoge.hide();
 	ladaLoge.show();
 	setTimeout(() => {
-		planetApply();
+		try {
+			planetApply();
+		} catch (error) {
+			console.error(error)
+		}
 		btn.prop('disabled', false);
 		ladaLoge.hide();
 		rediLoge.show();
@@ -268,7 +272,11 @@ $('#terrain-apply, #terrain-tab').on('click', () => {
 		rediLoge.hide();
 		ladaLoge.show();
 		setTimeout(() => {
-			terrainApply();
+			try {
+				terrainApply();
+			} catch (error) {
+				console.error(error);
+			}
 			btn.prop('disabled', false);
 			ladaLoge.hide();
 			rediLoge.show();
@@ -289,7 +297,11 @@ $('#history-apply, #history-tab').on('click', () => {
 		rediLoge.hide();
 		ladaLoge.show();
 		setTimeout(() => {
-			historyApply();
+			try {
+				historyApply();
+			} catch (error) {
+				console.error(error);
+			}
 			btn.prop('disabled', false);
 			ladaLoge.hide();
 			rediLoge.show();
@@ -310,7 +322,11 @@ $('#map-apply, #map-tab').on('click', () => {
 		rediLoge.hide();
 		ladaLoge.show();
 		setTimeout(() => {
-			mapApply();
+			try {
+				mapApply();
+			} catch (error) {
+				console.error(error);
+			}
 			btn.prop('disabled', false);
 			ladaLoge.hide();
 			rediLoge.show();
