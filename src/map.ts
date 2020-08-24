@@ -288,7 +288,6 @@ export class Chart {
 				this.fill([...surface.nodos].filter(n => n.biome !== 'samud' && n.gawe >= min && n.gawe < max),
 					g, ALTITUDE_COLORS[i]);
 			}
-			nadorang = DEPTH_COLORS[0];
 		}
 
 		if (nade) {

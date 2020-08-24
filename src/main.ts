@@ -92,31 +92,40 @@ function planetApply() {
 			throw err;
 	}
 
-	console.log("grafa...");
-	const {x, y, z, I} = surface.parameterize(18);
-	Plotly.react(
-		$('#planet-map')[0],
-		[{
-			type: 'surface',
-			x: x,
-			y: y,
-			z: z,
-			surfacecolor: I,
-			cmin: 0,
-			cmax: 1.5,
-			colorscale: TERRAIN_COLORMAP,
-			showscale: false,
-			lightposition: {x: 1000, y: 0, z: 0},
-			hoverinfo: "none",
-		}],
-		{
-			margin: {l: 20, r: 20, t: 20, b: 20},
-		},
-		{
-			responsive: true,
-		}
-	).then(() => {
-	});
+	const plotDiv = $('#planet-map');
+	if (plotDiv.is(':visible')) {
+		console.log("grafa...");
+		const {x, y, z, I} = surface.parameterize(18);
+		Plotly.react(
+			plotDiv[0],
+			[{ // TODO: only do this when the plot is out of date
+				type: 'surface',
+				x: x,
+				y: y,
+				z: z,
+				surfacecolor: I,
+				cmin: 0,
+				cmax: 1.5,
+				colorscale: TERRAIN_COLORMAP,
+				showscale: false,
+				lightposition: {x: 1000, y: 0, z: 0},
+				hoverinfo: "none",
+				contours: {x: {highlight: false}, y: {highlight: false}, z: {highlight: false}},
+			}],
+			{
+				margin: {l: 20, r: 20, t: 20, b: 20},
+				scene: {
+					xaxis: {showspikes: false},
+					yaxis: {showspikes: false},
+					zaxis: {showspikes: false}
+				},
+			},
+			{
+				responsive: true,
+			}
+		).then(() => {
+		});
+	}
 
 	console.log("fina!");
 	planetOutOfSync = false;
@@ -228,23 +237,23 @@ $(document).ready(() => {
 }); // TODO: warn before leaving page
 
 /**
- * When the planet button is clicked, call its function
+ * When the planet button is clicked, call its function.
+ * Note that this does not check if the planet is out of sync; it
+ * must update every time the tab is opened because of Plotly.
  */
 $('#planet-apply, #planet-tab').on('click', () => {
-	if (planetOutOfSync) {
-		const btn = $('#planet-apply');
-		const rediLoge = $('#planet-redi');
-		const ladaLoge = $('#planet-lada');
-		btn.prop('disabled', true);
-		rediLoge.hide();
-		ladaLoge.show();
-		setTimeout(() => {
-			planetApply();
-			btn.prop('disabled', false);
-			ladaLoge.hide();
-			rediLoge.show();
-		}, 10);
-	}
+	const btn = $('#planet-apply');
+	const rediLoge = $('#planet-redi');
+	const ladaLoge = $('#planet-lada');
+	btn.prop('disabled', true);
+	rediLoge.hide();
+	ladaLoge.show();
+	setTimeout(() => {
+		planetApply();
+		btn.prop('disabled', false);
+		ladaLoge.hide();
+		rediLoge.show();
+	}, 10);
 });
 
 /**
