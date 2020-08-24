@@ -30,6 +30,10 @@ const TERRAIN_COLORMAP = [
 ];
 
 
+let planetOutOfSync = true;
+let terrainOutOfSync = true;
+let historyOutOfSync = true;
+let mapOutOfSync = true;
 let surface: Surface = null;
 let world: World = null;
 
@@ -113,7 +117,9 @@ function planetApply() {
 		}
 	).then(() => {
 	});
+
 	console.log("fina!");
+	planetOutOfSync = false;
 }
 
 
@@ -121,6 +127,9 @@ function planetApply() {
  * Generate the heightmap and biomes on the planet's surface.
  */
 function terrainApply() {
+	if (planetOutOfSync)
+		planetApply();
+
 	console.log("jena zemforme...");
 	const randomSeme = Number($('#terrain-seme').val());
 	const numContinents = Number($('#terrain-continents').val()) * 2;
@@ -141,6 +150,7 @@ function terrainApply() {
 	mapper.depict(surface, null, $('#terrain-map')[0], 'jivi', 'nili');
 
 	console.log("fina!");
+	terrainOutOfSync = false;
 }
 
 
@@ -148,6 +158,9 @@ function terrainApply() {
  * Generate the countries on the planet's surface.
  */
 function historyApply() {
+	if (terrainOutOfSync)
+		terrainApply();
+
 	console.log("jena histore...");
 	const randomSeme = Number($('#history-seme').val());
 	const year = Number($('#history-nen').val());
@@ -165,7 +178,9 @@ function historyApply() {
 	console.log("grafa...");
 	const mapper = new Chart(new Azimuthal(surface));
 	mapper.depict(surface, world, $('#history-map')[0], 'politiki', 'nili');
+
 	console.log("fina!");
+	historyOutOfSync = false;
 }
 
 
@@ -173,6 +188,9 @@ function historyApply() {
  * Generate a final formatted map.
  */
 function mapApply() {
+	if (historyOutOfSync)
+		historyApply();
+
 	console.log("grafa zemgrafe...");
 	const projection = $('#map-projection').val();
 	const zemrang = $('#map-zemrang').val();
@@ -195,7 +213,9 @@ function mapApply() {
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 
 	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade);
+
 	console.log("fina!");
+	mapOutOfSync = false;
 }
 
 
@@ -204,80 +224,109 @@ function mapApply() {
  */
 $(document).ready(() => {
 	console.log("ready!"); // TODO: automatically generate the first map
+	$('#map-apply').click();
 }); // TODO: warn before leaving page
-
 
 /**
  * When the planet button is clicked, call its function
  */
-$('#planet-apply').on('click', () => {
-	const btn = $('#planet-apply');
-	const rediLoge = $('#planet-redi');
-	const ladaLoge = $('#planet-lada');
-	btn.prop('disabled', true);
-	rediLoge.hide();
-	ladaLoge.show();
-	setTimeout(() => {
-		planetApply();
-		btn.prop('disabled', false);
-		ladaLoge.hide();
-		rediLoge.show();
-	}, 1);
+$('#planet-apply, #planet-tab').on('click', () => {
+	if (planetOutOfSync) {
+		const btn = $('#planet-apply');
+		const rediLoge = $('#planet-redi');
+		const ladaLoge = $('#planet-lada');
+		btn.prop('disabled', true);
+		rediLoge.hide();
+		ladaLoge.show();
+		setTimeout(() => {
+			planetApply();
+			btn.prop('disabled', false);
+			ladaLoge.hide();
+			rediLoge.show();
+		}, 10);
+	}
 });
-
 
 /**
  * When the terrain button is clicked, do its thing
  */
-$('#terrain-apply').on('click', () => {
-	const btn = $('#terrain-apply');
-	const rediLoge = $('#terrain-redi');
-	const ladaLoge = $('#terrain-lada');
-	btn.prop('disabled', true);
-	rediLoge.hide();
-	ladaLoge.show();
-	setTimeout(() => {
-		terrainApply();
-		btn.prop('disabled', false);
-		ladaLoge.hide();
-		rediLoge.show();
-	}, 1);
+$('#terrain-apply, #terrain-tab').on('click', () => {
+	if (terrainOutOfSync) {
+		const btn = $('#terrain-apply');
+		const rediLoge = $('#terrain-redi');
+		const ladaLoge = $('#terrain-lada');
+		btn.prop('disabled', true);
+		rediLoge.hide();
+		ladaLoge.show();
+		setTimeout(() => {
+			terrainApply();
+			btn.prop('disabled', false);
+			ladaLoge.hide();
+			rediLoge.show();
+		}, 10);
+	}
 });
 
 
 /**
  * When the history button is clicked, activate its purpose.
  */
-$('#history-apply').on('click', () => {
-	const btn = $('#history-apply');
-	const rediLoge = $('#history-redi');
-	const ladaLoge = $('#history-lada');
-	btn.prop('disabled', true);
-	rediLoge.hide();
-	ladaLoge.show();
-	setTimeout(() => {
-		historyApply();
-		btn.prop('disabled', false);
-		ladaLoge.hide();
-		rediLoge.show();
-	}, 1);
+$('#history-apply, #history-tab').on('click', () => {
+	if (historyOutOfSync) {
+		const btn = $('#history-apply');
+		const rediLoge = $('#history-redi');
+		const ladaLoge = $('#history-lada');
+		btn.prop('disabled', true);
+		rediLoge.hide();
+		ladaLoge.show();
+		setTimeout(() => {
+			historyApply();
+			btn.prop('disabled', false);
+			ladaLoge.hide();
+			rediLoge.show();
+		}, 10);
+	}
 });
 
 
 /**
  * When the map button is clicked, reveal its true form.
  */
-$('#map-apply').on('click', () => {
-	const btn = $('#map-apply');
-	const rediLoge = $('#map-redi');
-	const ladaLoge = $('#map-lada');
-	btn.prop('disabled', true);
-	rediLoge.hide();
-	ladaLoge.show();
-	setTimeout(() => {
-		mapApply();
-		btn.prop('disabled', false);
-		ladaLoge.hide();
-		rediLoge.show();
-	}, 1);
+$('#map-apply, #map-tab').on('click', () => {
+	if (mapOutOfSync) {
+		const btn = $('#map-apply');
+		const rediLoge = $('#map-redi');
+		const ladaLoge = $('#map-lada');
+		btn.prop('disabled', true);
+		rediLoge.hide();
+		ladaLoge.show();
+		setTimeout(() => {
+			mapApply();
+			btn.prop('disabled', false);
+			ladaLoge.hide();
+			rediLoge.show();
+		}, 10);
+	}
+});
+
+$('#planet-panel :input').on('change', () => {
+	planetOutOfSync = true;
+	terrainOutOfSync = true;
+	historyOutOfSync = true;
+	mapOutOfSync = true;
+});
+
+$('#terrain-panel :input').on('change', () => {
+	terrainOutOfSync = true;
+	historyOutOfSync = true;
+	mapOutOfSync = true;
+});
+
+$('#history-panel :input').on('change', () => {
+	historyOutOfSync = true;
+	mapOutOfSync = true;
+});
+
+$('#map-panel :input').on('change', () => {
+	mapOutOfSync = true;
 });
