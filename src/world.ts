@@ -11,7 +11,7 @@ import {Language, ProtoLanguage, DeuteroLanguage, Convention, transcribe} from "
 const TIME_STEP = 100; // [year]
 const START_OF_HUMAN_HISTORY = -3000; // [BCE]
 const AUTHORITARIANISM = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
-const LIBERTARIANISM = 5e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
+const LIBERTARIANISM = 2e-7; // [1/year/km^2] rate at which tribes coalesce into kingdoms
 const NATIONALISM = 3.0; // [] factor by which a military is stronger if conquering people to whom they can talk
 const SOCIAL_DECAY_PERIOD = 1000; // [year] time it takes for an empire's might to decay by 2.7
 const CULTURAL_MEMORY = 160; // [year] time it takes to erase a people's language
@@ -42,7 +42,7 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['potistan',    0.1],
 	['barxojangal', 0.1],
 	['jangal',      1.0],
-	['lage',        0.3],
+	['lage',        3.0],
 	['taige',       1.0],
 	['piristan',    0.3],
 	['grasistan',   3.0],
@@ -103,7 +103,10 @@ export class World {
 					this.civs.add(new Civ(tile, this.civs.size, this, rng));
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
-				if (rng.probability(LIBERTARIANISM*TIME_STEP*demomultia)) // use the population without technology correction for balancing
+				let linguisticModifier = NATIONALISM;
+				if (ruler.languages.get(tile).isIntelligible(ruler.officialLanguage))
+					linguisticModifier = 1;
+				if (rng.probability(LIBERTARIANISM*TIME_STEP*demomultia*linguisticModifier)) // use the population without technology correction for balancing
 					this.civs.add(new Civ(tile, this.civs.size, this, rng, ruler.technology));
 			}
 		}
