@@ -1,7 +1,7 @@
 // surface.ts: defines the geometric classes
 
 import {Random} from "./random.js";
-import {delaunayTriangulate, legendreP2, legendreP4, legendreP6, linterp} from "./utils.js";
+import {delaunayTriangulate, legendreP2, legendreP4, legendreP6, linterp, Vector} from "./utils.js";
 
 const INTEGRATION_RESOLUTION = 32;
 const TILE_AREA = 30000; // typical area of a tile in km^2
@@ -56,13 +56,29 @@ export class Surface {
 		this.axis = this.xyz(0, Math.PI/2).minus(this.xyz(0, 0)).cross(
 			this.xyz(0, Math.PI).minus(this.xyz(0, Math.PI/2))).norm(); // figure out which way the coordinate system points
 
-		const nodos = []; // remember to clear the old nodes, if necessary
+		const nodos: Nodo[] = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
 			nodos.push(new Nodo(i, this.randomPoint(rng), this)); // push a bunch of new ones
 		this.nodos = new Set(nodos); // keep that list, but save it as a set as well
-		this.triangles = new Set(); // also start a new set for the triangles
 
-		delaunayTriangulate(this);
+		const partition = this.partition();
+		const triangulation = delaunayTriangulate( // call the delaunay triangulation subroutine
+			nodos.map((n: Nodo) => n.pos),
+			nodos.map((n: Nodo) => n.normal),
+			partition.nodos.map((n: Nodo) => n.pos),
+			partition.nodos.map((n: Nodo) => n.normal),
+			partition.triangles.map((t: Triangle) => t.vertices.map((n: Nodo) => partition.nodos.indexOf(n)))
+		);
+		this.triangles = new Set(); // unpack the resulting triangles
+		for (const [ia, ib, ic] of triangulation.triangles) {
+			this.triangles.add(new Triangle(nodos[ia], nodos[ib], nodos[ic]));
+		}
+		for (let i = 0; i < nodos.length; i ++) {
+			for (const j of triangulation.parentage[i]) // as well as the parentage
+				nodos[i].parents.push(nodos[j]);
+			for (const [j, k] of triangulation.between[i]) // and separation information
+				nodos[i].between.push([nodos[j], nodos[k]]);
+		}
 
 		for (let i = 1; i < nodos.length; i ++) { // after all that's through, some nodes won't have any parents
 			if (nodos[i].parents.length === 0) { // if that's so,
@@ -387,7 +403,6 @@ export class Nodo {
 	public neighbors: Map<Nodo, Edge>;
 	public between: Nodo[][];
 	public parents: Nodo[];
-	public vertices: Triangle[];
 
 	public gawe: number;
 	public terme: number;
@@ -415,7 +430,8 @@ export class Nodo {
 		this.nord = this.normal.cross(this.dong);
 
 		this.neighbors = new Map();
-		this.parents = null;
+		this.parents = [];
+		this.between = [];
 
 		this.terme = 0;
 		this.barxe = 0;
@@ -442,31 +458,6 @@ export class Nodo {
 		else
 			return this.neighbors.get(that).triangleL;
 	}
-
-	/**
-	 * check for the existence of a Triangle containing these three nodes in that order.
-	 * @returns boolean
-	 */
-	inTriangleWith(b: Nodo, c: Nodo): boolean {
-		if (!this.neighbors.has(b))
-			return false;
-		return this.leftOf(b).acrossFrom(this.neighbors.get(b)) === c;
-	}
-
-	/**
-	 * return the Triangles that border this in widershins order.
-	 */
-	getPolygon(): Triangle[] {
-		if (this.vertices === undefined) { // don't compute this unless you must
-			this.vertices = [this.neighbors.values().next().value.triangleL]; // start with an arbitrary neighboring triangle
-			while (this.vertices.length < this.neighbors.size) {
-				const lastTriangle = this.vertices[this.vertices.length - 1];
-				const nextNode = lastTriangle.clockwiseOf(this);
-				this.vertices.push(this.leftOf(nextNode));
-			}
-		}
-		return this.vertices;
-	}
 }
 
 
@@ -480,7 +471,6 @@ export class Triangle {
 	public edges: Edge[];
 	public neighbors: Map<Triangle, Edge>;
 	public surface: Surface;
-	public children: Triangle[];
 	public circumcenter: Place;
 
 	public gawe: number
@@ -492,7 +482,6 @@ export class Triangle {
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
 		this.neighbors = new Map(); // adjacent triangles
 		this.surface = a.surface;
-		this.children = null;
 
 		for (let i = 0; i < 3; i ++) { // check each pair to see if they are already connected
 			const node0 = this.vertices[i], node1 = this.vertices[(i+1)%3];
@@ -510,29 +499,6 @@ export class Triangle {
 		}
 	}
 
-	/**
-	 * determine whether this triangle contains the given Node, using its neighbors to
-	 * hint at the direction of the surface. must return false for points outside the
-	 * triangle's circumcircle.
-	 */
-	contains(r: Nodo): boolean {
-		const totalNormal = this.vertices[0].normal.plus(
-			this.vertices[1].normal).plus(this.vertices[2].normal);
-		if (r.normal.dot(totalNormal) < 0)
-			return false; // check alignment on the surface
-		for (let i = 0; i < 3; i ++) {
-			const a = this.vertices[i];
-			const na = a.normal;
-			const b = this.vertices[(i+1)%3];
-			const nb = b.normal;
-			const edgeDirection = b.pos.minus(a.pos);
-			const normalDirection = na.plus(nb);
-			const boundDirection = normalDirection.cross(edgeDirection);
-			if (boundDirection.dot(r.pos.minus(a.pos)) < 0)
-				return false; // check each side condition
-		}
-		return true;
-	}
 
 	/**
 	 * compute the φ-λ parameterization of the circumcenter in the plane normal to the sum
@@ -588,16 +554,6 @@ export class Triangle {
 	}
 
 	/**
-	 * Find and return the vertex clockwise of the given edge.
-	 */
-	clockwiseOf(node: Nodo): Nodo {
-		for (let i = 0; i < 3; i ++)
-			if (this.vertices[i] === node)
-				return this.vertices[(i+2)%3];
-		throw "This node isn't even in this triangle.";
-	}
-
-	/**
 	 * Find and return the vertex widershins of the given edge.
 	 */
 	widershinsOf(node: Nodo): Nodo {
@@ -635,11 +591,6 @@ export class Edge {
 		node1.neighbors.set(node0, this);
 	}
 
-	seppuku() {
-		this.node0.neighbors.delete(this.node1);
-		this.node1.neighbors.delete(this.node0);
-	}
-
 	toString(): string {
 		return `${this.node0.pos}--${this.node1.pos}`;
 	}
@@ -655,71 +606,3 @@ export interface Place {
 }
 
 
-/**
- * A simple class to bind vector operations
- */
-export class Vector {
-	public x: number;
-	public y: number;
-	public z: number;
-
-	constructor(x: number, y: number, z: number) {
-		this.x = x;
-		this.y = y;
-		this.z = z;
-	}
-
-	times(a: number): Vector {
-		return new Vector(
-			this.x * a,
-			this.y * a,
-			this.z * a);
-	}
-
-	over(a: number): Vector {
-		return new Vector(
-			this.x / a,
-			this.y / a,
-			this.z / a);
-	}
-
-	plus(that: Vector): Vector {
-		return new Vector(
-			this.x + that.x,
-			this.y + that.y,
-			this.z + that.z);
-	}
-
-	minus(that: Vector): Vector {
-		return new Vector(
-			this.x - that.x,
-			this.y - that.y,
-			this.z - that.z);
-	}
-
-	dot(that: Vector): number {
-		return (
-			this.x*that.x +
-			this.y*that.y +
-			this.z*that.z);
-	}
-
-	cross(that: Vector): Vector {
-		return new Vector(
-			this.y*that.z - this.z*that.y,
-			this.z*that.x - this.x*that.z,
-			this.x*that.y - this.y*that.x);
-	}
-
-	sqr(): number {
-		return this.dot(this);
-	}
-
-	norm(): Vector {
-		return this.times(Math.pow(this.sqr(), -0.5));
-	}
-
-	toString(): string {
-		return `<${Math.trunc(this.x)}, ${Math.trunc(this.y)}, ${Math.trunc(this.z)}>`;
-	}
-}

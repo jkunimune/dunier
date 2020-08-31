@@ -3,8 +3,8 @@
 // @ts-ignore
 import TinyQueue from './lib/tinyqueue.js';
 
-import {Nodo, Place, Surface, Triangle, Vector} from "./surface.js";
-import {linterp} from "./utils.js";
+import {Nodo, Place, Surface, Triangle} from "./surface.js";
+import {linterp, Vector} from "./utils.js";
 import {Convention} from "./language.js";
 import {Civ, World} from "./world.js";
 

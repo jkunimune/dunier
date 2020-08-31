@@ -3,9 +3,9 @@
 // @ts-ignore
 import TinyQueue from './lib/tinyqueue.js';
 
-import {Surface, Triangle, Nodo, Vector} from "./surface.js";
+import {Surface, Triangle, Nodo} from "./surface.js";
 import {Random} from "./random.js";
-import {argmax, union} from "./utils.js";
+import {argmax, union, Vector} from "./utils.js";
 
 
 const TERME_NOISE_LEVEL = 12;
