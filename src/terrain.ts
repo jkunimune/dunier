@@ -129,7 +129,7 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random) {
 			rng.discrete(0, 0); // but call rng anyway to keep things consistent
 		}
 		else { // and the rest with a method similar to that above
-			const prefParents: Nodo[] = []; // TODO: sort possible parents by altitude
+			const prefParents: Nodo[] = [];
 			for (const pair of node.between) { // if this node is directly between two nodes
 				if (pair[0].plate === pair[1].plate) { // of the same plate
 					if (!prefParents.includes(pair[0]))
@@ -138,10 +138,9 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random) {
 						prefParents.push(pair[1]);
 				}
 			}
-			if (prefParents.length > 0) // in any case, just take the plate parent pseudorandomly
-				node.plate = prefParents[rng.discrete(0, prefParents.length)].plate;
-			else
-				node.plate = node.parents[rng.discrete(0, node.parents.length)].plate; // if there are no pairs, just choose from the full set
+			const options = (prefParents.length > 0) ? prefParents : node.parents;
+			options.sort((a: Nodo, b: Nodo) => a.plate%2 - b.plate%2); // sort these by altitude to make the randomness more stable
+			node.plate = options[rng.discrete(0, options.length)].plate; // in any case, just take the plate parent pseudorandomly
 		}
 	}
 
