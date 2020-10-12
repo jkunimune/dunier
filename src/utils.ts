@@ -79,6 +79,97 @@ export function loadTSV(filename: string): string[][] {
 	return arr;
 }
 
+/**
+ * perform a Nelder-Mead simplex search to find a local minimum of the function f. this implementation is not well-
+ * optimized for large numbers of dimensions
+ * @param f the function to minimize
+ * @param x0 the initial guess
+ * @param simplexScale the distance along each dimension to step when constructing the initial simplex
+ * @param tol the relative error threshold for termination
+ */
+export function minimizeNelderMead(f: (n: number[]) => number, x0: number[], simplexScale: number[], tol:number) {
+	const α = 1, γ = 2, ρ = 1/2., σ = 1/2.; // declare values
+
+	const x: number[][] = []; // the vertices of the simplex
+	const fx: number[] = []; // the values of f at the vertices
+	for (let i = 0; i <= x0.length; i ++) {
+		x.push(x0.slice()); // initialize the vertices as the guess
+		if (i < x0.length)
+			x[i][i] += simplexScale[i]; // with multidimensional perturbations
+		fx.push(f(x[i])); // and get the initial values
+	}
+	if (!Number.isFinite(fx[x0.length]))
+		throw new Error(`Initial guess yielded bunk value: ${fx[x0.length]}`);
+
+	while (true) { // now for the iterative part
+		const rank = []; // sort indices of dimensions from worst (highest) to best (lowest)
+		for (let i = 0; i < x.length; i ++)
+			rank.push(i);
+		rank.sort((a: number, b: number) => fx[b] - fx[a]);
+
+		let completelyConvergedInSpace = true;
+		for (let j = 0; j < x0.length; j ++) { // check termination conditions
+			if (Math.abs(x[rank[x0.length]][j] - x[rank[0]][j]) > tol*Math.abs(simplexScale[j]))
+				completelyConvergedInSpace = false;
+		}
+		if (completelyConvergedInSpace)
+			return x[rank[x0.length]];
+
+		const xC = new Array(x0.length).fill(0);
+		for (let j = 0; j < x0.length; j ++) {
+			for (let i = 0; i < x0.length + 1; i++) { // compute the best-guess centroid
+				if (i != rank[0])
+					xC[j] += x[i][j]/x0.length;
+			}
+		}
+
+		const xR = new Array(x0.length);
+		for (let j = 0; j < x0.length; j ++)
+			xR[j] = xC[j] + α*(xC[j] - x[rank[0]][j]); // compute the reflected point
+		const fxR = f(xR);
+
+		if (fxR < fx[rank[x0.length]]) { // if this is the best point yet
+			const xE = new Array(x0.length);
+			for (let j = 0; j < x0.length; j ++)
+				xE[j] = xC[j] + γ*(xR[j] - xC[j]); // compute the expanded point
+			const fxE = f(xE);
+
+			if (fxE < fxR) {
+				x[rank[0]] = xE;
+				fx[rank[0]] = fxE;
+			}
+			else {
+				x[rank[0]] = xR;
+				fx[rank[0]] = fxR;
+			}
+		}
+		else if (fxR < fx[rank[1]]) { // if this is better than the second worst
+			x[rank[0]] = xR;
+			fx[rank[0]] = fxR;
+		}
+		else {
+			const xS = new Array(x0.length);
+			for (let j = 0; j < x0.length; j ++)
+				xS[j] = xC[j] + ρ*(x[rank[0]][j] - xC[j]); // compute the contracted point
+			const fxS = f(xS);
+
+			if (fxS < fx[rank[0]]) { // if that's better than the reflected point
+				x[rank[0]] = xS;
+				fx[rank[0]] = fxS;
+			}
+			else {
+				for (let i = 0; i < x0.length + 1; i ++) { // if it's all complete garbage
+					if (i != rank[x0.length]) {
+						for (let j = 0; j < x0.length; j ++) {
+							x[i][j] = x[rank[x0.length]][j] + σ*(x[i][j] - x[x0.length][j]); // move all vertices toward the best one
+							fx[i] = f(x[i]);
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 /**
  * cover a field of points in Delaunay triangles.
@@ -86,17 +177,40 @@ export function loadTSV(filename: string): string[][] {
  * @param normals the normal vector of the triangulated circle at each point, assumed to be [0,0,1] if not specified.
  * @param sample optional set of dummy points to seed the surface
  * @param sampleNormals normal vectors to go with sample
- * @param partition optional set of starter triangles to establish topology, represented as arrays of sample indices
+ * @param partition optional set of starter triangles to establish topology, represented as arrays of sample indices.
+ * the partition must contain all points if given, and must be given for non-planes.
  */
-export function delaunayTriangulate(points: Vector[], normals: Vector[] = null,
-									sample: Vector[] = [], sampleNormals: Vector[] = [], partition: number[][] = []
+export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new Vector(0, 0, 1)],
+									sample: Vector[] = [], sampleNormals: Vector[] = [new Vector(0, 0, 1)],
+									partition: number[][] = []
 									): {triangles: number[][], parentage: number[][], between: number[][][]} {
-	const nodos: Nodo[] = [];
+	// const stuff = partition.length === 0;
+	if (partition.length === 0) { // start by creating a partition if we have none
+		let xMax = Number.NEGATIVE_INFINITY, xMin = Number.POSITIVE_INFINITY;
+		let yMax = Number.NEGATIVE_INFINITY, yMin = Number.POSITIVE_INFINITY;
+		for (let i = 0; i < points.length; i ++) {
+			if (points[i].z !== 0) // assert that it is in fact a plane (remove this if I ever need to implement for not a plane)
+				throw "me yexo no bina autonomi fene da no plate.";
+			if (points[i].x > xMax) xMax = points[i].x; // and get the bounding box in the x-y plane
+			if (points[i].x < xMin) xMin = points[i].x;
+			if (points[i].y > yMax) yMax = points[i].y;
+			if (points[i].y < yMin) yMin = points[i].y;
+		}
+		sample = [
+			new Vector(2*xMin - xMax, 2*yMin - yMax, 0), // set the sample to the corners of the bounding boxen
+			new Vector(2*xMax - xMin, 2*yMin - yMax, 0),
+			new Vector(2*xMax - xMin, 2*yMax - yMin, 0),
+			new Vector(2*xMin - xMax, 2*yMax - yMin, 0),
+		];
+		partition = [[0, 1, 2], [2, 3, 0]]; // and triangulate it trivially
+	}
+
+	const nodos: Nodo[] = []; // convert the primitive inputs into our own object formats
 	for (let i = 0; i < sample.length; i ++)
-		nodos.push(new Nodo(i - sample.length, sample[i], sampleNormals[i]));
-	const triangles = partition.map((t: number[]) => new Triangle(nodos[t[0]], nodos[t[1]], nodos[t[2]])); // convert the primitive inputs into our own object formats
+		nodos.push(new Nodo(i - sample.length, sample[i], sampleNormals[i%sampleNormals.length]));
+	const triangles = partition.map((t: number[]) => new Triangle(nodos[t[0]], nodos[t[1]], nodos[t[2]]));
 	for (let i = 0; i < points.length; i ++)
-		nodos.push(new Nodo(i, points[i], normals[i]));
+		nodos.push(new Nodo(i, points[i], normals[i%normals.length]));
 
 	for (const node of nodos.slice(sample.length)) { // for each node,
 		const containing = findSmallestEncompassing(node, triangles); // find out which triangle it's in
@@ -104,22 +218,21 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = null,
 			triangles.push(new Triangle(
 				node,
 				containing.nodos[j],
-				containing.nodos[(j+1)%3]));
+				containing.nodos[(j + 1) % 3]));
 		}
-		containing.children = triangles.slice(triangles.length-3); // we could remove containing from triangles now, but it would be a waste of time
-
+		containing.children = triangles.slice(triangles.length - 3); // we could remove containing from triangles now, but it would be a waste of time
 		const flipQueue = []; // start a list of edges to try flipping
 		for (let i = 0; i < 3; i ++)
 			flipQueue.push(new Edge(containing.nodos[i], containing.nodos[(i+1)%3])); // and put the edges of this triangle on it
-		const flipHistory = flipEdges(flipQueue, [], node, triangles); // do the flipping thing
+		const flipHistory = flipEdges(flipQueue, triangles, [], node); // do the flipping thing
 		node.parents = [];
 		for (const triangle of node.triangles) { // its parentage is all currently connected non-dummy nodes
 			if (triangle.children === null && widershinsOf(node, triangle).i >= 0)
 				node.parents.push(widershinsOf(node, triangle));
 		}
 		for (const edge of flipHistory) { // keep track of the edges that this node flipped; it is "between" those endpoints
-			if (edge[0].i >= 0 && edge[1].i >= 0)
-				node.between.push([edge[0], edge[1]]);
+			if (edge.a.i >= 0 && edge.b.i >= 0)
+				node.between.push([edge.a, edge.b]);
 		}
 	}
 
@@ -140,81 +253,141 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = null,
  * remove all Triangles and Edges connected to the given node, and return a list of new
  * Triangles between the surrounding nodes to replace them.
  * @param node the dummy node to be removed
+ * @return array of new Triangles
  */
-function removeNode(node: Nodo) {
+function removeNode(node: Nodo): Triangle[] {
 	const oldTriangles: Triangle[] = [[...node.triangles].filter((t: Triangle) => t.children === null)[0]]; // starting with an arbitrary neighboring triangle
 	while (true) { // trace the graph to find the surrounding triangles in widershins order
-		const prev = oldTriangles[oldTriangles.length - 1];
-		const med = clockwiseOf(node, prev);
-		const next = triangleOf(node, med);
-		if (next !== oldTriangles[0])
-			oldTriangles.push(next);
-		else
-			break;
-	}
+		let prev = oldTriangles[oldTriangles.length - 1];
+		let med = clockwiseOf(node, prev);
+		let next;
+		try {
+			next = triangleOf(node, med);
+		} catch {
+			next = null;
+		}
 
+		if (next === null) { // if you come up short,
+			while (true) { // do the same thing in the other direction
+				let prev = oldTriangles[0];
+				let med = widershinsOf(node, prev);
+				let next;
+				try {
+					next = triangleOf(med, node);
+				} catch {
+					next = null;
+				}
+
+				if (next === null)
+					break;
+				else
+					oldTriangles.splice(0, 0, next);
+			}
+			return removeNodeHull(node, oldTriangles); // and call the exterior node function
+		}
+
+		else if (next === oldTriangles[0]) // otherwise go until you get back to whence you started
+			break;
+		else
+			oldTriangles.push(next);
+	}
+	return removeNodeInterior(node, oldTriangles); // and then call the embeded node function
+}
+
+/**
+ * remove all Triangles and Edges connected to the given interior node, given the Triangles that completely surround it.
+ * @param node the dummy node to be removed
+ * @param surroundings all triangles connected to node to be destroyed, in widershins order
+ */
+function removeNodeInterior(node: Nodo, surroundings: Triangle[]): Triangle[] {
 	const newTriangles: Triangle[] = [];
 	const flipQueue: Edge[] = [], flipImmune: Edge[] = [];
 	arbitrationLoop:
-	for (let i0 = 0; i0 < oldTriangles.length; i0 ++) { // we have to pick an arbitrary border node to start this process
-		const a = clockwiseOf(node, oldTriangles[i0]); // choosing i0 is harder than it may seem if we want to avoid coincident triangles
-		for (let j = 2; j < oldTriangles.length-1; j ++) { // run through all the edges we're going to make
-			const c = clockwiseOf(node, oldTriangles[(i0 + j)%oldTriangles.length]);
+	for (let i0 = 0; i0 < surroundings.length; i0 ++) { // we have to pick an arbitrary border node to start this process
+		const a = clockwiseOf(node, surroundings[i0]); // choosing i0 is harder than it may seem if we want to avoid coincident triangles
+		for (let j = 2; j < surroundings.length-1; j ++) { // run through all the edges we're going to make
+			const c = clockwiseOf(node, surroundings[(i0 + j)%surroundings.length]);
 			if (isAdjacentTo(a, c)) // and check if any of them already exist
 				continue arbitrationLoop; // if so, try a different start
 		}
-		for (let j = 0; j < oldTriangles.length; j ++) { // begin fixing the gap left by this null node
-			const b = widershinsOf(node, oldTriangles[(i0 + j)%oldTriangles.length]);
-			const c = clockwiseOf(node, oldTriangles[(i0 + j)%oldTriangles.length]);
-			oldTriangles[j].children = []; // by disabling the triangles that used to fill it
+		for (let j = 0; j < surroundings.length; j ++) { // begin fixing the gap left by this null node
+			const b = widershinsOf(node, surroundings[(i0 + j)%surroundings.length]);
+			const c = clockwiseOf(node, surroundings[(i0 + j)%surroundings.length]);
+			surroundings[j].children = []; // by disabling the triangles that used to fill it
 			if (j >= 2)
 				newTriangles.push(new Triangle(a, b, c)); // and filling it with new, naively placed triangles
-			if (j >= 2 && j < oldTriangles.length-1)
+			if (j >= 2 && j < surroundings.length-1)
 				flipQueue.push(new Edge(a, c)); // keep track of the edges to be flipped
 			flipImmune.push(new Edge(b, c)); // and to avoid being flipped
 		} // if you make it to the end of the for loop, then arbitrary was a fine choice
 		break; // and we can proceed
 	}
 
-	flipEdges(flipQueue, flipImmune, null, newTriangles); // do the part where we make it delaunay
+	flipEdges(flipQueue, newTriangles, flipImmune); // do the part where we make it delaunay
+	return newTriangles;
+}
+
+/**
+ * remove all Triangles and Edges connected to the given hull node, given the Triangles that connect it to the interior.
+ * @param node the dummy node to be removed
+ * @param neighbors all triangles connected to node to be destroyed, ordered from right to left from Node's perspective
+ */
+function removeNodeHull(node: Nodo, neighbors: Triangle[]): Triangle[] {
+	const newTriangles: Triangle[] = [];
+	const flipQueue: Edge[] = [];
+	for (let i = neighbors.length-1; i > 0; i --) { // for each edge connected to node
+		const a = widershinsOf(node, neighbors[i-1]); // consider what would happen if you flipped it
+		const b = clockwiseOf(node, neighbors[i-1]);
+		const c = clockwiseOf(node, neighbors[i]);
+		const [ap, bp, cp] = flatten(a, b, c); // project their positions into the normal plane
+		if (isRightSideOut(ap, bp, cp)) { // if the resulting triangle could be considered a triangle by the weakest possible definition
+			neighbors[i-1].children = neighbors[i].children = []; // flip it
+			neighbors.splice(i - 1, 1, new Triangle(c, node, a)); // you get a new triangle in neighbors
+			newTriangles.push(new Triangle(a, b, c)); // and a new triangle in newTriangles
+			flipQueue.push(new Edge(a, c));
+		}
+	}
+	for (const triangle of node.triangles) // make sure these are all gone
+		triangle.children = [];
+	flipEdges(flipQueue, newTriangles); // and do some Delaunay checking
 	return newTriangles;
 }
 
 /**
  * Go through the queue and flip any non-delaunay edges. After flipping an edge, add
  * adjacent edges to the queue. Do not check edges that have newestNode as an endpoint or
- * that are in immune. allTriangles is the running list of all triangles that must be
- * kept up to date.
+ * that are in immune.
  * @param queue initial edges to check
+ * @param triangles the list of all Triangles, which must be kept up to date
  * @param immune edges that do not need to be checked
  * @param newestNode a node for which any edges that touch it need not be checked
- * @param triangles the list of all Triangles, which must be kept up to date
  * @return Array of Edges that were flipped
  */
-export function flipEdges(queue: Edge[], immune: Edge[], newestNode: Nodo, triangles: Triangle[]): Nodo[][] {
-	const flipped = [];
+export function flipEdges(queue: Edge[], triangles: Triangle[],
+						  immune: Edge[] = [], newestNode: Nodo = null): Edge[] {
+	const flipped: Edge[] = [];
 
 	while (queue.length > 0) { // go through that queue
 		const edge = queue.pop(); // extract the needed geometric entities
 		const a = edge.a;
 		const c = edge.b;
-		const abc = triangleOf(c, a);
-		const cda = triangleOf(a, c);
-		const b = (abc.nodos[0] === edge.a) ? abc.nodos[1] : (abc.nodos[1] === edge.a) ? abc.nodos[2] : abc.nodos[0];
-		const d = (cda.nodos[0] === edge.b) ? cda.nodos[1] : (cda.nodos[1] === edge.b) ? cda.nodos[2] : cda.nodos[0];
+		let abc = null, cda = null;
+		try { // be careful when getting the hypothetical cross edge
+			abc = triangleOf(c, a)
+			cda = triangleOf(a, c);
+		} catch { // if you can't find a triangle on one side or the other
+			continue; // it might mean you've hit the end of the partition (I'm sure it's fine)
+		}
+		const b = widershinsOf(a, abc);
+		const d = widershinsOf(c, cda);
 
-		const nHat = a.n.plus(b.n).plus(c.n).plus(d.n); // average their normal vectors
-		const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
-		const uHat = nHat.cross(vHat).norm();
-		const ap = {x: a.r.dot(vHat), y: a.r.dot(uHat)}; // project their positions into the normal plane
-		const bp = {x: b.r.dot(vHat), y: b.r.dot(uHat)};
-		const cp = {x: c.r.dot(vHat), y: c.r.dot(uHat)};
-		const dp = {x: d.r.dot(vHat), y: d.r.dot(uHat)};
+		const [ap, bp, cp, dp] = flatten(a, b, c, d); // project their positions into the normal plane
 		if (!isDelaunay(ap, bp, cp, dp)) { // and check for non-Delaunay edges
 			triangles.push(new Triangle(b, c, d)); // if it is so, add new triangles
 			triangles.push(new Triangle(d, a, b));
 			abc.children = cda.children = triangles.slice(triangles.length-2); // remove the old ones by assigning them children
-			flipped.push([a, c]); // record this
+			flipped.push(new Edge(a, c)); // record this
+			immune.push(new Edge(a, c));
 			const perimeter = [new Edge(a, b), new Edge(b, c), new Edge(c, d), new Edge(d, a)];
 			addToQueueLoop:
 			for (const nextEdge of perimeter) { // and add the neighbors to the queue
@@ -229,6 +402,22 @@ export function flipEdges(queue: Edge[], immune: Edge[], newestNode: Nodo, trian
 	}
 
 	return flipped;
+}
+
+/**
+ * Average the normal vectors of the given nodes and project them into the plane perpendicular to that normal.
+ * @param nodes
+ */
+function flatten(...nodes: Nodo[]) {
+	let n = new Vector(0, 0, 0);
+	for (const node of nodes)
+		n = n.plus(node.n);
+	const v = n.cross((n.y === 0 && n.z === 0) ? new Vector(0, 1, 0) : new Vector(1, 0, 0)).norm();
+	const u = n.cross(v).norm();
+	const projected = [];
+	for (const node of nodes)
+		projected.push({x: node.r.dot(v), y: node.r.dot(u)});
+	return projected;
 }
 
 /**
@@ -247,7 +436,14 @@ function isDelaunay(a: {x: number, y: number}, b: {x: number, y: number},
 			mat[0][ i     ] * mat[1][(i+1)%3] * mat[2][(i+2)%3] -
 			mat[0][(i+2)%3] * mat[1][(i+1)%3] * mat[2][ i     ];
 	}
-	return det <= 0;
+	return det < 0;
+}
+
+/**
+ * Check whether a--b--c is a right-side-out triangle (return false if it's within machine precision of colinearity)
+ */
+function isRightSideOut(a: {x: number, y: number}, b: {x: number, y: number}, c: {x: number, y: number}): boolean {
+	return a.x*(b.y - c.y) + b.x*(c.y - a.y) + c.x*(a.y - b.y) > 1e-14*(a.x**2 + a.y**2);
 }
 
 /**
@@ -264,7 +460,7 @@ function findSmallestEncompassing(node: Nodo, triangles: Iterable<Triangle>): Tr
 				return findSmallestEncompassing(node, triangle.children);
 		}
 	}
-	throw "no eureka tingon da indu.";
+	throw new RangeError("no eureka tingon da indu");
 }
 
 /**
@@ -342,12 +538,12 @@ function isAdjacentTo(a: Nodo, b: Nodo) {
  * a delaunay node (voronoi polygon)
  */
 class Nodo {
-	public i: number;
-	public r: Vector;
-	public n: Vector;
-	public triangles: Set<Triangle>;
-	public parents: Nodo[];
-	public between: Nodo[][];
+	public i: number; // index
+	public r: Vector; // position
+	public n: Vector; // normal vector
+	public triangles: Set<Triangle>; // attached triangles
+	public parents: Nodo[]; // parent nodes
+	public between: Nodo[][]; // parent nodes it separates
 
 	constructor(i: number, r: Vector, n: Vector) {
 		this.i = i;

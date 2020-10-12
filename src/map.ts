@@ -4,14 +4,17 @@
 import TinyQueue from './lib/tinyqueue.js';
 
 import {Nodo, Place, Surface, Triangle} from "./surface.js";
-import {linterp, Vector} from "./utils.js";
+import {delaunayTriangulate, linterp, minimizeNelderMead, Vector} from "./utils.js";
 import {Convention} from "./language.js";
 import {Civ, World} from "./world.js";
 
 const MAP_PRECISION = 1e-1;
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
-const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2
+const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2 TODO: display rivers that connect lakes to shown rivers
+const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
+const N_DEGREES = 6; // number of line segments into which to break one radian of arc
+const RALF_NUM_CANDIDATES = 1; // number of sizeable longest shortest paths to try using for the label
 
 const BIOME_COLORS = new Map([
 	['zeme',        '#93d953'],
@@ -88,152 +91,22 @@ const DEPTH_COLORS = [
 
 
 /**
- * create an ordered Iterator of segments that form all of these lines, aggregating where applicable.
- * aggregation may behave unexpectedly if some members of lines contain nonendpoints that are endpoints of others.
- * @param lines Set of lists of points to be combined and pathified.
- */
-function trace(lines: Iterable<Place[]>): PathSegment[] {
-	const queue = [...lines];
-	const consolidated: Set<Place[]> = new Set(); // first, consolidate
-	const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
-	const tails: Map<Place, Place[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
-	const torsos: Map<Place, {containing: Place[], index: number}> = new Map(); // map from midpoints to line containing midpoint
-	while (queue.length > 0) {
-		for (const l of consolidated) {
-			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
-				throw Error("up top!");
-			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
-				throw Error("up slightly lower!");
-		}
-		let line = [...queue.pop()]; // check each given line (we've only shallow-copied until now, so make sure you don't alter the input lines themselves)
-		const head = line[0], tail = line[line.length-1];
-		consolidated.add(line); // add it to the list
-		if (!heads.has(head))  heads.set(head, []); // and connect it to these existing sets
-		heads.get(head).push(line);
-		if (!tails.has(tail))  tails.set(tail, []);
-		tails.get(tail).push(line);
-		for (let i = 1; i < line.length - 1; i ++)
-			torsos.set(line[i], {containing: line, index: i});
-
-		for (const l of consolidated)
-			if (!heads.has(l[0]) || !tails.has(l[l.length-1]))
-				throw Error("that was quick.");
-
-		for (const endpoint of [head, tail]) { // first, on either end...
-			if (torsos.has(endpoint)) { // does it run into the middle of another?
-				const {containing, index} = torsos.get(endpoint); // then that one must be cut in half
-				const fragment = containing.slice(index);
-				containing.splice(index + 1);
-				consolidated.add(fragment);
-				if (endpoint === head)  tails.set(endpoint, []);
-				else                    heads.set(endpoint, []);
-				heads.get(endpoint).push(fragment);
-				tails.get(endpoint).push(containing);
-				tails.get(fragment[fragment.length-1])[tails.get(fragment[fragment.length-1]).indexOf(containing)] = fragment;
-				torsos.delete(endpoint);
-				for (let i = 1; i < fragment.length - 1; i ++)
-					torsos.set(fragment[i], {containing: fragment, index: i});
-			}
-		}
-
-		for (const l of consolidated) {
-			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
-				throw Error(`i broke it ${l[0].φ} -> ${l[l.length-1].φ}`);
-			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
-				throw Error(`yoo broke it! ${l[0].φ} -> ${l[l.length-1].φ}`);
-		}
-
-		if (tails.has(head)) { // does its beginning connect to another?
-			if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
-				line = combine(tails.get(head)[0], line); // put them together
-		}
-		if (heads.has(tail)) { // does its end connect to another?
-			if (heads.get(tail).length === 1 && tails.get(tail).length === 1) // if these fit together exclusively
-				line = combine(line, heads.get(tail)[0]); // put them together
-		}
-	}
-
-	function combine(a: Place[], b: Place[]): Place[] {
-		consolidated.delete(b); // delete b
-		heads.delete(b[0]);
-		tails.delete(b[0]);
-		tails.get(b[b.length-1])[tails.get(b[b.length-1]).indexOf(b)] = a; // repoint the tail reference from b to a
-		for (let i = 1; i < b.length; i ++) { // add b's elements to a
-			torsos.set(b[i-1], {containing: a, index: a.length - 1});
-			a.push(b[i]);
-		}
-		return a;
-	}
-
-	let output = [];
-	for (const line of consolidated) { // then do the conversion
-		output.push({type: 'M', args: [line[0].φ, line[0].λ]});
-		for (let i = 1; i < line.length; i ++)
-			output.push({type: 'L', args: [line[i].φ, line[i].λ]});
-	}
-	return output;
-}
-
-/**
- * create an ordered Iterator of segments that form the boundary of this.
- * @param nodos Set of Node that are part of this group.
- * @return Array of PathSegments, ordered widdershins.
- */
-function outline(nodos: Set<Nodo>): PathSegment[] {
-	const accountedFor = new Set(); // keep track of which Edge have been done
-	const output: PathSegment[] = [];
-	for (let ind of nodos) { // look at every included node
-		for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
-			if (nodos.has(way))    continue; // (really we only care about excluded way)
-			let edge = ind.neighbors.get(way);
-			if (accountedFor.has(edge)) continue; // (and can ignore edges we've already hit)
-
-			const loopIdx = output.length;
-			const start = edge; // the edge between them defines the start of the loop
-			do {
-				const next = ind.leftOf(way); // look for the next triangle, going widdershins
-				const vertex = next.circumcenter; // pick out its circumcenter to plot
-				output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
-				accountedFor.add(edge); // check this edge off
-				if (nodos.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
-					ind = next.acrossFrom(edge); // advance one of the state nodos
-				else
-					way = next.acrossFrom(edge);
-				edge = ind.neighbors.get(way); // and update edge
-			} while (edge !== start); // continue for the full loop
-
-			output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
-			output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
-		}
-	}
-
-	return output;
-}
-
-
-/**
- * something that can be dropped into an SVG <path>.
- */
-interface PathSegment {
-	type: string;
-	args: number[];
-}
-
-
-/**
  * a class to handle all of the graphical arrangement stuff.
  */
 export class Chart {
 	private projection: MapProjection;
+	private testText: SVGTextElement;
+	private labelIndex: number;
 
 
 	constructor(projection: MapProjection) {
 		this.projection = projection;
+		this.labelIndex = 0;
 	}
 
 	/**
 	 * do your thing
-	 * @param surface the surface that we'e mapping
+	 * @param surface the surface that we're mapping
 	 * @param world the world on that surface, if we're mapping human features
 	 * @param svg the SVG element on which to draw everything
 	 * @param zemrang the color scheme for the land areas
@@ -242,24 +115,36 @@ export class Chart {
 	 * @param nade whether to add rivers
 	 * @param kenare whether to add state borders
 	 * @param shade whether to add shaded relief
+	 * @param civLabels whether to label countries
+	 * @param geoLabels whether to label mountain ranges and seas
+	 * @param fontSize the size of city labels and minimum size of country and biome labels
+	 * @param convention the transliteration convention to use for them
 	 */
-	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol', nade: boolean = true, kenare: boolean = true, shade: boolean = false) {
+	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol',
+		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
+		   civLabels: boolean = false, geoLabels: boolean = false,
+		   fontSize: number = 12, convention: Convention = Convention.NOVOYANGI) {
 		svg.setAttribute('viewBox',
 			`${this.projection.left} ${this.projection.top}
 			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
 		svg.textContent = ''; // clear the layer
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		g.setAttribute('id', 'jeni-zemgrafe');
 		svg.appendChild(g);
+
+		this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+		this.testText.setAttribute('class', 'zemgrafe-label');
+		this.testText.setAttribute('style', `font-size: 10;`);
+		svg.appendChild(this.testText);
 
 		let nadorang = 'none';
 		if (marorang === 'nili') { // color the sea deep blue
 			this.fill([...surface.nodos].filter(n => n.biome === 'samud'), g, BIOME_COLORS.get('samud'));
 			nadorang = BIOME_COLORS.get('samud');
-		}
-		else if (marorang === 'gawia') { // color the sea by altitude
-			for (let i = 0; i < DEPTH_COLORS.length; i ++) {
-				const min = (i !== 0) ? i*DEPTH_STEP : Number.NEGATIVE_INFINITY;
-				const max = (i !== DEPTH_COLORS.length-1) ? (i+1)*DEPTH_STEP : Number.POSITIVE_INFINITY;
+		} else if (marorang === 'gawia') { // color the sea by altitude
+			for (let i = 0; i < DEPTH_COLORS.length; i++) {
+				const min = (i !== 0) ? i * DEPTH_STEP : Number.NEGATIVE_INFINITY;
+				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Number.POSITIVE_INFINITY;
 				this.fill([...surface.nodos].filter(n => n.biome === 'samud' && -n.gawe >= min && -n.gawe < max),
 					g, DEPTH_COLORS[i]); // TODO: enforce contiguity of shallow ocean?
 			}
@@ -268,23 +153,20 @@ export class Chart {
 
 		if (zemrang === 'lugi') { // color the land light green
 			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('zeme'));
-		}
-		else if (zemrang === 'jivi') { // draw the biomes
+		} else if (zemrang === 'jivi') { // draw the biomes
 			for (const biome of BIOME_COLORS.keys())
 				if (biome !== 'samud')
 					this.fill([...surface.nodos].filter(n => n.biome === biome), g, BIOME_COLORS.get(biome));
-		}
-		else if (zemrang === 'politiki' && world !== null) { // draw the countries
+		} else if (zemrang === 'politiki' && world !== null) { // draw the countries
 			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('kagaze'));
 			const biggestCivs = new TinyQueue([...world.civs],
 				(a: Civ, b: Civ) => b.getPopulation() - a.getPopulation());
-			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i ++)
+			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i++)
 				this.fill([...biggestCivs.pop().nodos].filter(n => n.biome !== 'samud'), g, COUNTRY_COLORS[i]);
-		}
-		else if (zemrang === 'gawia') { // color the sea by altitude
-			for (let i = 0; i < ALTITUDE_COLORS.length; i ++) {
-				const min = (i !== 0) ? i*ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
-				const max = (i !== ALTITUDE_COLORS.length-1) ? (i+1)*ALTITUDE_STEP : Number.POSITIVE_INFINITY;
+		} else if (zemrang === 'gawia') { // color the sea by altitude
+			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
+				const min = (i !== 0) ? i * ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
+				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Number.POSITIVE_INFINITY;
 				this.fill([...surface.nodos].filter(n => n.biome !== 'samud' && n.gawe >= min && n.gawe < max),
 					g, ALTITUDE_COLORS[i]);
 			}
@@ -314,6 +196,13 @@ export class Chart {
 		if (shade) { // add relief shadows
 			this.shade(surface.triangles, g);
 		}
+
+		if (civLabels && world !== null) {
+			for (const civ of world.civs) {
+				if (civ.getPopulation() > 0)
+					this.label([...civ.nodos].filter(n => n.biome !== 'samud'), civ.getName(convention), svg, fontSize);
+			}
+		}
 	}
 
 	/**
@@ -330,7 +219,7 @@ export class Chart {
 		 stroke: string = 'none', strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
 		if (nodos.length <= 0)
 			return null;
-		const path = this.map(outline(new Set(nodos)), svg, smooth, true);
+		const path = this.draw(this.map(outline(new Set(nodos)), smooth, true), svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
 		return path;
@@ -347,7 +236,7 @@ export class Chart {
 	 */
 	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number,
 		   smooth: boolean = false): SVGPathElement {
-		const path = this.map(trace(strokes), svg, smooth, false);
+		const path = this.draw(this.map(trace(strokes), smooth, false), svg);
 		path.setAttribute('style',
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: round; stroke-linecap: round;`);
 		return path;
@@ -387,23 +276,272 @@ export class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
-			this.map(path, svg, false, true).setAttribute('style',
+			this.draw(this.map(path, false, true), svg).setAttribute('style',
 				`fill: '#000'; fill-opacity: ${1-brightness};`);
 		}
+	}
+
+	/**
+	 * add some text to this region using a simplified form of the RALF labelling algorithm. TODO: add citation
+	 * @param nodos the Nodos that comprise the region to be labelled.
+	 * @param label the text to place.
+	 * @param svg the SVG object on which to write the label.
+	 * @param minFontSize the smallest the label can be. if the label cannot fit inside the region with this font size,
+	 * no label will be placed.
+	 */
+	label(nodos: Nodo[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
+		this.testText.textContent = '..'+label+'..';
+		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
+		const aspect = boundBox.width/boundBox.height;
+		const mapScale = svg.clientWidth/(this.projection.right - this.projection.left); // and also the current size of the map in px for reference
+		const fontScale = boundBox.height/mapScale/10;
+		this.testText.textContent = '';
+
+		const path = this.map(outline(new Set(nodos)), false, true); // do the projection
+		for (let i = path.length - 1; i >= 1; i --) { // convert it into a simplified polygon
+			if (path[i].type === 'A') { // turn arcs into triscadecagons
+				const x0 = path[i-1].args[path[i-1].args.length-2], y0 = path[i-1].args[path[i-1].args.length-1];
+				const x1 = path[i].args[path[i].args.length-2], y1 = path[i].args[path[i].args.length-1];
+				const l = Math.hypot(x1 - x0, y1 - y0);
+				const r = (path[i].args[0] + path[i].args[1])/2;
+				const cx = 0, cy = 0; // XXX: this could be an actual calculation, but I know that the only time an arc will come up is when it is centered on the origin
+				const Δθ = 2*Math.asin(l/(2*r));
+				const θ0 = Math.atan2(y0 - cy, x0 - cx);
+				const nSegments = Math.ceil(N_DEGREES*Δθ);
+				const lineApprox = [];
+				for (let j = 1; j <= nSegments; j ++)
+					lineApprox.push({type: 'L', args: [
+							cx + r*Math.cos(θ0 + Δθ*j/nSegments),
+							cy + r*Math.sin(θ0 + Δθ*j/nSegments)]});
+				path.splice(i, 1, ...lineApprox);
+			}
+		}
+
+		while (path.length > SIMPLE_PATH_LENGTH) { // simplify path
+			let shortI = -1, minL = Number.POSITIVE_INFINITY;
+			for (let i = 1; i < path.length-1; i ++) {
+				if (path[i].type === 'L' && path[i+1].type === 'L') {
+					let l = Math.hypot(
+						path[i+1].args[0] - path[i-1].args[0], path[i+1].args[1] - path[i-1].args[1]);
+					if (l < minL) { // find the vertex whose removal results in the shortest line segment
+						minL = l;
+						shortI = i;
+					}
+				}
+			}
+			path.splice(shortI, 1); // and remove it
+		}
+		while (path.length < SIMPLE_PATH_LENGTH/2) { // complicate path
+			let longI = -1, maxL = Number.NEGATIVE_INFINITY;
+			for (let i = 1; i < path.length; i ++) {
+				if (path[i].type === 'L') {
+					let l = Math.hypot(
+						path[i].args[0] - path[i-1].args[0], path[i].args[1] - path[i-1].args[1]);
+					if (l > maxL) { // find the longest line segment
+						maxL = l;
+						longI = i;
+					}
+				}
+			}
+			path.splice(longI, 0, { // and split it
+				type: 'L',
+				args: [(path[longI].args[0] + path[longI-1].args[0])/2, (path[longI].args[1] + path[longI-1].args[1])/2]
+			});
+		}
+
+		interface Circumcenter {
+			x: number, y: number, r: number;
+			isContained: boolean;
+			edges: {length: number, clearance: number}[];
+		}
+
+		// estimate skeleton
+		const points: Vector[] = [];
+		for (const segment of path)
+			if (segment.type === 'L')
+				points.push(new Vector(segment.args[0], -segment.args[1], 0)); // note the minus sign: all calculations will be done with a sensibly oriented y axis
+		const triangulation = delaunayTriangulate(points); // start with a Delaunay triangulation of the border
+		const centers: Circumcenter[] = [];
+		for (let i = 0; i < triangulation.triangles.length; i ++) { // then convert that into a voronoi graph
+			const abc = triangulation.triangles[i];
+			const a = points[abc[0]];
+			const b = points[abc[1]];
+			const c = points[abc[2]];
+			const D = 2*(a.x*(b.y - c.y) + b.x*(c.y - a.y) + c.x*(a.y - b.y));
+			centers.push({
+				x:  (a.sqr() * (b.y - c.y) + b.sqr() * (c.y - a.y) + c.sqr() * (a.y - b.y)) / D, // calculating the circumcenters
+				y:  (a.sqr() * (c.x - b.x) + b.sqr() * (a.x - c.x) + c.sqr() * (b.x - a.x)) / D,
+				r: 0, isContained: false, edges: new Array(triangulation.triangles.length).fill(null),
+			});
+			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
+			centers[i].isContained = contains(path, {x: centers[i].x, y: -centers[i].y});
+			if (centers[i].isContained) {
+				for (let j = 0; j < i; j ++) {
+					if (centers[j].isContained) {
+						const def = triangulation.triangles[j]; // and recording adjacency
+						triangleFit:
+							for (let k = 0; k < 3; k++) {
+								for (let l = 0; l < 3; l++) {
+									if (abc[k] === def[(l + 1) % 3] && abc[(k + 1) % 3] === def[l]) {
+										const a = new Vector(centers[i].x, centers[i].y, 0);
+										const c = new Vector(centers[j].x, centers[j].y, 0);
+										const b = points[abc[k]], d = points[abc[(k + 1) % 3]];
+										const length = Math.sqrt(a.minus(c).sqr()); // compute the length of this edge
+										let clearance; // estimate of minimum space around this edge
+										const mid = b.plus(d).over(2);
+										if (a.minus(mid).dot(c.minus(mid)) < 0)
+											clearance = Math.sqrt(b.minus(d).sqr())/2;
+										else
+											clearance = Math.min(centers[i].r, centers[j].r);
+										centers[i].edges[j] = centers[j].edges[i] = {length: length, clearance: clearance};
+										break triangleFit;
+									}
+								}
+							}
+					}
+				}
+			}
+		}
+
+		let argmax = -1;
+		for (let i = 0; i < centers.length; i ++) { // find the circumcenter with the greatest clearance
+			if (centers[i].isContained && (argmax < 0 || centers[i].r > centers[argmax].r))
+				argmax = i;
+		}
+
+		const candidates: number[][] = [];
+		let minClearance = centers[argmax].r;
+		while (candidates.length < RALF_NUM_CANDIDATES) {
+			minClearance /= Math.sqrt(2); // gradually loosen a minimum clearance filter
+			const minLength = minClearance*aspect;
+			const usedPoints: Set<number> = new Set();
+			while (usedPoints.size < centers.length) {
+				const newEndpoint = longestShortestPath(
+					centers, (usedPoints.size > 0) ?usedPoints : new Set([argmax]), minClearance).points[0]; // find the point farthest from the paths you have checked TODO expand on this argmax thing to make sure check every exclave fore we start reducing the minimum
+				if (usedPoints.has(newEndpoint)) break;
+				const newShortestPath = longestShortestPath(
+					centers, new Set([newEndpoint]), minClearance); // find a new diverse longest shortest path with that as endpoin
+				if (newShortestPath.length >= minLength) { // if the label will fit,
+					candidates.push(newShortestPath.points); // take it
+					for (const point of newShortestPath.points)
+						usedPoints.add(point); // and look for a different one
+				}
+				else // if it won't
+					break; // reduce the required clearance and try again
+			}
+		}
+
+		let labelAxis = null, axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisSign = null;
+		for (const candidate of candidates) { // for each candidate label axis
+			let sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0;
+			for (let i = 0; i < candidate.length; i ++) {
+				sx += centers[candidate[i]].x;
+				sy += centers[candidate[i]].y;
+				sxx += centers[candidate[i]].x * centers[candidate[i]].x;
+				sxy += centers[candidate[i]].x * centers[candidate[i]].y;
+				syy += centers[candidate[i]].y * centers[candidate[i]].y;
+			}
+			const μx = sx/candidate.length, μy = sy/candidate.length;
+			const μxx = sxx/candidate.length - μx*μx;
+			const μxy = sxy/candidate.length - μy*μx;
+			const μyy = syy/candidate.length - μy*μy;
+			const m = (μyy - μxx + Math.sqrt(Math.pow(μyy - μxx, 2) + 4*μxy*μxy))/(2*μxy); // perform Deming regression to fit a line through it
+			const l = Math.sqrt(μxx + μyy); // reuse these moments to get a length scale
+			let a = 1/l/10000; // and use that line as the initial guess at a fit arc
+			let b = -m/Math.sqrt(m**2 + 1), c = 1/Math.sqrt(m**2 + 1);
+			let d = - a*(μx**2 + μy**2) - b*μx - c*μy;
+
+			[a, b, c, d] = minimizeNelderMead( // use Nelder-Mead to fit an arc
+				function(state: number[]) { // define error to be minimized as
+					const [a, b, c, d] = state;
+					const det = b**2 + c**2 - 4*a*d;
+					if (det <= 0) return Number.POSITIVE_INFINITY; // infinity if circle is empty, else
+					let err = 0;
+					for (let i = 0; i < candidate.length; i ++) {
+						const {x, y} = centers[candidate[i]];
+						const p = a*(x**2 + y**2) + b*x + c*y + d;
+						err += Math.pow(2*p/(1 + Math.sqrt(1 + 4*a*p)), 2); // sum of squares of distances to arc
+					}
+					return err + 0.1*Math.log(det)**2; // augmented with square of geometric distance of determinant from +1.0
+				},
+				[a, b, c, d],
+				[1/6/l, 1/6, 1/6, l/6],
+				1e-4,
+			);
+			const r = Math.sqrt(b**2 + c**2 - 4*a*d)/(2*Math.abs(a)), cx = -b/(2*a), cy = -c/(2*a); // convert the result into more natural parameters
+
+
+			const pL = centers[candidate[0]], pR = centers[candidate[candidate.length-1]];
+			const pM = centers[candidate[Math.floor(candidate.length/2)]];
+			let θL = Math.atan2(pL.y - cy, pL.x - cx); // determine the optimal angular placement TODO
+			let θR = Math.atan2(pR.y - cy, pR.x - cx);
+			const θM = Math.atan2(pM.y - cy, pM.x - cx);
+			if (pL.x > pR.x)
+				[θL, θR] = [θR, θL];
+
+			if (labelAxis === null) { // TODO: define an actual value function for these
+				labelAxis = candidate;
+				axisR = r;
+				axisCx = cx;
+				axisCy = cy;
+				axisΘL = θL;
+				axisΘR = θR;
+				axisSign = (
+					(Math.cos(θL) - Math.cos(θM))*(Math.sin(θR) - Math.sin(θM)) -
+					(Math.sin(θL) - Math.sin(θM))*(Math.cos(θR) - Math.cos(θM))) < 0;
+			}
+		}
+		const axisS = axisR*(((axisSign ? axisΘR - axisΘL : axisΘL - axisΘR) + 2*Math.PI)%(2*Math.PI));
+		const axisDR = axisS/aspect;
+
+		const arc = this.draw([ // make the arc in the SVG
+			{type: 'M', args: [axisCx + axisR*Math.cos(axisΘL), -(axisCy + axisR*Math.sin(axisΘL))]},
+			{type: 'A', args: [axisR, axisR, 0, 0, axisSign ? 0 : 1, axisCx + axisR*Math.cos(axisΘR), -(axisCy + axisR*Math.sin(axisΘR))]},
+		], svg);
+		arc.setAttribute('style', `fill: none; stroke: none;`);
+		arc.setAttribute('id', `labelArc${this.labelIndex}`);
+		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
+		textGroup.setAttribute('style', `font-size: ${axisDR/fontScale}`);
+		svg.appendChild(textGroup);
+		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
+		textPath.setAttribute('class', 'zemgrafe-label');
+		textPath.setAttribute('startOffset', '50%');
+		textPath.setAttribute('href', `#labelArc${this.labelIndex}`);
+		textGroup.appendChild(textPath);
+		textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
+
+		this.labelIndex += 1;
+
+		return null;
+	}
+
+	/**
+	 * convert the series of segments to an HTML path element and add it to the Element
+	 * @param segments
+	 * @param svg
+	 */
+	draw(segments: PathSegment[], svg: Element): SVGPathElement {
+		let str = ''; // create the d string
+		for (let i = 0; i < segments.length; i ++)
+			str += segments[i].type + segments[i].args.join(',') + ' ';
+
+		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+		path.setAttribute('d', str);
+		path.setAttribute('vector-effect', 'non-scaling-stroke');
+		return svg.appendChild(path); // put it in the SVG
 	}
 
 	/**
 	 * project and convert a list of SVG paths in latitude-longitude coordinates representing a series of closed paths
 	 * into an SVG.Path object, and add that Path to the given SVG.
 	 * @param segments ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
-	 * @param svg the SVG object on which to draw things
 	 * @param smooth an optional feature that will smooth the Path out into Bezier curves
 	 * @param closed if this is set to true, the map will make adjustments to account for its complete nature
 	 * @returns SVG.Path object
 	 */
-	map(segments: PathSegment[], svg: Element, smooth: boolean, closed: boolean): SVGPathElement {
+	map(segments: PathSegment[], smooth: boolean, closed: boolean): PathSegment[] {
 		if (segments.length === 0) // what're you trying to pull here?
-			return document.createElementNS('http://www.w3.org/2000/svg', 'path');
+			return [];
 
 		const sections = [];
 		let touchedEdge = false;
@@ -586,22 +724,7 @@ export class Chart {
 			}
 		}
 
-		let str = ''; // finally, put it in the <path>
-		for (let i = 0; i < cutPoints.length; i ++)
-			str += cutPoints[i].type + cutPoints[i].args.join(',') + ' ';
-
-		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-		path.setAttribute('d', str);
-		path.setAttribute('vector-effect', 'non-scaling-stroke');
-		return svg.appendChild(path);
-	}
-
-	transform(φ: number, λ: number): {x: number, y: number} {
-		const {x, y} = this.projection.project(φ, λ);
-		return {
-			x: (x - this.projection.left)/(this.projection.right - this.projection.left),
-			y: (y - this.projection.top)/(this.projection.bottom - this.projection.top)
-		};
+		return cutPoints;
 	}
 }
 
@@ -854,4 +977,200 @@ export class Azimuthal extends MapProjection {
 			{type: 'M', args: [0, linterp(φ1, this.surface.refLatitudes, this.surface.cumulDistances) - this.surface.height]},
 		];
 	}
+}
+
+/**
+ * create an ordered Iterator of segments that form all of these lines, aggregating where applicable.
+ * aggregation may behave unexpectedly if some members of lines contain nonendpoints that are endpoints of others.
+ * @param lines Set of lists of points to be combined and pathified.
+ */
+function trace(lines: Iterable<Place[]>): PathSegment[] {
+	const queue = [...lines];
+	const consolidated: Set<Place[]> = new Set(); // first, consolidate
+	const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
+	const tails: Map<Place, Place[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
+	const torsos: Map<Place, {containing: Place[], index: number}> = new Map(); // map from midpoints to line containing midpoint
+	while (queue.length > 0) {
+		for (const l of consolidated) {
+			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
+				throw Error("up top!");
+			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
+				throw Error("up slightly lower!");
+		}
+		let line = [...queue.pop()]; // check each given line (we've only shallow-copied until now, so make sure you don't alter the input lines themselves)
+		const head = line[0], tail = line[line.length-1];
+		consolidated.add(line); // add it to the list
+		if (!heads.has(head))  heads.set(head, []); // and connect it to these existing sets
+		heads.get(head).push(line);
+		if (!tails.has(tail))  tails.set(tail, []);
+		tails.get(tail).push(line);
+		for (let i = 1; i < line.length - 1; i ++)
+			torsos.set(line[i], {containing: line, index: i});
+
+		for (const l of consolidated)
+			if (!heads.has(l[0]) || !tails.has(l[l.length-1]))
+				throw Error("that was quick.");
+
+		for (const endpoint of [head, tail]) { // first, on either end...
+			if (torsos.has(endpoint)) { // does it run into the middle of another?
+				const {containing, index} = torsos.get(endpoint); // then that one must be cut in half
+				const fragment = containing.slice(index);
+				containing.splice(index + 1);
+				consolidated.add(fragment);
+				if (endpoint === head)  tails.set(endpoint, []);
+				else                    heads.set(endpoint, []);
+				heads.get(endpoint).push(fragment);
+				tails.get(endpoint).push(containing);
+				tails.get(fragment[fragment.length-1])[tails.get(fragment[fragment.length-1]).indexOf(containing)] = fragment;
+				torsos.delete(endpoint);
+				for (let i = 1; i < fragment.length - 1; i ++)
+					torsos.set(fragment[i], {containing: fragment, index: i});
+			}
+		}
+
+		for (const l of consolidated) {
+			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
+				throw Error(`i broke it ${l[0].φ} -> ${l[l.length-1].φ}`);
+			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
+				throw Error(`yoo broke it! ${l[0].φ} -> ${l[l.length-1].φ}`);
+		}
+
+		if (tails.has(head)) { // does its beginning connect to another?
+			if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
+				line = combine(tails.get(head)[0], line); // put them together
+		}
+		if (heads.has(tail)) { // does its end connect to another?
+			if (heads.get(tail).length === 1 && tails.get(tail).length === 1) // if these fit together exclusively
+				line = combine(line, heads.get(tail)[0]); // put them together
+		}
+	}
+
+	function combine(a: Place[], b: Place[]): Place[] {
+		consolidated.delete(b); // delete b
+		heads.delete(b[0]);
+		tails.delete(b[0]);
+		tails.get(b[b.length-1])[tails.get(b[b.length-1]).indexOf(b)] = a; // repoint the tail reference from b to a
+		for (let i = 1; i < b.length; i ++) { // add b's elements to a
+			torsos.set(b[i-1], {containing: a, index: a.length - 1});
+			a.push(b[i]);
+		}
+		return a;
+	}
+
+	let output = [];
+	for (const line of consolidated) { // then do the conversion
+		output.push({type: 'M', args: [line[0].φ, line[0].λ]});
+		for (let i = 1; i < line.length; i ++)
+			output.push({type: 'L', args: [line[i].φ, line[i].λ]});
+	}
+	return output;
+}
+
+/**
+ * create an ordered Iterator of segments that form the boundary of this.
+ * @param nodos Set of Node that are part of this group.
+ * @return Array of PathSegments, ordered widdershins.
+ */
+function outline(nodos: Set<Nodo>): PathSegment[] {
+	const accountedFor = new Set(); // keep track of which Edge have been done
+	const output: PathSegment[] = [];
+	for (let ind of nodos) { // look at every included node
+		for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
+			if (nodos.has(way))    continue; // (really we only care about excluded way)
+			let edge = ind.neighbors.get(way);
+			if (accountedFor.has(edge)) continue; // (and can ignore edges we've already hit)
+
+			const loopIdx = output.length;
+			const start = edge; // the edge between them defines the start of the loop
+			do {
+				const next = ind.leftOf(way); // look for the next triangle, going widdershins
+				const vertex = next.circumcenter; // pick out its circumcenter to plot
+				output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
+				accountedFor.add(edge); // check this edge off
+				if (nodos.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
+					ind = next.acrossFrom(edge); // advance one of the state nodos
+				else
+					way = next.acrossFrom(edge);
+				edge = ind.neighbors.get(way); // and update edge
+			} while (edge !== start); // continue for the full loop
+
+			output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
+			output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
+		}
+	}
+
+	return output;
+}
+
+/**
+ * perform a Dijkstra search on the given Euclidean graph from the given nodes. return the shortest path from the node
+ * that is furthest from those endpoint nodes to the endpoint node that is closest to it, as a list of indices.
+ * @param nodes the locations of all of the nodes in the plane, and their connections
+ * @param endpoints the indices of the possible endpoints
+ * @param threshold the minimum clearance of an edge
+ * @return list of indices starting with the farthest connected point and stepping through the path, and the path length
+ */
+function longestShortestPath(nodes: {x: number, y: number, edges: {length: number, clearance: number}[]}[],
+							 endpoints: Set<number>, threshold: number = 0): {points: number[], length: number} {
+	const graph = [];
+	for (let i = 0; i < nodes.length; i ++)
+		graph.push({distance: Number.POSITIVE_INFINITY, cene: null, lewi: false})
+
+	const queue = new TinyQueue([], (a: {distance: number}, b: {distance: number}) => a.distance - b.distance);
+	for (const i of endpoints)
+		queue.push({start: null, end: i, distance: 0}); // populate the queue with the endpoints
+
+	let furthest = null;
+	while (queue.length > 0) { // while there are places whither you can go
+		const {start, end, distance} = queue.pop(); // look for the closest one
+		if (!graph[end].lewi) { // only look at each one once
+			for (let next = 0; next < nodes.length; next ++) { // add its neighbors to the queue
+				if (nodes[end].edges[next] !== null && nodes[end].edges[next].clearance >= threshold) // if they are connected with enough clearance
+					queue.push({start: end, end: next, distance: distance + nodes[end].edges[next].length});
+			}
+			graph[end] = {distance: distance, cene: start, lewi: true}; // mark this as visited
+			furthest = end; // and as the furthest yet visited
+		}
+	}
+
+	const points = [furthest];
+	let length = 0;
+	let i = furthest; // starting at the furthest point you found,
+	while (graph[i].cene !== null) { // step backwards and record the path
+		length += nodes[i].edges[graph[i].cene].length;
+		i = graph[i].cene;
+		points.push(i);
+	}
+	return {points: points, length: length};
+}
+
+/**
+ * find out if a point is contained by a polygon, using an even/odd rule.
+ * @param polygon
+ * @param point
+ * @return whether point is inside polygon
+ */
+function contains(polygon: PathSegment[], point: {x: number, y: number}): boolean {
+	let contained = false;
+	for (let i = 0; i < polygon.length; i ++)
+		console.assert(polygon[i].type === 'M' || polygon[i].type === 'L', "I can't do that segment type.");
+	for (let i = 1; i < polygon.length; i ++) {
+		if (polygon[i].type === 'L') {
+			const [x0, y0] = polygon[i-1].args;
+			const [x1, y1] = polygon[i].args;
+			if ((y0 < point.y) !== (y1 < point.y))
+				if (x0 + (point.y - y0)/(y1 - y0)*(x1 - x0) > point.x)
+					contained = !contained;
+		}
+	}
+	return contained;
+}
+
+
+/**
+ * something that can be dropped into an SVG <path>.
+ */
+interface PathSegment {
+	type: string;
+	args: number[];
 }

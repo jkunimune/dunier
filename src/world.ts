@@ -322,7 +322,7 @@ export class Civ {
 			this.arableLand = 0;
 		this.world.politicalMap.delete(tile);
 
-		if (!this.nodos.has(this.capital)) // kill it when it loses its capital
+		if (!this.nodos.has(this.capital)) // kill it when it loses its capital TODO make this an exclave thing
 			this.militarism = 0;
 	}
 
@@ -352,7 +352,7 @@ export class Civ {
 		}
 	}
 
-	getStrength(kontra: Civ, sa: Nodo) : number {
+	getStrength(kontra: Civ, sa: Nodo) : number { // TODO zero strength in exclaves
 		let linguisticModifier = 1;
 		if (kontra != null && kontra.languages.get(sa).isIntelligible(this.officialLanguage))
 			linguisticModifier = NATIONALISM;

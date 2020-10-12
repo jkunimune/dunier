@@ -208,6 +208,9 @@ function mapApply() {
 	const nade = $('#map-nade').prop('checked');
 	const kenare = $('#map-kenare').prop('checked');
 	const shade = $('#map-saye').prop('checked');
+	const dexnam = $('#map-dexnam').prop('checked');
+	const xanonam = $('#map-xanonam').prop('checked');
+	const baxe = $('#map-baxe').val();
 
 	let mapper;
 	if (projection === 'equirectangular')
@@ -221,7 +224,18 @@ function mapApply() {
 	else
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 
-	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade);
+	let convention;
+	if (baxe === 'en')
+		convention = Convention.ENGLI;
+	else if (baxe === 'es')
+		convention = Convention.ESPANI;
+	else if (baxe === 'jp')
+		convention = Convention.NIPONI;
+	else if (baxe === 'pd')
+		convention = Convention.PANDUNI;
+
+	console.log($('#map-map'));
+	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade, dexnam, xanonam, convention);
 
 	console.log("fina!");
 	mapOutOfSync = false;
@@ -232,7 +246,7 @@ function mapApply() {
  * Once the page is ready, start the algorithm!
  */
 $(document).ready(() => {
-	console.log("ready!"); // TODO: automatically generate the first map
+	console.log("ready!");
 	$('#map-apply').click();
 }); // TODO: warn before leaving page
 

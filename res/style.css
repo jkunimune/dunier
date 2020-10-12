@@ -7,6 +7,12 @@
     width: 100%;
 }
 
+.zemgrafe-label {
+    font-family: "Noto Serif", "Times New Roman", "Times", serif;
+    text-anchor: middle;
+    alignment-baseline: middle;
+}
+
 @media screen and (min-width: 768px) {
     .scrolling-sidebar {
         padding-right: 1em;

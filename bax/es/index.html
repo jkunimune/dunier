@@ -187,9 +187,6 @@
                 <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
-                    <filter id="blur">
-                      <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
-                    </filter>
                   </svg>
                 </div>
               </div>
@@ -241,9 +238,6 @@
                 <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
-                    <filter id="blur">
-                      <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
-                    </filter>
                   </svg>
                 </div>
               </div>
@@ -305,8 +299,8 @@
                             <select class="custom-select" id="map-zemrang">
                               <option value="baki">Blanco</option>
                               <option value="huyi">Gris</option>
-                              <option selected value="lugi">Verde</option>
-                              <option value="jivi">Biomas</option>
+                              <option value="lugi">Verde</option>
+                              <option selected value="jivi">Biomas</option>
                               <option value="politiki">Naciones</option>
                               <option value="gawia">Altitudes</option>
                             </select>
@@ -388,7 +382,7 @@
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-kenare">
+                              <input type="checkbox" class="custom-control-input" id="map-kenare" checked>
                               <label class="custom-control-label" for="map-kenare">Fronteras</label>
                             </div>
                           </div>
@@ -419,6 +413,49 @@
                         </div>
                       </div>
                     </div>
+                    <div class="card">
+                      <div class="card-header" id="headingFour">
+                        <h5 class="mb-0">
+                          <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                            Etiquetas
+                          </button>
+                        </h5>
+                      </div>
+                      <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
+                        <div class="card-body">
+                          <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                              <input type="checkbox" class="custom-control-input" id="map-dexnam" checked>
+                              <label class="custom-control-label" for="map-dexnam">Political</label>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                              <input type="checkbox" class="custom-control-input" id="map-xanonam">
+                              <label class="custom-control-label" for="map-xanonam">Fisical</label>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <label for="map-baxe">Transcripción</label>
+                            <select class="custom-select" id="map-baxe">
+                              <option selected value="novyangi">Moderna</option>
+                              <option value="en">Inglés</option>
+                              <option value="es">Español</option>
+                              <option value="la">Latina</option>
+                              <!--TODO it would be nice if it could automatically select the system that goes with the language-->
+                              <option value="jp">Japonés</option>
+                              <option value="pd">Pandunia</option>
+                            </select>
+                          </div>
+                          <div class="form-group">
+                            <div class="form-group">
+                              <label for="map-kitabodayia">Tamaño de texto</label>
+                              <input type="number" value="12" data-decimals="0" min="2" max="72" step="1" id="map-kitabodayia"/>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <button type="button" class="btn btn-block btn-primary" id="map-apply">
                       <span id="map-redi">
                         Aplicar
@@ -434,9 +471,6 @@
                 <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
                   <svg xmlns="http://www.w3.org/2000/svg"
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
-                    <filter id="blur">
-                      <feGaussianBlur in="SourceGraphic" stdDeviation=".003" />
-                    </filter>
                   </svg>
                 </div>
               </div>
