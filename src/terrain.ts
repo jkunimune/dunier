@@ -480,9 +480,9 @@ function setBiomes(surf: Surface) {
 			else if (node.barxe >= MARSH_THRESH && node.gawe < CLOUD_HEIGHT && adjacentWater)
 				node.biome = 'potistan';
 			else if (node.terme < TROPIC_TEMP)
-				node.biome = 'jangal';
+				node.biome = 'jangle';
 			else
-				node.biome = 'barxojangal';
+				node.biome = 'barxojangle';
 		}
 	}
 }

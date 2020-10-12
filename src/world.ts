@@ -24,8 +24,8 @@ const APOCALYPSE_SURVIVAL_RATE = 0.5;
 const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth
 	['samud',       0.0],
 	['potistan',    0.1],
-	['barxojangal', 0.3],
-	['jangal',      3.0],
+	['barxojangle', 0.3],
+	['jangle',      3.0],
 	['lage',        0.0],
 	['taige',       0.3],
 	['piristan',    0.1],
@@ -40,8 +40,8 @@ const OCEAN_UTILITY = 1.0;
 const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	['samud',       0.1],
 	['potistan',    0.1],
-	['barxojangal', 0.1],
-	['jangal',      1.0],
+	['barxojangle', 0.1],
+	['jangle',      1.0],
 	['lage',        3.0],
 	['taige',       1.0],
 	['piristan',    0.3],
