@@ -4,7 +4,7 @@
 import TinyQueue from './lib/tinyqueue.js';
 
 import {Nodo, Place, Surface, Triangle} from "./surface.js";
-import {delaunayTriangulate, linterp, minimizeNelderMead, Vector} from "./utils.js";
+import {delaunayTriangulate, linterp, minimizeNelderMead, Vector, ErodingSegmentTree} from "./utils.js";
 import {Convention} from "./language.js";
 import {Civ, World} from "./world.js";
 
@@ -14,7 +14,7 @@ const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2 TODO: display rivers that connect lakes to shown rivers
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const N_DEGREES = 6; // number of line segments into which to break one radian of arc
-const RALF_NUM_CANDIDATES = 1; // number of sizeable longest shortest paths to try using for the label
+const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 
 const BIOME_COLORS = new Map([
 	['zeme',        '#93d953'],
@@ -96,6 +96,7 @@ const DEPTH_COLORS = [
 export class Chart {
 	private projection: MapProjection;
 	private testText: SVGTextElement;
+	private testTextSize: number;
 	private labelIndex: number;
 
 
@@ -132,9 +133,12 @@ export class Chart {
 		g.setAttribute('id', 'jeni-zemgrafe');
 		svg.appendChild(g);
 
+		this.testTextSize = Math.min(
+			(this.projection.right - this.projection.left)/18,
+			this.projection.bottom - this.projection.top);
 		this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 		this.testText.setAttribute('class', 'zemgrafe-label');
-		this.testText.setAttribute('style', `font-size: 10;`);
+		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`);
 		svg.appendChild(this.testText);
 
 		let nadorang = 'none';
@@ -292,9 +296,8 @@ export class Chart {
 	label(nodos: Nodo[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
 		this.testText.textContent = '..'+label+'..';
 		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
-		const aspect = boundBox.width/boundBox.height;
 		const mapScale = svg.clientWidth/(this.projection.right - this.projection.left); // and also the current size of the map in px for reference
-		const fontScale = boundBox.height/mapScale/10;
+		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		this.testText.textContent = '';
 
 		const path = this.map(outline(new Set(nodos)), false, true); // do the projection
@@ -409,7 +412,7 @@ export class Chart {
 				argmax = i;
 		}
 
-		const candidates: number[][] = [];
+		const candidates: number[][] = []; // next collect candidate paths along which you might fit labels
 		let minClearance = centers[argmax].r;
 		while (candidates.length < RALF_NUM_CANDIDATES) {
 			minClearance /= Math.sqrt(2); // gradually loosen a minimum clearance filter
@@ -431,7 +434,8 @@ export class Chart {
 			}
 		}
 
-		let labelAxis = null, axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisSign = null;
+		let axisValue = Number.NEGATIVE_INFINITY;
+		let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisH = null;
 		for (const candidate of candidates) { // for each candidate label axis
 			let sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0;
 			for (let i = 0; i < candidate.length; i ++) {
@@ -451,7 +455,7 @@ export class Chart {
 			let b = -m/Math.sqrt(m**2 + 1), c = 1/Math.sqrt(m**2 + 1);
 			let d = - a*(μx**2 + μy**2) - b*μx - c*μy;
 
-			[a, b, c, d] = minimizeNelderMead( // use Nelder-Mead to fit an arc
+			[a, b, c, d] = minimizeNelderMead( // use Nelder-Mead to fit an arc TODO custom initial simplex
 				function(state: number[]) { // define error to be minimized as
 					const [a, b, c, d] = state;
 					const det = b**2 + c**2 - 4*a*d;
@@ -468,40 +472,127 @@ export class Chart {
 				[1/6/l, 1/6, 1/6, l/6],
 				1e-4,
 			);
-			const r = Math.sqrt(b**2 + c**2 - 4*a*d)/(2*Math.abs(a)), cx = -b/(2*a), cy = -c/(2*a); // convert the result into more natural parameters
+			const R = Math.sqrt(b**2 + c**2 - 4*a*d)/(2*Math.abs(a)), cx = -b/(2*a), cy = -c/(2*a); // convert the result into more natural parameters
 
+			const circularPoints: {x: number, y: number}[] = []; // get polygon segments in circular coordinates
+			const θ0 = Math.atan2(μy - cy, μx - cx);
+			for (let i = 0; i < points.length; i ++) {
+				const {x, y} = points[i];
+				const θ = (Math.atan2(y - cy, x - cx) - θ0 + 3*Math.PI)%(2*Math.PI) - Math.PI;
+				const r = Math.hypot(x - cx, y - cy);
+				const xp = R*θ, yp = R - r;
+				circularPoints.push({x: xp, y: yp});
+			}
 
-			const pL = centers[candidate[0]], pR = centers[candidate[candidate.length-1]];
-			const pM = centers[candidate[Math.floor(candidate.length/2)]];
-			let θL = Math.atan2(pL.y - cy, pL.x - cx); // determine the optimal angular placement TODO
-			let θR = Math.atan2(pR.y - cy, pR.x - cx);
-			const θM = Math.atan2(pM.y - cy, pM.x - cx);
-			if (pL.x > pR.x)
-				[θL, θR] = [θR, θL];
+			let xMin = -Math.PI*R, xMax = Math.PI*R;
+			const wedges: {xL: number, xR: number, y: number}[] = []; // get wedges from edges
+			for (let i = 0; i < points.length; i ++) { // there's a wedge associated with each pair of points
+				const p0 = circularPoints[i];
+				const p1 = circularPoints[(i + 1) % circularPoints.length];
+				const height = (p0.y < 0 === p1.y < 0) ? Math.min(Math.abs(p0.y), Math.abs(p1.y)) : 0;
+				const interpretations = [];
+				if (Math.abs(p1.x - p0.x) < Math.PI*R) {
+					interpretations.push([p0.x, p1.x, height]); // well, usually there's just one
+				}
+				else {
+					interpretations.push([p0.x, p1.x + 2*Math.PI*R*Math.sign(p0.x), height]); // but sometimes there's clipping on the periodic boundary condition...
+					interpretations.push([p0.x + 2*Math.PI*R*Math.sign(p1.x), p1.x, height]); // so you have to try wrapping p0 over to p1, and also p1 over to p0
+				}
 
-			if (labelAxis === null) { // TODO: define an actual value function for these
-				labelAxis = candidate;
-				axisR = r;
+				for (const [x0, x1, y] of interpretations) {
+					if (height === 0) { // if this crosses the baseline, adjust the total bounds
+						if (x0 < 0 || x1 < 0)
+							if (Math.max(x0, x1) > xMin)
+								xMin = Math.max(x0, x1);
+						if (x0 > 0 || x1 > 0)
+							if (Math.min(x0, x1) < xMax)
+								xMax = Math.min(x0, x1);
+					}
+					else { // otherwise, add a floating wedge
+						wedges.push({
+							xL: Math.min(x0, x1) - y*aspect,
+							xR: Math.max(x0, x1) + y*aspect,
+							y: y,
+						});
+					}
+				}
+			}
+			if (xMin > xMax) // occasionally we get these really terrible candidates
+				continue; // just skip them
+			wedges.sort((a: {y: number}, b: {y: number}) => b.y - a.y); // TODO it would be slightly more efficient if I can merge wedges that share a min vertex
+			// const wedgesKopiye = wedges.slice(); // TODO deleta ye
+
+			const validRegion = new ErodingSegmentTree(xMin, xMax); // construct segment tree
+
+			let height = 0; // iterate height upward until only one segment is left
+			let best;
+			while (true) {
+				if (wedges.length > 0 && wedges[wedges.length-1].y - height < validRegion.getRadius()/aspect) { // either go to the next wedge if it comes before we run out of space
+					const {xL, xR, y} = wedges.pop();
+					validRegion.erode((y - height)*aspect);
+					height = y;
+					if (validRegion.getMinim() >= xL && validRegion.getMaxim() <= xR) {
+						if (validRegion.contains(0))
+							best = 0;
+						else
+							best = validRegion.getClosest(0);
+						break;
+					}
+					else {
+						validRegion.block(xL, xR);
+					}
+				}
+				else { // or go to here we run out of space
+					best = validRegion.getPole();
+					height += validRegion.getRadius()/aspect;
+					break;
+				}
+			}
+			if (Math.sin(θ0) > 0) // if it's going to be upside down
+				height *= -1; // flip it around
+			const value = Math.log(Math.abs(height)) - 6*Math.abs(height)/R + Math.pow(Math.sin(θ0), 2); // choose the axis with the biggest area and smallest curvature
+			if (value > axisValue) {
+				// const axis = [];
+				// for (const i of candidate)
+				// 	axis.push({type:'L', args:[centers[i].x, -centers[i].y]});
+				// axis[0].type = 'M';
+				// const drawing = this.draw(axis, svg);
+				// drawing.setAttribute('style', 'stroke-width:.1px; fill:none; stroke:#000;');
+				// if (label[0] === 'P') {
+				// 	for (let i = 0; i < points.length; i ++)
+				// 		console.log(`[${circularPoints[i].x}, ${circularPoints[i].y}],`);
+				// 	console.log(`${xMin}, ${xMax}, ${0}`);
+				// 	for (let i = 0; i < wedgesKopiye.length; i ++)
+				// 		console.log(`[${wedgesKopiye[i].xL}, ${wedgesKopiye[i].xR}, ${wedgesKopiye[i].y}],`);
+				// 	console.log(aspect);
+				// 	console.log(`${best}, ${height}`);
+				// 	console.log(label);
+				//
+				// }
+				axisValue = value;
+				axisR = R;
 				axisCx = cx;
 				axisCy = cy;
-				axisΘL = θL;
-				axisΘR = θR;
-				axisSign = (
-					(Math.cos(θL) - Math.cos(θM))*(Math.sin(θR) - Math.sin(θM)) -
-					(Math.sin(θL) - Math.sin(θM))*(Math.cos(θR) - Math.cos(θM))) < 0;
+				axisΘL = θ0 + best/R - height*aspect/R;
+				axisΘR = θ0 + best/R + height*aspect/R;
+				axisH = 2*Math.abs(height);
 			}
 		}
-		const axisS = axisR*(((axisSign ? axisΘR - axisΘL : axisΘL - axisΘR) + 2*Math.PI)%(2*Math.PI));
-		const axisDR = axisS/aspect;
 
 		const arc = this.draw([ // make the arc in the SVG
-			{type: 'M', args: [axisCx + axisR*Math.cos(axisΘL), -(axisCy + axisR*Math.sin(axisΘL))]},
-			{type: 'A', args: [axisR, axisR, 0, 0, axisSign ? 0 : 1, axisCx + axisR*Math.cos(axisΘR), -(axisCy + axisR*Math.sin(axisΘR))]},
+			{type: 'M', args: [
+				axisCx + axisR*Math.cos(axisΘL), -(axisCy + axisR*Math.sin(axisΘL))]},
+			{type: 'A', args: [
+				axisR, axisR, 0,
+				(Math.abs(axisΘR - axisΘL) < Math.PI) ? 0 : 1,
+				(axisΘR > axisΘL) ? 0 : 1,
+				axisCx + axisR*Math.cos(axisΘR), -(axisCy + axisR*Math.sin(axisΘR))]},
 		], svg);
+		// arc.setAttribute('style', `fill: none; stroke: #000; stroke-width: .1px;`);
 		arc.setAttribute('style', `fill: none; stroke: none;`);
 		arc.setAttribute('id', `labelArc${this.labelIndex}`);
 		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
-		textGroup.setAttribute('style', `font-size: ${axisDR/fontScale}`);
+		textGroup.setAttribute('style', `font-size: ${axisH}px`);
 		svg.appendChild(textGroup);
 		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
 		textPath.setAttribute('class', 'zemgrafe-label');

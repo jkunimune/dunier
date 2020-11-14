@@ -13,6 +13,7 @@ import {World} from "./world.js";
 import {Convention} from "./language.js";
 import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
 import {Random} from "./random.js";
+import {ErodingSegmentTree} from "./utils.js";
 
 
 const TERRAIN_COLORMAP = [
