@@ -578,6 +578,8 @@ export class Chart {
 				axisH = 2*Math.abs(height);
 			}
 		}
+		if (axisR === null)
+			console.log(`all ${candidates.length} candidates were somehow incredible garbage`);
 
 		const arc = this.draw([ // make the arc in the SVG
 			{type: 'M', args: [

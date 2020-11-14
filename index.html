@@ -10,7 +10,7 @@
 
     <link rel="stylesheet" href="/res/style.css">
 
-    <title>dunhamar &ndash; jena fantazi karte</title>
+    <title>dunhamar &ndash; jena fantazi zemgraf</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
   </head>
@@ -23,36 +23,36 @@
             <img src="/res/logo.svg" width="35" height="35" alt="">
             dunhamar
           </a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="sira/xowa faxe da daweurekia">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="sira/xowa fash da daweureke">
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="siri-daweurekia">
             <div class="navbar-nav">
-              <a class="nav-item nav-link" href="#">dome<span class="sr-only"> (zay)</span></a>
+              <a class="nav-item nav-link" href="#">dom<span class="sr-only"> (zay)</span></a>
               <a class="nav-item nav-link" href="./tema.html">tema</a>
               <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">poste</a>
             </div>
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="baxe">
+                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="bash">
                   <svg class="bi" width="20" viewBox="-38 -38 76 86" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path fill="none" stroke-width="4" d="M0,-36 A36,36,0,0,0,0,36 A18,36,0,0,0,0,-36 A18,36,0,0,0,0,36 A36,36,0,0,0,0,-36 L0,36 M-36,0 L36,0 M-25.5,25.5 A36,36,0,0,1,25.5,25.5 M-25.5,-25.5 A36,36,0,0,0,25.5,-25.5"/>
                   </svg>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right" role="menu" aria-orientation="vertical">
-                  <a class="dropdown-item" href="/bax/en/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/en/" role="menuitem">
                     <img src="/res/flags/gb-eng.svg" width="20" height="20" alt="">&nbsp;
                     English
                   </a>
-                  <a class="dropdown-item" href="/bax/es/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/es/" role="menuitem">
                     <img src="/res/flags/es.svg" width="20" height="20" alt="">&nbsp;
                     español
                   </a>
-                  <a class="dropdown-item" href="/bax/jp/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/jp/" role="menuitem">
                     <img src="/res/flags/jp.svg" width="20" height="20" alt="">&nbsp;
                     日本語
                   </a>
-                  <a class="dropdown-item" href="/bax/pd/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/pd/" role="menuitem">
                     <img src="/res/flags/pandunia.svg" width="20" height="20" alt="">&nbsp;
                     pandunia
                   </a>
@@ -74,13 +74,13 @@
             <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">planete</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">zemforme</a>
+            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">rupe da zem</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">histore</a>
+            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">histor</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="true">zemgrafe</a>
+            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="true">zemgraf</a>
           </li>
         </ul>
 
@@ -95,18 +95,18 @@
                       <label for="planet-type">forme</label>
                       <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value)">
                         <option selected value="0">bol</option>
-                        <option value="1">wene</option>
+                        <option value="1">wen</option>
                         <option value="2">plate</option>
                       </select>
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked)">
-                        <label class="custom-control-label" for="planet-locked">cawo samomari</label>
+                        <label class="custom-control-label" for="planet-locked">cawo samsati</label>
                       </div>
                     </div>
                     <div class="form-group">
-                      <label for="planet-size">cirkomete</label>
+                      <label for="planet-size">cirkometre</label>
                       <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
                     </div>
                     <div class="form-group">
@@ -114,11 +114,11 @@
                       <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-day">dure da den</label>
+                      <label for="planet-day">dur da den</label>
                       <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="h" id="planet-day"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-tilt">tercia da akse</label>
+                      <label for="planet-tilt">terchia da akse</label>
                       <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="planet-apply">
@@ -145,16 +145,16 @@
                 <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
                   <form>
                     <div class="form-group">
-                      <label for="terrain-seme">falsozari seme</label>
-                      <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-seme"/>
+                      <label for="terrain-sem">falsozari sem</label>
+                      <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-sem"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-continents">nombre da daynese</label>
+                      <label for="terrain-continents">nombre da daynes</label>
                       <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-samud">gawia da mare</label>
-                      <select class="custom-select" id="terrain-samud">
+                      <label for="terrain-hay">gawia da hay</label>
+                      <select class="custom-select" id="terrain-hay">
                         <option value="4">dayo gawi</option>
                         <option value="3">gawi</option>
                         <option value="2">lilo gawi</option>
@@ -199,8 +199,8 @@
                 <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
                   <form>
                     <div class="form-group">
-                      <label for="history-seme">falsozari seme</label>
-                      <input type="number" value="0" min="0" max="99999999" step="1" id="history-seme"/>
+                      <label for="history-sem">falsozari sem</label>
+                      <input type="number" value="0" min="0" max="99999999" step="1" id="history-sem"/>
                     </div>
                     <div class="form-group">
                       <label for="history-nen">nen</label>
@@ -215,12 +215,12 @@
                       <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="/Gn" id="history-injenivia"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-katastrofe">katastrofe</label>
-                      <select class="custom-select" id="history-katastrofe">
+                      <label for="history-katastrof">katastrof</label>
+                      <select class="custom-select" id="history-katastrof">
                         <option selected value="0">nol</option>
                         <option value="1e-4">un</option>
-                        <option value="1e-3">un sa mey kili nen</option>
-                        <option value="1e-2">un sa mey honi nen</option>
+                        <option value="1e-3">un sa mey kilonen</option>
+                        <option value="1e-2">un sa mey honnen</option>
                       </select>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="history-apply">
@@ -271,8 +271,8 @@
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-dixe">rote</label>
-                            <select class="custom-select" id="map-dixe">
+                            <label for="map-dish">rote</label>
+                            <select class="custom-select" id="map-dish">
                               <option selected value="norde">norde gawi</option>
                               <option value="sude">sude gawi</option>
                             </select>
@@ -295,19 +295,19 @@
                       <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
                         <div class="card-body">
                           <div class="form-group">
-                            <label for="map-zemrang">rang da zeme</label>
+                            <label for="map-zemrang">rang da zem</label>
                             <select class="custom-select" id="map-zemrang">
                               <option value="baki">baki</option>
                               <option value="huyi">huyi</option>
                               <option value="lugi">lugi</option>
-                              <option selected value="jivi">jivosisteme</option>
-                              <option value="politiki">dexe</option>
+                              <option selected value="jivi">jivosistem</option>
+                              <option value="politiki">desh</option>
                               <option value="gawia">gawia</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-marorang">rang da mare</label>
-                            <select class="custom-select" id="map-marorang">
+                            <label for="map-hayrang">rang da hay</label>
+                            <select class="custom-select" id="map-hayrang">
                               <option value="baki">baki</option>
                               <option value="huyi">huyi</option>
                               <option selected value="nili">nili</option>
@@ -320,36 +320,36 @@
                             <select class="custom-select" id="map-filter">
                               <option selected value="nol">nol</option>
                               <option value="pili">pilrangi</option>
-                              <option value="bakocerni">bakocerni</option>
+                              <option value="bakocerni">bakocherni</option>
                               <option value="mirdi">mirdi</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <h6>rupe da zeme</h6>
+                            <h6>rupe da zem</h6>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
-                              <label class="form-check-label" for="map-zemforme-kale">kali</label>
+                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kal" value="kal" checked>
+                              <label class="form-check-label" for="map-zemforme-kal">kali</label>
                             </div>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
-                              <label class="form-check-label" for="map-zemforme-desene">grafi</label>
+                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desen" value="desen">
+                              <label class="form-check-label" for="map-zemforme-desen">grafi</label>
                             </div>
                           </div>
                           <div class="form-group">
-                            <h6>rupe da mare</h6>
+                            <h6>rupe da hay</h6>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
-                              <label class="form-check-label" for="map-mar-kale">kali</label>
+                              <input class="form-check-input" type="radio" name="hay" id="map-hay-kal" value="kal" checked>
+                              <label class="form-check-label" for="map-hay-kal">kali</label>
                             </div>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
-                              <label class="form-check-label" for="map-mar-linye">grafi</label>
+                              <input class="form-check-input" type="radio" name="hay" id="map-hay-linye" value="linye">
+                              <label class="form-check-label" for="map-hay-linye">grafi</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <h6>rupe da site</h6>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
+                              <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kal" checked>
                               <label class="form-check-label" for="map-site-nol">kali</label>
                             </div>
                             <div class="form-check">
@@ -357,7 +357,7 @@
                               <label class="form-check-label" for="map-site-binde">bindi</label>
                             </div>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
+                              <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desen">
                               <label class="form-check-label" for="map-site-grafe">grafi</label>
                             </div>
                           </div>
@@ -368,7 +368,7 @@
                       <div class="card-header" id="headingThree">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                            sife
+                            sif
                           </button>
                         </h5>
                       </div>
@@ -382,14 +382,14 @@
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-kenare" checked>
-                              <label class="custom-control-label" for="map-kenare">dexi kenare</label>
+                              <input type="checkbox" class="custom-control-input" id="map-kenar" checked>
+                              <label class="custom-control-label" for="map-kenar">deshi kenar</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-saye">
-                              <label class="custom-control-label" for="map-saye">xani saye</label>
+                              <input type="checkbox" class="custom-control-input" id="map-say">
+                              <label class="custom-control-label" for="map-say">xani say</label>
                             </div>
                           </div>
                           <div class="form-group">
@@ -401,7 +401,7 @@
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                              <label class="custom-control-label" for="map-dawnete">nete da marorute</label>
+                              <label class="custom-control-label" for="map-dawnete">nete da hayrute</label>
                             </div>
                           </div>
                           <div class="form-group">
@@ -417,7 +417,7 @@
                       <div class="card-header" id="headingFour">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                            name
+                            nam
                           </button>
                         </h5>
                       </div>
@@ -425,19 +425,19 @@
                         <div class="card-body">
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-dexnam" checked>
-                              <label class="custom-control-label" for="map-dexnam">dexe</label>
+                              <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
+                              <label class="custom-control-label" for="map-deshnam">desh</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-xanonam">
-                              <label class="custom-control-label" for="map-xanonam">zemformi sife</label>
+                              <input type="checkbox" class="custom-control-input" id="map-shannam">
+                              <label class="custom-control-label" for="map-shannam">zemformi sif</label>
                             </div>
                           </div>
                           <div class="form-group">
-                            <label for="map-baxe">transokitabe</label>
-                            <select class="custom-select" id="map-baxe">
+                            <label for="map-bash">transokitabe</label>
+                            <select class="custom-select" id="map-bash">
                               <option selected value="novyangi">novyangi</option>
                               <option value="en">engli</option>
                               <option value="es">espani</option>
@@ -480,7 +480,7 @@
       </div>
     </main>
 
-    <div id="baxe" style="display: none;">pd</div>
+    <div id="bash" style="display: none;">pd</div>
 
     <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="/src/lib/jquery.min.js" crossorigin="anonymous"></script>

@@ -19,7 +19,7 @@ for filename in os.listdir('../res/templates/'):
 		if remaining_keys:
 			raise KeyError(f"no jana cabe {remaining_keys.group(1)}!")
 		page = re.sub(r'\{\{.*\}\}', "MISSINGNO", page)
-		with open(f'../bax/{lang_code}/{filename}', 'w', encoding='utf8') as page_file:
+		with open(f'../bash/{lang_code}/{filename}', 'w', encoding='utf8') as page_file:
 			page_file.write(page)
 		if lang_code == DEFAULT_LANGUAGE:
 			with open(f'../{filename}', 'w', encoding='utf8') as page_file:

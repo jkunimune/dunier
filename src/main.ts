@@ -13,7 +13,6 @@ import {World} from "./world.js";
 import {Convention} from "./language.js";
 import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
 import {Random} from "./random.js";
-import {ErodingSegmentTree} from "./utils.js";
 
 
 const TERRAIN_COLORMAP = [
@@ -141,9 +140,9 @@ function terrainApply() {
 		planetApply();
 
 	console.log("jena zemforme...");
-	const randomSeme = Number($('#terrain-seme').val());
+	const randomSeme = Number($('#terrain-sem').val());
 	const numContinents = Number($('#terrain-continents').val()) * 2;
-	const seaLevel = Number($('#terrain-samud').val());
+	const seaLevel = Number($('#terrain-hay').val());
 	const avgTerme = Number($('#terrain-terme').val());
 
 	let rng = new Random(randomSeme); // use the random seed
@@ -172,11 +171,11 @@ function historyApply() {
 		terrainApply();
 
 	console.log("jena histore...");
-	const randomSeme = Number($('#history-seme').val());
+	const randomSeme = Number($('#history-sem').val());
 	const year = Number($('#history-nen').val());
 	const imperistia = Number($('#history-imperistia').val()) / 1e3; // km/year
 	const injenivia = Number($('#history-injenivia').val()) / 1e9; // 1/y
-	const katastrofe = Number($('#history-katastrofe').val());
+	const katastrofe = Number($('#history-katastrof').val());
 
 	world = new World(imperistia, injenivia, katastrofe, surface);
 
@@ -204,14 +203,14 @@ function mapApply() {
 	console.log("grafa zemgrafe...");
 	const projection = $('#map-projection').val();
 	const zemrang = $('#map-zemrang').val();
-	const marorang = $('#map-marorang').val();
+	const marorang = $('#map-hayrang').val();
 	const filter = $('#map-filter').val();
 	const nade = $('#map-nade').prop('checked');
-	const kenare = $('#map-kenare').prop('checked');
-	const shade = $('#map-saye').prop('checked');
-	const dexnam = $('#map-dexnam').prop('checked');
-	const xanonam = $('#map-xanonam').prop('checked');
-	const baxe = $('#map-baxe').val();
+	const kenare = $('#map-kenar').prop('checked');
+	const shade = $('#map-say').prop('checked');
+	const dexnam = $('#map-deshnam').prop('checked');
+	const xanonam = $('#map-shannam').prop('checked');
+	const baxe = $('#map-bash').val();
 
 	let mapper;
 	if (projection === 'equirectangular')
@@ -235,7 +234,6 @@ function mapApply() {
 	else if (baxe === 'pd')
 		convention = Convention.PANDUNI;
 
-	console.log($('#map-map'));
 	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade, dexnam, xanonam, convention);
 
 	console.log("fina!");

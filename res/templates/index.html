@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{{baxe.kode}}">
+<html lang="{{bash.kode}}">
   <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -10,7 +10,7 @@
 
     <link rel="stylesheet" href="/res/style.css">
 
-    <title>{{kitabe.tem-nam}}</title>
+    <title>{{kitabe.temnam}}</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
   </head>
@@ -23,36 +23,36 @@
             <img src="/res/logo.svg" width="35" height="35" alt="">
             dunhamar
           </a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="{{menuw.toggle-faxe}}">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="{{menu.muta-fash}}">
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="siri-daweurekia">
             <div class="navbar-nav">
-              <a class="nav-item nav-link" href="#">{{menuw.dome}}<span class="sr-only"> ({{menuw.zay}})</span></a>
-              <a class="nav-item nav-link" href="./tema.html">{{menuw.tema}}</a>
-              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">{{menuw.poste}}</a>
+              <a class="nav-item nav-link" href="#">{{menu.dom}}<span class="sr-only"> ({{menu.zay}})</span></a>
+              <a class="nav-item nav-link" href="./tema.html">{{menu.tema}}</a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">{{menu.poste}}</a>
             </div>
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="{{menuw.baxe}}">
+                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="{{menu.bash}}">
                   <svg class="bi" width="20" viewBox="-38 -38 76 86" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path fill="none" stroke-width="4" d="M0,-36 A36,36,0,0,0,0,36 A18,36,0,0,0,0,-36 A18,36,0,0,0,0,36 A36,36,0,0,0,0,-36 L0,36 M-36,0 L36,0 M-25.5,25.5 A36,36,0,0,1,25.5,25.5 M-25.5,-25.5 A36,36,0,0,0,25.5,-25.5"/>
                   </svg>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right" role="menu" aria-orientation="vertical">
-                  <a class="dropdown-item" href="/bax/en/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/en/" role="menuitem">
                     <img src="/res/flags/gb-eng.svg" width="20" height="20" alt="">&nbsp;
                     English
                   </a>
-                  <a class="dropdown-item" href="/bax/es/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/es/" role="menuitem">
                     <img src="/res/flags/es.svg" width="20" height="20" alt="">&nbsp;
                     español
                   </a>
-                  <a class="dropdown-item" href="/bax/jp/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/jp/" role="menuitem">
                     <img src="/res/flags/jp.svg" width="20" height="20" alt="">&nbsp;
                     日本語
                   </a>
-                  <a class="dropdown-item" href="/bax/pd/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/pd/" role="menuitem">
                     <img src="/res/flags/pandunia.svg" width="20" height="20" alt="">&nbsp;
                     pandunia
                   </a>
@@ -71,16 +71,16 @@
 
         <ul class="nav nav-tabs" id="myTab" role="tablist">
           <li class="nav-item">
-            <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">{{menuw.planete}}</a>
+            <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">{{param.planete}}</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">{{menuw.zem-forme}}</a>
+            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">{{param.zemforme}}</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">{{menuw.histore}}</a>
+            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">{{param.histor}}</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="true">{{menuw.karte}}</a>
+            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="true">{{param.zemgraf}}</a>
           </li>
         </ul>
 
@@ -92,42 +92,42 @@
                 <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
                   <form>
                     <div class="form-group">
-                      <label for="planet-type">{{menuw.forme}}</label>
+                      <label for="planet-type">{{param.forme}}</label>
                       <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value)">
-                        <option selected value="0">{{menuw.bol}}</option>
-                        <option value="1">{{menuw.wen}}</option>
-                        <option value="2">{{menuw.plate}}</option>
+                        <option selected value="0">{{param.bol}}</option>
+                        <option value="1">{{param.wen}}</option>
+                        <option value="2">{{param.plate}}</option>
                       </select>
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked)">
-                        <label class="custom-control-label" for="planet-locked">{{menuw.sori}}</label>
+                        <label class="custom-control-label" for="planet-locked">{{param.sori}}</label>
                       </div>
                     </div>
                     <div class="form-group">
-                      <label for="planet-size">{{menuw.cirk-mete}}</label>
+                      <label for="planet-size">{{param.cirkometre}}</label>
                       <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-gravity">{{menuw.baria}}</label>
+                      <label for="planet-gravity">{{param.baria}}</label>
                       <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-day">{{menuw.den}}</label>
-                      <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="{{un-mete.hor}}" id="planet-day"/>
+                      <label for="planet-day">{{param.den}}</label>
+                      <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="{{unmetre.hor}}" id="planet-day"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-tilt">{{menuw.tercia}}</label>
+                      <label for="planet-tilt">{{param.terchia}}</label>
                       <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="planet-apply">
                       <span id="planet-redi">
-                        {{menuw.kara}}
+                        {{menu.kara}}
                       </span>
                       <span id="planet-lada" style="display: none">
                         <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                        {{menuw.denga}}
+                        {{menu.denga}}
                       </span>
                     </button>
                   </form>
@@ -145,40 +145,40 @@
                 <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
                   <form>
                     <div class="form-group">
-                      <label for="terrain-seme">{{menuw.seme}}</label>
-                      <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-seme"/>
+                      <label for="terrain-sem">{{param.sem}}</label>
+                      <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-sem"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-continents">{{menuw.day-nese}}</label>
+                      <label for="terrain-continents">{{param.daynes}}</label>
                       <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-samud">{{menuw.samud-gawia}}</label>
-                      <select class="custom-select" id="terrain-samud">
-                        <option value="4">{{menuw.gawi-3}}</option>
-                        <option value="3">{{menuw.gawi-2}}</option>
-                        <option value="2">{{menuw.gawi-1}}</option>
-                        <option selected value="1.5">{{menuw.medi}}</option>
-                        <option value="1">{{menuw.tali-1}}</option>
-                        <option value="-0.5">{{menuw.tali-2}}</option>
-                        <option value="-1.5">{{menuw.tali-3}}</option>
+                      <label for="terrain-hay">{{param.haygawia}}</label>
+                      <select class="custom-select" id="terrain-hay">
+                        <option value="4">{{param.gawi-3}}</option>
+                        <option value="3">{{param.gawi-2}}</option>
+                        <option value="2">{{param.gawi-1}}</option>
+                        <option selected value="1.5">{{param.medi}}</option>
+                        <option value="1">{{param.tali-1}}</option>
+                        <option value="-0.5">{{param.tali-2}}</option>
+                        <option value="-1.5">{{param.tali-3}}</option>
                       </select>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-terme">{{menuw.terme}}</label>
+                      <label for="terrain-terme">{{param.terme}}</label>
                       <select class="custom-select" id="terrain-terme">
-                        <option value="308">{{menuw.garmi}}</option>
-                        <option selected value="288">{{menuw.medi}}</option>
-                        <option value="268">{{menuw.lengi}}</option>
+                        <option value="308">{{param.garmi}}</option>
+                        <option selected value="288">{{param.medi}}</option>
+                        <option value="268">{{param.lengi}}</option>
                       </select>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="terrain-apply">
                       <span id="terrain-redi">
-                        {{menuw.kara}}
+                        {{menu.kara}}
                       </span>
                       <span id="terrain-lada" style="display: none">
                         <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                        {{menuw.denga}}
+                        {{menu.denga}}
                       </span>
                     </button>
                   </form>
@@ -199,37 +199,37 @@
                 <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
                   <form>
                     <div class="form-group">
-                      <label for="history-seme">{{menuw.seme}}</label>
-                      <input type="number" value="0" min="0" max="99999999" step="1" id="history-seme"/>
+                      <label for="history-sem">{{param.sem}}</label>
+                      <input type="number" value="0" min="0" max="99999999" step="1" id="history-sem"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-nen">{{menuw.nen-mes-den}}</label>
-                      <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="{{un-mete.nen}}" id="history-nen"/>
+                      <label for="history-nen">{{param.nenmesden}}</label>
+                      <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="{{unmetre.nen}}" id="history-nen"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-imperistia">{{menuw.imper-istia}}</label>
-                      <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="{{un-mete.metre-mey-nen}}" id="history-imperistia"/>
+                      <label for="history-imperistia">{{param.imperistia}}</label>
+                      <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="{{unmetre.mitre-mey-nen}}" id="history-imperistia"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-injenivia">{{menuw.injenivia}}</label>
-                      <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="{{un-mete.mey-gigonen}}" id="history-injenivia"/>
+                      <label for="history-injenivia">{{param.injenivia}}</label>
+                      <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="{{unmetre.mey-giganen}}" id="history-injenivia"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-katastrofe">{{menuw.katastrofe}}</label>
-                      <select class="custom-select" id="history-katastrofe">
-                        <option selected value="0">{{menuw.nol}}</option>
-                        <option value="1e-4">{{menuw.un}}</option>
-                        <option value="1e-3">{{menuw.mey-kilnen}}</option>
-                        <option value="1e-2">{{menuw.mey-hononen}}</option>
+                      <label for="history-katastrof">{{param.katastrof}}</label>
+                      <select class="custom-select" id="history-katastrof">
+                        <option selected value="0">{{param.nol}}</option>
+                        <option value="1e-4">{{param.un}}</option>
+                        <option value="1e-3">{{param.mey-kilonen}}</option>
+                        <option value="1e-2">{{param.mey-honnen}}</option>
                       </select>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="history-apply">
                       <span id="history-redi">
-                        {{menuw.kara}}
+                        {{menu.kara}}
                       </span>
                       <span id="history-lada" style="display: none">
                         <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                        {{menuw.denga}}
+                        {{menu.denga}}
                       </span>
                     </button>
                   </form>
@@ -253,32 +253,32 @@
                       <div class="card-header" id="headingOne">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                            {{menuw.lancografe}}
+                            {{param.lancograf}}
                           </button>
                         </h5>
                       </div>
                       <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
                         <div class="card-body">
                           <div class="form-group">
-                            <label for="map-projection">{{menuw.tipe}}</label>
+                            <label for="map-projection">{{param.tipe}}</label>
                             <select class="custom-select" id="map-projection">
-                              <option value="equirectangular">{{menuw.cargone}}</option>
-                              <option value="mercator">{{menuw.merkator}}</option>
-                              <option value="azimuthal-equidistant">{{menuw.asimuti}}</option>
-                              <option selected value="eckert">{{menuw.ekerte}}</option>
-                              <option value="bonne">{{menuw.bone}}</option>
-                              <option value="conformal-conic">{{menuw.konusi}}</option>
+                              <option value="equirectangular">{{param.chargon}}</option>
+                              <option value="mercator">{{param.merkator}}</option>
+                              <option value="azimuthal-equidistant">{{param.asimuti}}</option>
+                              <option selected value="eckert">{{param.ekerte}}</option>
+                              <option value="bonne">{{param.bone}}</option>
+                              <option value="conformal-conic">{{param.konusi}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-dixe">{{menuw.dixe}}</label>
-                            <select class="custom-select" id="map-dixe">
-                              <option selected value="norde">{{menuw.norde}}</option>
-                              <option value="sude">{{menuw.sude}}</option>
+                            <label for="map-dish">{{param.dish}}</label>
+                            <select class="custom-select" id="map-dish">
+                              <option selected value="norde">{{param.norde}}</option>
+                              <option value="sude">{{param.sude}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-dongwestia">{{menuw.dongwestia}}</label>
+                            <label for="map-dongwestia">{{param.dongwestia}}</label>
                             <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
                           </div>
                         </div>
@@ -288,77 +288,77 @@
                       <div class="card-header" id="headingTwo">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                            {{menuw.rang}}
+                            {{param.rang}}
                           </button>
                         </h5>
                       </div>
                       <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
                         <div class="card-body">
                           <div class="form-group">
-                            <label for="map-zemrang">{{menuw.zemrang}}</label>
+                            <label for="map-zemrang">{{param.zemrang}}</label>
                             <select class="custom-select" id="map-zemrang">
-                              <option value="baki">{{menuw.baki}}</option>
-                              <option value="huyi">{{menuw.huyi}}</option>
-                              <option value="lugi">{{menuw.lugi}}</option>
-                              <option selected value="jivi">{{menuw.jivi}}</option>
-                              <option value="politiki">{{menuw.politiki}}</option>
-                              <option value="gawia">{{menuw.gawia}}</option>
+                              <option value="baki">{{param.baki}}</option>
+                              <option value="huyi">{{param.huyi}}</option>
+                              <option value="lugi">{{param.lugi}}</option>
+                              <option selected value="jivi">{{param.jivi}}</option>
+                              <option value="politiki">{{param.politiki}}</option>
+                              <option value="gawia">{{param.gawia}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-marorang">{{menuw.marorang}}</label>
-                            <select class="custom-select" id="map-marorang">
-                              <option value="baki">{{menuw.baki}}</option>
-                              <option value="huyi">{{menuw.huyi}}</option>
-                              <option selected value="nili">{{menuw.nili}}</option>
-                              <option value="cerni">{{menuw.cerni}}</option>
-                              <option value="gawia">{{menuw.gawia}}</option>
+                            <label for="map-hayrang">{{param.hayrang}}</label>
+                            <select class="custom-select" id="map-hayrang">
+                              <option value="baki">{{param.baki}}</option>
+                              <option value="huyi">{{param.huyi}}</option>
+                              <option selected value="nili">{{param.nili}}</option>
+                              <option value="cerni">{{param.cerni}}</option>
+                              <option value="gawia">{{param.gawia}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-filter">{{menuw.filter}}</label>
+                            <label for="map-filter">{{param.filter}}</label>
                             <select class="custom-select" id="map-filter">
-                              <option selected value="nol">{{menuw.nol}}</option>
-                              <option value="pili">{{menuw.pili}}</option>
-                              <option value="bakocerni">{{menuw.bakocerni}}</option>
-                              <option value="mirdi">{{menuw.mirdi}}</option>
+                              <option selected value="nol">{{param.nol}}</option>
+                              <option value="pili">{{param.pili}}</option>
+                              <option value="bakocerni">{{param.bakocerni}}</option>
+                              <option value="mirdi">{{param.mirdi}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <h6>{{menuw.zemforme}}</h6>
+                            <h6>{{param.zemforme}}</h6>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kale" value="kale" checked>
-                              <label class="form-check-label" for="map-zemforme-kale">{{menuw.kale}}</label>
+                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kal" value="kal" checked>
+                              <label class="form-check-label" for="map-zemforme-kal">{{param.kal}}</label>
                             </div>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desene" value="desene">
-                              <label class="form-check-label" for="map-zemforme-desene">{{menuw.desene}}</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <h6>{{menuw.mare}}</h6>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="mare" id="map-mar-kale" value="kale" checked>
-                              <label class="form-check-label" for="map-mar-kale">{{menuw.kale}}</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="mare" id="map-mar-linye" value="linye">
-                              <label class="form-check-label" for="map-mar-linye">{{menuw.desene}}</label>
+                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desen" value="desen">
+                              <label class="form-check-label" for="map-zemforme-desen">{{param.desen}}</label>
                             </div>
                           </div>
                           <div class="form-group">
-                            <h6>{{menuw.site}}</h6>
+                            <h6>{{param.hay}}</h6>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kale" checked>
-                              <label class="form-check-label" for="map-site-nol">{{menuw.kale}}</label>
+                              <input class="form-check-input" type="radio" name="hay" id="map-hay-kal" value="kal" checked>
+                              <label class="form-check-label" for="map-hay-kal">{{param.kal}}</label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="hay" id="map-hay-linye" value="linye">
+                              <label class="form-check-label" for="map-hay-linye">{{param.desen}}</label>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <h6>{{param.site}}</h6>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kal" checked>
+                              <label class="form-check-label" for="map-site-nol">{{param.kal}}</label>
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                              <label class="form-check-label" for="map-site-binde">{{menuw.binde}}</label>
+                              <label class="form-check-label" for="map-site-binde">{{param.binde}}</label>
                             </div>
                             <div class="form-check">
-                              <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desene">
-                              <label class="form-check-label" for="map-site-grafe">{{menuw.desene}}</label>
+                              <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desen">
+                              <label class="form-check-label" for="map-site-grafe">{{param.desen}}</label>
                             </div>
                           </div>
                         </div>
@@ -368,7 +368,7 @@
                       <div class="card-header" id="headingThree">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                            {{menuw.sife}}
+                            {{param.sif}}
                           </button>
                         </h5>
                       </div>
@@ -377,37 +377,37 @@
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-nade">
-                              <label class="custom-control-label" for="map-nade">{{menuw.nade}}</label>
+                              <label class="custom-control-label" for="map-nade">{{param.nade}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-kenare" checked>
-                              <label class="custom-control-label" for="map-kenare">{{menuw.kenare}}</label>
+                              <input type="checkbox" class="custom-control-input" id="map-kenar" checked>
+                              <label class="custom-control-label" for="map-kenar">{{param.kenar}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-saye">
-                              <label class="custom-control-label" for="map-saye">{{menuw.saye}}</label>
+                              <input type="checkbox" class="custom-control-input" id="map-say">
+                              <label class="custom-control-label" for="map-say">{{param.say}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                              <label class="custom-control-label" for="map-zemnete">{{menuw.zemnete}}</label>
+                              <label class="custom-control-label" for="map-zemnete">{{param.zemnete}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                              <label class="custom-control-label" for="map-dawnete">{{menuw.dawnete}}</label>
+                              <label class="custom-control-label" for="map-dawnete">{{param.dawnete}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                              <label class="custom-control-label" for="map-pontopine">{{menuw.pontopine}}</label>
+                              <label class="custom-control-label" for="map-pontopine">{{param.pontopine}}</label>
                             </div>
                           </div>
                         </div>
@@ -417,7 +417,7 @@
                       <div class="card-header" id="headingFour">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                            {{menuw.name}}
+                            {{param.nam}}
                           </button>
                         </h5>
                       </div>
@@ -425,31 +425,31 @@
                         <div class="card-body">
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-dexnam" checked>
-                              <label class="custom-control-label" for="map-dexnam">{{menuw.dexnam}}</label>
+                              <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
+                              <label class="custom-control-label" for="map-deshnam">{{param.deshnam}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-xanonam">
-                              <label class="custom-control-label" for="map-xanonam">{{menuw.xanonam}}</label>
+                              <input type="checkbox" class="custom-control-input" id="map-shannam">
+                              <label class="custom-control-label" for="map-shannam">{{param.shannam}}</label>
                             </div>
                           </div>
                           <div class="form-group">
-                            <label for="map-baxe">{{menuw.kitabe}}</label>
-                            <select class="custom-select" id="map-baxe">
-                              <option selected value="novyangi">{{menuw.novyangi}}</option>
-                              <option value="en">{{menuw.en}}</option>
-                              <option value="es">{{menuw.es}}</option>
-                              <option value="la">{{menuw.la}}</option>
+                            <label for="map-bash">{{param.kitabe}}</label>
+                            <select class="custom-select" id="map-bash">
+                              <option selected value="novyangi">{{param.novyangi}}</option>
+                              <option value="en">{{param.en}}</option>
+                              <option value="es">{{param.es}}</option>
+                              <option value="la">{{param.la}}</option>
                               <!--TODO it would be nice if it could automatically select the system that goes with the language-->
-                              <option value="jp">{{menuw.jp}}</option>
-                              <option value="pd">{{menuw.pd}}</option>
+                              <option value="jp">{{param.jp}}</option>
+                              <option value="pd">{{param.pd}}</option>
                             </select>
                           </div>
                           <div class="form-group">
                             <div class="form-group">
-                              <label for="map-kitabodayia">{{menuw.kitabodayia}}</label>
+                              <label for="map-kitabodayia">{{param.kitabodayia}}</label>
                               <input type="number" value="12" data-decimals="0" min="2" max="72" step="1" id="map-kitabodayia"/>
                             </div>
                           </div>
@@ -458,11 +458,11 @@
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="map-apply">
                       <span id="map-redi">
-                        {{menuw.kara}}
+                        {{menu.kara}}
                       </span>
                       <span id="map-lada" style="display: none">
                         <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                        {{menuw.denga}}
+                        {{menu.denga}}
                       </span>
                     </button>
                   </form>
@@ -480,7 +480,7 @@
       </div>
     </main>
 
-    <div id="baxe" style="display: none;">{{baxe.kode}}</div>
+    <div id="bash" style="display: none;">{{bash.kode}}</div>
 
     <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="/src/lib/jquery.min.js" crossorigin="anonymous"></script>
