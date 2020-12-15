@@ -10,7 +10,7 @@ const $ = window.$; // why is this like this? I don't know.
 import {generateTerrain} from "./terrain.js";
 import {Sphere, Spheroid, Surface} from "./surface.js";
 import {World} from "./world.js";
-import {Convention} from "./language.js";
+import {Convention, DeuteroLanguage, Language, ProtoLanguage, transcribe} from "./language.js";
 import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
 import {Random} from "./random.js";
 
@@ -242,14 +242,6 @@ function mapApply() {
 
 
 /**
- * Once the page is ready, start the algorithm!
- */
-$(document).ready(() => {
-	console.log("ready!");
-	$('#map-apply').click();
-}); // TODO: warn before leaving page
-
-/**
  * When the planet button is clicked, call its function.
  * Note that this does not check if the planet is out of sync; it
  * must update every time the tab is opened because of Plotly.
@@ -272,6 +264,7 @@ $('#planet-apply, #planet-tab').on('click', () => {
 		rediLoge.show();
 	}, 10);
 });
+
 
 /**
  * When the terrain button is clicked, do its thing
@@ -347,6 +340,7 @@ $('#map-apply, #map-tab').on('click', () => {
 	}
 });
 
+
 $('#planet-panel :input').on('change', () => {
 	planetOutOfSync = true;
 	terrainOutOfSync = true;
@@ -368,3 +362,23 @@ $('#history-panel :input').on('change', () => {
 $('#map-panel :input').on('change', () => {
 	mapOutOfSync = true;
 });
+
+
+/**
+ * Once the page is ready, start the algorithm!
+ */
+$(document).ready(() => {
+	console.log("ready!");
+	for (let i = 0; i < 18; i ++) {
+		console.log(i);
+		for (let j = 0; j < 6; j ++) {
+			const rng = new Random(i);
+			let bash: Language = new ProtoLanguage(rng);
+			for (let k = 0; k < 20; k ++) {
+				console.log(transcribe(bash.getCountryName(j)));
+				bash = new DeuteroLanguage(bash, rng);
+			}
+		}
+	}
+	$('#map-apply').click();
+}); // TODO: warn before leaving page

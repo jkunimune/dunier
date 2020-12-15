@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+*.tsv eol=lf
+*.txt eol=lf

@@ -100,13 +100,13 @@ class Silabia extends Enumify {
 /** laterality */
 class Latia extends Enumify {
 	static LATERAL = new Latia();
-	static CENTRAL = new Latia();
+	static MEDIAN = new Latia();
 	static _ = Latia.closeEnum();
 }
 
 /** location of secondary articulation or vowel rounding */
 class MinorLoke extends Enumify {
-	static NONE = new MinorLoke();
+	static UNROUNDED = new MinorLoke();
 	static LABIALIZED = new MinorLoke();
 	static PALATALIZED = new MinorLoke();
 	static VELARIZED = new MinorLoke();
@@ -131,6 +131,7 @@ class PendaniSif extends Enumify {
 	static SONORANT = new PendaniSif();
 	static OBSTRUENT = new PendaniSif();
 	static HIGH = new PendaniSif();
+	static MID = new PendaniSif();
 	static LOW = new PendaniSif();
 	static TENSE = new PendaniSif();
 	static LAX = new PendaniSif();
@@ -159,7 +160,7 @@ class Fon {
 	public readonly nosia: Nosia;
 
 	constructor(mode: Mode, loke: Loke, voze: Voze = Voze.VOICED, silabia: Silabia = Silabia.NONSYLLABIC,
-				latia: Latia = Latia.CENTRAL, minorLoke: MinorLoke = MinorLoke.NONE, nosia: Nosia = Nosia.ORAL) {
+				latia: Latia = Latia.MEDIAN, minorLoke: MinorLoke = MinorLoke.UNROUNDED, nosia: Nosia = Nosia.ORAL) {
 		this.mode = mode;
 		this.loke = loke;
 		this.voze = voze;
@@ -204,6 +205,8 @@ class Fon {
 					return !this.is(PendaniSif.SONORANT);
 				case PendaniSif.HIGH:
 					return this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE;
+				case PendaniSif.MID:
+					return this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN_MID;
 				case PendaniSif.LOW:
 					return this.mode === Mode.NEAR_OPEN || this.mode === Mode.OPEN;
 				case PendaniSif.TENSE:
@@ -229,8 +232,8 @@ class Fon {
 					return this.is(PendaniSif.RHOTIC) ||
 						(this.latia === Latia.LATERAL && this.mode === Mode.CLOSE && this.is(PendaniSif.CORONAL));
 				case PendaniSif.VOWEL:
-					return this.mode >= Mode.CLOSE && this.latia === Latia.CENTRAL &&
-						([Loke.PALATAL, Loke.CENTRAL, Loke.VELAR].includes(this.loke));
+					return this.mode.sonority >= Mode.CLOSE.sonority && this.latia === Latia.MEDIAN &&
+						this.loke.foner === Foner.DORSUM;
 				default:
 					throw "nope; not going to happen";
 			}
@@ -260,8 +263,8 @@ class Fon {
 
 /** collection of phonological features */
 class Klas {
-	private readonly sa: Sif[];
-	private readonly na: Sif[];
+	private readonly sa: Sif[]; // qualities this class explicitly has
+	private readonly na: Sif[]; // qualities this class explicitly does not have
 
 	constructor(sa: Sif[], na: Sif[]) {
 		this.sa = sa;
@@ -352,7 +355,7 @@ class Klas {
 			}
 		}
 
-		if (loke === Loke.UVULAR && mode.sonority > Mode.CLOSE.sonority)
+		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
 			loke = Loke.VELAR;
 		if (
 				(mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
@@ -464,8 +467,8 @@ for (const row of harfiaTable) {
 	const loke = LOKE_KODE.get(sif[0]);
 	const {mode, voze} = MODE_KODE.get(sif[1]);
 	const silabia = sif[2].includes('s') ? Silabia.SYLLABIC : Silabia.NONSYLLABIC;
-	const latia = sif[2].includes('l') ? Latia.LATERAL: Latia.CENTRAL;
-	const aliSif = sif[2].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.NONE;
+	const latia = sif[2].includes('l') ? Latia.LATERAL: Latia.MEDIAN;
+	const aliSif = sif[2].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.UNROUNDED;
 	const foneme = new Fon(mode, loke, voze, silabia, latia, aliSif);
 	FROM_IPA.set(grafeme[0], foneme);
 	TO_TEXT.set(foneme.hash(), grafeme);
@@ -664,10 +667,13 @@ const ENGLI_VISE = loadTSV('kanune-engli.tsv')
 export function transcribe(lekse: Fon[], convention: Convention = Convention.NASOMEDI): string {
 	let asli = "";
 	for (let i = 0; i < lekse.length; i ++) {
-		if (TO_TEXT.has(lekse[i].hash()))
-			asli += TO_TEXT.get(lekse[i].hash())[convention];
+		let fonHash = lekse[i].hash();
+		if (!TO_TEXT.has(fonHash) && fonHash.slice(10, 12) === 'PO') // spell postalveolar sounds as alveolar
+			fonHash = fonHash.slice(0, 10) + 'AL' + fonHash.slice(12);
+		if (!TO_TEXT.has(fonHash))
+			throw `could not transcribe ${lekse[i]}, ${fonHash}`;
 		else
-			throw `could not transcribe ${lekse[i]}, ${lekse[i].hash()}`;
+			asli += TO_TEXT.get(fonHash)[convention];
 	}
 
 	if (convention === Convention.ENGLI) {
