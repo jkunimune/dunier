@@ -1,100 +1,106 @@
-i	i	i	e-	i	i	i	vokale	5	2	u
-y	y	i	u-	yu	ü	i	vokale	5	2	r
-ɨ	y	i	i*	i	ï	i	vokale	5	1	u
-ʉ	y	u	u*	u	y	u	vokale	5	1	r
-ɯ	u	u	oo	u	ÿ	u	vokale	5	0	u
-u	u	u	oo	u	u	u	vokale	5	0	r
-ɪ	i	i	i*	i	i	i	vokale	4	2	u
-ʏ	y	i	yu*	yu	ü	i	vokale	4	2	r
-ʊ	u	u	u*	u	u	u	vokale	4	0	r
-e	e	e	e*	e	e	e	vokale	3	2	u
-ø	œ	e	ur	e	ö	e	vokale	3	2	r
-ɘ	œ	e	u*	a	ë	e	vokale	3	1	u
-ɵ	œ	o	ur	o	ə	o	vokale	3	1	r
-ɤ	o	e	u*	o	ə̈	o	vokale	3	0	u
-o	o	o	o*	o	o	o	vokale	3	0	r
-ɛ	e	e	e*	e	e	e	vokale	2	2	u
-œ	œ	e	ur	e	ö	e	vokale	2	2	r
-ɜ	œ	e	u*	e	ë	e	vokale	2	1	u
-ɞ	œ	o	ur	o	ə	o	vokale	2	1	r
-ʌ	o	e	u*	o	ə̈	o	vokale	2	0	u
-ɔ	o	o	o*	o	o	o	vokale	2	0	r
-æ	æ	a	a*	a	ä	a	vokale	1	2	u
-ɐ	a	a	u*	a	a	a	vokale	1	1	r
-a	a	a	a*	a	a	a	vokale	0	1	u
-ɑ	a	a	a*	a	a	a	vokale	0	0	u
-ɒ	o	o	o*	o	o	o	vokale	0	0	r
-m	m	m	m	m	m	m	konson	bl	n	c	v
-ɱ	m	m	m	m	m	m	konson	ld	n	c	v
-n	n	n	n	n	n	n	konson	ar	n	c	v
-ɳ	n	n	n	n	ṇ	n	konson	rf	n	c	v
-ɲ	gn	ñ	ny	ny	ny	ny	konson	hp	n	c	v
-ŋ	n	n	ng	nn	ng	ng	konson	vl	n	c	v
-ɴ	n	n	ng	nn	ng	ng	konson	uv	n	c	v
-p	p	p	p	p	p	p	konson	bl	p	c	u
-b	b	b	b	b	b	b	konson	bl	p	c	v
-t	t	t	t	t	t	t	konson	ar	p	c	u
-d	d	d	d	d	d	d	konson	ar	p	c	v
-ʈ	t	t	t	t	ṭ	t	konson	rf	p	c	u
-ɖ	d	d	d	d	ḍ	d	konson	rf	p	c	v
-c	ci	ci	c	ky	ky	ky	konson	hp	p	c	u
-ɟ	j	y	j	dy	gy	gy	konson	hp	p	c	v
-k	c	c	c	k	k	k	konson	vl	p	c	u
-ɡ	g	g	g	g	g	g	konson	vl	p	c	v
-q	g	g	c	k	q	k	konson	uv	p	c	u
-ɢ	g	g	g	g	q	g	konson	uv	p	c	v
-ʡ	g	g	c	k	q	k	konson	eg	p	c	u
-ʔ		h			’		konson	gl	p	c	u
-p͡ɸ	ph	f	f	p	pf	f	konson	bl	pf	c	u
-b͡β	b	b	v	b	bv	v	konson	bl	pf	c	v
-p͡f	ph	f	f	p	pf	f	konson	ld	pf	c	u
-b͡v	b	b	v	b	bv	v	konson	ld	pf	c	v
-t͡s	c	z	z	ts	ts	c	konson	ar	pf	c	u
-d͡z	z	z	z	z	dz	z	konson	ar	pf	c	v
-t͡ʃ	cj	ch	ch	ty	ch	c	konson	pa	pf	c	u
-d͡ʒ	j	y	j	zy	j	j	konson	pa	pf	c	v
-ʈ͡ʂ	cj	ch	ch	ty	ch	c	konson	rf	pf	c	u
-ɖ͡ʐ	j	y	j	zy	j	j	konson	rf	pf	c	v
-c͡ç	cj	ch	ch	ky	khy	ky	konson	hp	pf	c	u
-ɟ͡ʝ	j	y	j	zy	ghy	gy	konson	hp	pf	c	v
-k͡x	ch	j	c	k	kh	k	konson	vl	pf	c	u
-ɡ͡ɣ	g	g	g	g	gh	g	konson	vl	pf	c	v
-ɸ	ph	f	f	f	f	f	konson	bl	f	c	u
-β	b	b	v	b	v	v	konson	bl	f	c	v
-f	f	f	f	f	f	v	konson	ld	f	c	u
-v	v	v	v	b	v	v	konson	ld	f	c	v
-θ	th	z	th	s	th	t	konson	dn	f	c	u
-ð	d	d	th	z	dh	d	konson	dn	f	c	v
-s	s	s	s	s	s	s	konson	ar	f	c	u
-z	z	z	z	z	z	z	konson	ar	f	c	v
-ʃ	sc	y	sh	sy	sh	x	konson	pa	f	c	u
-ʒ	z	y	j	zy	zh	j	konson	pa	f	c	v
-ʂ	sc	y	sh	sy	ṣ	x	konson	rf	f	c	u
-ʐ	z	y	j	zy	ẓ	j	konson	rf	f	c	v
-ç	hi	ji	sh	hy	hy	hy	konson	hp	f	c	u
-ʝ	j	y	y	y	y	y	konson	hp	f	c	v
-x	ch	j	ɦ	h	kh	h	konson	vl	f	c	u
-ɣ	g	g	g	g	gh	g	konson	vl	f	c	v
-χ	ch	j	ɦ	h	qh	h	konson	uv	f	c	u
-ʁ	r	r	r	r	r	r	konson	uv	f	c	v
-ħ	h	j	ɦ	h	h	h	konson	eg	f	c	u
-ʕ		h			h		konson	eg	f	c	v
-h	h	j	ɦ	h	h	h	konson	gl	f	c	u
-ʋ	v	u	w	u	w	w	konson	ld	a	c	v
-ɹ	r	r	r	r	r	r	konson	ar	a	c	v
-ɻ	r	r	r	r	ṛ	r	konson	rf	a	c	v
-j	j	i	y	y	y	y	konson	hp	a	c	v
-ɰ	v	u	w	w	w	w	konson	vl	a	c	v
-ⱱ	v	v	v	u	v	v	konson	ld	t	c	v
-ɾ	r	r	r	r	r	r	konson	ar	t	c	v
-ɽ	r	r	r	r	ṛ	r	konson	rf	t	c	v
-ʙ	b	brr	pbbbr	bub	bb	b	konson	bl	r	c	v
-r	r	rr	r	r	r	r	konson	ar	r	c	v
-ʀ	r	r	r	r	r	r	konson	uv	r	c	v
-ɬ	l	l	l	r	lh	l	konson	ar	f	l	u
-ɮ	l	l	l	dl	r	l	konson	ar	f	l	v
-l	l	l	l	r	l	l	konson	ar	a	l	v
-ɭ	l	l	l	r	l	l	konson	rf	a	l	v
-ʎ	gl	ll	y	ry	ly	ly	konson	hp	a	l	v
-ʟ	gl	ll	y	ry	lw	l	konson	vl	a	l	v
-ɺ	r	r	r	r	r	r	konson	ar	t	l	v
+m	m	m	m	м	m	m	m	m	m	m	bl	n	
+p	p	p	p	п	p	p	p	p	p	p	bl	p	
+b	b	b	b	б	b	b	b	b	b	b	bl	b	
+ɸ	ph	f	f	ф	f	f	f	f	f	f	bl	f	
+β	b	b	v	в	b	v	v	v	v	v	bl	v	
+ʙ	b	brr	pbr	мв	bub	mbr	mbb	mbr	mb	mblr	bl	r	
+ɱ	m	m	m	м	m	m	m	m	m	m	ld	n	
+f	f	f	f	ф	f	f	f	f	f	f	ld	f	
+v	v	v	v	в	b	v	v	v	v	v	ld	v	
+ʋ	v	u	w	в	u	w	v	w	v	w	ld	a	
+ⱱ	v	v	v	в	u	v	v	v	v	v	ld	t	
+n	n	n	n	н	n	n	n	n	n	n	ar	n	
+t	t	t	t	т	t	t	t	t	t	t	ar	p	
+d	d	d	d	д	d	d	d	d	d	d	ar	b	
+θ	th	z	th	ф	s	th	th	th	ṭ	th	d	f	
+ð	d	d	th	д	z	dh	dh	dh	ḍ	dh	d	v	
+t͡s	c	z	s	ц	ts	c	c	ts	ts	z	ar	pf	
+d͡z	z	z	z	дз	z	z	dz	dz	dz	z	ar	bv	
+s	s	s	s	с	s	s	s	s	s	s	ar	f	
+z	z	z	z	з	z	z	z	z	z	z	ar	v	
+t͡ʃ	c'	ch	ch	ч	ty	ch	cj	ch	tṣ	c	pa	pf	
+d͡ʒ	j	y	j	дж	zy	j	dzj	j	dẓ	j	pa	bv	
+t͡ɬ	cl	cl	cl	тль	tor	tl	tl	tl	tl	kl	ar	pf	l
+d͡ɮ	gl	gl	gl	дль	dor	dl	dl	dl	dl	gl	ar	bv	l
+ʃ	sc'	y	sh	ш	sy	sh	sj	sh	ṣ	x	pa	f	
+ʒ	z	y	j	ж	zy	zh	zj	zh	ẓ	j	pa	v	
+ɬ	l	l	l	ль	r	lh	ll	lh	lh	lh	ar	f	l
+ɮ	l	l	l	л	r	l	dl	dl	dl	zl	ar	v	l
+ɹ	r	r	r	р	a	r	r	r	r	r	ar	a	
+l	l	l	l	л	r	l	l	l	l	l	ar	a	l
+r	r	rr	r	р	r	r	rr	r	r	r	ar	r	
+ɾ	r	r	r	р	r	r	r	r	r	r	ar	t	
+ɳ	n	n	n	н	n	n	ṇ	nr	ṇ	ṇ	rf	a	
+ʈ	t	t	t	т	t	t	ṭ	tr	ṭ	ṭ	rf	p	
+ɖ	d	d	d	д	d	d	ḍ	dr	ḍ	ḍ	rf	b	
+ʈ͡ʂ	c'	ch	ch	ч	ty	ch	cz	ch	tṣ	ch	rf	pf	
+ɖ͡ʐ	j	y	j	дж	zy	j	dz	j	dẓ	zh	rf	bv	
+ʂ	sc'	y	sh	ш	sy	sh	ṣ	sh	ṣ	sh	rf	f	
+ʐ	r	y	j	ж	zy	zh	ẓ	zh	ẓ	zh	rf	v	
+ɻ	r	r	r	р	a	r	rz	rh	ṛ	rh	rf	a	
+ɭ	l	l	l	л	r	l	l	l	l	l	rf	a	l
+ɽ	r	r	r	р	r	r	rz	rh	ṛ	rh	rf	t	
+ɺ	r	r	r	р	r	r	rz	rh	ṛ	rh	rf	t	l
+ɲ	gn	ñ	ny	нь	ny	ny	ny	nh	ny	ny	c	n	
+c	cj	cy	c	кь	ky	ky	kj	kh	ty	ky	c	p	
+ɟ	j	y	j	гь	gy	gy	gj	gh	dy	gy	c	b	
+ç	hj	jy	sh	щ	hy	hy	hj	sh	sy	hy	c	f	
+ʝ	j	y	y	й	y	y	y	y	y	y	c	v	
+ʎ	gl	ll	y	ль	ry	ly	ly	lh	ly	ly	c	a	l
+ŋ	n	n	ng	нг	nn	ng	ng	ng	ng	ng	v	n	
+k	c	c	c	к	k	k	k	k	k	k	v	p	
+ɡ	g	g	g	г	g	g	g	g	g	g	v	b	
+x	ch	j	gh	х	h	h	kh	h	x	kh	v	f	
+ɣ	g	g	g	г	g	gh	gh	gh	g̣	gh	v	v	
+ʟ	l	ll	y	ль	ry	l	lw	lw	lw	lw	v	a	l
+ɴ	n	n	ng	и	nn	ng	ng	ng	ng	ng	uv	n	
+q	g	g	c	г	k	k	q	q	q	q	uv	p	
+ɢ	g	g	g	г	g	g	q	q	q	q	uv	b	
+χ	ch	j	ɦ	х	h	h	qh	h	x̣	qh	uv	f	
+ʁ	r	r	r	р	r	r	r	rh	r	r	uv	v	
+ʀ	r	r	r	р	r	r	r	r	r	r	uv	r	
+ʡ	g	g	c	г	k	k	q	q	q	q	eg	p	
+ħ	h	j	ɦ	х	h	h	h	h	h	h	eg	f	
+ʕ		h					h	h	ʻ	ʻ	eg	v	
+ʔ		h					’	’	ʻ	’	gl	p	
+h	h	j	ɦ	г	h	h	h	h	ḥ	h	gl	f	
+ᵏʘ	p	p	p	п	p	p	pq	pc	pc	p’	bl	k!	
+ᶢʘ	b	b	b	б	b	b	bq	bc	bc	b’	bl	k!	
+ᵏǀ	t	t	t	т	t	t	tq	c	tc	t’	d	k!	
+ᶢǀ	d	d	d	д	d	d	dq	gc	dc	d’	d	k!	
+ᵏǂ	c	c	c	к	k	k	q	q	c	’	c	k!	
+ᶢǂ	c	c	c	г	g	g	gq	gq	gc	g’	c	k!	
+ᵏǁ	cl	cl	cl	кл	k	k	ql	x	lc	c’	v	k!	l
+ᶢǁ	gl	gl	gl	гл	g	g	gql	gx	glc	j’	v	k!	l
+ᵏǃ	t	t	t	т	t	t	qy	qc	c̣	’h	rf	k!	
+ᶢǃ	t	t	t	т	t	t	gqy	gqc	gc̣	g’h	rf	k!	
+j	j	*i	y	й	y	y	j	y	y	y	c	a	
+ɥ	ju	yu	yu*	ю	yu	yu	yu	yw	wy	yu	c	a	w
+ɰ	v	u	w	у	w	w	w	w	w	w	v	a	
+w	v	*u	w	в	w	w	w	w	w	w	v	a	w
+i	i	i	e-	и	i	i	i	i	i	i	c	a	s
+y	y	i	u-	ю	yu	i	ü	oi	y	ʉ	c	a	sw
+ɨ	y	i	i*	ы	i	i	ï	i	ị	ɨ	m	a	s
+ʉ	y	u	u*	ю	u	u	y	u	ụ	ʉ	m	a	sw
+ɯ	u	u	oo	ы	u	u	ÿ	eu	ị	ɨ	v	a	s
+u	u	u	oo	у	u	u	u	u	u	u	v	a	sw
+ɪ	i	i	i*	и	i	i	i	i	ị	i	c	1	s
+ʏ	y	i	yu*	ю	yu	i	ü	ü	ỵ	ʉ	c	1	sw
+ʊ	u	u	u*	у	u	u	u	u	ụ	u	v	1	sw
+e	e	e	e*	э	e	e	e	e	e	e	c	2	s
+ø	œ	e	ur	ё	e	e	ö	oe	ọ	ø	c	2	sw
+ɘ	œ	e	u*	а	a	e	ë	e	ẹ	y	m	2	s
+ɵ	œ	o	ur	о	o	o	ə	o	ọ	ø	m	2	sw
+ɤ	o	e	u*	ы	o	o	ə̈	eo	ẹ	y	v	2	s
+o	o	o	o*	о	o	o	o	o	o	o	v	2	sw
+ɛ	e	e	e*	э	e	e	e	e	ẹ	e	c	3	s
+œ	œ	e	ur	ё	e	e	ö	oe	ọ	ø	c	3	sw
+ɜ	œ	e	u*	а	e	e	ë	e	ẹ	y	m	3	s
+ɞ	œ	o	ur	о	o	o	ə	o	ọ	ø	m	3	sw
+ʌ	o	e	u*	ы	o	o	ə̈	eo	ẹ	y	v	3	s
+ɔ	o	o	o*	о	o	o	o	o	ọ	o	v	3	sw
+æ	æ	a	a*	э	a	a	ä	ae	ạ	æ	c	4	s
+ɐ	a	a	u*	а	a	a	a	a	ạ	a	m	4	s
+a	a	a	a*	а	a	a	a	a	a	a	c	5	s
+ɑ	a	a	a*	а	a	a	a	a	a	a	v	5	s
+ɒ	o	o	o*	о	o	o	o	ao	ọ	a	v	5	sw

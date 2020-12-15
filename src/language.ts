@@ -1,185 +1,472 @@
-// language.ts
+// language.ts: just the code relevant to linguistics
 
 import {Random} from "./random.js";
 import {loadTSV} from "./utils.js";
+import {Enumify} from "./lib/enumify.js";
 
 
 const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
 
 
-const NUM_CONVENTIONS = 7;
+const NUM_CONVENTIONS = 11;
+/** transcription systems */
 export enum Convention {
 	NASOMEDI,
 	LATINI,
 	ESPANI,
 	ENGLI,
+	RUSI,
 	NIPONI,
-	NOVOYANGI,
 	PANDUNI,
+	CHANSAGI_0,
+	CHANSAGI_1,
+	CHANSAGI_2,
+	CHANSAGI_3,
 }
 
-
-enum Gawia {
-	ANY,
-	TALI,
-	YAGOTALI,
-	MEDOTALI,
-	MEDOGAWI,
-	YAGOGAWI,
-	GAWI,
+/** list of active articulators */
+enum Foner {
+	LABIA,
+	CORONA,
+	DORSUM,
+	PHARYNX,
 }
 
-enum Predia {
-	ANY,
-	BADI,
-	MEDI,
-	PREDI,
-}
+/** form of primary articulation or vowel height */
+class Mode extends Enumify { // this should just be an enum, but JavaScript implements them poorly
+	static STOP = new Mode(0);
+	static AFFRICATE = new Mode(1);
+	static FRICATE = new Mode(1);
+	static NASAL = new Mode(2);
+	static TAP = new Mode(3);
+	static TRILL = new Mode(3);
+	static CLOSE = new Mode(4);
+	static NEAR_CLOSE = new Mode(5);
+	static CLOSE_MID = new Mode(6);
+	static OPEN_MID = new Mode(7);
+	static NEAR_OPEN = new Mode(8);
+	static OPEN = new Mode(9);
+	static CLICK = new Mode(-1);
+	static _ = Mode.closeEnum();
 
-enum Cirkia {
-	ANY,
-	CIRKI,
-	KAYI,
-}
-
-enum Avoze {
-	ANY,
-	AVOZI,
-	KIRIKAVOZE,
-	NOLAVOZI,
-	NAFASI,
-	TUHI,
-}
-
-enum Tone {
-	ANY,
-	TALI,
-	MEDI,
-	GAWI,
-	ZAYO_TALI,
-	ZAYO_GAWI,
-}
-
-enum Nosia {
-	ANY,
-	NOSI,
-	SAFI,
-}
-
-enum Loke {
-	ANY,
-	DULOLABI,
-	LABODANTI,
-	DANTI,
-	PIZOKULI,
-	BADOPIZI,
-	BOKOCATI,
-	RETROKURBI,
-	BOKOKOMALI,
-	BOKOPENDI,
-	SUPROMUNI,
-	GALOMUNI,
-}
-
-enum Forme {
-	ANY,
-	NOSI,
-	TINGI,
-	FRIKI,
-	TINGOFRIKI,
-	KARIBI,
-	TOCI,
-	DALALI,
-	KLIKI,
-}
-
-enum Latia {
-	ANY,
-	JUNGI,
-	LATI,
-}
-
-
-class Vokale {
-	public gawia: Gawia;
-	public predia: Predia;
-	public cirkia: Cirkia;
-	public avoze: Avoze;
-
-	constructor(gawia: Gawia, predia: Predia, cirkia: Cirkia = Cirkia.ANY, avoze: Avoze = Avoze.ANY) {
-		this.gawia = gawia;
-		this.predia = predia;
-		this.cirkia = cirkia;
-		this.avoze = avoze;
-	}
-
-	hash(): number {
-		return (((((this.gawia << 4) | this.predia) << 4) | this.cirkia) << 4) | this.avoze;
+	sonority: number;
+	constructor (sonority: number) {
+		super();
+		this.sonority = sonority;
 	}
 }
 
+/** location of primary articulation or vowel frontness */
+class Loke extends Enumify {
+	static BILABIAL = new Loke(Foner.LABIA);
+	static LABIODENTAL = new Loke(Foner.LABIA);
+	static LINGUOLABIAL = new Loke(Foner.CORONA);
+	static DENTAL = new Loke(Foner.CORONA);
+	static ALVEOLAR = new Loke(Foner.CORONA);
+	static POSTALVEOLAR = new Loke(Foner.CORONA);
+	static RETROFLEX = new Loke(Foner.CORONA);
+	static PALATAL = new Loke(Foner.DORSUM);
+	static CENTRAL = new Loke(Foner.DORSUM);
+	static VELAR = new Loke(Foner.DORSUM);
+	static UVULAR = new Loke(Foner.DORSUM);
+	static EPIGLOTTAL = new Loke(Foner.PHARYNX);
+	static GLOTTAL = new Loke(Foner.PHARYNX);
+	static _ = Loke.closeEnum();
 
-class Konsone {
-	public loke: Loke;
-	public forme: Forme;
-	public latia: Latia;
-	public avoze: Avoze;
+	foner: number;
+	constructor (articulator: number) {
+		super();
+		this.foner = articulator;
+	}
+}
 
-	constructor(loke: Loke, forme: Forme, latia: Latia = Latia.ANY, avoze: Avoze = Avoze.ANY) {
+/** voicing */
+class Voze extends Enumify {
+	static VOICED = new Voze();
+	static BREATHY = new Voze();
+	static TENUIS = new Voze();
+	static ASPIRATED = new Voze();
+	static EJECTIVE = new Voze();
+	static _ = Voze.closeEnum();
+}
+
+/** syllabicity */
+class Silabia extends Enumify {
+	static SYLLABIC = new Silabia();
+	static NONSYLLABIC = new Silabia();
+	static _ = Silabia.closeEnum();
+}
+
+/** laterality */
+class Latia extends Enumify {
+	static LATERAL = new Latia();
+	static CENTRAL = new Latia();
+	static _ = Latia.closeEnum();
+}
+
+/** location of secondary articulation or vowel rounding */
+class MinorLoke extends Enumify {
+	static NONE = new MinorLoke();
+	static LABIALIZED = new MinorLoke();
+	static PALATALIZED = new MinorLoke();
+	static VELARIZED = new MinorLoke();
+	static PHARANGEALIZED = new MinorLoke();
+	static _ = MinorLoke.closeEnum();
+}
+
+/** nasality */
+class Nosia extends Enumify {
+	static NASAL = new Nosia();
+	static ORAL = new Nosia();
+	static _ = Nosia.closeEnum();
+}
+/** dependent segment features */
+class PendaniSif extends Enumify {
+	static LABIAL = new PendaniSif();
+	static CORONAL = new PendaniSif();
+	static DORSAL = new PendaniSif();
+	static GUTTURAL = new PendaniSif();
+	static CONTINUANT = new PendaniSif();
+	static OCCLUSIVE = new PendaniSif();
+	static SONORANT = new PendaniSif();
+	static OBSTRUENT = new PendaniSif();
+	static HIGH = new PendaniSif();
+	static LOW = new PendaniSif();
+	static TENSE = new PendaniSif();
+	static LAX = new PendaniSif();
+	static NASAL = new PendaniSif();
+	static PALATAL = new PendaniSif();
+	static VELAR = new PendaniSif();
+	static PHARANGEAL = new PendaniSif();
+	static SIBILANT = new PendaniSif();
+	static RHOTIC = new PendaniSif();
+	static LIQUID = new PendaniSif();
+	static VOWEL = new PendaniSif();
+	// static STRESSED = new Sif();
+	static _ = PendaniSif.closeEnum();
+}
+
+type Sif = Mode | Loke | Voze | Silabia | Latia | MinorLoke | Nosia | PendaniSif;
+
+/** phonological segment */
+class Fon {
+	public readonly mode: Mode;
+	public readonly loke: Loke;
+	public readonly voze: Voze;
+	public readonly silabia: Silabia;
+	public readonly latia: Latia;
+	public readonly minorLoke: MinorLoke;
+	public readonly nosia: Nosia;
+
+	constructor(mode: Mode, loke: Loke, voze: Voze = Voze.VOICED, silabia: Silabia = Silabia.NONSYLLABIC,
+				latia: Latia = Latia.CENTRAL, minorLoke: MinorLoke = MinorLoke.NONE, nosia: Nosia = Nosia.ORAL) {
+		this.mode = mode;
 		this.loke = loke;
-		this.forme = forme;
+		this.voze = voze;
+		this.silabia = silabia;
 		this.latia = latia;
-		this.avoze = avoze;
+		this.minorLoke = minorLoke;
+		this.nosia = nosia;
 	}
 
-	hash(): number {
-		return -((((((this.loke << 4) | this.forme) << 4) | this.latia) << 4) | this.avoze);
+	is(sif: Sif): boolean {
+		if (sif instanceof Loke)
+			return this.loke === sif;
+		else if (sif instanceof Mode)
+			return this.mode === sif;
+		else if (sif instanceof Voze)
+			return this.voze === sif;
+		else if (sif instanceof Silabia)
+			return this.silabia === sif;
+		else if (sif instanceof Latia)
+			return this.latia === sif;
+		else if (sif instanceof MinorLoke)
+			return this.minorLoke === sif;
+		else if (sif instanceof Nosia)
+			return this.nosia === sif;
+		else {
+			switch (sif) {
+				case PendaniSif.LABIAL:
+					return this.loke.foner === Foner.LABIA || this.minorLoke === MinorLoke.LABIALIZED;
+				case PendaniSif.CORONAL:
+					return this.loke.foner === Foner.CORONA;
+				case PendaniSif.DORSAL:
+					return this.loke.foner === Foner.DORSUM || this.minorLoke === MinorLoke.PALATALIZED || this.minorLoke === MinorLoke.VELARIZED;
+				case PendaniSif.GUTTURAL:
+					return this.loke.foner === Foner.PHARYNX || this.minorLoke === MinorLoke.PHARANGEALIZED;
+				case PendaniSif.CONTINUANT:
+					return this.mode === Mode.FRICATE || this.mode.sonority >= Mode.CLOSE.sonority;
+				case PendaniSif.OCCLUSIVE:
+					return !this.is(PendaniSif.CONTINUANT);
+				case PendaniSif.SONORANT:
+					return this.mode.sonority >= Mode.NASAL.sonority;
+				case PendaniSif.OBSTRUENT:
+					return !this.is(PendaniSif.SONORANT);
+				case PendaniSif.HIGH:
+					return this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE;
+				case PendaniSif.LOW:
+					return this.mode === Mode.NEAR_OPEN || this.mode === Mode.OPEN;
+				case PendaniSif.TENSE:
+					return this.mode === Mode.CLOSE || this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN;
+				case PendaniSif.LAX:
+					return this.mode === Mode.NEAR_CLOSE || this.mode === Mode.OPEN_MID || this.mode === Mode.NEAR_OPEN;
+				case PendaniSif.NASAL:
+					return this.mode === Mode.NASAL || this.nosia === Nosia.NASAL;
+				case PendaniSif.PALATAL:
+					return this.loke === Loke.PALATAL || this.loke === Loke.POSTALVEOLAR || this.minorLoke === MinorLoke.PALATALIZED;
+				case PendaniSif.VELAR:
+					return this.loke === Loke.VELAR || this.minorLoke === MinorLoke.VELARIZED;
+				case PendaniSif.PHARANGEAL:
+					return this.loke === Loke.EPIGLOTTAL || this.minorLoke === MinorLoke.PHARANGEALIZED;
+				case PendaniSif.SIBILANT:
+					return (this.mode === Mode.AFFRICATE || this.mode === Mode.FRICATE) &&
+						(this.loke === Loke.ALVEOLAR || this.loke === Loke.POSTALVEOLAR);
+				case PendaniSif.RHOTIC:
+					return this.voze === Voze.VOICED && (
+						(this.is(PendaniSif.SONORANT) && this.is(PendaniSif.CONTINUANT) && (this.is(PendaniSif.CORONAL) || this.loke === Loke.UVULAR)) ||
+						(this.mode === Mode.FRICATE && this.loke === Loke.UVULAR));
+				case PendaniSif.LIQUID:
+					return this.is(PendaniSif.RHOTIC) ||
+						(this.latia === Latia.LATERAL && this.mode === Mode.CLOSE && this.is(PendaniSif.CORONAL));
+				case PendaniSif.VOWEL:
+					return this.mode >= Mode.CLOSE && this.latia === Latia.CENTRAL &&
+						([Loke.PALATAL, Loke.CENTRAL, Loke.VELAR].includes(this.loke));
+				default:
+					throw "nope; not going to happen";
+			}
+		}
+	}
+
+	hash(): string {
+		return this.silabia.enumKey.slice(0, 2) +
+			this.minorLoke.enumKey.slice(0, 2) +
+			this.nosia.enumKey.slice(0, 2) +
+			this.voze.enumKey.slice(0, 2) +
+			this.latia.enumKey.slice(0, 2) +
+			this.loke.enumKey.slice(0, 2) +
+			this.mode.enumKey;
+	}
+
+	toString(): string {
+		return this.silabia.enumKey.toLowerCase() + " " +
+			this.minorLoke.enumKey.toLowerCase() + " " +
+			this.nosia.enumKey.toLowerCase() + " " +
+			this.voze.enumKey.toLowerCase() + " " +
+			this.latia.enumKey.toLowerCase() + " " +
+			this.loke.enumKey.toLowerCase() + " " +
+			this.mode.enumKey.toLowerCase();
+	}
+}
+
+/** collection of phonological features */
+class Klas {
+	private readonly sa: Sif[];
+	private readonly na: Sif[];
+
+	constructor(sa: Sif[], na: Sif[]) {
+		this.sa = sa;
+		this.na = na;
+	}
+
+	/**
+	 * does fon have all of the properties of this class?
+	 * @param fon
+	 */
+	macha(fon: Fon): boolean {
+		for (const sif of this.sa)
+			if (!fon.is(sif))
+				return false;
+		for (const sif of this.na)
+			if (fon.is(sif))
+				return false;
+		return true;
+	}
+
+	/**
+	 * create a Fon with all of the properties of this, and similar to fon in every other respect.
+	 * @param fon
+	 */
+	konformu(fon: Fon): Fon {
+		if (this.na.length > 0)
+			throw Error("you can't use minuses in the final state of a process!");
+		let mode = fon.mode, loke = fon.loke, voze = fon.voze;
+		let silabia = fon.silabia, latia = fon.latia, minorLoke = fon.minorLoke, nosia = fon.nosia;
+		for (const sif of this.sa) {
+			if (sif instanceof Mode)
+				mode = sif;
+			else if (sif instanceof Loke)
+				loke = sif;
+			else if (sif instanceof Voze)
+				voze = sif;
+			else if (sif instanceof Silabia)
+				silabia = sif;
+			else if (sif instanceof Latia)
+				latia = sif;
+			else if (sif instanceof MinorLoke)
+				minorLoke = sif;
+			else if (sif instanceof Nosia)
+				nosia = sif;
+			else {
+				switch (sif) {
+					case PendaniSif.PALATAL:
+						loke = Loke.PALATAL;
+						break;
+					case PendaniSif.VELAR:
+						loke = Loke.VELAR;
+						break;
+					case PendaniSif.HIGH:
+						if (fon.is(PendaniSif.LAX))
+							mode = Mode.NEAR_CLOSE;
+						else
+							mode = Mode.CLOSE;
+						break;
+					case PendaniSif.LOW:
+						if (fon.is(PendaniSif.LAX))
+							mode = Mode.NEAR_OPEN;
+						else
+							mode = Mode.OPEN;
+						break;
+					case PendaniSif.TENSE:
+						if (!fon.is(PendaniSif.VOWEL))
+							throw RangeError("can't tense a nonvocoid");
+						else if (mode === Mode.NEAR_CLOSE)
+							mode = Mode.CLOSE;
+						else if (mode === Mode.OPEN_MID)
+							mode = Mode.CLOSE_MID;
+						else if (mode === Mode.NEAR_OPEN)
+							mode = Mode.OPEN;
+						break;
+					case PendaniSif.LAX:
+						if (!fon.is(PendaniSif.VOWEL))
+							throw RangeError("can't lax a nonvocoid");
+						else if (mode === Mode.CLOSE)
+							mode = Mode.NEAR_CLOSE;
+						else if (mode === Mode.CLOSE_MID)
+							mode = Mode.OPEN_MID;
+						else if (mode === Mode.OPEN)
+							mode = Mode.NEAR_OPEN;
+						break;
+					default:
+						throw Error(`I can't use ${sif} in the final state of a process.`);
+				}
+			}
+		}
+
+		if (loke === Loke.UVULAR && mode.sonority > Mode.CLOSE.sonority)
+			loke = Loke.VELAR;
+		if (
+				(mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
+				(voze === Voze.VOICED && loke === Loke.GLOTTAL) ||
+				(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
+				(mode === Mode.TRILL && loke.foner !== Foner.CORONA && loke !== Loke.BILABIAL && loke !== Loke.UVULAR) ||
+				(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
+				(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is physically impossible for whatever reason
+			return fon; // cancel it
+		else // otherwise
+			return new Fon(mode, loke, voze, silabia, latia, minorLoke, nosia); // bring it all together!
 	}
 }
 
 
-const FROM_IPA: Map<string, Vokale | Konsone> = new Map(); // load the IPA table from static res
-const TO_TEXT: Map<number, string[]> = new Map();
+/**
+ * a process by which words change over time
+ */
+class FonProces {
+	private readonly ca: Klas[]; // original value
+	private readonly pa: Klas[]; // target value
+	private readonly bada: Klas[];
+	private readonly chena: Klas[];
+
+	constructor(ca: Klas[], pa: Klas[], bada: Klas[], chena: Klas[]) {
+		if (pa.length !== ca.length)
+			throw RangeError(`mismatched initial and final states: ${ca} and ${pa}. insertion and deletion should be indicated with ∅s.`)
+		this.ca = ca;
+		this.pa = pa;
+		this.bada = bada;
+		this.chena = chena;
+	}
+
+	apply(old: Fon[]): Fon[] {
+		const nov: Fon[] = [];
+		let i = 0;
+		while (i < old.length) {
+			if (this.applies(old, i)) { // if it applies here,
+				for (let j = 0; j < this.pa.length; j ++)
+					nov.push(this.pa[j].konformu(old[i + j])); // add this.pa to nov
+				i += this.ca.length;
+			}
+			else { // if not
+				nov.push(old[i]); // just add the next character of old
+				i += 1;
+			}
+		}
+		return nov;
+	}
+
+	applies(word: Fon[], i: number) {
+		if (i < this.bada.length)
+			return false;
+		else if (word.length - i < this.ca.length + this.chena.length)
+			return false;
+		for (let j = 0; j < this.bada.length; j ++)
+			if (!this.bada[j].macha(word[i + j - this.bada.length]))
+				return false;
+		for (let j = 0; j < this.ca.length; j ++)
+			if (!this.ca[j].macha(word[i + j]))
+				return false;
+		for (let j = 0; j < this.chena.length; j ++)
+			if (!this.chena[j].macha(word[i + j + this.chena.length]))
+				return false;
+		return true;
+	}
+}
+
+
+const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
+const TO_TEXT: Map<string, string[]> = new Map();
 const LOKE_KODE = new Map([
-	['bl', Loke.DULOLABI],
-	['ld', Loke.LABODANTI],
-	['dn', Loke.DANTI],
-	['ar', Loke.PIZOKULI],
-	['pa', Loke.BADOPIZI],
-	['rf', Loke.RETROKURBI],
-	['hp', Loke.BOKOCATI],
-	['vl', Loke.BOKOKOMALI],
-	['uv', Loke.BOKOPENDI],
-	['eg', Loke.SUPROMUNI],
-	['gl', Loke.GALOMUNI],
+	['bl', Loke.BILABIAL],
+	['ld', Loke.LABIODENTAL],
+	['d', Loke.DENTAL],
+	['ar', Loke.ALVEOLAR],
+	['pa', Loke.POSTALVEOLAR],
+	['rf', Loke.RETROFLEX],
+	['c',  Loke.PALATAL],
+	['m',  Loke.CENTRAL],
+	['v',  Loke.VELAR],
+	['uv', Loke.UVULAR],
+	['eg', Loke.EPIGLOTTAL],
+	['gl', Loke.GLOTTAL],
 ])
-const FORME_KODE = new Map([
-	['n', Forme.NOSI],
-	['p', Forme.TINGI],
-	['f', Forme.FRIKI],
-	['pf', Forme.TINGOFRIKI],
-	['a', Forme.KARIBI],
-	['t', Forme.TOCI],
-	['r', Forme.DALALI],
+const MODE_KODE = new Map([
+	['n', {mode: Mode.NASAL, voze: Voze.VOICED}],
+	['p', {mode: Mode.STOP, voze: Voze.TENUIS}],
+	['b', {mode: Mode.STOP, voze: Voze.VOICED}],
+	['pf', {mode: Mode.AFFRICATE, voze: Voze.TENUIS}],
+	['bv', {mode: Mode.AFFRICATE, voze: Voze.VOICED}],
+	['f', {mode: Mode.FRICATE, voze: Voze.TENUIS}],
+	['v', {mode: Mode.FRICATE, voze: Voze.VOICED}],
+	['t', {mode: Mode.TAP, voze: Voze.VOICED}],
+	['r', {mode: Mode.TRILL, voze: Voze.VOICED}],
+	['a', {mode: Mode.CLOSE, voze: Voze.VOICED}],
+	['1', {mode: Mode.NEAR_CLOSE, voze: Voze.VOICED}],
+	['2', {mode: Mode.CLOSE_MID, voze: Voze.VOICED}],
+	['3', {mode: Mode.OPEN_MID, voze: Voze.VOICED}],
+	['4', {mode: Mode.NEAR_OPEN, voze: Voze.VOICED}],
+	['5', {mode: Mode.OPEN, voze: Voze.VOICED}],
+	['k!', {mode: Mode.CLICK, voze: Voze.TENUIS}],
+	['g!', {mode: Mode.CLICK, voze: Voze.VOICED}],
 ]);
-const abociTable = loadTSV('alphabet.tsv');
-for (const row of abociTable) {
+const harfiaTable = loadTSV('alphabet.tsv');
+for (const row of harfiaTable) {
 	const grafeme = row.slice(0, NUM_CONVENTIONS);
-	const sife = row.slice(NUM_CONVENTIONS);
-	let foneme: Vokale | Konsone;
-	if (sife[0] == 'vokale') {
-		const gawia = [Gawia.TALI, Gawia.YAGOTALI, Gawia.MEDOTALI, Gawia.MEDOGAWI, Gawia.YAGOGAWI, Gawia.GAWI][parseInt(sife[1])];
-		const predia = [Predia.BADI, Predia.MEDI, Predia.PREDI][parseInt(sife[2])];
-		const cirkia = (sife[3] === 'r') ? Cirkia.CIRKI : Cirkia.KAYI;
-		foneme = new Vokale(gawia, predia, cirkia, Avoze.AVOZI);
-	}
-	else {
-		const loke = LOKE_KODE.get(sife[1]);
-		const forme = FORME_KODE.get(sife[2]);
-		const latia = (sife[3] === 'l') ? Latia.LATI: Latia.JUNGI;
-		const avoze = (sife[4] === 'v') ? Avoze.AVOZI : Avoze.NOLAVOZI;
-		foneme = new Konsone(loke, forme, latia, avoze);
-	}
+	const sif = row.slice(NUM_CONVENTIONS);
+	const loke = LOKE_KODE.get(sif[0]);
+	const {mode, voze} = MODE_KODE.get(sif[1]);
+	const silabia = sif[2].includes('s') ? Silabia.SYLLABIC : Silabia.NONSYLLABIC;
+	const latia = sif[2].includes('l') ? Latia.LATERAL: Latia.CENTRAL;
+	const aliSif = sif[2].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.NONE;
+	const foneme = new Fon(mode, loke, voze, silabia, latia, aliSif);
 	FROM_IPA.set(grafeme[0], foneme);
 	TO_TEXT.set(foneme.hash(), grafeme);
 }
@@ -189,7 +476,7 @@ for (const row of abociTable) {
  * get a phoneme array from its IPA representation
  * @param ipa the characters to put in the lookup table
  */
-function ipa(ipa: string): (Vokale | Konsone)[] {
+function ipa(ipa: string): Fon[] {
 	const output = [];
 	for (let i = 0; i < ipa.length; i ++) { // TODO: parse affricates and diacritics
 		if (FROM_IPA.has(ipa.charAt(i)))
@@ -200,143 +487,72 @@ function ipa(ipa: string): (Vokale | Konsone)[] {
 	return output;
 }
 
-/**
- * does this phoneme ever occur in any actual language?
- * @param foneme
- */
-function isPossible(foneme: Konsone): boolean {
-	return !(
-		(foneme.forme === Forme.NOSI && foneme.loke >= Loke.SUPROMUNI) ||
-		(foneme.forme === Forme.KARIBI && foneme.loke === Loke.GALOMUNI) ||
-		(foneme.forme === Forme.TOCI && ![Loke.LABODANTI, Loke.PIZOKULI, Loke.RETROKURBI].includes(foneme.loke)) ||
-		(foneme.forme === Forme.DALALI && ![Loke.DULOLABI, Loke.PIZOKULI, Loke.BOKOPENDI].includes(foneme.loke)) ||
-		(foneme.latia === Latia.LATI) && (foneme.loke <= Loke.LABODANTI || foneme.loke >= Loke.BOKOPENDI) ||
-		(foneme.avoze === Avoze.AVOZI) && (foneme.loke === Loke.GALOMUNI));
-}
 
-/**
- * does this phoneme fit with the given mold?
- * @param foneme
- * @param mold
- */
-function fits(foneme: Vokale | Konsone, mold: Vokale | Konsone): boolean {
-	if (foneme instanceof Vokale) {
-		if (!(mold instanceof Vokale))
-			return false;
-		else if (mold.gawia !== Gawia.ANY && mold.gawia !== foneme.gawia)
-			return false;
-		else if (mold.predia !== Predia.ANY && mold.predia !== foneme.predia)
-			return false;
-		else if (mold.cirkia !== Cirkia.ANY && mold.cirkia !== foneme.cirkia)
-			return false;
-		else if (mold.avoze !== Avoze.ANY && mold.avoze !== foneme.avoze)
-			return false;
-		return true;
-	}
-	else {
-		if (!(mold instanceof Konsone))
-			return false;
-		else if (mold.loke !== Loke.ANY && mold.loke !== foneme.loke)
-			return false;
-		else if (mold.forme !== Forme.ANY && mold.forme !== foneme.forme)
-			return false;
-		else if (mold.latia !== Latia.ANY && mold.latia !== foneme.latia)
-			return false;
-		else if (mold.avoze !== Avoze.ANY && mold.avoze !== foneme.avoze)
-			return false;
-		return true;
-	}
-}
-
-/**
- * return the mold, but with any ANYs replaced by the corresponding property from foneme
- * @param foneme
- * @param mold
- */
-function fit(foneme: Vokale | Konsone, mold: Vokale | Konsone): Vokale | Konsone {
-	if (foneme instanceof Vokale) {
-		if (!(mold instanceof Vokale))
-			throw new TypeError("Cannot cast a vowel to a consonant.");
-		const gawia = (mold.gawia !== Gawia.ANY) ? mold.gawia : foneme.gawia;
-		const predia = (mold.predia !== Predia.ANY) ? mold.predia : foneme.predia;
-		const cirkia = (mold.cirkia !== Cirkia.ANY) ? mold.cirkia : foneme.cirkia;
-		const avoze = (mold.avoze !== Avoze.ANY) ? mold.avoze : foneme.avoze;
-		return new Vokale(gawia, predia, cirkia, avoze);
-	}
-	else {
-		if (!(mold instanceof Konsone))
-			throw new TypeError("Cannot cast a consonant to a vowel.");
-		const loke = (mold.loke !== Loke.ANY) ? mold.loke : foneme.loke;
-		const forme = (mold.forme !== Forme.ANY) ? mold.forme : foneme.forme;
-		const latia = (mold.latia !== Latia.ANY) ? mold.latia : foneme.latia;
-		const avoze = (mold.avoze !== Avoze.ANY) ? mold.avoze : foneme.avoze;
-		const kon = new Konsone(loke, forme, latia, avoze);
-		return isPossible(kon) ? kon : foneme;
-	}
-}
-
-
-const CHANGE_OPTIONS = [
-	{ca: ipa("u"), pa: ipa("y")},
-	{ca: ipa("y"), pa: ipa("u")},
-	{ca: [new Konsone(Loke.PIZOKULI, 0), new Vokale(0, Predia.PREDI)], pa:[new Konsone(Loke.BOKOCATI, 0), new Vokale(0, Predia.PREDI)]}
-]
-
-
-/**
- * a process by which words change over time
- */
-class SoundChange {
-	private readonly ca: (Vokale | Konsone)[]; // original value
-	private readonly pa: (Vokale | Konsone)[]; // target value
-	private chance: number; // number of cases in which it changes once
-
-	constructor(rng: Random) {
-		const {ca, pa} = rng.choice(CHANGE_OPTIONS);
-		this.ca = ca;
-		this.pa = pa;
-		this.chance = rng.probability(1/6) ? 0.5 : 1;
-	}
-
-	apply(old: (Vokale | Konsone)[]): (Vokale | Konsone)[] {
-		const nov: (Vokale | Konsone)[] = [];
-		while (nov.length < old.length) {
-			const i = nov.length;
-			let match = true; // check if the current point in old matches this.ca
-			for (let j = 0; j < this.ca.length; j ++) {
-				if (i + j >= old.length || !fits(old[i + j], this.ca[j])) { // by comparing each segment individually
-					match = false;
-					break;
+const PROCES_CHUZABLE: {chanse: number, proces: FonProces}[] = [];
+const procesTable = loadTSV('proces.txt', ' '); // load the phonological processes
+for (const proces of procesTable) { // go through them
+	const chanse = Number.parseInt(proces[0])/1000;
+	const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
+	let fen = ca;
+	let sa: Sif[] = null, na: Sif[] = null;
+	for (let sinye of proces.slice(1)) { // and parse them
+		if (sinye === '>')
+			fen = pa;
+		else if (sinye === '/')
+			fen = bada;
+		else if (sinye === '_')
+			fen = chena;
+		else if (sinye === '[') {
+			sa = [];
+			na = [];
+		}
+		else if (sinye === ']') {
+			fen.push(new Klas(sa, na));
+			sa = null;
+			na = null;
+		}
+		else if (sinye.length >= 4) {
+			const kutube = (sinye.startsWith('+') ? sa : na)
+			sinye = sinye.slice(1);
+			let val: Sif = null;
+			sifSow:
+			for (const sifKlas of [PendaniSif, Loke, Mode, Voze, Silabia, Latia, Nosia, MinorLoke]) {
+				for (const sif of sifKlas) {
+					if (sif.enumKey.startsWith(sinye)) {
+						val = sif;
+						break sifSow;
+					}
 				}
 			}
-			if (match) { // if it does,
-				for (let j = 0; j < this.ca.length; j++)
-					nov.push(fit(old[i + j], this.pa[j])); // add this.pa to nov
-			}
-			else // otherwise
-				nov.push(old[i]); // just add the next character of old
+			if (val === null)
+				throw RangeError(`unrecognized feature: ${sinye}`);
+			else
+				kutube.push(val);
 		}
-		return nov;
+		else {
+			throw RangeError(`unintelligible symbol: ${sinye}`);
+		}
 	}
+	PROCES_CHUZABLE.push({chanse: chanse, proces: new FonProces(ca, pa, bada, chena)});
 }
 
 
 export interface Language {
-	getCommonNoun(i: number): (Vokale | Konsone)[]
-	getPersonalName(i: number): (Vokale | Konsone)[]
-	getCityName(i: number): (Vokale | Konsone)[]
-	getCountryName(i: number): (Vokale | Konsone)[]
+	getCommonNoun(i: number): Fon[]
+	getPersonalName(i: number): Fon[]
+	getCityName(i: number): Fon[]
+	getCountryName(i: number): Fon[]
 	getAncestor(n: number): Language
 	isIntelligible(lang: Language): boolean
 }
 
 export class ProtoLanguage {
 	private static initialVowels = ipa("iueoa");
-	private static initialConsonants = ipa("mnpbtdkɡʔfθszʃxʋrjl");
-	private readonly putong: (Vokale | Konsone)[][];
-	private readonly renonam: (Vokale | Konsone)[][];
-	private readonly sitonam: (Vokale | Konsone)[][];
-	private readonly dexonam: (Vokale | Konsone)[][];
+	private static initialConsonants = ipa("mnpbtdkɡʔfθszʃxwrjl");
+	private readonly putong: Fon[][];
+	private readonly renonam: Fon[][];
+	private readonly sitonam: Fon[][];
+	private readonly dexonam: Fon[][];
 
 	constructor(rng: Random) {
 		this.putong = [];
@@ -354,23 +570,23 @@ export class ProtoLanguage {
 		this.putong[0] = ipa("ia");
 	}
 
-	getCommonNoun(i: number): (Vokale | Konsone)[] {
+	getCommonNoun(i: number): Fon[] {
 		return this.putong[i];
 	}
 
-	getPersonalName(i: number): (Vokale | Konsone)[] {
+	getPersonalName(i: number): Fon[] {
 		return this.renonam[i];
 	}
 
-	getCityName(i: number): (Vokale | Konsone)[] {
+	getCityName(i: number): Fon[] {
 		return this.sitonam[i];
 	}
 
-	getCountryName(i: number): (Vokale | Konsone)[] {
+	getCountryName(i: number): Fon[] {
 		return this.dexonam[i];
 	}
 
-	newWord(nSyllables: number, rng: Random): (Vokale | Konsone)[] {
+	newWord(nSyllables: number, rng: Random): Fon[] {
 		const lekse = [];
 		for (let i = 0; i < nSyllables; i ++) {
 			if (rng.probability(2/3))
@@ -393,32 +609,33 @@ export class ProtoLanguage {
 
 export class DeuteroLanguage {
 	private readonly parent: Language;
-	private readonly changes: SoundChange[];
+	private readonly changes: FonProces[];
 
 	constructor(parent: Language, rng: Random) {
 		this.parent = parent;
 		this.changes = [];
-		for (let i = 0; i < 1; i ++)
-			this.changes.push(new SoundChange(rng));
+		for (const {chanse, proces} of PROCES_CHUZABLE)
+			if (rng.probability(chanse))
+				this.changes.push(proces);
 	}
 
-	getCommonNoun(i: number): (Vokale | Konsone)[] {
+	getCommonNoun(i: number): Fon[] {
 		return this.applyChanges(this.parent.getCommonNoun(i));
 	}
 
-	getPersonalName(i: number): (Vokale | Konsone)[] {
+	getPersonalName(i: number): Fon[] {
 		return this.applyChanges(this.parent.getPersonalName(i));
 	}
 
-	getCityName(i: number): (Vokale | Konsone)[] {
+	getCityName(i: number): Fon[] {
 		return this.applyChanges(this.parent.getCityName(i));
 	}
 
-	getCountryName(i: number): (Vokale | Konsone)[] {
+	getCountryName(i: number): Fon[] {
 		return this.applyChanges(this.parent.getCountryName(i));
 	}
 
-	applyChanges(lekse: (Vokale | Konsone)[]): (Vokale | Konsone)[] {
+	applyChanges(lekse: Fon[]): Fon[] {
 		for (const change of this.changes)
 			lekse = change.apply(lekse);
 		return lekse;
@@ -444,7 +661,7 @@ const ENGLI_VISE = loadTSV('kanune-engli.tsv')
  * @param lekse
  * @param convention
  */
-export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention = Convention.NASOMEDI): string {
+export function transcribe(lekse: Fon[], convention: Convention = Convention.NASOMEDI): string {
 	let asli = "";
 	for (let i = 0; i < lekse.length; i ++) {
 		if (TO_TEXT.has(lekse[i].hash()))
@@ -461,7 +678,7 @@ export function transcribe(lekse: (Vokale | Konsone)[], convention: Convention =
 					if (i-vise[j].length >= 0 && muti.substring(i-vise[j].length, i) === vise[j])
 						muti = muti.substring(0, i-vise[j].length) + vise[0] + muti.substring(i);
 				}
-		}
+			}
 		}
 		asli = muti.substring(1, muti.length-1);
 

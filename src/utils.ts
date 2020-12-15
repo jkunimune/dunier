@@ -63,9 +63,10 @@ export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
 
 /**
  * load a static TSV resource
- * @param filename
+ * @param filename the filename (will search in /res/ by default)
+ * @param delimiter
  */
-export function loadTSV(filename: string): string[][] {
+export function loadTSV(filename: string, delimiter: string = '\t'): string[][] {
 	const xmlHttp = new XMLHttpRequest();
 	xmlHttp.open("GET", `/res/${filename}`, false);
 	xmlHttp.send();
@@ -74,7 +75,7 @@ export function loadTSV(filename: string): string[][] {
 	const arr = [];
 	for (const line of xmlHttp.responseText.split('\n')) {
 		if (line.length === 0)  break;
-		else                    arr.push(line.split('\t'));
+		else                    arr.push(line.split(delimiter));
 	}
 	return arr;
 }

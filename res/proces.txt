@@ -1,0 +1,4 @@
+100 [ +HIG +VOW ] > [ +PAL ] / _
+100 [ +HIG +VOW ] > [ +NONE ] / _
+100 [ +LAB +VOW ] > [ +VEL ] / _
+100 [ +ALV ] > [ +PAL ] / _ [ +PAL ]
