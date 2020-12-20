@@ -370,15 +370,16 @@ $('#map-panel :input').on('change', () => {
 $(document).ready(() => {
 	console.log("ready!");
 	for (let i = 0; i < 18; i ++) {
-		console.log(i);
-		for (let j = 0; j < 6; j ++) {
-			const rng = new Random(i);
-			let bash: Language = new ProtoLanguage(rng);
-			for (let k = 0; k < 20; k ++) {
-				console.log(transcribe(bash.getCountryName(j)));
-				bash = new DeuteroLanguage(bash, rng);
-			}
+		const rng = new Random(i);
+		let bash: Language = new ProtoLanguage(rng);
+		for (let j = 0; j < 20; j ++) {
+			let s = "";
+			for (let k = 0; k < 6; k ++)
+				s += transcribe(bash.getCountryName(k)) + "  ";
+			console.log(s);
+			bash = new DeuteroLanguage(bash, rng);
 		}
+		console.log("");
 	}
 	$('#map-apply').click();
 }); // TODO: warn before leaving page

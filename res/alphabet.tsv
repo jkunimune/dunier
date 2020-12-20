@@ -97,7 +97,7 @@ e	e	e	e*	э	e	e	e	e	e	e	c	2	s
 o	o	o	o*	о	o	o	o	o	o	o	v	2	sw
 ɛ	e	e	e*	э	e	e	e	e	ẹ	e	c	3	s
 œ	œ	e	ur	ё	e	e	ö	oe	ọ	ø	c	3	sw
-ɜ	œ	e	u*	а	e	e	ë	e	ẹ	y	m	3	s
+ə	œ	e	u*	а	e	e	ë	e	ẹ	y	m	3	s
 ɞ	œ	o	ur	о	o	o	ə	o	ọ	ø	m	3	sw
 ʌ	o	e	u*	ы	o	o	ə̈	eo	ẹ	y	v	3	s
 ɔ	o	o	o*	о	o	o	o	o	ọ	o	v	3	sw
@@ -106,3 +106,6 @@ o	o	o	o*	о	o	o	o	o	o	o	v	2	sw
 a	a	a	a*	а	a	a	a	a	a	a	c	5	s
 ɑ	a	a	a*	а	a	a	a	a	a	a	v	5	s
 ɒ	o	o	o*	о	o	o	o	ao	ọ	a	v	5	sw
+Xː	X̄	X	X-	X	X-	X	X̄	XX	X̄	X̄	0	0	Len
+Xː	Xx	x	*x	xX	xX	x	xX	xX	xX	xX	0	0	Gem
+X͡Y	Xh	Y	X	XY	X	Y	XY	XY	XY	XY	0	0	Aff

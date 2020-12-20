@@ -97,6 +97,13 @@ class Silabia extends Enumify {
 	static _ = Silabia.closeEnum();
 }
 
+/** length */
+class Longia extends Enumify {
+	static LONG = new Longia();
+	static SHORT = new Longia();
+	static _ = Longia.closeEnum();
+}
+
 /** laterality */
 class Latia extends Enumify {
 	static LATERAL = new Latia();
@@ -147,24 +154,37 @@ class PendaniSif extends Enumify {
 	static _ = PendaniSif.closeEnum();
 }
 
-type Sif = Mode | Loke | Voze | Silabia | Latia | MinorLoke | Nosia | PendaniSif;
+type Sif = Mode | Loke | Voze | Silabia | Longia | Latia | MinorLoke | Nosia | PendaniSif;
 
 /** phonological segment */
 class Fon {
+	/** the default phone, to be used for insertion rules */
+	public static BLANK = new Fon(
+		null,
+		null,
+		Voze.VOICED,
+		Silabia.NONSYLLABIC,
+		Longia.SHORT,
+		Latia.MEDIAN,
+		MinorLoke.UNROUNDED,
+		Nosia.ORAL);
+
 	public readonly mode: Mode;
 	public readonly loke: Loke;
 	public readonly voze: Voze;
 	public readonly silabia: Silabia;
+	public readonly longia: Longia;
 	public readonly latia: Latia;
 	public readonly minorLoke: MinorLoke;
 	public readonly nosia: Nosia;
 
-	constructor(mode: Mode, loke: Loke, voze: Voze = Voze.VOICED, silabia: Silabia = Silabia.NONSYLLABIC,
-				latia: Latia = Latia.MEDIAN, minorLoke: MinorLoke = MinorLoke.UNROUNDED, nosia: Nosia = Nosia.ORAL) {
+	constructor(mode: Mode, loke: Loke, voze: Voze, silabia: Silabia, longia: Longia,
+				latia: Latia, minorLoke: MinorLoke, nosia: Nosia) {
 		this.mode = mode;
 		this.loke = loke;
 		this.voze = voze;
 		this.silabia = silabia;
+		this.longia = longia;
 		this.latia = latia;
 		this.minorLoke = minorLoke;
 		this.nosia = nosia;
@@ -179,6 +199,8 @@ class Fon {
 			return this.voze === sif;
 		else if (sif instanceof Silabia)
 			return this.silabia === sif;
+		else if (sif instanceof Longia)
+			return this.longia === sif;
 		else if (sif instanceof Latia)
 			return this.latia === sif;
 		else if (sif instanceof MinorLoke)
@@ -242,20 +264,22 @@ class Fon {
 
 	hash(): string {
 		return this.silabia.enumKey.slice(0, 2) +
+			this.longia.enumKey.slice(0, 2) +
 			this.minorLoke.enumKey.slice(0, 2) +
 			this.nosia.enumKey.slice(0, 2) +
-			this.voze.enumKey.slice(0, 2) +
 			this.latia.enumKey.slice(0, 2) +
+			this.voze.enumKey.slice(0, 2) +
 			this.loke.enumKey.slice(0, 2) +
 			this.mode.enumKey;
 	}
 
 	toString(): string {
 		return this.silabia.enumKey.toLowerCase() + " " +
+			this.longia.enumKey.toLowerCase() + " " +
 			this.minorLoke.enumKey.toLowerCase() + " " +
 			this.nosia.enumKey.toLowerCase() + " " +
-			this.voze.enumKey.toLowerCase() + " " +
 			this.latia.enumKey.toLowerCase() + " " +
+			this.voze.enumKey.toLowerCase() + " " +
 			this.loke.enumKey.toLowerCase() + " " +
 			this.mode.enumKey.toLowerCase();
 	}
@@ -289,11 +313,11 @@ class Klas {
 	 * create a Fon with all of the properties of this, and similar to fon in every other respect.
 	 * @param fon
 	 */
-	konformu(fon: Fon): Fon {
+	konformu(fon: Fon = Fon.BLANK): Fon {
 		if (this.na.length > 0)
 			throw Error("you can't use minuses in the final state of a process!");
 		let mode = fon.mode, loke = fon.loke, voze = fon.voze;
-		let silabia = fon.silabia, latia = fon.latia, minorLoke = fon.minorLoke, nosia = fon.nosia;
+		let silabia = fon.silabia, longia = fon.longia, latia = fon.latia, minorLoke = fon.minorLoke, nosia = fon.nosia;
 		for (const sif of this.sa) {
 			if (sif instanceof Mode)
 				mode = sif;
@@ -303,6 +327,8 @@ class Klas {
 				voze = sif;
 			else if (sif instanceof Silabia)
 				silabia = sif;
+			else if (sif instanceof Longia)
+				longia = sif;
 			else if (sif instanceof Latia)
 				latia = sif;
 			else if (sif instanceof MinorLoke)
@@ -366,7 +392,7 @@ class Klas {
 				(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is physically impossible for whatever reason
 			return fon; // cancel it
 		else // otherwise
-			return new Fon(mode, loke, voze, silabia, latia, minorLoke, nosia); // bring it all together!
+			return new Fon(mode, loke, voze, silabia, longia, latia, minorLoke, nosia); // bring it all together!
 	}
 }
 
@@ -377,26 +403,36 @@ class Klas {
 class FonProces {
 	private readonly ca: Klas[]; // original value
 	private readonly pa: Klas[]; // target value
-	private readonly bada: Klas[];
-	private readonly chena: Klas[];
+	private readonly idx: number[]; // reference indices for target phones
+	private readonly bada: Klas[]; // requisite predecessor
+	private readonly chena: Klas[]; // requisite follow-up
 
-	constructor(ca: Klas[], pa: Klas[], bada: Klas[], chena: Klas[]) {
-		if (pa.length !== ca.length)
-			throw RangeError(`mismatched initial and final states: ${ca} and ${pa}. insertion and deletion should be indicated with ∅s.`)
+	constructor(ca: Klas[], pa: Klas[], idx: number[], bada: Klas[], chena: Klas[]) {
+		if (idx.length !== pa.length)
+			throw RangeError("The pa array must be properly indexed.");
 		this.ca = ca;
 		this.pa = pa;
+		this.idx = idx;
 		this.bada = bada;
 		this.chena = chena;
 	}
 
+	/**
+	 * go through the word and apply this sound change.
+	 * @param old
+	 */
 	apply(old: Fon[]): Fon[] {
 		const nov: Fon[] = [];
 		let i = 0;
 		while (i < old.length) {
-			if (this.applies(old, i)) { // if it applies here,
-				for (let j = 0; j < this.pa.length; j ++)
-					nov.push(this.pa[j].konformu(old[i + j])); // add this.pa to nov
-				i += this.ca.length;
+			if (this.applies(old.slice(i), nov)) { // if it applies here,
+				for (let j = 0; j < this.pa.length; j ++) { // fill in the replacement
+					if (this.idx[j] < this.ca.length)
+						nov.push(this.pa[j].konformu(old[i + this.idx[j]])); // mapping to the relevant old segments
+					else
+						nov.push(this.pa[j].konformu()); // or drawing new segments from thin air
+				}
+				i += this.ca.length; // and jump to the next set of consonants
 			}
 			else { // if not
 				nov.push(old[i]); // just add the next character of old
@@ -406,19 +442,22 @@ class FonProces {
 		return nov;
 	}
 
-	applies(word: Fon[], i: number) {
-		if (i < this.bada.length)
-			return false;
-		else if (word.length - i < this.ca.length + this.chena.length)
+	/**
+	 * does the segment string at the start of oldWord qualify to be changed?
+	 * @param oldWord the unchanged word where we are considering making the change
+	 * @param novWord the changed previous section of the word
+	 */
+	applies(oldWord: Fon[], novWord: Fon[]) {
+		if (this.bada.length > novWord.length || this.ca.length + this.chena.length > oldWord.length)
 			return false;
 		for (let j = 0; j < this.bada.length; j ++)
-			if (!this.bada[j].macha(word[i + j - this.bada.length]))
+			if (!this.bada[j].macha(novWord[j - this.bada.length + novWord.length]))
 				return false;
 		for (let j = 0; j < this.ca.length; j ++)
-			if (!this.ca[j].macha(word[i + j]))
+			if (!this.ca[j].macha(oldWord[j]))
 				return false;
 		for (let j = 0; j < this.chena.length; j ++)
-			if (!this.chena[j].macha(word[i + j + this.chena.length]))
+			if (!this.chena[j].macha(oldWord[this.ca.length + j]))
 				return false;
 		return true;
 	}
@@ -427,6 +466,7 @@ class FonProces {
 
 const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
 const TO_TEXT: Map<string, string[]> = new Map();
+const TO_DIACRITICS: Map<string, string[]> = new Map();
 const LOKE_KODE = new Map([
 	['bl', Loke.BILABIAL],
 	['ld', Loke.LABIODENTAL],
@@ -464,14 +504,19 @@ const harfiaTable = loadTSV('alphabet.tsv');
 for (const row of harfiaTable) {
 	const grafeme = row.slice(0, NUM_CONVENTIONS);
 	const sif = row.slice(NUM_CONVENTIONS);
-	const loke = LOKE_KODE.get(sif[0]);
-	const {mode, voze} = MODE_KODE.get(sif[1]);
-	const silabia = sif[2].includes('s') ? Silabia.SYLLABIC : Silabia.NONSYLLABIC;
-	const latia = sif[2].includes('l') ? Latia.LATERAL: Latia.MEDIAN;
-	const aliSif = sif[2].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.UNROUNDED;
-	const foneme = new Fon(mode, loke, voze, silabia, latia, aliSif);
-	FROM_IPA.set(grafeme[0], foneme);
-	TO_TEXT.set(foneme.hash(), grafeme);
+	if (sif[0] !== '0') {
+		const loke = LOKE_KODE.get(sif[0]);
+		const {mode, voze} = MODE_KODE.get(sif[1]);
+		const silabia = sif[2].includes('s') ? Silabia.SYLLABIC : Silabia.NONSYLLABIC;
+		const latia = sif[2].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
+		const aliSif = sif[2].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.UNROUNDED;
+		const foneme = new Fon(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
+		FROM_IPA.set(grafeme[0], foneme);
+		TO_TEXT.set(foneme.hash(), grafeme);
+	}
+	else {
+		TO_DIACRITICS.set(sif[2], grafeme);
+	}
 }
 
 
@@ -490,36 +535,92 @@ function ipa(ipa: string): Fon[] {
 	return output;
 }
 
+/**
+ * get an orthographical representation from a phoneme
+ * @param fonHash
+ * @param convention
+ */
+function lookUp(fonHash: string, convention: Convention): string {
+	if (TO_TEXT.has(fonHash))
+		return TO_TEXT.get(fonHash)[convention];
+	else if (fonHash.slice(0, 2) === 'SY' && fonHash.slice(2, 4) === 'LO') // use diacritics to mark length
+		return apply_diacritic(TO_DIACRITICS.get('Len')[convention], ['SYSH' + fonHash.slice(4)], convention);
+	else if (fonHash.slice(0, 2) === 'NO' && fonHash.slice(2, 4) === 'LO') // use diacritics to mark gemination
+		return apply_diacritic(TO_DIACRITICS.get('Gem')[convention], ['NOSH' + fonHash.slice(4)], convention);
+	else if (fonHash.slice(14) === 'AFFRICATE') // spell affricates based on their stops and fricatives
+		return apply_diacritic(TO_DIACRITICS.get('Aff')[convention], [fonHash.slice(0, 14) + 'STOP', fonHash.slice(0, 14) + 'FRICATE'], convention);
+	else if (fonHash.slice(12, 14) === 'PO') // spell postalveolar sounds as alveolar
+		return lookUp(fonHash.slice(0, 12) + 'AL' + fonHash.slice(14), convention);
+	else {
+		console.log(TO_TEXT);
+		throw `I don't know how to write ${fonHash}`;
+	}
+}
+
+/**
+ * get some orthographical representations from some phonemes and apply a diacritic to it
+ * @param diacritic the string representing the modified letter, where the phonemes are replaced with X, Y, Z, etc.,
+ * and the first letter of each phoneme is replaced with x, y, z, etc. the first letter of an affricate will be that of
+ * its corresponding stop.
+ * @param fonHash the hashes of the phonemes to be combined into the diacritic
+ * @param convention the convention to use for the lookup
+ */
+function apply_diacritic(diacritic: string, fonHash: string[], convention: Convention): string {
+	const X = lookUp(fonHash[0], convention); // get the base character
+	let x = X.slice(0, 1); // if we need lowercase x, find that
+	if (diacritic.includes('x') && diacritic.slice(14) === 'AFFRICATE')
+		x = lookUp(fonHash.slice(0, 14) + 'STOP', convention).slice(0, 1);
+	let graf = diacritic.replace('X', X).replace('x', x);
+	if (fonHash.length > 1 && diacritic.includes('Y'))
+		graf = graf.replace('Y', lookUp(fonHash[1], convention));
+	if (fonHash.length > 2 && diacritic.includes('Z'))
+		graf = graf.replace('Z', lookUp(fonHash[2], convention));
+	return graf;
+}
+
 
 const PROCES_CHUZABLE: {chanse: number, proces: FonProces}[] = [];
 const procesTable = loadTSV('proces.txt', ' '); // load the phonological processes
 for (const proces of procesTable) { // go through them
 	const chanse = Number.parseInt(proces[0])/1000;
 	const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
+	const idx: number[] = [];
 	let fen = ca;
 	let sa: Sif[] = null, na: Sif[] = null;
 	for (let sinye of proces.slice(1)) { // and parse them
-		if (sinye === '>')
+		if (sinye === '>') // > transitions from ca to pa
 			fen = pa;
-		else if (sinye === '/')
-			fen = bada;
-		else if (sinye === '_')
+		else if (sinye === '_') // _ transitions from badu to chenu
 			fen = chena;
-		else if (sinye === '[') {
+		else if (sinye === '/') { // / transitions from pa to badu
+			if (idx.length === 0) { // and assigns indices if they weren't assigned explicitly
+				console.assert(ca.length === 0 || ca.length === pa.length, `please specify indices for ${proces}`);
+				for (let i = 0; i < pa.length; i++)
+					idx.push(Math.min(i, ca.length));
+			}
+			fen = bada;
+		}
+		else if (sinye === '[') { // [ stars a new phone
 			sa = [];
 			na = [];
 		}
-		else if (sinye === ']') {
+		else if (sinye === ']') { // ] ends the current phone
 			fen.push(new Klas(sa, na));
 			sa = null;
 			na = null;
 		}
-		else if (sinye.length >= 4) {
+		else if (sinye.length === 2 && sinye[0] === ']') { // ends the current phone and assigns it a specific reference index
+			fen.push(new Klas(sa, na));
+			idx.push(Number.parseInt(sinye[1]));
+			sa = null;
+			na = null;
+		}
+		else if (sinye.length >= 4) { // feature names are incorporated into the current phone
 			const kutube = (sinye.startsWith('+') ? sa : na)
 			sinye = sinye.slice(1);
 			let val: Sif = null;
 			sifSow:
-			for (const sifKlas of [PendaniSif, Loke, Mode, Voze, Silabia, Latia, Nosia, MinorLoke]) {
+			for (const sifKlas of [PendaniSif, Loke, Mode, Voze, Silabia, Longia, Latia, Nosia, MinorLoke]) {
 				for (const sif of sifKlas) {
 					if (sif.enumKey.startsWith(sinye)) {
 						val = sif;
@@ -532,11 +633,17 @@ for (const proces of procesTable) { // go through them
 			else
 				kutube.push(val);
 		}
+		else if (FROM_IPA.has(sinye)) { // IPA symbols are read for their specified features
+			const fon = FROM_IPA.get(sinye);
+			fen.push(new Klas([
+				fon.mode, fon.loke, fon.voze, fon.latia, fon.silabia, fon.minorLoke
+			], []));
+		}
 		else {
 			throw RangeError(`unintelligible symbol: ${sinye}`);
 		}
 	}
-	PROCES_CHUZABLE.push({chanse: chanse, proces: new FonProces(ca, pa, bada, chena)});
+	PROCES_CHUZABLE.push({chanse: chanse, proces: new FonProces(ca, pa, idx, bada, chena)});
 }
 
 
@@ -666,15 +773,8 @@ const ENGLI_VISE = loadTSV('kanune-engli.tsv')
  */
 export function transcribe(lekse: Fon[], convention: Convention = Convention.NASOMEDI): string {
 	let asli = "";
-	for (let i = 0; i < lekse.length; i ++) {
-		let fonHash = lekse[i].hash();
-		if (!TO_TEXT.has(fonHash) && fonHash.slice(10, 12) === 'PO') // spell postalveolar sounds as alveolar
-			fonHash = fonHash.slice(0, 10) + 'AL' + fonHash.slice(12);
-		if (!TO_TEXT.has(fonHash))
-			throw `could not transcribe ${lekse[i]}, ${fonHash}`;
-		else
-			asli += TO_TEXT.get(fonHash)[convention];
-	}
+	for (let i = 0; i < lekse.length; i ++)
+		asli += lookUp(lekse[i].hash(), convention);
 
 	if (convention === Convention.ENGLI) {
 		let muti = "#"+asli+"#";
