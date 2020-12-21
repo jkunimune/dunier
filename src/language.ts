@@ -406,6 +406,8 @@ class FonProces {
 	private readonly idx: number[]; // reference indices for target phones
 	private readonly bada: Klas[]; // requisite predecessor
 	private readonly chena: Klas[]; // requisite follow-up
+	private readonly wordShuri: boolean;
+	private readonly wordFini: boolean;
 
 	constructor(ca: Klas[], pa: Klas[], idx: number[], bada: Klas[], chena: Klas[]) {
 		if (idx.length !== pa.length)
@@ -413,8 +415,10 @@ class FonProces {
 		this.ca = ca;
 		this.pa = pa;
 		this.idx = idx;
-		this.bada = bada;
-		this.chena = chena;
+		this.wordShuri = (bada[0] === null);
+		this.wordFini = (chena[chena.length-1] === null);
+		this.bada = (this.wordShuri) ? bada.slice(1) : bada;
+		this.chena = (this.wordFini) ? chena.slice(0, chena.length-1) : chena;
 	}
 
 	/**
@@ -450,15 +454,20 @@ class FonProces {
 	applies(oldWord: Fon[], novWord: Fon[]) {
 		if (this.bada.length > novWord.length || this.ca.length + this.chena.length > oldWord.length)
 			return false;
-		for (let j = 0; j < this.bada.length; j ++)
-			if (!this.bada[j].macha(novWord[j - this.bada.length + novWord.length]))
+		if (this.wordShuri && this.bada.length < novWord.length)
+			return false;
+		if (this.wordFini && this.ca.length + this.chena.length < oldWord.length)
+			return false;
+		for (let j = 0; j < this.bada.length; j ++) // start with the left half of the context
+			if (!this.bada[j].macha(novWord[j - this.bada.length + novWord.length])) // check if it matches
 				return false;
 		for (let j = 0; j < this.ca.length; j ++)
 			if (!this.ca[j].macha(oldWord[j]))
 				return false;
-		for (let j = 0; j < this.chena.length; j ++)
+		for (let j = 0; j < this.chena.length; j ++) {
 			if (!this.chena[j].macha(oldWord[this.ca.length + j]))
 				return false;
+		}
 		return true;
 	}
 }
@@ -592,8 +601,10 @@ for (const proces of procesTable) { // go through them
 			fen = pa;
 		else if (sinye === '_') // _ transitions from badu to chenu
 			fen = chena;
+		else if (sinye === '#') // indicates a word boundary
+			fen.push(null);
 		else if (sinye === '/') { // / transitions from pa to badu
-			if (idx.length === 0) { // and assigns indices if they weren't assigned explicitly
+			if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
 				console.assert(ca.length === 0 || ca.length === pa.length, `please specify indices for ${proces}`);
 				for (let i = 0; i < pa.length; i++)
 					idx.push(Math.min(i, ca.length));

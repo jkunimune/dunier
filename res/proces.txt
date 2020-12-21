@@ -6,13 +6,16 @@
 001 [ +HIG +VOW ] > [ +UNR ] / _
 001 [ +PAL +VOW ] > [ +UNR ] / _
 001 [ +VEL +VOW ] > [ +LABIALIZ ] / _
-100 [ +PAL +STO ] > [ +AFF ] / _
-100 [ +PAL +OBS ] > [ +POS ] / _
-500 [ +DEN +SON ] > [ +ALV ] / _
-500 [ +POS -FRI -AFF ] > [ +ALV ] / _
+001 [ +PAL +STO ] > [ +AFF ] / _
+001 [ +PAL +OBS ] > [ +POS ] / _
+001 [ +DEN +SON ] > [ +ALV ] / _
+001 [ +POS -FRI -AFF ] > [ +ALV ] / _
 001 [ +BIL +FRI ] > [ +LABIODEN ] / _
-100 [ +LON -SYL ] > [ +SHO ] / _
-100 [ +ALV ] > [ +PAL ] / _ [ +PAL -LOW -MID ]
-100 [ +COR +OCC +OBS ] [ +COR ] > [ +LON ]1 / _
-500 [ +VEL -SYL ] [ +ALV ] > [ +PAL +LON ]1 / _
-500 > ə / [ +STO ] _ [ +OCC ]
+001 [ +LON -SYL ] > [ +SHO ] / _
+001 [ +ALV ] > [ +PAL ] / _ [ +PAL -LOW -MID ]
+001 [ +COR +OCC +OBS ] [ +COR ] > [ +LON ]1 / _
+001 [ +VEL -SYL ] [ +ALV ] > [ +PAL +LON ]1 / _
+001 > ə / [ +STO ] _ [ +OCC ]
+100 > ʔ / # _ [ +SYL ]
+100 [ +NON ] > / _ #
+100 [ +VOW ] > / _ #
