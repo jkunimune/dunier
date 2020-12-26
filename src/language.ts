@@ -123,7 +123,7 @@ class MinorLoke extends Enumify {
 
 /** nasality */
 class Nosia extends Enumify {
-	static NASAL = new Nosia();
+	static NASALIZED = new Nosia();
 	static ORAL = new Nosia();
 	static _ = Nosia.closeEnum();
 }
@@ -142,7 +142,6 @@ class PendaniSif extends Enumify {
 	static LOW = new PendaniSif();
 	static TENSE = new PendaniSif();
 	static LAX = new PendaniSif();
-	static NASAL = new PendaniSif();
 	static PALATAL = new PendaniSif();
 	static VELAR = new PendaniSif();
 	static PHARANGEAL = new PendaniSif();
@@ -155,6 +154,7 @@ class PendaniSif extends Enumify {
 }
 
 type Sif = Mode | Loke | Voze | Silabia | Longia | Latia | MinorLoke | Nosia | PendaniSif;
+const SIF_TIPE = [PendaniSif, Loke, Mode, Voze, Silabia, Longia, Latia, Nosia, MinorLoke];
 
 /** phonological segment */
 class Fon {
@@ -214,7 +214,7 @@ class Fon {
 				case PendaniSif.CORONAL:
 					return this.loke.foner === Foner.CORONA;
 				case PendaniSif.DORSAL:
-					return this.loke.foner === Foner.DORSUM || this.minorLoke === MinorLoke.PALATALIZED || this.minorLoke === MinorLoke.VELARIZED;
+					return this.loke.foner === Foner.DORSUM;
 				case PendaniSif.GUTTURAL:
 					return this.loke.foner === Foner.PHARYNX || this.minorLoke === MinorLoke.PHARANGEALIZED;
 				case PendaniSif.CONTINUANT:
@@ -235,8 +235,6 @@ class Fon {
 					return this.mode === Mode.CLOSE || this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN;
 				case PendaniSif.LAX:
 					return this.mode === Mode.NEAR_CLOSE || this.mode === Mode.OPEN_MID || this.mode === Mode.NEAR_OPEN;
-				case PendaniSif.NASAL:
-					return this.mode === Mode.NASAL || this.nosia === Nosia.NASAL;
 				case PendaniSif.PALATAL:
 					return this.loke === Loke.PALATAL || this.loke === Loke.POSTALVEOLAR || this.minorLoke === MinorLoke.PALATALIZED;
 				case PendaniSif.VELAR:
@@ -290,7 +288,7 @@ class Klas {
 	private readonly sa: Sif[]; // qualities this class explicitly has
 	private readonly na: Sif[]; // qualities this class explicitly does not have
 
-	constructor(sa: Sif[], na: Sif[]) {
+	constructor(sa: Sif[], na: Sif[] = []) {
 		this.sa = sa;
 		this.na = na;
 	}
@@ -400,7 +398,14 @@ class Klas {
 /**
  * a process by which words change over time
  */
-class FonProces {
+interface Proces {
+	apply(old: Fon[]): Fon[];
+}
+
+/**
+ * a process that causes segments to change according to a rule
+ */
+class FonMute {
 	private readonly ca: Klas[]; // original value
 	private readonly pa: Klas[]; // target value
 	private readonly idx: number[]; // reference indices for target phones
@@ -472,6 +477,78 @@ class FonProces {
 	}
 }
 
+/**
+ * a process that causes adjacent sounds, or sounds in the same word, to share a feature
+ */
+class Samsifis {
+	private readonly kutube: Klas[];
+	private readonly global: boolean;
+	private readonly affectsSonorants: boolean;
+	private readonly affectsConsonants: boolean;
+
+	constructor(sif: string, global: boolean, affectsSonorants: boolean, affectsConsonants: boolean) {
+		this.global = global; // read these flags
+		this.affectsSonorants = affectsSonorants;
+		this.affectsConsonants = affectsConsonants;
+		let kutube: Sif[]; // then construct the list of "polar" attributes
+		if (sif === 'front')
+			kutube = [Loke.VELAR, Loke.PALATAL];
+		else if (sif === 'hight')
+			kutube = [PendaniSif.LOW, PendaniSif.HIGH];
+		else if (sif === 'round')
+			kutube = [MinorLoke.UNROUNDED, MinorLoke.LABIALIZED];
+		else if (sif === 'tense')
+			kutube = [PendaniSif.LAX, PendaniSif.TENSE];
+		else if (sif === 'voice') {
+			kutube = [];
+			for (const hal of Voze)
+				kutube.push(hal);
+		}
+		else
+			throw `unrecognized harmony type: ${sif}`;
+		this.kutube = kutube.map((s: Sif) => new Klas([s])); // convert those attributes into classes and save the list
+	}
+
+	apply(old: Fon[]): Fon[] {
+		const nov: Fon[] = new Array<Fon>(old.length);
+		let val: Klas = null;
+		for (let i = old.length-1; i >= 0; i --) { // iterate backwards through the word
+			nov[i] = old[i]; // in most cases, we will just make this the same as it was in the old word
+			if (
+				!(!this.affectsSonorants && old[i].is(PendaniSif.SONORANT)) &&
+				!(!this.affectsConsonants && old[i].is(Silabia.NONSYLLABIC))) { // but if this segment isn't immune
+				for (let klas of this.kutube) { // check its polarity
+					if (klas.macha(old[i])) { // if it's polar,
+						if (val !== null) // change this sound to match what came before
+							nov[i] = val.konformu(old[i]); // and add it to the new word
+						else // or read the property to match if we haven't seen this yet
+							val = klas;
+						break;
+					} // if it's neutral, just ignore it without resetting val or changing anything
+				}
+			}
+			else if (!this.global) { // if it doesn't apply, unless the rule is global,
+				val = null; // reset for the next cluster
+			}
+		}
+		return nov;
+	}
+}
+
+// /**
+//  * a process that places stress according to certain rules
+//  */
+// class AcentoPoze {
+//
+// }
+//
+// /**
+//  * a process that turns some of the shortest words into suffixen and randomly applies them
+//  */
+// class BadoFikse {
+//
+// }
+
 
 const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
 const TO_TEXT: Map<string, string[]> = new Map();
@@ -534,8 +611,8 @@ for (const row of harfiaTable) {
  * @param ipa the characters to put in the lookup table
  */
 function ipa(ipa: string): Fon[] {
-	const output = [];
-	for (let i = 0; i < ipa.length; i ++) { // TODO: parse affricates and diacritics
+	const output: Fon[] = [];
+	for (let i = 0; i < ipa.length; i ++) {
 		if (FROM_IPA.has(ipa.charAt(i)))
 			output.push(FROM_IPA.get(ipa.charAt(i)));
 		else
@@ -550,14 +627,34 @@ function ipa(ipa: string): Fon[] {
  * @param convention
  */
 function lookUp(fonHash: string, convention: Convention): string {
-	if (TO_TEXT.has(fonHash))
-		return TO_TEXT.get(fonHash)[convention];
-	else if (fonHash.slice(0, 2) === 'SY' && fonHash.slice(2, 4) === 'LO') // use diacritics to mark length
-		return apply_diacritic(TO_DIACRITICS.get('Len')[convention], ['SYSH' + fonHash.slice(4)], convention);
-	else if (fonHash.slice(0, 2) === 'NO' && fonHash.slice(2, 4) === 'LO') // use diacritics to mark gemination
-		return apply_diacritic(TO_DIACRITICS.get('Gem')[convention], ['NOSH' + fonHash.slice(4)], convention);
+	if (TO_TEXT.has(fonHash)) // if it's in the table
+		return TO_TEXT.get(fonHash)[convention]; // just return that
+	else if (fonHash.slice(2, 4) === 'LO') {
+		if (fonHash.slice(0, 2) === 'NO') // use diacritics to mark gemination
+			return apply_diacritic(TO_DIACRITICS.get('Gem')[convention],
+				['NOSH' + fonHash.slice(4)], convention);
+		else // use diacritics to mark length
+			return apply_diacritic(TO_DIACRITICS.get('Len')[convention],
+				['SYSH' + fonHash.slice(4)], convention);
+	}
+	else if (fonHash.slice(6, 8) === 'NA') // spell nasalized vowels with the nasalization diacritic
+		return apply_diacritic(TO_DIACRITICS.get('Nas')[convention],
+			[fonHash.slice(0, 6) + 'OR' + fonHash.slice(8)], convention);
+	else if (fonHash.slice(4, 6) === 'LA') // spell labialized consonants with the labialization diacritic
+		return apply_diacritic(TO_DIACRITICS.get('Lab')[convention],
+			[fonHash.slice(0, 4) + 'UN' + fonHash.slice(6)], convention);
+	else if (fonHash.slice(4, 6) === 'PA') // spell palatalized consonants with the palatalization diacritic
+		return apply_diacritic(TO_DIACRITICS.get('Pal')[convention],
+			[fonHash.slice(0, 4) + 'UN' + fonHash.slice(6)], convention);
+	else if (fonHash.slice(4, 6) === 'VE') // spell velarized consonants with the velarization diacritic
+		return apply_diacritic(TO_DIACRITICS.get('Vel')[convention],
+			[fonHash.slice(0, 4) + 'UN' + fonHash.slice(6)], convention);
+	else if (fonHash.slice(4, 6) === 'PH') // spell pharangealized consonants with the pharangealization diacritic
+		return apply_diacritic(TO_DIACRITICS.get('Pha')[convention],
+			[fonHash.slice(0, 4) + 'UN' + fonHash.slice(6)], convention);
 	else if (fonHash.slice(14) === 'AFFRICATE') // spell affricates based on their stops and fricatives
-		return apply_diacritic(TO_DIACRITICS.get('Aff')[convention], [fonHash.slice(0, 14) + 'STOP', fonHash.slice(0, 14) + 'FRICATE'], convention);
+		return apply_diacritic(TO_DIACRITICS.get('Aff')[convention],
+			[fonHash.slice(0, 14) + 'STOP', fonHash.slice(0, 14) + 'FRICATE'], convention);
 	else if (fonHash.slice(12, 14) === 'PO') // spell postalveolar sounds as alveolar
 		return lookUp(fonHash.slice(0, 12) + 'AL' + fonHash.slice(14), convention);
 	else {
@@ -588,73 +685,84 @@ function apply_diacritic(diacritic: string, fonHash: string[], convention: Conve
 }
 
 
-const PROCES_CHUZABLE: {chanse: number, proces: FonProces}[] = [];
+const PROCES_CHUZABLE: {chanse: number, proces: Proces}[] = [];
 const procesTable = loadTSV('proces.txt', ' '); // load the phonological processes
-for (const proces of procesTable) { // go through them
-	const chanse = Number.parseInt(proces[0])/1000;
-	const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
-	const idx: number[] = [];
-	let fen = ca;
-	let sa: Sif[] = null, na: Sif[] = null;
-	for (let sinye of proces.slice(1)) { // and parse them
-		if (sinye === '>') // > transitions from ca to pa
-			fen = pa;
-		else if (sinye === '_') // _ transitions from badu to chenu
-			fen = chena;
-		else if (sinye === '#') // indicates a word boundary
-			fen.push(null);
-		else if (sinye === '/') { // / transitions from pa to badu
-			if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
-				console.assert(ca.length === 0 || ca.length === pa.length, `please specify indices for ${proces}`);
-				for (let i = 0; i < pa.length; i++)
-					idx.push(Math.min(i, ca.length));
-			}
-			fen = bada;
-		}
-		else if (sinye === '[') { // [ stars a new phone
-			sa = [];
-			na = [];
-		}
-		else if (sinye === ']') { // ] ends the current phone
-			fen.push(new Klas(sa, na));
-			sa = null;
-			na = null;
-		}
-		else if (sinye.length === 2 && sinye[0] === ']') { // ends the current phone and assigns it a specific reference index
-			fen.push(new Klas(sa, na));
-			idx.push(Number.parseInt(sinye[1]));
-			sa = null;
-			na = null;
-		}
-		else if (sinye.length >= 4) { // feature names are incorporated into the current phone
-			const kutube = (sinye.startsWith('+') ? sa : na)
-			sinye = sinye.slice(1);
-			let val: Sif = null;
-			sifSow:
-			for (const sifKlas of [PendaniSif, Loke, Mode, Voze, Silabia, Longia, Latia, Nosia, MinorLoke]) {
-				for (const sif of sifKlas) {
-					if (sif.enumKey.startsWith(sinye)) {
-						val = sif;
-						break sifSow;
+for (const procesKitabe of procesTable) { // go through them
+	const chanse = Number.parseInt(procesKitabe[0])/1000;
+	let proces: Proces;
+	if (procesKitabe[1] === 'mute') {
+		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
+		const idx: number[] = [];
+		let fen = ca;
+		let sa: Sif[] = null, na: Sif[] = null;
+		for (let sinye of procesKitabe.slice(2)) { // and parse them
+			if (sinye === '>') // > transitions from ca to pa
+				fen = pa;
+			else if (sinye === '_') // _ transitions from badu to chenu
+				fen = chena;
+			else if (sinye === '#') // indicates a word boundary
+				fen.push(null);
+			else if (sinye === '/') { // / transitions from pa to badu
+				if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
+					console.assert(ca.length === 0 || ca.length === pa.length, `please specify indices for ${procesKitabe}`);
+					for (let i = 0; i < pa.length; i++)
+						idx.push(Math.min(i, ca.length));
+				}
+				fen = bada;
+			} else if (sinye === '[') { // [ stars a new phone
+				sa = [];
+				na = [];
+			} else if (sinye === ']') { // ] ends the current phone
+				fen.push(new Klas(sa, na));
+				sa = null;
+				na = null;
+			} else if (sinye.length === 2 && sinye[0] === ']') { // ends the current phone and assigns it a specific reference index
+				fen.push(new Klas(sa, na));
+				idx.push(Number.parseInt(sinye[1]));
+				sa = null;
+				na = null;
+			} else if (sinye.length >= 4) { // feature names are incorporated into the current phone
+				const kutube = (sinye.startsWith('+') ? sa : na)
+				sinye = sinye.slice(1);
+				const starred = sinye.startsWith('!');
+				if (starred) sinye = sinye.slice(1);
+				let val: Sif = null;
+				sifSow:
+				for (const sifKlas of starred ? SIF_TIPE.slice(1) : SIF_TIPE) {
+					for (const sif of sifKlas) {
+						if ((sif.enumKey + typeof(sif)).startsWith(sinye)) {
+							val = sif;
+							break sifSow;
+						}
 					}
 				}
+				if (val === null)
+					throw RangeError(`unrecognized feature: ${sinye}`);
+				else
+					kutube.push(val);
+			} else if (FROM_IPA.has(sinye)) { // IPA symbols are read for their specified features
+				const fon = FROM_IPA.get(sinye);
+				fen.push(new Klas([
+					fon.mode, fon.loke, fon.voze, fon.latia, fon.silabia, fon.minorLoke
+				]));
+				idx.push(ca.length); // they index to len(ca), to indicate they don't need any reference foneme
+			} else {
+				throw RangeError(`unintelligible symbol on line ${PROCES_CHUZABLE.length}: ${sinye}`);
 			}
-			if (val === null)
-				throw RangeError(`unrecognized feature: ${sinye}`);
-			else
-				kutube.push(val);
 		}
-		else if (FROM_IPA.has(sinye)) { // IPA symbols are read for their specified features
-			const fon = FROM_IPA.get(sinye);
-			fen.push(new Klas([
-				fon.mode, fon.loke, fon.voze, fon.latia, fon.silabia, fon.minorLoke
-			], []));
-		}
-		else {
-			throw RangeError(`unintelligible symbol: ${sinye}`);
-		}
+		proces = new FonMute(ca, pa, idx, bada, chena);
 	}
-	PROCES_CHUZABLE.push({chanse: chanse, proces: new FonProces(ca, pa, idx, bada, chena)});
+	else if (procesKitabe[1] === 'samsifis') {
+		const sif = procesKitabe[2];
+		const global = procesKitabe[3] === 'global';
+		const affectsSonorants = procesKitabe[4] === 'all';
+		const affectsConsonants = procesKitabe[5] === 'all';
+		proces = new Samsifis(sif, global, affectsSonorants, affectsConsonants);
+	}
+	else {
+		throw `unrecognized process classification: ${procesKitabe[1]}`;
+	}
+	PROCES_CHUZABLE.push({chanse: chanse, proces: proces});
 }
 
 
@@ -730,7 +838,7 @@ export class ProtoLanguage {
 
 export class DeuteroLanguage {
 	private readonly parent: Language;
-	private readonly changes: FonProces[];
+	private readonly changes: Proces[];
 
 	constructor(parent: Language, rng: Random) {
 		this.parent = parent;

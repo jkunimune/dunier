@@ -1,21 +1,37 @@
-001 [ +HIG +VOW ] > [ +PAL ] / _
-001 [ +CEN +NONSYLLA -LAB +VOW ] > [ +PAL ] / _
-001 [ -LAB +VEL +VOW ] > [ +CEN ] / _
-001 [ +LAB +VOW ] > [ +VEL ] / _
-001 [ +CEN +NONSYLLA +LAB +VOW ] > [ +VEL ] / _
-001 [ +HIG +VOW ] > [ +UNR ] / _
-001 [ +PAL +VOW ] > [ +UNR ] / _
-001 [ +VEL +VOW ] > [ +LABIALIZ ] / _
-001 [ +PAL +STO ] > [ +AFF ] / _
-001 [ +PAL +OBS ] > [ +POS ] / _
-001 [ +DEN +SON ] > [ +ALV ] / _
-001 [ +POS -FRI -AFF ] > [ +ALV ] / _
-001 [ +BIL +FRI ] > [ +LABIODEN ] / _
-001 [ +LON -SYL ] > [ +SHO ] / _
-001 [ +ALV ] > [ +PAL ] / _ [ +PAL -LOW -MID ]
-001 [ +COR +OCC +OBS ] [ +COR ] > [ +LON ]1 / _
-001 [ +VEL -SYL ] [ +ALV ] > [ +PAL +LON ]1 / _
-001 > ə / [ +STO ] _ [ +OCC ]
-100 > ʔ / # _ [ +SYL ]
-100 [ +NON ] > / _ #
-100 [ +VOW ] > / _ #
+001 mute [ +HIGH +VOWEL ] > [ +PALATAL ] / _
+001 mute [ +CENTRAL +NONSYLLAB -LABIAL +VOWEL ] > [ +PALATAL ] / _
+001 mute [ -LABIAL +VELAR +VOW ] > [ +CENTRAL ] / _
+001 mute [ +LABIAL +VOWEL ] > [ +VELAR ] / _
+001 mute [ +CENTRAL +NONSYLLAB +LABIAL +VOWEL ] > [ +VELAR ] / _
+001 mute [ +HIGH +VOWEL ] > [ +UNROUND ] / _
+001 mute [ +PALATAL +VOWEL ] > [ +UNROUND ] / _
+001 mute [ +VELAR +VOWEL ] > [ +LABIALIZ ] / _
+500 mute [ +!PALATAL +OBSTR ] > [ +POSTALV ] / _
+900 mute [ +POSTALV +STOP ] > [ +AFFRIC ] / _
+001 mute [ +POSTALV -FRIC -AFFRIC ] > [ +ALVEO ] / _
+001 mute [ +DENTAL +SONOR ] > [ +ALVEO ] / _
+001 mute [ +BILAB +FRIC ] > [ +LABIODENT ] / _
+001 mute [ +LONG -SYLLAB ] > [ +SHORT ] / _
+001 mute [ +VOWEL -SYLLAB ] > [ +SYLLAB ] / _
+100 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] / _
+001 mute [ +ALVEO ] > [ +PALATAL ] / _ [ +PALATAL -LOW -MID ]
+001 mute [ +CORON +OCCL +OBSTR ] [ +CORON ] > [ +LONG ]1 / _
+001 mute [ +SONOR -VOWEL -SYLLAB ] [ +SONOR -VOWEL -SYLLAB ] > [ +LONG ]1 / _
+001 mute [ +FRIC -SYLLAB ] [ +FRIC -SYLLAB ] > [ +LONG ]1 / _
+001 mute [ +VELAR -VOWEL ] [ +ALVEO ] > [ +PALATAL +LONG ]1 / _
+200 mute [ +NASAL ] [ +OCCL ] > [ +NASAL +VOICE +MEDIAN ]1 [ ]1 / _
+001 mute [ -VOWEL +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]
+001 mute [ -VOWEL -LABIAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]
+001 mute [ -VOWEL -PALATAL ] > [ +PALATALIZ ] / _ [ +PALATAL +SYLLAB -LOW ]
+001 mute [ -VOWEL -VELAR ] > [ +VELARIZ ] / _ [ +VELAR +SYLLAB -LOW ]
+001 mute [ +VOWEL -NASAL ] > [ +NASALIZ ] / _ [ +NASAL ]
+500 samsifis voice local obstr all
+100 samsifis round global all vowel
+100 samsifis tense global all vowel
+100 samsifis hight global all vowel
+100 samsifis front global all vowel
+001 mute [ +!PALATAL -VOWEL ] > j [ +ALVEO ]0 / [ +SYLLAB ] _
+001 mute > ə / [ +STOP ] _ [ +OCCL ]
+001 mute > ʔ / # _ [ +SYLLAB ]
+001 mute [ +NONSYLLAB ] > / [ ] _ #
+001 mute [ +VOWEL ] > / [ ] _ #

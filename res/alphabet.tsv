@@ -74,12 +74,12 @@ h	h	j	ɦ	г	h	h	h	h	ḥ	h	gl	f
 ᶢǁ	gl	gl	gl	гл	g	g	gql	gx	glc	j’	v	k!	l
 ᵏǃ	t	t	t	т	t	t	qy	qc	c̣	’h	rf	k!	
 ᶢǃ	t	t	t	т	t	t	gqy	gqc	gc̣	g’h	rf	k!	
-j	j	*i	y	й	y	y	j	y	y	y	c	a	
+j	j	ʎ	y	й	y	y	j	y	y	y	c	a	
 ɥ	ju	yu	yu*	ю	yu	yu	yu	yw	wy	yu	c	a	w
-ɨ̯	j	*i	y	й	y	y	j	y	y	y	m	a	
-ʉ̯	v	*u	w	у	w	w	w	w	w	w	m	a	w
+ɨ̯	j	ʎ	y	й	y	y	j	y	y	y	m	a	
+ʉ̯	v	ʌ	w	у	w	w	w	w	w	w	m	a	w
 ɰ	v	u	w	у	w	w	w	w	w	w	v	a	
-w	v	*u	w	в	w	w	w	w	w	w	v	a	w
+w	v	ʌ	w	в	w	w	w	w	w	w	v	a	w
 i	i	i	e-	и	i	i	i	i	i	i	c	a	s
 y	y	i	u-	ю	yu	i	ü	oi	y	ʉ	c	a	sw
 ɨ	y	i	i*	ы	i	i	ï	i	ị	ɨ	m	a	s
@@ -87,7 +87,7 @@ y	y	i	u-	ю	yu	i	ü	oi	y	ʉ	c	a	sw
 ɯ	u	u	oo	ы	u	u	ÿ	eu	ị	ɨ	v	a	s
 u	u	u	oo	у	u	u	u	u	u	u	v	a	sw
 ɪ	i	i	i*	и	i	i	i	i	ị	i	c	1	s
-ʏ	y	i	yu*	ю	yu	i	ü	ü	ỵ	ʉ	c	1	sw
+ʏ	y	i	yu*	ю	yu	i	ü	oi	ỵ	ʉ	c	1	sw
 ʊ	u	u	u*	у	u	u	u	u	ụ	u	v	1	sw
 e	e	e	e*	э	e	e	e	e	e	e	c	2	s
 ø	œ	e	ur	ё	e	e	ö	oe	ọ	ø	c	2	sw
@@ -109,3 +109,8 @@ a	a	a	a*	а	a	a	a	a	a	a	c	5	s
 Xː	X̄	X	X-	X	X-	X	X̄	XX	X̄	X̄	0	0	Len
 Xː	Xx	x	*x	xX	xX	x	xX	xX	xX	xX	0	0	Gem
 X͡Y	Xh	Y	X	XY	X	Y	XY	XY	XY	XY	0	0	Aff
+Xʷ	Xv	Xu	Xw	Xу	Xu	Xi	Xw	Xw	Xw	Xw	0	0	Lab
+Xʲ	Xj	Xi	Xy	Xь	Xy	Xu	Xj	Xy	X’	Xy	0	0	Pal
+Xˠ	X	Xu	X	Xь	X	X	Xg	Xg	X̴	Xg	0	0	Vel
+Xˤ	X	X	X	X	X	X	X̣	Xh	X̣	X̣	0	0	Pha
+X̃	Xn	Xn	Xn	Xн	Xnn	Xn	X̃	Xn	X̃	Ẍ	0	0	Nas

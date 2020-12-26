@@ -375,7 +375,7 @@ $(document).ready(() => {
 		for (let j = 0; j < 20; j ++) {
 			let s = "";
 			for (let k = 0; k < 6; k ++)
-				s += transcribe(bash.getCountryName(k)) + "  ";
+				s += transcribe(bash.getPersonalName(30 + 10*k)) + "  ";
 			console.log(s);
 			bash = new DeuteroLanguage(bash, rng);
 		}
