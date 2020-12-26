@@ -590,18 +590,18 @@ const harfiaTable = loadTSV('alphabet.tsv');
 for (const row of harfiaTable) {
 	const grafeme = row.slice(0, NUM_CONVENTIONS);
 	const sif = row.slice(NUM_CONVENTIONS);
-	if (sif[0] !== '0') {
-		const loke = LOKE_KODE.get(sif[0]);
-		const {mode, voze} = MODE_KODE.get(sif[1]);
-		const silabia = sif[2].includes('s') ? Silabia.SYLLABIC : Silabia.NONSYLLABIC;
-		const latia = sif[2].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
-		const aliSif = sif[2].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.UNROUNDED;
+	if (sif[2] !== '0') {
+		const silabia = sif[0].includes('s') ? Silabia.SYLLABIC : Silabia.NONSYLLABIC;
+		const latia = sif[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
+		const aliSif = sif[0].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.UNROUNDED;
+		const loke = LOKE_KODE.get(sif[1]);
+		const {mode, voze} = MODE_KODE.get(sif[2]);
 		const foneme = new Fon(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
 		FROM_IPA.set(grafeme[0], foneme);
 		TO_TEXT.set(foneme.hash(), grafeme);
 	}
 	else {
-		TO_DIACRITICS.set(sif[2], grafeme);
+		TO_DIACRITICS.set(sif[0], grafeme);
 	}
 }
 
@@ -686,7 +686,7 @@ function apply_diacritic(diacritic: string, fonHash: string[], convention: Conve
 
 
 const PROCES_CHUZABLE: {chanse: number, proces: Proces}[] = [];
-const procesTable = loadTSV('proces.txt', ' '); // load the phonological processes
+const procesTable = loadTSV('proces.txt', /\s+/, /%/); // load the phonological processes
 for (const procesKitabe of procesTable) { // go through them
 	const chanse = Number.parseInt(procesKitabe[0])/1000;
 	let proces: Proces;

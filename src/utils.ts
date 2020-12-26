@@ -62,18 +62,23 @@ export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
 }
 
 /**
- * load a static TSV resource
- * @param filename the filename (will search in /res/ by default)
- * @param delimiter
+ * load a static TSV resource. comments may be specified with a comment character. whitespace will be stripped from
+ * each line, so don't use a whitespace delimiter if you want trailing empty columns.
+ * @param filename the filename (will search in ./res/ by default)
+ * @param delimiter the symbol that indicates a column break
+ * @param comment the symbol that indicates the start of a comment
  */
-export function loadTSV(filename: string, delimiter: string = '\t'): string[][] {
+export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: RegExp = null): string[][] {
 	const xmlHttp = new XMLHttpRequest();
 	xmlHttp.open("GET", `/res/${filename}`, false);
 	xmlHttp.send();
 	if (xmlHttp.status !== 200)
 		throw `${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`;
 	const arr = [];
-	for (const line of xmlHttp.responseText.split('\n')) {
+	for (let line of xmlHttp.responseText.split('\n')) {
+		line = line.split(comment)[0]; // remove the comment
+		line = line.replace(/\s+$/, '') // remove trailing whitespace
+		line = line.replace(/^\s+/, '') // remove leading whitespace
 		if (line.length === 0)  break;
 		else                    arr.push(line.split(delimiter));
 	}
