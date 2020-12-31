@@ -24,12 +24,13 @@ t͡ɬ	cl	cl	cl	тль	tor	tl	tl	tl	tl	kl		ar	pf
 d͡ɮ	gl	gl	gl	дль	dor	dl	dl	dl	dl	gl		ar	bv
 ʃ	sc'	y	sh	ш	sy	sh	sj	sh	ṣ	x		pa	f
 ʒ	z	y	j	ж	zy	zh	zj	zh	ẓ	j		pa	v
-ɬ	l	l	l	ль	r	lh	ll	lh	lh	lh	l	ar	f
+ɬ	l	l	fl	ль	r	lh	ll	lh	lh	hl	l	ar	f
 ɮ	l	l	l	л	r	l	dl	dl	dl	zl	l	ar	v
 ɹ	r	r	r	р	a	r	r	r	r	r		ar	a
 l	l	l	l	л	r	l	l	l	l	l	l	ar	a
 r	r	rr	r	р	r	r	rr	r	r	r		ar	r
 ɾ	r	r	r	р	r	r	r	r	r	r		ar	t
+ɺ	r	r	l	р	r	l	lr	r	ṛ	r	l	ar	t
 ɳ	n	n	n	н	n	n	ṇ	nr	ṇ	ṇ		rf	a
 ʈ	t	t	t	т	t	t	ṭ	tr	ṭ	ṭ		rf	p
 ɖ	d	d	d	д	d	d	ḍ	dr	ḍ	ḍ		rf	b
@@ -38,21 +39,20 @@ r	r	rr	r	р	r	r	rr	r	r	r		ar	r
 ʂ	sc'	y	sh	ш	sy	sh	ṣ	sh	ṣ	sh		rf	f
 ʐ	r	y	j	ж	zy	zh	ẓ	zh	ẓ	zh		rf	v
 ɻ	r	r	r	р	a	r	rz	rh	ṛ	rh		rf	a
-ɭ	l	l	l	л	r	l	l	l	l	l		rf	a
+ɭ	l	l	l	л	r	l	l	l	l	l	l	rf	a
 ɽ	r	r	r	р	r	r	rz	rh	ṛ	rh		rf	t
-ɺ	r	r	r	р	r	r	rz	rh	ṛ	rh		rf	t
 ɲ	gn	ñ	ny	нь	ny	ny	nj	nh	ny	ny		c	n
 c	cj	cy	c	кь	ky	ky	kj	kh	ty	ky		c	p
 ɟ	j	y	j	гь	gy	gy	gj	gh	dy	gy		c	b
 ç	hj	jy	sh	щ	hy	hy	hj	sh	sy	hy		c	f
 ʝ	j	y	y	й	y	y	y	y	y	y		c	v
-ʎ	gl	ll	y	ль	ry	ly	lj	lh	ly	ly		c	a
+ʎ	gl	ll	y	ль	ry	ly	lj	lh	ly	ly	l	c	a
 ŋ	n	n	ng	нг	nn	ng	ng	ng	ng	ng		v	n
 k	c	c	c	к	k	k	k	k	k	k		v	p
 ɡ	g	g	g	г	g	g	g	g	g	g		v	b
 x	ch	j	gh	х	h	h	kh	h	x	kh		v	f
 ɣ	g	g	g	г	g	gh	gh	gh	g̣	gh		v	v
-ʟ	l	ll	y	ль	ry	l	lw	lw	lw	lw		v	a
+ʟ	l	ll	y	ль	ry	l	lw	lw	lw	lw	l	v	a
 ɴ	n	n	ng	и	nn	ng	ng	ng	ng	ng		uv	n
 q	g	g	c	г	k	k	q	q	q	q		uv	p
 ɢ	g	g	g	г	g	g	q	q	q	q		uv	b
@@ -104,6 +104,7 @@ o	o	o	o*	о	o	o	o	o	o	o	sw	v	2
 æ	æ	a	a*	э	a	a	ä	ae	ạ	æ	s	c	4
 ɐ	a	a	u*	а	a	a	a	a	ạ	a	s	m	4
 a	a	a	a*	а	a	a	a	a	a	a	s	c	5
+ɶ	œ	e	ur	ё	e	e	ö	oe	ọ	ø	sw	c	5
 ɑ	a	a	a*	а	a	a	a	a	a	a	s	v	5
 ɒ	o	o	o*	о	o	o	o	ao	ọ	a	sw	v	5
 Xː	X̄	X	X-	X	X-	X	X̄	XX	X̄	X̄	Len	0	0
@@ -114,3 +115,5 @@ Xʲ	Xj	Xi	Xy	Xь	Xy	Xu	Xj	Xy	X’	Xy	Pal	0	0
 Xˠ	X	Xu	X	Xь	X	X	Xg	Xg	X̴	Xg	Vel	0	0
 Xˤ	X	X	X	X	X	X	X̣	Xh	X̣	X̣	Pha	0	0
 X̃	Xn	Xn	Xn	Xн	Xnn	Xn	X̃	Xn	X̃	Ẍ	Nas	0	0
+X́	X	X́	X	X́	X	X	X	X	X́	X	St1	0	0
+X̀	X	X	X	X	X	X	X	X	X̀	X	St2	0	0

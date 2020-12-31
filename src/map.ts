@@ -124,7 +124,7 @@ export class Chart {
 	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol',
 		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
 		   civLabels: boolean = false, geoLabels: boolean = false,
-		   fontSize: number = 12, convention: Convention = Convention.NOVOYANGI) {
+		   fontSize: number = 12, convention: Convention = Convention.CHANSAGI_2) {
 		svg.setAttribute('viewBox',
 			`${this.projection.left} ${this.projection.top}
 			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
@@ -187,7 +187,7 @@ export class Chart {
 					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
 					const text = document.createTextNode(
-						`${civ.getName(Convention.NOVOYANGI)}\n[${civ.getName(Convention.NASOMEDI)}]`);
+						`${civ.getName(Convention.CHANSAGI_2)}\n[${civ.getName(Convention.NASOMEDI)}]`);
 					hover.appendChild(text);
 					titledG.appendChild(hover);
 					g.appendChild(titledG);

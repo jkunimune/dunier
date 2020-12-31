@@ -92,8 +92,10 @@ class Voze extends Enumify {
 
 /** syllabicity */
 class Silabia extends Enumify {
-	static SYLLABIC = new Silabia();
-	static NONSYLLABIC = new Silabia();
+	static PRIMARY_STRESSED = new Silabia();
+	static SECONDARY_STRESSED = new Silabia();
+	static UNSTRESSED = new Silabia();
+	static CONSONANT = new Silabia();
 	static _ = Silabia.closeEnum();
 }
 
@@ -149,7 +151,7 @@ class PendaniSif extends Enumify {
 	static RHOTIC = new PendaniSif();
 	static LIQUID = new PendaniSif();
 	static VOWEL = new PendaniSif();
-	// static STRESSED = new Sif();
+	static STRESSED = new PendaniSif();
 	static _ = PendaniSif.closeEnum();
 }
 
@@ -163,7 +165,7 @@ class Fon {
 		null,
 		null,
 		Voze.VOICED,
-		Silabia.NONSYLLABIC,
+		Silabia.CONSONANT,
 		Longia.SHORT,
 		Latia.MEDIAN,
 		MinorLoke.UNROUNDED,
@@ -190,6 +192,10 @@ class Fon {
 		this.nosia = nosia;
 	}
 
+	/**
+	 * does this fone have the given feature?
+	 * @param sif
+	 */
 	is(sif: Sif): boolean {
 		if (sif instanceof Loke)
 			return this.loke === sif;
@@ -254,12 +260,25 @@ class Fon {
 				case PendaniSif.VOWEL:
 					return this.mode.sonority >= Mode.CLOSE.sonority && this.latia === Latia.MEDIAN &&
 						this.loke.foner === Foner.DORSUM;
+				case PendaniSif.STRESSED:
+					return this.silabia === Silabia.PRIMARY_STRESSED || this.silabia === Silabia.SECONDARY_STRESSED;
 				default:
 					throw "nope; not going to happen";
 			}
 		}
 	}
 
+	/**
+	 * return a fone that is identical to this, except that it has the given feature
+	 * @param sif
+	 */
+	with(sif: Sif): Fon {
+		return new Klas([sif]).konformu(this);
+	}
+
+	/**
+	 * losslessly represent this as a string
+	 */
 	hash(): string {
 		return this.silabia.enumKey.slice(0, 2) +
 			this.longia.enumKey.slice(0, 2) +
@@ -481,7 +500,7 @@ class FonMute {
  * a process that causes adjacent sounds, or sounds in the same word, to share a feature
  */
 class Samsifis {
-	private readonly kutube: Klas[];
+	private readonly kutube: Sif[];
 	private readonly global: boolean;
 	private readonly affectsSonorants: boolean;
 	private readonly affectsConsonants: boolean;
@@ -490,39 +509,37 @@ class Samsifis {
 		this.global = global; // read these flags
 		this.affectsSonorants = affectsSonorants;
 		this.affectsConsonants = affectsConsonants;
-		let kutube: Sif[]; // then construct the list of "polar" attributes
-		if (sif === 'front')
-			kutube = [Loke.VELAR, Loke.PALATAL];
+		if (sif === 'front') // then construct the list of "polar" attributes
+			this.kutube = [Loke.VELAR, Loke.PALATAL];
 		else if (sif === 'hight')
-			kutube = [PendaniSif.LOW, PendaniSif.HIGH];
+			this.kutube = [PendaniSif.LOW, PendaniSif.HIGH];
 		else if (sif === 'round')
-			kutube = [MinorLoke.UNROUNDED, MinorLoke.LABIALIZED];
+			this.kutube = [MinorLoke.UNROUNDED, MinorLoke.LABIALIZED];
 		else if (sif === 'tense')
-			kutube = [PendaniSif.LAX, PendaniSif.TENSE];
+			this.kutube = [PendaniSif.LAX, PendaniSif.TENSE];
 		else if (sif === 'voice') {
-			kutube = [];
+			this.kutube = [];
 			for (const hal of Voze)
-				kutube.push(hal);
+				this.kutube.push(hal);
 		}
 		else
 			throw `unrecognized harmony type: ${sif}`;
-		this.kutube = kutube.map((s: Sif) => new Klas([s])); // convert those attributes into classes and save the list
 	}
 
 	apply(old: Fon[]): Fon[] {
 		const nov: Fon[] = new Array<Fon>(old.length);
-		let val: Klas = null;
+		let val: Sif = null;
 		for (let i = old.length-1; i >= 0; i --) { // iterate backwards through the word
 			nov[i] = old[i]; // in most cases, we will just make this the same as it was in the old word
 			if (
 				!(!this.affectsSonorants && old[i].is(PendaniSif.SONORANT)) &&
-				!(!this.affectsConsonants && old[i].is(Silabia.NONSYLLABIC))) { // but if this segment isn't immune
-				for (let klas of this.kutube) { // check its polarity
-					if (klas.macha(old[i])) { // if it's polar,
+				!(!this.affectsConsonants && old[i].is(Silabia.CONSONANT))) { // but if this segment isn't immune
+				for (let sif of this.kutube) { // check its polarity
+					if (old[i].is(sif)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before
-							nov[i] = val.konformu(old[i]); // and add it to the new word
+							nov[i] = old[i].with(val); // and add it to the new word
 						else // or read the property to match if we haven't seen this yet
-							val = klas;
+							val = sif;
 						break;
 					} // if it's neutral, just ignore it without resetting val or changing anything
 				}
@@ -535,19 +552,107 @@ class Samsifis {
 	}
 }
 
-// /**
-//  * a process that places stress according to certain rules
-//  */
-// class AcentoPoze {
-//
-// }
-//
-// /**
-//  * a process that turns some of the shortest words into suffixen and randomly applies them
-//  */
-// class BadoFikse {
-//
-// }
+/**
+ * a process that places syllables and stress according to certain rules
+ */
+class AcentoPoze {
+	private readonly reverse: boolean; // whether the primary stress is on the right
+	private readonly headSize: number; // the number of unstressed syllables to put between the word edge and the initial stress
+	private readonly attractors: number; // the minimum weight that attracts stress
+	private readonly tailMode: string; // ['lapse', 'clash', 'none'] how to handle stress at the tail end when the syllables ar odd
+
+	/**
+	 * create a new stress system given some simplified parameters
+	 * @param reverse
+	 * @param headSize
+	 * @param attractors
+	 * @param tailMode ['lapse', 'clash', or 'none']
+	 */
+	constructor(reverse: boolean, headSize: number, attractors: number, tailMode: string) {
+		this.reverse = reverse;
+		this.headSize = headSize;
+		this.attractors = attractors;
+		this.tailMode = tailMode;
+	}
+
+	apply(old: Fon[]): Fon[] {
+		let nuclei: {i: number, weight: number}[] = [];
+		let numC = 1;
+		for (let i = old.length - 1; i >= 0; i --) { // first, tally up the syllables
+			if (!old[i].is(Silabia.CONSONANT)) { // using sylabicity to identify nuclei
+				if (old[i].is(Longia.LONG))
+					nuclei.push({i: i, weight: 2}); // long vowels have weight 2
+				else if (numC > 1)
+					nuclei.push({i: i, weight: 1}); // codas have weight 1
+				else
+					nuclei.push({i: i, weight: 0}); // open syllables have weight 0
+				numC = 0;
+			}
+			else {
+				numC += (old[i].is(Longia.LONG)) ? 2 : 1; // long consonants count as two segments for this purpose
+			}
+		}
+
+		if (!this.reverse) // choose the correct orientation
+			nuclei = nuclei.reverse();
+
+		const stress: boolean[] = new Array(nuclei.length);
+		let lapse = 0;
+		for (let i = 0; i < nuclei.length; i ++) {
+			if (nuclei[i].weight >= this.attractors) // if this is a stress attractor
+				stress[i] = true;
+			else if (lapse === i && (i === this.headSize || i === nuclei.length - 1)) // if this is the head
+				stress[i] = true;
+			else if (lapse === i && i < this.headSize) // keep ordinary stress off the pre-primary region
+				stress[i] = false;
+			else if (this.tailMode === 'lapse' && (i + 1 >= nuclei.length || nuclei[i + 1].weight >= this.attractors)) // if *Clash or NonFinal is active and there's a stress coming up
+				stress[i] = false;
+			else if (this.tailMode !== 'none' && lapse >= 1) // otherwise, assign stress to avoid lapses
+				stress[i] = true;
+			else
+				stress[i] = false;
+
+			if (!stress[i]) lapse ++; // count the lapses
+			else            lapse = 0;
+		}
+
+		const nov: Fon[] = old.slice(); // then edit the word
+		let firstStress = true;
+		for (let i = 0; i < nuclei.length; i ++) {
+			if (!stress[i])
+				nov[nuclei[i].i] = old[nuclei[i].i].with(Silabia.UNSTRESSED); // stressless is stressless
+			else if (!firstStress)
+				nov[nuclei[i].i] = old[nuclei[i].i].with(Silabia.SECONDARY_STRESSED); // all but the first stress is secondary
+			else {
+				nov[nuclei[i].i] = old[nuclei[i].i].with(Silabia.PRIMARY_STRESSED); // the first stress is primary
+				firstStress = false;
+			}
+		}
+		return nov;
+	}
+}
+
+/**
+ * a process that turns some of the shortest words into suffixen and randomly applies them
+ */
+class BadoFikse {
+	// TODO: implement this
+}
+
+
+const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
+	{klas: new Klas([Longia.LONG, Silabia.CONSONANT]), baze: [Longia.SHORT], kode: 'Gem'},
+	{klas: new Klas([Longia.LONG], [Silabia.CONSONANT]), baze: [Longia.SHORT], kode: 'Len'},
+	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
+	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
+	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
+	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
+	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
+	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
+	{klas: new Klas([MinorLoke.PHARANGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
+	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
+	{klas: new Klas([Loke.POSTALVEOLAR]), baze: [Loke.ALVEOLAR], kode: 'Pha'},
+]
 
 
 const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
@@ -591,7 +696,7 @@ for (const row of harfiaTable) {
 	const grafeme = row.slice(0, NUM_CONVENTIONS);
 	const sif = row.slice(NUM_CONVENTIONS);
 	if (sif[2] !== '0') {
-		const silabia = sif[0].includes('s') ? Silabia.SYLLABIC : Silabia.NONSYLLABIC;
+		const silabia = sif[0].includes('s') ? Silabia.UNSTRESSED : Silabia.CONSONANT;
 		const latia = sif[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
 		const aliSif = sif[0].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.UNROUNDED;
 		const loke = LOKE_KODE.get(sif[1]);
@@ -623,64 +728,44 @@ function ipa(ipa: string): Fon[] {
 
 /**
  * get an orthographical representation from a phoneme
- * @param fonHash
+ * @param fon
  * @param convention
  */
-function lookUp(fonHash: string, convention: Convention): string {
-	if (TO_TEXT.has(fonHash)) // if it's in the table
-		return TO_TEXT.get(fonHash)[convention]; // just return that
-	else if (fonHash.slice(2, 4) === 'LO') {
-		if (fonHash.slice(0, 2) === 'NO') // use diacritics to mark gemination
-			return apply_diacritic(TO_DIACRITICS.get('Gem')[convention],
-				['NOSH' + fonHash.slice(4)], convention);
-		else // use diacritics to mark length
-			return apply_diacritic(TO_DIACRITICS.get('Len')[convention],
-				['SYSH' + fonHash.slice(4)], convention);
+function lookUp(fon: Fon, convention: Convention): string {
+	if (TO_TEXT.has(fon.hash())) // if it's in the table
+		return TO_TEXT.get(fon.hash())[convention]; // just return that
+
+	for (const {klas, baze, kode} of DIACRITICS) { // if not, look through the diacritics
+		if (klas.macha(fon)) { // to see if there's one that will help
+			const baziFon = [];
+			for (const sif of baze)
+				baziFon.push(fon.with(sif));
+			return apply_diacritic(TO_DIACRITICS.get(kode)[convention], baziFon, convention);
+		}
 	}
-	else if (fonHash.slice(6, 8) === 'NA') // spell nasalized vowels with the nasalization diacritic
-		return apply_diacritic(TO_DIACRITICS.get('Nas')[convention],
-			[fonHash.slice(0, 6) + 'OR' + fonHash.slice(8)], convention);
-	else if (fonHash.slice(4, 6) === 'LA') // spell labialized consonants with the labialization diacritic
-		return apply_diacritic(TO_DIACRITICS.get('Lab')[convention],
-			[fonHash.slice(0, 4) + 'UN' + fonHash.slice(6)], convention);
-	else if (fonHash.slice(4, 6) === 'PA') // spell palatalized consonants with the palatalization diacritic
-		return apply_diacritic(TO_DIACRITICS.get('Pal')[convention],
-			[fonHash.slice(0, 4) + 'UN' + fonHash.slice(6)], convention);
-	else if (fonHash.slice(4, 6) === 'VE') // spell velarized consonants with the velarization diacritic
-		return apply_diacritic(TO_DIACRITICS.get('Vel')[convention],
-			[fonHash.slice(0, 4) + 'UN' + fonHash.slice(6)], convention);
-	else if (fonHash.slice(4, 6) === 'PH') // spell pharangealized consonants with the pharangealization diacritic
-		return apply_diacritic(TO_DIACRITICS.get('Pha')[convention],
-			[fonHash.slice(0, 4) + 'UN' + fonHash.slice(6)], convention);
-	else if (fonHash.slice(14) === 'AFFRICATE') // spell affricates based on their stops and fricatives
-		return apply_diacritic(TO_DIACRITICS.get('Aff')[convention],
-			[fonHash.slice(0, 14) + 'STOP', fonHash.slice(0, 14) + 'FRICATE'], convention);
-	else if (fonHash.slice(12, 14) === 'PO') // spell postalveolar sounds as alveolar
-		return lookUp(fonHash.slice(0, 12) + 'AL' + fonHash.slice(14), convention);
-	else {
-		console.log(TO_TEXT);
-		throw `I don't know how to write ${fonHash}`;
-	}
+
+	console.log(TO_TEXT);
+	throw `I don't know how to write ${fon}`;
 }
 
 /**
  * get some orthographical representations from some phonemes and apply a diacritic to it
- * @param diacritic the string representing the modified letter, where the phonemes are replaced with X, Y, Z, etc.,
- * and the first letter of each phoneme is replaced with x, y, z, etc. the first letter of an affricate will be that of
+ * @param diacritic the string representing the modified letter, where the base phonemes are replaced with X, Y, etc.,
+ * and the first letter of each phoneme is replaced with x, y, etc. the first letter of an affricate will be that of
  * its corresponding stop.
- * @param fonHash the hashes of the phonemes to be combined into the diacritic
+ * @param fon the phonemes to be combined into the diacritic
  * @param convention the convention to use for the lookup
  */
-function apply_diacritic(diacritic: string, fonHash: string[], convention: Convention): string {
-	const X = lookUp(fonHash[0], convention); // get the base character
+function apply_diacritic(diacritic: string, fon: Fon[], convention: Convention): string {
+	const X = lookUp(fon[0], convention); // get the base character
 	let x = X.slice(0, 1); // if we need lowercase x, find that
 	if (diacritic.includes('x') && diacritic.slice(14) === 'AFFRICATE')
-		x = lookUp(fonHash.slice(0, 14) + 'STOP', convention).slice(0, 1);
+		x = lookUp(fon[0].with(Mode.STOP), convention).slice(0, 1);
 	let graf = diacritic.replace('X', X).replace('x', x);
-	if (fonHash.length > 1 && diacritic.includes('Y'))
-		graf = graf.replace('Y', lookUp(fonHash[1], convention));
-	if (fonHash.length > 2 && diacritic.includes('Z'))
-		graf = graf.replace('Z', lookUp(fonHash[2], convention));
+	if (diacritic.includes('Y'))
+		graf = graf.replace('Y', lookUp(fon[1], convention));
+	if (diacritic.includes('Z'))
+		graf = graf.replace('Z', lookUp(fon[2], convention));
 	return graf;
 }
 
@@ -689,7 +774,6 @@ const PROCES_CHUZABLE: {chanse: number, proces: Proces}[] = [];
 const procesTable = loadTSV('proces.txt', /\s+/, /%/); // load the phonological processes
 for (const procesKitabe of procesTable) { // go through them
 	const chanse = Number.parseInt(procesKitabe[0])/1000;
-	let proces: Proces;
 	if (procesKitabe[1] === 'mute') {
 		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
 		const idx: number[] = [];
@@ -709,19 +793,23 @@ for (const procesKitabe of procesTable) { // go through them
 						idx.push(Math.min(i, ca.length));
 				}
 				fen = bada;
-			} else if (sinye === '[') { // [ stars a new phone
+			}
+			else if (sinye === '[') { // [ stars a new phone
 				sa = [];
 				na = [];
-			} else if (sinye === ']') { // ] ends the current phone
+			}
+			else if (sinye === ']') { // ] ends the current phone
 				fen.push(new Klas(sa, na));
 				sa = null;
 				na = null;
-			} else if (sinye.length === 2 && sinye[0] === ']') { // ends the current phone and assigns it a specific reference index
+			}
+			else if (sinye.length === 2 && sinye[0] === ']') { // ends the current phone and assigns it a specific reference index
 				fen.push(new Klas(sa, na));
 				idx.push(Number.parseInt(sinye[1]));
 				sa = null;
 				na = null;
-			} else if (sinye.length >= 4) { // feature names are incorporated into the current phone
+			}
+			else if (sinye.length >= 4) { // feature names are incorporated into the current phone
 				const kutube = (sinye.startsWith('+') ? sa : na)
 				sinye = sinye.slice(1);
 				const starred = sinye.startsWith('!');
@@ -740,29 +828,40 @@ for (const procesKitabe of procesTable) { // go through them
 					throw RangeError(`unrecognized feature: ${sinye}`);
 				else
 					kutube.push(val);
-			} else if (FROM_IPA.has(sinye)) { // IPA symbols are read for their specified features
+			}
+			else if (FROM_IPA.has(sinye)) { // IPA symbols are read for their specified features
 				const fon = FROM_IPA.get(sinye);
 				fen.push(new Klas([
 					fon.mode, fon.loke, fon.voze, fon.latia, fon.silabia, fon.minorLoke
 				]));
 				idx.push(ca.length); // they index to len(ca), to indicate they don't need any reference foneme
-			} else {
+			}
+			else {
 				throw RangeError(`unintelligible symbol on line ${PROCES_CHUZABLE.length}: ${sinye}`);
 			}
 		}
-		proces = new FonMute(ca, pa, idx, bada, chena);
+		PROCES_CHUZABLE.push({chanse: chanse, proces:
+				new FonMute(ca, pa, idx, bada, chena)});
 	}
 	else if (procesKitabe[1] === 'samsifis') {
 		const sif = procesKitabe[2];
 		const global = procesKitabe[3] === 'global';
 		const affectsSonorants = procesKitabe[4] === 'all';
 		const affectsConsonants = procesKitabe[5] === 'all';
-		proces = new Samsifis(sif, global, affectsSonorants, affectsConsonants);
+		PROCES_CHUZABLE.push({chanse: chanse, proces:
+				new Samsifis(sif, global, affectsSonorants, affectsConsonants)});
+	}
+	else if (procesKitabe[1] === 'acente') {
+		const reverse = procesKitabe[2] === 'right';
+		const headSize = Number.parseInt(procesKitabe[3]);
+		for (let attractors = 1; attractors <= 3; attractors ++)
+			for (const tailMode of ['clash', 'lapse', 'none'])
+				PROCES_CHUZABLE.push({chanse: chanse/9., proces:
+						new AcentoPoze(reverse, headSize, attractors, tailMode)});
 	}
 	else {
 		throw `unrecognized process classification: ${procesKitabe[1]}`;
 	}
-	PROCES_CHUZABLE.push({chanse: chanse, proces: proces});
 }
 
 
@@ -818,10 +917,10 @@ export class ProtoLanguage {
 	newWord(nSyllables: number, rng: Random): Fon[] {
 		const lekse = [];
 		for (let i = 0; i < nSyllables; i ++) {
-			if (rng.probability(2/3))
+			if (rng.probability(0.7))
 				lekse.push(rng.choice(ProtoLanguage.initialConsonants));
 			lekse.push(rng.choice(ProtoLanguage.initialVowels));
-			if (rng.probability(2/3))
+			if (rng.probability(0.5))
 				lekse.push(rng.choice(ProtoLanguage.initialConsonants));
 		}
 		return lekse;
@@ -893,7 +992,7 @@ const ENGLI_VISE = loadTSV('kanune-engli.tsv')
 export function transcribe(lekse: Fon[], convention: Convention = Convention.NASOMEDI): string {
 	let asli = "";
 	for (let i = 0; i < lekse.length; i ++)
-		asli += lookUp(lekse[i].hash(), convention);
+		asli += lookUp(lekse[i], convention);
 
 	if (convention === Convention.ENGLI) {
 		let muti = "#"+asli+"#";
