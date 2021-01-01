@@ -135,6 +135,7 @@ class PendaniSif extends Enumify {
 	static CORONAL = new PendaniSif();
 	static DORSAL = new PendaniSif();
 	static GUTTURAL = new PendaniSif();
+	static ALVEOLAR = new PendaniSif();
 	static CONTINUANT = new PendaniSif();
 	static OCCLUSIVE = new PendaniSif();
 	static SONORANT = new PendaniSif();
@@ -223,6 +224,8 @@ class Fon {
 					return this.loke.foner === Foner.DORSUM;
 				case PendaniSif.GUTTURAL:
 					return this.loke.foner === Foner.PHARYNX || this.minorLoke === MinorLoke.PHARANGEALIZED;
+				case PendaniSif.ALVEOLAR:
+					return this.is(Loke.ALVEOLAR) || (this.is(Loke.DENTAL) && this.mode !== Mode.FRICATE && this.mode !== Mode.AFFRICATE);
 				case PendaniSif.CONTINUANT:
 					return this.mode === Mode.FRICATE || this.mode.sonority >= Mode.CLOSE.sonority;
 				case PendaniSif.OCCLUSIVE:
@@ -363,6 +366,9 @@ class Klas {
 					case PendaniSif.VELAR:
 						loke = Loke.VELAR;
 						break;
+					case PendaniSif.ALVEOLAR:
+						loke = Loke.ALVEOLAR;
+						break;
 					case PendaniSif.HIGH:
 						if (fon.is(PendaniSif.LAX))
 							mode = Mode.NEAR_CLOSE;
@@ -412,13 +418,20 @@ class Klas {
 
 		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
 			loke = Loke.VELAR;
+		if (mode.sonority >= Mode.NEAR_OPEN.sonority) // snap open vowels to front or back depending on rounding
+			loke = (minorLoke === MinorLoke.LABIALIZED) ? Loke.VELAR : Loke.PALATAL;
+		if (loke === Loke.POSTALVEOLAR && mode === Mode.STOP) // turn postalveolar stops into affricates before they can be cast to dental
+			mode = Mode.AFFRICATE;
+		if ([Loke.DENTAL, Loke.ALVEOLAR, Loke.POSTALVEOLAR].includes(loke))
+			if (![Mode.FRICATE, Mode.AFFRICATE].includes(mode) || latia === Latia.LATERAL) // simplify alveolar-ish sounds to dental
+				loke = Loke.DENTAL;
 		if (
 				(mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
 				(voze === Voze.VOICED && loke === Loke.GLOTTAL) ||
 				(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
 				(mode === Mode.TRILL && loke.foner !== Foner.CORONA && loke !== Loke.BILABIAL && loke !== Loke.UVULAR) ||
 				(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
-				(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is physically impossible for whatever reason
+				(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is impossible for whatever reason
 			return fon; // cancel it
 		else // otherwise
 			return new Fon(mode, loke, voze, silabia, longia, latia, minorLoke, nosia); // bring it all together!
@@ -651,7 +664,6 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
 	{klas: new Klas([MinorLoke.PHARANGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
 	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
-	{klas: new Klas([Loke.POSTALVEOLAR]), baze: [Loke.ALVEOLAR], kode: 'Pha'},
 ]
 
 

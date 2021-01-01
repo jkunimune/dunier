@@ -9,9 +9,9 @@ f	f	f	f	ф	f	f	f	f	f	f		ld	f
 v	v	v	v	в	b	v	v	v	v	v		ld	v
 ʋ	v	u	w	в	u	w	v	w	v	w		ld	a
 ⱱ	v	v	v	в	u	v	v	v	v	v		ld	t
-n	n	n	n	н	n	n	n	n	n	n		ar	n
-t	t	t	t	т	t	t	t	t	t	t		ar	p
-d	d	d	d	д	d	d	d	d	d	d		ar	b
+n	n	n	n	н	n	n	n	n	n	n		d	n
+t	t	t	t	т	t	t	t	t	t	t		d	p
+d	d	d	d	д	d	d	d	d	d	d		d	b
 θ	th	z	th	ф	s	th	th	th	ṭ	th		d	f
 ð	d	d	th	д	z	dh	dh	dh	ḍ	dh		d	v
 t͡s	c	z	s	ц	ts	c	c	ts	ts	z		ar	pf
@@ -20,17 +20,17 @@ s	s	s	s	с	s	s	s	s	s	s		ar	f
 z	z	z	z	з	z	z	z	z	z	z		ar	v
 t͡ʃ	c'	ch	ch	ч	ty	ch	cj	ch	tṣ	c		pa	pf
 d͡ʒ	j	y	j	дж	zy	j	dzj	j	dẓ	j		pa	bv
-t͡ɬ	cl	cl	cl	тль	tor	tl	tl	tl	tl	kl		ar	pf
-d͡ɮ	gl	gl	gl	дль	dor	dl	dl	dl	dl	gl		ar	bv
 ʃ	sc'	y	sh	ш	sy	sh	sj	sh	ṣ	x		pa	f
 ʒ	z	y	j	ж	zy	zh	zj	zh	ẓ	j		pa	v
-ɬ	l	l	fl	ль	r	lh	ll	lh	lh	hl	l	ar	f
-ɮ	l	l	l	л	r	l	dl	dl	dl	zl	l	ar	v
-ɹ	r	r	r	р	a	r	r	r	r	r		ar	a
-l	l	l	l	л	r	l	l	l	l	l	l	ar	a
-r	r	rr	r	р	r	r	rr	r	r	r		ar	r
-ɾ	r	r	r	р	r	r	r	r	r	r		ar	t
-ɺ	r	r	l	р	r	l	lr	r	ṛ	r	l	ar	t
+t͡ɬ	cl	cl	cl	тль	tor	tl	tl	tl	tl	kl		d	pf
+d͡ɮ	gl	gl	gl	дль	dor	dl	dl	dl	dl	gl		d	bv
+ɬ	l	l	fl	ль	r	lh	ll	lh	lh	hl	l	d	f
+ɮ	l	l	l	л	r	l	dl	dl	dl	zl	l	d	v
+ɹ	r	r	r	р	a	r	r	r	r	r		d	a
+l	l	l	l	л	r	l	l	l	l	l	l	d	a
+r	r	rr	r	р	r	r	rr	r	r	r		d	r
+ɾ	r	r	r	р	r	r	r	r	r	r		d	t
+ɺ	r	r	l	р	r	l	lr	r	ṛ	r	l	d	t
 ɳ	n	n	n	н	n	n	ṇ	nr	ṇ	ṇ		rf	a
 ʈ	t	t	t	т	t	t	ṭ	tr	ṭ	ṭ		rf	p
 ɖ	d	d	d	д	d	d	ḍ	dr	ḍ	ḍ		rf	b
@@ -102,10 +102,8 @@ o	o	o	o*	о	o	o	o	o	o	o	sw	v	2
 ʌ	o	e	u*	ы	o	o	ə̈	eo	ẹ	y	s	v	3
 ɔ	o	o	o*	о	o	o	o	o	ọ	o	sw	v	3
 æ	æ	a	a*	э	a	a	ä	ae	ạ	æ	s	c	4
-ɐ	a	a	u*	а	a	a	a	a	ạ	a	s	m	4
+ɐ	a	a	u*	а	a	a	a	a	ạ	a	sw	v	4
 a	a	a	a*	а	a	a	a	a	a	a	s	c	5
-ɶ	œ	e	ur	ё	e	e	ö	oe	ọ	ø	sw	c	5
-ɑ	a	a	a*	а	a	a	a	a	a	a	s	v	5
 ɒ	o	o	o*	о	o	o	o	ao	ọ	a	sw	v	5
 Xː	X̄	X	X-	X	X-	X	X̄	XX	X̄	X̄	Len	0	0
 Xː	Xx	x	*x	xX	xX	x	xX	xX	xX	xX	Gem	0	0

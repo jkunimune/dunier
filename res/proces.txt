@@ -7,32 +7,30 @@
 001 mute [ +PALATAL +VOWEL ] > [ +UNROUND ] / _								% unrounding of front vowels
 001 mute [ +VELAR +VOWEL ] > [ +LABIALIZ ] / _								% rounding of back vowels
 500 mute [ +!PALATAL +OBSTR ] > [ +POSTALV ] / _
-900 mute [ +POSTALV +STOP ] > [ +AFFRIC ] / _
-900 mute [ +DENTAL +SONOR ] > [ +ALVEO ] / _								% dentals aren't real
-001 mute [ +POSTALV +SONOR ] > [ +ALVEO ] / _								% postalveolars aren't real
 001 mute [ +BILAB +FRIC ] > [ +LABIODENT ] / _
 001 mute [ +LONG +CONSON ] > [ +SHORT ] / _									% loss of gemination
 001 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] / _								% denasalization on non-vowels
 100 mute [ +ALVEO ] > [ +PALATAL ] / _ [ +PALATAL -LOW -MID ]
-100 mute [ +CORON +OCCL +OBSTR ] [ +CORON ] > [ +LONG ]1 / _				% assimilation of coronals
-100 mute [ +SONOR -VOWEL +CONSON ] [ +SONOR -VOWEL +CONSON ] > [ +LONG ]1 / _ % assimilation of sonorants
+001 mute [ +CORON +OCCL +OBSTR ] [ +CORON ] > [ +LONG ]1 / _				% assimilation of coronals
+001 mute [ +SONOR -VOWEL +CONSON ] [ +SONOR -VOWEL +CONSON ] > [ +LONG ]1 / _ % assimilation of sonorants
 001 mute [ +FRIC +CONSON ] [ +FRIC +CONSON ] > [ +LONG ]1 / _				% assimilation of fricatives
 001 mute [ +VELAR +OCCL ] [ +ALVEO ] > [ +PALATAL ]1 / _					% gn > ɲ
-500 mute [ +NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
+100 mute [ +NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
 001 mute [ -VOWEL +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL -CONSON ]			% labialization of dorsals
 001 mute [ -VOWEL -LABIAL ] > [ +LABIALIZ ] / _ [ +LABIAL -CONSON ]			% labialization
 001 mute [ -VOWEL -PALATAL ] > [ +PALATALIZ ] / _ [ +PALATAL -CONSON -LOW ]	% palatalization
 001 mute [ -VOWEL -VELAR ] > [ +VELARIZ ] / _ [ +VELAR -CONSON -LOW ]		% velarization
 001 mute [ +VOWEL -NASAL ] > [ +NASALIZ ] / _ [ +NASAL ]					% nasalization
-100 mute [ +OBSTR ]	> [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
+001 mute [ +OBSTR ]	> [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
 001 harmonia round vowel													% rounding harmony
 001 harmonia tense vowel													% tense/lax harmony
-100 harmonia hight vowel													% height harmony
+001 harmonia hight vowel													% height harmony
 001 harmonia front vowel													% frontness harmony
-100 mute [ +!PALATAL -VOWEL ] > j [ +ALVEO ]0 / [ -CONSON ] _
-100 mute > ə / [ +STOP ] _ [ +OCCL ]
-100 mute > ʔ / # _ [ -CONSON ]
-100 mute [ +CONSON ] > / [ ] _ #											% loss of final consonant
+100 mute [ +PALATAL -VOWEL ] > j [ +ALVEO ]0 / [ -CONSON ] _
+100 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +NASAL ]						% dm > nm
+001 mute > ə / [ +STOP ] _ [ +OCCL ]
+001 mute > ʔ / # _ [ -CONSON ]
+001 mute [ +CONSON ] > / [ ] _ #											% loss of final consonant
 001 mute [ +VOWEL -STRESS ] > / [ ] _ #										% loss of final vowel
 005 acente right 0
 010 acente right 1
