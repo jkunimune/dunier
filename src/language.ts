@@ -306,10 +306,12 @@ class Fon {
 class Klas {
 	private readonly sa: Sif[]; // qualities this class explicitly has
 	private readonly na: Sif[]; // qualities this class explicitly does not have
+	private readonly ka: string[]; // qualities this class might have
 
-	constructor(sa: Sif[], na: Sif[] = []) {
+	constructor(sa: Sif[], na: Sif[] = [], ka: string[] = []) {
 		this.sa = sa;
 		this.na = na;
+		this.ka = ka;
 	}
 
 	/**
@@ -329,8 +331,9 @@ class Klas {
 	/**
 	 * create a Fon with all of the properties of this, and similar to fon in every other respect.
 	 * @param fon
+	 * @param ref if this.ka has stuff in it, draw those features from ref.
 	 */
-	konformu(fon: Fon = Fon.BLANK): Fon {
+	konformu(fon: Fon = Fon.BLANK, ref: Fon = null): Fon {
 		if (this.na.length > 0)
 			throw Error("you can't use minuses in the final state of a process!");
 		let mode = fon.mode, loke = fon.loke, voze = fon.voze;
@@ -398,6 +401,15 @@ class Klas {
 			}
 		}
 
+		for (const akse of this.ka) { // match features from ka
+			if (akse === 'loke')
+				loke = ref.loke;
+			else if (akse === 'voze')
+				voze = ref.voze;
+			else
+				throw Error(`I can't understand ${akse}`);
+		}
+
 		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
 			loke = Loke.VELAR;
 		if (
@@ -428,8 +440,8 @@ class FonMute {
 	private readonly ca: Klas[]; // original value
 	private readonly pa: Klas[]; // target value
 	private readonly idx: number[]; // reference indices for target phones
-	private readonly bada: Klas[]; // requisite predecessor
-	private readonly chena: Klas[]; // requisite follow-up
+	private readonly chen: Klas[]; // requisite predecessor
+	private readonly bade: Klas[]; // requisite follow-up
 	private readonly wordShuri: boolean;
 	private readonly wordFini: boolean;
 
@@ -441,8 +453,8 @@ class FonMute {
 		this.idx = idx;
 		this.wordShuri = (bada[0] === null);
 		this.wordFini = (chena[chena.length-1] === null);
-		this.bada = (this.wordShuri) ? bada.slice(1) : bada;
-		this.chena = (this.wordFini) ? chena.slice(0, chena.length-1) : chena;
+		this.chen = (this.wordShuri) ? bada.slice(1) : bada;
+		this.bade = (this.wordFini) ? chena.slice(0, chena.length-1) : chena;
 	}
 
 	/**
@@ -450,64 +462,62 @@ class FonMute {
 	 * @param old
 	 */
 	apply(old: Fon[]): Fon[] {
-		const nov: Fon[] = [];
-		let i = 0;
-		while (i < old.length) {
-			if (this.applies(old.slice(i), nov)) { // if it applies here,
-				for (let j = 0; j < this.pa.length; j ++) { // fill in the replacement
+		const drowWen: Fon[] = []; // build the changed word in reverse
+		let i = old.length;
+		while (true) {
+			if (this.applies(old.slice(0, i), drowWen)) { // if it applies here,
+				for (let j = this.pa.length - 1; j >= 0; j --) { // fill in the replacement
 					if (this.idx[j] < this.ca.length)
-						nov.push(this.pa[j].konformu(old[i + this.idx[j]])); // mapping to the relevant old segments
+						drowWen.push(this.pa[j].konformu(
+							old[i + this.idx[j] - this.ca.length], // mapping to the relevant old segments
+							this.bade ? old[i] : null));
 					else
-						nov.push(this.pa[j].konformu()); // or drawing new segments from thin air
+						drowWen.push(this.pa[j].konformu()); // or drawing new segments from thin air
 				}
-				i += this.ca.length; // and jump to the next set of consonants
+				i -= this.ca.length; // and jump to the next set of consonants
 			}
 			else { // if not
-				nov.push(old[i]); // just add the next character of old
-				i += 1;
+				i -= 1;
+				if (i < 0) break;
+				drowWen.push(old[i]); // just add the next character of old
 			}
 		}
-		return nov;
+		return drowWen.reverse();
 	}
 
 	/**
-	 * does the segment string at the start of oldWord qualify to be changed?
+	 * does the segment string at the end of oldWord qualify to be changed?
 	 * @param oldWord the unchanged word where we are considering making the change
-	 * @param novWord the changed previous section of the word
+	 * @param novWord the changed following section of the word, reversed
 	 */
 	applies(oldWord: Fon[], novWord: Fon[]) {
-		if (this.bada.length > novWord.length || this.ca.length + this.chena.length > oldWord.length)
+		if (this.chen.length + this.ca.length > oldWord.length || this.bade.length > novWord.length)
 			return false;
-		if (this.wordShuri && this.bada.length < novWord.length)
+		if (this.wordShuri && this.chen.length + this.ca.length < oldWord.length)
 			return false;
-		if (this.wordFini && this.ca.length + this.chena.length < oldWord.length)
+		if (this.wordFini && this.bade.length < oldWord.length)
 			return false;
-		for (let j = 0; j < this.bada.length; j ++) // start with the left half of the context
-			if (!this.bada[j].macha(novWord[j - this.bada.length + novWord.length])) // check if it matches
+		for (let j = 0; j < this.chen.length; j ++) // start with the left half of the context
+			if (!this.chen[j].macha(oldWord[j - this.ca.length - this.chen.length + oldWord.length])) // check if it matches
 				return false;
-		for (let j = 0; j < this.ca.length; j ++)
-			if (!this.ca[j].macha(oldWord[j]))
+		for (let j = 0; j < this.ca.length; j ++) // then check the text that will be replaced
+			if (!this.ca[j].macha(oldWord[j - this.ca.length + oldWord.length]))
 				return false;
-		for (let j = 0; j < this.chena.length; j ++) {
-			if (!this.chena[j].macha(oldWord[this.ca.length + j]))
+		for (let j = 0; j < this.bade.length; j ++) // then check the right half of the context
+			if (!this.bade[j].macha(novWord[novWord.length - 1 - j]))
 				return false;
-		}
 		return true;
 	}
 }
 
 /**
- * a process that causes adjacent sounds, or sounds in the same word, to share a feature
+ * a process that causes sounds in the same word to share a feature
  */
-class Samsifis {
+class Harmonia {
 	private readonly kutube: Sif[];
-	private readonly global: boolean;
-	private readonly affectsSonorants: boolean;
 	private readonly affectsConsonants: boolean;
 
-	constructor(sif: string, global: boolean, affectsSonorants: boolean, affectsConsonants: boolean) {
-		this.global = global; // read these flags
-		this.affectsSonorants = affectsSonorants;
+	constructor(sif: string, affectsConsonants: boolean) {
 		this.affectsConsonants = affectsConsonants;
 		if (sif === 'front') // then construct the list of "polar" attributes
 			this.kutube = [Loke.VELAR, Loke.PALATAL];
@@ -517,11 +527,6 @@ class Samsifis {
 			this.kutube = [MinorLoke.UNROUNDED, MinorLoke.LABIALIZED];
 		else if (sif === 'tense')
 			this.kutube = [PendaniSif.LAX, PendaniSif.TENSE];
-		else if (sif === 'voice') {
-			this.kutube = [];
-			for (const hal of Voze)
-				this.kutube.push(hal);
-		}
 		else
 			throw `unrecognized harmony type: ${sif}`;
 	}
@@ -529,11 +534,9 @@ class Samsifis {
 	apply(old: Fon[]): Fon[] {
 		const nov: Fon[] = new Array<Fon>(old.length);
 		let val: Sif = null;
-		for (let i = old.length-1; i >= 0; i --) { // iterate backwards through the word
+		for (let i = 0; i < old.length; i ++) { // iterate backwards through the word
 			nov[i] = old[i]; // in most cases, we will just make this the same as it was in the old word
-			if (
-				!(!this.affectsSonorants && old[i].is(PendaniSif.SONORANT)) &&
-				!(!this.affectsConsonants && old[i].is(Silabia.CONSONANT))) { // but if this segment isn't immune
+			if (this.affectsConsonants || !old[i].is(Silabia.CONSONANT)) { // but if this segment isn't immune
 				for (let sif of this.kutube) { // check its polarity
 					if (old[i].is(sif)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before
@@ -543,9 +546,6 @@ class Samsifis {
 						break;
 					} // if it's neutral, just ignore it without resetting val or changing anything
 				}
-			}
-			else if (!this.global) { // if it doesn't apply, unless the rule is global,
-				val = null; // reset for the next cluster
 			}
 		}
 		return nov;
@@ -579,7 +579,7 @@ class AcentoPoze {
 		let nuclei: {i: number, weight: number}[] = [];
 		let numC = 1;
 		for (let i = old.length - 1; i >= 0; i --) { // first, tally up the syllables
-			if (!old[i].is(Silabia.CONSONANT)) { // using sylabicity to identify nuclei
+			if (!old[i].is(Silabia.CONSONANT)) { // using syllabicity to identify nuclei
 				if (old[i].is(Longia.LONG))
 					nuclei.push({i: i, weight: 2}); // long vowels have weight 2
 				else if (numC > 1)
@@ -731,7 +731,7 @@ function ipa(ipa: string): Fon[] {
  * @param fon
  * @param convention
  */
-function lookUp(fon: Fon, convention: Convention): string {
+function lookUp(fon: Fon, convention: Convention = Convention.NASOMEDI): string {
 	if (TO_TEXT.has(fon.hash())) // if it's in the table
 		return TO_TEXT.get(fon.hash())[convention]; // just return that
 
@@ -778,7 +778,7 @@ for (const procesKitabe of procesTable) { // go through them
 		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
 		const idx: number[] = [];
 		let fen = ca;
-		let sa: Sif[] = null, na: Sif[] = null;
+		let sa: Sif[] = null, na: Sif[] = null, ka: string[] = null;
 		for (let sinye of procesKitabe.slice(2)) { // and parse them
 			if (sinye === '>') // > transitions from ca to pa
 				fen = pa;
@@ -788,7 +788,7 @@ for (const procesKitabe of procesTable) { // go through them
 				fen.push(null);
 			else if (sinye === '/') { // / transitions from pa to badu
 				if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
-					console.assert(ca.length === 0 || ca.length === pa.length, `please specify indices for ${procesKitabe}`);
+					if (ca.length !== 0 && ca.length !== pa.length) throw `please specify indices for ${procesKitabe}`;
 					for (let i = 0; i < pa.length; i++)
 						idx.push(Math.min(i, ca.length));
 				}
@@ -797,37 +797,40 @@ for (const procesKitabe of procesTable) { // go through them
 			else if (sinye === '[') { // [ stars a new phone
 				sa = [];
 				na = [];
+				ka = [];
 			}
 			else if (sinye === ']') { // ] ends the current phone
-				fen.push(new Klas(sa, na));
-				sa = null;
-				na = null;
+				fen.push(new Klas(sa, na, ka));
+				sa = na = ka = null;
 			}
 			else if (sinye.length === 2 && sinye[0] === ']') { // ends the current phone and assigns it a specific reference index
-				fen.push(new Klas(sa, na));
+				fen.push(new Klas(sa, na, ka));
 				idx.push(Number.parseInt(sinye[1]));
-				sa = null;
-				na = null;
+				sa = na = ka = null;
 			}
-			else if (sinye.length >= 4) { // feature names are incorporated into the current phone
-				const kutube = (sinye.startsWith('+') ? sa : na)
-				sinye = sinye.slice(1);
-				const starred = sinye.startsWith('!');
-				if (starred) sinye = sinye.slice(1);
-				let val: Sif = null;
-				sifSow:
-				for (const sifKlas of starred ? SIF_TIPE.slice(1) : SIF_TIPE) {
-					for (const sif of sifKlas) {
-						if ((sif.enumKey + typeof(sif)).startsWith(sinye)) {
-							val = sif;
-							break sifSow;
+			else if (sinye.length >= 4) { // features are incorporated into the current phone
+				if (sinye.startsWith('±')) { // either their name goes into ka
+					ka.push(sinye.slice(1));
+				}
+				else {
+					const kutube = sinye.startsWith('+') ? sa : na;
+					sinye = sinye.slice(1);
+					const starred = sinye.startsWith('!');
+					if (starred) sinye = sinye.slice(1);
+					let val: Sif = null;
+					sifSow:
+					for (const sifKlas of starred ? SIF_TIPE.slice(1) : SIF_TIPE) { // or their value is read
+						for (const sif of sifKlas) {
+							if ((sif.enumKey + typeof (sif)).startsWith(sinye)) {
+								val = sif;
+								break sifSow;
+							}
 						}
 					}
+					if (val === null)
+						throw RangeError(`unrecognized feature: ${sinye}`);
+					kutube.push(val); // and added to sa or na
 				}
-				if (val === null)
-					throw RangeError(`unrecognized feature: ${sinye}`);
-				else
-					kutube.push(val);
 			}
 			else if (FROM_IPA.has(sinye)) { // IPA symbols are read for their specified features
 				const fon = FROM_IPA.get(sinye);
@@ -843,13 +846,11 @@ for (const procesKitabe of procesTable) { // go through them
 		PROCES_CHUZABLE.push({chanse: chanse, proces:
 				new FonMute(ca, pa, idx, bada, chena)});
 	}
-	else if (procesKitabe[1] === 'samsifis') {
+	else if (procesKitabe[1] === 'harmonia') {
 		const sif = procesKitabe[2];
-		const global = procesKitabe[3] === 'global';
-		const affectsSonorants = procesKitabe[4] === 'all';
-		const affectsConsonants = procesKitabe[5] === 'all';
+		const affectsConsonants = procesKitabe[3] === 'all';
 		PROCES_CHUZABLE.push({chanse: chanse, proces:
-				new Samsifis(sif, global, affectsSonorants, affectsConsonants)});
+				new Harmonia(sif, affectsConsonants)});
 	}
 	else if (procesKitabe[1] === 'acente') {
 		const reverse = procesKitabe[2] === 'right';
