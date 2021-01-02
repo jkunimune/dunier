@@ -6,8 +6,8 @@
 001 mute [ +HIGH +VOWEL ] > [ +UNROUND ] /									% unrounding of high vowels
 001 mute [ +PALATAL +VOWEL ] > [ +UNROUND ] /								% unrounding of front vowels
 001 mute [ +VELAR +VOWEL ] > [ +LABIALIZ ] /								% rounding of back vowels
-500 mute [ +VOWEL +CONSON ] > [ +TENSE ] /									% correction of lax semivowels
-500 mute [ +VOWEL +CONSON ] > [ +CLOSE ] /									% correction of nonhigh semivowels
+100 mute [ +VOWEL +CONSON ] > [ +CLOSE ] /									% correction of nonhigh semivowels
+100 mute [ +VOWEL +CONSON -HIGH ] > [ +UNSTRESS ] /							% correction of nonhigh semivowels
 001 mute [ +!PALATAL +OBSTR ] > [ +POSTALV ] /
 001 mute [ +BILAB +FRIC ] > [ +LABIODENT ] /
 001 mute [ +UNSTRESS +VOWEL ] > ə /
@@ -22,6 +22,7 @@
 001 mute [ +VELAR ] > [ +PALATAL ] / _ [ +PALATAL -LOW ] /
 001 mute [ +ALVEO ] > [ +PALATAL ] / _ [ +PALATAL -LOW -MID ] /
 001 mute [ +CORON +OCCL +OBSTR -STRESS ] [ +CORON ] > [ +LONG ]1 /			% assimilation of coronals
+100 mute [ +VOWEL +CONSON ] [ +VOWEL +CONSON ] > [ +LONG ]1 /				% assimilation of semivowels
 001 mute [ +HIGH ] [ +HIGH -STRESS ] > [ +LONG +SYLLAB ±loke ]0 /			% assimilation of high vowels
 001 mute [ +HIGH -STRESS ] [ +HIGH ] > [ +LONG +SYLLAB ±loke ]1 /			% assimilation of high vowels
 001 mute [ -HIGH +VOWEL ] [ +HIGH ] > [ +LONG +MID ±loke ]0 /				% assimilation of aj and ej
@@ -48,10 +49,13 @@
 001 mute [ +VOWEL +SYLLAB ] > [ ]0 [ +CONSONANT +HIGH +SHORT ]0 / _ [ +VOWEL +SYLLAB ]
 001 mute [ +CONSON ] > / [ ] _ #											% loss of final consonant
 001 mute [ +VOWEL -STRESS ] > / [ ] _ #										% loss of final vowel
-005 acente right 0
-010 acente right 1
-001 acente right 2
-005 acente left 0
-001 acente left 1
-001 acente left 2
+020 silabe 1
+020 silabe 0
+020 silabe -1
+015 acente right 0
+020 acente right 1
+002 acente right 2
+015 acente left 0
+002 acente left 1
+002 acente left 2
 1000 mute [ +EJECT +HIGH ] > [ +VOICE +SHORT ]0 [ +VOICE +TENSE +SHORT +CONSON ]0 % handle the ejective vowel workaround

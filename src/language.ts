@@ -41,11 +41,11 @@ class Mode extends Enumify { // this should just be an enum, but JavaScript impl
 	static TAP = new Mode(3);
 	static TRILL = new Mode(3);
 	static CLOSE = new Mode(4);
-	static NEAR_CLOSE = new Mode(5);
-	static CLOSE_MID = new Mode(6);
-	static OPEN_MID = new Mode(7);
-	static NEAR_OPEN = new Mode(8);
-	static OPEN = new Mode(9);
+	static NEAR_CLOSE = new Mode(4);
+	static CLOSE_MID = new Mode(4.1);
+	static OPEN_MID = new Mode(4.1);
+	static NEAR_OPEN = new Mode(4.2);
+	static OPEN = new Mode(4.2);
 	static CLICK = new Mode(-1);
 	static _ = Mode.closeEnum();
 
@@ -281,7 +281,8 @@ class Fon {
 	 * @param sif
 	 */
 	with(sif: Sif): Fon {
-		return new Klas([sif]).konformu(this);
+		if (!this.is(sif)) return new Klas([sif]).konformu(this);
+		else               return this;
 	}
 
 	/**
@@ -594,12 +595,43 @@ class Harmonia {
 	}
 }
 
+/**
+ * a process that places syllables according to the sonority sequencing constraint
+ */
 class SilaboPoze {
-	// TODO
+	private readonly bias: number; // amount to prefer earlier or later syllables
+
+	/**
+	 * set up a new syllable placement system
+	 * @param bias a positive number indicates that /iu/ is [ju], negative indicates [iw], and zero indicates [iu]
+	 */
+	constructor(bias: number) {
+		this.bias = bias/100.;
+	}
+
+	apply(old: Fon[]): Fon[] {
+		const sonority = [];
+		for (const fon of old) // first calculate the sonorities
+			sonority.push(
+				fon.mode.sonority
+				- ((fon.latia === Latia.LATERAL) ? 1.5 : 0)
+				+ ((fon.voze === Voze.VOICED) ? 0.75 : 0)
+				+ ((fon.longia === Longia.LONG) ? 0.35 : 0));
+		const nov = old.slice(); // then copy the old word
+		for (let i = 0; i < old.length; i ++) { // and assign syllables accordingly
+			if ((i-1 < 0 || sonority[i] >= sonority[i-1] - this.bias) &&
+				(i+1 >= old.length || sonority[i] >= sonority[i+1] + this.bias))
+				nov[i] = old[i].with(PendaniSif.SYLLABIC);
+			else
+				nov[i] = old[i].with(Silabia.CONSONANT);
+		}
+		return nov;
+	}
 }
 
+
 /**
- * a process that places syllables and stress according to certain rules
+ * a process that places stress according to certain rules
  */
 class AcentoPoze {
 	private readonly reverse: boolean; // whether the primary stress is on the right
@@ -915,6 +947,11 @@ for (const procesKitabe of procesTable) { // go through them
 				for (const lengthen of [true, false])
 					PROCES_CHUZABLE.push({chanse: chanse/18., proces:
 							new AcentoPoze(reverse, headSize, attractors, tailMode, lengthen)});
+	}
+	else if (procesKitabe[1] === 'silabe') {
+		const bias = Number.parseInt(procesKitabe[2]);
+		PROCES_CHUZABLE.push({chanse: chanse, proces:
+				new SilaboPoze(bias)});
 	}
 	else {
 		throw `unrecognized process classification: ${procesKitabe[1]}`;
