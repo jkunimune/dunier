@@ -88,6 +88,9 @@ y	y	i	u-	ю	yu	i	ü	oi	y	ʉ	sw	c	a
 u	u	u	oo	у	u	u	u	u	u	u	sw	v	a
 ɪ	i	i	i*	и	i	i	i	i	ị	i	s	c	1
 ʏ	y	i	yu*	ю	yu	i	ü	oi	ỵ	ʉ	sw	c	1
+ɨ̞	y	i	i*	ы	i	i	ï	i	ị	ɨ	s	m	1
+ʉ̞	y	u	u*	ю	u	u	y	u	ụ	ʉ	sw	m	1
+ɯ̞	u	u	oo	ы	u	u	ÿ	eu	ị	ɨ	s	v	1
 ʊ	u	u	u*	у	u	u	u	u	ụ	u	sw	v	1
 e	e	e	e*	э	e	e	e	e	e	e	s	c	2
 ø	œ	e	ur	ё	e	e	ö	oe	ọ	ø	sw	c	2
@@ -115,3 +118,6 @@ Xˤ	X	X	X	X	X	X	X̣	Xh	X̣	X̣	Pha	0	0
 X̃	Xn	Xn	Xn	Xн	Xnn	Xn	X̃	Xn	X̃	Ẍ	Nas	0	0
 X́	X	X́	X	X́	X	X	X	X	X́	X	St1	0	0
 X̀	X	X	X	X	X	X	X	X	X̀	X	St2	0	0
+X̯	X	X	X	X	X	X	X	X	X̆	X	Gli	0	0
+X̩	X	eX	eX	X	X	oX	X	X	X	X	Syl	0	0
+X̞	X	X	X	X	X	X	X	X	X	X	Prx	0	0

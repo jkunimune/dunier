@@ -1,35 +1,51 @@
-001 mute [ +HIGH +VOWEL ] > [ +PALATAL ] / _								% fronting of high vowels
-001 mute [ +CENTRAL +CONSON +VOWEL ] > [ +PALATAL ] / _					% fronting of central semivowels
-001 mute [ +UNROUND +VELAR +VOW ] > [ +CENTRAL ] / _						% fronting of unrounded back vowels
-001 mute [ +LABIAL +VOWEL ] > [ +VELAR ] / _								% backing of rounded vowels
-001 mute [ +CENTRAL +CONSON +VOWEL ] > [ +VELAR ] / _					% backing of central semivowels
-001 mute [ +HIGH +VOWEL ] > [ +UNROUND ] / _								% unrounding of high vowels
-001 mute [ +PALATAL +VOWEL ] > [ +UNROUND ] / _								% unrounding of front vowels
-001 mute [ +VELAR +VOWEL ] > [ +LABIALIZ ] / _								% rounding of back vowels
-500 mute [ +!PALATAL +OBSTR ] > [ +POSTALV ] / _
-001 mute [ +BILAB +FRIC ] > [ +LABIODENT ] / _
-001 mute [ +LONG +CONSON ] > [ +SHORT ] / _									% loss of gemination
-001 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] / _								% denasalization on non-vowels
-100 mute [ +ALVEO ] > [ +PALATAL ] / _ [ +PALATAL -LOW -MID ]
-001 mute [ +CORON +OCCL +OBSTR ] [ +CORON ] > [ +LONG ]1 / _				% assimilation of coronals
-001 mute [ +SONOR -VOWEL +CONSON ] [ +SONOR -VOWEL +CONSON ] > [ +LONG ]1 / _ % assimilation of sonorants
-001 mute [ +FRIC +CONSON ] [ +FRIC +CONSON ] > [ +LONG ]1 / _				% assimilation of fricatives
-001 mute [ +VELAR +OCCL ] [ +ALVEO ] > [ +PALATAL ]1 / _					% gn > ɲ
-100 mute [ +NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
-001 mute [ -VOWEL +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL -CONSON ]			% labialization of dorsals
-001 mute [ -VOWEL -LABIAL ] > [ +LABIALIZ ] / _ [ +LABIAL -CONSON ]			% labialization
-001 mute [ -VOWEL -PALATAL ] > [ +PALATALIZ ] / _ [ +PALATAL -CONSON -LOW ]	% palatalization
-001 mute [ -VOWEL -VELAR ] > [ +VELARIZ ] / _ [ +VELAR -CONSON -LOW ]		% velarization
+001 mute [ +HIGH +VOWEL ] > [ +PALATAL ] /									% fronting of high vowels
+001 mute [ +CENTRAL +CONSON +VOWEL ] > [ +PALATAL ] /						% fronting of central semivowels
+001 mute [ +UNROUND +VELAR +VOW ] > [ +CENTRAL ] /							% fronting of unrounded back vowels
+001 mute [ +LABIAL +VOWEL ] > [ +VELAR ] /									% backing of rounded vowels
+001 mute [ +CENTRAL +CONSON +VOWEL ] > [ +VELAR ] /							% backing of central semivowels
+001 mute [ +HIGH +VOWEL ] > [ +UNROUND ] /									% unrounding of high vowels
+001 mute [ +PALATAL +VOWEL ] > [ +UNROUND ] /								% unrounding of front vowels
+001 mute [ +VELAR +VOWEL ] > [ +LABIALIZ ] /								% rounding of back vowels
+500 mute [ +VOWEL +CONSON ] > [ +TENSE ] /									% correction of lax semivowels
+500 mute [ +VOWEL +CONSON ] > [ +CLOSE ] /									% correction of nonhigh semivowels
+001 mute [ +!PALATAL +OBSTR ] > [ +POSTALV ] /
+001 mute [ +BILAB +FRIC ] > [ +LABIODENT ] /
+001 mute [ +UNSTRESS +VOWEL ] > ə /
+001 mute [ +SHORT +VOWEL +SYLLAB ] > [ +LAX ] /
+001 mute [ +UNSTRESS +PALATAL -HIGH +VOWEL ] > [ +RAISED +LAX ] /			% weird ɛ~ɪ thing from Haw and Rus
+001 mute [ +LONG +CONSON ] > [ +SHORT ] /									% loss of gemination
+001 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on non-vowels
+001 mute [ +VOWEL ] > [ +TENSE ] /
+001 mute [ +STRESS +VOWEL ] > [ +TENSE ] /
+001 mute [ +LONG +VOWEL +SYLLAB ] > [ +RAISED ] / _ [ -VOWEL ]				% Anglic vowel shift
+001 mute [ +ALVEO ] > [ +POSTALV ] / _ [ +PALATAL +CONSON ] /
+001 mute [ +VELAR ] > [ +PALATAL ] / _ [ +PALATAL -LOW ] /
+001 mute [ +ALVEO ] > [ +PALATAL ] / _ [ +PALATAL -LOW -MID ] /
+001 mute [ +CORON +OCCL +OBSTR -STRESS ] [ +CORON ] > [ +LONG ]1 /			% assimilation of coronals
+001 mute [ +HIGH ] [ +HIGH -STRESS ] > [ +LONG +SYLLAB ±loke ]0 /			% assimilation of high vowels
+001 mute [ +HIGH -STRESS ] [ +HIGH ] > [ +LONG +SYLLAB ±loke ]1 /			% assimilation of high vowels
+001 mute [ -HIGH +VOWEL ] [ +HIGH ] > [ +LONG +MID ±loke ]0 /				% assimilation of aj and ej
+001 mute [ +SONOR -VOWEL -STRESS ] [ +SONOR -VOWEL ] > [ +LONG ]1 /			% assimilation of sonorants
+001 mute [ +FRIC -STRESS ] [ +FRIC ] > [ +LONG ]1 /							% assimilation of fricatives
+001 mute [ +VELAR +OCCL ] [ +ALVEO ] > [ +PALATAL ]1 /						% gn > ɲ
+001 mute [ +NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
+001 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +NASAL ]						% dm > nm
+001 mute [ -VOWEL +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]			% labialization of dorsals
+001 mute [ -VOWEL -LABIAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]			% labialization
+001 mute [ -VOWEL -PALATAL ] > [ +PALATALIZ ] / _ [ +PALATAL +SYLLAB -LOW ]	% palatalization
+001 mute [ -VOWEL -VELAR ] > [ +VELARIZ ] / _ [ +VELAR +SYLLAB -LOW ]		% velarization
 001 mute [ +VOWEL -NASAL ] > [ +NASALIZ ] / _ [ +NASAL ]					% nasalization
 001 mute [ +OBSTR ]	> [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
 001 harmonia round vowel													% rounding harmony
 001 harmonia tense vowel													% tense/lax harmony
 001 harmonia hight vowel													% height harmony
 001 harmonia front vowel													% frontness harmony
-100 mute [ +PALATAL -VOWEL ] > j [ +ALVEO ]0 / [ -CONSON ] _
-100 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +NASAL ]						% dm > nm
+001 mute [ +!PALATAL -VOWEL ] > j [ +ALVEO ]0 / [ +SYLLAB ] _
+001 mute [ -LOW +VOWEL +SYLLAB ] > [ +RAISED ] / _ [ -HIGH +VOWEL +SYLLAB ]	% raising dissimilation
+001 mute [ -HIGH +VOWEL +SYLLAB ] > [ +LOWERED ] / _ [ -LOW +VOWEL +SYLLAB ] % lowering dissimilation
 001 mute > ə / [ +STOP ] _ [ +OCCL ]
 001 mute > ʔ / # _ [ -CONSON ]
+001 mute [ +VOWEL +SYLLAB ] > [ ]0 [ +CONSONANT +HIGH +SHORT ]0 / _ [ +VOWEL +SYLLAB ]
 001 mute [ +CONSON ] > / [ ] _ #											% loss of final consonant
 001 mute [ +VOWEL -STRESS ] > / [ ] _ #										% loss of final vowel
 005 acente right 0
@@ -38,3 +54,4 @@
 005 acente left 0
 001 acente left 1
 001 acente left 2
+1000 mute [ +EJECT +HIGH ] > [ +VOICE +SHORT ]0 [ +VOICE +TENSE +SHORT +CONSON ]0 % handle the ejective vowel workaround

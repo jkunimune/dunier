@@ -143,6 +143,8 @@ class PendaniSif extends Enumify {
 	static HIGH = new PendaniSif();
 	static MID = new PendaniSif();
 	static LOW = new PendaniSif();
+	static RAISED = new PendaniSif();
+	static LOWERED = new PendaniSif();
 	static TENSE = new PendaniSif();
 	static LAX = new PendaniSif();
 	static PALATAL = new PendaniSif();
@@ -153,6 +155,7 @@ class PendaniSif extends Enumify {
 	static LIQUID = new PendaniSif();
 	static VOWEL = new PendaniSif();
 	static STRESSED = new PendaniSif();
+	static SYLLABIC = new PendaniSif();
 	static _ = PendaniSif.closeEnum();
 }
 
@@ -235,11 +238,11 @@ class Fon {
 				case PendaniSif.OBSTRUENT:
 					return !this.is(PendaniSif.SONORANT);
 				case PendaniSif.HIGH:
-					return this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE;
+					return this.is(PendaniSif.VOWEL) && (this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE);
 				case PendaniSif.MID:
-					return this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN_MID;
+					return this.is(PendaniSif.VOWEL) && (this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN_MID);
 				case PendaniSif.LOW:
-					return this.mode === Mode.NEAR_OPEN || this.mode === Mode.OPEN;
+					return this.is(PendaniSif.VOWEL) && (this.mode === Mode.NEAR_OPEN || this.mode === Mode.OPEN);
 				case PendaniSif.TENSE:
 					return this.mode === Mode.CLOSE || this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN;
 				case PendaniSif.LAX:
@@ -265,8 +268,10 @@ class Fon {
 						this.loke.foner === Foner.DORSUM;
 				case PendaniSif.STRESSED:
 					return this.silabia === Silabia.PRIMARY_STRESSED || this.silabia === Silabia.SECONDARY_STRESSED;
+				case PendaniSif.SYLLABIC:
+					return this.silabia !== Silabia.CONSONANT;
 				default:
-					throw "nope; not going to happen";
+					throw `can't check for ${sif}ness`;
 			}
 		}
 	}
@@ -341,8 +346,20 @@ class Klas {
 			throw Error("you can't use minuses in the final state of a process!");
 		let mode = fon.mode, loke = fon.loke, voze = fon.voze;
 		let silabia = fon.silabia, longia = fon.longia, latia = fon.latia, minorLoke = fon.minorLoke, nosia = fon.nosia;
-		for (const sif of this.sa) {
-			if (sif instanceof Mode)
+		for (let sif of this.sa) {
+			if (sif === PendaniSif.RAISED) { // there are two special PendaniSif that depend on the current quality of the fone
+				if (fon.is(PendaniSif.LOW))       sif = PendaniSif.MID;
+				else if (fon.is(PendaniSif.MID))  sif = PendaniSif.HIGH;
+				else if (fon.is(PendaniSif.HIGH)) sif = Voze.EJECTIVE; // ejective vowels aren't possible; this indicates that it should be diphthongized
+				else throw `can't apply +RAISED to ${fon}`
+			}
+			if (sif === PendaniSif.LOWERED) { // so interpret those first
+				if (fon.is(PendaniSif.HIGH))       sif = PendaniSif.MID;
+				else if (fon.is(PendaniSif.VOWEL)) sif = PendaniSif.LOW;
+				else throw `can't apply +LOWERED to ${fon}`
+			}
+
+			if (sif instanceof Mode) // then actually apply the feature
 				mode = sif;
 			else if (sif instanceof Loke)
 				loke = sif;
@@ -375,6 +392,12 @@ class Klas {
 						else
 							mode = Mode.CLOSE;
 						break;
+					case PendaniSif.MID:
+						if (fon.is(PendaniSif.LAX))
+							mode = Mode.OPEN_MID;
+						else
+							mode = Mode.CLOSE_MID;
+						break;
 					case PendaniSif.LOW:
 						if (fon.is(PendaniSif.LAX))
 							mode = Mode.NEAR_OPEN;
@@ -401,6 +424,10 @@ class Klas {
 						else if (mode === Mode.OPEN)
 							mode = Mode.NEAR_OPEN;
 						break;
+					case PendaniSif.SYLLABIC:
+						if (silabia === Silabia.CONSONANT)
+							silabia = Silabia.UNSTRESSED;
+						break;
 					default:
 						throw Error(`I can't use ${sif} in the final state of a process.`);
 				}
@@ -418,7 +445,9 @@ class Klas {
 
 		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
 			loke = Loke.VELAR;
-		if (mode.sonority >= Mode.NEAR_OPEN.sonority) // snap open vowels to front or back depending on rounding
+		if (mode.sonority >= Mode.NEAR_OPEN.sonority) // snap open vowels to front or back depending on rounding TODO this is too restrictive
+			loke = (minorLoke === MinorLoke.LABIALIZED) ? Loke.VELAR : Loke.PALATAL;
+		if (mode === Mode.NEAR_CLOSE) // snap lax central vowels to front or back depending on rounding
 			loke = (minorLoke === MinorLoke.LABIALIZED) ? Loke.VELAR : Loke.PALATAL;
 		if (loke === Loke.POSTALVEOLAR && mode === Mode.STOP) // turn postalveolar stops into affricates before they can be cast to dental
 			mode = Mode.AFFRICATE;
@@ -483,7 +512,7 @@ class FonMute {
 					if (this.idx[j] < this.ca.length)
 						drowWen.push(this.pa[j].konformu(
 							old[i + this.idx[j] - this.ca.length], // mapping to the relevant old segments
-							this.bade ? old[i] : null));
+							this.bade.length > 0 ? old[i] : old[i-1]));
 					else
 						drowWen.push(this.pa[j].konformu()); // or drawing new segments from thin air
 				}
@@ -565,6 +594,10 @@ class Harmonia {
 	}
 }
 
+class SilaboPoze {
+	// TODO
+}
+
 /**
  * a process that places syllables and stress according to certain rules
  */
@@ -573,6 +606,7 @@ class AcentoPoze {
 	private readonly headSize: number; // the number of unstressed syllables to put between the word edge and the initial stress
 	private readonly attractors: number; // the minimum weight that attracts stress
 	private readonly tailMode: string; // ['lapse', 'clash', 'none'] how to handle stress at the tail end when the syllables ar odd
+	private readonly lengthen: boolean; // whether to lengthen stressed open syllables
 
 	/**
 	 * create a new stress system given some simplified parameters
@@ -580,12 +614,14 @@ class AcentoPoze {
 	 * @param headSize
 	 * @param attractors
 	 * @param tailMode ['lapse', 'clash', or 'none']
+	 * @param lengthen
 	 */
-	constructor(reverse: boolean, headSize: number, attractors: number, tailMode: string) {
+	constructor(reverse: boolean, headSize: number, attractors: number, tailMode: string, lengthen: boolean) {
 		this.reverse = reverse;
 		this.headSize = headSize;
 		this.attractors = attractors;
 		this.tailMode = tailMode;
+		this.lengthen = lengthen
 	}
 
 	apply(old: Fon[]): Fon[] {
@@ -632,13 +668,17 @@ class AcentoPoze {
 		const nov: Fon[] = old.slice(); // then edit the word
 		let firstStress = true;
 		for (let i = 0; i < nuclei.length; i ++) {
-			if (!stress[i])
+			if (!stress[i]) {
 				nov[nuclei[i].i] = old[nuclei[i].i].with(Silabia.UNSTRESSED); // stressless is stressless
-			else if (!firstStress)
-				nov[nuclei[i].i] = old[nuclei[i].i].with(Silabia.SECONDARY_STRESSED); // all but the first stress is secondary
+				if (this.lengthen && nuclei[i].weight === 2)
+					nov[nuclei[i].i] = nov[nuclei[i].i].with(Longia.SHORT); // shorten unstressed heavy syllables if Ident long is outranked
+			}
 			else {
-				nov[nuclei[i].i] = old[nuclei[i].i].with(Silabia.PRIMARY_STRESSED); // the first stress is primary
+				nov[nuclei[i].i] = old[nuclei[i].i].with(
+					firstStress ? Silabia.PRIMARY_STRESSED : Silabia.SECONDARY_STRESSED); // the first stress is primary
 				firstStress = false;
+				if (this.lengthen && nuclei[i].weight === 0)
+					nov[nuclei[i].i] = nov[nuclei[i].i].with(Longia.LONG); // lengthen stressed open syllables if Ident long is outranked
 			}
 		}
 		return nov;
@@ -658,12 +698,15 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([Longia.LONG], [Silabia.CONSONANT]), baze: [Longia.SHORT], kode: 'Len'},
 	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
 	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
+	{klas: new Klas([PendaniSif.VOWEL, Silabia.CONSONANT]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
 	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
 	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
 	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
 	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
 	{klas: new Klas([MinorLoke.PHARANGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
+	{klas: new Klas([Silabia.UNSTRESSED]), baze: [Silabia.CONSONANT], kode: 'Syl'},
 	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
+	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'Prx'},
 ]
 
 
@@ -869,8 +912,9 @@ for (const procesKitabe of procesTable) { // go through them
 		const headSize = Number.parseInt(procesKitabe[3]);
 		for (let attractors = 1; attractors <= 3; attractors ++)
 			for (const tailMode of ['clash', 'lapse', 'none'])
-				PROCES_CHUZABLE.push({chanse: chanse/9., proces:
-						new AcentoPoze(reverse, headSize, attractors, tailMode)});
+				for (const lengthen of [true, false])
+					PROCES_CHUZABLE.push({chanse: chanse/18., proces:
+							new AcentoPoze(reverse, headSize, attractors, tailMode, lengthen)});
 	}
 	else {
 		throw `unrecognized process classification: ${procesKitabe[1]}`;
@@ -890,6 +934,7 @@ export interface Language {
 export class ProtoLanguage {
 	private static initialVowels = ipa("iueoa");
 	private static initialConsonants = ipa("mnpbtdkɡʔfθszʃxwrjl");
+	private static initialStress = new AcentoPoze(true, 1, 1, 'lapse', false);
 	private readonly putong: Fon[][];
 	private readonly renonam: Fon[][];
 	private readonly sitonam: Fon[][];
@@ -901,7 +946,7 @@ export class ProtoLanguage {
 			this.putong.push(this.newWord(Math.floor(1 + 3*i/100), rng));
 		this.renonam = [];
 		for (let i = 0; i < 100; i ++)
-			this.renonam.push(this.newWord(Math.floor(2 + 3*i/100), rng));
+			this.renonam.push(this.newWord(Math.floor(1 + 6*i/100), rng));
 		this.sitonam = [];
 		for (let i = 0; i < 100; i ++)
 			this.sitonam.push(this.newWord(Math.floor(1 + 2*i/100), rng));
@@ -936,7 +981,7 @@ export class ProtoLanguage {
 			if (rng.probability(0.5))
 				lekse.push(rng.choice(ProtoLanguage.initialConsonants));
 		}
-		return lekse;
+		return ProtoLanguage.initialStress.apply(lekse);
 	}
 
 	getAncestor(n: number): Language {
