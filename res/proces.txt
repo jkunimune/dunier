@@ -1,26 +1,37 @@
+%%	MUTATION
+%%		frontness
 001 mute [ +HIGH +VOWEL ] > [ +PALATAL ] /									% fronting of high vowels
 001 mute [ +CENTRAL +CONSON +VOWEL ] > [ +PALATAL ] /						% fronting of central semivowels
 001 mute [ +UNROUND +VELAR +VOW ] > [ +CENTRAL ] /							% fronting of unrounded back vowels
 001 mute [ +LABIAL +VOWEL ] > [ +VELAR ] /									% backing of rounded vowels
 001 mute [ +CENTRAL +CONSON +VOWEL ] > [ +VELAR ] /							% backing of central semivowels
+%%		roundedness
 001 mute [ +HIGH +VOWEL ] > [ +UNROUND ] /									% unrounding of high vowels
 001 mute [ +PALATAL +VOWEL ] > [ +UNROUND ] /								% unrounding of front vowels
 001 mute [ +VELAR +VOWEL ] > [ +LABIALIZ ] /								% rounding of back vowels
+%%		height
 100 mute [ +VOWEL +CONSON ] > [ +CLOSE ] /									% correction of nonhigh semivowels
 100 mute [ +VOWEL +CONSON -HIGH ] > [ +UNSTRESS ] /							% correction of nonhigh semivowels
+%%		place
 001 mute [ +!PALATAL +OBSTR ] > [ +POSTALV ] /
 001 mute [ +BILAB +FRIC ] > [ +LABIODENT ] /
-001 mute [ +UNSTRESS +VOWEL ] > ə /
+%%		lenition
+001 mute [ +UNSTRESS +VOWEL ] > ə /											% vowel reduction
 001 mute [ +SHORT +VOWEL +SYLLAB ] > [ +LAX ] /
 001 mute [ +UNSTRESS +PALATAL -HIGH +VOWEL ] > [ +RAISED +LAX ] /			% weird ɛ~ɪ thing from Haw and Rus
 001 mute [ +LONG +CONSON ] > [ +SHORT ] /									% loss of gemination
 001 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on non-vowels
+%%		fortition
 001 mute [ +VOWEL ] > [ +TENSE ] /
 001 mute [ +STRESS +VOWEL ] > [ +TENSE ] /
 001 mute [ +LONG +VOWEL +SYLLAB ] > [ +RAISED ] / _ [ -VOWEL ]				% Anglic vowel shift
+%%	ASSIMILATION
+%%		featural
 001 mute [ +ALVEO ] > [ +POSTALV ] / _ [ +PALATAL +CONSON ] /
 001 mute [ +VELAR ] > [ +PALATAL ] / _ [ +PALATAL -LOW ] /
 001 mute [ +ALVEO ] > [ +PALATAL ] / _ [ +PALATAL -LOW -MID ] /
+001 mute [ +OBSTR ]	> [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
+%%		combination
 001 mute [ +CORON +OCCL +OBSTR -STRESS ] [ +CORON ] > [ +LONG ]1 /			% assimilation of coronals
 100 mute [ +VOWEL +CONSON ] [ +VOWEL +CONSON ] > [ +LONG ]1 /				% assimilation of semivowels
 001 mute [ +HIGH ] [ +HIGH -STRESS ] > [ +LONG +SYLLAB ±loke ]0 /			% assimilation of high vowels
@@ -31,24 +42,29 @@
 001 mute [ +VELAR +OCCL ] [ +ALVEO ] > [ +PALATAL ]1 /						% gn > ɲ
 001 mute [ +NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
 001 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +NASAL ]						% dm > nm
+%%		secondary articulations
 001 mute [ -VOWEL +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]			% labialization of dorsals
 001 mute [ -VOWEL -LABIAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]			% labialization
 001 mute [ -VOWEL -PALATAL ] > [ +PALATALIZ ] / _ [ +PALATAL +SYLLAB -LOW ]	% palatalization
 001 mute [ -VOWEL -VELAR ] > [ +VELARIZ ] / _ [ +VELAR +SYLLAB -LOW ]		% velarization
 001 mute [ +VOWEL -NASAL ] > [ +NASALIZ ] / _ [ +NASAL ]					% nasalization
-001 mute [ +OBSTR ]	> [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
+%%		vowel harmony
 001 harmonia round vowel													% rounding harmony
 001 harmonia tense vowel													% tense/lax harmony
 001 harmonia hight vowel													% height harmony
 001 harmonia front vowel													% frontness harmony
-001 mute [ +!PALATAL -VOWEL ] > j [ +ALVEO ]0 / [ +SYLLAB ] _
+%%	DISSIMILATION
 001 mute [ -LOW +VOWEL +SYLLAB ] > [ +RAISED ] / _ [ -HIGH +VOWEL +SYLLAB ]	% raising dissimilation
 001 mute [ -HIGH +VOWEL +SYLLAB ] > [ +LOWERED ] / _ [ -LOW +VOWEL +SYLLAB ] % lowering dissimilation
-001 mute > ə / [ +STOP ] _ [ +OCCL ]
+%%	INSERTION
+001 mute > ə / [ +OCCL +OBSTR ] _ [ +OCCL ]
 001 mute > ʔ / # _ [ -CONSON ]
-001 mute [ +VOWEL +SYLLAB ] > [ ]0 [ +CONSONANT +HIGH +SHORT ]0 / _ [ +VOWEL +SYLLAB ]
+001 mute [ +!PALATAL -VOWEL ] > j [ +ALVEO ]0 / [ +SYLLAB ] _
+001 mute [ +VOWEL +SYLLAB ] > [ ]0 [ +CONSONANT +HIGH +SHORT ]0 / _ [ +VOWEL +SYLLAB ] % diphthongization
+%%	DELETION
 001 mute [ +CONSON ] > / [ ] _ #											% loss of final consonant
 001 mute [ +VOWEL -STRESS ] > / [ ] _ #										% loss of final vowel
+%%	PROSIDY CHANGES
 020 silabe 1
 020 silabe 0
 020 silabe -1
@@ -58,4 +74,5 @@
 015 acente left 0
 002 acente left 1
 002 acente left 2
+%%	OTHER
 1000 mute [ +EJECT +HIGH ] > [ +VOICE +SHORT ]0 [ +VOICE +TENSE +SHORT +CONSON ]0 % handle the ejective vowel workaround

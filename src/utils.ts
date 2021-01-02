@@ -70,12 +70,14 @@ export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
  */
 export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: RegExp = null): string[][] {
 	const xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", `/res/${filename}`, false);
+	xmlHttp.open("GET", `/res/${filename}`, false); // get the file
 	xmlHttp.send();
 	if (xmlHttp.status !== 200)
 		throw `${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`;
 	const arr = [];
-	for (let line of xmlHttp.responseText.split('\n')) {
+	for (let line of xmlHttp.responseText.split('\n')) { // read it line-by-line
+		const matchObject = line.match(comment);
+		if (matchObject !== null && matchObject.index === 0) continue; // skip the line if it is all one comment
 		line = line.split(comment)[0]; // remove the comment
 		line = line.replace(/\s+$/, '') // remove trailing whitespace
 		line = line.replace(/^\s+/, '') // remove leading whitespace
