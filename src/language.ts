@@ -95,7 +95,7 @@ class Silabia extends Enumify {
 	static PRIMARY_STRESSED = new Silabia();
 	static SECONDARY_STRESSED = new Silabia();
 	static UNSTRESSED = new Silabia();
-	static CONSONANT = new Silabia();
+	static NONSYLLABIC = new Silabia();
 	static _ = Silabia.closeEnum();
 }
 
@@ -153,6 +153,8 @@ class PendaniSif extends Enumify {
 	static SIBILANT = new PendaniSif();
 	static RHOTIC = new PendaniSif();
 	static LIQUID = new PendaniSif();
+	static VOCOID = new PendaniSif();
+	static GLIDE = new PendaniSif();
 	static VOWEL = new PendaniSif();
 	static STRESSED = new PendaniSif();
 	static SYLLABIC = new PendaniSif();
@@ -169,7 +171,7 @@ class Fon {
 		null,
 		null,
 		Voze.VOICED,
-		Silabia.CONSONANT,
+		Silabia.NONSYLLABIC,
 		Longia.SHORT,
 		Latia.MEDIAN,
 		MinorLoke.UNROUNDED,
@@ -238,11 +240,11 @@ class Fon {
 				case PendaniSif.OBSTRUENT:
 					return !this.is(PendaniSif.SONORANT);
 				case PendaniSif.HIGH:
-					return this.is(PendaniSif.VOWEL) && (this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE);
+					return this.is(PendaniSif.VOCOID) && (this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE);
 				case PendaniSif.MID:
-					return this.is(PendaniSif.VOWEL) && (this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN_MID);
+					return this.is(PendaniSif.VOCOID) && (this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN_MID);
 				case PendaniSif.LOW:
-					return this.is(PendaniSif.VOWEL) && (this.mode === Mode.NEAR_OPEN || this.mode === Mode.OPEN);
+					return this.is(PendaniSif.VOCOID) && (this.mode === Mode.NEAR_OPEN || this.mode === Mode.OPEN);
 				case PendaniSif.TENSE:
 					return this.mode === Mode.CLOSE || this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN;
 				case PendaniSif.LAX:
@@ -263,13 +265,17 @@ class Fon {
 				case PendaniSif.LIQUID:
 					return this.is(PendaniSif.RHOTIC) ||
 						(this.latia === Latia.LATERAL && this.mode === Mode.CLOSE && this.is(PendaniSif.CORONAL));
-				case PendaniSif.VOWEL:
+				case PendaniSif.VOCOID:
 					return this.mode.sonority >= Mode.CLOSE.sonority && this.latia === Latia.MEDIAN &&
 						this.loke.foner === Foner.DORSUM;
+				case PendaniSif.GLIDE:
+					return this.silabia === Silabia.NONSYLLABIC && this.is(PendaniSif.VOCOID);
+				case PendaniSif.VOWEL:
+					return this.silabia !== Silabia.NONSYLLABIC && this.is(PendaniSif.VOCOID);
 				case PendaniSif.STRESSED:
 					return this.silabia === Silabia.PRIMARY_STRESSED || this.silabia === Silabia.SECONDARY_STRESSED;
 				case PendaniSif.SYLLABIC:
-					return this.silabia !== Silabia.CONSONANT;
+					return this.silabia !== Silabia.NONSYLLABIC;
 				default:
 					throw `can't check for ${sif}ness`;
 			}
@@ -352,12 +358,12 @@ class Klas {
 				if (fon.is(PendaniSif.LOW))       sif = PendaniSif.MID;
 				else if (fon.is(PendaniSif.MID))  sif = PendaniSif.HIGH;
 				else if (fon.is(PendaniSif.HIGH)) sif = Voze.EJECTIVE; // ejective vowels aren't possible; this indicates that it should be diphthongized
-				else throw `can't apply +RAISED to ${fon}`
+				else throw `can't apply +RAISED to ${fon}`;
 			}
 			if (sif === PendaniSif.LOWERED) { // so interpret those first
 				if (fon.is(PendaniSif.HIGH))       sif = PendaniSif.MID;
-				else if (fon.is(PendaniSif.VOWEL)) sif = PendaniSif.LOW;
-				else throw `can't apply +LOWERED to ${fon}`
+				else if (fon.is(PendaniSif.VOCOID)) sif = PendaniSif.LOW;
+				else throw `can't apply +LOWERED to ${fon}`;
 			}
 
 			if (sif instanceof Mode) // then actually apply the feature
@@ -406,7 +412,7 @@ class Klas {
 							mode = Mode.OPEN;
 						break;
 					case PendaniSif.TENSE:
-						if (!fon.is(PendaniSif.VOWEL))
+						if (!fon.is(PendaniSif.VOCOID))
 							throw RangeError("can't tense a nonvocoid");
 						else if (mode === Mode.NEAR_CLOSE)
 							mode = Mode.CLOSE;
@@ -416,7 +422,7 @@ class Klas {
 							mode = Mode.OPEN;
 						break;
 					case PendaniSif.LAX:
-						if (!fon.is(PendaniSif.VOWEL))
+						if (!fon.is(PendaniSif.VOCOID))
 							throw RangeError("can't lax a nonvocoid");
 						else if (mode === Mode.CLOSE)
 							mode = Mode.NEAR_CLOSE;
@@ -426,7 +432,7 @@ class Klas {
 							mode = Mode.NEAR_OPEN;
 						break;
 					case PendaniSif.SYLLABIC:
-						if (silabia === Silabia.CONSONANT)
+						if (silabia === Silabia.NONSYLLABIC)
 							silabia = Silabia.UNSTRESSED;
 						break;
 					default:
@@ -579,7 +585,7 @@ class Harmonia {
 		let val: Sif = null;
 		for (let i = 0; i < old.length; i ++) { // iterate backwards through the word
 			nov[i] = old[i]; // in most cases, we will just make this the same as it was in the old word
-			if (this.affectsConsonants || !old[i].is(Silabia.CONSONANT)) { // but if this segment isn't immune
+			if (this.affectsConsonants || !old[i].is(Silabia.NONSYLLABIC)) { // but if this segment isn't immune
 				for (let sif of this.kutube) { // check its polarity
 					if (old[i].is(sif)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before
@@ -623,7 +629,7 @@ class SilaboPoze {
 				(i+1 >= old.length || sonority[i] >= sonority[i+1] + this.bias))
 				nov[i] = old[i].with(PendaniSif.SYLLABIC);
 			else
-				nov[i] = old[i].with(Silabia.CONSONANT);
+				nov[i] = old[i].with(Silabia.NONSYLLABIC);
 		}
 		return nov;
 	}
@@ -660,7 +666,7 @@ class AcentoPoze {
 		let nuclei: {i: number, weight: number}[] = [];
 		let numC = 1;
 		for (let i = old.length - 1; i >= 0; i --) { // first, tally up the syllables
-			if (!old[i].is(Silabia.CONSONANT)) { // using syllabicity to identify nuclei
+			if (!old[i].is(Silabia.NONSYLLABIC)) { // using syllabicity to identify nuclei
 				if (old[i].is(Longia.LONG))
 					nuclei.push({i: i, weight: 2}); // long vowels have weight 2
 				else if (numC > 1)
@@ -726,17 +732,17 @@ class BadoFikse {
 
 
 const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
-	{klas: new Klas([Longia.LONG, Silabia.CONSONANT]), baze: [Longia.SHORT], kode: 'Gem'},
-	{klas: new Klas([Longia.LONG], [Silabia.CONSONANT]), baze: [Longia.SHORT], kode: 'Len'},
+	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Gem'},
+	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
 	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
 	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
-	{klas: new Klas([PendaniSif.VOWEL, Silabia.CONSONANT]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
+	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
 	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
 	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
 	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
 	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
 	{klas: new Klas([MinorLoke.PHARANGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
-	{klas: new Klas([Silabia.UNSTRESSED]), baze: [Silabia.CONSONANT], kode: 'Syl'},
+	{klas: new Klas([Silabia.UNSTRESSED]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},
 	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
 	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'Prx'},
 ]
@@ -783,7 +789,7 @@ for (const row of harfiaTable) {
 	const grafeme = row.slice(0, NUM_CONVENTIONS);
 	const sif = row.slice(NUM_CONVENTIONS);
 	if (sif[2] !== '0') {
-		const silabia = sif[0].includes('s') ? Silabia.UNSTRESSED : Silabia.CONSONANT;
+		const silabia = sif[0].includes('s') ? Silabia.UNSTRESSED : Silabia.NONSYLLABIC;
 		const latia = sif[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
 		const aliSif = sif[0].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.UNROUNDED;
 		const loke = LOKE_KODE.get(sif[1]);
