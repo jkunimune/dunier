@@ -1,18 +1,17 @@
 // index.ts: interfaces with forms and plots
 
 import "./lib/jquery.min.js";
+import {generateTerrain} from "./terrain.js";
+import {Sphere, Spheroid, Surface} from "./surface.js";
+import {World} from "./world.js";
+import {Convention, DeuteroLang, Language, ProtoLang, transcribe, WordType} from "./language.js";
+import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
+import {Random} from "./random.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 // import "./lib/plotly.js";
 // // @ts-ignore
 // const Plotly = window.Plotly;
-
-import {generateTerrain} from "./terrain.js";
-import {Sphere, Spheroid, Surface} from "./surface.js";
-import {World} from "./world.js";
-import {Convention, DeuteroLanguage, Language, ProtoLanguage, transcribe} from "./language.js";
-import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
-import {Random} from "./random.js";
 
 
 const TERRAIN_COLORMAP = [
@@ -371,13 +370,13 @@ $(document).ready(() => {
 	console.log("ready!");
 	for (let i = 0; i < 18; i ++) {
 		const rng = new Random(i);
-		let bash: Language = new ProtoLanguage(rng);
+		let bash: Language = new ProtoLang(rng);
 		for (let j = 0; j < 20; j ++) {
 			let s = "";
 			for (let k = 0; k < 6; k ++)
-				s += transcribe(bash.getPersonalName(30 + 10*k)) + "  ";
+				s += transcribe(bash.getNamloge(k, WordType.LOKONAM)) + "  ";
 			console.log(s);
-			bash = new DeuteroLanguage(bash, rng);
+			bash = new DeuteroLang(bash, rng);
 		}
 		console.log("");
 	}

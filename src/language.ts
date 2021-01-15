@@ -158,6 +158,7 @@ class PendaniSif extends Enumify {
 	static VOWEL = new PendaniSif();
 	static STRESSED = new PendaniSif();
 	static SYLLABIC = new PendaniSif();
+	static SPOKEN = new PendaniSif();
 	static _ = PendaniSif.closeEnum();
 }
 
@@ -176,6 +177,17 @@ class Fon {
 		Latia.MEDIAN,
 		MinorLoke.UNROUNDED,
 		Nosia.ORAL);
+	/** the representation of a pause */
+	public static PAUSE = new Fon(
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null,
+		null
+	);
 
 	public readonly mode: Mode;
 	public readonly loke: Loke;
@@ -203,7 +215,9 @@ class Fon {
 	 * @param sif
 	 */
 	is(sif: Sif): boolean {
-		if (sif instanceof Loke)
+		if (this.voze === null)
+			return false;
+		else if (sif instanceof Loke)
 			return this.loke === sif;
 		else if (sif instanceof Mode)
 			return this.mode === sif;
@@ -276,6 +290,8 @@ class Fon {
 					return this.silabia === Silabia.PRIMARY_STRESSED || this.silabia === Silabia.SECONDARY_STRESSED;
 				case PendaniSif.SYLLABIC:
 					return this.silabia !== Silabia.NONSYLLABIC;
+				case PendaniSif.SPOKEN:
+					return true;
 				default:
 					throw `can't check for ${sif}ness`;
 			}
@@ -295,6 +311,7 @@ class Fon {
 	 * losslessly represent this as a string
 	 */
 	hash(): string {
+		if (this.mode === null) return '';
 		return this.silabia.enumKey.slice(0, 2) +
 			this.longia.enumKey.slice(0, 2) +
 			this.minorLoke.enumKey.slice(0, 2) +
@@ -306,6 +323,7 @@ class Fon {
 	}
 
 	toString(): string {
+		if (this.mode === null) return 'pause';
 		return this.silabia.enumKey.toLowerCase() + " " +
 			this.longia.enumKey.toLowerCase() + " " +
 			this.minorLoke.enumKey.toLowerCase() + " " +
@@ -314,6 +332,16 @@ class Fon {
 			this.voze.enumKey.toLowerCase() + " " +
 			this.loke.enumKey.toLowerCase() + " " +
 			this.mode.enumKey.toLowerCase();
+	}
+
+	getSonority() {
+		if (this.mode === null)
+			return Number.NEGATIVE_INFINITY;
+		else
+			return this.mode.sonority
+				- ((this.latia === Latia.LATERAL) ? 1.5 : 0)
+				+ ((this.voze === Voze.VOICED) ? 0.75 : 0)
+				+ ((this.longia === Longia.LONG) ? 0.35 : 0)
 	}
 }
 
@@ -350,7 +378,7 @@ class Klas {
 	 */
 	konformu(fon: Fon = Fon.BLANK, ref: Fon = null): Fon {
 		if (this.na.length > 0)
-			throw Error("you can't use minuses in the final state of a process!");
+			throw Error(`you can't use minus ${this.na[0]} in the final state of a process!`);
 		let mode = fon.mode, loke = fon.loke, voze = fon.voze;
 		let silabia = fon.silabia, longia = fon.longia, latia = fon.latia, minorLoke = fon.minorLoke, nosia = fon.nosia;
 		for (let sif of this.sa) {
@@ -491,8 +519,6 @@ class FonMute {
 	private readonly idx: number[]; // reference indices for target phones
 	private readonly chen: Klas[]; // requisite predecessor
 	private readonly bade: Klas[]; // requisite follow-up
-	private readonly wordShuri: boolean;
-	private readonly wordFini: boolean;
 
 	constructor(ca: Klas[], pa: Klas[], idx: number[], bada: Klas[], chena: Klas[]) {
 		if (idx.length !== pa.length)
@@ -500,10 +526,8 @@ class FonMute {
 		this.ca = ca;
 		this.pa = pa;
 		this.idx = idx;
-		this.wordShuri = (bada[0] === null);
-		this.wordFini = (chena[chena.length-1] === null);
-		this.chen = (this.wordShuri) ? bada.slice(1) : bada;
-		this.bade = (this.wordFini) ? chena.slice(0, chena.length-1) : chena;
+		this.chen = bada;
+		this.bade = chena;
 	}
 
 	/**
@@ -511,10 +535,10 @@ class FonMute {
 	 * @param old
 	 */
 	apply(old: Fon[]): Fon[] {
-		const drowWen: Fon[] = []; // build the changed word in reverse
+		const drowWen: Fon[] = []; // build the neWword in reverse
 		let i = old.length;
 		while (true) {
-			if (this.applies(old.slice(0, i), drowWen)) { // if it applies here,
+			if (this.applies([Fon.PAUSE].concat(old.slice(0, i)), [Fon.PAUSE].concat(drowWen))) { // if it applies here,
 				for (let j = this.pa.length - 1; j >= 0; j --) { // fill in the replacement
 					if (this.idx[j] < this.ca.length)
 						drowWen.push(this.pa[j].konformu(
@@ -541,10 +565,6 @@ class FonMute {
 	 */
 	applies(oldWord: Fon[], novWord: Fon[]) {
 		if (this.chen.length + this.ca.length > oldWord.length || this.bade.length > novWord.length)
-			return false;
-		if (this.wordShuri && this.chen.length + this.ca.length < oldWord.length)
-			return false;
-		if (this.wordFini && this.bade.length < oldWord.length)
 			return false;
 		for (let j = 0; j < this.chen.length; j ++) // start with the left half of the context
 			if (!this.chen[j].macha(oldWord[j - this.ca.length - this.chen.length + oldWord.length])) // check if it matches
@@ -618,18 +638,16 @@ class SilaboPoze {
 	apply(old: Fon[]): Fon[] {
 		const sonority = [];
 		for (const fon of old) // first calculate the sonorities
-			sonority.push(
-				fon.mode.sonority
-				- ((fon.latia === Latia.LATERAL) ? 1.5 : 0)
-				+ ((fon.voze === Voze.VOICED) ? 0.75 : 0)
-				+ ((fon.longia === Longia.LONG) ? 0.35 : 0));
+			sonority.push(fon.getSonority());
 		const nov = old.slice(); // then copy the old word
 		for (let i = 0; i < old.length; i ++) { // and assign syllables accordingly
 			if ((i-1 < 0 || sonority[i] >= sonority[i-1] - this.bias) &&
-				(i+1 >= old.length || sonority[i] >= sonority[i+1] + this.bias))
-				nov[i] = old[i].with(PendaniSif.SYLLABIC);
+				(i+1 >= old.length || sonority[i] >= sonority[i+1] + this.bias)) // if it is a peak
+				nov[i] = old[i].with(PendaniSif.SYLLABIC); // make it syllabic
+			else if (old[i].is(PendaniSif.SPOKEN)) // otherwise if it is a sound
+				nov[i] = old[i].with(Silabia.NONSYLLABIC); // make it nonsyllabic
 			else
-				nov[i] = old[i].with(Silabia.NONSYLLABIC);
+				nov[i] = old[i]; // ignore pauses
 		}
 		return nov;
 	}
@@ -666,7 +684,10 @@ class AcentoPoze {
 		let nuclei: {i: number, weight: number}[] = [];
 		let numC = 1;
 		for (let i = old.length - 1; i >= 0; i --) { // first, tally up the syllables
-			if (!old[i].is(Silabia.NONSYLLABIC)) { // using syllabicity to identify nuclei
+			if (!old[i].is(PendaniSif.SPOKEN)) { // skip past any pauses
+				numC = 1;
+			}
+			else if (old[i].is(PendaniSif.SYLLABIC)) { // using syllabicity to identify nuclei
 				if (old[i].is(Longia.LONG))
 					nuclei.push({i: i, weight: 2}); // long vowels have weight 2
 				else if (numC > 1)
@@ -723,29 +744,37 @@ class AcentoPoze {
 	}
 }
 
+
 /**
- * a process that turns some of the shortest words into suffixen and randomly applies them
+ * get some orthographical representations from some phonemes and apply a diacritic to it
+ * @param diacritic the string representing the modified letter, where the base phonemes are replaced with X, Y, etc.,
+ * and the first letter of each phoneme is replaced with x, y, etc. the first letter of an affricate will be that of
+ * its corresponding stop.
+ * @param fon the phonemes to be combined into the diacritic
+ * @param convention the convention to use for the lookup
  */
-class BadoFikse {
-	// TODO: implement this
+function apply_diacritic(diacritic: string, fon: Fon[], convention: Convention): string {
+	let graf = diacritic;
+	if (diacritic.includes('X')) {
+		let X = lookUp(fon[0], convention)
+		graf = graf.replace('X', X); // insert the base character
+		if (diacritic.includes('x')) {
+			let x = X.slice(0, 1);
+			if (fon[0].mode === Mode.AFFRICATE)
+				x = lookUp(fon[0].with(Mode.STOP), convention).slice(0, 1);
+			graf = diacritic.replace('x', x);
+		}
+		if (diacritic.includes('Y')) {
+			let Y = lookUp(fon[1], convention);
+			graf = graf.replace('Y', Y);
+			if (diacritic.includes('Z')) {
+				let Z = lookUp(fon[2], convention);
+				graf = graf.replace('Z', Z);
+			}
+		}
+	}
+	return graf;
 }
-
-
-const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
-	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Gem'},
-	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
-	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
-	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
-	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
-	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
-	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
-	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
-	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
-	{klas: new Klas([MinorLoke.PHARANGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
-	{klas: new Klas([Silabia.UNSTRESSED]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},
-	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
-	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'Prx'},
-]
 
 
 const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
@@ -803,66 +832,6 @@ for (const row of harfiaTable) {
 	}
 }
 
-
-/**
- * get a phoneme array from its IPA representation
- * @param ipa the characters to put in the lookup table
- */
-function ipa(ipa: string): Fon[] {
-	const output: Fon[] = [];
-	for (let i = 0; i < ipa.length; i ++) {
-		if (FROM_IPA.has(ipa.charAt(i)))
-			output.push(FROM_IPA.get(ipa.charAt(i)));
-		else
-			throw `could not interpret '${ipa.charAt(i)}' as an IPA symbol`;
-	}
-	return output;
-}
-
-/**
- * get an orthographical representation from a phoneme
- * @param fon
- * @param convention
- */
-function lookUp(fon: Fon, convention: Convention = Convention.NASOMEDI): string {
-	if (TO_TEXT.has(fon.hash())) // if it's in the table
-		return TO_TEXT.get(fon.hash())[convention]; // just return that
-
-	for (const {klas, baze, kode} of DIACRITICS) { // if not, look through the diacritics
-		if (klas.macha(fon)) { // to see if there's one that will help
-			const baziFon = [];
-			for (const sif of baze)
-				baziFon.push(fon.with(sif));
-			return apply_diacritic(TO_DIACRITICS.get(kode)[convention], baziFon, convention);
-		}
-	}
-
-	console.log(TO_TEXT);
-	throw `I don't know how to write ${fon}`;
-}
-
-/**
- * get some orthographical representations from some phonemes and apply a diacritic to it
- * @param diacritic the string representing the modified letter, where the base phonemes are replaced with X, Y, etc.,
- * and the first letter of each phoneme is replaced with x, y, etc. the first letter of an affricate will be that of
- * its corresponding stop.
- * @param fon the phonemes to be combined into the diacritic
- * @param convention the convention to use for the lookup
- */
-function apply_diacritic(diacritic: string, fon: Fon[], convention: Convention): string {
-	const X = lookUp(fon[0], convention); // get the base character
-	let x = X.slice(0, 1); // if we need lowercase x, find that
-	if (diacritic.includes('x') && diacritic.slice(14) === 'AFFRICATE')
-		x = lookUp(fon[0].with(Mode.STOP), convention).slice(0, 1);
-	let graf = diacritic.replace('X', X).replace('x', x);
-	if (diacritic.includes('Y'))
-		graf = graf.replace('Y', lookUp(fon[1], convention));
-	if (diacritic.includes('Z'))
-		graf = graf.replace('Z', lookUp(fon[2], convention));
-	return graf;
-}
-
-
 const PROCES_CHUZABLE: {chanse: number, proces: Proces}[] = [];
 const procesTable = loadTSV('proces.txt', /\s+/, /%/); // load the phonological processes
 for (const procesKitabe of procesTable) { // go through them
@@ -878,7 +847,7 @@ for (const procesKitabe of procesTable) { // go through them
 			else if (sinye === '_') // _ transitions from badu to chenu
 				fen = chena;
 			else if (sinye === '#') // indicates a word boundary
-				fen.push(null);
+				fen.push(new Klas([], [PendaniSif.SPOKEN]));
 			else if (sinye === '/') { // / transitions from pa to badu
 				if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
 					if (ca.length !== 0 && ca.length !== pa.length) throw `please specify indices for ${procesKitabe}`;
@@ -965,66 +934,154 @@ for (const procesKitabe of procesTable) { // go through them
 }
 
 
+/**
+ * different types of nym
+ */
+export enum WordType {
+	JANNAM,
+	FAMILNAM,
+	SITONAM,
+	BASHNAM,
+	LOKONAM,
+	DEMNAM,
+}
+
+/**
+ * a collection of similar words.
+ */
 export interface Language {
-	getCommonNoun(i: number): Fon[]
-	getPersonalName(i: number): Fon[]
-	getCityName(i: number): Fon[]
-	getCountryName(i: number): Fon[]
+	/**
+	 * get a name from this language. the style of name and valid indices depend on the WordType:
+	 * JANNAM - forename, indexed in [0, 50)
+	 * FAMILNAM - surname, indexed in [0, 25)
+	 * SITONAM - city name, indexed in [0, 25), corresponds to the respective toponym
+	 * BASHNAM - glossonym, indexed in [0, 25), corresponds to the respective toponym
+	 * LOKONAM - toponym, indexed in [0, 25)
+	 * DEMNAM - ethnonym, indexed in [0, 25), corresponds to the respective toponym
+	 * @param i the index of the name
+	 * @param type the type of name
+	 */
+	getNamloge(i: number, type: WordType): Fon[]
+
+	/**
+	 * get the language that this was n timesteps ago
+	 * @param n the number of steps backward, in centuries.
+	 */
 	getAncestor(n: number): Language
+
+	/**
+	 * is this language actually a dialect of lang?
+	 * @param lang
+	 */
 	isIntelligible(lang: Language): boolean
 }
 
-export class ProtoLanguage {
-	private static initialVowels = ipa("iueoa");
-	private static initialConsonants = ipa("mnpbtdkɡʔfθszʃxwrjl");
-	private static initialStress = new AcentoPoze(true, 1, 1, 'lapse', false);
-	private readonly putong: Fon[][];
-	private readonly renonam: Fon[][];
-	private readonly sitonam: Fon[][];
-	private readonly dexonam: Fon[][];
+export class ProtoLang {
+	private static STRESS = new AcentoPoze(true, 1, 1, 'lapse', false);
+	private static VOWELS = ipa("aiueoəɛɔyø");
+	private static CONSON = ipa("mnptksljwhfbdɡrzŋʃʔxqθvɣʙ");
+	private static MEDIAL = ipa("ljwr");
+	private static R_INDEX = ProtoLang.CONSON.indexOf(ipa("r")[0]); // note the index of r, because it's phonotactically important
+
+	private static P_ONSET = 0.8;
+	private static P_MEDIAL = 0.4;
+	private static P_CODA = 0.4;
+
+	private readonly rng: Random; // this language's personal rng generator
+	private readonly diversity: number; // the typical number of suffixes used for one type of word
+	private readonly nConson: number; // the number of consonants in this language
+	private readonly nVowel: number; // the number of vowels in this langugage
+	private readonly nMedial: number; // the numer of medials in this language
+	private readonly complexity: number; // the approximate amount of information in one syllable
+	/**
+	 * the fundamental roots of this language. they are indexed as follows:
+	 * [0, 6) - synonyms of "city"
+	 * [6, 12) - synonyms of "land"
+	 * [12, 24) - synonyms of "person"
+	 * [24, 25) - word for "language"
+	 * [25, 150) - generic roots
+	 * @param i the index of the word, in [0, 150).
+	 */
+	private readonly loge: Fon[][];
 
 	constructor(rng: Random) {
-		this.putong = [];
-		for (let i = 0; i < 100; i ++)
-			this.putong.push(this.newWord(Math.floor(1 + 3*i/100), rng));
-		this.renonam = [];
-		for (let i = 0; i < 100; i ++)
-			this.renonam.push(this.newWord(Math.floor(1 + 6*i/100), rng));
-		this.sitonam = [];
-		for (let i = 0; i < 100; i ++)
-			this.sitonam.push(this.newWord(Math.floor(1 + 2*i/100), rng));
-		this.dexonam = [];
-		for (let i = 0; i < 100; i ++)
-			this.dexonam.push(this.newWord(Math.floor(2 + 2*i/100), rng));
-		this.putong[0] = ipa("ia");
+		this.rng = rng;
+		this.diversity = rng.binomial(12, .3); // choose how much suffixing to do
+		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
+		this.nVowel = 5 + rng.binomial(5, .1); // choose how many nuclei it will have
+		this.nMedial = (this.nConson > ProtoLang.R_INDEX) ? 4 : 0;
+		this.complexity = 2*Math.log10(1 + this.nConson)
+			+ Math.log10(1 + this.nMedial) + Math.log10(1 + this.nVowel);
+		this.loge = new Array<Fon[]>(150);
+		if (rng.probability(.3))
+			this.loge[8] = ipa("ia"); // this is sometimes here
 	}
 
-	getCommonNoun(i: number): Fon[] {
-		return this.putong[i];
+	getLogomul(i: number): Fon[] {
+		if (i < 0 || i >= 150)
+			throw RangeError("baka.");
+		if (this.loge[i] === undefined)
+			this.loge[i] = this.newWord(Math.ceil((i < 25 ? 2 : 4)/this.complexity), this.rng);
+		return this.loge[i];
 	}
 
-	getPersonalName(i: number): Fon[] {
-		return this.renonam[i];
+	getNamloge(i: number, type: WordType): Fon[] {
+		switch (type) {
+			case WordType.SITONAM:
+				return this.suffix(i, 25, 0, 6, false);
+			case WordType.LOKONAM:
+				return this.suffix(i, 50, 6, 12, false); // TODO countries can be named after cities
+			case WordType.DEMNAM:
+				return this.suffix(i, 50, 18, 19, true); // TODO people can be named after countries
+			case WordType.BASHNAM:
+				return this.suffix(i, 50, 24, 25, true);
+			case WordType.FAMILNAM:
+				return this.suffix(i, 75, 12, 24, false);
+			case WordType.JANNAM:
+				return this.suffix(i, 100, 0, 0, false);
+		}
 	}
 
-	getCityName(i: number): Fon[] {
-		return this.sitonam[i];
-	}
-
-	getCountryName(i: number): Fon[] {
-		return this.dexonam[i];
-	}
-
+	/**
+	 * generate a new random word root
+	 * @param nSyllables
+	 * @param rng
+	 */
 	newWord(nSyllables: number, rng: Random): Fon[] {
 		const lekse = [];
 		for (let i = 0; i < nSyllables; i ++) {
-			if (rng.probability(0.7))
-				lekse.push(rng.choice(ProtoLanguage.initialConsonants));
-			lekse.push(rng.choice(ProtoLanguage.initialVowels));
-			if (rng.probability(0.5))
-				lekse.push(rng.choice(ProtoLanguage.initialConsonants));
+			if (rng.probability(ProtoLang.P_ONSET))
+				lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
+			if (this.nMedial > 0 && rng.probability(ProtoLang.P_MEDIAL))
+				lekse.push(rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
+			lekse.push(rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
+			if (rng.probability(ProtoLang.P_CODA))
+				lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
 		}
-		return ProtoLanguage.initialStress.apply(lekse);
+		return lekse;
+	}
+
+	/**
+	 * create a new word derivative based on roots
+	 * @param i
+	 * @param base0
+	 * @param affix0
+	 * @param affixN
+	 * @param obligatory whether the affix cannot be noting
+	 */
+	suffix(i: number, base0: number, affix0: number, affixN: number, obligatory: boolean) {
+		const baseI = base0 + i; // pick a base
+		const base = this.getLogomul(baseI); // get it
+		let numAffixen = affixN - affix0;
+		if (!obligatory)
+			numAffixen += 1;
+		const affixI = affix0 + i%Math.max(this.diversity, numAffixen); // pick an affix
+		let affix: Fon[];
+		if (affixI < affixN)
+			affix = this.getLogomul(affixI); // get it
+		else
+			affix = []; // or get nothing if we've chosen to forgo an affix
+		return ProtoLang.STRESS.apply(base.concat([Fon.PAUSE]).concat(affix)); // remember to put a pause between them TODO: allow prefixen
 	}
 
 	getAncestor(n: number): Language {
@@ -1036,7 +1093,7 @@ export class ProtoLanguage {
 	}
 }
 
-export class DeuteroLanguage {
+export class DeuteroLang {
 	private readonly parent: Language;
 	private readonly changes: Proces[];
 
@@ -1048,20 +1105,8 @@ export class DeuteroLanguage {
 				this.changes.push(proces);
 	}
 
-	getCommonNoun(i: number): Fon[] {
-		return this.applyChanges(this.parent.getCommonNoun(i));
-	}
-
-	getPersonalName(i: number): Fon[] {
-		return this.applyChanges(this.parent.getPersonalName(i));
-	}
-
-	getCityName(i: number): Fon[] {
-		return this.applyChanges(this.parent.getCityName(i));
-	}
-
-	getCountryName(i: number): Fon[] {
-		return this.applyChanges(this.parent.getCountryName(i));
+	getNamloge(i: number, type: WordType) {
+		return this.applyChanges(this.parent.getNamloge(i, type));
 	}
 
 	applyChanges(lekse: Fon[]): Fon[] {
@@ -1080,6 +1125,61 @@ export class DeuteroLanguage {
 	isIntelligible(lang: Language): boolean {
 		return this.getAncestor(DEVIATION_TIME) === lang.getAncestor(DEVIATION_TIME);
 	}
+}
+
+
+
+/**
+ * get a phoneme array from its IPA representation
+ * @param ipa the characters to put in the lookup table
+ */
+function ipa(ipa: string): Fon[] {
+	const output: Fon[] = [];
+	for (let i = 0; i < ipa.length; i ++) {
+		if (FROM_IPA.has(ipa.charAt(i)))
+			output.push(FROM_IPA.get(ipa.charAt(i)));
+		else
+			throw `could not interpret '${ipa.charAt(i)}' as an IPA symbol`;
+	}
+	return output;
+}
+
+const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
+	{klas: new Klas([], [PendaniSif.SPOKEN]), baze: [], kode: 'Pau'},
+	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Gem'},
+	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
+	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
+	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
+	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
+	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
+	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
+	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
+	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
+	{klas: new Klas([MinorLoke.PHARANGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
+	{klas: new Klas([Silabia.UNSTRESSED]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},
+	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
+	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'Prx'},
+]
+
+/**
+ * get an orthographical representation from a phoneme
+ * @param fon
+ * @param convention
+ */
+function lookUp(fon: Fon, convention: Convention = Convention.NASOMEDI): string {
+	if (TO_TEXT.has(fon.hash())) // if it's in the table
+		return TO_TEXT.get(fon.hash())[convention]; // just return that
+
+	for (const {klas, baze, kode} of DIACRITICS) { // if not, look through the diacritics
+		if (klas.macha(fon)) { // to see if there's one that will help
+			const baziFon = [];
+			for (const sif of baze)
+				baziFon.push(fon.with(sif));
+			return apply_diacritic(TO_DIACRITICS.get(kode)[convention], baziFon, convention);
+		}
+	}
+
+	throw `I don't know how to write ${fon}`;
 }
 
 

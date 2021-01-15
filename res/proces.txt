@@ -3,8 +3,8 @@
 001 mute [ +UNROUND +VELAR +VOWEL ] > [ +CENTRAL ] /						% fronting of unrounded back vowels
 001 mute [ +HIGH +VOCOID ] > [ +PALATAL ] /									% fronting of high vowels
 001 mute [ +LABIAL +VOCOID ] > [ +VELAR ] /									% backing of rounded vowels
-001 mute [ +CENTRAL +GLIDE ] > [ +PALATAL ] /								% fronting of central semivowels
-001 mute [ +CENTRAL +GLIDE ] > [ +VELAR ] /									% backing of central semivowels
+001 mute [ +CENTRAL +UNROUND +GLIDE ] > [ +PALATAL ] /						% fronting of central semivowels
+001 mute [ +CENTRAL +LABIALIZ +GLIDE ] > [ +VELAR ] /						% backing of central semivowels
 %%		roundedness
 001 mute [ +HIGH +VOCOID ] > [ +UNROUND ] /									% unrounding of high vowels
 001 mute [ +PALATAL +VOCOID ] > [ +UNROUND ] /								% unrounding of front vowels
@@ -41,29 +41,30 @@
 001 mute [ +FRIC -STRESS ] [ +FRIC ] > [ +LONG ]1 /							% assimilation of fricatives
 001 mute [ +VELAR +OCCL ] [ +ALVEO ] > [ +PALATAL ]1 /						% gn > ɲ
 001 mute [ +NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
-001 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +NASAL ]						% dm > nm
+001 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +OCCL ]						% dm > nm
 %%		secondary articulations
-001 mute [ -VOCOID +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization of dorsals
-001 mute [ -VOCOID -LABIAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization
-001 mute [ -VOCOID -PALATAL ] > [ +PALATALIZ ] / _ [ +PALATAL +SYLLAB -LOW ]% palatalization
-001 mute [ -VOCOID -VELAR ] > [ +VELARIZ ] / _ [ +VELAR +SYLLAB -LOW ]		% velarization
-001 mute [ +SONOR -NASAL ] > [ +NASALIZ ] / _ [ +NASAL ]					% nasalization
+001 mute [ -LABIAL +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization of dorsals
+001 mute [ -LABIAL +SPOKEN ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization
+001 mute [ -PALATAL +SPOKEN -VOCOID ] > [ +PALATALIZ ] / _ [ +PALATAL +SYLLAB -LOW ]% palatalization
+001 mute [ -VELAR +SPOKEN -VOCOID ] > [ +VELARIZ ] / _ [ +VELAR +SYLLAB -LOW ]% velarization TODO: this isn't how velarization works
+001 mute [ -NASAL +SONOR ] > [ +NASALIZ ] / _ [ +NASAL ]					% nasalization
 %%		vowel harmony
 001 harmonia round vowel													% rounding harmony
 001 harmonia tense vowel													% tense/lax harmony
 001 harmonia hight vowel													% height harmony
 001 harmonia front vowel													% frontness harmony
 %%	DISSIMILATION
-001 mute [ -LOW +VOWEL ] > [ +RAISED ] / _ [ -HIGH +VOWEL ]	% raising dissimilation
-001 mute [ -HIGH +VOWEL ] > [ +LOWERED ] / _ [ -LOW +VOWEL ] % lowering dissimilation
+001 mute [ -LOW +VOWEL ] > [ +RAISED ] / _ [ -HIGH +VOWEL ]					% raising dissimilation
+001 mute [ -HIGH +VOWEL ] > [ +LOWERED ] / _ [ -LOW +VOWEL ] 				% lowering dissimilation
 %%	INSERTION
 001 mute > ə / [ +OCCL +OBSTR ] _ [ +OCCL ]
 001 mute > ʔ / # _ [ +VOWEL ]
 001 mute [ +!PALATAL -VOCOID ] > j [ +ALVEO ]0 / [ +SYLLAB ] _
 001 mute [ +VOWEL ] > [ ]0 [ +NONSYLLAB +CLOSE +SHORT ]0 / _ [ +VOWEL ]		% diphthongization
 %%	DELETION
-001 mute [ +NONSYLLAB ] > / [ ] _ #											% loss of final consonant
-001 mute [ +VOCOID -STRESS ] > / [ ] _ #									% loss of final vowel
+001 mute [ +NONSYLLAB ] > / [ +SPOKEN ] _ #									% loss of final consonant
+001 mute [ +VOCOID -STRESS ] > / [ +SPOKEN ] _ #							% loss of final vowel
+100 mute [ -SPOKEN ] > /													% elision of pauses
 %%	PROSIDY CHANGES
 020 silabe 1
 020 silabe 0

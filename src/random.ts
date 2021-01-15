@@ -120,7 +120,8 @@ export class Random {
 	}
 
 	/**
-	 * return a pseudorandom number drawn from a Binomial distribution (approximate for large numbers)
+	 * return a pseudorandom number drawn from a Binomial distribution (approximates with normal for expectations/
+	 * antiexpectatians over 36).
 	 * @param num
 	 * @param prob
 	 */

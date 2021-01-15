@@ -62,8 +62,9 @@ export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
 }
 
 /**
- * load a static TSV resource. comments may be specified with a comment character. whitespace will be stripped from
- * each line, so don't use a whitespace delimiter if you want trailing empty columns.
+ * load a static TSV resource. comments may be specified with a comment character. if a comment character is given,
+ * whitespace will be stripped from each line after the comment is removed. so don't use a whitespace delimiter if you
+ * want trailing empty columns and comments.
  * @param filename the filename (will search in ./res/ by default)
  * @param delimiter the symbol that indicates a column break
  * @param comment the symbol that indicates the start of a comment
@@ -79,10 +80,12 @@ export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: Reg
 		const matchObject = line.match(comment);
 		if (matchObject !== null && matchObject.index === 0) continue; // skip the line if it is all one comment
 		line = line.split(comment)[0]; // remove the comment
-		line = line.replace(/\s+$/, '') // remove trailing whitespace
-		line = line.replace(/^\s+/, '') // remove leading whitespace
-		if (line.length === 0)  break;
-		else                    arr.push(line.split(delimiter));
+		if (comment !== null) {
+			line = line.replace(/\s+$/, '') // remove trailing whitespace
+			line = line.replace(/^\s+/, '') // remove leading whitespace
+		}
+		if (line.length !== 0) arr.push(line.split(delimiter));
+		else break;
 	}
 	return arr;
 }

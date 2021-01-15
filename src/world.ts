@@ -5,7 +5,7 @@ import TinyQueue from './lib/tinyqueue.js';
 
 import {Nodo, Surface} from "./surface.js";
 import {Random} from "./random.js";
-import {Language, ProtoLanguage, DeuteroLanguage, Convention, transcribe} from "./language.js";
+import {Convention, DeuteroLang, Language, ProtoLang, transcribe, WordType} from "./language.js";
 
 
 const TIME_STEP = 100; // [year]
@@ -225,7 +225,6 @@ export class World {
  */
 export class Civ {
 	public readonly id: number;
-	private readonly name: number; // its name index
 	private arableLand: number; // the population, pre technology modifier
 	public languages: Map<Nodo, Language>; // the languages of this country
 	public officialLanguage: Language;
@@ -254,14 +253,12 @@ export class Civ {
 		this.languages = new Map();
 
 		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
-			this.officialLanguage = new ProtoLanguage(rng); // make up a language
+			this.officialLanguage = new ProtoLang(rng); // make up a language
 		else // if it's based on an existing one
 			this.officialLanguage = null; // the language will get automatically set when the capital is conquered
 
 		this.capital = capital;
 		this.conquer(capital);
-
-		this.name = rng.discrete(0, 100); // TODO make it so countries can borrow names from each other
 
 		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
 		this.technology = technology;
@@ -331,7 +328,7 @@ export class Civ {
 	 * @param rng
 	 */
 	update(rng: Random) {
-		const newLects: Map<Language, DeuteroLanguage> = new Map();
+		const newLects: Map<Language, DeuteroLang> = new Map();
 		for (const nodo of this.nodos) {
 			if (this.languages.get(nodo) !== this.officialLanguage)
 				if (this.languages.get(nodo).isIntelligible(this.officialLanguage) ||
@@ -339,7 +336,7 @@ export class Civ {
 					this.languages.set(nodo, this.officialLanguage);
 			const currentLect = this.languages.get(nodo);
 			if (!newLects.has(currentLect))
-				newLects.set(currentLect, new DeuteroLanguage(currentLect, rng));
+				newLects.set(currentLect, new DeuteroLang(currentLect, rng));
 			this.languages.set(nodo, newLects.get(currentLect));
 		}
 		if (this.nodos.has(this.capital))
@@ -364,7 +361,7 @@ export class Civ {
 	}
 
 	getName(convention: Convention = Convention.NASOMEDI): string {
-		return transcribe(this.officialLanguage.getCountryName(this.name), convention);
+		return transcribe(this.officialLanguage.getNamloge(this.capital.index%25, WordType.LOKONAM), convention);
 	}
 }
 
