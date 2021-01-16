@@ -988,6 +988,7 @@ export class ProtoLang {
 	private static P_CODA = 0.4;
 
 	private readonly rng: Random; // this language's personal rng generator
+	private readonly rightBranching: boolean; // whether it is right-branching
 	private readonly diversity: number; // the typical number of suffixes used for one type of word
 	private readonly nConson: number; // the number of consonants in this language
 	private readonly nVowel: number; // the number of vowels in this langugage
@@ -1006,7 +1007,8 @@ export class ProtoLang {
 
 	constructor(rng: Random) {
 		this.rng = rng;
-		this.diversity = rng.binomial(12, .3); // choose how much suffixing to do
+		this.rightBranching = rng.probability(0.2);
+		this.diversity = Math.floor(rng.exponential(3)); // choose how much suffixing to do
 		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
 		this.nVowel = 5 + rng.binomial(5, .1); // choose how many nuclei it will have
 		this.nMedial = (this.nConson > ProtoLang.R_INDEX) ? 4 : 0;
@@ -1072,16 +1074,18 @@ export class ProtoLang {
 	suffix(i: number, base0: number, affix0: number, affixN: number, obligatory: boolean) {
 		const baseI = base0 + i; // pick a base
 		const base = this.getLogomul(baseI); // get it
-		let numAffixen = affixN - affix0;
-		if (!obligatory)
-			numAffixen += 1;
-		const affixI = affix0 + i%Math.max(this.diversity, numAffixen); // pick an affix
+		const numAffixen = Math.min(this.diversity, affixN - affix0); // count how many options we have for affixen
+		const affixI = i%(numAffixen + (obligatory ? 0 : 1)); // pick an affix (if it's nonobligatory, none is also an option)
 		let affix: Fon[];
-		if (affixI < affixN)
-			affix = this.getLogomul(affixI); // get it
-		else
-			affix = []; // or get nothing if we've chosen to forgo an affix
-		return ProtoLang.STRESS.apply(base.concat([Fon.PAUSE]).concat(affix)); // remember to put a pause between them TODO: allow prefixen
+		if (affixI === numAffixen)
+			return ProtoLang.STRESS.apply(base); // choosing an out of bounds affix indicates that we have chosen no affix
+		else {
+			affix = this.getLogomul(affix0 + affixI); // otherwise get the chosen affix
+			if (this.rightBranching)
+				return ProtoLang.STRESS.apply(affix.concat([Fon.PAUSE]).concat(base)); // remember to put a pause between them
+			else
+				return ProtoLang.STRESS.apply(base.concat([Fon.PAUSE]).concat(affix));
+		}
 	}
 
 	getAncestor(n: number): Language {
