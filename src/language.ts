@@ -41,11 +41,11 @@ class Mode extends Enumify { // this should just be an enum, but JavaScript impl
 	static TAP = new Mode(3);
 	static TRILL = new Mode(3);
 	static CLOSE = new Mode(4);
+	static OPEN = new Mode(4.2);
 	static NEAR_CLOSE = new Mode(4);
+	static NEAR_OPEN = new Mode(4.2);
 	static CLOSE_MID = new Mode(4.1);
 	static OPEN_MID = new Mode(4.1);
-	static NEAR_OPEN = new Mode(4.2);
-	static OPEN = new Mode(4.2);
 	static CLICK = new Mode(-1);
 	static _ = Mode.closeEnum();
 
@@ -272,13 +272,12 @@ class Fon {
 				case PendaniSif.SIBILANT:
 					return (this.mode === Mode.AFFRICATE || this.mode === Mode.FRICATE) &&
 						(this.loke === Loke.ALVEOLAR || this.loke === Loke.POSTALVEOLAR);
-				case PendaniSif.RHOTIC:
-					return this.voze === Voze.VOICED && (
-						(this.is(PendaniSif.SONORANT) && this.is(PendaniSif.CONTINUANT) && (this.is(PendaniSif.CORONAL) || this.loke === Loke.UVULAR)) ||
-						(this.mode === Mode.FRICATE && this.loke === Loke.UVULAR));
 				case PendaniSif.LIQUID:
-					return this.is(PendaniSif.RHOTIC) ||
-						(this.latia === Latia.LATERAL && this.mode === Mode.CLOSE && this.is(PendaniSif.CORONAL));
+					return this.voze === Voze.VOICED && (
+						(this.is(PendaniSif.SONORANT) && !this.is(Mode.NASAL) && (this.is(PendaniSif.CORONAL) || this.loke === Loke.UVULAR)) ||
+						(this.mode === Mode.FRICATE && this.loke === Loke.UVULAR));
+				case PendaniSif.RHOTIC:
+					return this.is(PendaniSif.LIQUID) && !this.is(Latia.LATERAL);
 				case PendaniSif.VOCOID:
 					return this.mode.sonority >= Mode.CLOSE.sonority && this.latia === Latia.MEDIAN &&
 						this.loke.foner === Foner.DORSUM;
@@ -341,14 +340,14 @@ class Fon {
 			return this.mode.sonority
 				- ((this.latia === Latia.LATERAL) ? 1.5 : 0)
 				+ ((this.voze === Voze.VOICED) ? 0.75 : 0)
-				+ ((this.longia === Longia.LONG) ? 0.35 : 0)
+				+ ((this.longia === Longia.LONG) ? 0.05 : 0)
 	}
 }
 
 /** collection of phonological features */
 class Klas {
 	private readonly sa: Sif[]; // qualities this class explicitly has
-	private readonly na: Sif[]; // qualities this class explicitly does not have
+	readonly na: Sif[]; // qualities this class explicitly does not have
 	private readonly ka: string[]; // qualities this class might have
 
 	constructor(sa: Sif[], na: Sif[] = [], ka: string[] = []) {
@@ -482,7 +481,7 @@ class Klas {
 			loke = Loke.VELAR;
 		if (mode.sonority >= Mode.NEAR_OPEN.sonority) // snap open vowels to front or back depending on rounding TODO this is too restrictive
 			loke = (minorLoke === MinorLoke.LABIALIZED) ? Loke.VELAR : Loke.PALATAL;
-		if (mode === Mode.NEAR_CLOSE) // snap lax central vowels to front or back depending on rounding
+		if (mode === Mode.NEAR_CLOSE) // snap lax central vowels to front or back depending on rounding TODO make sure labial consonants aren't labialized
 			loke = (minorLoke === MinorLoke.LABIALIZED) ? Loke.VELAR : Loke.PALATAL;
 		if (loke === Loke.POSTALVEOLAR && mode === Mode.STOP) // turn postalveolar stops into affricates before they can be cast to dental
 			mode = Mode.AFFRICATE;
@@ -499,6 +498,10 @@ class Klas {
 			return fon; // cancel it
 		else // otherwise
 			return new Fon(mode, loke, voze, silabia, longia, latia, minorLoke, nosia); // bring it all together!
+	}
+
+	toString(): string {
+		return `Klas(+[${this.sa}], -[${this.na}])`;
 	}
 }
 
@@ -537,7 +540,7 @@ class FonMute {
 	apply(old: Fon[]): Fon[] {
 		const drowWen: Fon[] = []; // build the neWword in reverse
 		let i = old.length;
-		while (true) {
+		while (i >= 0) {
 			if (this.applies([Fon.PAUSE].concat(old.slice(0, i)), [Fon.PAUSE].concat(drowWen))) { // if it applies here,
 				for (let j = this.pa.length - 1; j >= 0; j --) { // fill in the replacement
 					if (this.idx[j] < this.ca.length)
@@ -551,8 +554,7 @@ class FonMute {
 			}
 			else { // if not
 				i -= 1;
-				if (i < 0) break;
-				drowWen.push(old[i]); // just add the next character of old
+				if (i >= 0) drowWen.push(old[i]); // just add the next character of old
 			}
 		}
 		return drowWen.reverse();
@@ -833,8 +835,7 @@ for (const row of harfiaTable) {
 }
 
 const PROCES_CHUZABLE: {chanse: number, proces: Proces}[] = [];
-const procesTable = loadTSV('proces.txt', /\s+/, /%/); // load the phonological processes
-for (const procesKitabe of procesTable) { // go through them
+for (const procesKitabe of loadTSV('proces.txt', /\s+/, /%/)) { // load the phonological processes
 	const chanse = Number.parseInt(procesKitabe[0])/1000;
 	if (procesKitabe[1] === 'mute') {
 		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
@@ -902,7 +903,7 @@ for (const procesKitabe of procesTable) { // go through them
 				idx.push(ca.length); // they index to len(ca), to indicate they don't need any reference foneme
 			}
 			else {
-				throw RangeError(`unintelligible symbol on line ${PROCES_CHUZABLE.length}: ${sinye}`);
+				throw RangeError(`unintelligible symbol near line ${PROCES_CHUZABLE.length}: ${sinye}`);
 			}
 		}
 		PROCES_CHUZABLE.push({chanse: chanse, proces:
@@ -1152,15 +1153,16 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([], [PendaniSif.SPOKEN]), baze: [], kode: 'Pau'},
 	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Gem'},
 	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
-	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
-	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
-	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
-	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
-	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
+	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'Asp'},
 	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
 	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
 	{klas: new Klas([MinorLoke.PHARANGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
-	{klas: new Klas([Silabia.UNSTRESSED]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},
+	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
+	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
+	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
+	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
+	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
+	{klas: new Klas([PendaniSif.SYLLABIC]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},
 	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
 	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'Prx'},
 ]

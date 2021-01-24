@@ -8,32 +8,44 @@
 %%		roundedness
 001 mute [ +HIGH +VOCOID ] > [ +UNROUND ] /									% unrounding of high vowels
 001 mute [ +PALATAL +VOCOID ] > [ +UNROUND ] /								% unrounding of front vowels
+001 mute [ +LOW ] > [ +UNROUND ] /											% unrounding of low vowels
 001 mute [ +VELAR +VOCOID ] > [ +LABIALIZ ] /								% rounding of back vowels
 %%		height
-100 mute [ +GLIDE ] > [ +CLOSE ] /											% correction of nonhigh semivowels
-100 mute [ +GLIDE -HIGH ] > [ +UNSTRESS ] /									% correction of nonhigh semivowels
+001 mute [ +GLIDE ] > [ +CLOSE ] /											% correction of nonhigh semivowels
+001 mute [ +GLIDE -HIGH ] > [ +UNSTRESS ] /									% correction of nonhigh semivowels
 %%		place
 001 mute [ +!PALATAL +OBSTR ] > [ +POSTALV ] /
 001 mute [ +BILAB +FRIC ] > [ +LABIODENT ] /
+001 mute [ +VELAR -VOCOID ] > [ +BILABIAL ] / _ [ +CORONAL ]				% kt > pt
 %%		lenition
 001 mute [ +UNSTRESS +VOWEL ] > ə /											% vowel reduction
-001 mute [ +SHORT +VOWEL ] > [ +LAX ] /
+001 mute [ +UNSTRESS +VOWEL ] > [ +LAX ] /									% stress-based laxing
+001 mute [ +SHORT +VOWEL ] > [ +LAX ] /										% length-based laxing
 001 mute [ +UNSTRESS +PALATAL -HIGH +VOWEL ] > [ +RAISED +LAX ] /			% weird ɛ~ɪ thing from Haw and Rus
 001 mute [ +LONG +NONSYLLAB ] > [ +SHORT ] /								% loss of gemination
 001 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on nonvowels
+001 mute [ +ALVEO +STOP ] > [ +VOICED +TAP ] / [ +VOCOID ] _ [ +VOWEL ]		% t flapping
+001 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +VELAR +STOP ]		% kl > kj
+001 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +STOP ]				% tl > tj
 %%		fortition
 001 mute [ +VOCOID ] > [ +TENSE ] /
 001 mute [ +STRESS +VOWEL ] > [ +TENSE ] /
 001 mute [ +LONG +VOWEL ] > [ +RAISED ] / _ [ -GLIDE ]						% Anglic vowel shift
+001 mute [ +TENUIS +STOP ] > [ +ASPIR ] / _ [ +STRESS ]
+001 mute [ +PRIMARY +MID ] > [ +NONSYLLAB +CLOSE ]0 [ +LOW ]0 / [ -GLIDE ] _% diphthongation of mid vowels I
+001 mute [ +PRIMARY +MID ] > [ +NONSYLLAB +CLOSE ]0 [ ]0 / [ -GLIDE ] _		% diphthongation of mid vowels II
+
 %%	ASSIMILATION
 %%		featural
+001 mute [ +VELAR -VOCOID ] > [ +BILABIAL ] / _ [ +LABIALIZ +VOWEL ]		% labiality assimilation I
+001 mute [ +VELAR -VOCOID ] > [ +BILABIAL ] / _ [ +LABIAL ]					% labiality assimilation II
 001 mute [ +ALVEO ] > [ +POSTALV ] / _ [ +PALATAL +NONSYLLAB ] /
 001 mute [ +VELAR ] > [ +PALATAL ] / _ [ +PALATAL -LOW ] /
 001 mute [ +ALVEO ] > [ +PALATAL ] / _ [ +PALATAL -LOW -MID ] /
 001 mute [ +OBSTR ]	> [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
 %%		combination
 001 mute [ +CORON +OCCL +OBSTR -STRESS ] [ +CORON ] > [ +LONG ]1 /			% assimilation of coronals
-100 mute [ +GLIDE ] [ +GLIDE ] > [ +LONG ]1 /								% assimilation of semivowels
+001 mute [ +GLIDE ] [ +GLIDE ] > [ +LONG ]1 /								% assimilation of semivowels
 001 mute [ +HIGH +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG ±loke ]0 /				% assimilation of ij
 001 mute [ +UNSTRESS +VOWEL ] [ +GLIDE ] > [ +LONG ]1 / _ [ +VOWEL ]		% assimilation of ij
 001 mute [ -HIGH +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG +MID ±loke ]0 /		% assimilation of aj and ej
@@ -42,6 +54,8 @@
 001 mute [ +VELAR +OCCL ] [ +ALVEO ] > [ +PALATAL ]1 /						% gn > ɲ
 001 mute [ +NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
 001 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +OCCL ]						% dm > nm
+001 mute [ +CORON +FRIC ] [ +VELAR +OBSTR ] > [ +POSTALV ]0 / _				% sk > ʃ
+001 mute [ +CORON +FRIC ] > [ +POSTALV ] / _ [ +RHOTIC ]					% sr > ʃr
 %%		secondary articulations
 001 mute [ -LABIAL +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization of dorsals
 001 mute [ -LABIAL +SPOKEN ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization
@@ -53,18 +67,26 @@
 001 harmonia tense vowel													% tense/lax harmony
 001 harmonia hight vowel													% height harmony
 001 harmonia front vowel													% frontness harmony
+
 %%	DISSIMILATION
 001 mute [ -LOW +VOWEL ] > [ +RAISED ] / _ [ -HIGH +VOWEL ]					% raising dissimilation
 001 mute [ -HIGH +VOWEL ] > [ +LOWERED ] / _ [ -LOW +VOWEL ] 				% lowering dissimilation
+001 mute [ +LABIAL +VOWEL ] > [ +UNROUND +PALATAL ] / [ +LABIAL +VOCOID ] _	% unrounding dissimilation
+
 %%	INSERTION
 001 mute > ə / [ +OCCL +OBSTR ] _ [ +OCCL ]
 001 mute > ʔ / # _ [ +VOWEL ]
 001 mute [ +!PALATAL -VOCOID ] > j [ +ALVEO ]0 / [ +SYLLAB ] _
+001 mute > j / [ +POSTALV ] _ [ +VOWEL ]
 001 mute [ +VOWEL ] > [ ]0 [ +NONSYLLAB +CLOSE +SHORT ]0 / _ [ +VOWEL ]		% diphthongization
+001 mute > a / [ +MID +VOWEL ] _ [ -VOCOID ] [ +LOW ]
+
 %%	DELETION
+001 mute [ +PALATAL +CLOSE +MEDIAN ] > / [ +CORONAL ] _						% yod dropping
 001 mute [ +NONSYLLAB ] > / [ +SPOKEN ] _ #									% loss of final consonant
 001 mute [ +VOCOID -STRESS ] > / [ +SPOKEN ] _ #							% loss of final vowel
 100 mute [ -SPOKEN ] > /													% elision of pauses
+
 %%	PROSIDY CHANGES
 020 silabe 1
 020 silabe 0
@@ -75,5 +97,6 @@
 015 acente left 0
 002 acente left 1
 002 acente left 2
+
 %%	OTHER
 1000 mute [ +EJECT +HIGH ] > [ +VOICE +SHORT ]0 [ +VOICE +SHORT +CLOSE +NONSYLLAB ]0 % handle the ejective vowel workaround

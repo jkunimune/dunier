@@ -98,12 +98,12 @@ e	e	e	e*	э	e	e	e	e	e	e	s	c	2
 ɵ	oe	o	ur	о	o	o	ë	o	ọ	ø	sw	m	2
 ɤ	o	e	u*	ы	o	o	ə̈	eo	ọ	y	s	v	2
 o	o	o	o*	о	o	o	o	o	o	o	sw	v	2
-ɛ	e	e	e*	э	e	e	e	e	ẹ	e	s	c	3
+ɛ	e	e	e*	э	e	e	e	ea	ẹ	e	s	c	3
 œ	oe	e	ur	ё	e	e	ö	oe	ẹ	ø	sw	c	3
 ə	oe	e	u*	а	e	e	ə	e	ẹ	y	s	m	3
 ɞ	oe	o	ur	о	o	o	ë	o	ọ	ø	sw	m	3
 ʌ	o	e	u*	ы	o	o	ə̈	eo	ọ	y	s	v	3
-ɔ	o	o	o*	о	o	o	o	o	ọ	o	sw	v	3
+ɔ	o	o	o*	о	o	o	o	oa	ọ	o	sw	v	3
 æ	ae	a	a*	э	a	a	ä	ae	ạ	æ	s	c	4
 ɐ	a	a	u*	а	a	a	a	a	ạ	a	sw	v	4
 a	a	a	a*	а	a	a	a	a	a	a	s	c	5
@@ -111,6 +111,7 @@ a	a	a	a*	а	a	a	a	a	a	a	s	c	5
 Xː	X̄	X	X-	X	X-	X	X̄	XX	X̄	X̄	Len	0	0
 Xː	Xx	x	*x	xX	xX	x	xX	xX	xX	xX	Gem	0	0
 X͡Y	Xh	Y	X	XY	X	Y	XY	XY	XY	XY	Aff	0	0
+Xʰ	Xh	X	X	X	X	X	Xh	Xh	Xh	Xh	Asp	0	0
 Xʷ	Xv	Xu	Xw	Xу	Xu	Xi	Xw	Xw	Xw	Xw	Lab	0	0
 Xʲ	Xj	Xi	Xy	Xь	Xy	Xu	Xj	Xy	X’	Xy	Pal	0	0
 Xˠ	X	Xu	X	Xь	X	X	Xg	Xg	X̴	Xg	Vel	0	0

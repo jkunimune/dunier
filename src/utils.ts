@@ -84,8 +84,7 @@ export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: Reg
 			line = line.replace(/\s+$/, '') // remove trailing whitespace
 			line = line.replace(/^\s+/, '') // remove leading whitespace
 		}
-		if (line.length !== 0) arr.push(line.split(delimiter));
-		else break;
+		if (line.length !== 0) arr.push(line.split(delimiter)); // if the line is nonempty, record it
 	}
 	return arr;
 }
