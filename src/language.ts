@@ -477,7 +477,12 @@ class Klas {
 				throw Error(`I can't understand ${akse}`);
 		}
 
+		if (mode === null)
+			console.error(`You tried to assign properties to silence in your overzealous attempt to mutate all of something into ${this}.`);
+
 		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
+			loke = Loke.VELAR;
+		if (loke === Loke.CENTRAL && mode.sonority < Mode.CLOSE.sonority) // turn central nonvowels into regular velar vowels
 			loke = Loke.VELAR;
 		if (mode.sonority >= Mode.NEAR_OPEN.sonority) // snap open vowels to front or back depending on rounding TODO this is too restrictive
 			loke = (minorLoke === MinorLoke.LABIALIZED) ? Loke.VELAR : Loke.PALATAL;
@@ -492,7 +497,7 @@ class Klas {
 				(mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
 				(voze === Voze.VOICED && loke === Loke.GLOTTAL) ||
 				(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
-				(mode === Mode.TRILL && loke.foner !== Foner.CORONA && loke !== Loke.BILABIAL && loke !== Loke.UVULAR) ||
+				(mode === Mode.TRILL && loke !== Loke.BILABIAL && loke !== Loke.DENTAL && loke !== Loke.UVULAR) ||
 				(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
 				(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is impossible for whatever reason
 			return fon; // cancel it
@@ -1160,6 +1165,8 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
 	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
 	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
+	{klas: new Klas([Voze.BREATHY]), baze: [Voze.VOICED], kode: 'Bre'},
+	{klas: new Klas([Voze.TENUIS, PendaniSif.SONORANT]), baze: [Voze.VOICED], kode: 'Dev'},
 	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
 	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
 	{klas: new Klas([PendaniSif.SYLLABIC]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},

@@ -12,32 +12,32 @@ v	v	v	v	в	b	v	v	v	v	v		ld	v
 n	n	n	n	н	n	n	n	n	n	n		d	n
 t	t	t	t	т	t	t	t	t	t	t		d	p
 d	d	d	d	д	d	d	d	d	d	d		d	b
-θ	th	z	th	ф	s	th	th	th	ṭ	th		d	f
-ð	d	d	th	д	z	dh	dh	dh	ḍ	dh		d	v
+θ	th	z	th	ф	s	t	th	th	ṭ	th		d	f
+ð	d	d	th	д	z	d	dh	dh	ḍ	dh		d	v
 t͡s	c	z	tz	ц	ts	c	c	ts	ts	z		ar	pf
 d͡z	z	z	z	дз	z	z	dz	dz	dz	z		ar	bv
 s	s	s	s	с	s	s	s	s	s	s		ar	f
 z	z	z	z	з	z	z	z	z	z	z		ar	v
-t͡ʃ	c'	ch	ch	ч	ty	ch	cj	ch	tṣ	c		pa	pf
+t͡ʃ	c'	ch	ch	ч	ty	c	cj	ch	tṣ	c		pa	pf
 d͡ʒ	j	y	j	дж	zy	j	dzj	j	dẓ	j		pa	bv
-ʃ	sc'	y	sh	ш	sy	sh	sj	sh	ṣ	x		pa	f
-ʒ	z	y	j	ж	zy	zh	zj	zh	ẓ	j		pa	v
+ʃ	sc'	y	sh	ш	sy	x	sj	sh	ṣ	x		pa	f
+ʒ	z	y	j	ж	zy	j	zj	zh	ẓ	j		pa	v
 t͡ɬ	cl	cl	cl	тль	tor	tl	tl	tl	tl	kl		d	pf
 d͡ɮ	gl	gl	gl	дль	dor	dl	dl	dl	dl	gl		d	bv
-ɬ	l	l	fl	ль	r	lh	ll	lh	lh	hl	l	d	f
+ɬ	l	l	fl	ль	r	l	ll	lh	lh	hl	l	d	f
 ɮ	l	l	l	л	r	l	dl	dl	dl	zl	l	d	v
 ɹ	r	r	r	р	a	r	r	r	r	r		d	a
 l	l	l	l	л	r	l	l	l	l	l	l	d	a
 r	r	rr	r	р	r	r	rr	r	r	r		d	r
 ɾ	r	r	r	р	r	r	r	r	r	r		d	t
 ɺ	r	r	l	р	r	l	lr	r	ṛ	r	l	d	t
-ɳ	n	n	n	н	n	n	ṇ	nr	ṇ	ṇ		rf	a
+ɳ	n	n	n	н	n	n	ṇ	nr	ṇ	ṇ		rf	n
 ʈ	t	t	t	т	t	t	ṭ	tr	ṭ	ṭ		rf	p
 ɖ	d	d	d	д	d	d	ḍ	dr	ḍ	ḍ		rf	b
-ʈ͡ʂ	c'	ch	ch	ч	ty	ch	cz	ch	tṣ	ch		rf	pf
+ʈ͡ʂ	c'	ch	ch	ч	ty	c	cz	ch	tṣ	ch		rf	pf
 ɖ͡ʐ	j	y	j	дж	zy	j	dz	j	dẓ	zh		rf	bv
-ʂ	sc'	y	sh	ш	sy	sh	ṣ	sh	ṣ	sh		rf	f
-ʐ	r	y	j	ж	zy	zh	ẓ	zh	ẓ	zh		rf	v
+ʂ	sc'	y	sh	ш	sy	x	ṣ	sh	ṣ	sh		rf	f
+ʐ	r	y	j	ж	zy	j	ẓ	zh	ẓ	zh		rf	v
 ɻ	r	r	r	р	a	r	rz	rh	ṛ	rh		rf	a
 ɭ	l	l	l	л	r	l	l	l	l	l	l	rf	a
 ɽ	r	r	r	р	r	r	rz	rh	ṛ	rh		rf	t
@@ -51,7 +51,7 @@ c	cj	cy	c	кь	ky	ky	kj	kh	ty	ky		c	p
 k	c	c	c	к	k	k	k	k	k	k		v	p
 ɡ	g	g	g	г	g	g	g	g	g	g		v	b
 x	ch	j	gh	х	h	h	kh	h	x	kh		v	f
-ɣ	g	g	g	г	g	gh	gh	gh	ġ	gh		v	v
+ɣ	g	g	g	г	g	g	gh	gh	ġ	gh		v	v
 ʟ	l	ll	y	ль	ry	l	lw	lw	lw	lw	l	v	a
 ɴ	n	n	ng	и	nn	ng	ng	ng	ng	ng		uv	n
 q	g	g	c	г	k	k	q	q	q	q		uv	p
@@ -108,12 +108,14 @@ o	o	o	o*	о	o	o	o	o	o	o	sw	v	2
 ɐ	a	a	u*	а	a	a	a	a	ạ	a	sw	v	4
 a	a	a	a*	а	a	a	a	a	a	a	s	c	5
 ɒ	o	o	o*	о	o	o	o	ao	ọ	a	sw	v	5
-Xː	X̄	X	X-	X	X-	X	X̄	XX	X̄	X̄	Len	0	0
-Xː	Xx	x	*x	xX	xX	x	xX	xX	xX	xX	Gem	0	0
-X͡Y	Xh	Y	X	XY	X	Y	XY	XY	XY	XY	Aff	0	0
+Xː	X̄	X	X-	X	X-	X	XX	Xh	X̄	X̄	Len	0	0
+Xː	Xx	X	xX	xX	xX	X	xX	xX	xX	xX	Gem	0	0
+X͡Y	Y	Y	X	XY	X	Y	XY	XY	XY	XY	Aff	0	0
 Xʰ	Xh	X	X	X	X	X	Xh	Xh	Xh	Xh	Asp	0	0
-Xʷ	Xv	Xu	Xw	Xу	Xu	Xi	Xw	Xw	Xw	Xw	Lab	0	0
-Xʲ	Xj	Xi	Xy	Xь	Xy	Xu	Xj	Xy	X’	Xy	Pal	0	0
+X̥	Xh	X	X	X	X	X	Xh	Xh	Xh	Xh	Dev	0	0
+X̤	X	X	X	X	X	X	Xh	Xh	Xh	Xh	Bre	0	0
+Xʷ	Xv	Xu	Xw	Xу	Xu	Xy	Xw	Xw	Xw	Xw	Lab	0	0
+Xʲ	Xj	Xi	Xy	Xь	Xy	Xw	Xj	Xy	X’	Xy	Pal	0	0
 Xˠ	X	Xu	X	Xь	X	X	Xg	Xg	X̴	Xg	Vel	0	0
 Xˤ	X	X	X	X	X	X	X̣	Xh	X̣	X̣	Pha	0	0
 X̃	X	X	X	X	Xnn	Xn	X̃	Xn	X̃	Ẍ	Nas	0	0
