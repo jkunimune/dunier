@@ -136,10 +136,12 @@ class PendaniSif extends Enumify {
 	static DORSAL = new PendaniSif();
 	static GUTTURAL = new PendaniSif();
 	static ALVEOLAR = new PendaniSif();
+	static NASAL = new PendaniSif();
 	static CONTINUANT = new PendaniSif();
 	static OCCLUSIVE = new PendaniSif();
 	static SONORANT = new PendaniSif();
 	static OBSTRUENT = new PendaniSif();
+	static VIBRANT = new PendaniSif();
 	static HIGH = new PendaniSif();
 	static MID = new PendaniSif();
 	static LOW = new PendaniSif();
@@ -156,6 +158,7 @@ class PendaniSif extends Enumify {
 	static VOCOID = new PendaniSif();
 	static GLIDE = new PendaniSif();
 	static VOWEL = new PendaniSif();
+	static SORDID = new PendaniSif();
 	static STRESSED = new PendaniSif();
 	static SYLLABIC = new PendaniSif();
 	static SPOKEN = new PendaniSif();
@@ -243,6 +246,8 @@ class Fon {
 					return this.loke.foner === Foner.DORSUM;
 				case PendaniSif.GUTTURAL:
 					return this.loke.foner === Foner.PHARYNX || this.minorLoke === MinorLoke.PHARANGEALIZED;
+				case PendaniSif.NASAL:
+					return this.mode === Mode.NASAL || this.nosia === Nosia.NASALIZED;
 				case PendaniSif.ALVEOLAR:
 					return this.is(Loke.ALVEOLAR) || (this.is(Loke.DENTAL) && this.mode !== Mode.FRICATE && this.mode !== Mode.AFFRICATE);
 				case PendaniSif.CONTINUANT:
@@ -253,6 +258,8 @@ class Fon {
 					return this.mode.sonority >= Mode.NASAL.sonority;
 				case PendaniSif.OBSTRUENT:
 					return !this.is(PendaniSif.SONORANT);
+				case PendaniSif.VIBRANT:
+					return this.mode === Mode.TAP || this.mode === Mode.TRILL;
 				case PendaniSif.HIGH:
 					return this.is(PendaniSif.VOCOID) && (this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE);
 				case PendaniSif.MID:
@@ -285,6 +292,8 @@ class Fon {
 					return this.silabia === Silabia.NONSYLLABIC && this.is(PendaniSif.VOCOID);
 				case PendaniSif.VOWEL:
 					return this.silabia !== Silabia.NONSYLLABIC && this.is(PendaniSif.VOCOID);
+				case PendaniSif.SORDID:
+					return this.voze !== Voze.VOICED && this.voze !== Voze.BREATHY;
 				case PendaniSif.STRESSED:
 					return this.silabia === Silabia.PRIMARY_STRESSED || this.silabia === Silabia.SECONDARY_STRESSED;
 				case PendaniSif.SYLLABIC:
@@ -341,6 +350,7 @@ class Fon {
 				- ((this.latia === Latia.LATERAL) ? 1.5 : 0)
 				+ ((this.voze === Voze.VOICED) ? 0.75 : 0)
 				+ ((this.longia === Longia.LONG) ? 0.05 : 0)
+				+ (this.is(PendaniSif.VOCOID) ? 1 : 0);
 	}
 }
 
@@ -494,6 +504,13 @@ class Klas {
 			if (![Mode.FRICATE, Mode.AFFRICATE].includes(mode) || latia === Latia.LATERAL) // simplify alveolar-ish sounds to dental
 				loke = Loke.DENTAL;
 		if (
+				(minorLoke === MinorLoke.LABIALIZED && loke.foner === Foner.LABIA) ||
+				(minorLoke === MinorLoke.PALATALIZED && (loke === Loke.PALATAL || loke === Loke.POSTALVEOLAR)) ||
+				(minorLoke === MinorLoke.VELARIZED && loke === Loke.VELAR) ||
+				(minorLoke === MinorLoke.PHARANGEALIZED && loke.foner === Foner.PHARYNX) ||
+				(nosia === Nosia.NASALIZED && mode === Mode.NASAL))
+			minorLoke = MinorLoke.UNROUNDED;
+		if (
 				(mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
 				(voze === Voze.VOICED && loke === Loke.GLOTTAL) ||
 				(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
@@ -636,10 +653,10 @@ class SilaboPoze {
 
 	/**
 	 * set up a new syllable placement system
-	 * @param bias a positive number indicates that /iu/ is [ju], negative indicates [iw], and zero indicates [iu]
+	 * @param bias a positive number indicates that /iuiu/ is [juju], negative indicates [iwiw], and zero indicates [iuiu]
 	 */
 	constructor(bias: number) {
-		this.bias = bias/100.;
+		this.bias = bias;
 	}
 
 	apply(old: Fon[]): Fon[] {
@@ -648,8 +665,10 @@ class SilaboPoze {
 			sonority.push(fon.getSonority());
 		const nov = old.slice(); // then copy the old word
 		for (let i = 0; i < old.length; i ++) { // and assign syllables accordingly
-			if ((i-1 < 0 || sonority[i] >= sonority[i-1] - this.bias) &&
-				(i+1 >= old.length || sonority[i] >= sonority[i+1] + this.bias)) // if it is a peak
+			const c = sonority[i];
+			const l = (i-1 >= 0) ? sonority[i-1] : Number.NEGATIVE_INFINITY;
+			const r = (i+1 < old.length) ? sonority[i+1] : Number.NEGATIVE_INFINITY;
+			if (c >= l && c >= r && !((this.bias < 0 && c === l && c < r) || (this.bias > 0 && c < l && c === r))) // if it is a peak
 				nov[i] = old[i].with(PendaniSif.SYLLABIC); // make it syllabic
 			else if (old[i].is(PendaniSif.SPOKEN)) // otherwise if it is a sound
 				nov[i] = old[i].with(Silabia.NONSYLLABIC); // make it nonsyllabic

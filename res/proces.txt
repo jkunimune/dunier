@@ -16,9 +16,31 @@
 %%		place
 001 mute [ +!PALATAL +OBSTR ] > [ +POSTALV ] /
 500 mute [ +BILAB +FRIC ] > [ +LABIODENT ] /
-100 mute [ +LABIAL +FRIC ] > [ +GLOT ] /									% f > h
-100 mute [ +SIBILANT +FRIC ] > [ +GLOT ] / _ [ -VOCOID ]					% s > h
+001 mute [ +LABIAL +FRIC ] > [ +GLOT ] /									% f > h
+001 mute [ +SIBILANT +FRIC ] > [ +GLOT ] / _ [ -VOCOID ]					% s > h
 001 mute [ +VELAR -VOCOID ] > [ +BILABIAL ] / _ [ +CORONAL ]				% kt > pt
+001 mute [ +POSTALV ] > [ +ALVEO ] /
+001 mute [ +VELAR ] > [ +UVULAR ] / _ [ +VELAR +VOCOID ]					% retraction before back vowels
+%%		manner
+001 mute [ +AFF ] > [ +FRIC ] /												% affricates to fricatives
+001 mute [ +VOICE +SIBILANT +FRIC ] > [ +AFF ] /							% ʒ > dʒ
+001 mute [ +VOICE +ALVEO +AFF ] > [ +FRIC ] /								% dz > z
+001 mute [ +VOICE +ALVEO +AFF ] > [ +TENUIS ] /								% dz > ts
+001 mute [ +LABIAL -VOICE +STOP ] > [ +TENUIS +FRIC ] /						% fricate p specifically
+001 mute [ +ASPIR +ALVEO +STOP ] > [ +ALVEO +AFF ] /						% the thing I do that no one else does
+001 mute [ +CORON +!NASAL ] > [ +LATERAL +CLOSE ] /							% n > l
+001 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +!NASAL ] /						% l > n
+001 mute [ +VIBR ] > [ +LATERAL +CLOSE ] / [ -ALVEO +OCCL ] _				% r > l
+001 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +TAP ] / [ +VOCOID ] _ [ +VOCOID ]	% l > ɾ
+001 mute [ +RHOTIC ] > [ +ALVEO +TAP ] /
+001 mute [ +RHOTIC ] > [ +ALVEO +TRILL ] /
+001 mute [ +RHOTIC ] > [ +UVULAR +TRILL ] /
+001 mute [ +RHOTIC ] > [ +RETRO +CLOSE ] /
+001 mute [ +LONG +TAP ] > [ +SHORT +TRILL ] /
+001 mute [ +UVULAR +TRILL ] > [ +FRIC ] /									% trills are hard
+001 mute [ +ALVEO +TRILL ] > [ +CLOSE ] /									% trills are hard
+001 mute [ +LABIALIZ +VELAR +GLIDE ] > [ +LABIODENT ] /
+001 mute [ +LABIODENT +CLOSE ] > [ +FRIC ] /
 %%		lenition
 001 mute [ +UNSTRESS +VOWEL ] > ə /											% vowel reduction
 001 mute [ +UNSTRESS +VOWEL ] > [ +LAX ] /									% stress-based laxing
@@ -26,44 +48,48 @@
 001 mute [ +UNSTRESS +PALATAL -HIGH +VOWEL ] > [ +RAISED +LAX ] /			% weird ɛ~ɪ thing from Haw and Rus
 001 mute [ +LONG +NONSYLLAB ] > [ +SHORT ] /								% loss of gemination
 001 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on nonvowels
-001 mute [ +ALVEO +STOP ] > [ +VOICED +TAP ] / [ +VOCOID ] _ [ +VOWEL ]		% t flapping
+001 mute [ +ALVEO +STOP ] > [ +VOICE +TAP ] / [ +VOCOID ] _ [ +VOWEL ]		% t flapping
+001 mute [ +VOICE +ALVEO +STOP ] > [ +LATERAL +CLOSE ] / [ +VOCOID ] _ [ +VOWEL ]% t lateralizing
 001 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +VELAR +STOP ] _	% kl > kj
 001 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +STOP ] _			% tl > tj
-100 mute [ +VOICE +OBSTR ] > [ +TENUIS ] / _								% voiced to tenuis
-100 mute [ -TENUIS +OCCL +OBSTR ] > [ +FRIC ] / [ +CONT ] _					% stop to fricative
-100 mute [ +ASPIR +OBSTR ] > [ +TENUIS ] /									% aspirated to tenuis
-500 mute [ +ASPIR +FRIC ] > [ +TENUIS ] /									% aspirated to tenuis
-100 mute [ +VOICE +OBSTR ] > [ +TENUIS ] /									% voiced to tenuis
-100 mute [ +VOICE +FRIC ] > [ +TENUIS ] /									% voiced to tenuis
-100 mute [ +BREATHY +OBSTR +OCCL ] > [ +ASPIR ] /							% breathy to aspirated
-500 mute [ +BREATHY +FRIC ] > [ +TENUIS ] /									% breathy to tenuis
-100 mute [ +BREATHY ] > [ +TENUIS ] /										% breathy to tenuis
-100 mute [ +OBSTR ] > [ +TENUIS ] / _ [ -VOCOID ]							% coda devoicing
-100 mute [ +LABIAL -VOICE +STOP ] > [ +TENUIS +FRIC ] /						% fricate p specifically
-100 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +TAP ] / [ +VOCOID ] _ [ +VOCOID ]	% l > ɾ
-100 mute [ -VOICE +SONOR ] > [ +FRIC ] /									% get rid of voiceless sonorants
-100 mute [ -VOICE +SONOR ] > [ +VOICE ] /									% get rid of voiceless sonorants
-100 mute [ -VOICE +SONOR ] > [ +TENUIS +GLOT +FRIC ] /						% get rid of voiceless sonorants
+001 mute [ -TENUIS +OCCL +OBSTR ] > [ +FRIC ] / [ +CONT ] _					% stop to fricative
+001 mute [ +ASPIR +OBSTR ] > [ +TENUIS ] /									% aspirated to tenuis
+001 mute [ +ASPIR +FRIC ] > [ +TENUIS ] /									% aspirated to tenuis
+001 mute [ +VOICE +OBSTR ] > [ +TENUIS ] /									% voiced to tenuis
+001 mute [ +VOICE +FRIC ] > [ +TENUIS ] /									% voiced to tenuis
+001 mute [ +VOICE +UVULAR +STOP ] > [ +TENUIS ] /							% voiced to tenuis, but specifically ɢ
+001 mute [ +VOICE +OBSTR ] > [ +BREATHY ] /									% voiced to breathy
+001 mute [ +BREATHY +OBSTR +OCCL ] > [ +ASPIR ] /							% breathy to aspirated
+001 mute [ +BREATHY +FRIC ] > [ +TENUIS ] /									% breathy to tenuis
+001 mute [ +BREATHY ] > [ +TENUIS ] /										% breathy to tenuis
+001 mute [ +OBSTR ] > [ +TENUIS ] / _ [ -VOICE ]							% coda devoicing
+001 mute [ -VOICE +SONOR ] > [ +FRIC ] /									% get rid of voiceless sonorants
+001 mute [ -VOICE +SONOR ] > [ +VOICE ] /									% get rid of voiceless sonorants
+001 mute [ -VOICE +SONOR ] > [ +TENUIS +GLOT +FRIC ] /						% get rid of voiceless sonorants
 %%		fortition
 001 mute [ +VOCOID ] > [ +TENSE ] /
 001 mute [ +STRESS +VOWEL ] > [ +TENSE ] /
 001 mute [ +LONG +VOWEL ] > [ +RAISED ] / _ [ -GLIDE ]						% Anglic vowel shift
 001 mute [ +OBSTR +OCCL -VOICE ] > [ +ASPIR ] / _ [ +STRESS ]				% tenuis to aspirated
-100 mute [ +OBSTR +OCCL -VOICE ] > [ +ASPIR ] / # _							% tenuis to aspirated
-100 mute [ +OBSTR -ASPIR ] > [ +VOICE ] / [ +VOICE ] _ [ +VOICE ]			% tenuis to voiced
-100 mute [ +TRILL ] > [ +TENUIS ] / [ -VOICE ] _							% devoice initial r
+001 mute [ +TENUIS ] > [ +ASPIR ] / # _										% tenuis to aspirated
+001 mute [ +OBSTR -ASPIR ] > [ +VOICE ] / [ +VOICE ] _ [ +VOICE ]			% tenuis to voiced
+001 mute [ +FRIC -ASPIR ] > [ +VOICE ] / [ +VOICE ] _ [ +VOICE ]			% tenuis to voiced
+001 mute [ +TENUIS ] > [ +VOICE ] /											% tenuis to voiced
+100 mute [ +SIBILANT +FRIC ] > [ +VOICE ] / [ -SORD ] _ [ +VOICE ]			% s > z
+100 mute [ +SIBILANT +FRIC ] > [ +VOICE ] / [ +VOICE ] _ [ -SORD ]			% s > z
+001 mute [ +TRILL ] > [ +TENUIS ] / [ -VOICE ] _							% devoice initial r
 001 mute [ +PRIMARY +MID ] > [ +NONSYLLAB +CLOSE ]0 [ +LOW ]0 / [ -GLIDE ] _% diphthongation of mid vowels I
 001 mute [ +PRIMARY +MID ] > [ +NONSYLLAB +CLOSE ]0 [ ]0 / [ -GLIDE ] _		% diphthongation of mid vowels II
 
 %%	ASSIMILATION
 %%		featural
-001 mute [ +VELAR -VOCOID ] > [ +BILABIAL ] / _ [ +LABIALIZ +VOWEL ]		% labiality assimilation I
+001 mute [ +VELAR -VOCOID ] > [ +BILABIAL ] / _ [ +LABIALIZ ]				% labiality assimilation I
 001 mute [ +VELAR -VOCOID ] > [ +BILABIAL ] / _ [ +LABIAL ]					% labiality assimilation II
 001 mute [ +ALVEO ] > [ +POSTALV ] / _ [ +PALATAL +NONSYLLAB ] /
 001 mute [ +VELAR ] > [ +PALATAL ] / _ [ +PALATAL -LOW ] /
 001 mute [ +ALVEO ] > [ +PALATAL ] / _ [ +PALATAL -LOW -MID ] /
 001 mute [ +OBSTR ]	> [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
-100 mute [ +SHORT -LOW -MID -ASPIR ] > [ +TENUIS ] / [ -VOICE +SPOKEN ] _ [ -VOICE ]% vowel devoicing
+001 mute [ -LOW -MID -ASPIR ] > [ +TENUIS ] / [ -VOICE +SPOKEN ] _ [ -VOICE ]% vowel devoicing
 %%		combination
 001 mute [ +CORON +OCCL +OBSTR -STRESS ] [ +CORON ] > [ +LONG ]1 /			% assimilation of coronals
 001 mute [ +GLIDE ] [ +GLIDE ] > [ +LONG ]1 /								% assimilation of semivowels
@@ -73,19 +99,20 @@
 001 mute [ +SONOR -VOCOID -STRESS ] [ +SONOR -VOCOID ] > [ +LONG ]1 /		% assimilation of sonorants
 001 mute [ +FRIC -STRESS ] [ +FRIC ] > [ +LONG ]1 /							% assimilation of fricatives
 001 mute [ +VELAR +OCCL ] [ +ALVEO ] > [ +PALATAL ]1 /						% gn > ɲ
-001 mute [ +NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
-001 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +OCCL ]						% dm > nm
+001 mute [ +!NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
+001 mute [ +VOICE +OCCL ] > [ +!NASAL ] / _ [ +OCCL ]						% dm > nm
 001 mute [ +CORON +FRIC ] [ +VELAR +OBSTR ] > [ +POSTALV ]0 / _				% sk > ʃ
 001 mute [ +CORON +OBSTR ] > [ +POSTALV ] / _ [ +CORONAL +CLOSE ]			% sɹ > ʃɹ
-100 mute [ +CORON -RHOTIC ] [ +RHOTIC ] > [ +RETRO ]0 / _					% sr > ʂ
-100 mute [ -VOICE +OBSTR ] [ +GLOT +FRIC ] > [ +ASPIR ]0 /					% I made this one up
-500 mute [ +VOICE +OBSTR ] [ +GLOT +FRIC ] > [ +BREATHY ]0 /				% this one too
+001 mute [ +CORON -RHOTIC ] [ +RHOTIC ] > [ +RETRO ]0 / _					% sr > ʂ
+001 mute [ -VOICE +OBSTR ] [ -VOICE +FRIC ] > [ +ASPIR ]0 /					% fricative > aspiration
+001 mute [ +VOICE +OBSTR ] [ -VOICE +FRIC ] > [ +BREATHY ]0 /				% fricative > aspiration
 %%		secondary articulations
-001 mute [ -LABIAL +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization of dorsals
-001 mute [ -LABIAL +SPOKEN ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization
-001 mute [ -PALATAL +SPOKEN -VOCOID ] > [ +PALATALIZ ] / _ [ +PALATAL +SYLLAB -LOW ]% palatalization
+001 mute [ +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization of dorsals
+001 mute [ +SPOKEN ] > [ +LABIALIZ ] / _ [ +LABIAL +SYLLAB ]		% labialization
+001 mute [ +SPOKEN -VOCOID ] > [ +PALATALIZ ] / _ [ +PALATAL +SYLLAB -LOW ]% palatalization
+001 mute [ +SPOKEN -VOCOID ] > [ +PALATALIZ ] / [ +PALATAL +SYLLAB -LOW ] _% palatalization
 001 mute [ -VELAR +SPOKEN -VOCOID ] > [ +VELARIZ ] / _ [ +VELAR +SYLLAB -LOW ]% velarization TODO: this isn't how velarization works
-001 mute [ -NASAL +SONOR ] > [ +NASALIZ ] / _ [ +NASAL ]					% nasalization
+001 mute [ +SONOR ] > [ +NASALIZ ] / _ [ +NASAL ]							% nasalization
 %%		vowel harmony
 001 harmonia round vowel													% rounding harmony
 001 harmonia tense vowel													% tense/lax harmony
