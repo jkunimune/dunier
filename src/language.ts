@@ -119,7 +119,7 @@ class MinorLoke extends Enumify {
 	static LABIALIZED = new MinorLoke();
 	static PALATALIZED = new MinorLoke();
 	static VELARIZED = new MinorLoke();
-	static PHARANGEALIZED = new MinorLoke();
+	static PHARYNGEALIZED = new MinorLoke();
 	static _ = MinorLoke.closeEnum();
 }
 
@@ -245,7 +245,7 @@ class Fon {
 				case PendaniSif.DORSAL:
 					return this.loke.foner === Foner.DORSUM;
 				case PendaniSif.GUTTURAL:
-					return this.loke.foner === Foner.PHARYNX || this.minorLoke === MinorLoke.PHARANGEALIZED;
+					return this.loke.foner === Foner.PHARYNX || this.minorLoke === MinorLoke.PHARYNGEALIZED;
 				case PendaniSif.NASAL:
 					return this.mode === Mode.NASAL || this.nosia === Nosia.NASALIZED;
 				case PendaniSif.ALVEOLAR:
@@ -271,11 +271,11 @@ class Fon {
 				case PendaniSif.LAX:
 					return this.mode === Mode.NEAR_CLOSE || this.mode === Mode.OPEN_MID || this.mode === Mode.NEAR_OPEN;
 				case PendaniSif.PALATAL:
-					return this.loke === Loke.PALATAL || this.loke === Loke.POSTALVEOLAR || this.minorLoke === MinorLoke.PALATALIZED;
+					return !this.is(PendaniSif.LOW) && (this.loke === Loke.PALATAL || this.loke === Loke.POSTALVEOLAR || this.minorLoke === MinorLoke.PALATALIZED);
 				case PendaniSif.VELAR:
-					return this.loke === Loke.VELAR || this.minorLoke === MinorLoke.VELARIZED;
+					return !this.is(PendaniSif.LOW) && (this.loke === Loke.VELAR || this.minorLoke === MinorLoke.VELARIZED);
 				case PendaniSif.PHARANGEAL:
-					return this.loke === Loke.EPIGLOTTAL || this.minorLoke === MinorLoke.PHARANGEALIZED;
+					return this.loke === Loke.EPIGLOTTAL || this.minorLoke === MinorLoke.PHARYNGEALIZED;
 				case PendaniSif.SIBILANT:
 					return (this.mode === Mode.AFFRICATE || this.mode === Mode.FRICATE) &&
 						(this.loke === Loke.ALVEOLAR || this.loke === Loke.POSTALVEOLAR);
@@ -494,29 +494,42 @@ class Klas {
 			loke = Loke.VELAR;
 		if (loke === Loke.CENTRAL && mode.sonority < Mode.CLOSE.sonority) // turn central nonvowels into regular velar vowels
 			loke = Loke.VELAR;
-		if (mode.sonority >= Mode.NEAR_OPEN.sonority) // snap open vowels to front or back depending on rounding TODO this is too restrictive
+
+		if (mode === Mode.NEAR_CLOSE) // snap close-mid central vowels to front or back depending on rounding
 			loke = (minorLoke === MinorLoke.LABIALIZED) ? Loke.VELAR : Loke.PALATAL;
-		if (mode === Mode.NEAR_CLOSE) // snap lax central vowels to front or back depending on rounding TODO make sure labial consonants aren't labialized
-			loke = (minorLoke === MinorLoke.LABIALIZED) ? Loke.VELAR : Loke.PALATAL;
+
+		if (mode.sonority >= Mode.NEAR_OPEN.sonority && minorLoke === MinorLoke.LABIALIZED) // snap rounded low vowel to back
+			loke = Loke.VELAR;
+		if (mode === Mode.NEAR_OPEN && minorLoke === MinorLoke.LABIALIZED) // snap near-open vowels to the nearest IPA symbol
+			mode = Mode.OPEN_MID;
+		if (mode === Mode.NEAR_OPEN && loke === Loke.VELAR)
+			loke = Loke.CENTRAL;
+
+		if ((minorLoke === MinorLoke.LABIALIZED && loke.foner === Foner.LABIA) ||
+			(minorLoke === MinorLoke.PALATALIZED && (loke === Loke.POSTALVEOLAR || loke === Loke.PALATAL)) ||
+			(minorLoke === MinorLoke.VELARIZED && loke === Loke.VELAR) ||
+			(minorLoke === MinorLoke.PHARYNGEALIZED && loke.foner === Foner.PHARYNX)) // make sure the secondary articulation does not conflict with the primary articulation
+			minorLoke = MinorLoke.UNROUNDED;
+		if (nosia === Nosia.NASALIZED && mode === Mode.NASAL) // make sure nasal consonants are not also nasalized
+			nosia = Nosia.ORAL;
+
 		if (loke === Loke.POSTALVEOLAR && mode === Mode.STOP) // turn postalveolar stops into affricates before they can be cast to dental
 			mode = Mode.AFFRICATE;
 		if ([Loke.DENTAL, Loke.ALVEOLAR, Loke.POSTALVEOLAR].includes(loke))
 			if (![Mode.FRICATE, Mode.AFFRICATE].includes(mode) || latia === Latia.LATERAL) // simplify alveolar-ish sounds to dental
 				loke = Loke.DENTAL;
-		if (
-				(minorLoke === MinorLoke.LABIALIZED && loke.foner === Foner.LABIA) ||
-				(minorLoke === MinorLoke.PALATALIZED && (loke === Loke.PALATAL || loke === Loke.POSTALVEOLAR)) ||
-				(minorLoke === MinorLoke.VELARIZED && loke === Loke.VELAR) ||
-				(minorLoke === MinorLoke.PHARANGEALIZED && loke.foner === Foner.PHARYNX) ||
-				(nosia === Nosia.NASALIZED && mode === Mode.NASAL))
+		if ((minorLoke === MinorLoke.LABIALIZED && loke.foner === Foner.LABIA) ||
+			(minorLoke === MinorLoke.PALATALIZED && (loke === Loke.PALATAL || loke === Loke.POSTALVEOLAR)) ||
+			(minorLoke === MinorLoke.VELARIZED && loke === Loke.VELAR) ||
+			(minorLoke === MinorLoke.PHARYNGEALIZED && loke.foner === Foner.PHARYNX) ||
+			(nosia === Nosia.NASALIZED && mode === Mode.NASAL))
 			minorLoke = MinorLoke.UNROUNDED;
-		if (
-				(mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
-				(voze === Voze.VOICED && loke === Loke.GLOTTAL) ||
-				(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
-				(mode === Mode.TRILL && loke !== Loke.BILABIAL && loke !== Loke.DENTAL && loke !== Loke.UVULAR) ||
-				(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
-				(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is impossible for whatever reason
+		if ((mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
+			(voze === Voze.VOICED && loke === Loke.GLOTTAL) ||
+			(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
+			(mode === Mode.TRILL && loke !== Loke.BILABIAL && loke !== Loke.DENTAL && loke !== Loke.UVULAR) ||
+			(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
+			(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is impossible for whatever reason
 			return fon; // cancel it
 		else // otherwise
 			return new Fon(mode, loke, voze, silabia, longia, latia, minorLoke, nosia); // bring it all together!
@@ -547,7 +560,7 @@ class FonMute {
 
 	constructor(ca: Klas[], pa: Klas[], idx: number[], bada: Klas[], chena: Klas[]) {
 		if (idx.length !== pa.length)
-			throw RangeError("The pa array must be properly indexed.");
+			throw RangeError(`The pa array must be properly indexed: ${ca} > ${pa} / ${bada} _ ${chena}`);
 		this.ca = ca;
 		this.pa = pa;
 		this.idx = idx;
@@ -788,16 +801,16 @@ function apply_diacritic(diacritic: string, fon: Fon[], convention: Convention):
 			let x = X.slice(0, 1);
 			if (fon[0].mode === Mode.AFFRICATE)
 				x = lookUp(fon[0].with(Mode.STOP), convention).slice(0, 1);
-			graf = diacritic.replace('x', x);
+			graf = graf.replace('x', x);
 		}
-		if (diacritic.includes('Y')) {
-			let Y = lookUp(fon[1], convention);
-			graf = graf.replace('Y', Y);
-			if (diacritic.includes('Z')) {
-				let Z = lookUp(fon[2], convention);
-				graf = graf.replace('Z', Z);
-			}
-		}
+	}
+	if (diacritic.includes('Y')) {
+		let Y = lookUp(fon[1], convention);
+		graf = graf.replace('Y', Y);
+	}
+	if (diacritic.includes('Z')) {
+		let Z = lookUp(fon[2], convention);
+		graf = graf.replace('Z', Z);
 	}
 	return graf;
 }
@@ -846,7 +859,7 @@ for (const row of harfiaTable) {
 	if (sif[2] !== '0') {
 		const silabia = sif[0].includes('s') ? Silabia.UNSTRESSED : Silabia.NONSYLLABIC;
 		const latia = sif[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
-		const aliSif = sif[0].includes('w') ? MinorLoke.LABIALIZED : MinorLoke.UNROUNDED;
+		const aliSif = sif[0].includes('w') ? MinorLoke.LABIALIZED : sif[0].includes('v') ? MinorLoke.VELARIZED : MinorLoke.UNROUNDED;
 		const loke = LOKE_KODE.get(sif[1]);
 		const {mode, voze} = MODE_KODE.get(sif[2]);
 		const foneme = new Fon(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
@@ -1178,9 +1191,11 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Gem'},
 	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
 	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'Asp'},
+	{klas: new Klas([Loke.LINGUOLABIAL, Latia.LATERAL]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'LnL'},
+	{klas: new Klas([Loke.LINGUOLABIAL]), baze: [Loke.BILABIAL, Loke.DENTAL], kode: 'LnL'},
 	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
+	{klas: new Klas([MinorLoke.PHARYNGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
 	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
-	{klas: new Klas([MinorLoke.PHARANGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
 	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
 	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
 	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
@@ -1188,7 +1203,7 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([Voze.TENUIS, PendaniSif.SONORANT]), baze: [Voze.VOICED], kode: 'Dev'},
 	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
 	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
-	{klas: new Klas([PendaniSif.SYLLABIC]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},
+	{klas: new Klas([PendaniSif.SYLLABIC], [PendaniSif.VOCOID]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},
 	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
 	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'Prx'},
 ]
