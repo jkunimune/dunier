@@ -524,8 +524,9 @@ class Klas {
 			(minorLoke === MinorLoke.PHARYNGEALIZED && loke.foner === Foner.PHARYNX) ||
 			(nosia === Nosia.NASALIZED && mode === Mode.NASAL))
 			minorLoke = MinorLoke.UNROUNDED;
+
 		if ((mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
-			(voze === Voze.VOICED && loke === Loke.GLOTTAL) ||
+			((voze === Voze.VOICED || voze === Voze.BREATHY) && loke === Loke.GLOTTAL && mode === Mode.STOP) ||
 			(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
 			(mode === Mode.TRILL && loke !== Loke.BILABIAL && loke !== Loke.DENTAL && loke !== Loke.UVULAR) ||
 			(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
@@ -602,6 +603,8 @@ class FonMute {
 	 */
 	applies(oldWord: Fon[], novWord: Fon[]) {
 		if (this.chen.length + this.ca.length > oldWord.length || this.bade.length > novWord.length)
+			return false;
+		if (this.ca.length === 1 && this.chen.length > 0 && this.bade.length > 0 && oldWord[oldWord.length - 1].longia === Longia.LONG) // geminates are immune to /X_X processes
 			return false;
 		for (let j = 0; j < this.chen.length; j ++) // start with the left half of the context
 			if (!this.chen[j].macha(oldWord[j - this.ca.length - this.chen.length + oldWord.length])) // check if it matches
@@ -681,7 +684,7 @@ class SilaboPoze {
 			const c = sonority[i];
 			const l = (i-1 >= 0) ? sonority[i-1] : Number.NEGATIVE_INFINITY;
 			const r = (i+1 < old.length) ? sonority[i+1] : Number.NEGATIVE_INFINITY;
-			if (c >= l && c >= r && !((this.bias < 0 && c === l && c < r) || (this.bias > 0 && c < l && c === r))) // if it is a peak
+			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) // if it is a peak
 				nov[i] = old[i].with(PendaniSif.SYLLABIC); // make it syllabic
 			else if (old[i].is(PendaniSif.SPOKEN)) // otherwise if it is a sound
 				nov[i] = old[i].with(Silabia.NONSYLLABIC); // make it nonsyllabic
@@ -1148,7 +1151,12 @@ export class DeuteroLang {
 	}
 
 	getNamloge(i: number, type: WordType) {
-		return this.applyChanges(this.parent.getNamloge(i, type));
+		const thing = this.applyChanges(this.parent.getNamloge(i, type));
+		if (thing.length === 5 && transcribe(thing) === 'wwjww') {
+			console.log(this.changes);
+			throw "aaaaaad";
+		}
+		return thing;
 	}
 
 	applyChanges(lekse: Fon[]): Fon[] {
