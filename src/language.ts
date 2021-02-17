@@ -251,7 +251,7 @@ class Fon {
 				case PendaniSif.ALVEOLAR:
 					return this.is(Loke.ALVEOLAR) || (this.is(Loke.DENTAL) && this.mode !== Mode.FRICATE && this.mode !== Mode.AFFRICATE);
 				case PendaniSif.CONTINUANT:
-					return this.mode === Mode.FRICATE || this.mode.sonority >= Mode.CLOSE.sonority;
+					return this.mode === Mode.FRICATE || this.mode === Mode.TRILL || this.mode.sonority >= Mode.CLOSE.sonority;
 				case PendaniSif.OCCLUSIVE:
 					return !this.is(PendaniSif.CONTINUANT);
 				case PendaniSif.SONORANT:
@@ -505,6 +505,9 @@ class Klas {
 		if (mode === Mode.NEAR_OPEN && loke === Loke.VELAR)
 			loke = Loke.CENTRAL;
 
+		if (mode === Mode.STOP || mode === Mode.NASAL)
+			latia = Latia.MEDIAN;
+
 		if ((minorLoke === MinorLoke.LABIALIZED && loke.foner === Foner.LABIA) ||
 			(minorLoke === MinorLoke.PALATALIZED && (loke === Loke.POSTALVEOLAR || loke === Loke.PALATAL)) ||
 			(minorLoke === MinorLoke.VELARIZED && loke === Loke.VELAR) ||
@@ -666,30 +669,41 @@ class Harmonia {
  */
 class SilaboPoze {
 	private readonly bias: number; // amount to prefer earlier or later syllables
+	private readonly minSonority: number; // minimum allowable sonority of a nucleus
 
 	/**
 	 * set up a new syllable placement system
-	 * @param bias a positive number indicates that /iuiu/ is [juju], negative indicates [iwiw], and zero indicates [iuiu]
+	 * @param bias a positive number indicates that /iuiu/ is [juju], negative indicates [iwiw],
+	 * and zero indicates [iuiu]
+	 * @param minSonority the sonority of the most sordid allowable nucleus; if a peak is too sordid,
+	 * a schwa will be inserted
 	 */
-	constructor(bias: number) {
+	constructor(bias: number, minSonority: number) {
 		this.bias = bias;
+		this.minSonority = minSonority;
 	}
 
 	apply(old: Fon[]): Fon[] {
 		const sonority = [];
 		for (const fon of old) // first calculate the sonorities
 			sonority.push(fon.getSonority());
-		const nov = old.slice(); // then copy the old word
+		const nov = []; // then copy the old word
 		for (let i = 0; i < old.length; i ++) { // and assign syllables accordingly
 			const c = sonority[i];
 			const l = (i-1 >= 0) ? sonority[i-1] : Number.NEGATIVE_INFINITY;
 			const r = (i+1 < old.length) ? sonority[i+1] : Number.NEGATIVE_INFINITY;
-			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) // if it is a peak
-				nov[i] = old[i].with(PendaniSif.SYLLABIC); // make it syllabic
+			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) { // if it is a peak
+				if (old[i].getSonority() < this.minSonority) {
+					nov.push(new Fon(Mode.OPEN_MID, Loke.CENTRAL, Voze.VOICED, old[i].silabia, Longia.SHORT, Latia.MEDIAN, MinorLoke.UNROUNDED, Nosia.ORAL).with(PendaniSif.SYLLABIC));
+					nov.push(old[i].with(Silabia.NONSYLLABIC)); // insert an epenthetic schwa or
+				}
+				else
+					nov.push(old[i].with(PendaniSif.SYLLABIC)); // make it syllabic
+			}
 			else if (old[i].is(PendaniSif.SPOKEN)) // otherwise if it is a sound
-				nov[i] = old[i].with(Silabia.NONSYLLABIC); // make it nonsyllabic
+				nov.push(old[i].with(Silabia.NONSYLLABIC)); // make it nonsyllabic
 			else
-				nov[i] = old[i]; // ignore pauses
+				nov.push(old[i]); // ignore pauses
 		}
 		return nov;
 	}
@@ -965,9 +979,10 @@ for (const procesKitabe of loadTSV('proces.txt', /\s+/, /%/)) { // load the phon
 							new AcentoPoze(reverse, headSize, attractors, tailMode, lengthen)});
 	}
 	else if (procesKitabe[1] === 'silabe') {
-		const bias = Number.parseInt(procesKitabe[2]);
-		PROCES_CHUZABLE.push({chanse: chanse, proces:
-				new SilaboPoze(bias)});
+		const minSilabia = Number.parseInt(procesKitabe[2]);
+		for (let bias = -1; bias <= 1; bias ++)
+			PROCES_CHUZABLE.push({chanse: chanse/3, proces:
+					new SilaboPoze(bias, minSilabia)});
 	}
 	else {
 		throw `unrecognized process classification: ${procesKitabe[1]}`;
@@ -1030,7 +1045,8 @@ export class ProtoLang {
 
 	private readonly rng: Random; // this language's personal rng generator
 	private readonly rightBranching: boolean; // whether it is right-branching
-	private readonly diversity: number; // the typical number of suffixes used for one type of word
+	private readonly diversity: number; // the typical number of lexical suffixes used for one type of word
+	private readonly genders: number; // the typical number of gender suffixes used for nouns
 	private readonly nConson: number; // the number of consonants in this language
 	private readonly nVowel: number; // the number of vowels in this langugage
 	private readonly nMedial: number; // the numer of medials in this language
@@ -1044,28 +1060,33 @@ export class ProtoLang {
 	 * [25, 150) - generic roots
 	 * @param i the index of the word, in [0, 150).
 	 */
-	private readonly loge: Fon[][];
+	private readonly logomul: Fon[][];
+	private readonly logofin: Fon[][];
 
 	constructor(rng: Random) {
 		this.rng = rng;
 		this.rightBranching = rng.probability(0.2);
-		this.diversity = Math.floor(rng.exponential(3)); // choose how much suffixing to do
+		this.diversity = Math.floor(rng.exponential(3)); // choose how much lexical suffixing to do
+		this.genders = Math.floor(rng.exponential(2)); // choose how much basic suffixing to do
 		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
 		this.nVowel = 5 + rng.binomial(5, .1); // choose how many nuclei it will have
 		this.nMedial = (this.nConson > ProtoLang.R_INDEX) ? 4 : 0;
 		this.complexity = 2*Math.log10(1 + this.nConson)
 			+ Math.log10(1 + this.nMedial) + Math.log10(1 + this.nVowel);
-		this.loge = new Array<Fon[]>(150);
-		if (rng.probability(.3))
-			this.loge[8] = ipa("ia"); // this is sometimes here
+		this.logomul = new Array<Fon[]>(150);
+		this.logofin = new Array<Fon[]>(this.genders);
+		if (rng.probability(.5))
+			this.logomul[8] = ipa("ia"); // this is sometimes here
 	}
 
-	getLogomul(i: number): Fon[] {
-		if (i < 0 || i >= 150)
+	getLoge(asle: Fon[][], i: number): Fon[] {
+		if (i < 0 || i >= asle.length)
 			throw RangeError("baka.");
-		if (this.loge[i] === undefined)
-			this.loge[i] = this.newWord(Math.ceil((i < 25 ? 2 : 4)/this.complexity), this.rng);
-		return this.loge[i];
+		if (asle[i] === undefined) {
+			const nSyl = (asle === this.logofin) ? 2/3 : Math.ceil((i < 25 ? 2 : 4)/this.complexity);
+			asle[i] = this.newRoot(nSyl, this.rng);
+		}
+		return asle[i];
 	}
 
 	getNamloge(i: number, type: WordType): Fon[] {
@@ -1087,18 +1108,20 @@ export class ProtoLang {
 
 	/**
 	 * generate a new random word root
-	 * @param nSyllables
+	 * @param nSyllables the number of syllables in the word, or less than one to indicate a syllable with fewer letters
 	 * @param rng
 	 */
-	newWord(nSyllables: number, rng: Random): Fon[] {
+	newRoot(nSyllables: number, rng: Random): Fon[] {
 		const lekse = [];
+		const reduccion = Math.min(1, nSyllables);
 		for (let i = 0; i < nSyllables; i ++) {
-			if (rng.probability(ProtoLang.P_ONSET))
+			if (rng.probability(ProtoLang.P_ONSET*reduccion))
 				lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
-			if (this.nMedial > 0 && rng.probability(ProtoLang.P_MEDIAL))
+			if (this.nMedial > 0 && rng.probability(ProtoLang.P_MEDIAL*reduccion))
 				lekse.push(rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
-			lekse.push(rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
-			if (rng.probability(ProtoLang.P_CODA))
+			if (rng.probability(reduccion))
+				lekse.push(rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
+			if (rng.probability(ProtoLang.P_CODA*reduccion))
 				lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
 		}
 		return lekse;
@@ -1106,27 +1129,29 @@ export class ProtoLang {
 
 	/**
 	 * create a new word derivative based on roots
-	 * @param i
+	 * @param baseI
 	 * @param base0
 	 * @param affix0
 	 * @param affixN
 	 * @param obligatory whether the affix cannot be noting
 	 */
-	suffix(i: number, base0: number, affix0: number, affixN: number, obligatory: boolean) {
-		const baseI = base0 + i; // pick a base
-		const base = this.getLogomul(baseI); // get it
+	suffix(baseI: number, base0: number, affix0: number, affixN: number, obligatory: boolean) {
+		const base = this.getLoge(this.logomul, base0 + baseI); // get the base
 		const numAffixen = Math.min(this.diversity, affixN - affix0); // count how many options we have for affixen
-		const affixI = i%(numAffixen + (obligatory ? 0 : 1)); // pick an affix (if it's nonobligatory, none is also an option)
-		let affix: Fon[];
+		const affixI = baseI%(numAffixen + (obligatory ? 0 : 1)); // pick an affix (if it's nonobligatory, none is also an option)
+		const endingI = affixI%this.genders; // pick a word ending (if genders==0, there should be no ending)
+		const ending = Number.isNaN(endingI) ? [] : this.getLoge(this.logofin, endingI); // get the word ending
+		let loge: Fon[];
 		if (affixI === numAffixen)
-			return ProtoLang.STRESS.apply(base); // choosing an out of bounds affix indicates that we have chosen no affix
+			loge = base; // choosing an out of bounds affix indicates that we have chosen no affix
 		else {
-			affix = this.getLogomul(affix0 + affixI); // otherwise get the chosen affix
+			const affix = this.getLoge(this.logomul, affix0 + affixI); // otherwise get the chosen affix
 			if (this.rightBranching)
-				return ProtoLang.STRESS.apply(affix.concat([Fon.PAUSE]).concat(base)); // remember to put a pause between them
+				loge = affix.concat([Fon.PAUSE]).concat(base); // remember to put a pause between them
 			else
-				return ProtoLang.STRESS.apply(base.concat([Fon.PAUSE]).concat(affix));
+				loge = base.concat([Fon.PAUSE]).concat(affix);
 		}
+		return ProtoLang.STRESS.apply(loge.concat(ending));
 	}
 
 	getAncestor(n: number): Language {
@@ -1151,12 +1176,7 @@ export class DeuteroLang {
 	}
 
 	getNamloge(i: number, type: WordType) {
-		const thing = this.applyChanges(this.parent.getNamloge(i, type));
-		if (thing.length === 5 && transcribe(thing) === 'wwjww') {
-			console.log(this.changes);
-			throw "aaaaaad";
-		}
-		return thing;
+		return this.applyChanges(this.parent.getNamloge(i, type));
 	}
 
 	applyChanges(lekse: Fon[]): Fon[] {
