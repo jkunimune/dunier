@@ -430,6 +430,9 @@ class Klas {
 					case PendaniSif.ALVEOLAR:
 						loke = Loke.ALVEOLAR;
 						break;
+					case PendaniSif.NASAL:
+						mode = Mode.NASAL;
+						break;
 					case PendaniSif.HIGH:
 						if (fon.is(PendaniSif.LAX))
 							mode = Mode.NEAR_CLOSE;
