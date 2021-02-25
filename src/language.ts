@@ -486,6 +486,8 @@ class Klas {
 				loke = ref.loke;
 			else if (akse === 'voze')
 				voze = ref.voze;
+			else if (akse === 'minorLoke')
+				minorLoke = ref.minorLoke;
 			else
 				throw Error(`I can't understand ${akse}`);
 		}
@@ -531,7 +533,7 @@ class Klas {
 			(nosia === Nosia.NASALIZED && mode === Mode.NASAL))
 			minorLoke = MinorLoke.UNROUNDED;
 
-		if ((mode === Mode.NASAL && loke.foner === Foner.PHARYNX) ||
+		if (((mode === Mode.NASAL || nosia === Nosia.NASALIZED) && loke.foner === Foner.PHARYNX) ||
 			((voze === Voze.VOICED || voze === Voze.BREATHY) && loke === Loke.GLOTTAL && mode === Mode.STOP) ||
 			(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
 			(mode === Mode.TRILL && loke !== Loke.BILABIAL && loke !== Loke.DENTAL && loke !== Loke.UVULAR) ||
@@ -814,7 +816,7 @@ class AcentoPoze {
  */
 function apply_diacritic(diacritic: string, fon: Fon[], convention: Convention): string {
 	let graf = diacritic;
-	if (diacritic.includes('X')) {
+	if (diacritic.includes('X') || diacritic.includes('x')) {
 		let X = lookUp(fon[0], convention)
 		graf = graf.replace('X', X); // insert the base character
 		if (diacritic.includes('x')) {
@@ -1229,7 +1231,8 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
 	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
 	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
-	{klas: new Klas([Nosia.NASALIZED]), baze: [Nosia.ORAL], kode: 'Nas'},
+	{klas: new Klas([Nosia.NASALIZED, PendaniSif.SONORANT]), baze: [Nosia.ORAL], kode: 'Nas'},
+	{klas: new Klas([Nosia.NASALIZED, PendaniSif.OBSTRUENT]), baze: [Mode.NASAL, Nosia.ORAL], kode: 'PrN'},
 	{klas: new Klas([Voze.BREATHY]), baze: [Voze.VOICED], kode: 'Bre'},
 	{klas: new Klas([Voze.TENUIS, PendaniSif.SONORANT]), baze: [Voze.VOICED], kode: 'Dev'},
 	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},

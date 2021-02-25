@@ -5,6 +5,8 @@ b	b	b	b	б	b	b	b	b	b	b		bl	b
 β	b	b	v	в	b	v	v	v	v	v		bl	v
 ʙ	b	brr	pbr	мбв	bub	mbr	bb	br	mb	blr		bl	r
 ɱ	m	m	m	м	m	m	m	m	m	m		ld	n
+p͆	p	p	p	п	p	p	p	p	p	p		ld	p
+b̪	b	b	b	б	b	b	b	b	b	b		ld	b
 f	f	f	f	ф	f	f	f	f	f	f		ld	f
 v	v	v	v	в	b	v	v	v	v	v		ld	v
 ʋ	v	u	w	в	u	w	v	w	v	w		ld	a
@@ -124,6 +126,7 @@ Xʲ	Xj	Xi	Xy	Xь	Xy	Xw	Xj	Xy	X’	Xy	Pal	0	0
 Xˠ	X	Xu	X	Xь	X	X	gX	Xw	X̴	Xw	Vel	0	0
 Xˤ	X	X	X	X	X	X	X̣	Xh	X̰	X’	Pha	0	0
 X̃	X	X	X	X	Xnn	Xn	X̃	Xn	X̃	Ẍ	Nas	0	0
+x͡Y	xY	xY	xY	xY	nnY	xY	xY	xY	xY	xY	PrN	0	0
 X́	X	X́	X	X́	X	X	X	X	X́	X	St1	0	0
 X̀	X	X	X	X	X	X	X	X	X	X	St2	0	0
 X̯	X	X	X	X	X	X	X	X	X̆	X	Gli	0	0
