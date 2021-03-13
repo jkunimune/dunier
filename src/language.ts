@@ -71,6 +71,8 @@ class Loke extends Enumify {
 	static UVULAR = new Loke(Foner.DORSUM);
 	static EPIGLOTTAL = new Loke(Foner.PHARYNX);
 	static GLOTTAL = new Loke(Foner.PHARYNX);
+	static LABIOCORONAL = new Loke(null);
+	static LABIOVELAR = new Loke(null);
 	static _ = Loke.closeEnum();
 
 	foner: number;
@@ -326,7 +328,7 @@ class Fon {
 			this.nosia.enumKey.slice(0, 2) +
 			this.latia.enumKey.slice(0, 2) +
 			this.voze.enumKey.slice(0, 2) +
-			this.loke.enumKey.slice(0, 2) +
+			this.loke.enumKey +
 			this.mode.enumKey;
 	}
 
@@ -492,7 +494,7 @@ class Klas {
 				throw Error(`I can't understand ${akse}`);
 		}
 
-		if (mode === null)
+		if (mode === null || loke === null)
 			console.error(`You tried to assign properties to silence in your overzealous attempt to mutate all of something into ${this}.`);
 
 		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
@@ -532,6 +534,19 @@ class Klas {
 			(minorLoke === MinorLoke.PHARYNGEALIZED && loke.foner === Foner.PHARYNX) ||
 			(nosia === Nosia.NASALIZED && mode === Mode.NASAL))
 			minorLoke = MinorLoke.UNROUNDED;
+
+		if (mode === Mode.CLICK) { // only specific types of click are allowd (this is not realistic, but I'm simplifying the possible click systems because I don't understand clicks)
+			if (latia === Latia.LATERAL)
+				loke = Loke.PALATAL;
+			else if (loke.foner === Foner.DORSUM || loke === Loke.POSTALVEOLAR)
+				loke = Loke.PALATAL;
+			else if (loke.foner === Foner.LABIA)
+				loke = Loke.BILABIAL;
+			else if (loke === Loke.POSTALVEOLAR || loke === Loke.RETROFLEX)
+				loke = Loke.RETROFLEX;
+			else
+				loke = Loke.ALVEOLAR;
+		}
 
 		if (((mode === Mode.NASAL || nosia === Nosia.NASALIZED) && loke.foner === Foner.PHARYNX) ||
 			((voze === Voze.VOICED || voze === Voze.BREATHY) && loke === Loke.GLOTTAL && mode === Mode.STOP) ||
@@ -612,7 +627,8 @@ class FonMute {
 	applies(oldWord: Fon[], novWord: Fon[]) {
 		if (this.chen.length + this.ca.length > oldWord.length || this.bade.length > novWord.length)
 			return false;
-		if (this.ca.length === 1 && this.chen.length > 0 && this.bade.length > 0 && oldWord[oldWord.length - 1].longia === Longia.LONG) // geminates are immune to /X_X processes
+		if (this.ca.length === 1 && this.chen.length > 0 && this.bade.length > 0 &&
+			(oldWord[oldWord.length-1].longia === Longia.LONG || oldWord[oldWord.length-1].minorLoke == MinorLoke.PHARYNGEALIZED)) // geminates and emphatics are immune to /X_X processes
 			return false;
 		for (let j = 0; j < this.chen.length; j ++) // start with the left half of the context
 			if (!this.chen[j].macha(oldWord[j - this.ca.length - this.chen.length + oldWord.length])) // check if it matches
@@ -811,13 +827,13 @@ class AcentoPoze {
  * @param diacritic the string representing the modified letter, where the base phonemes are replaced with X, Y, etc.,
  * and the first letter of each phoneme is replaced with x, y, etc. the first letter of an affricate will be that of
  * its corresponding stop.
- * @param fon the phonemes to be combined into the diacritic
+ * @param fon the phonemes to be combined under the diacritic
  * @param convention the convention to use for the lookup
  */
 function apply_diacritic(diacritic: string, fon: Fon[], convention: Convention): string {
 	let graf = diacritic;
 	if (diacritic.includes('X') || diacritic.includes('x')) {
-		let X = lookUp(fon[0], convention)
+		let X = lookUp(fon[0], convention);
 		graf = graf.replace('X', X); // insert the base character
 		if (diacritic.includes('x')) {
 			let x = X.slice(0, 1);
@@ -910,9 +926,9 @@ for (const procesKitabe of loadTSV('proces.txt', /\s+/, /%/)) { // load the phon
 				fen.push(new Klas([], [PendaniSif.SPOKEN]));
 			else if (sinye === '/') { // / transitions from pa to badu
 				if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
-					if (ca.length !== 0 && ca.length !== pa.length) throw `please specify indices for ${procesKitabe}`;
-					for (let i = 0; i < pa.length; i++)
-						idx.push(Math.min(i, ca.length));
+					if (ca.length > 1 && ca.length !== pa.length) throw `please specify indices for ${procesKitabe}`;
+					for (let i = idx.length; i < pa.length; i++)
+						idx.push(Math.min(i, ca.length - 1));
 				}
 				fen = bada;
 			}
@@ -1040,7 +1056,7 @@ export interface Language {
 export class ProtoLang {
 	private static STRESS = new AcentoPoze(true, 1, 1, 'lapse', false);
 	private static VOWELS = ipa("aiueoəɛɔyø");
-	private static CONSON = ipa("mnptksljwhfbdɡrzŋʃʔxqθvɣʙ");
+	private static CONSON = ipa("mnptksljwhfbdɡrzŋʃʔxqvɣθʙ");
 	private static MEDIAL = ipa("ljwr");
 	private static R_INDEX = ProtoLang.CONSON.indexOf(ipa("r")[0]); // note the index of r, because it's phonotactically important
 
@@ -1224,8 +1240,11 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Gem'},
 	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
 	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'Asp'},
+	{klas: new Klas([Voze.EJECTIVE]), baze: [Voze.TENUIS], kode: 'Ejt'},
 	{klas: new Klas([Loke.LINGUOLABIAL, Latia.LATERAL]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'LnL'},
 	{klas: new Klas([Loke.LINGUOLABIAL]), baze: [Loke.BILABIAL, Loke.DENTAL], kode: 'LnL'},
+	{klas: new Klas([Loke.LABIOCORONAL]), baze: [Loke.ALVEOLAR, Loke.BILABIAL], kode: 'Dbl'},
+	{klas: new Klas([Loke.LABIOVELAR]), baze: [Loke.VELAR, Loke.BILABIAL], kode: 'Dbl'},
 	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
 	{klas: new Klas([MinorLoke.PHARYNGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
 	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
