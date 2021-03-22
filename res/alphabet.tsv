@@ -63,8 +63,8 @@ q	g	g	c	г	k	k	q	q	q	q		uv	p
 χ	ch	j	ɦ	х	h	h	qh	h	x̣	qh		uv	f
 ʁ	r	r	r	р	r	r	r	rh	r	r		uv	v
 ʀ	r	r	r	р	r	r	r	r	r	r		uv	r
-ʡ	g	g	c	г	k	k	q	q	q	q		eg	p
-ħ	h	j	ɦ	х	h	h	h	h	ḥ	h		eg	f
+ʡ	g	g	c	г	k	k	q̇	q	q̇	q̇		eg	b
+ħ	h	j	ɦ	х	h	h	ḥ	h	ḥ	ḥ		eg	f
 ʕ		h					h	h	ʻ	ʻ		eg	v
 ʔ		h					’	’	ʻ	’		gl	p
 h	h	j	ɦ	г	h	h	h	h	h	h		gl	f
@@ -128,8 +128,8 @@ X͡Y	Y	xY	xY	xY	Y	Y	XY	xY	xY	xY	Dbl	0	0
 Xʷ	Xv	Xu	Xw	Xу	Xu	Xy	Xw	Xw	Xw	Xw	Lab	0	0
 Xʲ	Xj	Xi	Xy	Xь	Xy	Xw	Xj	Xy	X’	Xy	Pal	0	0
 Xˠ	X	Xu	X	Xь	X	X	gX	Xw	X̴	Xw	Vel	0	0
-Xˤ	X	X	X	X	X	X	X̣	Xq	X̰	X’	Pha	0	0
-X̃	X	X	X	X	Xnn	Xn	X̃	Xn	X̃	Ẍ	Nas	0	0
+Xˤ	X	X	X	X	X	X	X̣	X̰	Xʻ	Xʻ	Pha	0	0
+X̃	X	X	X	X	Xnn	Xn	X̃	X̨	X̃	Ẍ	Nas	0	0
 x͡Y	xY	xY	xY	xY	nnY	xY	xY	xY	xY	xY	PrN	0	0
 X́	X	X́	X	X́	X	X	X	X	X́	X	St1	0	0
 X̀	X	X	X	X	X	X	X	X	X	X	St2	0	0
