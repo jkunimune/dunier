@@ -351,7 +351,6 @@ class Fon {
 			return this.mode.sonority
 				- ((this.latia === Latia.LATERAL) ? 1.5 : 0)
 				+ ((this.voze === Voze.VOICED) ? 0.75 : 0)
-				+ ((this.longia === Longia.LONG) ? 0.05 : 0)
 				+ (this.is(PendaniSif.VOCOID) ? 1 : 0);
 	}
 }
@@ -495,7 +494,7 @@ class Klas {
 		}
 
 		if (mode === null || loke === null)
-			console.error(`You tried to assign properties to silence in your overzealous attempt to mutate all of something into ${this}.`);
+			throw `You tried to assign properties to silence in your overzealous attempt to mutate all of something into ${this}.`;
 
 		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
 			loke = Loke.VELAR;
@@ -822,38 +821,6 @@ class AcentoPoze {
 }
 
 
-/**
- * get some orthographical representations from some phonemes and apply a diacritic to it
- * @param diacritic the string representing the modified letter, where the base phonemes are replaced with X, Y, etc.,
- * and the first letter of each phoneme is replaced with x, y, etc. the first letter of an affricate will be that of
- * its corresponding stop.
- * @param fon the phonemes to be combined under the diacritic
- * @param convention the convention to use for the lookup
- */
-function apply_diacritic(diacritic: string, fon: Fon[], convention: Convention): string {
-	let graf = diacritic;
-	if (diacritic.includes('X') || diacritic.includes('x')) {
-		let X = lookUp(fon[0], convention);
-		graf = graf.replace('X', X); // insert the base character
-		if (diacritic.includes('x')) {
-			let x = X.slice(0, 1);
-			if (fon[0].mode === Mode.AFFRICATE)
-				x = lookUp(fon[0].with(Mode.STOP), convention).slice(0, 1);
-			graf = graf.replace('x', x);
-		}
-	}
-	if (diacritic.includes('Y')) {
-		let Y = lookUp(fon[1], convention);
-		graf = graf.replace('Y', Y);
-	}
-	if (diacritic.includes('Z')) {
-		let Z = lookUp(fon[2], convention);
-		graf = graf.replace('Z', Z);
-	}
-	return graf;
-}
-
-
 const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
 const TO_TEXT: Map<string, string[]> = new Map();
 const TO_DIACRITICS: Map<string, string[]> = new Map();
@@ -914,7 +881,7 @@ for (const procesKitabe of loadTSV('proces.txt', /\s+/, /%/)) { // load the phon
 	const chanse = Number.parseInt(procesKitabe[0])/1000;
 	if (procesKitabe[1] === 'mute') {
 		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
-		const idx: number[] = [];
+		let idx: number[] = [];
 		let fen = ca;
 		let sa: Sif[] = null, na: Sif[] = null, ka: string[] = null;
 		for (let sinye of procesKitabe.slice(2)) { // and parse them
@@ -927,6 +894,7 @@ for (const procesKitabe of loadTSV('proces.txt', /\s+/, /%/)) { // load the phon
 			else if (sinye === '/') { // / transitions from pa to badu
 				if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
 					if (ca.length > 1 && ca.length !== pa.length) throw `please specify indices for ${procesKitabe}`;
+					idx = [];
 					for (let i = idx.length; i < pa.length; i++)
 						idx.push(Math.min(i, ca.length - 1));
 				}
@@ -1172,6 +1140,7 @@ export class ProtoLang {
 			else
 				loge = base.concat([Fon.PAUSE]).concat(affix);
 		}
+		ProtoLang.STRESS.apply(loge.concat(ending));
 		return ProtoLang.STRESS.apply(loge.concat(ending));
 	}
 
@@ -1263,19 +1232,38 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 
 /**
  * get an orthographical representation from a phoneme
- * @param fon
- * @param convention
+ * @param fon the sound to look up
+ * @param convention the spelling style in which to look this up
+ * @param level the number of diacritics we have already checkd (don't check them again)
  */
-function lookUp(fon: Fon, convention: Convention = Convention.NASOMEDI): string {
+function lookUp(fon: Fon, convention: Convention = Convention.NASOMEDI, level: number = 0): string {
 	if (TO_TEXT.has(fon.hash())) // if it's in the table
 		return TO_TEXT.get(fon.hash())[convention]; // just return that
 
-	for (const {klas, baze, kode} of DIACRITICS) { // if not, look through the diacritics
+	for (let i = level; i < DIACRITICS.length; i ++) { // if not, look through the diacritics
+		const {klas, baze, kode} = DIACRITICS[i];
 		if (klas.macha(fon)) { // to see if there's one that will help
 			const baziFon = [];
 			for (const sif of baze)
-				baziFon.push(fon.with(sif));
-			return apply_diacritic(TO_DIACRITICS.get(kode)[convention], baziFon, convention);
+				baziFon.push(fon.with(sif)); // if so, simplify the foneme
+
+			const diacritic = TO_DIACRITICS.get(kode)[convention]; // and apply the diacritic
+			let graf = diacritic;
+			if (diacritic.includes('X') || diacritic.includes('x')) {
+				let X = lookUp(baziFon[0], convention, i + 1);
+				graf = graf.replace('X', X);
+				if (diacritic.includes('x')) {
+					let x = X.slice(0, 1);
+					if (baziFon[0].mode === Mode.AFFRICATE)
+						x = lookUp(baziFon[0].with(Mode.STOP), convention, i + 1).slice(0, 1);
+					graf = graf.replace('x', x);
+				}
+			}
+			if (diacritic.includes('Y')) {
+				let Y = lookUp(baziFon[1], convention, i + 1);
+				graf = graf.replace('Y', Y);
+			}
+			return graf;
 		}
 	}
 

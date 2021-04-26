@@ -605,7 +605,7 @@ export class Chart {
 
 		this.labelIndex += 1;
 
-		return null;
+		return textGroup;
 	}
 
 	/**
