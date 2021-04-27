@@ -35,6 +35,7 @@ let historyOutOfSync = true;
 let mapOutOfSync = true;
 let surface: Surface = null;
 let world: World = null;
+let inProgress: boolean = false;
 
 
 /**
@@ -241,27 +242,53 @@ function mapApply() {
 
 
 /**
+ * set the GUI to prevent user input while a process is running
+ */
+function disableButtons() {
+	for (const tab of ['planet', 'terrain', 'history', 'map']) {
+		const btn = $(`#${tab}-apply`);
+		const rediLoge = $(`#${tab}-redi`);
+		const ladaLoge = $(`#${tab}-lada`);
+		btn.prop('disabled', true);
+		rediLoge.hide();
+		ladaLoge.show();
+	}
+}
+
+/**
+ * set the GUI to allow user input now that a process is done
+ */
+function enableButtons() {
+	for (const tab of ['planet', 'terrain', 'history', 'map']) {
+		const btn = $(`#${tab}-apply`);
+		const rediLoge = $(`#${tab}-redi`);
+		const ladaLoge = $(`#${tab}-lada`);
+		btn.prop('disabled', false);
+		ladaLoge.hide();
+		rediLoge.show();
+	}
+}
+
+
+/**
  * When the planet button is clicked, call its function.
  * Note that this does not check if the planet is out of sync; it
  * must update every time the tab is opened because of Plotly.
  */
 $('#planet-apply, #planet-tab').on('click', () => {
-	const btn = $('#planet-apply');
-	const rediLoge = $('#planet-redi');
-	const ladaLoge = $('#planet-lada');
-	btn.prop('disabled', true);
-	rediLoge.hide();
-	ladaLoge.show();
-	setTimeout(() => {
-		try {
-			planetApply();
-		} catch (error) {
-			console.error(error)
-		}
-		btn.prop('disabled', false);
-		ladaLoge.hide();
-		rediLoge.show();
-	}, 10);
+	if (!inProgress) {
+		inProgress = true;
+		disableButtons();
+		setTimeout(() => {
+			try {
+				planetApply();
+			} catch (error) {
+				console.error(error);
+			}
+			inProgress = false;
+			enableButtons();
+		}, 10);
+	}
 });
 
 
@@ -269,22 +296,17 @@ $('#planet-apply, #planet-tab').on('click', () => {
  * When the terrain button is clicked, do its thing
  */
 $('#terrain-apply, #terrain-tab').on('click', () => {
-	if (terrainOutOfSync) {
-		const btn = $('#terrain-apply');
-		const rediLoge = $('#terrain-redi');
-		const ladaLoge = $('#terrain-lada');
-		btn.prop('disabled', true);
-		rediLoge.hide();
-		ladaLoge.show();
+	if (terrainOutOfSync && !inProgress) {
+		inProgress = true;
+		disableButtons();
 		setTimeout(() => {
 			try {
 				terrainApply();
 			} catch (error) {
 				console.error(error);
 			}
-			btn.prop('disabled', false);
-			ladaLoge.hide();
-			rediLoge.show();
+			inProgress = false;
+			enableButtons();
 		}, 10);
 	}
 });
@@ -294,22 +316,17 @@ $('#terrain-apply, #terrain-tab').on('click', () => {
  * When the history button is clicked, activate its purpose.
  */
 $('#history-apply, #history-tab').on('click', () => {
-	if (historyOutOfSync) {
-		const btn = $('#history-apply');
-		const rediLoge = $('#history-redi');
-		const ladaLoge = $('#history-lada');
-		btn.prop('disabled', true);
-		rediLoge.hide();
-		ladaLoge.show();
+	if (historyOutOfSync && !inProgress) {
+		inProgress = true;
+		disableButtons();
 		setTimeout(() => {
 			try {
 				historyApply();
 			} catch (error) {
 				console.error(error);
 			}
-			btn.prop('disabled', false);
-			ladaLoge.hide();
-			rediLoge.show();
+			inProgress = false;
+			enableButtons();
 		}, 10);
 	}
 });
@@ -319,22 +336,17 @@ $('#history-apply, #history-tab').on('click', () => {
  * When the map button is clicked, reveal its true form.
  */
 $('#map-apply, #map-tab').on('click', () => {
-	if (mapOutOfSync) {
-		const btn = $('#map-apply');
-		const rediLoge = $('#map-redi');
-		const ladaLoge = $('#map-lada');
-		btn.prop('disabled', true);
-		rediLoge.hide();
-		ladaLoge.show();
+	if (mapOutOfSync && !inProgress) {
+		inProgress = true;
+		disableButtons();
 		setTimeout(() => {
 			try {
 				mapApply();
 			} catch (error) {
 				console.error(error);
 			}
-			btn.prop('disabled', false);
-			ladaLoge.hide();
-			rediLoge.show();
+			inProgress = false;
+			enableButtons();
 		}, 10);
 	}
 });
