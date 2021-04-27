@@ -6,9 +6,9 @@ LANGUAGES = ['en', 'es', 'jp', 'pd']
 DEFAULT_LANGUAGE = 'pd'
 
 for filename in os.listdir('../res/templates/'):
-	print(filename)
+	print(f"{filename}")
 	for lang_code in LANGUAGES:
-		print(lang_code)
+		print(f"  {lang_code}")
 		with open(f'../res/templates/{filename}', 'r', encoding='utf8') as page_file:
 			page = page_file.read()
 		with open(f'../res/tarje/{lang_code}.json', 'r', encoding='utf8') as lang_file:
@@ -24,3 +24,5 @@ for filename in os.listdir('../res/templates/'):
 		if lang_code == DEFAULT_LANGUAGE:
 			with open(f'../{filename}', 'w', encoding='utf8') as page_file:
 				page_file.write(page)
+
+print("fini!")

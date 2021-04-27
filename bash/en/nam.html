@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="/bootstrap-4.5.2-dist/css/bootstrap.min.css" crossorigin="anonymous">
+
+    <link rel="stylesheet" href="/res/style.css">
+
+    <title>Fantasy name generator &ndash; Dunhamar</title>
+
+    <link rel="icon" type="image/svg" href="/res/logo.svg" />
+  </head>
+
+  <body>
+    <header>
+      <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container">
+          <a class="navbar-brand" href="#">
+            <img src="/res/logo.svg" width="35" height="35" alt="">
+            dunhamar
+          </a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="Toggle navigation bar">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="siri-daweurekia">
+            <div class="navbar-nav">
+              <a class="nav-item nav-link" href="./index.html">Maps<span class="sr-only"> (current)</span></a>
+              <a class="nav-item nav-link" href="#">Names</a>
+              <a class="nav-item nav-link" href="./tema.html">About</a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">Contact</a>
+            </div>
+            <div class="navbar-nav ml-auto">
+              <div class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="Language">
+                  <svg class="bi" width="20" viewBox="-38 -38 76 86" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="none" stroke-width="4" d="M0,-36 A36,36,0,0,0,0,36 A18,36,0,0,0,0,-36 A18,36,0,0,0,0,36 A36,36,0,0,0,0,-36 L0,36 M-36,0 L36,0 M-25.5,25.5 A36,36,0,0,1,25.5,25.5 M-25.5,-25.5 A36,36,0,0,0,25.5,-25.5"/>
+                  </svg>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right" role="menu" aria-orientation="vertical">
+                  <a class="dropdown-item" href="/bash/en/nam.html" role="menuitem">
+                    <img src="/res/flags/gb-eng.svg" width="20" height="20" alt="">&nbsp;
+                    English
+                  </a>
+                  <a class="dropdown-item" href="/bash/es/nam.html" role="menuitem">
+                    <img src="/res/flags/es.svg" width="20" height="20" alt="">&nbsp;
+                    español
+                  </a>
+                  <a class="dropdown-item" href="/bash/jp/nam.html" role="menuitem">
+                    <img src="/res/flags/jp.svg" width="20" height="20" alt="">&nbsp;
+                    日本語
+                  </a>
+                  <a class="dropdown-item" href="/bash/pd/nam.html" role="menuitem">
+                    <img src="/res/flags/pandunia.svg" width="20" height="20" alt="">&nbsp;
+                    pandunia
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main role="main">
+      <div class="container mt-3 mb-5">
+        <div id="alert-box">
+        </div>
+
+        <div class="row justify-content-center p-2">
+          <div id="xef-kolum" class="col-xs-12 col-md-12 col-lg-8 col-xl-6">
+            <form>
+              <button type="button" class="btn btn-block btn-primary" id="nam-apply">
+                <span id="nam-redi">
+                  Generate
+                </span>
+                <span id="nam-lada" style="display: none">
+                  <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
+                  Loading…
+                </span>
+              </button>
+            </form>
+          </div>
+        </div>
+        <div class="row justify-content-center p-2">
+          <div id="ten-kolum-1" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
+            <ul id="nam-liste-1" class="list-group">
+            </ul>
+          </div>
+          <div id="ten-kolum-2" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
+            <ul id="nam-liste-2" class="list-group">
+            </ul>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="bash" style="display: none;">en</div>
+
+    <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
+    <script src="/src/lib/jquery.min.js" crossorigin="anonymous"></script>
+    <script src="/src/lib/popper.min.js" crossorigin="anonymous"></script>
+    <script src="/bootstrap-4.5.2-dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+    <script src="/src/lib/bootstrap-input-spinner.js"></script>
+    <script>
+      $("input[type='number']").inputSpinner()
+    </script>
+
+    <!-- generation scripts -->
+    <script src="/src/namjener.js" type="module"></script>
+
+  </body>
+</html>

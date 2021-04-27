@@ -2,7 +2,8 @@
 	"bash.kode":"jp",
 	"bash.nam":"日本語",
 	"menu.bash":"言語",
-	"menu.dom":"ホーム",
+	"menu.dom":"地図生成",
+	"menu.nam":"名生成",
 	"menu.tema":"dunhamarについて",
 	"menu.poste":"問い合わせ",
 	"param.planete":"惑星",
@@ -98,6 +99,7 @@
 	"menu.ankarivi":"オフ",
 	"menu.oskuri":"ダークテーマ",
 	"menu.kara":"適用",
+	"menu.jena":"生成",
 	"menu.denga":"読み込み中…",
 	"menu.bada":"次へ",
 	"menu.preda":"戻る",
@@ -107,7 +109,9 @@
 	"unmetre.nen":"年",
 	"unmetre.mitre-mey-nen":"m/y",
 	"unmetre.mey-giganen":"/Gy",
-	"kitabe.temnam":"ドゥンハマル・ファンタジーの地図生成器",
+	"temnam.metrografjener":"ファンタジーの地図生成器・ドゥンハマル",
+	"temnam.namjener":"ファンタジーの名生成器・ドゥンハマル",
+	"temnam.tema":"について・ドゥンハマル",
 	"kitabe.tema":"dunhamarについて",
 	"kitabe.sif":"<p>dunhamarは作家やゲームマスターや言語を作る人の創作を振るれる迫真な世界を作り上げるのを手伝うツールです。擬似乱数列の初期値と他の色々なパラメタを入って、それから世界地図と年表とすべての国と言語のインフォがあるページが出ます。算譜はすべてのワールドビルジンぐの喜びの創造的な工程に取って代われませんけど、dunhamarは何人か出来ないまたはしたくないことを営めます。</p> <p>dunhamarは<a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">アズガアルさんの物</a>とか前のファンタジーの地図生成器がきっかけを与えましたが、dunhamarは写実を強めます。dunhamarは他のものほど対話的ではなくて鉱山の位置とか外交関係とか小さい詳細を作りませんけど。でも、惑星曲率とかプレートテクトニクスとか言語変化とか巨視的な特徴を汲みます。</p>"
 }
