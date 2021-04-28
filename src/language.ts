@@ -157,6 +157,7 @@ class PendaniSif extends Enumify {
 	static SIBILANT = new PendaniSif();
 	static RHOTIC = new PendaniSif();
 	static LIQUID = new PendaniSif();
+	static WIBBLY = new PendaniSif();
 	static VOCOID = new PendaniSif();
 	static GLIDE = new PendaniSif();
 	static VOWEL = new PendaniSif();
@@ -287,6 +288,9 @@ class Fon {
 						(this.mode === Mode.FRICATE && this.loke === Loke.UVULAR));
 				case PendaniSif.RHOTIC:
 					return this.is(PendaniSif.LIQUID) && !this.is(Latia.LATERAL);
+				case PendaniSif.WIBBLY:
+					return this.is(PendaniSif.LABIAL) && (this.is(PendaniSif.SONORANT) || (this.is(Voze.VOICED) &&
+						this.is(Mode.FRICATE))) && this.is(Silabia.NONSYLLABIC);
 				case PendaniSif.VOCOID:
 					return this.mode.sonority >= Mode.CLOSE.sonority && this.latia === Latia.MEDIAN &&
 						this.loke.foner === Foner.DORSUM;
@@ -1072,7 +1076,7 @@ export class ProtoLang {
 		if (i < 0 || i >= asle.length)
 			throw RangeError("baka.");
 		if (asle[i] === undefined) {
-			const nSyl = (asle === this.logofin) ? 2/3 : Math.ceil((i < 25 ? 2 : 4)/this.complexity);
+			const nSyl = (asle === this.logofin) ? 1/2 : Math.ceil((i < 25 ? 1.5 : 4)/this.complexity);
 			asle[i] = this.newRoot(nSyl, this.rng);
 		}
 		return asle[i];
@@ -1101,18 +1105,21 @@ export class ProtoLang {
 	 * @param rng
 	 */
 	newRoot(nSyllables: number, rng: Random): Fon[] {
-		const lekse = [];
+		let lekse;
 		const reduccion = Math.min(1, nSyllables);
-		for (let i = 0; i < nSyllables; i ++) {
-			if (rng.probability(ProtoLang.P_ONSET*reduccion))
-				lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
-			if (this.nMedial > 0 && rng.probability(ProtoLang.P_MEDIAL*reduccion))
-				lekse.push(rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
-			if (rng.probability(reduccion))
-				lekse.push(rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
-			if (rng.probability(ProtoLang.P_CODA*reduccion))
-				lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
-		}
+		do {
+			lekse = [];
+			for (let i = 0; i < nSyllables; i++) {
+				if (rng.probability(ProtoLang.P_ONSET * reduccion))
+					lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
+				if (this.nMedial > 0 && rng.probability(ProtoLang.P_MEDIAL * reduccion))
+					lekse.push(rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
+				if (rng.probability(reduccion))
+					lekse.push(rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
+				if (rng.probability(ProtoLang.P_CODA * reduccion))
+					lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
+			}
+		} while (nSyllables >= 1 && lekse.length < 3);
 		return lekse;
 	}
 
@@ -1210,7 +1217,7 @@ const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
 	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
 	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'Asp'},
 	{klas: new Klas([Voze.EJECTIVE]), baze: [Voze.TENUIS], kode: 'Ejt'},
-	{klas: new Klas([Loke.LINGUOLABIAL, Latia.LATERAL]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'LnL'},
+	{klas: new Klas([Loke.LINGUOLABIAL, PendaniSif.LIQUID]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'LnL'},
 	{klas: new Klas([Loke.LINGUOLABIAL]), baze: [Loke.BILABIAL, Loke.DENTAL], kode: 'LnL'},
 	{klas: new Klas([Loke.LABIOCORONAL]), baze: [Loke.ALVEOLAR, Loke.BILABIAL], kode: 'Dbl'},
 	{klas: new Klas([Loke.LABIOVELAR]), baze: [Loke.VELAR, Loke.BILABIAL], kode: 'Dbl'},

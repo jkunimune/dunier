@@ -42,9 +42,7 @@ $('#nam-apply').on('click', () => { // TODO: back button
 				holnam = `${jannam}`;
 			else
 				holnam = `${familnam} ${jannam}`;
-
-			console.log(transcribe(bax.getNamloge(i0 + i, WordType.JANNAM)));
-
+			
 			const listem = document.createElement('li'); // start by creating the text element
 			listem.setAttribute('class', 'list-group-item');
 			listem.textContent = holnam;
