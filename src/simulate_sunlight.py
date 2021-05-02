@@ -1,3 +1,5 @@
+# simulate_sunlight.py - validate the insolation on an oblique sphere
+
 import numpy as np
 from scipy import integrate, optimize
 import matplotlib.pyplot as plt
