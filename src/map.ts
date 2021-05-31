@@ -636,27 +636,28 @@ export class Chart {
 		if (segments.length === 0) // what're you trying to pull here?
 			return [];
 
-		const sections: PathSegment[][] = []; // first, we want to break this up into sections
 		let touchedEdge = false;
-		let start = 0, repeatCount = 0;
-		for (let i = 1; i <= segments.length; i ++) { // sweep through the result and split the path at places where
-			if (i === segments.length || segments[i].type === 'M') { // there are movetos or endings
+		for (let i = 1; i < segments.length; i ++) { // first, handle places where it crosses the edge of the map
+			if (segments[i].type === 'L') {
+				const crossing = this.projection.getCrossing(segments[i-1].args, segments[i].args);
+				if (crossing !== null) { // if you find one
+					const {endpoint0, endpoint1} = crossing;
+					segments.splice(i, 0,
+						{type: 'L', args: [endpoint0.φ, endpoint0.λ]}, // insert a line to the very edge
+						{type: 'M', args: [endpoint1.φ, endpoint1.λ]}); // and then a moveto to the other side
+					touchedEdge = true;
+					i --; // then step back to check if there was another one
+				}
+			}
+		}
+
+		const sections: PathSegment[][] = []; // then, break this up into sections
+		let start = 0;
+		for (let i = 1; i <= segments.length; i ++) { // sweep through the result
+			if (i === segments.length || segments[i].type === 'M') { // and split it up at movetos and endings
 				sections.push(segments.slice(start, i));
 				start = i;
 			}
-			else {
-				const crossing = this.projection.getCrossing(segments[i-1].args, segments[i].args);
-				if (crossing !== null) { // or you find a boundary crossing
-					const {endpoint0, endpoint1} = crossing;
-					sections.push(segments.slice(start, i).concat([{type: 'L', args: [endpoint0.φ, endpoint0.λ]}]));
-					segments[i - 1] = {type: 'M', args: [endpoint1.φ, endpoint1.λ]}; // add points there so we don't get weird edge artifacts
-					start = i - 1;
-					touchedEdge = true;
-					repeatCount += 1;
-				}
-			}
-			if (repeatCount > 10000)
-				throw "_someone_ (not pointing any fingers) missd an interrupcion.";
 		}
 
 		const precision = MAP_PRECISION*Math.hypot(
@@ -672,6 +673,7 @@ export class Chart {
 				cutPoints.push({type: jinPoints[i].type, args: [x, y]});
 			}
 
+			let repeatCount = 0;
 			for (let i = base + 1; i < cutPoints.length; i ++) { // then go back through
 				const [x0, y0] = cutPoints[i-1].args;
 				const [x1, y1] = cutPoints[i].args;
@@ -683,7 +685,10 @@ export class Chart {
 					jinPoints.splice(i-base, 0, {type: 'L', args: [φ, λ]}); // add the midpoints to the polygon
 					cutPoints.splice(i,           0, {type: 'L', args: [x, y]});
 					i --; // and check again
+					repeatCount ++;
 				}
+				if (repeatCount > 10000)
+					throw "_someone_ (not pointing any fingers) missd an interrupcion.";
 			}
 
 			const end = jinPoints[jinPoints.length-1].args; // when all that's done, look at where we are

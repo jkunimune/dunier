@@ -442,7 +442,7 @@ export class Toroid extends Surface {
 			const dz = 2*this.majorRadius/this.minorRadius*Math.tan(this.obliquity)/this.elongation;
 			opacity =
 				Math.min(1, Math.min(1, (1 - Math.sin(β))/dz) * Math.min(1, (1 + Math.sin(β))/dz) +
-					0.4*Math.pow(Math.sin(2*β), 2)/(1 + dz) +
+					0.4*Math.pow(Math.sin(2*β), 2)/(1 + dz) -
 					0.8*this.elongation*this.minorRadius/this.majorRadius * Math.pow(Math.cos(φ), 3));
 		}
 		return incident*(1 - opacity);
