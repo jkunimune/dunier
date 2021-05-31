@@ -636,29 +636,32 @@ export class Chart {
 		if (segments.length === 0) // what're you trying to pull here?
 			return [];
 
-		const sections = [];
+		const sections: PathSegment[][] = []; // first, we want to break this up into sections
 		let touchedEdge = false;
-		let start = 0;
-		for (let i = 1; i <= segments.length; i ++) { // sweep through the result
-			if (i === segments.length || segments[i].type === 'M') { // splitting it up at movetos
+		let start = 0, repeatCount = 0;
+		for (let i = 1; i <= segments.length; i ++) { // sweep through the result and split the path at places where
+			if (i === segments.length || segments[i].type === 'M') { // there are movetos or endings
 				sections.push(segments.slice(start, i));
 				start = i;
 			}
-			else if (Math.abs(segments[i].args[1] - segments[i-1].args[1]) > Math.PI) { // and at places where it crosses the antimeridian
-				const [φ0, λ0] = segments[i-1].args;
-				const [φ1, λ1] = segments[i].args;
-				const φX = this.projection.getCrossing(φ0, λ0, φ1, λ1, Math.PI).φ; // estimate the place where it crosses
-				const λX = (λ1 < λ0) ? Math.PI : -Math.PI;
-				sections.push(segments.slice(start, i).concat([{type: 'L', args: [φX, λX]}]));
-				segments[i-1] = {type: 'M', args: [φX, -λX]}; // add points there so we don't get weird edge artifacts
-				start = i - 1;
-				touchedEdge = true;
+			else {
+				const crossing = this.projection.getCrossing(segments[i-1].args, segments[i].args);
+				if (crossing !== null) { // or you find a boundary crossing
+					const {endpoint0, endpoint1} = crossing;
+					sections.push(segments.slice(start, i).concat([{type: 'L', args: [endpoint0.φ, endpoint0.λ]}]));
+					segments[i - 1] = {type: 'M', args: [endpoint1.φ, endpoint1.λ]}; // add points there so we don't get weird edge artifacts
+					start = i - 1;
+					touchedEdge = true;
+					repeatCount += 1;
+				}
 			}
+			if (repeatCount > 10000)
+				throw "_someone_ (not pointing any fingers) missd an interrupcion.";
 		}
 
 		const precision = MAP_PRECISION*Math.hypot(
 			this.projection.right - this.projection.left, this.projection.top - this.projection.bottom)
-		const cutPoints = []; // now start putting together the projected points
+		const cutPoints: PathSegment[] = []; // now start putting together the projected points
 		let jinPoints = sections.pop();
 		let supersectionStart = jinPoints[0].args;
 		while (jinPoints !== undefined) {
@@ -685,66 +688,41 @@ export class Chart {
 
 			const end = jinPoints[jinPoints.length-1].args; // when all that's done, look at where we are
 			if (!closed) { // if we're not worrying about closing it off
-				jinPoints = null; // move onto whatever else
+				jinPoints = null; // forget it and move onto whatever else
 			}
-			else if (supersectionStart[0] === end[0] && supersectionStart[1] === end[1]) { // if we just completed a loop
+			else if (supersectionStart[0] === end[0] && supersectionStart[1] === end[1]) { // if this whole section is one big loop
 				jinPoints = null; // also move on
 			}
-			else if (Math.abs(jinPoints[jinPoints.length-1].args[1]) === Math.PI) { // if it is and we ended hitting a wall
-				const dix = Math.sign(end[1]);
+			else if (this.projection.getPositionOnEdge(end[0], end[1]) !== null) { // if we ended hitting a wall
+				const edges = this.projection.getEdges();
+				let endPosition = this.projection.getPositionOnEdge(end[0], end[1]);
+
 				const possibleStarts = sections.map((s) => s[0].args).concat([supersectionStart]);
-				let bestSection = null, bestDistance = Number.POSITIVE_INFINITY;
+				let bestSection = null, bestPosition = Number.POSITIVE_INFINITY;
 				for (let i = 0; i < possibleStarts.length; i ++) { // check the remaining sections
-					const start = possibleStarts[i];
-					let distance;
-					if (start[1] === end[1]) {
-						if (dix*(start[0] - end[0]) >= 0)
-							distance = dix*(start[0] - end[0]);
-						else
-							distance = 80 + dix*(start[0] - end[0]);
-					}
-					else if (start[1] === -end[1])
-						distance = 40 - dix*(start[0] + end[0]);
-					else
-						continue;
-					if (distance < bestDistance) {
-						bestSection = i; // to find which one should come next
-						bestDistance = distance;
-					}
-				}
-				if (!Number.isFinite(bestDistance)) {
-					throw new Error(`There was nowhither left to go. I was at ${end}, and the only options you gave me were ${possibleStarts}!`);
-				}
-				if (dix > 0) { // go around the edge to get to the next start point
-					cutPoints.push(
-						...this.projection.outlineRightEdge(end[0], Math.min(end[0] + bestDistance, this.projection.surface.φMax)));
-					if (bestDistance > 20) {
-						cutPoints.push(
-							...this.projection.outlineNorthPole(),
-							...this.projection.outlineLeftEdge(this.projection.surface.φMax, Math.max(-(end[0] + bestDistance - 40), this.projection.surface.φMin)));
-						if (bestDistance > 60) {
-							cutPoints.push(
-								...this.projection.outlineSouthPole(),
-								...this.projection.outlineRightEdge(this.projection.surface.φMin, end[0] + bestDistance - 80));
+					const restart = possibleStarts[i];
+					let restartPosition = this.projection.getPositionOnEdge(restart[0], restart[1]);
+					if (restartPosition !== null) {
+						if (restartPosition < endPosition)
+							restartPosition += edges.length;
+						if (restartPosition < bestPosition) {
+							bestSection = i; // to find which one should come next
+							bestPosition = restartPosition;
 						}
 					}
 				}
-				else {
-					cutPoints.push(
-						...this.projection.outlineLeftEdge(end[0], Math.max(-(-end[0] + bestDistance), this.projection.surface.φMin)));
-					if (bestDistance > 20) {
-						cutPoints.push(
-							...this.projection.outlineSouthPole(),
-							...this.projection.outlineRightEdge(this.projection.surface.φMin, Math.min(-end[0] + bestDistance - 40, this.projection.surface.φMax)));
-						if (bestDistance > 60) {
-							cutPoints.push(
-								...this.projection.outlineNorthPole(),
-								...this.projection.outlineLeftEdge(this.projection.surface.φMax, -(-end[0] + bestDistance - 80)));
-						}
-					}
+				const endEdge = Math.trunc(endPosition), restartEdge = Math.trunc(bestPosition);
+				const restart = possibleStarts[bestSection];
+				for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
+					const edge = edges[i%edges.length]
+					const currentPlace = (i === endEdge) ? end : [edge.start.φ, edge.start.λ];
+					const targetPlace = (i === restartEdge) ? restart : [edge.end.φ, edge.end.λ];
+					cutPoints.push(...edge.tracer(
+						currentPlace[0], currentPlace[1], targetPlace[0], targetPlace[1],
+					));
 				}
-				if (bestSection < sections.length)
-					jinPoints = sections.splice(bestSection, 1)[0].slice(1); // then either take the next section without its moveto if there is one
+				if (bestSection !== sections.length) // if you found a new place to restart
+					jinPoints = sections.splice(bestSection, 1)[0].slice(1); // and then take that as the next section without its moveto
 				else
 					jinPoints = null; // or move on if that was the end
 			}
@@ -757,9 +735,8 @@ export class Chart {
 						break;
 					}
 				}
-				if (jinPoints === null) {
+				if (jinPoints === null)
 					throw new Error("I was left hanging.");
-				}
 			}
 			if (jinPoints === null) { // if we were planning to move onto whatever else for the next section
 				if (sections.length === 0) // we may be done
@@ -793,14 +770,11 @@ export class Chart {
 				}
 			}
 			if (insideOut) { // if it is
-				const {x, y} = this.projection.project(0, Math.PI);
-				cutPoints.push( // draw the outline of the entire map to contain it
-					{type: 'M', args: [x, y]},
-					...this.projection.outlineRightEdge(0),
-					...this.projection.outlineNorthPole(),
-					...this.projection.outlineLeftEdge(),
-					...this.projection.outlineSouthPole(),
-					...this.projection.outlineRightEdge(this.projection.surface.φMin, 0));
+				const startingPoint = this.projection.getEdges()[0].start;
+				const {x, y} = this.projection.project(startingPoint.φ, startingPoint.λ);
+				cutPoints.push({type: 'M', args: [x, y]});
+				for (const edge of this.projection.getEdges()) // draw the outline of the entire map to contain it
+					cutPoints.push(...edge.tracer(edge.start.φ, edge.start.λ, edge.end.φ, edge.end.λ));
 			}
 		}
 
@@ -826,14 +800,16 @@ export class Chart {
  * a class to manage the plotting of points from a Surface onto a plane.
  */
 class MapProjection {
-	surface: Surface;
+	public readonly surface: Surface;
 	public left: number;
 	public right: number;
 	public top: number;
 	public bottom: number;
+	private edges: {start: Place, end: Place, tracer: (φ0: number, λ0: number, φ1: number, λ1: number) => PathSegment[]}[];
 
 	constructor(surface: Surface, left: number, right:number, top: number, bottom: number) {
 		this.surface = surface;
+		console.assert(surface !== undefined);
 		this.left = left;
 		this.right = right;
 		this.top = top;
@@ -856,22 +832,39 @@ class MapProjection {
 	}
 
 	/**
-	 * compute the coordinates at which the line between these two points crosses the
-	 * plane defined by the longitude λX.
-	 * @param φ0
-	 * @param λ0
-	 * @param φ1
-	 * @param λ1
-	 * @param λX
-	 * @return Point
+	 * compute the coordinates at which the line between these two points crosses an interrupcion in the map.  if
+	 * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
+	 * the 1th point's side.
+	 * @param φλ0
+	 * @param φλ1
+	 * @return Place the point where the segment crosses the edge of the map, if such a point exists.  null otherwise.
 	 */
-	getCrossing(φ0: number, λ0: number, φ1:number, λ1: number, λX: number): Place {
-		const pos0 = this.surface.xyz(φ0, λ0-λX);
-		const pos1 = this.surface.xyz(φ1, λ1-λX);
-		const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
-			pos1.x - pos0.x);
-		const φX = this.surface.φλ(posX.x, posX.y, posX.z).φ;
-		return {φ: φX, λ: λX};
+	getCrossing(φλ0: number[], φλ1: number[]): {endpoint0: Place, endpoint1: Place} {
+		const [φ0, λ0] = φλ0;
+		const [φ1, λ1] = φλ1;
+		const pos0 = this.surface.xyz(φ0, λ0);
+		const pos1 = this.surface.xyz(φ1, λ1);
+		if (Math.abs(λ1 - λ0) > Math.PI) {
+			const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
+				pos1.x - pos0.x);
+			const φX = this.surface.φλ(posX.x, posX.y, posX.z).φ;
+			const λX = (λ0 > λ1) ? Math.PI : -Math.PI;
+			return {
+				endpoint0: {φ: φX, λ: λX},
+				endpoint1: {φ: φX, λ: -λX},
+			};
+		}
+		else if (Math.abs(φ1 - φ0) > Math.PI) {
+			const posX = pos0.times(pos1.z).plus(pos1.times(-pos0.z)).over(
+				pos1.z - pos0.z);
+			const φX = (φ0 > φ1) ? Math.PI : -Math.PI;
+			const λX = this.surface.φλ(posX.x, posX.y, posX.z).λ;
+			return {
+				endpoint0: {φ: φX, λ: λX},
+				endpoint1: {φ: -φX, λ: λX},
+			};
+		}
+		return null;
 	}
 
 	/**
@@ -882,40 +875,65 @@ class MapProjection {
 	}
 
 	/**
-	 * generate some <path> segments to go around the North Pole for the zero-length path from 180E to W at latitude 90N
-	 * @return Array containing PathSegment
+	 * bild the list of map edges
 	 */
-	outlineNorthPole(): PathSegment[] {
-		const {x, y} = this.project(this.surface.φMax, -Math.PI);
+	getEdges(): {start: Place, end: Place, tracer: (φ0: number, λ0: number, φ1: number, λ1: number) => PathSegment[]}[] {
+		console.assert(this.surface !== undefined);
+		if (this.edges === undefined) {
+			this.edges = [
+				{
+					start: {φ: this.surface.φMax, λ:  Math.PI}, end: null,
+					tracer: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMax),
+				},
+				{
+					start: {φ: this.surface.φMax, λ: -Math.PI}, end: null,
+					tracer: (φ0, _0, φ1, _1) => this.drawMeridian(φ0, φ1, -Math.PI),
+				},
+				{
+					start: {φ: this.surface.φMin, λ: -Math.PI}, end: null,
+					tracer: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMin),
+				},
+				{
+					start: {φ: this.surface.φMin, λ:  Math.PI}, end: null,
+					tracer: (φ0, _0, φ1, _1) => this.drawMeridian(φ0, φ1, Math.PI),
+				},
+			];
+			for (let i = 0; i < this.edges.length; i ++)
+				this.edges[i].end = this.edges[(i+1)%this.edges.length].start;
+		}
+		return this.edges;
+	}
+
+	/**
+	 * return a number indicating where on the edge of map this point lies
+	 * @return the index of the edge that contains this point plus the fraccional distance from that edges start to its
+	 * end of that point, or null if there is no such edge.
+	 */
+	getPositionOnEdge(φ: number, λ: number): number {
+		for (let i = 0; i < this.getEdges().length; i ++) {
+			const edge = this.getEdges()[i];
+			if (φ >= Math.min(edge.start.φ, edge.end.φ) && φ <= Math.max(edge.start.φ, edge.end.φ) &&
+				λ >= Math.min(edge.start.λ, edge.end.λ) && λ <= Math.max(edge.start.λ, edge.end.λ))
+				return i +
+					((φ - edge.start.φ)*(edge.end.φ - edge.start.φ) + (λ - edge.start.λ)*(edge.end.λ - edge.start.λ))/
+					(Math.pow(edge.end.φ - edge.start.φ, 2) + Math.pow(edge.end.λ - edge.start.λ, 2));
+		}
+		return null;
+	}
+
+	/**
+	 * generate some <path> segments to trace a line of constant latitude between two longitudes
+	 */
+	drawParallel(λ0: number, λ1: number, φ: number): PathSegment[] {
+		const {x, y} = this.project(φ, λ1);
 		return [{type: 'L', args: [x, y]}];
 	}
 
 	/**
-	 * generate some <path> segments to outline the antimeridian on the left from latitude φ0 to φ1
-	 * @param φ0
-	 * @param φ1
+	 * generate some <path> segments to trace a line of constant longitude between two latitudes
 	 */
-	outlineLeftEdge(φ0: number = this.surface.φMax, φ1: number = this.surface.φMin): PathSegment[] {
-		const {x, y} = this.project(φ1, -Math.PI);
-		return [{type: 'L', args: [x, y]}];
-	}
-
-	/**
-	 * generate some <path> segments to go around the South Pole for the zero-length path from 180W to E at latitude 90S
-	 * @return Array containing PathSegment
-	 */
-	outlineSouthPole(): PathSegment[] {
-		const {x, y} = this.project(this.surface.φMin, Math.PI);
-		return [{type: 'L', args: [x, y]}];
-	}
-
-	/**
-	 * generate some <path> segments to outline the antimeridian on the right from latitude φ0 to φ1
-	 * @param φ0
-	 * @param φ1
-	 */
-	outlineRightEdge(φ0: number = this.surface.φMin, φ1: number = this.surface.φMax): PathSegment[] {
-		const {x, y} = this.project(φ1, Math.PI);
+	drawMeridian(φ0: number, φ1: number, λ: number): PathSegment[] {
+		const {x, y} = this.project(φ1, λ);
 		return [{type: 'L', args: [x, y]}];
 	}
 }
@@ -981,6 +999,7 @@ export class EqualArea extends MapProjection {
 
 	constructor(surface: Surface) {
 		super(surface, null, null, null, 0);
+
 		let avgWidth = 0;
 		for (let i = 1; i < surface.refLatitudes.length; i ++) // first measure the typical width of the surface
 			avgWidth += surface.dAds((surface.refLatitudes[i-1] + surface.refLatitudes[i])/2)*
@@ -990,10 +1009,10 @@ export class EqualArea extends MapProjection {
 		this.xRef = [];
 		this.yRef = [0];
 		for (let i = 0; i < this.φRef.length; i ++) {
-			this.xRef.push((surface.dAds(this.φRef[i]) + avgWidth)/4);
+			this.xRef.push((surface.dAds(this.φRef[i]) + avgWidth)/2/(2*Math.PI));
 			if (i > 0) {
 				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
-				this.yRef.push(this.yRef[i-1] - verAre / (2*(this.xRef[i-1] + this.xRef[i])/2));
+				this.yRef.push(this.yRef[i-1] - verAre / (2*Math.PI*(this.xRef[i-1] + this.xRef[i])/2));
 			}
 		}
 
@@ -1001,38 +1020,35 @@ export class EqualArea extends MapProjection {
 		for (const x of this.xRef)
 			if (x > maxX)
 				maxX = x;
-		this.left = -maxX;
-		this.right = maxX;
+		this.left = -Math.PI*maxX;
+		this.right = Math.PI*maxX;
 		this.bottom = this.yRef[0];
 		this.top = this.yRef[this.yRef.length-1];
 	}
 
 	project(φ: number, λ: number): {x: number, y: number} {
-		return {x: λ/Math.PI*linterp(φ, this.φRef, this.xRef), y: linterp(φ, this.φRef, this.yRef)};
+		return {x: λ*linterp(φ, this.φRef, this.xRef), y: linterp(φ, this.φRef, this.yRef)};
 	}
 
-	outlineLeftEdge(φ0: number = this.surface.φMax, φ1: number = this.surface.φMin): PathSegment[] {
+	drawMeridian(φ0: number, φ1: number, λ: number): PathSegment[] {
+		console.assert(φ0 !== φ1, φ0);
 		const edge = [];
-		const i0 = Math.ceil(
-			(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
-		const i1 = Math.floor(
-			(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
-		for (let i = i0 - 1; i > i1; i --)
-			edge.push({type: 'L', args: [-this.xRef[i], this.yRef[i]]});
-		const {x, y} = this.project(φ1, -Math.PI);
-		edge.push({type: 'L', args: [x, y]});
-		return edge;
-	}
-
-	outlineRightEdge(φ0: number = this.surface.φMin, φ1: number = this.surface.φMax): PathSegment[] {
-		const edge = [];
-		const i0 = Math.floor(
-			(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
-		const i1 = Math.ceil(
-			(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
-		for (let i = i0 + 1; i < i1; i ++)
-			edge.push({type: 'L', args: [this.xRef[i], this.yRef[i]]});
-		const {x, y} = this.project(φ1, Math.PI);
+		let i0, i1;
+		if (φ1 > φ0) {
+			i0 = Math.floor(
+				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) + 1;
+			i1 = Math.ceil(
+				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
+		}
+		else {
+			i0 = Math.ceil(
+				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) - 1;
+			i1 = Math.floor(
+				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
+		}
+		for (let i = i0; i !== i1; i += Math.sign(i1 - i0))
+			edge.push({type: 'L', args: [λ*this.xRef[i], this.yRef[i]]});
+		const {x, y} = this.project(φ1, λ);
 		edge.push({type: 'L', args: [x, y]});
 		return edge;
 	}
@@ -1042,33 +1058,40 @@ export class EqualArea extends MapProjection {
  * an azimuthal equidistant projection
  */
 export class Azimuthal extends MapProjection {
+	private readonly rMax: number;
+	private readonly rMin: number;
+
 	constructor(surface: Surface) {
-		super(surface, -surface.height, surface.height, -surface.height, surface.height);
+		const r0 = surface.dAds(Math.PI)/(2*Math.PI);
+		const rMax = r0 + linterp(Math.PI, surface.refLatitudes, surface.cumulDistances);
+		super(surface, -rMax, rMax, -rMax, rMax);
+		this.rMax = rMax;
+		this.rMin = rMax - surface.height;
 	}
 
 	project(φ: number, λ: number): {x: number, y: number} {
-		const p = this.surface.height - linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
-		return {x: p*Math.sin(λ), y: p*Math.cos(λ)};
+		const r = this.rMax - linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
+		return {x: r*Math.sin(λ), y: r*Math.cos(λ)};
 	}
 
-	outlineSouthPole(): PathSegment[] {
-		return [
-			{type: 'M', args: [0, -this.surface.height]},
-			{type: 'A', args: [this.surface.height, this.surface.height, 0, 1, 0, 0, this.surface.height]},
-			{type: 'A', args: [this.surface.height, this.surface.height, 0, 1, 0, 0, -this.surface.height]},
-		];
-	}
-
-	outlineLeftEdge(φ0: number = this.surface.φMax, φ1: number = this.surface.φMin): PathSegment[] {
-		return [
-			{type: 'M', args: [0, linterp(φ1, this.surface.refLatitudes, this.surface.cumulDistances) - this.surface.height]},
-		];
-	}
-
-	outlineRightEdge(φ0: number = this.surface.φMin, φ1: number = this.surface.φMax): PathSegment[] {
-		return [
-			{type: 'M', args: [0, linterp(φ1, this.surface.refLatitudes, this.surface.cumulDistances) - this.surface.height]},
-		];
+	drawParallel(λ0: number, λ1: number, φ: number): PathSegment[] {
+		console.assert(λ0 !== λ1, λ0);
+		const r = this.rMax - linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
+		const sweepFlag = (λ1 > λ0) ? 0 : 1;
+		if (r > 0) {
+			const {x, y} = this.project(φ, λ1);
+			if (Math.abs(λ0 - λ1) <= Math.PI)
+				return [
+					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
+				]
+			else
+				return [
+					{type: 'A', args: [r, r, 0, 0, sweepFlag, 0, r]},
+					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
+				];
+		}
+		else
+			return [];
 	}
 }
 

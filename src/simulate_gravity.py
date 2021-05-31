@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.special import jv, jn_zeros
 import scipy.optimize as opt
 
-MODE = 'ellipsoid'
+MODE = 'toroid'
 PARAM_SWEEP = np.linspace(1, 3.5, 51)
 
 RES = 20

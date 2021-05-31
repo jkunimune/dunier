@@ -2,7 +2,7 @@
 
 import "./lib/jquery.min.js";//TODO: I should not be using jquery here
 import {generateTerrain} from "./terrain.js";
-import {Sphere, Spheroid, Surface} from "./surface.js";
+import {Sphere, Spheroid, Surface, Toroid} from "./surface.js";
 import {World} from "./world.js";
 import {Convention} from "./language.js";
 import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
@@ -65,11 +65,11 @@ function planetApply() {
 					obliquity);
 			}
 		} else if (planetType === '1') { // toroid
-			// surface = new Toroid(
-			// 	radius,
-			// 	gravity,
-			// 	spinRate,
-			// 	obliquity);
+			surface = new Toroid(
+				radius,
+				gravity,
+				spinRate,
+				obliquity);
 		} else if (planetType === '2') { // plane
 			if (tidallyLocked) { // with static sun
 				// surface = new StaticPlane(
@@ -82,9 +82,14 @@ function planetApply() {
 		}
 	} catch (err) {
 		if (err instanceof RangeError) {
+			let message: string;
+			if (err.message.startsWith("Too fast"))
+				message = "The planet tore itself apart. Please choose a longer day length."; // TODO: translate this.  and/or automatically correct it.
+			else if (err.message.startsWith("Too slow"))
+				message = "The planet broke into pieces. Please choose a shorter day length."; // TODO: translate this.  and/or automatically correct it.
 			$('#alert-box').append(
 				"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
-				"  The planet tore itself apart. Please try different parameters.\n" +
+				`  ${message}\n` +
 				"  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>\n" +
 				"    <span aria-hidden='true'>&times;</span>\n" +
 				"  </button>\n" +
@@ -93,6 +98,7 @@ function planetApply() {
 		} else
 			throw err;
 	}
+	surface.initialize();
 
 	const plotDiv = $('#planet-map');
 	if (plotDiv.is(':visible')) {

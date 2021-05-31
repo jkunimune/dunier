@@ -34,22 +34,34 @@ export function legendreP6(y: number): number {
 }
 
 /**
+ * from Alice Nadeau and Richard McGehee (2018)
+ * @param obliquity
+ * @param latitude
+ */
+export function annualInsolationFunction(obliquity: number, latitude: number) {
+	return 1 -
+		5/8.*legendreP2(Math.cos(obliquity))*legendreP2(Math.sin(latitude)) -
+		9/64.*legendreP4(Math.cos(obliquity))*legendreP4(Math.sin(latitude)) -
+		65/1024.*legendreP6(Math.cos(obliquity))*legendreP6(Math.sin(latitude));
+}
+
+/**
  * linearly interpolate x from the sorted function X onto the corresponding output Y.
  */
-export function linterp(x: number, X: number[], Y: number[]): number {
-	if (X.length !== Y.length)
+export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
+	if (inRef.length !== exRef.length)
 		throw "array lengths must match";
 
-	let min = 0, max = X.length - 1;
+	let min = 0, max = inRef.length - 1;
 	while (max - min > 1) {
 		const mid = Math.trunc((min + max)/2);
-		if (X[mid] <= x)
+		if (inRef[mid] <= inVal)
 			min = mid;
 		else
 			max = mid;
 	}
 
-	return (x - X[min])/(X[max] - X[min])*(Y[max] - Y[min]) + Y[min];
+	return (inVal - inRef[min])/(inRef[max] - inRef[min])*(exRef[max] - exRef[min]) + exRef[min];
 }
 
 /**
@@ -215,17 +227,32 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
 		partition = [[0, 1, 2], [2, 3, 0]]; // and triangulate it trivially
 	}
 
-	const nodos: Nodo[] = []; // convert the primitive inputs into our own object formats
+	const nodos: DelaunayNodo[] = []; // convert the primitive inputs into our own object formats
 	for (let i = 0; i < sample.length; i ++)
-		nodos.push(new Nodo(i - sample.length, sample[i], sampleNormals[i%sampleNormals.length]));
-	const triangles = partition.map((t: number[]) => new Triangle(nodos[t[0]], nodos[t[1]], nodos[t[2]]));
+		nodos.push(new DelaunayNodo(i - sample.length, sample[i], sampleNormals[i%sampleNormals.length]));
+	const triangles = partition.map((t: number[]) =>
+		new DelaunayTriangle(nodos[t[0]], nodos[t[1]], nodos[t[2]], true));
 	for (let i = 0; i < points.length; i ++)
-		nodos.push(new Nodo(i, points[i], normals[i%normals.length]));
+		nodos.push(new DelaunayNodo(i, points[i], normals[i%normals.length]));
 
+	// console.log(`particion = np.array([`);
+	// for (const node of sample)
+	// 	console.log(`[${node.x}, ${node.y}, ${node.z}],`);
+	// console.log(`])`);
+	// console.log(`nodos = np.array([`);
+	// for (const node of nodos.slice(sample.length, sample.length+50))
+	// 	console.log(`[${node.r.x}, ${node.r.y}, ${node.r.z}],`);
+	// console.log(`])`);
+
+	// console.log(`triangles = [`);
 	for (const node of nodos.slice(sample.length)) { // for each node,
+		// if (node.i >= 50) {
+		// 	console.log(']');
+		// 	throw "ew";
+		// }
 		const containing = findSmallestEncompassing(node, triangles); // find out which triangle it's in
 		for (let j = 0; j < 3; j ++) { // add the three new child triangles
-			triangles.push(new Triangle(
+			triangles.push(new DelaunayTriangle(
 				node,
 				containing.nodos[j],
 				containing.nodos[(j + 1) % 3]));
@@ -233,7 +260,7 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
 		containing.children = triangles.slice(triangles.length - 3); // we could remove containing from triangles now, but it would be a waste of time
 		const flipQueue = []; // start a list of edges to try flipping
 		for (let i = 0; i < 3; i ++)
-			flipQueue.push(new Edge(containing.nodos[i], containing.nodos[(i+1)%3])); // and put the edges of this triangle on it
+			flipQueue.push(new DelaunayEdge(containing.nodos[i], containing.nodos[(i+1)%3])); // and put the edges of this triangle on it
 		const flipHistory = flipEdges(flipQueue, triangles, [], node); // do the flipping thing
 		node.parents = [];
 		for (const triangle of node.triangles) { // its parentage is all currently connected non-dummy nodes
@@ -244,18 +271,26 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
 			if (edge.a.i >= 0 && edge.b.i >= 0)
 				node.between.push([edge.a, edge.b]);
 		}
+
+		// console.log(`[`);
+		// for (let j = 0; j < triangles.length; j ++)
+		// 	if (triangles[j].children === null)
+		// 		console.log(`[${triangles[j].nodos[0].i}, ${triangles[j].nodos[1].i}, ${triangles[j].nodos[2].i}],`);
+		// console.log(`],`);
 	}
+	// console.log(`]`);
 
 	for (const node of nodos.slice(0, sample.length)) { // now remove the partition vertices
+		// console.log(node);
 		triangles.push(...removeNode(node));
 	}
 
-	const triangleIdx = triangles.filter((t: Triangle) => t.children === null)
-		.map((t: Triangle) => t.nodos.map((n: Nodo) => n.i));
-	const parentIdx = nodos.filter((n: Nodo) => n.i >= 0)
-		.map((n: Nodo) => n.parents.map((n: Nodo) => n.i));
-	const betweenIdx = nodos.filter((n: Nodo) => n.i >= 0)
-		.map((n: Nodo) => n.between.map((ns: Nodo[]) => [ns[0].i, ns[1].i]));
+	const triangleIdx = triangles.filter((t: DelaunayTriangle) => t.children === null)
+		.map((t: DelaunayTriangle) => t.nodos.map((n: DelaunayNodo) => n.i));
+	const parentIdx = nodos.filter((n: DelaunayNodo) => n.i >= 0)
+		.map((n: DelaunayNodo) => n.parents.map((n: DelaunayNodo) => n.i));
+	const betweenIdx = nodos.filter((n: DelaunayNodo) => n.i >= 0)
+		.map((n: DelaunayNodo) => n.between.map((ns: DelaunayNodo[]) => [ns[0].i, ns[1].i]));
 	return {triangles: triangleIdx, parentage: parentIdx, between: betweenIdx}; // convert all to indices and return
 }
 
@@ -265,8 +300,8 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
  * @param node the dummy node to be removed
  * @return array of new Triangles
  */
-function removeNode(node: Nodo): Triangle[] {
-	const oldTriangles: Triangle[] = [[...node.triangles].filter((t: Triangle) => t.children === null)[0]]; // starting with an arbitrary neighboring triangle
+function removeNode(node: DelaunayNodo): DelaunayTriangle[] {
+	const oldTriangles: DelaunayTriangle[] = [[...node.triangles].filter((t: DelaunayTriangle) => t.children === null)[0]]; // starting with an arbitrary neighboring triangle
 	while (true) { // trace the graph to find the surrounding triangles in widershins order
 		let prev = oldTriangles[oldTriangles.length - 1];
 		let med = clockwiseOf(node, prev);
@@ -309,9 +344,9 @@ function removeNode(node: Nodo): Triangle[] {
  * @param node the dummy node to be removed
  * @param surroundings all triangles connected to node to be destroyed, in widershins order
  */
-function removeNodeInterior(node: Nodo, surroundings: Triangle[]): Triangle[] {
-	const newTriangles: Triangle[] = [];
-	const flipQueue: Edge[] = [], flipImmune: Edge[] = [];
+function removeNodeInterior(node: DelaunayNodo, surroundings: DelaunayTriangle[]): DelaunayTriangle[] {
+	const newTriangles: DelaunayTriangle[] = [];
+	const flipQueue: DelaunayEdge[] = [], flipImmune: DelaunayEdge[] = [];
 	arbitrationLoop:
 	for (let i0 = 0; i0 < surroundings.length; i0 ++) { // we have to pick an arbitrary border node to start this process
 		const a = clockwiseOf(node, surroundings[i0]); // choosing i0 is harder than it may seem if we want to avoid coincident triangles
@@ -325,10 +360,10 @@ function removeNodeInterior(node: Nodo, surroundings: Triangle[]): Triangle[] {
 			const c = clockwiseOf(node, surroundings[(i0 + j)%surroundings.length]);
 			surroundings[j].children = []; // by disabling the triangles that used to fill it
 			if (j >= 2)
-				newTriangles.push(new Triangle(a, b, c)); // and filling it with new, naively placed triangles
+				newTriangles.push(new DelaunayTriangle(a, b, c)); // and filling it with new, naively placed triangles
 			if (j >= 2 && j < surroundings.length-1)
-				flipQueue.push(new Edge(a, c)); // keep track of the edges to be flipped
-			flipImmune.push(new Edge(b, c)); // and to avoid being flipped
+				flipQueue.push(new DelaunayEdge(a, c)); // keep track of the edges to be flipped
+			flipImmune.push(new DelaunayEdge(b, c)); // and to avoid being flipped
 		} // if you make it to the end of the for loop, then arbitrary was a fine choice
 		break; // and we can proceed
 	}
@@ -342,9 +377,9 @@ function removeNodeInterior(node: Nodo, surroundings: Triangle[]): Triangle[] {
  * @param node the dummy node to be removed
  * @param neighbors all triangles connected to node to be destroyed, ordered from right to left from Node's perspective
  */
-function removeNodeHull(node: Nodo, neighbors: Triangle[]): Triangle[] {
-	const newTriangles: Triangle[] = [];
-	const flipQueue: Edge[] = [];
+function removeNodeHull(node: DelaunayNodo, neighbors: DelaunayTriangle[]): DelaunayTriangle[] {
+	const newTriangles: DelaunayTriangle[] = [];
+	const flipQueue: DelaunayEdge[] = [];
 	for (let i = neighbors.length-1; i > 0; i --) { // for each edge connected to node
 		const a = widershinsOf(node, neighbors[i-1]); // consider what would happen if you flipped it
 		const b = clockwiseOf(node, neighbors[i-1]);
@@ -352,9 +387,9 @@ function removeNodeHull(node: Nodo, neighbors: Triangle[]): Triangle[] {
 		const [ap, bp, cp] = flatten(a, b, c); // project their positions into the normal plane
 		if (isRightSideOut(ap, bp, cp)) { // if the resulting triangle could be considered a triangle by the weakest possible definition
 			neighbors[i-1].children = neighbors[i].children = []; // flip it
-			neighbors.splice(i - 1, 1, new Triangle(c, node, a)); // you get a new triangle in neighbors
-			newTriangles.push(new Triangle(a, b, c)); // and a new triangle in newTriangles
-			flipQueue.push(new Edge(a, c));
+			neighbors.splice(i - 1, 1, new DelaunayTriangle(c, node, a)); // you get a new triangle in neighbors
+			newTriangles.push(new DelaunayTriangle(a, b, c)); // and a new triangle in newTriangles
+			flipQueue.push(new DelaunayEdge(a, c));
 		}
 	}
 	for (const triangle of node.triangles) // make sure these are all gone
@@ -373,9 +408,9 @@ function removeNodeHull(node: Nodo, neighbors: Triangle[]): Triangle[] {
  * @param newestNode a node for which any edges that touch it need not be checked
  * @return Array of Edges that were flipped
  */
-export function flipEdges(queue: Edge[], triangles: Triangle[],
-						  immune: Edge[] = [], newestNode: Nodo = null): Edge[] {
-	const flipped: Edge[] = [];
+export function flipEdges(queue: DelaunayEdge[], triangles: DelaunayTriangle[],
+						  immune: DelaunayEdge[] = [], newestNode: DelaunayNodo = null): DelaunayEdge[] {
+	const flipped: DelaunayEdge[] = [];
 
 	while (queue.length > 0) { // go through that queue
 		const edge = queue.pop(); // extract the needed geometric entities
@@ -393,12 +428,12 @@ export function flipEdges(queue: Edge[], triangles: Triangle[],
 
 		const [ap, bp, cp, dp] = flatten(a, b, c, d); // project their positions into the normal plane
 		if (!isDelaunay(ap, bp, cp, dp)) { // and check for non-Delaunay edges
-			triangles.push(new Triangle(b, c, d)); // if it is so, add new triangles
-			triangles.push(new Triangle(d, a, b));
+			triangles.push(new DelaunayTriangle(b, c, d)); // if it is so, add new triangles
+			triangles.push(new DelaunayTriangle(d, a, b));
 			abc.children = cda.children = triangles.slice(triangles.length-2); // remove the old ones by assigning them children
-			flipped.push(new Edge(a, c)); // record this
-			immune.push(new Edge(a, c));
-			const perimeter = [new Edge(a, b), new Edge(b, c), new Edge(c, d), new Edge(d, a)];
+			flipped.push(new DelaunayEdge(a, c)); // record this
+			immune.push(new DelaunayEdge(a, c));
+			const perimeter = [new DelaunayEdge(a, b), new DelaunayEdge(b, c), new DelaunayEdge(c, d), new DelaunayEdge(d, a)];
 			addToQueueLoop:
 			for (const nextEdge of perimeter) { // and add the neighbors to the queue
 				for (const safeEdge of queue.concat(immune))
@@ -418,7 +453,7 @@ export function flipEdges(queue: Edge[], triangles: Triangle[],
  * Average the normal vectors of the given nodes and project them into the plane perpendicular to that normal.
  * @param nodes
  */
-function flatten(...nodes: Nodo[]) {
+function flatten(...nodes: DelaunayNodo[]) {
 	let n = new Vector(0, 0, 0);
 	for (const node of nodes)
 		n = n.plus(node.n);
@@ -461,26 +496,45 @@ function isRightSideOut(a: {x: number, y: number}, b: {x: number, y: number}, c:
  * @param node the node being encompassed
  * @param triangles the top-level list of triangles in which to search
  */
-function findSmallestEncompassing(node: Nodo, triangles: Iterable<Triangle>): Triangle {
+function findSmallestEncompassing(node: DelaunayNodo, triangles: Iterable<DelaunayTriangle>): DelaunayTriangle {
+	let bestTriangle: DelaunayTriangle = null;
+	let bestDistance: number = Number.POSITIVE_INFINITY;
 	for (const triangle of triangles) {
 		if (contains(triangle, node)) {
-			if (triangle.children === null)
-				return triangle;
-			else
-				return findSmallestEncompassing(node, triangle.children);
+			const d = /*(triangle.basic) ?*/ distance(triangle, node);// : 0; // we need to check the distance in case there are multiple candies
+			if (d < bestDistance)
+				[bestDistance, bestTriangle] = [d, triangle];
 		}
 	}
-	throw new RangeError("no eureka tingon da indu");
+	if (bestTriangle === null)
+		throw new RangeError("no eureka tingon da indu");
+	else if (bestTriangle.children === null)
+		return bestTriangle;
+	else
+		return findSmallestEncompassing(node, bestTriangle.children);
+	//
+	// for (const triangle of triangles) {
+	// 	console.log(`[`);
+	// 	for (let i = 0; i <= 3; i ++) {
+	// 		const a = (i < 3) ? triangle.nodos[i] : node;
+	// 		console.log(`[${a.r.x}, ${a.r.y}, ${a.r.z}, ${a.n.x}, ${a.n.y}, ${a.n.z}],`);
+	// 	}
+	// 	if (contains(triangle, node))
+	// 		console.log(`[0,0,0,0,0,0]],`);
+	// 	else
+	// 		console.log(`[1,1,1,1,1,1]],`);
+	// }
+
 }
 
 /**
- * determine whether this triangle contains the given Node, using its neighbors to
+ * determine whether this triangle contains the given Nodo, using its neighbors to
  * hint at the direction of the surface. must return false for points outside the
  * triangle's circumcircle.
  * @param triangle the containing triangle
  * @param p the point being contained
  */
-function contains(triangle: Triangle, p: Nodo): boolean {
+function contains(triangle: DelaunayTriangle, p: DelaunayNodo): boolean {
 	const totalNormal = triangle.nodos[0].n.plus(triangle.nodos[1].n).plus(triangle.nodos[2].n);
 	if (p.n.dot(totalNormal) < 0)
 		return false; // check alignment on the surface
@@ -499,11 +553,43 @@ function contains(triangle: Triangle, p: Nodo): boolean {
 }
 
 /**
+ * compute the minimum distance from this triangle to this Nodo.  I haven't decided
+ * yet whether it will return the normal distance or distance to nearest vertex for
+ * nodos that don't project into the triangle in its plane.
+ * @param triangle
+ * @param p
+ */
+function distance(triangle: DelaunayTriangle, p: DelaunayNodo): number {
+	for (let i = 0; i < 3; i ++) { // for each edge (you may haff to check some twice)
+		const [a, b, c] = [triangle.nodos[i%3], triangle.nodos[(i+1)%3], triangle.nodos[(i+2)%3]];
+		const u = b.r.minus(a.r); // throw together some quick orthogonal coordinates
+		const v = triangle.n.cross(u);
+		const t = v.dot(p.r.minus(a.r)); // project onto the perpendicular plane
+		if (t < 0) { // if it lands outside the triangle
+			const s = u.dot(p.r.minus(a.r)); // project onto the edge plane
+			if (s <= 0) { // if it falls too far to the left
+				if (c.r.minus(a.r).dot(p.r.minus(a.r)) > 0) // check whether it falls into the domain of the last edge
+					continue; // otherwise,
+				return Math.sqrt(p.r.minus(a.r).sqr()); // it's the distance to this vertex
+			}
+			else if (s >= u.dot(b.r.minus(a.r))) { // if it's too far to the rite
+				if (c.r.minus(b.r).dot(p.r.minus(a.r)) > 0) // check whether it falls into the domain of the next edge
+					continue; // otherwise,
+				return Math.sqrt(p.r.minus(b.r).sqr()); // it's the distance to that vertex
+			}
+			else // if it's in the middle
+				return Math.sqrt(p.r.minus(a.r).sqr() - u.dot(p.r.minus(a.r))**2/u.sqr()); // compute the point-line distance
+		}
+	}
+	return Math.abs(p.r.minus(triangle.nodos[0].r).dot(triangle.n)/Math.sqrt(triangle.n.sqr())); // compute the point-plane distance
+}
+
+/**
  * find the Nodo that appears after node on this triangle.
  * @param node
  * @param triangle
  */
-function widershinsOf(node: Nodo, triangle: Triangle) {
+function widershinsOf(node: DelaunayNodo, triangle: DelaunayTriangle) {
 	for (let i = 0; i < 3; i ++)
 		if (triangle.nodos[i] === node)
 			return triangle.nodos[(i+1)%3];
@@ -515,7 +601,7 @@ function widershinsOf(node: Nodo, triangle: Triangle) {
  * @param node
  * @param triangle
  */
-function clockwiseOf(node: Nodo, triangle: Triangle) {
+function clockwiseOf(node: DelaunayNodo, triangle: DelaunayTriangle) {
 	for (let i = 0; i < 3; i ++)
 		if (triangle.nodos[i] === node)
 			return triangle.nodos[(i+2)%3];
@@ -525,7 +611,7 @@ function clockwiseOf(node: Nodo, triangle: Triangle) {
 /**
  * find the Triangle that has these two Nodes in this order
  */
-function triangleOf(a: Nodo, b: Nodo) {
+function triangleOf(a: DelaunayNodo, b: DelaunayNodo) {
 	for (const triangle of a.triangles)
 		if (triangle.children === null && widershinsOf(a, triangle) === b)
 			return triangle;
@@ -537,7 +623,7 @@ function triangleOf(a: Nodo, b: Nodo) {
  * @param a
  * @param b
  */
-function isAdjacentTo(a: Nodo, b: Nodo) {
+function isAdjacentTo(a: DelaunayNodo, b: DelaunayNodo) {
 	for (const triangle of a.triangles)
 		if (triangle.children === null && b.triangles.has(triangle))
 			return true;
@@ -547,13 +633,13 @@ function isAdjacentTo(a: Nodo, b: Nodo) {
 /**
  * a delaunay node (voronoi polygon)
  */
-class Nodo {
+class DelaunayNodo {
 	public i: number; // index
 	public r: Vector; // position
 	public n: Vector; // normal vector
-	public triangles: Set<Triangle>; // attached triangles
-	public parents: Nodo[]; // parent nodes
-	public between: Nodo[][]; // parent nodes it separates
+	public triangles: Set<DelaunayTriangle>; // attached triangles
+	public parents: DelaunayNodo[]; // parent nodes
+	public between: DelaunayNodo[][]; // parent nodes it separates
 
 	constructor(i: number, r: Vector, n: Vector) {
 		this.i = i;
@@ -568,26 +654,30 @@ class Nodo {
 /**
  * a delaunay triangle (voronoi vertex)
  */
-class Triangle {
-	public nodos: Nodo[];
-	public children: Triangle[];
+class DelaunayTriangle {
+	public readonly nodos: DelaunayNodo[];
+	public children: DelaunayTriangle[];
+	public readonly basic: boolean;
+	public readonly n: Vector;
 
-	constructor(a: Nodo, b: Nodo, c: Nodo) {
+	constructor(a: DelaunayNodo, b: DelaunayNodo, c: DelaunayNodo, basic: boolean = false) {
 		this.nodos = [a, b, c];
 		this.children = null;
+		this.basic = basic;
 		for (const v of this.nodos)
 			v.triangles.add(this);
+		this.n = b.r.minus(a.r).cross(c.r.minus(a.r));
 	}
 }
 
 /**
- * an edge, connecting two nodes and two triangles
+ * a delaunay edge, connecting two nodes and two triangles
  */
-class Edge {
-	public a: Nodo;
-	public b: Nodo;
+class DelaunayEdge {
+	public a: DelaunayNodo;
+	public b: DelaunayNodo;
 
-	constructor(a: Nodo, b: Nodo) {
+	constructor(a: DelaunayNodo, b: DelaunayNodo) {
 		this.a = (a.i < b.i) ? a : b; // set up the order so a always has the lower index
 		this.b = (a.i < b.i) ? b : a;
 	}

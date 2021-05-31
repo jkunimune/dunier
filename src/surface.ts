@@ -1,7 +1,12 @@
 // surface.ts: defines the geometric classes
 
 import {Random} from "./random.js";
-import {delaunayTriangulate, legendreP2, legendreP4, legendreP6, linterp, Vector} from "./utils.js";
+import {
+	annualInsolationFunction,
+	delaunayTriangulate,
+	linterp,
+	Vector
+} from "./utils.js";
 
 const INTEGRATION_RESOLUTION = 32;
 const TILE_AREA = 30000; // typical area of a tile in km^2
@@ -32,9 +37,9 @@ export class Surface {
 	}
 
 	/**
-	 * fill this.nodes with random nodes
+	 * do the general constructor stuff that has to be done after the subclass constructor
 	 */
-	populate(rng: Random) {
+	initialize() {
 		this.refLatitudes = []; // fill in latitude-integrated values
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
@@ -55,7 +60,12 @@ export class Surface {
 
 		this.axis = this.xyz(0, Math.PI/2).minus(this.xyz(0, 0)).cross(
 			this.xyz(0, Math.PI).minus(this.xyz(0, Math.PI/2))).norm(); // figure out which way the coordinate system points
+	}
 
+	/**
+	 * fill this.nodes with random nodes.
+	 */
+	populate(rng: Random) {
 		const nodos: Nodo[] = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
 			nodos.push(new Nodo(i, this.randomPoint(rng), this)); // push a bunch of new ones
@@ -233,7 +243,7 @@ export class Spheroid extends Surface {
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
 		this.aspectRatio = 1 + w/2 + 1.5*w*w + 6.5*w*w*w; // numerically determined formula for oblateness
 		if (this.aspectRatio > 4)
-			throw new RangeError("Unstable planet");
+			throw new RangeError("Too fast to sustain an ellipsoidal planet.");
 		this.flattening = 1 - 1/this.aspectRatio;
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2));
 		this.obliquity = obliquity;
@@ -305,10 +315,7 @@ export class Spheroid extends Surface {
 	}
 
 	insolation(φ: number): number {
-		return 1 -
-			5/8.*legendreP2(Math.cos(this.obliquity))*legendreP2(Math.sin(φ)) -
-			9/64.*legendreP4(Math.cos(this.obliquity))*legendreP4(Math.sin(φ)) -
-			65/1024.*legendreP6(Math.cos(this.obliquity))*legendreP6(Math.sin(φ));
+		return annualInsolationFunction(this.obliquity, φ);
 	}
 
 	windConvergence(φ: number): number {
@@ -322,25 +329,25 @@ export class Spheroid extends Surface {
 	xyz(φ: number, λ: number): Vector {
 		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
 		return new Vector(
-			-this.radius*Math.cos(β)*Math.sin(λ),
-			 this.radius*Math.cos(β)*Math.cos(λ),
+			 this.radius*Math.cos(β)*Math.sin(λ),
+			-this.radius*Math.cos(β)*Math.cos(λ),
 			 this.radius*Math.sin(β)/this.aspectRatio);
 	}
 
 	φλ(x: number, y: number, z: number): Place {
 		const β = Math.atan2(this.aspectRatio*z, Math.hypot(x, y));
-		const λ = Math.atan2(-x, y);
+		const λ = Math.atan2(x, -y);
 		return {φ: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
 	}
 
 	normal(node: Place): Vector {
 		return new Vector(
-			-Math.cos(node.φ)*Math.sin(node.λ),
-			 Math.cos(node.φ)*Math.cos(node.λ),
+			 Math.cos(node.φ)*Math.sin(node.λ),
+			-Math.cos(node.φ)*Math.cos(node.λ),
 			 Math.sin(node.φ));
 	}
 
-	distance(a: Place, b: Place): number {
+	distance(a: Place, b: Place): number { // TODO: check
 		const s = Math.acos(Math.sin(a.φ)*Math.sin(b.φ) +
 			Math.cos(a.φ)*Math.cos(b.φ)*Math.cos(a.λ - b.λ));
 		const p = (a.φ + b.φ)/2;
@@ -348,6 +355,138 @@ export class Spheroid extends Surface {
 		const x = (s - Math.sin(s))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(s/2), 2);
 		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
 		return this.radius*(s - this.flattening/2*(x + y));
+	}
+}
+
+
+export class Toroid extends Surface {
+	private readonly majorRadius: number;
+	private readonly minorRadius: number;
+	private readonly elongation: number;
+	private readonly obliquity: number;
+
+	constructor(radius: number, gravity: number, omega: number, obliquity: number) {
+		super(-Math.PI, Math.PI);
+		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
+		const aspectRatio = 1/(1.010*w + 0.618*w*w); // numerically determined formula for aspect ratio
+		this.elongation = 1/(1 - 0.204*w + 4.436*w*w); // numerically determined formula for elongation
+		if (aspectRatio < 1.5)
+			throw new RangeError("Too fast to sustain a toroidal planet.");
+		if (aspectRatio > 6)
+			throw new RangeError("Too slow to sustain a toroidal planet.");
+		this.majorRadius = radius*aspectRatio/(1 + aspectRatio);
+		this.minorRadius = radius/(1 + aspectRatio);
+		this.obliquity = obliquity;
+	}
+
+	partition(): {triangles: Triangle[]; nodos: Nodo[]} {
+		const n = 2*Math.trunc(3*this.majorRadius/this.minorRadius);
+		const m = 3;
+		const nodos = [];
+		for (let i = 0; i < n; i ++) { // construct a chain of points,
+			const φ0 = (i%2 === 0) ? 0 : Math.PI/m;
+			for (let j = 0; j < m; j ++)
+				nodos.push(new Nodo(null, {
+					φ: φ0 + 2*Math.PI/m * j,
+					λ: 2*Math.PI/n * i,
+				}, this));
+		}
+
+		// console.log('nodos = np.array([');
+		// for (const nodo of nodos)
+		// 	console.log(`[${nodo.pos.x}, ${nodo.pos.y}, ${nodo.pos.z}],`);
+		// console.log('])');
+
+		// console.log('triangles = np.array([');
+		const triangles = []; // and cover it with triangles
+		for (let i = 0; i < n; i ++) {
+			for (let j = 0; j < m; j ++) {
+				for (let coords of [[[0, 0], [1, 0], [0, 1]], [[0, 1], [1, 0], [1, 1]]]) {
+					const indices = [];
+					for (let k = 0; k < 3; k ++)
+						indices.push((i + coords[k][0])%n*m + (j + coords[k][1] + (i%2)*(coords[k][0])%2)%m);
+					// console.log(`[${indices}],`);
+					triangles.push(new Triangle(
+						nodos[indices[0]], nodos[indices[1]], nodos[indices[2]]));
+				}
+			}
+		}
+		// console.log('])');
+		return {nodos: nodos, triangles: triangles};
+	}
+
+	dsdφ(φ: number): number {
+		const β = Math.atan(Math.tan(φ)*this.elongation);
+		const dβdφ = this.elongation/(
+			Math.pow(Math.cos(φ), 2) +
+			Math.pow(this.elongation*Math.sin(φ), 2));
+		const dsdβ = this.minorRadius*
+			Math.hypot(Math.sin(β), this.elongation*Math.cos(β));
+		return dsdβ*dβdφ;
+	}
+
+	dAds(φ: number): number {
+		const β = Math.atan(Math.tan(φ)*this.elongation);
+		return 2*Math.PI*(this.majorRadius + this.minorRadius*Math.cos(β));
+	}
+
+	insolation(φ: number): number {
+		const β = Math.atan(Math.tan(φ)*this.elongation);
+		const incident = annualInsolationFunction(this.obliquity, φ);
+		let opacity;
+		if (Math.cos(φ) >= 0)
+			opacity = 0;
+		else if (this.obliquity === 0)
+			opacity = 1;
+		else { // I made this formula up myself to fit some actually accurate integrals.  I'm quite proud of it.
+			const dz = 2*this.majorRadius/this.minorRadius*Math.tan(this.obliquity)/this.elongation;
+			opacity =
+				Math.min(1, Math.min(1, (1 - Math.sin(β))/dz) * Math.min(1, (1 + Math.sin(β))/dz) +
+					0.4*Math.pow(Math.sin(2*β), 2)/(1 + dz) +
+					0.8*this.elongation*this.minorRadius/this.majorRadius * Math.pow(Math.cos(φ), 3));
+		}
+		return incident*(1 - opacity);
+	}
+
+	windConvergence(φ: number): number {
+		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
+	}
+
+	windVelocity(φ: number): {n: number, d: number} {
+		return {n: 0, d: Math.cos(φ)};
+	}
+
+	xyz(φ: number, λ: number): Vector {
+		const β = Math.atan2(Math.sin(φ)*this.elongation, Math.cos(φ));
+		const r = this.majorRadius + this.minorRadius*Math.cos(β);
+		const z = this.elongation*this.minorRadius*Math.sin(β);
+		return new Vector(
+			r*Math.sin(λ), -r*Math.cos(λ), z);
+	}
+
+	φλ(x: number, y: number, z: number): Place {
+		const r = Math.hypot(x, y);
+		const β = Math.atan2(z/this.elongation, r - this.majorRadius);
+		return {
+			φ: Math.atan2(Math.sin(β)/this.elongation, Math.cos(β)),
+			λ: Math.atan2(x, -y)};
+	}
+
+	normal(node: Place): Vector {
+		return new Vector(
+			 Math.cos(node.φ)*Math.sin(node.λ),
+			-Math.cos(node.φ)*Math.cos(node.λ),
+			 Math.sin(node.φ));
+	}
+
+	distance(a: Place, b: Place): number {
+		const rAvg = 2/(
+			1/(this.majorRadius + this.minorRadius*Math.cos(a.φ)) +
+			1/(this.majorRadius + this.minorRadius*Math.cos(b.φ)));
+		const aAvg = (this.dsdφ(a.φ) + this.dsdφ(b.φ))/2;
+		const sTor = rAvg * (Math.abs(a.λ - b.λ) % (2*Math.PI));
+		const sPol = aAvg * Math.abs((a.φ - b.φ) % (2*Math.PI));
+		return Math.hypot(sTor, sPol);
 	}
 }
 
@@ -362,7 +501,7 @@ export class Sphere extends Spheroid {
 	}
 
 	insolation(φ: number): number {
-		return 1.5*Math.max(0, Math.sin(φ));
+		return 2.0*Math.max(0, Math.sin(φ));
 	}
 
 	windConvergence(φ: number): number {
@@ -389,7 +528,7 @@ export class Sphere extends Spheroid {
 
 
 /**
- * A single delaunay vertex/voronoi polygon, which contains geographical information
+ * A single Voronoi polygon, which contains geographical information
  */
 export class Nodo {
 	public surface: Surface;
@@ -462,7 +601,7 @@ export class Nodo {
 
 
 /**
- * A single Delaunay triangle/voronoi vertex, which binds three Nodos
+ * A voronoi vertex, which exists at the confluence of three Nodos
  */
 export class Triangle {
 	public φ: number;
@@ -478,6 +617,10 @@ export class Triangle {
 	public liwonice: Triangle | Nodo;
 
 	constructor(a: Nodo, b: Nodo, c: Nodo) {
+		const nodeDix = a.normal.plus(b.normal).plus(c.normal);
+		const faceDix = b.pos.minus(a.pos).cross(c.pos.minus(a.pos));
+		if (nodeDix.dot(faceDix) <= 0)
+			throw "triangles must be instantiated facing outward, but this one was not."
 		this.vertices = [a, b, c]; // nodes, ordered widdershins
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
 		this.neighbors = new Map(); // adjacent triangles
@@ -570,7 +713,7 @@ export class Triangle {
 
 
 /**
- * A line between two connected Nodes, and separating two triangles
+ * A line between two connected Nodos, and separating two triangles
  */
 export class Edge {
 	public node0: Nodo;
