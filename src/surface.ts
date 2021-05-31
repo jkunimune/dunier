@@ -426,7 +426,7 @@ export class Toroid extends Surface {
 	}
 
 	dAds(φ: number): number {
-		const β = Math.atan(Math.tan(φ)*this.elongation);
+		const β = Math.atan2(Math.sin(φ)*this.elongation, Math.cos(φ));
 		return 2*Math.PI*(this.majorRadius + this.minorRadius*Math.cos(β));
 	}
 
