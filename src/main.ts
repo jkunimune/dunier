@@ -1,31 +1,33 @@
 // index.ts: interfaces with forms and plots
 
-import "./lib/jquery.min.js";
+import "./lib/jquery.min.js";//TODO: I should not be using jquery here
 import {generateTerrain} from "./terrain.js";
 import {Sphere, Spheroid, Surface} from "./surface.js";
 import {World} from "./world.js";
-import {Convention, DeuteroLang, Language, ProtoLang, transcribe, WordType} from "./language.js";
+import {Convention} from "./language.js";
 import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
 import {Random} from "./random.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
-// import "./lib/plotly.js";
-// // @ts-ignore
-// const Plotly = window.Plotly;
+import "./lib/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
+// @ts-ignore
+const Plotly = window.Plotly;
 
 
 const TERRAIN_COLORMAP = [
-	[0.0, 'rgb(251, 252, 253)'],
-	[0.1, 'rgb(215, 233, 249)'],
-	[0.2, 'rgb(165, 217, 245)'],
-	[0.3, 'rgb(117, 204, 214)'],
-	[0.4, 'rgb( 80, 189, 174)'],
-	[0.5, 'rgb( 41, 174, 131)'],
-	[0.6, 'rgb( 13, 156,  82)'],
-	[0.7, 'rgb( 53, 134,  28)'],
-	[0.8, 'rgb( 81, 109,   0)'],
-	[0.9, 'rgb( 87,  85,   3)'],
-	[1.0, 'rgb( 85,  61,   3)'],
+	[0.00, 'rgb(251,254,248)'],
+	[0.08, 'rgb(216,231,245)'],
+	[0.17, 'rgb(164, 215, 237)'],
+	[0.25, 'rgb(104, 203, 206)'],
+	[0.33, 'rgb( 68, 185, 156)'],
+	[0.42, 'rgb(54,167,105)'],
+	[0.50, 'rgb( 64, 145,  47)'],
+	[0.58, 'rgb( 92, 116,  11)'],
+	[0.67, 'rgb(100,89,5)'],
+	[0.75, 'rgb( 99,  62,   1)'],
+	[0.83, 'rgb( 91,  33,   1)'],
+	[0.92, 'rgb(75,2,6)'],
+	[1.00, 'rgb( 41,   4,   5)'],
 ];
 
 
@@ -96,35 +98,61 @@ function planetApply() {
 	if (plotDiv.is(':visible')) {
 		console.log("grafa...");
 		const {x, y, z, I} = surface.parameterize(18);
-		// Plotly.react(
-		// 	plotDiv[0],
-		// 	[{ // TODO: only do this when the plot is out of date
-		// 		type: 'surface',
-		// 		x: x,
-		// 		y: y,
-		// 		z: z,
-		// 		surfacecolor: I,
-		// 		cmin: 0,
-		// 		cmax: 1.5,
-		// 		colorscale: TERRAIN_COLORMAP,
-		// 		showscale: false,
-		// 		lightposition: {x: 1000, y: 0, z: 0},
-		// 		hoverinfo: "none",
-		// 		contours: {x: {highlight: false}, y: {highlight: false}, z: {highlight: false}},
-		// 	}],
-		// 	{
-		// 		margin: {l: 20, r: 20, t: 20, b: 20},
-		// 		scene: {
-		// 			xaxis: {showspikes: false},
-		// 			yaxis: {showspikes: false},
-		// 			zaxis: {showspikes: false}
-		// 		},
-		// 	},
-		// 	{
-		// 		responsive: true,
-		// 	}
-		// ).then(() => {
-		// });
+		// const {nodos, triangles} = surface.partition();
+		// const x: number[] = [];
+		// const y: number[] = [];
+		// const z: number[] = [];
+		// const I: number[] = [];
+		// const is: number[] = [];
+		// const js: number[] = [];
+		// const ks: number[] = [];
+		// for (let i = 0; i < nodos.length; i ++) {
+		// 	x.push(surface.xyz(nodos[i].φ, nodos[i].λ).x);
+		// 	y.push(surface.xyz(nodos[i].φ, nodos[i].λ).y);
+		// 	z.push(surface.xyz(nodos[i].φ, nodos[i].λ).z);
+		// 	I.push(surface.insolation(nodos[i].φ));
+		// }
+		// for (let j = 0; j < triangles.length; j ++) {
+		// 	is.push(nodos.indexOf(triangles[j].vertices[0]));
+		// 	js.push(nodos.indexOf(triangles[j].vertices[1]));
+		// 	ks.push(nodos.indexOf(triangles[j].vertices[2]));
+		// }
+		Plotly.react(
+			plotDiv[0],
+			[{
+				type: 'surface',
+				x: x,
+				y: y,
+				z: z,
+				surfacecolor: I,
+				// i: is,
+				// j: js,
+				// k: ks,
+				cmin: 0.,
+				cmax: 2.,
+				colorscale: TERRAIN_COLORMAP,
+				showscale: false,
+				lightposition: {x: 1000, y: 0, z: 0},
+				hoverinfo: "none",
+				contours: {
+					x: {highlight: false},
+					y: {highlight: false},
+					z: {highlight: false}},
+			}],
+			{
+				margin: {l: 20, r: 20, t: 20, b: 20},
+				scene: {
+					xaxis: {showspikes: false},
+					yaxis: {showspikes: false},
+					zaxis: {showspikes: false},
+					aspectmode: 'data',
+				},
+			},
+			{
+				responsive: true,
+			}
+		).then(() => {
+		});
 	}
 
 	console.log("fina!");
@@ -380,17 +408,5 @@ $('#map-panel :input').on('change', () => {
  */
 $(document).ready(() => {
 	console.log("ready!");
-	for (let i = 0; i < 18; i ++) {
-		const rng = new Random(i);
-		let bash: Language = new ProtoLang(rng);
-		for (let j = 0; j < 20; j ++) {
-			let s = "";
-			for (let k = 0; k < 6; k ++)
-				s += transcribe(bash.getNamloge(k, WordType.LOKONAM)) + "  ";
-			console.log(s);
-			bash = new DeuteroLang(bash, rng);
-		}
-		console.log("");
-	}
 	$('#map-apply').click();
 }); // TODO: warn before leaving page

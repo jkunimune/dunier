@@ -118,12 +118,13 @@
 050 mute [ +VOCOID ] > [ +SHORT ] /											% loss of vowel length
 500 mute [ +NONSYLLAB ] > [ +SHORT ] / [ -VOCOID ] _						% geminates should follow vocoids
 100 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on nonvowels
-010 mute [ +ALVEO +STOP ] > [ +VOICE +TAP ] / [ +VOCOID ] _ [ +UNSTRESS +VOWEL ]% t flapping
+010 mute [ -ASPIR +ALVEO +STOP ] > [ +VOICE +TAP ] / [ +VOCOID ] _ [ +VOWEL ]% t flapping
 010 mute [ +ALVEO +STOP ] > [ +GLOT ] / [ +VOCOID ] _ [ +UNSTRESS +VOWEL ]	% t 'dropping'
 050 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +VELAR +STOP ] _	% kl > kj
 010 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +STOP ] _			% tl > tj
 010 mute [ +DENTAL +STOP -PHARYNGEALIZ ] > [ +ALVEO +FRIC ] / _ [ -CONT ]	% t > s
 010 mute [ -TENUIS +STOP -PHARYNGEALIZ ] > [ +FRIC ] / [ +CONT ] _			% stop to fricative
+002 mute [ +STOP -PHARYNGEALIZ ] > [ +FRIC ] / _ [ -VOCOID ]				% stop to fricative
 005 mute [ +VOICE +FRIC -PHARYNGEALIZ ] > [ +CLOSE ] /						% fricative to approx
 020 mute [ +FRIC ] > [ +TENUIS ] /											% fricative to tenuis
 100 mute [ +DORSAL +LABIALIZ +FRIC ] > [ +CLOSE ] /							% if it looks vocal, it vocal
@@ -166,7 +167,7 @@
 050 mute [ +VOCOID ] > [ +TENSE ] /
 200 mute [ +LONG +VOWEL ] > [ +TENSE ] /									% length-based tensing
 050 mute [ +STRESS +VOWEL ] > [ +TENSE ] /
-010 mute [ +LONG +VOWEL ] > [ +RAISED ] / _ [ -GLIDE ]						% Anglic vowel shift
+020 mute [ +LONG +VOWEL ] > [ +RAISED ] / _ [ -GLIDE ]						% Anglic vowel shift
 002 mute [ +MID ] > [ +HIGH ] /												% 3-vowel system
 010 mute [ +CLOSE +VOWEL ] > [ +LONG ] /
 010 mute [ +OBSTR +OCCL -VOICE ] > [ +ASPIR ] / _ [ +STRESS ]				% tenuis to aspirated
@@ -183,7 +184,7 @@
 005 mute [ +LONG +TRILL ] > [ +TENUIS ] /									% devoice long r
 010 mute [ +PRIMARY +MID ] > [ +NONSYLLAB +CLOSE +SHORT ]0 [ +LOW ]0 / [ -GLIDE ] _% diphthongize mid vowels I
 010 mute [ +PRIMARY +MID ] > [ +NONSYLLAB +CLOSE +SHORT ]0 [ ]0 / [ -GLIDE ] _% diphthongize mid vowels II
-010 mute [ +LONG +MID +VOWEL ] > [ +SHORT ]0 [ +NONSYLLAB +CLOSE +SHORT ]0 /% diphthongize mid vowels III
+020 mute [ +LONG +MID +VOWEL ] > [ +SHORT ]0 [ +NONSYLLAB +CLOSE +SHORT ]0 /% diphthongize mid vowels III
 020 mute [ +STRESS +VOWEL ] > [ ] [ +NONSYLLAB +CLOSE +SHORT ] / _ [ +VOWEL ]% diphthongization I
 010 mute [ +VOWEL ] > [ ] [ +NONSYLLAB +CLOSE +SHORT ] / _ [ +VOWEL ]		% diphthongization II
 002 mute [ +LAX +!PALATAL +VOWEL ] > [ +RAISED +TENSE ]0 ə̯ /				% drawl
@@ -298,7 +299,8 @@
 010 mute [ +VOWEL ] [ +LIQ ] > [ ]1 [ ]0 / [ -SONOR -CONT ] _				% gar > gra
 010 mute [ +SIBILANT ] [ -CORON +STOP ] > [ ]1 [ ]0 / _	[ +VOCOID ]			% ask > aks
 010 mute [ +STOP ] [ +SIBILANT ] > [ ]1 [ ]0 / _							% aks > ask
-020 mute [ +LIQUID ] [ +SPOKEN -LIQUID ] [ +LIQUID ] > [ ]2 [ ]1 [ ]0		% ral > lar
+010 mute [ +CORON +STOP ] [ -CORON +STOP ] > [ ]1 [ ]0 / _					% tp > pt
+020 mute [ +LIQUID ] [ -LIQUID ] [ +LIQUID ] > [ ]2 [ ]1 [ ]0				% ral > lar
 
 %%	INSERTION
 010 mute > ə / [ +OCCL +OBSTR ] _ [ +OCCL ]

@@ -20,10 +20,10 @@ t͡s	c	z	tz	ц	ts	c	c	ts	ts	z		ar	pf
 d͡z	z	z	z	дз	z	z	dz	dz	dz	z		ar	bv
 s	s	s	s	с	s	s	s	s	s	s		ar	f
 z	z	z	z	з	z	z	z	z	z	z		ar	v
-t͡ʃ	s	ch	ch	ч	ty	c	cj	ch	tṣ	c		pa	pf
-d͡ʒ	j	y	j	дж	zy	j	dzj	j	dẓ	j		pa	bv
-ʃ	sc	ch	sh	ш	sy	x	sj	sh	ṣ	x		pa	f
-ʒ	z	y	j	ж	zy	j	zj	zh	ẓ	j		pa	v
+t͡ʃ	s	ch	ch	ч	ty	c	ch	ch	tṣ	c		pa	pf
+d͡ʒ	j	y	j	дж	zy	j	dzh	j	dẓ	j		pa	bv
+ʃ	sc	ch	sh	ш	sy	x	sh	sh	ṣ	x		pa	f
+ʒ	z	y	j	ж	zy	j	zh	zh	ẓ	j		pa	v
 t͡ɬ	cl	cl	cl	тл	tor	tl	tl	tl	tl	kl	l	d	pf
 d͡ɮ	gl	gl	gl	дл	dor	dl	dl	dl	dl	gl	l	d	bv
 ɬ	l	l	fl	сл	r	l	ll	lh	lh	hl	l	d	f
@@ -39,11 +39,11 @@ r	r	rr	r	р	r	r	rr	r	r	r		d	r
 ɖ	d	d	d	д	d	d	ḍ	dr	ḍ	ḍ		rf	b
 ʈ͡ʂ	s	ch	ch	ч	ty	c	cz	ch	tṣ	ch		rf	pf
 ɖ͡ʐ	j	y	j	дж	zy	j	dz	j	dẓ	zh		rf	bv
-ʂ	sc	y	sh	ш	sy	x	ṣ	sh	ṣ	sh		rf	f
-ʐ	r	y	j	ж	zy	j	ẓ	zh	ẓ	zh		rf	v
-ꞎ	l	l	fl	л	r	l	ḷḷ	lh	ḷh	hḷ	l	rf	f
+ʂ	sc	y	sh	ш	sy	x	sz	sh	ṣ	sh		rf	f
+ʐ	r	y	j	ж	zy	j	zz	zh	ẓ	zh		rf	v
+ꞎ	l	l	fl	л	r	l	llz	lh	ḷh	hḷ	l	rf	f
 ɻ	r	r	r	р	a	r	rz	rh	ṛ	rh		rf	a
-ɭ	l	l	l	л	r	l	ḷ	lh	ḷ	ḷ	l	rf	a
+ɭ	l	l	l	л	r	l	lz	lh	ḷ	ḷ	l	rf	a
 ɽ	r	r	r	р	r	r	rz	rh	ṛ	rh		rf	t
 ɲ	gn	ñ	ny	нь	ny	ny	nj	nh	ny	ny		c	n
 c	cj	cy	c	кь	ky	ky	kj	kh	ty	ky		c	p
@@ -98,26 +98,26 @@ u	u	u	oo	у	u	u	u	u	u	u	sw	v	a
 ɯ̞	u	u	oo	ы	u	u	ÿ	eu	ị	ɨ	s	v	1
 ʊ	u	u	u*	у	u	u	u	u	ụ	u	sw	v	1
 e	e	e	e*	э	e	e	e	e	e	e	s	c	2
-ø	oe	e	ur	ё	e	e	ö	oe	ẹ	ø	sw	c	2
-ɘ	oe	e	u*	а	a	e	ə	e	ẹ	y	s	m	2
-ɵ	oe	o	ur	о	o	o	ë	o	ọ	ø	sw	m	2
+ø	œ	e	ur	ё	e	e	ö	oe	ẹ	ø	sw	c	2
+ɘ	œ	e	u*	а	a	e	ə	e	ẹ	y	s	m	2
+ɵ	œ	o	ur	о	o	o	ë	o	ọ	ø	sw	m	2
 ɤ	o	e	u*	ы	o	o	ə̈	eo	ọ	y	s	v	2
 o	o	o	o*	о	o	o	o	o	o	o	sw	v	2
 ɛ	e	e	ea	э	e	e	e	e	ẹ	e	s	c	3
-œ	oe	e	ur	ё	e	e	ö	oe	ẹ	ø	sw	c	3
+œ	œ	e	ur	ё	e	e	ö	oe	ẹ	ø	sw	c	3
 ə̯	e	e	r	а	e	e	ə	e	ẹ	y		c	3
-ə	oe	e	u*	а	e	e	ə	e	ẹ	y	s	m	3
-ɞ	oe	o	ur	о	o	o	ë	o	ọ	ø	sw	m	3
+ə	e	e	u*	а	e	e	ə	e	ẹ	y	s	m	3
+ɞ	œ	o	ur	о	o	o	ë	o	ọ	ø	sw	m	3
 ʌ	o	e	u*	ы	o	o	ə̈	eo	ọ	y	s	v	3
 ɔ	o	o	oa	о	o	o	o	o	ọ	o	sw	v	3
-æ	ae	a	a*	э	a	a	ä	a	ạ	æ	s	c	4
+æ	æ	a	a*	э	a	a	ä	a	ạ	æ	s	c	4
 ɐ	a	a	u*	а	a	a	a	a	ạ	a	s	m	4
 a	a	a	a*	а	a	a	a	a	a	a	s	c	5
 a	a	a	a*	а	a	a	a	a	a	a	s	m	5
 ɑ	a	a	a*	a	a	a	a	a	a	a	s	v	5
 ɒ	o	o	o*	о	o	o	o	ao	ọ	a	sw	v	5
-Xː	X̄	X	X-	X	X-	X	xX	Xh	X̄	X̄	Len	0	0
-Xː	Xx	X	xX	xX	xX	X	xX	xX	xX	xX	Gem	0	0
+Xː	X̄	X	X-	X	X-	X	X̄	xX	X̄	X̄	Len	0	0
+Xː	xX	X	xX	xX	xX	X	xX	xX	xX	xX	Gem	0	0
 X͡Y	Y	Y	X	XY	X	Y	XY	XY	XY	XY	Aff	0	0
 Xʰ	Xh	X	X	Xх	X	X	Xh	Xh	Xh	Xh	Asp	0	0
 Xʼ	xX	X	xX	xX	xX	X	Xʼ	xX	Xʼ	Xʼ	Ejt	0	0
