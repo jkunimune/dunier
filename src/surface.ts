@@ -380,8 +380,8 @@ export class Toroid extends Surface {
 	}
 
 	partition(): {triangles: Triangle[]; nodos: Nodo[]} {
-		const n = 2*Math.trunc(3*this.majorRadius/this.minorRadius);
 		const m = 3;
+		const n = 4*Math.trunc(m*this.majorRadius/(this.minorRadius*this.elongation));
 		const nodos = [];
 		for (let i = 0; i < n; i ++) { // construct a chain of points,
 			const φ0 = (i%2 === 0) ? 0 : Math.PI/m;
@@ -401,7 +401,7 @@ export class Toroid extends Surface {
 		const triangles = []; // and cover it with triangles
 		for (let i = 0; i < n; i ++) {
 			for (let j = 0; j < m; j ++) {
-				for (let coords of [[[0, 0], [1, 0], [0, 1]], [[0, 1], [1, 0], [1, 1]]]) {
+				for (let coords of [[[0, 0], [2, 0], [1, 0]], [[1, 0], [2, 0], [3, 0]]]) {
 					const indices = [];
 					for (let k = 0; k < 3; k ++)
 						indices.push((i + coords[k][0])%n*m + (j + coords[k][1] + (i%2)*(coords[k][0])%2)%m);
