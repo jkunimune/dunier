@@ -1,7 +1,7 @@
 # simulate_shadows.py - search for a simple formula for the insolation on the inside of a toroid
 
 import numpy as np
-from scipy import integrate, optimize
+from scipy import integrate
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style('whitegrid')
