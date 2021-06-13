@@ -124,7 +124,7 @@ export class Chart {
 	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol',
 		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
 		   civLabels: boolean = false, geoLabels: boolean = false,
-		   fontSize: number = 12, convention: Convention = Convention.CHANSAGI_2) {
+		   fontSize: number = 6, convention: Convention = Convention.CHANSAGI_2) {
 		svg.setAttribute('viewBox',
 			`${this.projection.left} ${this.projection.top}
 			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
@@ -202,10 +202,9 @@ export class Chart {
 		}
 
 		if (civLabels && world !== null) {
-			for (const civ of world.civs) {
+			for (const civ of world.civs)
 				if (civ.getPopulation() > 0)
 					this.label([...civ.nodos].filter(n => n.biome !== 'samud'), civ.getName(convention), svg, fontSize);
-			}
 		}
 	}
 
@@ -291,7 +290,7 @@ export class Chart {
 	 * @param label the text to place.
 	 * @param svg the SVG object on which to write the label.
 	 * @param minFontSize the smallest the label can be. if the label cannot fit inside the region with this font size,
-	 * no label will be placed.
+	 * no label will be placed and it will return null.
 	 */
 	label(nodos: Nodo[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
 		this.testText.textContent = '..'+label+'..';
@@ -433,6 +432,8 @@ export class Chart {
 					break; // reduce the required clearance and try again
 			}
 		}
+		if (candidates.length === 0)
+			return null;
 
 		let axisValue = Number.NEGATIVE_INFINITY;
 		let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisH = null;
@@ -466,7 +467,7 @@ export class Chart {
 						const p = a*(x**2 + y**2) + b*x + c*y + d;
 						err += Math.pow(2*p/(1 + Math.sqrt(1 + 4*a*p)), 2); // sum of squares of distances to arc
 					}
-					return err + 0.1*Math.log(det)**2; // augmented with square of geometric distance of determinant from +1.0
+					return err + 0.1*Math.log(det)**2; // augmented with square of geometric distance of determinant from +1.0 TODO: why did I add this factor?  shouldn't I be adding the log of the radius?
 				},
 				[a, b, c, d],
 				[1/6/l, 1/6, 1/6, l/6],
@@ -575,7 +576,7 @@ export class Chart {
 				axisCy = cy;
 				axisΘL = θ0 + best/R - height*aspect/R;
 				axisΘR = θ0 + best/R + height*aspect/R;
-				axisH = 2*Math.abs(height);
+				axisH = 2*Math.abs(height); // TODO: enforce font size limit
 			}
 		}
 		if (axisR === null)
@@ -639,8 +640,18 @@ export class Chart {
 		let touchedEdge = false;
 		for (let i = 1; i < segments.length; i ++) { // first, handle places where it crosses the edge of the map
 			if (segments[i].type === 'L') {
+				if (!Number.isFinite(segments[i].args[0])) { // if a point is at infinity
+					if (segments[i].args[0] < 0)
+						segments.splice(i, 1, // remove it
+							{type: 'L', args: [this.projection.surface.φMin, segments[i-1].args[1]]},
+							{type: 'M', args: [this.projection.surface.φMin, segments[i+1].args[1]]}); // and add a moveto along the South edge
+					else
+						throw "I haven't accounted for positive infinity points.";
+					touchedEdge = true;
+				}
+
 				const crossing = this.projection.getCrossing(segments[i-1].args, segments[i].args);
-				if (crossing !== null) { // if you find one
+				if (crossing !== null) { // otherwise, if it jumps across an interruption
 					const {endpoint0, endpoint1} = crossing;
 					segments.splice(i, 0,
 						{type: 'L', args: [endpoint0.φ, endpoint0.λ]}, // insert a line to the very edge
@@ -667,7 +678,7 @@ export class Chart {
 		let supersectionStart = jinPoints[0].args;
 		while (jinPoints !== undefined) {
 			const base = cutPoints.length;
-			for (let i = 0; i < jinPoints.length; i ++) { // run through the section
+			for (let i = 0; i < jinPoints.length; i ++) { // now run through the section
 				const [φ1, λ1] = jinPoints[i].args;
 				const {x, y} = this.projection.project(φ1, λ1); // projecting points and adding them to the thing
 				cutPoints.push({type: jinPoints[i].type, args: [x, y]});
@@ -680,9 +691,9 @@ export class Chart {
 				if (Math.hypot(x1 - x0, y1 - y0) > precision) { // and fill in segments that are too long
 					const [φ0, λ0] = jinPoints[i-base-1].args;
 					const [φ1, λ1] = jinPoints[i-base].args;
-					const {φ, λ} = this.projection.getMidpoint(φ0, λ0, φ1, λ1); // and split them in half
+					const {φ, λ} = this.projection.getMidpoint(φ0, λ0, φ1, λ1); // by splitting them in half
 					const {x, y} = this.projection.project(φ, λ);
-					jinPoints.splice(i-base, 0, {type: 'L', args: [φ, λ]}); // add the midpoints to the polygon
+					jinPoints.splice(i-base, 0, {type: 'L', args: [φ, λ]}); // and adding the midpoints to the polygon
 					cutPoints.splice(i,           0, {type: 'L', args: [x, y]});
 					i --; // and check again
 					repeatCount ++;
@@ -1067,8 +1078,8 @@ export class Azimuthal extends MapProjection {
 	private readonly rMin: number;
 
 	constructor(surface: Surface) {
-		const r0 = surface.dAds(Math.PI)/(2*Math.PI);
-		const rMax = r0 + linterp(Math.PI, surface.refLatitudes, surface.cumulDistances);
+		const r0 = surface.dAds(Math.PI/2)/(2*Math.PI);
+		const rMax = r0 + linterp(Math.PI/2, surface.refLatitudes, surface.cumulDistances);
 		super(surface, -rMax, rMax, -rMax, rMax);
 		this.rMax = rMax;
 		this.rMin = rMax - surface.height;
@@ -1194,29 +1205,45 @@ function trace(lines: Iterable<Place[]>): PathSegment[] {
  */
 function outline(nodos: Set<Nodo>): PathSegment[] {
 	const accountedFor = new Set(); // keep track of which Edge have been done
-	const output: PathSegment[] = [];
+	const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire map?
 	for (let ind of nodos) { // look at every included node
 		for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
-			if (nodos.has(way))    continue; // (really we only care about excluded way)
-			let edge = ind.neighbors.get(way);
-			if (accountedFor.has(edge)) continue; // (and can ignore edges we've already hit)
+			if (nodos.has(way))    continue; // (we only care if that adjacent node is excluded)
+			const startingEdge = ind.neighbors.get(way); // the edge between them defines the start of the loop
+			if (accountedFor.has(startingEdge)) continue; // (and can ignore edges we've already hit)
 
 			const loopIdx = output.length;
-			const start = edge; // the edge between them defines the start of the loop
 			do {
 				const next = ind.leftOf(way); // look for the next triangle, going widdershins
-				const vertex = next.circumcenter; // pick out its circumcenter to plot
-				output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
-				accountedFor.add(edge); // check this edge off
-				if (nodos.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
-					ind = next.acrossFrom(edge); // advance one of the state nodos
-				else
-					way = next.acrossFrom(edge);
-				edge = ind.neighbors.get(way); // and update edge
-			} while (edge !== start); // continue for the full loop
+				if (next !== null) { // assuming there is one,
+					const vertex = next.circumcenter; // pick out its circumcenter to plot
+					output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
+					const lastEdge = ind.neighbors.get(way);
+					accountedFor.add(lastEdge); // check this edge off
+					if (nodos.has(next.acrossFrom(lastEdge))) // then, depending on the state of the Node after that Triangle
+						ind = next.acrossFrom(lastEdge); // advance one of the state nodos
+					else
+						way = next.acrossFrom(lastEdge);
+				}
+				else { // if there isn't a next triangle
+					if (output.length > loopIdx)
+						output.push({type: 'L', args: [Number.NEGATIVE_INFINITY, Number.NaN]}); // draw a line to infinity
+					else
+						break; // unless you're trying to start a new seccion; the lines to infinity must be in the middle of seccions
+					way = ind;
+					let i = 0;
+					do {
+						way = way.surface.edge.get(way).next; // and shimmy way around the internal portion of the edge
+						i ++;
+					} while (nodos.has(way)); // until it becomes external again
+					ind = way.surface.edge.get(way).prev; // then, grab the new ind and continue
+				}
+			} while (ind.neighbors.get(way) !== startingEdge && output.length < 10000); // continue until you go all the way around this loop
 
-			output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
-			output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
+			if (loopIdx < output.length) {
+				output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
+				output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
+			}
 		}
 	}
 

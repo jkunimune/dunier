@@ -2,7 +2,7 @@
 
 import "./lib/jquery.min.js";//TODO: I should not be using jquery here
 import {generateTerrain} from "./terrain.js";
-import {Sphere, Spheroid, Surface, Toroid} from "./surface.js";
+import {Disc, Sphere, Spheroid, Surface, Toroid} from "./surface.js";
 import {World} from "./world.js";
 import {Convention} from "./language.js";
 import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
@@ -47,9 +47,9 @@ function planetApply() {
 	console.log("jena planete...");
 	const planetType = $('#planet-type').val(); // read input
 	const tidallyLocked = $('#planet-locked').prop('checked');
-	const radius = Number($('#planet-size').val()) / (2 * Math.PI);
+	const radius = Number($('#planet-size').val()) / (2*Math.PI);
 	const gravity = Number($('#planet-gravity').val()) * 9.8;
-	const spinRate = 1 / Number($('#planet-day').val()) * 2 * Math.PI / 3600;
+	const spinRate = 1 / Number($('#planet-day').val()) * 2*Math.PI / 3600;
 	const obliquity = Number($('#planet-tilt').val()) * Math.PI / 180;
 
 	try { // create a surface
@@ -75,9 +75,9 @@ function planetApply() {
 				// surface = new StaticPlane(
 				// 	radius);
 			} else { // with orbiting sun
-				// surface = new Plane(
-				// 	radius,
-				// 	obliquity);
+				surface = new Disc(
+					radius,
+					obliquity);
 			}
 		}
 	} catch (err) {
@@ -148,10 +148,19 @@ function planetApply() {
 			{
 				margin: {l: 20, r: 20, t: 20, b: 20},
 				scene: {
-					xaxis: {showspikes: false},
-					yaxis: {showspikes: false},
-					zaxis: {showspikes: false},
-					aspectmode: 'data',
+					xaxis: {
+						showspikes: false,
+						range: [-radius, radius],
+					},
+					yaxis: {
+						showspikes: false,
+						range: [-radius, radius],
+					},
+					zaxis: {
+						showspikes: false,
+						range: [-radius, radius],
+					},
+					aspectmode: 'cube',
 				},
 			},
 			{

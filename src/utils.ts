@@ -34,18 +34,6 @@ export function legendreP6(y: number): number {
 }
 
 /**
- * from Alice Nadeau and Richard McGehee (2018)
- * @param obliquity
- * @param latitude
- */
-export function annualInsolationFunction(obliquity: number, latitude: number) {
-	return 1 -
-		5/8.*legendreP2(Math.cos(obliquity))*legendreP2(Math.sin(latitude)) -
-		9/64.*legendreP4(Math.cos(obliquity))*legendreP4(Math.sin(latitude)) -
-		65/1024.*legendreP6(Math.cos(obliquity))*legendreP6(Math.sin(latitude));
-}
-
-/**
  * linearly interpolate x from the sorted function X onto the corresponding output Y.
  */
 export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
@@ -62,6 +50,38 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 	}
 
 	return (inVal - inRef[min])/(inRef[max] - inRef[min])*(exRef[max] - exRef[min]) + exRef[min];
+}
+
+/**
+ * generate a set of three mutually orthogonal Vectors
+ * @param n the direction of the n vector
+ * @param normalize whether to normalize the three vectors before returning them
+ * @param axis v will be chosen to be coplanar with axis and n
+ * @param bias if axis and n are parallel, v will be chosen to be coplanar with axis, n, and bias
+ * @returns three vectors, u, v, and n.  if they are normalized, u×v=n, v×n=u, and n×u=v.  if they aren’t then the
+ * magnitudes will be whatever.  also, u will always be orthogonal to axis.  if there is an opcion,
+ */
+export function orthogonalBasis(n: Vector, normalize: boolean = false, axis: Vector = new Vector(0, 0, 1), bias: Vector = new Vector(1, 0, 0)): {u: Vector, v: Vector, n: Vector} {
+	if (axis.cross(n).sqr() === 0) {
+		axis = bias;
+		if (bias.cross(n).sqr() === 0) {
+			if (n.y !== 0)
+				axis = new Vector(0, 0, 1);
+			else
+				axis = new Vector(0, 1, 0);
+		}
+	}
+
+	let u = axis.cross(n);
+	let v = n.cross(u);
+
+	if (normalize) {
+		u = u.norm();
+		v = v.norm();
+		n = n.norm();
+	}
+
+	return {u: u, v: v, n: n};
 }
 
 /**
@@ -453,15 +473,14 @@ export function flipEdges(queue: DelaunayEdge[], triangles: DelaunayTriangle[],
  * Average the normal vectors of the given nodes and project them into the plane perpendicular to that normal.
  * @param nodes
  */
-function flatten(...nodes: DelaunayNodo[]) {
+export function flatten(...nodes: DelaunayNodo[]) {
 	let n = new Vector(0, 0, 0);
 	for (const node of nodes)
 		n = n.plus(node.n);
-	const v = n.cross((n.y === 0 && n.z === 0) ? new Vector(0, 1, 0) : new Vector(1, 0, 0)).norm();
-	const u = n.cross(v).norm();
+	const {u, v} = orthogonalBasis(n, true);
 	const projected = [];
 	for (const node of nodes)
-		projected.push({x: node.r.dot(v), y: node.r.dot(u)});
+		projected.push({x: node.r.dot(u), y: node.r.dot(v)});
 	return projected;
 }
 
@@ -501,18 +520,12 @@ function findSmallestEncompassing(node: DelaunayNodo, triangles: Iterable<Delaun
 	let bestDistance: number = Number.POSITIVE_INFINITY;
 	for (const triangle of triangles) {
 		if (contains(triangle, node)) {
-			const d = /*(triangle.basic) ?*/ distance(triangle, node);// : 0; // we need to check the distance in case there are multiple candies
-			if (d < bestDistance)
-				[bestDistance, bestTriangle] = [d, triangle];
+			const d2 = /*(triangle.basic) ?*/ distanceSqr(triangle, node);// : 0; // we need to check the distance in case there are multiple candies
+			if (d2 < bestDistance)
+				[bestDistance, bestTriangle] = [d2, triangle];
 		}
 	}
-	if (bestTriangle === null)
-		throw new RangeError("no eureka tingon da indu");
-	else if (bestTriangle.children === null)
-		return bestTriangle;
-	else
-		return findSmallestEncompassing(node, bestTriangle.children);
-	//
+
 	// for (const triangle of triangles) {
 	// 	console.log(`[`);
 	// 	for (let i = 0; i <= 3; i ++) {
@@ -525,6 +538,12 @@ function findSmallestEncompassing(node: DelaunayNodo, triangles: Iterable<Delaun
 	// 		console.log(`[1,1,1,1,1,1]],`);
 	// }
 
+	if (bestTriangle === null)
+		throw new RangeError("no eureka tingon da indu");
+	else if (bestTriangle.children === null)
+		return bestTriangle;
+	else
+		return findSmallestEncompassing(node, bestTriangle.children);
 }
 
 /**
@@ -553,16 +572,14 @@ function contains(triangle: DelaunayTriangle, p: DelaunayNodo): boolean {
 }
 
 /**
- * compute the minimum distance from this triangle to this Nodo.  I haven't decided
- * yet whether it will return the normal distance or distance to nearest vertex for
- * nodos that don't project into the triangle in its plane.
+ * compute the square of the minimum distance from this triangle to this Nodo.
  * @param triangle
  * @param p
  */
-function distance(triangle: DelaunayTriangle, p: DelaunayNodo): number {
-	for (let i = 0; i < 3; i ++) { // for each edge (you may haff to check some twice)
+function distanceSqr(triangle: DelaunayTriangle, p: DelaunayNodo): number {
+	for (let i = 0; i < 3; i ++) { // for each edge
 		const [a, b, c] = [triangle.nodos[i%3], triangle.nodos[(i+1)%3], triangle.nodos[(i+2)%3]];
-		const u = b.r.minus(a.r); // throw together some quick orthogonal coordinates
+		const u = b.r.minus(a.r); // throw together some quick orthogonal alined with each edge
 		const v = triangle.n.cross(u);
 		const t = v.dot(p.r.minus(a.r)); // project onto the perpendicular plane
 		if (t < 0) { // if it lands outside the triangle
@@ -570,18 +587,18 @@ function distance(triangle: DelaunayTriangle, p: DelaunayNodo): number {
 			if (s <= 0) { // if it falls too far to the left
 				if (c.r.minus(a.r).dot(p.r.minus(a.r)) > 0) // check whether it falls into the domain of the last edge
 					continue; // otherwise,
-				return Math.sqrt(p.r.minus(a.r).sqr()); // it's the distance to this vertex
+				return p.r.minus(a.r).sqr(); // it's the distance to this vertex
 			}
 			else if (s >= u.dot(b.r.minus(a.r))) { // if it's too far to the rite
 				if (c.r.minus(b.r).dot(p.r.minus(a.r)) > 0) // check whether it falls into the domain of the next edge
 					continue; // otherwise,
-				return Math.sqrt(p.r.minus(b.r).sqr()); // it's the distance to that vertex
+				return p.r.minus(b.r).sqr(); // it's the distance to that vertex
 			}
 			else // if it's in the middle
-				return Math.sqrt(p.r.minus(a.r).sqr() - u.dot(p.r.minus(a.r))**2/u.sqr()); // compute the point-line distance
+				return p.r.minus(a.r).sqr() - u.dot(p.r.minus(a.r))**2/u.sqr(); // compute the point-line distance
 		}
 	}
-	return Math.abs(p.r.minus(triangle.nodos[0].r).dot(triangle.n)/Math.sqrt(triangle.n.sqr())); // compute the point-plane distance
+	return Math.pow(p.r.minus(triangle.nodos[0].r).dot(triangle.n), 2)/triangle.n.sqr(); // compute the point-plane distance
 }
 
 /**
@@ -633,7 +650,7 @@ function isAdjacentTo(a: DelaunayNodo, b: DelaunayNodo) {
 /**
  * a delaunay node (voronoi polygon)
  */
-class DelaunayNodo {
+export class DelaunayNodo {
 	public i: number; // index
 	public r: Vector; // position
 	public n: Vector; // normal vector
@@ -745,7 +762,7 @@ export class Vector {
 	}
 
 	norm(): Vector {
-		return this.times(Math.pow(this.sqr(), -0.5));
+		return this.over(Math.sqrt(this.sqr()));
 	}
 
 	toString(): string {

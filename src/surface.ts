@@ -2,9 +2,8 @@
 
 import {Random} from "./random.js";
 import {
-	annualInsolationFunction,
-	delaunayTriangulate,
-	linterp,
+	delaunayTriangulate, legendreP2, legendreP4, legendreP6,
+	linterp, orthogonalBasis,
 	Vector
 } from "./utils.js";
 
@@ -15,13 +14,14 @@ const TILE_AREA = 30000; // typical area of a tile in km^2
 /**
  * Generic 3D collection of nodes and edges
  */
-export class Surface {
+export abstract class Surface {
 	public nodos: Set<Nodo>;
 	public triangles: Set<Triangle>;
 	public rivers: Set<(Nodo | Triangle)[]>;
 	public area: number;
 	public height: number;
 	public axis: Vector; // orientation of geodetic coordinate system
+	public edge: Map<Nodo, {prev: Nodo, next: Nodo}>;
 	readonly φMin: number;
 	readonly φMax: number;
 	refLatitudes: number[];
@@ -29,11 +29,12 @@ export class Surface {
 	cumulDistances: number[];
 
 
-	constructor(φMin: number, φMax: number) {
+	protected constructor(φMin: number, φMax: number) {
 		this.nodos = new Set();
 		this.φMin = φMin;
 		this.φMax = φMax;
 		this.axis = null;
+		this.edge = new Map();
 	}
 
 	/**
@@ -58,8 +59,8 @@ export class Surface {
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
-		this.axis = this.xyz(0, Math.PI/2).minus(this.xyz(0, 0)).cross(
-			this.xyz(0, Math.PI).minus(this.xyz(0, Math.PI/2))).norm(); // figure out which way the coordinate system points
+		this.axis = this.xyz(1, Math.PI/2).minus(this.xyz(1, 0)).cross(
+			this.xyz(1, Math.PI).minus(this.xyz(1, Math.PI/2))).norm(); // figure out which way the coordinate system points
 	}
 
 	/**
@@ -116,6 +117,13 @@ export class Surface {
 			}
 			triangle.computeCircumcenter();
 		}
+
+		for (const nodo of this.nodos) // and find the edge, if there is one
+			for (const neibor of nodo.neighbors.keys())
+				if (nodo.rightOf(neibor) === null)
+					this.edge.set(nodo, {next: neibor, prev: null});
+		for (const nodo of this.edge.keys()) // and make it back-searchable
+			this.edge.get(this.edge.get(nodo).next).prev = nodo;
 	}
 
 	/**
@@ -159,77 +167,60 @@ export class Surface {
 	 * completely cover this Surface. The mesh must never diverge from the surface farther
 	 * than the radius of curvature.
 	 */
-	partition(): {nodos: Nodo[], triangles: Triangle[]} {
-		throw "Unimplemented";
-	}
+	abstract partition(): {nodos: Nodo[], triangles: Triangle[]};
 
 	/**
 	 * return the local length-to-latitude rate [km]
 	 */
-	dsdφ(φ: number): number {
-		throw "Unimplemented";
-	}
+	abstract dsdφ(φ: number): number;
 
 	/**
 	 * return the local effective width [km]
 	 */
-	dAds(φ: number): number {
-		throw "Unimplemented";
-	}
-
-	/**
-	 * return the amount of moisture accumulation at a latitude, normalized to peak at 1.
-	 */
-	windConvergence(φ: number): number {
-		throw "Unimplemented";
-	}
-
-	/**
-	 * for the purposes of the orographic effect, return a dimensionless tangent velocity.
-	 */
-	windVelocity(φ: number): {n: number, d: number} {
-		throw "Unimplemented";
-	}
+	abstract dAds(φ: number): number;
 
 	/**
 	 * return the amount of solar radiation at a latitude, normalized to average to 1.
 	 */
-	insolation(φ: number): number {
-		throw "Unimplemented";
-	}
+	abstract insolation(φ: number): number;
+
+	/**
+	 * return the amount of moisture accumulation at a latitude, normalized to peak at 1.
+	 */
+	abstract windConvergence(φ: number): number;
+
+	/**
+	 * for the purposes of the orographic effect, return a dimensionless tangent velocity.
+	 */
+	abstract windVelocity(φ: number): {nord: number, dong: number};
 
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
-	xyz(φ: number, λ: number): Vector {
-		throw "Unimplemented";
-	}
+	abstract xyz(φ: number, λ: number): Vector;
 
 	/**
 	 * return the 2D parameterization corresponding to the given parameters
 	 */
-	φλ(x: number, y: number, z: number): Place {
-		throw "Unimplemented";
-	}
+	abstract φλ(x: number, y: number, z: number): Place;
 
 	/**
 	 * return the normalized vector pointing outward at this node. the node may be assumed
 	 * to be on this Surface.
 	 */
-	normal(node: Place): Vector {
-		throw "Unimplemented";
-	}
+	abstract normal(node: Place): Vector;
 
 	/**
 	 * orthodromic distance from A to B on the surface (it's okay if it's just
 	 * an approximation).
 	 */
-	distance(a: Place, b: Place): number {
-		throw "Unimplemented";
-	}
+	abstract distance(a: Place, b: Place): number;
 }
 
 
+/**
+ * an oblate spheroid
+ */
 export class Spheroid extends Surface {
 	private readonly radius: number;
 	private readonly aspectRatio: number;
@@ -315,15 +306,15 @@ export class Spheroid extends Surface {
 	}
 
 	insolation(φ: number): number {
-		return annualInsolationFunction(this.obliquity, φ);
+		return Spheroid.annualInsolationFunction(this.obliquity, φ);
 	}
 
 	windConvergence(φ: number): number {
 		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
 	}
 
-	windVelocity(φ: number): {n: number, d: number} {
-		return {n: 0, d: Math.cos(φ)};
+	windVelocity(φ: number): {nord: number, dong: number} {
+		return {nord: 0, dong: Math.cos(φ)}; // realistically this should change direccion, but this formula makes orographs more apparent
 	}
 
 	xyz(φ: number, λ: number): Vector {
@@ -356,9 +347,137 @@ export class Spheroid extends Surface {
 		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
 		return this.radius*(s - this.flattening/2*(x + y));
 	}
+
+	/**
+	 * from Alice Nadeau and Richard McGehee (2018)
+	 * @param obliquity
+	 * @param latitude
+	 */
+	static annualInsolationFunction(obliquity: number, latitude: number) {
+		return 1 -
+			5/8.*legendreP2(Math.cos(obliquity))*legendreP2(Math.sin(latitude)) -
+			9/64.*legendreP4(Math.cos(obliquity))*legendreP4(Math.sin(latitude)) -
+			65/1024.*legendreP6(Math.cos(obliquity))*legendreP6(Math.sin(latitude));
+	}
 }
 
 
+/**
+ * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the y direction
+ * rather than the z.
+ */
+export class Sphere extends Spheroid {
+	constructor(radius: number) {
+		super(radius, 1, 0, Number.NaN);
+	}
+
+	insolation(φ: number): number {
+		return 2.0*Math.max(0, Math.sin(φ));
+	}
+
+	windConvergence(φ: number): number {
+		return Math.cos(φ);
+	}
+
+	windVelocity(φ: number): {nord: number, dong: number} {
+		return {nord: -Math.cos(φ), dong: 0};
+	}
+
+	xyz(φ: number, λ: number): Vector {
+		const {x, y, z} = super.xyz(φ, λ);
+		return new Vector(x, z, -y);
+	}
+
+	φλ(x: number, y: number, z: number): Place {
+		return super.φλ(x, -z, y);
+	}
+
+	normal(node: Nodo): Vector {
+		return node.pos.norm();
+	}
+}
+
+
+export class Disc extends Surface {
+	private readonly radius: number;
+	private readonly firmamentHite: number;
+	private readonly effectiveObliquity: number;
+
+	constructor(radius: number, obliquity: number) {
+		super(Math.atan(1/4), Math.PI/2);
+		this.radius = radius;
+		this.firmamentHite = radius/4;
+		this.effectiveObliquity = obliquity;
+	}
+
+	partition(): {triangles: Triangle[], nodos: Nodo[]} {
+		const nodos: Nodo[] = [
+			new Nodo(null, {φ: Math.atan(1/8), λ: 0}, this),
+			new Nodo(null, {φ: Math.atan(1/8), λ: Math.PI/2}, this),
+			new Nodo(null, {φ: Math.atan(1/8), λ: Math.PI}, this),
+			new Nodo(null, {φ: Math.atan(1/8), λ: 3*Math.PI/2}, this),
+		];
+
+		const triangles: Triangle[] = [
+			new Triangle(nodos[0], nodos[1], nodos[2]),
+			new Triangle(nodos[2], nodos[3], nodos[0]),
+		];
+
+		return {triangles: triangles, nodos: nodos};
+	}
+
+	dsdφ(φ: number): number {
+		return this.firmamentHite*Math.pow(Math.sin(φ), -2);
+	}
+
+	dAds(φ: number): number {
+		return 2*Math.PI*this.firmamentHite/Math.tan(φ);
+	}
+
+	insolation(φ: number): number {
+		const cosψ = Math.cos(2*this.effectiveObliquity)
+		const ρ = this.firmamentHite/this.radius/Math.tan(φ);
+		return 7/(
+			(3.865*cosψ + 6.877) -
+			(44.803*cosψ +  1.216)*Math.pow(ρ, 2) +
+			(87.595*cosψ + 19.836)*Math.pow(ρ, 4) -
+			(38.728*cosψ -  8.049)*Math.pow(ρ, 6));
+	}
+
+	windConvergence(φ: number): number {
+		return 1.5*(Math.sin(2*φ)**2 + Math.sin(3*φ)**2 - 0.5)
+	}
+
+	windVelocity(φ: number): {nord: number, dong: number} {
+		return {nord: Math.sin(2*φ), dong: 0};
+	}
+
+	xyz(φ: number, λ: number): Vector {
+		const r = this.firmamentHite/Math.tan(φ);
+		return new Vector(r*Math.sin(λ), -r*Math.cos(λ), 0);
+	}
+
+	φλ(x: number, y: number, z: number): Place {
+		return {
+			φ: Math.max(Math.atan(this.firmamentHite/Math.hypot(x, y)), this.φMin),
+			λ: Math.atan2(x, -y)};
+	}
+
+	normal(node: Place): Vector {
+		return new Vector(0, 0, 1);
+	}
+
+	distance(a: Place, b: Place): number {
+		const ar = this.firmamentHite/Math.tan(a.φ);
+		const br = this.firmamentHite/Math.tan(b.φ);
+		return Math.sqrt(ar*ar + br*br - 2*ar*br*Math.cos(a.λ - b.λ));
+	}
+}
+
+
+/**
+ * a toroidal planet
+ */
 export class Toroid extends Surface {
 	private readonly majorRadius: number;
 	private readonly minorRadius: number;
@@ -379,7 +498,7 @@ export class Toroid extends Surface {
 		this.obliquity = obliquity;
 	}
 
-	partition(): {triangles: Triangle[]; nodos: Nodo[]} {
+	partition(): {triangles: Triangle[], nodos: Nodo[]} {
 		const m = 3;
 		const n = 4*Math.trunc(m*this.majorRadius/(this.minorRadius*this.elongation));
 		const nodos = [];
@@ -432,7 +551,7 @@ export class Toroid extends Surface {
 
 	insolation(φ: number): number {
 		const β = Math.atan(Math.tan(φ)*this.elongation);
-		const incident = annualInsolationFunction(this.obliquity, φ);
+		const incident = Spheroid.annualInsolationFunction(this.obliquity, φ);
 		let opacity;
 		if (Math.cos(φ) >= 0)
 			opacity = 0;
@@ -452,8 +571,8 @@ export class Toroid extends Surface {
 		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
 	}
 
-	windVelocity(φ: number): {n: number, d: number} {
-		return {n: 0, d: Math.cos(φ)};
+	windVelocity(φ: number): {nord: number, dong: number} {
+		return {nord: 0, dong: Math.cos(φ)};
 	}
 
 	xyz(φ: number, λ: number): Vector {
@@ -492,55 +611,19 @@ export class Toroid extends Surface {
 
 
 /**
- * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the y direction
- * rather than the z.
- */
-export class Sphere extends Spheroid {
-	constructor(radius: number) {
-		super(radius, 1, 0, Number.NaN);
-	}
-
-	insolation(φ: number): number {
-		return 2.0*Math.max(0, Math.sin(φ));
-	}
-
-	windConvergence(φ: number): number {
-		return Math.cos(φ);
-	}
-
-	windVelocity(φ: number): {n: number, d: number} {
-		return {n: -Math.cos(φ), d: 0};
-	}
-
-	xyz(φ: number, λ: number): Vector {
-		const {x, y, z} = super.xyz(φ, λ);
-		return new Vector(x, z, -y);
-	}
-
-	φλ(x: number, y: number, z: number): Place {
-		return super.φλ(x, -z, y);
-	}
-
-	normal(node: Nodo): Vector {
-		return node.pos.norm();
-	}
-}
-
-
-/**
  * A single Voronoi polygon, which contains geographical information
  */
 export class Nodo {
-	public surface: Surface;
-	public index: number;
-	public φ: number;
-	public λ: number;
-	public pos: Vector;
-	public normal: Vector;
-	public dong: Vector;
-	public nord: Vector;
-	public neighbors: Map<Nodo, Edge>;
-	public between: Nodo[][];
+	public readonly surface: Surface;
+	public readonly index: number;
+	public readonly φ: number;
+	public readonly λ: number;
+	public readonly pos: Vector;
+	public readonly normal: Vector;
+	public readonly dong: Vector;
+	public readonly nord: Vector;
+	public readonly neighbors: Map<Nodo, Edge>;
+	public readonly between: Nodo[][];
 	public parents: Nodo[];
 
 	public gawe: number;
@@ -559,14 +642,10 @@ export class Nodo {
 		this.φ = position.φ;
 		this.λ = position.λ;
 		this.pos = surface.xyz(this.φ, this.λ);
-		this.normal = surface.normal(this);
-		this.dong = this.surface.axis.cross(this.normal).norm();
-		if (Number.isNaN(this.dong.x)) {
-			this.dong = this.normal.cross(this.pos).norm();
-			if (Number.isNaN(this.dong.x))
-				this.dong = new Vector(1, 0, 0);
-		}
-		this.nord = this.normal.cross(this.dong);
+		const basis = orthogonalBasis(surface.normal(this), true, surface.axis, this.pos.times(-1));
+		this.normal = basis.n;
+		this.nord = basis.v;
+		this.dong = basis.u;
 
 		this.neighbors = new Map();
 		this.parents = [];
@@ -648,18 +727,16 @@ export class Triangle {
 	 * of the vertices' normal vectors.
 	 */
 	computeCircumcenter() {
-		let nHat = new Vector(0, 0, 0);
+		let nAvg = new Vector(0, 0, 0);
 		for (const vertex of this.vertices)
-			nHat = nHat.plus(vertex.normal);
-		nHat = nHat.norm();
-		const vHat = nHat.cross(new Vector(0, 0, -1)).norm();
-		const uHat = nHat.cross(vHat);
+			nAvg = nAvg.plus(vertex.normal);
+		const {u, v, n} = orthogonalBasis(nAvg, true);
 		const projected = [];
 		for (const vertex of this.vertices) // project all of the vertices into the tangent plane
 			projected.push({
-				v: vHat.dot(vertex.pos),
-				u: uHat.dot(vertex.pos),
-				n: nHat.dot(vertex.pos)});
+				v: v.dot(vertex.pos),
+				u: u.dot(vertex.pos),
+				n: n.dot(vertex.pos)});
 
 		let vNumerator = 0, uNumerator = 0;
 		let denominator = 0, nSum = 0;
@@ -677,9 +754,9 @@ export class Triangle {
 			u: -uNumerator/denominator/2,
 			n:  nSum/3 };
 		center = {
-			x: vHat.x*center.v + uHat.x*center.u + nHat.x*center.n,
-			y: vHat.y*center.v + uHat.y*center.u + nHat.y*center.n,
-			z: vHat.z*center.v + uHat.z*center.u + nHat.z*center.n };
+			x: v.x*center.v + u.x*center.u + n.x*center.n,
+			y: v.y*center.v + u.y*center.u + n.y*center.n,
+			z: v.z*center.v + u.z*center.u + n.z*center.n };
 		this.circumcenter = this.surface.φλ(center.x, center.y, center.z); // finally, put it back in φ-λ space
 
 		this.φ = this.circumcenter.φ; // and make these values a bit easier to access

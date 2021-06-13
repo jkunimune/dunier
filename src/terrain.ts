@@ -76,8 +76,8 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
 			surf.insolation(node.φ)*Math.exp(-node.gawe/ATMOSPHERE_THICKNESS),
 			1/4.)*avgTerme - 273;
 		node.barxe += surf.windConvergence(node.φ);
-		const {n, d} = surf.windVelocity(node.φ);
-		node.windVelocity = node.nord.times(n).plus(node.dong.times(d));
+		const {nord, dong} = surf.windVelocity(node.φ);
+		node.windVelocity = node.nord.times(nord).plus(node.dong.times(dong));
 	}
 
 	for (const node of surf.nodos)
@@ -375,11 +375,13 @@ function addRivers(surf: Surface) {
 			supr.liwonice = nice; // take it
 			riverDistance.set(supr, riverDistance.get(nice) + 1); // number of steps to delta
 			for (const beyond of supr.neighbors.keys()) { // then look for what comes next
-				if (beyond.liwonice === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
-					let slope = beyond.gawe - supr.gawe;
-					if (slope > 0)
-						slope = surf.distance(beyond, supr); // only normalize slope by run if it is downhill
-					nadeQueue.push({nice: supr, supr: beyond, slope: slope});
+				if (beyond !== null) {
+					if (beyond.liwonice === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
+						let slope = beyond.gawe - supr.gawe;
+						if (slope > 0)
+							slope = surf.distance(beyond, supr); // only normalize slope by run if it is downhill
+						nadeQueue.push({nice: supr, supr: beyond, slope: slope});
+					}
 				}
 			}
 		}
@@ -412,7 +414,7 @@ function addRivers(surf: Surface) {
 		surf.rivers.add([vertex, vertex.liwonice]);
 	}
 
-	const lageQueue = [...surf.nodos];
+	const lageQueue = [...surf.nodos].filter((n: Nodo) => !surf.edge.has(n));
 	queue:
 	while (lageQueue.length > 0) { // now look at the tiles
 		const tile = lageQueue.pop();
@@ -420,7 +422,7 @@ function addRivers(surf: Surface) {
 			continue; // ignoring things that are already water or too cold for this
 
 		let seenRightEdge = false; // check that there is up to 1 continuous body of water at its border
-		let outflow = null; // and while you're at it, locate the largest river flowing away
+		let outflow = null; // and while you're at it, locate the downstreamest river flowing away
 		const start = <Nodo>tile.neighbors.keys()[Symbol.iterator]().next().value; // pick an arbitrary neighbor
 		let last = start;
 		do {
