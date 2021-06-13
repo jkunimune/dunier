@@ -18,7 +18,7 @@ const CULTURAL_MEMORY = 160; // [year] time it takes to erase a people's languag
 const CARRYING_CAPACITY = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 const VALUE_OF_KNOWLEDGE = .50; // [] value of a single technological advancement
 const POWER_OF_MEMES = .020; // [1/year] probability that an idea spreads across a border in a year
-const HUMAN_WEIGHT = 100; // [] multiplier on vertical distances
+const HUMAN_WEIGHT = 100; // [] multiplier on vertical distances TODO: use the minimum slope that a military can traverse instead
 const APOCALYPSE_SURVIVAL_RATE = 0.5;
 
 const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth

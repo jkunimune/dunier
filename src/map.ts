@@ -413,13 +413,13 @@ export class Chart {
 
 		const candidates: number[][] = []; // next collect candidate paths along which you might fit labels
 		let minClearance = centers[argmax].r;
-		while (candidates.length < RALF_NUM_CANDIDATES) {
-			minClearance /= Math.sqrt(2); // gradually loosen a minimum clearance filter
+		while (candidates.length < RALF_NUM_CANDIDATES && minClearance >= minFontSize) {
+			minClearance /= Math.sqrt(2); // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
 			const minLength = minClearance*aspect;
 			const usedPoints: Set<number> = new Set();
 			while (usedPoints.size < centers.length) {
 				const newEndpoint = longestShortestPath(
-					centers, (usedPoints.size > 0) ?usedPoints : new Set([argmax]), minClearance).points[0]; // find the point farthest from the paths you have checked TODO expand on this argmax thing to make sure check every exclave fore we start reducing the minimum
+					centers, (usedPoints.size > 0) ? usedPoints : new Set([argmax]), minClearance).points[0]; // find the point farthest from the paths you have checked TODO expand on this argmax thing to make sure check every exclave fore we start reducing the minimum
 				if (usedPoints.has(newEndpoint)) break;
 				const newShortestPath = longestShortestPath(
 					centers, new Set([newEndpoint]), minClearance); // find a new diverse longest shortest path with that as endpoin

@@ -2,7 +2,7 @@
 
 import "./lib/jquery.min.js";//TODO: I should not be using jquery here
 import {generateTerrain} from "./terrain.js";
-import {Disc, Sphere, Spheroid, Surface, Toroid} from "./surface.js";
+import {Disc, LockedDisc, Sphere, Spheroid, Surface, Toroid} from "./surface.js";
 import {World} from "./world.js";
 import {Convention} from "./language.js";
 import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
@@ -72,8 +72,8 @@ function planetApply() {
 				obliquity);
 		} else if (planetType === '2') { // plane
 			if (tidallyLocked) { // with static sun
-				// surface = new StaticPlane(
-				// 	radius);
+				surface = new LockedDisc(
+					radius);
 			} else { // with orbiting sun
 				surface = new Disc(
 					radius,
@@ -104,25 +104,6 @@ function planetApply() {
 	if (plotDiv.is(':visible')) {
 		console.log("grafa...");
 		const {x, y, z, I} = surface.parameterize(18);
-		// const {nodos, triangles} = surface.partition();
-		// const x: number[] = [];
-		// const y: number[] = [];
-		// const z: number[] = [];
-		// const I: number[] = [];
-		// const is: number[] = [];
-		// const js: number[] = [];
-		// const ks: number[] = [];
-		// for (let i = 0; i < nodos.length; i ++) {
-		// 	x.push(surface.xyz(nodos[i].φ, nodos[i].λ).x);
-		// 	y.push(surface.xyz(nodos[i].φ, nodos[i].λ).y);
-		// 	z.push(surface.xyz(nodos[i].φ, nodos[i].λ).z);
-		// 	I.push(surface.insolation(nodos[i].φ));
-		// }
-		// for (let j = 0; j < triangles.length; j ++) {
-		// 	is.push(nodos.indexOf(triangles[j].vertices[0]));
-		// 	js.push(nodos.indexOf(triangles[j].vertices[1]));
-		// 	ks.push(nodos.indexOf(triangles[j].vertices[2]));
-		// }
 		Plotly.react(
 			plotDiv[0],
 			[{
@@ -131,9 +112,6 @@ function planetApply() {
 				y: y,
 				z: z,
 				surfacecolor: I,
-				// i: is,
-				// j: js,
-				// k: ks,
 				cmin: 0.,
 				cmax: 2.,
 				colorscale: TERRAIN_COLORMAP,

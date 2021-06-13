@@ -398,15 +398,19 @@ export class Sphere extends Spheroid {
 }
 
 
+/**
+ * a planar planet based on the modern flat earth model, where the sun circles in a horizontal plane above the world,
+ * and the oscillating radius of its orbit effects the seasons.
+ */
 export class Disc extends Surface {
-	private readonly radius: number;
-	private readonly firmamentHite: number;
+	protected readonly radius: number;
+	protected readonly firmamentHite: number;
 	private readonly effectiveObliquity: number;
 
-	constructor(radius: number, obliquity: number) {
-		super(Math.atan(1/4), Math.PI/2);
+	constructor(radius: number, obliquity: number, aspectRatio: number = 4.) {
+		super(Math.atan(1/aspectRatio), Math.PI/2);
 		this.radius = radius;
-		this.firmamentHite = radius/4;
+		this.firmamentHite = radius/aspectRatio;
 		this.effectiveObliquity = obliquity;
 	}
 
@@ -437,7 +441,7 @@ export class Disc extends Surface {
 	insolation(φ: number): number {
 		const cosψ = Math.cos(2*this.effectiveObliquity)
 		const ρ = this.firmamentHite/this.radius/Math.tan(φ);
-		return 7/(
+		return 7.0/(
 			(3.865*cosψ + 6.877) -
 			(44.803*cosψ +  1.216)*Math.pow(ρ, 2) +
 			(87.595*cosψ + 19.836)*Math.pow(ρ, 4) -
@@ -471,6 +475,24 @@ export class Disc extends Surface {
 		const ar = this.firmamentHite/Math.tan(a.φ);
 		const br = this.firmamentHite/Math.tan(b.φ);
 		return Math.sqrt(ar*ar + br*br - 2*ar*br*Math.cos(a.λ - b.λ));
+	}
+}
+
+
+/**
+ * a planar planet where the sun hovers stationary above the center.
+ */
+export class LockedDisc extends Disc {
+	constructor(radius: number) {
+		super(radius, Number.NaN, 2);
+	}
+
+	insolation(φ: number): number {
+		return 2.0/Math.pow(1 + Math.pow(Math.tan(φ), -2), 3/2.);
+	}
+
+	windConvergence(φ: number): number {
+		return Math.pow(Math.sin(φ), 2);
 	}
 }
 
