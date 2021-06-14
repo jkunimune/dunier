@@ -250,10 +250,12 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
 	const nodos: DelaunayNodo[] = []; // convert the primitive inputs into our own object formats
 	for (let i = 0; i < sample.length; i ++)
 		nodos.push(new DelaunayNodo(i - sample.length, sample[i], sampleNormals[i%sampleNormals.length]));
-	const triangles = partition.map((t: number[]) =>
+	const partitionTriangles = partition.map((t: number[]) =>
 		new DelaunayTriangle(nodos[t[0]], nodos[t[1]], nodos[t[2]], true));
+
+	const triangles = partitionTriangles.slice(); // then set up the full triangle array
 	for (let i = 0; i < points.length; i ++)
-		nodos.push(new DelaunayNodo(i, points[i], normals[i%normals.length]));
+		nodos.push(new DelaunayNodo(i, points[i], normals[i%normals.length])); // and make the actual nodos
 
 	// console.log(`particion = np.array([`);
 	// for (const node of sample)
@@ -270,7 +272,7 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
 		// 	console.log(']');
 		// 	throw "ew";
 		// }
-		const containing = findSmallestEncompassing(node, triangles); // find out which triangle it's in
+		const containing = findSmallestEncompassing(node, partitionTriangles); // find out which triangle it's in
 		for (let j = 0; j < 3; j ++) { // add the three new child triangles
 			triangles.push(new DelaunayTriangle(
 				node,
