@@ -8,7 +8,7 @@ import {delaunayTriangulate, linterp, minimizeNelderMead, Vector, ErodingSegment
 import {Convention} from "./language.js";
 import {Civ, World} from "./world.js";
 
-const MAP_PRECISION = 1e-1;
+const MAP_PRECISION = 5e-2;
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2 TODO: display rivers that connect lakes to shown rivers
@@ -118,13 +118,13 @@ export class Chart {
 	 * @param shade whether to add shaded relief
 	 * @param civLabels whether to label countries
 	 * @param geoLabels whether to label mountain ranges and seas
-	 * @param fontSize the size of city labels and minimum size of country and biome labels
+	 * @param fontSize the size of city labels and minimum size of country and biome labels [pt]
 	 * @param convention the transliteration convention to use for them
 	 */
 	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol',
 		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
 		   civLabels: boolean = false, geoLabels: boolean = false,
-		   fontSize: number = 6, convention: Convention = Convention.CHANSAGI_2) {
+		   fontSize: number = 2, convention: Convention = Convention.CHANSAGI_2) {
 		svg.setAttribute('viewBox',
 			`${this.projection.left} ${this.projection.top}
 			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
@@ -202,9 +202,13 @@ export class Chart {
 		}
 
 		if (civLabels && world !== null) {
-			for (const civ of world.civs)
+			for (const civ of world.civs) // TODO: the hover text should go on this
 				if (civ.getPopulation() > 0)
-					this.label([...civ.nodos].filter(n => n.biome !== 'samud'), civ.getName(convention), svg, fontSize);
+					this.label(
+						[...civ.nodos].filter(n => n.biome !== 'samud' && n.biome !== 'lage'),
+						civ.getName(convention),
+						svg,
+						fontSize);
 		}
 	}
 
@@ -221,7 +225,7 @@ export class Chart {
 	fill(nodos: Nodo[], svg: SVGGElement, color: string,
 		 stroke: string = 'none', strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
 		if (nodos.length <= 0)
-			return null;
+			return this.draw([], svg);
 		const path = this.draw(this.map(outline(new Set(nodos)), smooth, true), svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
@@ -295,13 +299,14 @@ export class Chart {
 	label(nodos: Nodo[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
 		this.testText.textContent = '..'+label+'..';
 		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
+		this.testText.textContent = '';
 		const mapScale = svg.clientWidth/(this.projection.right - this.projection.left); // and also the current size of the map in px for reference
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
-		this.testText.textContent = '';
+		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
 		const path = this.map(outline(new Set(nodos)), false, true); // do the projection
 		for (let i = path.length - 1; i >= 1; i --) { // convert it into a simplified polygon
-			if (path[i].type === 'A') { // turn arcs into triscadecagons
+			if (path[i].type === 'A') { // turn arcs into triscadecagons TODO: find out if this can create coincident nodes and thereby Delaunay Triangulation to fail
 				const x0 = path[i-1].args[path[i-1].args.length-2], y0 = path[i-1].args[path[i-1].args.length-1];
 				const x1 = path[i].args[path[i].args.length-2], y1 = path[i].args[path[i].args.length-1];
 				const l = Math.hypot(x1 - x0, y1 - y0);
@@ -709,50 +714,53 @@ export class Chart {
 			else if (supersectionStart[0] === end[0] && supersectionStart[1] === end[1]) { // if this whole section is one big loop
 				jinPoints = null; // also move on
 			}
-			else if (this.projection.getPositionOnEdge(end[0], end[1]) !== null) { // if we ended hitting a wall
-				const edges = this.projection.getEdges();
-				let endPosition = this.projection.getPositionOnEdge(end[0], end[1]);
+			else {
+				const endPosition = this.projection.getPositionOnEdge(end[0], end[1]);
+				if (endPosition !== null) { // if we ended hitting a wall
+					const edges = this.projection.getEdges()[endPosition.loop];
 
-				const possibleStarts = sections.map((s) => s[0].args).concat([supersectionStart]);
-				let bestSection = null, bestPosition = Number.POSITIVE_INFINITY;
-				for (let i = 0; i < possibleStarts.length; i ++) { // check the remaining sections
-					const restart = possibleStarts[i];
-					let restartPosition = this.projection.getPositionOnEdge(restart[0], restart[1]);
-					if (restartPosition !== null) {
-						if (restartPosition < endPosition)
-							restartPosition += edges.length;
-						if (restartPosition < bestPosition) {
-							bestSection = i; // to find which one should come next
-							bestPosition = restartPosition;
+					const possibleStarts = sections.map((s) => s[0].args).concat([supersectionStart]);
+					let bestSection = null, bestPosition = Number.POSITIVE_INFINITY;
+					for (let i = 0; i < possibleStarts.length; i ++) { // check the remaining sections
+						const restart = possibleStarts[i];
+						let restartPosition = this.projection.getPositionOnEdge(restart[0], restart[1]);
+						if (restartPosition !== null && restartPosition.loop === endPosition.loop) {
+							if (restartPosition.index < endPosition.index)
+								restartPosition.index += edges.length;
+							if (restartPosition.index < bestPosition) {
+								bestSection = i; // to find which one should come next
+								bestPosition = restartPosition.index;
+							}
 						}
 					}
-				}
-				const endEdge = Math.trunc(endPosition), restartEdge = Math.trunc(bestPosition);
-				const restart = possibleStarts[bestSection];
-				for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
-					const edge = edges[i%edges.length]
-					const currentPlace = (i === endEdge) ? end : [edge.start.φ, edge.start.λ];
-					const targetPlace = (i === restartEdge) ? restart : [edge.end.φ, edge.end.λ];
-					cutPoints.push(...edge.tracer(
-						currentPlace[0], currentPlace[1], targetPlace[0], targetPlace[1],
-					));
-				}
-				if (bestSection !== sections.length) // if you found a new place to restart
-					jinPoints = sections.splice(bestSection, 1)[0].slice(1); // and then take that as the next section without its moveto
-				else
-					jinPoints = null; // or move on if that was the end
-			}
-			else { // if we ended in the middle someplace
-				jinPoints = null;
-				for (let i = 0; i < sections.length; i ++) { // look for the one that picks up from here
-					const start = sections[i][0];
-					if (start.args[0] === end[0] && start.args[1] === end[1]) {
-						jinPoints = sections.splice(i, 1)[0].slice(1); // and skip its moveto
-						break;
+					const endEdge = Math.trunc(endPosition.index), restartEdge = Math.trunc(bestPosition);
+					const restart = possibleStarts[bestSection];
+					for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
+						const edge = edges[i%edges.length];
+						const currentPlace = (i === endEdge) ? end : [edge.start.φ, edge.start.λ];
+						const targetPlace = (i === restartEdge) ? restart : [edge.end.φ, edge.end.λ];
+						if (currentPlace !== targetPlace)
+							cutPoints.push(...edge.trace(
+								currentPlace[0], currentPlace[1], targetPlace[0], targetPlace[1],
+							));
 					}
+					if (bestSection !== sections.length) // if you found a new place to restart
+						jinPoints = sections.splice(bestSection, 1)[0].slice(1); // and then take that as the next section without its moveto
+					else
+						jinPoints = null; // or move on if that was the end
 				}
-				if (jinPoints === null)
-					throw new Error("I was left hanging.");
+				else { // if we ended in the middle someplace
+					jinPoints = null;
+					for (let i = 0; i < sections.length; i ++) { // look for the one that picks up from here
+						const start = sections[i][0];
+						if (start.args[0] === end[0] && start.args[1] === end[1]) {
+							jinPoints = sections.splice(i, 1)[0].slice(1); // and skip its moveto
+							break;
+						}
+					}
+					if (jinPoints === null)
+						throw new Error("I was left hanging.");
+				}
 			}
 			if (jinPoints === null) { // if we were planning to move onto whatever else for the next section
 				if (sections.length === 0) // we may be done
@@ -786,11 +794,13 @@ export class Chart {
 				}
 			}
 			if (insideOut) { // if it is
-				const startingPoint = this.projection.getEdges()[0].start;
-				const {x, y} = this.projection.project(startingPoint.φ, startingPoint.λ);
-				cutPoints.push({type: 'M', args: [x, y]});
-				for (const edge of this.projection.getEdges()) // draw the outline of the entire map to contain it
-					cutPoints.push(...edge.tracer(edge.start.φ, edge.start.λ, edge.end.φ, edge.end.λ));
+				for (const loop of this.projection.getEdges()) { // draw the outline of the entire map to contain it
+					const startingPoint = loop[0].start;
+					const {x, y} = this.projection.project(startingPoint.φ, startingPoint.λ);
+					cutPoints.push({type: 'M', args: [x, y]});
+					for (const edge of loop)
+						cutPoints.push(...edge.trace(edge.start.φ, edge.start.λ, edge.end.φ, edge.end.λ));
+				}
 			}
 		}
 
@@ -821,11 +831,10 @@ class MapProjection {
 	public right: number;
 	public top: number;
 	public bottom: number;
-	private edges: {start: Place, end: Place, tracer: (φ0: number, λ0: number, φ1: number, λ1: number) => PathSegment[]}[];
+	protected edges: MapEdge[][];
 
 	constructor(surface: Surface, left: number, right:number, top: number, bottom: number) {
 		this.surface = surface;
-		console.assert(surface !== undefined);
 		this.left = left;
 		this.right = right;
 		this.top = top;
@@ -848,38 +857,51 @@ class MapProjection {
 	}
 
 	/**
+	 * compute the coordinates at which the line between these two points crosses the y-z plane.  two Places will be
+	 * returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.
+	 */
+	getMeridianCrossing(φ0: number, λ0: number, φ1: number, λ1: number) {
+		const pos0 = this.surface.xyz(φ0, λ0);
+		const pos1 = this.surface.xyz(φ1, λ1);
+		const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
+			pos1.x - pos0.x);
+		const φX = this.surface.φλ(posX.x, posX.y, posX.z).φ;
+		const λX = (λ0 > λ1) ? Math.PI : -Math.PI;
+		return {
+			endpoint0: {φ: φX, λ: λX},
+			endpoint1: {φ: φX, λ: -λX},
+		};
+	}
+
+	/**
+	 * compute the coordinates at which the line between these two points crosses the equatorial plane.  two Places
+	 * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.
+	 */
+	getEquatorCrossing(φ0: number, λ0: number, φ1: number, λ1: number) {
+		const pos0 = this.surface.xyz(φ0, λ0);
+		const pos1 = this.surface.xyz(φ1, λ1);
+		const posX = pos0.times(pos1.z).plus(pos1.times(-pos0.z)).over(
+			pos1.z - pos0.z);
+		const φX = (φ0 > φ1) ? Math.PI : -Math.PI;
+		const λX = this.surface.φλ(posX.x, posX.y, posX.z).λ;
+		return {
+			endpoint0: {φ: φX, λ: λX},
+			endpoint1: {φ: -φX, λ: λX},
+		};
+	}
+
+	/**
 	 * compute the coordinates at which the line between these two points crosses an interrupcion in the map.  if
 	 * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
 	 * the 1th point's side.
-	 * @param φλ0
-	 * @param φλ1
-	 * @return Place the point where the segment crosses the edge of the map, if such a point exists.  null otherwise.
 	 */
 	getCrossing(φλ0: number[], φλ1: number[]): {endpoint0: Place, endpoint1: Place} {
 		const [φ0, λ0] = φλ0;
 		const [φ1, λ1] = φλ1;
-		const pos0 = this.surface.xyz(φ0, λ0);
-		const pos1 = this.surface.xyz(φ1, λ1);
-		if (Math.abs(λ1 - λ0) > Math.PI) {
-			const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
-				pos1.x - pos0.x);
-			const φX = this.surface.φλ(posX.x, posX.y, posX.z).φ;
-			const λX = (λ0 > λ1) ? Math.PI : -Math.PI;
-			return {
-				endpoint0: {φ: φX, λ: λX},
-				endpoint1: {φ: φX, λ: -λX},
-			};
-		}
-		else if (Math.abs(φ1 - φ0) > Math.PI) {
-			const posX = pos0.times(pos1.z).plus(pos1.times(-pos0.z)).over(
-				pos1.z - pos0.z);
-			const φX = (φ0 > φ1) ? Math.PI : -Math.PI;
-			const λX = this.surface.φλ(posX.x, posX.y, posX.z).λ;
-			return {
-				endpoint0: {φ: φX, λ: λX},
-				endpoint1: {φ: -φX, λ: λX},
-			};
-		}
+		if (Math.abs(λ1 - λ0) > Math.PI)
+			return this.getMeridianCrossing(φ0, λ0, φ1, λ1);
+		else if (Math.abs(φ1 - φ0) > Math.PI)
+			return this.getEquatorCrossing(φ0, λ0, φ1, λ1);
 		return null;
 	}
 
@@ -891,31 +913,30 @@ class MapProjection {
 	}
 
 	/**
-	 * bild the list of map edges
+	 * bild the lists of map edges.  each list represents one continuous loop of chaind loxodromes.
 	 */
-	getEdges(): {start: Place, end: Place, tracer: (φ0: number, λ0: number, φ1: number, λ1: number) => PathSegment[]}[] {
-		console.assert(this.surface !== undefined);
+	getEdges(): MapEdge[][] {
 		if (this.edges === undefined) {
-			this.edges = [
+			this.edges = [[
 				{
 					start: {φ: this.surface.φMax, λ:  Math.PI}, end: null,
-					tracer: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMax),
+					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMax),
 				},
 				{
 					start: {φ: this.surface.φMax, λ: -Math.PI}, end: null,
-					tracer: (φ0, _0, φ1, _1) => this.drawMeridian(φ0, φ1, -Math.PI),
+					trace: (φ0, _0, φ1, _1) => this.drawMeridian(φ0, φ1, -Math.PI),
 				},
 				{
 					start: {φ: this.surface.φMin, λ: -Math.PI}, end: null,
-					tracer: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMin),
+					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMin),
 				},
 				{
 					start: {φ: this.surface.φMin, λ:  Math.PI}, end: null,
-					tracer: (φ0, _0, φ1, _1) => this.drawMeridian(φ0, φ1, Math.PI),
+					trace: (φ0, _0, φ1, _1) => this.drawMeridian(φ0, φ1, Math.PI),
 				},
-			];
-			for (let i = 0; i < this.edges.length; i ++)
-				this.edges[i].end = this.edges[(i+1)%this.edges.length].start;
+			]];
+			for (let i = 0; i < this.edges[0].length; i ++)
+				this.edges[0][i].end = this.edges[0][(i+1)%this.edges[0].length].start;
 		}
 		return this.edges;
 	}
@@ -923,16 +944,20 @@ class MapProjection {
 	/**
 	 * return a number indicating where on the edge of map this point lies
 	 * @return the index of the edge that contains this point plus the fraccional distance from that edges start to its
-	 * end of that point, or null if there is no such edge.
+	 * end of that point, or null if there is no such edge.  also, the index of the edge loop about which we're tauking
+	 * or null if the point isn't on an edge
 	 */
-	getPositionOnEdge(φ: number, λ: number): number {
+	getPositionOnEdge(φ: number, λ: number): {loop: number, index: number} {
 		for (let i = 0; i < this.getEdges().length; i ++) {
-			const edge = this.getEdges()[i];
-			if (φ >= Math.min(edge.start.φ, edge.end.φ) && φ <= Math.max(edge.start.φ, edge.end.φ) &&
-				λ >= Math.min(edge.start.λ, edge.end.λ) && λ <= Math.max(edge.start.λ, edge.end.λ))
-				return i +
-					((φ - edge.start.φ)*(edge.end.φ - edge.start.φ) + (λ - edge.start.λ)*(edge.end.λ - edge.start.λ))/
-					(Math.pow(edge.end.φ - edge.start.φ, 2) + Math.pow(edge.end.λ - edge.start.λ, 2));
+			for (let j = 0; j < this.getEdges()[i].length; j ++) {
+				const edge = this.getEdges()[i][j];
+				if (φ >= Math.min(edge.start.φ, edge.end.φ) && φ <= Math.max(edge.start.φ, edge.end.φ) &&
+					λ >= Math.min(edge.start.λ, edge.end.λ) && λ <= Math.max(edge.start.λ, edge.end.λ)) {
+					const startToPoint = new Vector(λ - edge.start.λ, φ - edge.start.φ, 0);
+					const startToEnd = new Vector(edge.end.λ - edge.start.λ, edge.end.φ - edge.start.φ, 0);
+					return {loop: i, index: j + startToPoint.dot(startToEnd)/startToEnd.sqr()};
+				}
+			}
 		}
 		return null;
 	}
@@ -1091,7 +1116,6 @@ export class Azimuthal extends MapProjection {
 	}
 
 	drawParallel(λ0: number, λ1: number, φ: number): PathSegment[] {
-		console.assert(λ0 !== λ1, λ0);
 		const r = this.rMax - linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
 		const sweepFlag = (λ1 > λ0) ? 0 : 1;
 		if (r > 0) {
@@ -1109,6 +1133,33 @@ export class Azimuthal extends MapProjection {
 		else
 			return [];
 	}
+
+	getCrossing(φλ0: number[], φλ1: number[]): {endpoint0: Place, endpoint1: Place} {
+		const [φ0, λ0] = φλ0;
+		const [φ1, λ1] = φλ1;
+		if (Math.abs(φ1 - φ0) > Math.PI)
+			return this.getEquatorCrossing(φ0, λ0, φ1, λ1);
+		return null;
+	}
+
+	getEdges(): MapEdge[][] {
+		if (this.edges === undefined) {
+			this.edges = [
+				[{
+					start: {φ: this.surface.φMax, λ:  Math.PI},
+					end:   {φ: this.surface.φMax, λ: -Math.PI},
+					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMax),
+				}],
+				[{
+					start: {φ: this.surface.φMin, λ: -Math.PI},
+					end:   {φ: this.surface.φMin, λ:  Math.PI},
+					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMin),
+				}],
+			];
+		}
+		return this.edges;
+	}
+
 }
 
 /**
@@ -1314,6 +1365,14 @@ function contains(polygon: PathSegment[], point: {x: number, y: number}): boolea
 	return contained;
 }
 
+/**
+ * the edge of a map projection
+ */
+interface MapEdge {
+	start: Place;
+	end: Place;
+	trace: (φ0: number, λ0: number, φ1: number, λ1: number) => PathSegment[];
+}
 
 /**
  * something that can be dropped into an SVG <path>.

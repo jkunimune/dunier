@@ -387,12 +387,15 @@ class Klas {
 
 	/**
 	 * create a Fon with all of the properties of this, and similar to fon in every other respect.
-	 * @param fon
+	 * @param fon the foneme that is being made to conform here
 	 * @param ref if this.ka has stuff in it, draw those features from ref.
 	 */
 	konformu(fon: Fon = Fon.BLANK, ref: Fon = null): Fon {
 		if (this.na.length > 0)
 			throw Error(`you can't use minus ${this.na[0]} in the final state of a process!`);
+		if (this.sa.length == 0) // if there are no properties, you don't have to do anything
+			return fon; // (even if fon is a pause)
+
 		let mode = fon.mode, loke = fon.loke, voze = fon.voze;
 		let silabia = fon.silabia, longia = fon.longia, latia = fon.latia, minorLoke = fon.minorLoke, nosia = fon.nosia;
 		for (let sif of this.sa) {

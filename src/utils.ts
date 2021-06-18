@@ -226,7 +226,6 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
 									sample: Vector[] = [], sampleNormals: Vector[] = [new Vector(0, 0, 1)],
 									partition: number[][] = []
 									): {triangles: number[][], parentage: number[][], between: number[][][]} {
-	// const stuff = partition.length === 0;
 	if (partition.length === 0) { // start by creating a partition if we have none
 		let xMax = Number.NEGATIVE_INFINITY, xMin = Number.POSITIVE_INFINITY;
 		let yMax = Number.NEGATIVE_INFINITY, yMin = Number.POSITIVE_INFINITY;
@@ -257,22 +256,8 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
 	for (let i = 0; i < points.length; i ++)
 		nodos.push(new DelaunayNodo(i, points[i], normals[i%normals.length])); // and make the actual nodos
 
-	// console.log(`particion = np.array([`);
-	// for (const node of sample)
-	// 	console.log(`[${node.x}, ${node.y}, ${node.z}],`);
-	// console.log(`])`);
-	// console.log(`nodos = np.array([`);
-	// for (const node of nodos.slice(sample.length, sample.length+50))
-	// 	console.log(`[${node.r.x}, ${node.r.y}, ${node.r.z}],`);
-	// console.log(`])`);
-
-	// console.log(`triangles = [`);
 	for (const node of nodos.slice(sample.length)) { // for each node,
-		// if (node.i >= 50) {
-		// 	console.log(']');
-		// 	throw "ew";
-		// }
-		const containing = findSmallestEncompassing(node, partitionTriangles); // find out which triangle it's in
+		let containing = findSmallestEncompassing(node, partitionTriangles); // find out which triangle it's in
 		for (let j = 0; j < 3; j ++) { // add the three new child triangles
 			triangles.push(new DelaunayTriangle(
 				node,
@@ -293,19 +278,10 @@ export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new V
 			if (edge.a.i >= 0 && edge.b.i >= 0)
 				node.between.push([edge.a, edge.b]);
 		}
-
-		// console.log(`[`);
-		// for (let j = 0; j < triangles.length; j ++)
-		// 	if (triangles[j].children === null)
-		// 		console.log(`[${triangles[j].nodos[0].i}, ${triangles[j].nodos[1].i}, ${triangles[j].nodos[2].i}],`);
-		// console.log(`],`);
 	}
-	// console.log(`]`);
 
-	for (const node of nodos.slice(0, sample.length)) { // now remove the partition vertices
-		// console.log(node);
+	for (const node of nodos.slice(0, sample.length)) // now remove the partition vertices
 		triangles.push(...removeNode(node));
-	}
 
 	const triangleIdx = triangles.filter((t: DelaunayTriangle) => t.children === null)
 		.map((t: DelaunayTriangle) => t.nodos.map((n: DelaunayNodo) => n.i));
@@ -567,7 +543,8 @@ function contains(triangle: DelaunayTriangle, p: DelaunayNodo): boolean {
 		const edgeDirection = b.r.minus(a.r);
 		const normalDirection = na.plus(nb);
 		const boundDirection = normalDirection.cross(edgeDirection);
-		if (boundDirection.dot(p.r.minus(a.r)) < 0)
+		const relativePos = (a.i < b.i) ? p.r.minus(a.r) : p.r.minus(b.r);
+		if (boundDirection.dot(relativePos) < 0)
 			return false; // check each side condition
 	}
 	return true;
@@ -768,7 +745,7 @@ export class Vector {
 	}
 
 	toString(): string {
-		return `<${Math.trunc(this.x)}, ${Math.trunc(this.y)}, ${Math.trunc(this.z)}>`;
+		return `<${Math.trunc(this.x*1e3)/1e3}, ${Math.trunc(this.y*1e3)/1e3}, ${Math.trunc(this.z*1e3)/1e3}>`;
 	}
 }
 

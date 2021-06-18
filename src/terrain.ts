@@ -14,7 +14,8 @@ const MAX_NOISE_SCALE = 1/8;
 const ATMOSPHERE_THICKNESS = 12; // km
 const CLOUD_HEIGHT = 2; // km
 const OROGRAPHIC_MAGNITUDE = 1;
-const OROGRAPHIC_RANGE = 8000; // km
+const OROGRAPHIC_RANGE = 500; // km
+const RAINFALL_NEEDED_TO_CREATE_MARSH = 1e7; // km^2
 
 const TUNDRA_TEMP = -10; // °C
 const DESERT_INTERCEPT = -30; // °C
@@ -57,7 +58,7 @@ export function generateTerrain(numContinents: number, seaLevel: number, avgTerm
 	movePlates(surf, rng);
 	fillOcean(seaLevel, surf);
 	rng = rng.reset();
-	generateClimate(avgTerme, surf, rng);
+	generateClimate(avgTerme, surf, rng); // TODO: I reely think I should have an avgRain parameter
 	addRivers(surf);
 	setBiomes(surf);
 }
@@ -107,7 +108,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
 				const distance = node.neighbors.get(downwind).length;
 				queue.push({
 					node: downwind,
-					moisture: moisture*(1 - distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
+					moisture: moisture*Math.exp(-distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
 			}
 		}
 	}
@@ -417,7 +418,7 @@ function addRivers(surf: Surface) {
 	const lageQueue = [...surf.nodos].filter((n: Nodo) => !surf.edge.has(n));
 	queue:
 	while (lageQueue.length > 0) { // now look at the tiles
-		const tile = lageQueue.pop();
+		const tile = lageQueue.pop(); // TODO: make lakes more likely to appear on large rivers
 		if (tile.biome === 'samud' || tile.biome === 'lage' || tile.terme < RIVER_THRESH)
 			continue; // ignoring things that are already water or too cold for this
 
@@ -463,7 +464,8 @@ function setBiomes(surf: Surface) {
 	for (const node of surf.nodos) {
 		let adjacentWater = false;
 		for (const neighbor of node.neighbors.keys())
-			if (neighbor.biome === 'samud' || neighbor.biome === 'lage')
+			if (neighbor.biome === 'samud' || neighbor.biome === 'lage' ||
+					node.neighbors.get(neighbor).liwe > RAINFALL_NEEDED_TO_CREATE_MARSH)
 				adjacentWater = true;
 
 		if (node.biome == null) {
