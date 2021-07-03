@@ -4,7 +4,8 @@ import {Random} from "./random.js";
 import {
 	delaunayTriangulate, legendreP2, legendreP4, legendreP6,
 	linterp, orthogonalBasis,
-	Vector
+	Vector,
+    circumcenter
 } from "./utils.js";
 
 const INTEGRATION_RESOLUTION = 32;
@@ -753,32 +754,18 @@ export class Triangle {
 		for (const vertex of this.vertices)
 			nAvg = nAvg.plus(vertex.normal);
 		const {u, v, n} = orthogonalBasis(nAvg, true);
-		const projected = [];
+		const projected: {x: number, y: number, z: number}[] = [];
 		for (const vertex of this.vertices) // project all of the vertices into the tangent plane
 			projected.push({
-				v: v.dot(vertex.pos),
-				u: u.dot(vertex.pos),
-				n: n.dot(vertex.pos)});
+				x: u.dot(vertex.pos),
+				y: v.dot(vertex.pos),
+				z: n.dot(vertex.pos)});
 
-		let vNumerator = 0, uNumerator = 0;
-		let denominator = 0, nSum = 0;
-		for (let i = 0; i < 3; i++) { // do the 2D circumcenter calculation
-			const a = projected[i];
-			const b = projected[(i + 1)%3];
-			const c = projected[(i + 2)%3];
-			vNumerator += (a.v*a.v + a.u*a.u) * (b.u - c.u);
-			uNumerator += (a.v*a.v + a.u*a.u) * (b.v - c.v);
-			denominator += a.v * (b.u - c.u);
-			nSum += a.n;
-		}
-		let center: any = {
-			v:  vNumerator/denominator/2,
-			u: -uNumerator/denominator/2,
-			n:  nSum/3 };
-		center = {
-			x: v.x*center.v + u.x*center.u + n.x*center.n,
-			y: v.y*center.v + u.y*center.u + n.y*center.n,
-			z: v.z*center.v + u.z*center.u + n.z*center.n };
+		const {x, y} = circumcenter(projected);
+		let z = 0;
+		for (const nodo of projected)
+			z += nodo.z/3;
+		const center = u.times(x).plus(v.times(y)).plus(n.times(z));
 		this.circumcenter = this.surface.φλ(center.x, center.y, center.z); // finally, put it back in φ-λ space
 
 		this.φ = this.circumcenter.φ; // and make these values a bit easier to access

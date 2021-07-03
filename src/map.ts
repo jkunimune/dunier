@@ -4,7 +4,13 @@
 import TinyQueue from './lib/tinyqueue.js';
 
 import {Nodo, Place, Surface, Triangle} from "./surface.js";
-import {delaunayTriangulate, linterp, minimizeNelderMead, Vector, ErodingSegmentTree} from "./utils.js";
+import {
+	delaunayTriangulate,
+	linterp,
+	Vector,
+	ErodingSegmentTree,
+	circularRegression
+} from "./utils.js";
 import {Convention} from "./language.js";
 import {Civ, World} from "./world.js";
 
@@ -289,12 +295,17 @@ export class Chart {
 	}
 
 	/**
-	 * add some text to this region using a simplified form of the RALF labelling algorithm. TODO: add citation
+	 * add some text to this region using a simplified form of the RALF labelling
+	 * algorithm, described in
+	 *     Krumpe, F. and Mendel, T. (2020) "Computing Curved Area Labels in Near-Real Time"
+	 *     (Doctoral dissertation). University of Stuttgart, Stuttgart, Germany.
+	 *     https://arxiv.org/abs/2001.02938 TODO: try horizontal labels: https://github.com/mapbox/polylabel
 	 * @param nodos the Nodos that comprise the region to be labelled.
 	 * @param label the text to place.
 	 * @param svg the SVG object on which to write the label.
-	 * @param minFontSize the smallest the label can be. if the label cannot fit inside the region with this font size,
-	 * no label will be placed and it will return null.
+	 * @param minFontSize the smallest the label can be. if the label cannot fit inside
+	 *                    the region with this font size, no label will be placed and it
+	 *                    will return null.
 	 */
 	label(nodos: Nodo[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
 		this.testText.textContent = '..'+label+'..';
@@ -419,7 +430,7 @@ export class Chart {
 		const candidates: number[][] = []; // next collect candidate paths along which you might fit labels
 		let minClearance = centers[argmax].r;
 		while (candidates.length < RALF_NUM_CANDIDATES && minClearance >= minFontSize) {
-			minClearance /= Math.sqrt(2); // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
+			minClearance /= 1.4; // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
 			const minLength = minClearance*aspect;
 			const usedPoints: Set<number> = new Set();
 			while (usedPoints.size < centers.length) {
@@ -442,46 +453,13 @@ export class Chart {
 
 		let axisValue = Number.NEGATIVE_INFINITY;
 		let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisH = null;
+		let axis: number[] = null;
 		for (const candidate of candidates) { // for each candidate label axis
-			let sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0;
-			for (let i = 0; i < candidate.length; i ++) {
-				sx += centers[candidate[i]].x;
-				sy += centers[candidate[i]].y;
-				sxx += centers[candidate[i]].x * centers[candidate[i]].x;
-				sxy += centers[candidate[i]].x * centers[candidate[i]].y;
-				syy += centers[candidate[i]].y * centers[candidate[i]].y;
-			}
-			const μx = sx/candidate.length, μy = sy/candidate.length;
-			const μxx = sxx/candidate.length - μx*μx;
-			const μxy = sxy/candidate.length - μy*μx;
-			const μyy = syy/candidate.length - μy*μy;
-			const m = (μyy - μxx + Math.sqrt(Math.pow(μyy - μxx, 2) + 4*μxy*μxy))/(2*μxy); // perform Deming regression to fit a line through it
-			const l = Math.sqrt(μxx + μyy); // reuse these moments to get a length scale
-			let a = 1/l/10000; // and use that line as the initial guess at a fit arc
-			let b = -m/Math.sqrt(m**2 + 1), c = 1/Math.sqrt(m**2 + 1);
-			let d = - a*(μx**2 + μy**2) - b*μx - c*μy;
-
-			[a, b, c, d] = minimizeNelderMead( // use Nelder-Mead to fit an arc TODO custom initial simplex
-				function(state: number[]) { // define error to be minimized as
-					const [a, b, c, d] = state;
-					const det = b**2 + c**2 - 4*a*d;
-					if (det <= 0) return Number.POSITIVE_INFINITY; // infinity if circle is empty, else
-					let err = 0;
-					for (let i = 0; i < candidate.length; i ++) {
-						const {x, y} = centers[candidate[i]];
-						const p = a*(x**2 + y**2) + b*x + c*y + d;
-						err += Math.pow(2*p/(1 + Math.sqrt(1 + 4*a*p)), 2); // sum of squares of distances to arc
-					}
-					return err + 0.1*Math.log(det)**2; // augmented with square of geometric distance of determinant from +1.0 TODO: why did I add this factor?  shouldn't I be adding the log of the radius?
-				},
-				[a, b, c, d],
-				[1/6/l, 1/6, 1/6, l/6],
-				1e-4,
-			);
-			const R = Math.sqrt(b**2 + c**2 - 4*a*d)/(2*Math.abs(a)), cx = -b/(2*a), cy = -c/(2*a); // convert the result into more natural parameters
+			const {R, cx, cy} = circularRegression(candidate.map((i: number) => centers[i]));
+			const midpoint = centers[candidate[Math.trunc(candidate.length/2)]];
 
 			const circularPoints: {x: number, y: number}[] = []; // get polygon segments in circular coordinates
-			const θ0 = Math.atan2(μy - cy, μx - cx);
+			const θ0 = Math.atan2(midpoint.y - cy, midpoint.x - cx);
 			for (let i = 0; i < points.length; i ++) {
 				const {x, y} = points[i];
 				const θ = (Math.atan2(y - cy, x - cx) - θ0 + 3*Math.PI)%(2*Math.PI) - Math.PI;
@@ -558,23 +536,6 @@ export class Chart {
 				height *= -1; // flip it around
 			const value = Math.log(Math.abs(height)) - 6*Math.abs(height)/R + Math.pow(Math.sin(θ0), 2); // choose the axis with the biggest area and smallest curvature
 			if (value > axisValue) {
-				// const axis = [];
-				// for (const i of candidate)
-				// 	axis.push({type:'L', args:[centers[i].x, -centers[i].y]});
-				// axis[0].type = 'M';
-				// const drawing = this.draw(axis, svg);
-				// drawing.setAttribute('style', 'stroke-width:.1px; fill:none; stroke:#000;');
-				// if (label[0] === 'P') {
-				// 	for (let i = 0; i < points.length; i ++)
-				// 		console.log(`[${circularPoints[i].x}, ${circularPoints[i].y}],`);
-				// 	console.log(`${xMin}, ${xMax}, ${0}`);
-				// 	for (let i = 0; i < wedgesKopiye.length; i ++)
-				// 		console.log(`[${wedgesKopiye[i].xL}, ${wedgesKopiye[i].xR}, ${wedgesKopiye[i].y}],`);
-				// 	console.log(aspect);
-				// 	console.log(`${best}, ${height}`);
-				// 	console.log(label);
-				//
-				// }
 				axisValue = value;
 				axisR = R;
 				axisCx = cx;
@@ -582,10 +543,20 @@ export class Chart {
 				axisΘL = θ0 + best/R - height*aspect/R;
 				axisΘR = θ0 + best/R + height*aspect/R;
 				axisH = 2*Math.abs(height); // TODO: enforce font size limit
+				axis = candidate;
 			}
 		}
-		if (axisR === null)
+		if (axisR === null) {
 			console.log(`all ${candidates.length} candidates were somehow incredible garbage`);
+			return null;
+		}
+
+		// const axos = [];
+		// for (const i of axis)
+		// 	axos.push({type:'L', args:[centers[i].x, -centers[i].y]});
+		// axos[0].type = 'M';
+		// const drawing = this.draw(axos, svg);
+		// drawing.setAttribute('style', 'stroke-width:.5px; fill:none; stroke:#004;');
 
 		const arc = this.draw([ // make the arc in the SVG
 			{type: 'M', args: [
@@ -596,9 +567,10 @@ export class Chart {
 				(axisΘR > axisΘL) ? 0 : 1,
 				axisCx + axisR*Math.cos(axisΘR), -(axisCy + axisR*Math.sin(axisΘR))]},
 		], svg);
-		// arc.setAttribute('style', `fill: none; stroke: #000; stroke-width: .1px;`);
+		// arc.setAttribute('style', `fill: none; stroke: #400; stroke-width: .5px;`);
 		arc.setAttribute('style', `fill: none; stroke: none;`);
 		arc.setAttribute('id', `labelArc${this.labelIndex}`);
+		// svg.appendChild(arc);
 		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
 		textGroup.setAttribute('style', `font-size: ${axisH}px`);
 		svg.appendChild(textGroup);
@@ -1068,7 +1040,7 @@ export class EqualArea extends MapProjection {
 	}
 
 	project(φ: number, λ: number): {x: number, y: number} {
-		return {x: λ*linterp(φ, this.φRef, this.xRef), y: linterp(φ, this.φRef, this.yRef)};
+		return {x: λ*linterp(φ, this.φRef, this.xRef), y: linterp(φ, this.φRef, this.yRef)}; // TODO: use better interpolacion
 	}
 
 	drawMeridian(φ0: number, φ1: number, λ: number): PathSegment[] {
@@ -1077,7 +1049,7 @@ export class EqualArea extends MapProjection {
 		let i0, i1;
 		if (φ1 > φ0) {
 			i0 = Math.floor(
-				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) + 1;
+				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) + 1; // TODO: use bezier curves
 			i1 = Math.ceil(
 				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
 		}

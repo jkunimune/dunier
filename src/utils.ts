@@ -85,6 +85,18 @@ export function orthogonalBasis(n: Vector, normalize: boolean = false, axis: Vec
 }
 
 /**
+ * solve for the vector x such that vec = mat*x
+ * @param mat
+ * @param vec
+ */
+export function solveLinearSystem(mat: number[][], vec: number[]): number[] {
+	const A = new Matrix(mat);
+	const b = new Matrix([vec]).trans();
+	const x = A.inverse().times(b);
+	return x.trans().asArray()[0];
+}
+
+/**
  * combine the two arrays and remove duplicates.
  */
 export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
@@ -122,95 +134,227 @@ export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: Reg
 }
 
 /**
- * perform a Nelder-Mead simplex search to find a local minimum of the function f. this implementation is not well-
- * optimized for large numbers of dimensions
- * @param f the function to minimize
- * @param x0 the initial guess
- * @param simplexScale the distance along each dimension to step when constructing the initial simplex
- * @param tol the relative error threshold for termination
+ * fit an arc to a set of points using an algorithm inspired by this paper:
+ *     Chernov, N., Lesort, C. "Least Squares Fitting of Circles". J Math Imaging Vis 23,
+ *     239–252 (2005). https://doi.org/10.1007/s10851-005-0482-8
+ * @return {R: the radius of the arc, cx,cy: the coordinates of the center of curvature of
+ *          the arc, μx,μy: the coordinates of the center of mass of the arc
  */
-export function minimizeNelderMead(f: (n: number[]) => number, x0: number[], simplexScale: number[], tol:number) {
-	const α = 1, γ = 2, ρ = 1/2., σ = 1/2.; // declare values
+export function circularRegression(
+		points: {x: number, y: number}[]): {cx: number, cy: number, R: number} {
+	if (points.length <= 1)
+		throw "you need more than one point to fit a circle, dingus.";
+	else if (points.length == 2)
+		throw "I suppose I could fit a line thru these two points, but with the way you've parameterized it, that's not really doable.";
+	else if (points.length === 3)
+		throw "I'll implement this later";
 
-	const x: number[][] = []; // the vertices of the simplex
-	const fx: number[] = []; // the values of f at the vertices
-	for (let i = 0; i <= x0.length; i ++) {
-		x.push(x0.slice()); // initialize the vertices as the guess
-		if (i < x0.length)
-			x[i][i] += simplexScale[i]; // with multidimensional perturbations
-		fx.push(f(x[i])); // and get the initial values
+	let μx = 0, μy = 0;
+	for (const {x, y} of points) {
+		μx += x;
+		μy += y;
 	}
-	if (!Number.isFinite(fx[x0.length]))
-		throw new Error(`Initial guess yielded bunk value: ${fx[x0.length]}`);
+	[μx, μy] = [μx/points.length, μy/points.length];
+	let sum = [];
+	for (let i = 0; i <= 3; i ++)
+		sum.push([0, 0, 0, 0]);
+	for (const {x, y} of points)
+		for (let i = 0; i <= 3; i ++)
+			for (let j = 0; j <= 3; j ++)
+				if (i + j >= 2 && i + j <= 3)
+				sum[i][j] += Math.pow(x - μx, i) * Math.pow(y - μy, j);
+	let [cx, cy] = solveLinearSystem(
+		[[sum[2][0], sum[1][1]], [sum[1][1], sum[0][2]]],
+		[(sum[3][0] + sum[1][2])/2, (sum[2][1] + sum[0][3])/2]);
+	let R = Math.sqrt((sum[2][0] + sum[0][2])/points.length + cx*cx + cy*cy);
+	[cx, cy] = [cx + μx, cy + μy];
 
-	while (true) { // now for the iterative part
-		const rank = []; // sort indices of dimensions from worst (highest) to best (lowest)
-		for (let i = 0; i < x.length; i ++)
-			rank.push(i);
-		rank.sort((a: number, b: number) => fx[b] - fx[a]);
+	// const c = circumcenter([points[0], points[Math.trunc(points.length/2)], points[points.length-1]]);
+	// let cx = c.x, cy = c.y;
+	// let R = Math.hypot(points[0].x - cx, points[0].y - cy); // 4. TRI initial condition
 
-		let completelyConvergedInSpace = true;
-		for (let j = 0; j < x0.length; j ++) { // check termination conditions
-			if (Math.abs(x[rank[x0.length]][j] - x[rank[0]][j]) > tol*Math.abs(simplexScale[j]))
-				completelyConvergedInSpace = false;
-		}
-		if (completelyConvergedInSpace)
-			return x[rank[x0.length]];
+	let A = 1/(2*R); // reparameterize the circle as A*(x^2 + y^2) + B*x + C*y + D = 1
+	let B = -2*A*cx; // where D is defined by 1 = B^2 + C^2 - 4*A*D
+	let C = -2*A*cy;
+	
+	[A, B, C] = fitLevenbergMarquardt(
+		function(point: number[], state: number[]): number[] {
+			const [x, y] = point;
+			const [A, B, C] = state;
+			const r2 = x*x + y*y;
+			const D = (B*B + C*C - 1)/(4*A);
+			const P = A*r2 + B*x + C*y + D;
+			const Q = Math.sqrt(1 + 4*A*P);
+			const d = 2*P/(1 + Q);
+			return [d, r2, D, Q];
+		},
+		function(point: number[], state: number[], args: number[]): number[] {
+			const [x, y] = point;
+			const [A, B, C] = state;
+			const [d, r2, D, Q] = args;
+			const partial = 2*(1 - A*d/Q)/(1 + Q);
+			return [
+				partial*(r2 - D/A) - d*d/Q,
+				partial*(x + B/(2*A)),
+				partial*(y + C/(2*A))];
+		},
+		points.map((point: {x: number, y: number}) => [point.x, point.y]),
+		[A, B, C],
+		1e-8,
+	);
 
-		const xC = new Array(x0.length).fill(0);
-		for (let j = 0; j < x0.length; j ++) {
-			for (let i = 0; i < x0.length + 1; i++) { // compute the best-guess centroid
-				if (i !== rank[0])
-					xC[j] += x[i][j]/x0.length;
-			}
-		}
+	return {R: 1/(2*Math.abs(A)), cx: -B/(2*A), cy: -C/(2*A)}; // convert the result into more natural parameters
+}
 
-		const xR = new Array(x0.length);
-		for (let j = 0; j < x0.length; j ++)
-			xR[j] = xC[j] + α*(xC[j] - x[rank[0]][j]); // compute the reflected point
-		const fxR = f(xR);
+/**
+ * find a local minimum of the funccion f(state; points) = Σ dist(point[i], state)^2,
+ * using the Levengerg-Marquardt formula as defined in
+ *     Shakarji, C. "Least-Square Fitting Algorithms of the NIST Algorithm Testing
+ *     System". Journal of Research of the National Institute of Standards and Technology
+ *     103, 633–641 (1988). https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=821955
+ * @param dist the error of a single point given the state, along with any intermediate
+ *             quantities that may be useful.  these will all be passd to grad as args.
+ * @param grad the gradient of dist
+ * @param points the list of points for which to minimize the errors
+ * @param gess the inicial gess for the optimal state
+ * @param tolerance the maximum acceptable value of the components of the gradient of the
+ *                  sum of squares, normalized by the norm of the errors and the norm of
+ *                  the gradients of the individual errors.
+ * @return the parameters that minimize the sum of squared distances
+ */
+export function fitLevenbergMarquardt(
+		dist: (point: number[], state: number[]) => number[],
+		grad: (point: number[], state: number[], args: number[]) => number[],
+		points: number[][],
+		gess: number[],
+		tolerance: number = 1e-4): number[] {
+	let iter = 0;
+	let state = gess.slice();
+	let λ = 4e-5;
 
-		if (fxR < fx[rank[x0.length]]) { // if this is the best point yet
-			const xE = new Array(x0.length);
-			for (let j = 0; j < x0.length; j ++)
-				xE[j] = xC[j] + γ*(xR[j] - xC[j]); // compute the expanded point
-			const fxE = f(xE);
-
-			if (fxE < fxR) {
-				x[rank[0]] = xE;
-				fx[rank[0]] = fxE;
-			}
-			else {
-				x[rank[0]] = xR;
-				fx[rank[0]] = fxR;
-			}
-		}
-		else if (fxR < fx[rank[1]]) { // if this is better than the second worst
-			x[rank[0]] = xR;
-			fx[rank[0]] = fxR;
-		}
-		else {
-			const xS = new Array(x0.length);
-			for (let j = 0; j < x0.length; j ++)
-				xS[j] = xC[j] + ρ*(x[rank[0]][j] - xC[j]); // compute the contracted point
-			const fxS = f(xS);
-
-			if (fxS < fx[rank[0]]) { // if that's better than the reflected point
-				x[rank[0]] = xS;
-				fx[rank[0]] = fxS;
-			}
-			else {
-				for (let i = 0; i < x0.length + 1; i ++) { // if it's all complete garbage
-					if (i !== rank[x0.length]) {
-						for (let j = 0; j < x0.length; j ++) {
-							x[i][j] = x[rank[x0.length]][j] + σ*(x[i][j] - x[x0.length][j]); // move all vertices toward the best one
-							fx[i] = f(x[i]);
-						}
-					}
-				}
-			}
-		}
+	let args: number[][] = []; // compute inicial distances
+	let lastValue = Number.POSITIVE_INFINITY, newValue = 0;
+	for (let i = 0; i < points.length; i ++) {
+		args.push(dist(points[i], state)); // the dist funccion mite return other numbers besides the point distance
+		newValue += Math.pow(args[i][0], 2);
 	}
+
+	while (true) {
+		let dists = []; // extract distances
+		let grads = []; // compute gradients
+		for (let i = 0; i < points.length; i ++) {
+			dists.push([args[i][0]]);
+			grads.push(grad(points[i], state, args[i]));
+		}
+
+		if (isConverged(lastValue, newValue, dists, grads, tolerance, tolerance)) // check global convergence
+			return state;
+		lastValue = newValue;
+
+		const d0: Matrix = new Matrix(dists); // convert distances and gradients to matrices
+		const J0: Matrix = new Matrix(grads);
+		const U: Matrix = J0.trans().times(J0); // and do some linear algebra
+		const v: Matrix = J0.trans().times(d0);
+
+		while (true) {
+			const H = U.asArray(); // estimate Hessian
+			for (let i = 0; i < state.length; i ++)
+				H[i][i] += λ*(1 + U.get(i, i));
+			const B = new Matrix(H).inverse();
+			const x = B.times(v);
+
+			const newState = []; // take step
+			for (let i = 0; i < x.n; i ++)
+				newState.push(state[i] - x.get(i));
+
+			let newArgs = []; // recompute distances
+			newValue = 0;
+			for (let i = 0; i < points.length; i ++) {
+				newArgs.push(dist(points[i], newState));
+				newValue += Math.pow(newArgs[i][0], 2);
+			}
+
+			// console.log(`  ${lastValue} -> ${newValue}`);
+			// console.log(x.trans().asArray()[0].toString());
+			if (newValue <= lastValue) { // check line search convergence
+				state = newState;
+				args = newArgs;
+				// console.log("exiting line search");
+				break;
+			}
+			λ *= 10; // increment line search parameter
+			if (λ > 1e64) // check iterations
+				throw "the line search did not converge";
+		}
+
+		λ *= 4e-4; // decrement line search parameter
+
+		iter += 1; // check iterations
+		if (iter > 10000)
+			throw "the maximum number of iteracions has been reachd";
+	}
+}
+
+/**
+ * check a vector of distances and their jacobian to see if we are clone enuff to the
+ * minimum of the sum of squared distances
+ * @param lastValue the sum of squared errors from the previous iteracion
+ * @param nextValue the sum of squared errors from the current iteracion
+ * @param dists the colum-vector of distances
+ * @param grads the matrix where each row is the gradient of one distance
+ * @param funcTolerance the minimum worthwhile relative change in the sum of squares
+ * @param gradTolerance the maximum allowable absolute value of the cosine of the angle
+ *                  between a colum of the jacobian and a residual vector
+ */
+export function isConverged(lastValue: number, nextValue: number,
+							dists: number[][], grads: number[][],
+							funcTolerance: number, gradTolerance: number): boolean {
+	if (dists.length !== grads.length)
+		throw "these matrix shapes do not match.";
+
+	for (let i = 0; i < dists.length; i ++)
+		if (dists[i].length !== 1)
+			throw "This residual vector has not the rite shape.";
+
+	if ((lastValue - nextValue)/lastValue < funcTolerance) // if the last relative change was smol
+		return true; // call it dun
+
+	for (let j = 0; j < grads[0].length; j ++) { // for each dimension of the state vector
+		let distsSqr = 0;
+		let gradDotDist = 0;
+		let gradsSqr = 0;
+		for (let i = 0; i < grads.length; i ++) {
+			distsSqr += dists[i][0]*dists[i][0];
+			gradDotDist += dists[i][0]*grads[i][j]; // compute the derivative of the sum of squares
+			gradsSqr += grads[i][j]*grads[i][j];
+		}
+		const cosine = gradDotDist/Math.sqrt(distsSqr*gradsSqr); // normalize it
+		if (Math.abs(cosine) > gradTolerance) // if just one derivative is nonzero
+			return false; // it's not converged
+	}
+
+	return true; // if we got thru them all, then you're all g to terminate
+}
+
+/**
+ * compute the point equidistant from the three points given.
+ */
+export function circumcenter(points: {x: number, y: number}[]): {x: number, y: number} {
+	if (points.length !== 3)
+		console.log("it has to be 3.");
+	let xNumerator = 0, yNumerator = 0;
+	let denominator = 0;
+	for (let i = 0; i < 3; i++) { // do the 2D circumcenter calculation
+		const a = points[i];
+		const b = points[(i + 1)%3];
+		const c = points[(i + 2)%3];
+		xNumerator += (a.x*a.x + a.y*a.y) * (b.y - c.y);
+		yNumerator += (a.x*a.x + a.y*a.y) * (c.x - b.x);
+		denominator += a.x * (b.y - c.y);
+	}
+	return {
+		x: xNumerator/denominator/2,
+		y: yNumerator/denominator/2};
 }
 
 /**
@@ -222,10 +366,12 @@ export function minimizeNelderMead(f: (n: number[]) => number, x0: number[], sim
  * @param partition optional set of starter triangles to establish topology, represented as arrays of sample indices.
  * the partition must contain all points if given, and must be given for non-planes.
  */
-export function delaunayTriangulate(points: Vector[], normals: Vector[] = [new Vector(0, 0, 1)],
-									sample: Vector[] = [], sampleNormals: Vector[] = [new Vector(0, 0, 1)],
+export function delaunayTriangulate(points: Vector[],
+									normals: Vector[] = [new Vector(0, 0, 1)],
+									sample: Vector[] = [],
+									sampleNormals: Vector[] = [new Vector(0, 0, 1)],
 									partition: number[][] = []
-									): {triangles: number[][], parentage: number[][], between: number[][][]} {
+): {triangles: number[][], parentage: number[][], between: number[][][]} {
 	if (partition.length === 0) { // start by creating a partition if we have none
 		let xMax = Number.NEGATIVE_INFINITY, xMin = Number.POSITIVE_INFINITY;
 		let yMax = Number.NEGATIVE_INFINITY, yMin = Number.POSITIVE_INFINITY;
@@ -681,7 +827,7 @@ class DelaunayEdge {
 
 
 /**
- * A simple class to bind vector operations
+ * a vector in 3-space
  */
 export class Vector {
 	public x: number;
@@ -751,6 +897,165 @@ export class Vector {
 
 
 /**
+ * an n×m matrix
+ */
+export class Matrix {
+	private readonly values: number[][];
+	public readonly n: number;
+	public readonly m: number;
+
+	constructor(values: number[][]) {
+		for (let i = 0; i < values.length; i ++)
+			if (values[i].length !== values[0].length)
+				throw RangeError("the rows of a Matrix must all have the same length.");
+		this.values = values;
+		this.n = values.length;
+		this.m = values[0].length;
+	}
+
+	public times(that: Matrix): Matrix {
+		if (this.m !== that.n)
+			throw RangeError("these matrices don't have compatible sizes.");
+		const newValues: number[][] = [];
+		for (let i = 0; i < this.n; i ++) {
+			newValues.push([]);
+			for (let j = 0; j < that.m; j ++) {
+				newValues[i].push(0);
+				for (let k = 0; k < this.m; k ++) {
+					newValues[i][j] += this.values[i][k]*that.values[k][j];
+				}
+			}
+		}
+		return new Matrix(newValues);
+	}
+
+	public trans(): Matrix {
+		const newValues: number[][] = [];
+		for (let i = 0; i < this.m; i ++) {
+			newValues.push([]);
+			for (let j = 0; j < this.n; j ++)
+				newValues[i].push(this.values[j][i]);
+		}
+		return new Matrix(newValues);
+	}
+
+	/**
+	 * ported from https://www.sanfoundry.com/java-program-find-inverse-matrix/
+	 */
+	public inverse(): Matrix {
+		if (this.n !== this.m)
+			throw "the matrix has to be square";
+		const n = this.n;
+
+		const a: number[][] = [];
+		for (let i = 0; i < n; i ++)
+			a.push(this.values[i].slice());
+
+		const x: number[][] = [];
+		const b: number[][] = [];
+		const index: number[] = [];
+		for (let i = 0; i < n; i ++) {
+			x.push([]);
+			b.push([]);
+			for (let j = 0; j < n; j ++) {
+				x[i].push(0);
+				b[i].push((i === j) ? 1 : 0);
+			}
+			index.push(0);
+		}
+
+		// Transform the matrix into an upper triangle
+		Matrix.gaussian(a, index);
+
+		// Update the matrix b[i][j] with the ratios stored
+		for (let i = 0; i < n - 1; i ++)
+			for (let j = i + 1; j < n; j ++)
+				for (let k = 0; k < n; k ++)
+					b[index[j]][k] -= a[index[j]][i] * b[index[i]][k];
+
+		// Perform backward substitutions
+		for (let i = 0; i < n; i ++) {
+			x[n - 1][i] = b[index[n - 1]][i] / a[index[n - 1]][n - 1];
+			for (let j = n - 2; j >= 0; j --) {
+				x[j][i] = b[index[j]][i];
+				for (let k = j + 1; k < n; k ++) {
+					x[j][i] -= a[index[j]][k] * x[k][i];
+				}
+				x[j][i] /= a[index[j]][j];
+			}
+		}
+		return new Matrix(x);
+	}
+
+	/**
+	 * Method to carry out the partial-pivoting Gaussian
+	 * elimination. Here index[] stores pivoting order.
+	 */
+	private static gaussian(a: number[][], index: number[]): void {
+		const n = index.length;
+		const c: number[] = [];
+		for (let i = 0; i < n; i ++)
+			c.push(0);
+
+		// Initialize the index
+		for (let i = 0; i < n; i ++)
+			index[i] = i;
+
+		// Find the rescaling factors, one from each row
+		for (let i = 0; i < n; i ++) {
+			let c1 = 0;
+			for (let j = 0; j < n; j ++) {
+				const c0 = Math.abs(a[i][j]);
+				if (c0 > c1)
+					c1 = c0;
+			}
+			c[i] = c1;
+		}
+
+		// Search the pivoting element from each column
+		let k = 0;
+		for (let j = 0; j < n - 1; j ++) {
+			let pi1 = 0;
+			for (let i = j; i < n; i ++) {
+				let pi0 = Math.abs(a[index[i]][j]);
+				pi0 /= c[index[i]];
+				if (pi0 > pi1) {
+					pi1 = pi0;
+					k = i;
+				}
+			}
+
+			// Interchange rows according to the pivoting order
+			const itmp = index[j];
+			index[j] = index[k];
+			index[k] = itmp;
+			for (let i = j + 1; i < n; i ++) {
+				const pj = a[index[i]][j] / a[index[j]][j];
+
+				// Record pivoting ratios below the diagonal
+				a[index[i]][j] = pj;
+
+				// Modify other elements accordingly
+				for (let l = j + 1; l < n; l ++)
+					a[index[i]][l] -= pj * a[index[j]][l];
+			}
+		}
+	}
+
+	public asArray(): number[][] {
+		const output = [];
+		for (const row of this.values)
+			output.push(row.slice());
+		return output;
+	}
+
+	get(i: number, j: number = 0): number {
+		return this.values[i][j];
+	}
+}
+
+
+/**
  * a data structure storing a series of nonintersecting segments on a line, with the ability
  * to efficiently erode all segments by the same amount.
  */
@@ -767,7 +1072,7 @@ export class ErodingSegmentTree {
 	private mul: Link;
 	/** the number of additions so far */
 	private index: number;
-	
+
 	constructor(xMin: number, xMax: number) {
 		if (xMin > xMax)
 			throw RangeError("initial range must be positive!");
