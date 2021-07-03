@@ -14,16 +14,16 @@ v	v	v	v	в	b	v	v	v	v	v		ld	v
 n	n	n	n	н	n	n	n	n	n	n		d	n
 t	t	t	t	т	t	t	t	t	t	t		d	p
 d	d	d	d	д	d	d	d	d	d	d		d	b
-θ	th	z	th	ф	s	t	th	th	ṭ	th		d	f
-ð	d	d	th	д	z	d	dh	dh	ḍ	dh		d	v
+θ	th	z	th	ф	s	t	th	th	ṯ	θ		d	f
+ð	d	d	th	д	z	d	dh	dh	ḏ	ð		d	v
 t͡s	c	z	tz	ц	ts	c	c	ts	ts	z		ar	pf
 d͡z	z	z	z	дз	z	z	dz	dz	dz	z		ar	bv
 s	s	s	s	с	s	s	s	s	s	s		ar	f
 z	z	z	z	з	z	z	z	z	z	z		ar	v
-t͡ʃ	s	ch	ch	ч	ty	c	ch	ch	tṣ	c		pa	pf
-d͡ʒ	j	y	j	дж	zy	j	dzh	j	dẓ	j		pa	bv
-ʃ	sc	ch	sh	ш	sy	x	sh	sh	ṣ	x		pa	f
-ʒ	z	y	j	ж	zy	j	zh	zh	ẓ	j		pa	v
+t͡ʃ	s	ch	ch	ч	ty	c	ch	ch	tš	c		pa	pf
+d͡ʒ	j	y	j	дж	zy	j	dzh	j	dž	j		pa	bv
+ʃ	sc	ch	sh	ш	sy	x	sh	sh	š	x		pa	f
+ʒ	z	y	j	ж	zy	j	zh	zh	ž	j		pa	v
 t͡ɬ	cl	cl	cl	тл	tor	tl	tl	tl	tl	kl	l	d	pf
 d͡ɮ	gl	gl	gl	дл	dor	dl	dl	dl	dl	gl	l	d	bv
 ɬ	l	l	fl	сл	r	l	ll	lh	lh	hl	l	d	f
@@ -45,17 +45,17 @@ r	r	rr	r	р	r	r	rr	r	r	r		d	r
 ɻ	r	r	r	р	a	r	rz	rh	ṛ	rh		rf	a
 ɭ	l	l	l	л	r	l	lz	lh	ḷ	ḷ	l	rf	a
 ɽ	r	r	r	р	r	r	rz	rh	ṛ	rh		rf	t
-ɲ	gn	ñ	ny	нь	ny	ny	nj	nh	ny	ny		c	n
-c	cj	cy	c	кь	ky	ky	kj	kh	ty	ky		c	p
-ɟ	j	y	j	гь	gy	gy	gj	gh	dy	gy		c	b
-ç	hj	jy	sh	щ	hy	hy	hj	sh	sy	hy		c	f
-ʝ	j	y	y	й	y	y	y	y	ẏ	y		c	v
-ʎ	gl	ll	y	ль	ry	ly	lj	lh	ly	ly	l	c	a
+ɲ	gn	ñ	ny	нь	ny	ny	ny	nh	nj	ny		c	n
+c	cj	cy	c	кь	ky	ky	ky	kh	tj	ky		c	p
+ɟ	j	y	j	гь	gy	gy	gy	gh	dj	gy		c	b
+ç	hj	jy	sh	щ	hy	hy	hy	sh	sj	hy		c	f
+ʝ	j	y	y	й	y	y	y	y	j	y		c	v
+ʎ	gl	ll	y	ль	ry	ly	ly	lh	lj	ly	l	c	a
 ŋ	n	n	ng	нг	nn	ng	ng	ng	ng	ng		v	n
 k	c	c	c	к	k	k	k	k	k	k		v	p
 ɡ	g	g	g	г	g	g	g	g	g	g		v	b
 x	ch	j	gh	х	h	h	h	kh	x	kh		v	f
-ɣ	g	g	g	г	g	g	gh	gh	ġ	gh		v	v
+ɣ	g	g	g	г	g	g	gh	gh	ğ	gh		v	v
 ʟ	l	ll	y	ль	ry	l	lw	lw	lw	lw	l	v	a
 ɴ	n	n	ng	и	nn	ng	ng	ng	ng	ng		uv	n
 q	g	g	c	г	k	k	q	q	q	q		uv	p
@@ -79,9 +79,9 @@ h	h	j	ɦ	г	h	h	h	h	h	h		gl	f
 ᶢǁ	gl	dic	dic	тг	kk	g	dx	gx	glc	gǁ	l	c	g!
 ᵏǃ	t	tac	tac	тт	tt	t	q	q	c̣	!		rf	k!
 ᶢǃ	t	dac	dac	тд	tt	t	dq	gq	gc̣	g!		rf	g!
-j	j	y	y	й	y	y	j	y	y	y		c	a
-ɥ	ju	yu	yu*	ю	yu	yu	yu	yw	wy	yu	w	c	a
-ɨ̯	j	y	y	й	y	y	j	y	y	y		m	a
+j	j	y	y	й	y	y	y	y	j	y		c	a
+ɥ	ju	yu	yu*	ю	yu	yu	yu	yw	y	yu	w	c	a
+ɨ̯	j	y	y	й	y	y	y	y	j	y		m	a
 ʉ̯	v	u	w	у	w	w	w	w	w	w	w	m	a
 ɰ	v	u	w	у	w	w	w	w	w	w		v	a
 w	v	u	w	в	w	w	w	w	w	w	w	v	a
@@ -116,7 +116,7 @@ a	a	a	a*	а	a	a	a	a	a	a	s	c	5
 a	a	a	a*	а	a	a	a	a	a	a	s	m	5
 ɑ	a	a	a*	a	a	a	a	a	a	a	s	v	5
 ɒ	o	o	o*	о	o	o	o	ao	ọ	a	sw	v	5
-Xː	X̄	X	X-	X	X-	X	X̄	xX	X̄	X̄	Len	0	0
+Xː	X̄	X	X-	X	X-	X	xX	Xh	X̄	X̄	Len	0	0
 Xː	xX	X	xX	xX	xX	X	xX	xX	xX	xX	Gem	0	0
 X͡Y	Y	Y	X	XY	X	Y	XY	XY	XY	XY	Aff	0	0
 Xʰ	Xh	X	X	Xх	X	X	Xh	Xh	Xh	Xh	Asp	0	0
@@ -136,4 +136,4 @@ X̀	X	X	X	X	X	X	X	X	X	X	St2	0	0
 X̯	X	X	X	X	X	X	X	X	X̆	X	Gli	0	0
 X̩	X	eX	eX	X	X	oX	X	X	X	X	Syl	0	0
 X̞	X	X	X	X	X	X	X	X	X	X	Prx	0	0
-..	 	 	- 	-		 	 	 	 	-	Pau	0	0
+ 	 	 	- 	-		 	 	 	 	-	Pau	0	0

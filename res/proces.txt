@@ -104,6 +104,7 @@
 200 mute [ +PHARYNG +STOP ] > [ +FRIC ] /
 050 mute [ +GLOT ] > [ +FRIC ] /
 010 mute [ +RETRO +STOP ] > [ +AFFR ] /										% make retro stops like postalvs
+010 mute [ -LIQ +CORON +OCCL ] > [ +TAP ] / [ +SPOKEN -VOCOID -CORON ]		% mn > mr
 002 mute [ +NONSYLLAB ] [ +NONSYLLAB -GUTTURAL ] > [ +CLICK ]1 /			% click genesis
 002 mute [ +OCCL ] [ +CORON ] > [ +CLICK ]1 /								% click genesis
 %%		lenition
@@ -195,6 +196,7 @@
 010 mute [ +CLOSE +GLIDE ] > [ +NASAL ] / [ +VOCOID ] _ [ -VOWEL ]			% offglide to nasal
 010 mute [ +VELAR +GLIDE ] > [ +UNROUND +STOP ] [ ] / [ -OBSTR ] _ [ +VOWEL ]% w > ɡw
 002 mute [ +LONG +VOWEL ] > [ +NASALIZ ] /
+005 mute [ +LONG +FRIC ] > [ +SHORT +AFFR ] /								% create weerd affricates
 
 %%	ASSIMILATION
 %%		place
@@ -221,6 +223,7 @@
 010 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +OCCL ]						% dm > nm
 100 mute [ +CORON +OBSTR ] > [ +POSTALV ] / _ [ +CORONAL +CLOSE ]			% sɹ > ʃɹ
 002 mute [ +SIBILANT ] > [ +RETRO ] / [ +RHOTIC ] _							% rs > rʂ
+010 mute [ +GLOT +FRIC ] > [ ±loke ] / _ [ +STOP ]							% ht > θt
 %%		featural
 010 mute [ +TENUIS +OBSTR +OCCL ] > [ +VOICE ] / [ +VOICE +NASAL ] _		% nasals voice stops
 100 mute [ +OBSTR ] > [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
@@ -308,6 +311,7 @@
 010 mute > ə / [ +CORON +STOP ] _ [ +CORON ]
 010 mute > s / [ +CORON +STOP ] _ [ +CORON +OCCL ]
 005 mute > ʔ / [ -NONSYLLAB ] _ [ +VOWEL ]
+005 mute [ +VOWEL ] > [ +NONSYLLAB +CLOSE ] [ ] / [ -NONSYLLAB ] _			% glide insertion
 010 mute [ +!PALATAL -VOCOID ] > j [ +ALVEO ] / [ +SYLLAB ] _
 005 mute > j / [ +POSTALV ] _ [ +VOWEL ]
 010 mute > j / [ -GLIDE ] _ [ +LONG +VELAR +HIGH +VOWEL ]

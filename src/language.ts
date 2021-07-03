@@ -1214,7 +1214,7 @@ function ipa(ipa: string): Fon[] {
 	return output;
 }
 
-const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [
+const DIACRITICS: {klas: Klas, baze: Sif[], kode: string}[] = [ // TODO: can I rearrange this to put the macron underneath the acute accent?
 	{klas: new Klas([], [PendaniSif.SPOKEN]), baze: [], kode: 'Pau'},
 	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Gem'},
 	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
