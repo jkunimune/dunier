@@ -265,7 +265,7 @@ export class Civ {
 	}
 
 	/**
-	 * do the upkeep required for this to officially gain tile.
+	 * do the upkeep required for this to officially gain tile. TODO: implement a road network; when a tile is conquered, the conquerer automatically gets everything beyond that as well
 	 * @param tile the land being acquired
 	 */
 	conquer(tile: Nodo) {

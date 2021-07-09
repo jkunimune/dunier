@@ -23,7 +23,6 @@ const N_DEGREES = 6; // number of line segments into which to break one radian o
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 
 const BIOME_COLORS = new Map([
-	['zeme',        '#93d953'],
 	['samud',       '#06267f'],
 	['lage',        '#06267f'],
 	['potistan',    '#444921'],
@@ -161,19 +160,19 @@ export class Chart {
 			nadorang = DEPTH_COLORS[0]; // TODO: outline ocean + cerni nade?
 		}
 
-		if (zemrang === 'lugi') { // color the land light green
-			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('zeme'));
-		} else if (zemrang === 'jivi') { // draw the biomes
+		if (zemrang === 'jivi') { // draw the biomes
 			for (const biome of BIOME_COLORS.keys())
 				if (biome !== 'samud')
 					this.fill([...surface.nodos].filter(n => n.biome === biome), g, BIOME_COLORS.get(biome));
-		} else if (zemrang === 'politiki' && world !== null) { // draw the countries
+		}
+		else if (zemrang === 'politiki' && world !== null) { // draw the countries
 			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('kagaze'));
 			const biggestCivs = new TinyQueue([...world.civs],
 				(a: Civ, b: Civ) => b.getPopulation() - a.getPopulation());
 			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i++)
 				this.fill([...biggestCivs.pop().nodos].filter(n => n.biome !== 'samud'), g, COUNTRY_COLORS[i]);
-		} else if (zemrang === 'gawia') { // color the sea by altitude
+		}
+		else if (zemrang === 'gawia') { // color the sea by altitude
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Number.POSITIVE_INFINITY;
@@ -453,7 +452,6 @@ export class Chart {
 
 		let axisValue = Number.NEGATIVE_INFINITY;
 		let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisH = null;
-		let axis: number[] = null;
 		for (const candidate of candidates) { // for each candidate label axis
 			const {R, cx, cy} = circularRegression(candidate.map((i: number) => centers[i]));
 			const midpoint = centers[candidate[Math.trunc(candidate.length/2)]];
@@ -504,17 +502,16 @@ export class Chart {
 			if (xMin > xMax) // occasionally we get these really terrible candidates
 				continue; // just skip them
 			wedges.sort((a: {y: number}, b: {y: number}) => b.y - a.y); // TODO it would be slightly more efficient if I can merge wedges that share a min vertex
-			// const wedgesKopiye = wedges.slice(); // TODO deleta ye
 
 			const validRegion = new ErodingSegmentTree(xMin, xMax); // construct segment tree
 
-			let height = 0; // iterate height upward until only one segment is left
+			let halfHeight = 0; // iterate height upward until only one segment is left
 			let best;
 			while (true) {
-				if (wedges.length > 0 && wedges[wedges.length-1].y - height < validRegion.getRadius()/aspect) { // either go to the next wedge if it comes before we run out of space
+				if (wedges.length > 0 && wedges[wedges.length-1].y - halfHeight < validRegion.getRadius()/aspect) { // either go to the next wedge if it comes before we run out of space
 					const {xL, xR, y} = wedges.pop();
-					validRegion.erode((y - height)*aspect);
-					height = y;
+					validRegion.erode((y - halfHeight)*aspect);
+					halfHeight = y;
 					if (validRegion.getMinim() >= xL && validRegion.getMaxim() <= xR) {
 						if (validRegion.contains(0))
 							best = 0;
@@ -528,22 +525,22 @@ export class Chart {
 				}
 				else { // or go to here we run out of space
 					best = validRegion.getPole();
-					height += validRegion.getRadius()/aspect;
+					halfHeight += validRegion.getRadius()/aspect;
 					break;
 				}
 			}
-			if (Math.sin(θ0) > 0) // if it's going to be upside down
-				height *= -1; // flip it around
-			const value = Math.log(Math.abs(height)) - 6*Math.abs(height)/R + Math.pow(Math.sin(θ0), 2); // choose the axis with the biggest area and smallest curvature
+			const area = halfHeight*halfHeight, bendRatio = halfHeight/R, horizontality = -Math.sin(θ0);
+			if (horizontality < 0) // if it's going to be upside down
+				halfHeight *= -1; // flip it around
+			const value = Math.log(area) - bendRatio/(1 - bendRatio) + Math.pow(horizontality, 2); // choose the axis with the biggest area and smallest curvature
 			if (value > axisValue) {
 				axisValue = value;
 				axisR = R;
 				axisCx = cx;
 				axisCy = cy;
-				axisΘL = θ0 + best/R - height*aspect/R;
-				axisΘR = θ0 + best/R + height*aspect/R;
-				axisH = 2*Math.abs(height); // TODO: enforce font size limit
-				axis = candidate;
+				axisΘL = θ0 + best/R - halfHeight*aspect/R;
+				axisΘR = θ0 + best/R + halfHeight*aspect/R;
+				axisH = 2*Math.abs(halfHeight); // TODO: enforce font size limit
 			}
 		}
 		if (axisR === null) {
@@ -797,7 +794,7 @@ export class Chart {
 /**
  * a class to manage the plotting of points from a Surface onto a plane.
  */
-class MapProjection {
+abstract class MapProjection {
 	public readonly surface: Surface;
 	public left: number;
 	public right: number;
@@ -805,13 +802,18 @@ class MapProjection {
 	public bottom: number;
 	protected edges: MapEdge[][];
 
-	constructor(surface: Surface, left: number, right:number, top: number, bottom: number) {
+	protected constructor(surface: Surface, left: number, right:number, top: number, bottom: number) {
 		this.surface = surface;
 		this.left = left;
 		this.right = right;
 		this.top = top;
 		this.bottom = bottom;
 	}
+
+	/**
+	 * transform the given parametric coordinates to Cartesian ones.
+	 */
+	abstract project(φ: number, λ: number): {x: number, y: number};
 
 	/**
 	 * compute the coordinates of the midpoint between these two lines.
@@ -875,13 +877,6 @@ class MapProjection {
 		else if (Math.abs(φ1 - φ0) > Math.PI)
 			return this.getEquatorCrossing(φ0, λ0, φ1, λ1);
 		return null;
-	}
-
-	/**
-	 * transform the given parametric coordinates to Cartesian ones.
-	 */
-	project(φ: number, λ: number): {x: number, y: number} {
-		throw "unimplemented";
 	}
 
 	/**

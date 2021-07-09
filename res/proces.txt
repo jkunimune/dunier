@@ -4,8 +4,8 @@
 100 mute [ +UNROUND +VOWEL ] > [ +PALATAL ] /								% fronting of unrounded vowels
 002 mute [ +HIGH ] > [ +PALATAL ] /											% fronting of high vowels
 100 mute [ +LABIAL +VOCOID ] > [ +VELAR ] /									% backing of rounded vowels
-300 mute [ +CENTRAL +UNROUND +GLIDE ] > [ +PALATAL ] /						% fronting of central semivowels
-300 mute [ +CENTRAL +LABIALIZ +GLIDE ] > [ +VELAR ] /						% backing of central semivowels
+500 mute [ +CENTRAL +UNROUND +GLIDE ] > [ +PALATAL ] /						% fronting of central semivowels
+500 mute [ +CENTRAL +LABIALIZ +GLIDE ] > [ +VELAR ] /						% backing of central semivowels
 050 mute [ +CENTRAL ] > [ +VELAR ] /										% backing of central vowels
 050 mute [ +CENTRAL ] > [ +PALATAL ] /										% fronting of central vowels
 100 mute [ +LOW ] > [ +PALATAL ] /											% merge low vowels
@@ -16,8 +16,8 @@
 100 mute [ +LOW ] > [ +UNROUND ] /											% unrounding of low vowels
 100 mute [ +VELAR +VOCOID ] > [ +LABIALIZ ] /								% rounding of back vowels
 %%		height
-300 mute [ +GLIDE ] > [ +CLOSE ] /											% correction of nonhigh semivowels
-300 mute [ +GLIDE -HIGH ] > [ +UNSTRESS ] /									% correction of nonhigh semivowels
+200 mute [ +GLIDE ] > [ +CLOSE ] /											% correction of nonhigh semivowels
+200 mute [ +GLIDE -HIGH ] > [ +UNSTRESS ] /									% correction of nonhigh semivowels
 100 mute [ +GLIDE ] > [ +UNSTRESS ] / [ +LIQ ] _
 010 mute [ +OPEN_MID ] > [ +NEAR_OPEN ] /
 010 mute [ +NEAR_OPEN ] > [ +OPEN_MID ] /
@@ -111,7 +111,7 @@
 020 mute [ +UNSTRESS +VOWEL ] > ə /											% vowel reduction
 020 mute [ +GLIDE ] > / [ +SPOKEN -VOCOID ] _ [ +UNSTRESS ]					% falling diphthong reduction
 020 mute [ +GLIDE ] > / [ +UNSTRESS ] _										% rising diphthong reduction
-020 mute [ +UNSTRESS +VOWEL ] > [ +LAX ] /									% stress-based laxing
+020 mute [ -PRIMARY +VOWEL ] > [ +LAX ] /									% stress-based laxing
 020 mute [ +SHORT +VOWEL ] > [ +LAX ] /										% length-based laxing
 002 mute [ +UNSTRESS ] > [ +UNROUND ] /										% stress-based unrounding
 010 mute [ +UNSTRESS +!PALATAL -HIGH +VOWEL ] > [ +RAISED +LAX ] /			% weird ɛ~ɪ thing from Haw and Rus
@@ -120,7 +120,7 @@
 500 mute [ +NONSYLLAB ] > [ +SHORT ] / [ -VOCOID ] _						% geminates should follow vocoids
 100 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on nonvowels
 010 mute [ -ASPIR +ALVEO +STOP ] > [ +VOICE +TAP ] / [ +VOCOID ] _ [ +VOWEL ]% t flapping
-010 mute [ +ALVEO +STOP ] > [ +GLOT ] / [ +VOCOID ] _ [ +UNSTRESS +VOWEL ]	% t 'dropping'
+010 mute [ +TENUIS +ALVEO +STOP ] > [ +GLOT ] / [ +PRIMARY ] _ [ -LIQ ]		% t glottalizacion
 050 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +VELAR +STOP ] _	% kl > kj
 010 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +STOP ] _			% tl > tj
 010 mute [ +DENTAL +STOP -PHARYNGEALIZ ] > [ +ALVEO +FRIC ] / _ [ -CONT ]	% t > s
@@ -150,9 +150,9 @@
 010 mute [ +LABIALIZ -VOCOID ] > [ +UNROUND ] w / _ [ -LABIAL ]				% qu > cu
 010 mute [ +LABIALIZ -VOCOID ] > w [ +UNROUND ] / [ -LABIAL ] _				% qu > uc
 050 mute [ +PALATALIZ ] > [ +UNROUND ] /
-010 mute [ +PALATALIZ ] > [ +PALATAL ] /
-010 mute [ +PALATALIZ ] > [ +UNROUND ] j / _ [ -PALATAL ]
-010 mute [ +PALATALIZ ] > j [ +UNROUND ] / [ -PALATAL ] _
+020 mute [ +PALATALIZ ] > [ +PALATAL ] /
+020 mute [ +PALATALIZ ] > [ +UNROUND ] j / _ [ -PALATAL ]
+020 mute [ +PALATALIZ ] > j [ +UNROUND ] / [ -PALATAL ] _
 050 mute [ +VELARIZ ] > [ +UNROUND ] /
 010 mute [ +VELARIZ ] > [ +VELAR ] /
 020 mute [ +VELARIZ +CLOSE ] > [ +MEDIAN +VELAR +UNROUND ] /				% dark l > w
@@ -169,6 +169,7 @@
 200 mute [ +LONG +VOWEL ] > [ +TENSE ] /									% length-based tensing
 050 mute [ +STRESS +VOWEL ] > [ +TENSE ] /
 020 mute [ +LONG +VOWEL ] > [ +RAISED ] / _ [ -GLIDE ]						% Anglic vowel shift
+010 mute [ +STRESS ] > [ +RAISED ] / _ #									% raise stressd final vowels
 002 mute [ +MID ] > [ +HIGH ] /												% 3-vowel system
 010 mute [ +CLOSE +VOWEL ] > [ +LONG ] /
 010 mute [ +OBSTR +OCCL -VOICE ] > [ +ASPIR ] / _ [ +STRESS ]				% tenuis to aspirated
@@ -266,11 +267,11 @@
 050 mute [ +DORSAL -NASAL -VOCOID ] [ +DORSAL -VOCOID ] > [ +LONG ]1 /		% assimilation of dorsals
 100 mute [ +PALATAL -NASAL -VOCOID ] [ +PALATAL -VOWEL ] > [ +LONG ]1 /		% assimilation of palatals
 100 mute [ +VELAR -NASAL -VOCOID ] [ +VELAR -VOWEL ] > [ +LONG ]1 /			% assimilation of velars
-050 mute [ +OBSTR +OCCL ] [ +OBSTR ] > [ +LONG ]1 /							% assimilation of obstruents
+020 mute [ -SIBILANT +OBSTR +OCCL ] [ +OBSTR ] > [ +LONG ]1 /				% assimilation of obstruents
 100 mute [ +SONOR -VOCOID ] [ +SONOR -VOCOID ] > [ +LONG ]1 /				% assimilation of sonorants
 050 mute [ +!NASAL ] [ +NASAL ] > [ +LONG ]1 /								% assimilation of nasals
 050 mute [ +NASAL ] [ +!NASAL ] > [ +LONG ]0 /								% assimilation of nasals
-050 mute [ +OCCL -!NASAL ] [ +OCCL +OBSTR ] > [ +LONG ]1 /					% assimilation of occlusives
+020 mute [ +OCCL -!NASAL ] [ +OCCL +OBSTR ] > [ +LONG ]1 /					% assimilation of occlusives
 050 mute [ +FRIC ] [ +FRIC ] > [ +LONG ]1 /									% assimilation of fricatives
 200 mute [ +SIBILANT ] [ +SIBILANT ] > [ +LONG ±loke ]0 /					% assimilation of sibilants
 100 mute [ +FRIC ] [ +AFFR ] > [ +LONG +FRIC ]1 /							% ft͡ʃ > ʃː
@@ -328,6 +329,7 @@
 %%	DELETION
 020 mute [ +GLOT +FRIC ] > /												% h dropping
 050 mute [ +GLOT +FRIC ] > / _ [ -STRESS ]									% h dropping when unstressd
+050 mute [ +GLOT +FRIC ] > / _ [ +HIGH ]									% h dropping before high vowel
 200 mute [ +GLOT ] > / _ [ -VOCOID ]										% h dropping before consonants
 100 mute [ +GLOT ] > / [ +SPOKEN -VOCOID ] _								% h dropping after consonants
 500 mute [ +SYLLAB ] [ +GLOT ] > [ +LONG ]0 / _ [ -VOCOID ]					% h dropping in coda
@@ -350,7 +352,8 @@
 002 mute [ +NONSYLLAB ] > / [ +SPOKEN ] _ #									% loss of final consonant
 002 mute [ +VOCOID -STRESS ] > / [ +SPOKEN ] _ #							% loss of final vowel
 005 mute [ +VOWEL -STRESS ] > / _ [ +VOWEL ]								% loss of hiatus
-005 mute [ +LAX -STRESS ] > /												% loss of vowel
+005 mute [ +LAX -STRESS ] > /												% loss of lax vowel
+005 mute [ +HIGH -STRESS ] > /												% loss of high vowel
 500 mute [ +VOICE +GLOT ] > /												% delete voiced glottal sounds
 100 mute [ -SPOKEN ] > /													% elision of pauses
 

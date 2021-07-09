@@ -831,6 +831,7 @@ class AcentoPoze {
 const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
 const TO_TEXT: Map<string, string[]> = new Map();
 const TO_DIACRITICS: Map<string, string[]> = new Map();
+const ORTHOGRAPHIC_FLAGS: Map<string, boolean[]> = new Map();
 const LOKE_KODE = new Map([
 	['bl', Loke.BILABIAL],
 	['ld', Loke.LABIODENTAL],
@@ -844,7 +845,7 @@ const LOKE_KODE = new Map([
 	['uv', Loke.UVULAR],
 	['eg', Loke.EPIGLOTTAL],
 	['gl', Loke.GLOTTAL],
-])
+]);
 const MODE_KODE = new Map([
 	['n', {mode: Mode.NASAL, voze: Voze.VOICED}],
 	['p', {mode: Mode.STOP, voze: Voze.TENUIS}],
@@ -865,10 +866,10 @@ const MODE_KODE = new Map([
 	['g!', {mode: Mode.CLICK, voze: Voze.VOICED}],
 ]);
 const harfiaTable = loadTSV('alphabet.tsv');
-for (const row of harfiaTable) {
+for (const row of harfiaTable) { // each row of the orthographick table tells us about the different available conventions
 	const grafeme = row.slice(0, NUM_CONVENTIONS);
 	const sif = row.slice(NUM_CONVENTIONS);
-	if (sif[2] !== '0') {
+	if (sif.length === 3) { // first we read all the phonemes and their transcripcions
 		const silabia = sif[0].includes('s') ? Silabia.UNSTRESSED : Silabia.NONSYLLABIC;
 		const latia = sif[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
 		const aliSif = sif[0].includes('w') ? MinorLoke.LABIALIZED : sif[0].includes('v') ? MinorLoke.VELARIZED : MinorLoke.UNROUNDED;
@@ -878,8 +879,15 @@ for (const row of harfiaTable) {
 		FROM_IPA.set(grafeme[0], foneme);
 		TO_TEXT.set(foneme.hash(), grafeme);
 	}
-	else {
+	else if (sif[0].match(/^[A-Z]/)) { // then we read the modifying features and their transcripcions
 		TO_DIACRITICS.set(sif[0], grafeme);
+	}
+	else if (sif[0].match(/^\?/)) { // then we read the special rules
+		ORTHOGRAPHIC_FLAGS.set(sif[0].slice(1),
+			grafeme.map((value: string) => (value === 'y')));
+	}
+	else {
+		throw `incomprehensible orthographickal feature: ${sif}`;
 	}
 }
 
@@ -1062,8 +1070,8 @@ export class ProtoLang {
 	constructor(rng: Random) {
 		this.rng = rng;
 		this.rightBranching = rng.probability(0.2);
-		this.diversity = Math.floor(rng.exponential(3)); // choose how much lexical suffixing to do
-		this.genders = Math.floor(rng.exponential(2)); // choose how much basic suffixing to do
+		this.diversity = Math.floor(rng.exponential(5)); // choose how much lexical suffixing to do
+		this.genders = rng.discrete(0, 6); // choose how much basic suffixing to do
 		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
 		this.nVowel = 5 + rng.binomial(5, .1); // choose how many nuclei it will have
 		this.nMedial = (this.nConson > ProtoLang.R_INDEX) ? 4 : 0;
@@ -1289,9 +1297,23 @@ const ENGLI_VISE = loadTSV('kanune-engli.tsv')
  * @param convention
  */
 export function transcribe(lekse: Fon[], convention: Convention = Convention.NASOMEDI): string {
+	lekse = lekse.slice(); // first, handle some common orthographickal rules
+	if (ORTHOGRAPHIC_FLAGS.get('diphthong as hiatus')[convention]) {
+		for (let i = 0; i < lekse.length; i ++) // for this flag, go thru the original phonemick representacion
+			if (lekse[i].is(PendaniSif.HIGH)
+				&& (i+1 >= lekse.length || lekse[i+1].is(Silabia.NONSYLLABIC))) // find glides in codas
+				lekse[i] = new Klas([Silabia.UNSTRESSED]).konformu(lekse[i]); // and change them to vowels
+	}
+	if (ORTHOGRAPHIC_FLAGS.get('velar nasal as coronal')[convention]) {
+		for (let i = 0; i < lekse.length; i ++)
+			if (lekse[i].is(Loke.VELAR) && lekse[i].is(Mode.NASAL) && i+1 < lekse.length
+				&& lekse[i+1].is(Loke.VELAR) && lekse[i+1].is(PendaniSif.OCCLUSIVE)) // find velar nasals followd by velar stops
+				lekse[i] = new Klas([Loke.ALVEOLAR]).konformu(lekse[i]); // and change them to be coronal
+	}
+
 	let asli = "";
 	for (let i = 0; i < lekse.length; i ++)
-		asli += lookUp(lekse[i], convention);
+		asli += lookUp(lekse[i], convention); // form the inicial spelling by reading the transcripcion out of the table
 
 	if (convention === Convention.ENGLI) {
 		let muti = "#"+asli+"#";
@@ -1360,13 +1382,16 @@ export function transcribe(lekse: Fon[], convention: Convention = Convention.NAS
 			asli = asli.replace(ca, <string> pa);
 	}
 
-	if (convention !== Convention.NASOMEDI) {
+	if (ORTHOGRAPHIC_FLAGS.get('capitalization')[convention]) { // finally, capitalize
 		let muti = "";
+		let startOfWord = true;
 		for (let i = 0; i < asli.length; i ++) {
-			if (i === 0 || asli[i-1] === ' ')
-				muti += asli[i].toUpperCase();
-			else
-				muti += asli[i];
+			muti += (startOfWord) ? asli[i].toUpperCase() : asli[i];
+
+			if (startOfWord && muti[i] !== asli[i])
+				startOfWord = false;
+			if (asli[i] === ' ' || asli[i] === '-')
+				startOfWord = true;
 		}
 		asli = muti;
 	}

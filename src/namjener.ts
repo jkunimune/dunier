@@ -25,7 +25,7 @@ $('#nam-apply').on('click', () => { // TODO: back button
 	for (let i = 0; i < 30; i ++)
 		bax = new DeuteroLang(bax, rng);
 
-	const type = rng.probability(.75) ? 1 : rng.probability(.4) ? 0 : -1;
+	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
 	const convencion = rng.choice([
 		Convention.CHANSAGI_0, Convention.CHANSAGI_1, Convention.CHANSAGI_2, Convention.CHANSAGI_3
 	]);
