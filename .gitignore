@@ -2,8 +2,8 @@
 # Edit at https://www.gitignore.io/?templates=node,intellij
 
 ### build directory ###
-src/*.js
-src/*.js.map
+src/*/*.js
+src/*/*.js.map
 src/lib/*
 
 ### bootstrap ###

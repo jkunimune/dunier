@@ -1,18 +1,40 @@
-// map.ts: all of the cartographic code
-
+/**
+ * MIT License
+ *
+ * Copyright (c) 2021 Justin Kunimune
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 // @ts-ignore
-import TinyQueue from './lib/tinyqueue.js';
+import TinyQueue from '../lib/tinyqueue.js';
 
-import {Nodo, Place, Surface, Triangle} from "./surface.js";
+import {Nodo, Place, Surface, Triangle} from "../planet/surface.js";
 import {
-	delaunayTriangulate,
-	linterp,
 	Vector,
-	ErodingSegmentTree,
-	circularRegression
-} from "./utils.js";
-import {Convention} from "./language.js";
-import {Civ, World} from "./world.js";
+	ErodingSegmentTree, longestShortestPath,
+} from "../util/util.js";
+import {World} from "../society/world.js";
+import {MapProjection, PathSegment} from "./projection.js";
+import {Style} from "../language/script.js";
+import {Civ} from "../society/civ.js";
+import {delaunayTriangulate} from "../util/delaunay.js";
+import {circularRegression} from "../util/fitting.js";
 
 const MAP_PRECISION = 5e-2;
 const SUN_ELEVATION = 60/180*Math.PI;
@@ -129,7 +151,7 @@ export class Chart {
 	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol',
 		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
 		   civLabels: boolean = false, geoLabels: boolean = false,
-		   fontSize: number = 2, convention: Convention = Convention.CHANSAGI_2) {
+		   fontSize: number = 2, convention: Style = Style.CHANSAGI_2) {
 		svg.setAttribute('viewBox',
 			`${this.projection.left} ${this.projection.top}
 			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
@@ -192,7 +214,7 @@ export class Chart {
 					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
 					const text = document.createTextNode(
-						`${civ.getName(Convention.CHANSAGI_2)}\n[${civ.getName(Convention.NASOMEDI)}]`);
+						`${civ.getName(Style.CHANSAGI_2)}\n[${civ.getName(Style.NASOMEDI)}]`);
 					hover.appendChild(text);
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
@@ -231,7 +253,7 @@ export class Chart {
 		 stroke: string = 'none', strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
 		if (nodos.length <= 0)
 			return this.draw([], svg);
-		const path = this.draw(this.map(outline(new Set(nodos)), smooth, true), svg);
+		const path = this.draw(this.map(Chart.outline(new Set(nodos)), smooth, true), svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
 		return path;
@@ -248,7 +270,7 @@ export class Chart {
 	 */
 	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number,
 		   smooth: boolean = false): SVGPathElement {
-		const path = this.draw(this.map(trace(strokes), smooth, false), svg);
+		const path = this.draw(this.map(Chart.trace(strokes), smooth, false), svg);
 		path.setAttribute('style',
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: round; stroke-linecap: round;`);
 		return path;
@@ -314,7 +336,7 @@ export class Chart {
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.map(outline(new Set(nodos)), false, true); // do the projection
+		const path = this.map(Chart.outline(new Set(nodos)), false, true); // do the projection
 		for (let i = path.length - 1; i >= 1; i --) { // convert it into a simplified polygon
 			if (path[i].type === 'A') { // turn arcs into triscadecagons TODO: find out if this can create coincident nodes and thereby Delaunay Triangulation to fail
 				const x0 = path[i-1].args[path[i-1].args.length-2], y0 = path[i-1].args[path[i-1].args.length-1];
@@ -391,7 +413,7 @@ export class Chart {
 				r: 0, isContained: false, edges: new Array(triangulation.triangles.length).fill(null),
 			});
 			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
-			centers[i].isContained = contains(path, {x: centers[i].x, y: -centers[i].y});
+			centers[i].isContained = Chart.contains(path, {x: centers[i].x, y: -centers[i].y});
 			if (centers[i].isContained) {
 				for (let j = 0; j < i; j ++) {
 					if (centers[j].isContained) {
@@ -434,7 +456,9 @@ export class Chart {
 			const usedPoints: Set<number> = new Set();
 			while (usedPoints.size < centers.length) {
 				const newEndpoint = longestShortestPath(
-					centers, (usedPoints.size > 0) ? usedPoints : new Set([argmax]), minClearance).points[0]; // find the point farthest from the paths you have checked TODO expand on this argmax thing to make sure check every exclave fore we start reducing the minimum
+					centers,
+					(usedPoints.size > 0) ? usedPoints : new Set([argmax]),
+					minClearance).points[0]; // find the point farthest from the paths you have checked TODO expand on this argmax thing to make sure check every exclave fore we start reducing the minimum
 				if (usedPoints.has(newEndpoint)) break;
 				const newShortestPath = longestShortestPath(
 					centers, new Set([newEndpoint]), minClearance); // find a new diverse longest shortest path with that as endpoin
@@ -788,563 +812,172 @@ export class Chart {
 
 		return cutPoints;
 	}
-}
 
 
-/**
- * a class to manage the plotting of points from a Surface onto a plane.
- */
-abstract class MapProjection {
-	public readonly surface: Surface;
-	public left: number;
-	public right: number;
-	public top: number;
-	public bottom: number;
-	protected edges: MapEdge[][];
-
-	protected constructor(surface: Surface, left: number, right:number, top: number, bottom: number) {
-		this.surface = surface;
-		this.left = left;
-		this.right = right;
-		this.top = top;
-		this.bottom = bottom;
-	}
 
 	/**
-	 * transform the given parametric coordinates to Cartesian ones.
+	 * find out if a point is contained by a polygon, using an even/odd rule.
+	 * @param polygon
+	 * @param point
+	 * @return whether point is inside polygon
 	 */
-	abstract project(φ: number, λ: number): {x: number, y: number};
-
-	/**
-	 * compute the coordinates of the midpoint between these two lines.
-	 * @param φ0
-	 * @param λ0
-	 * @param φ1
-	 * @param λ1
-	 * @return Point
-	 */
-	getMidpoint(φ0: number, λ0: number, φ1: number, λ1: number): Place {
-		const pos0 = this.surface.xyz(φ0, λ0);
-		const pos1 = this.surface.xyz(φ1, λ1);
-		const posM = pos0.plus(pos1).over(2);
-		return this.surface.φλ(posM.x, posM.y, posM.z);
-	}
-
-	/**
-	 * compute the coordinates at which the line between these two points crosses the y-z plane.  two Places will be
-	 * returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.
-	 */
-	getMeridianCrossing(φ0: number, λ0: number, φ1: number, λ1: number) {
-		const pos0 = this.surface.xyz(φ0, λ0);
-		const pos1 = this.surface.xyz(φ1, λ1);
-		const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
-			pos1.x - pos0.x);
-		const φX = this.surface.φλ(posX.x, posX.y, posX.z).φ;
-		const λX = (λ0 > λ1) ? Math.PI : -Math.PI;
-		return {
-			endpoint0: {φ: φX, λ: λX},
-			endpoint1: {φ: φX, λ: -λX},
-		};
-	}
-
-	/**
-	 * compute the coordinates at which the line between these two points crosses the equatorial plane.  two Places
-	 * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.
-	 */
-	getEquatorCrossing(φ0: number, λ0: number, φ1: number, λ1: number) {
-		const pos0 = this.surface.xyz(φ0, λ0);
-		const pos1 = this.surface.xyz(φ1, λ1);
-		const posX = pos0.times(pos1.z).plus(pos1.times(-pos0.z)).over(
-			pos1.z - pos0.z);
-		const φX = (φ0 > φ1) ? Math.PI : -Math.PI;
-		const λX = this.surface.φλ(posX.x, posX.y, posX.z).λ;
-		return {
-			endpoint0: {φ: φX, λ: λX},
-			endpoint1: {φ: -φX, λ: λX},
-		};
-	}
-
-	/**
-	 * compute the coordinates at which the line between these two points crosses an interrupcion in the map.  if
-	 * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
-	 * the 1th point's side.
-	 */
-	getCrossing(φλ0: number[], φλ1: number[]): {endpoint0: Place, endpoint1: Place} {
-		const [φ0, λ0] = φλ0;
-		const [φ1, λ1] = φλ1;
-		if (Math.abs(λ1 - λ0) > Math.PI)
-			return this.getMeridianCrossing(φ0, λ0, φ1, λ1);
-		else if (Math.abs(φ1 - φ0) > Math.PI)
-			return this.getEquatorCrossing(φ0, λ0, φ1, λ1);
-		return null;
-	}
-
-	/**
-	 * bild the lists of map edges.  each list represents one continuous loop of chaind loxodromes.
-	 */
-	getEdges(): MapEdge[][] {
-		if (this.edges === undefined) {
-			this.edges = [[
-				{
-					start: {φ: this.surface.φMax, λ:  Math.PI}, end: null,
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMax),
-				},
-				{
-					start: {φ: this.surface.φMax, λ: -Math.PI}, end: null,
-					trace: (φ0, _0, φ1, _1) => this.drawMeridian(φ0, φ1, -Math.PI),
-				},
-				{
-					start: {φ: this.surface.φMin, λ: -Math.PI}, end: null,
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMin),
-				},
-				{
-					start: {φ: this.surface.φMin, λ:  Math.PI}, end: null,
-					trace: (φ0, _0, φ1, _1) => this.drawMeridian(φ0, φ1, Math.PI),
-				},
-			]];
-			for (let i = 0; i < this.edges[0].length; i ++)
-				this.edges[0][i].end = this.edges[0][(i+1)%this.edges[0].length].start;
+	static contains(polygon: PathSegment[], point: {x: number, y: number}): boolean {
+		let contained = false;
+		for (let i = 0; i < polygon.length; i ++)
+			console.assert(polygon[i].type === 'M' || polygon[i].type === 'L', "I can't do that segment type.");
+		for (let i = 1; i < polygon.length; i ++) {
+			if (polygon[i].type === 'L') {
+				const [x0, y0] = polygon[i-1].args;
+				const [x1, y1] = polygon[i].args;
+				if ((y0 < point.y) !== (y1 < point.y))
+					if (x0 + (point.y - y0)/(y1 - y0)*(x1 - x0) > point.x)
+						contained = !contained;
+			}
 		}
-		return this.edges;
+		return contained;
+	}
+
+
+
+	/**
+	 * create an ordered Iterator of segments that form all of these lines, aggregating where
+	 * applicable. aggregation may behave unexpectedly if some members of lines contain
+	 * nonendpoints that are endpoints of others.
+	 * @param lines Set of lists of points to be combined and pathified.
+	 */
+	static trace(lines: Iterable<Place[]>): PathSegment[] {
+		const queue = [...lines];
+		const consolidated: Set<Place[]> = new Set(); // first, consolidate
+		const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
+		const tails: Map<Place, Place[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
+		const torsos: Map<Place, {containing: Place[], index: number}> = new Map(); // map from midpoints to line containing midpoint
+		while (queue.length > 0) {
+			for (const l of consolidated) {
+				if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
+					throw Error("up top!");
+				if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
+					throw Error("up slightly lower!");
+			}
+			let line = [...queue.pop()]; // check each given line (we've only shallow-copied until now, so make sure you don't alter the input lines themselves)
+			const head = line[0], tail = line[line.length-1];
+			consolidated.add(line); // add it to the list
+			if (!heads.has(head))  heads.set(head, []); // and connect it to these existing sets
+			heads.get(head).push(line);
+			if (!tails.has(tail))  tails.set(tail, []);
+			tails.get(tail).push(line);
+			for (let i = 1; i < line.length - 1; i ++)
+				torsos.set(line[i], {containing: line, index: i});
+
+			for (const l of consolidated)
+				if (!heads.has(l[0]) || !tails.has(l[l.length-1]))
+					throw Error("that was quick.");
+
+			for (const endpoint of [head, tail]) { // first, on either end...
+				if (torsos.has(endpoint)) { // does it run into the middle of another?
+					const {containing, index} = torsos.get(endpoint); // then that one must be cut in half
+					const fragment = containing.slice(index);
+					containing.splice(index + 1);
+					consolidated.add(fragment);
+					if (endpoint === head)  tails.set(endpoint, []);
+					else                    heads.set(endpoint, []);
+					heads.get(endpoint).push(fragment);
+					tails.get(endpoint).push(containing);
+					tails.get(fragment[fragment.length-1])[tails.get(fragment[fragment.length-1]).indexOf(containing)] = fragment;
+					torsos.delete(endpoint);
+					for (let i = 1; i < fragment.length - 1; i ++)
+						torsos.set(fragment[i], {containing: fragment, index: i});
+				}
+			}
+
+			for (const l of consolidated) {
+				if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
+					throw Error(`i broke it ${l[0].φ} -> ${l[l.length-1].φ}`);
+				if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
+					throw Error(`yoo broke it! ${l[0].φ} -> ${l[l.length-1].φ}`);
+			}
+
+			if (tails.has(head)) { // does its beginning connect to another?
+				if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
+					line = combine(tails.get(head)[0], line); // put them together
+			}
+			if (heads.has(tail)) { // does its end connect to another?
+				if (heads.get(tail).length === 1 && tails.get(tail).length === 1) // if these fit together exclusively
+					line = combine(line, heads.get(tail)[0]); // put them together
+			}
+		}
+
+		function combine(a: Place[], b: Place[]): Place[] {
+			consolidated.delete(b); // delete b
+			heads.delete(b[0]);
+			tails.delete(b[0]);
+			tails.get(b[b.length-1])[tails.get(b[b.length-1]).indexOf(b)] = a; // repoint the tail reference from b to a
+			for (let i = 1; i < b.length; i ++) { // add b's elements to a
+				torsos.set(b[i-1], {containing: a, index: a.length - 1});
+				a.push(b[i]);
+			}
+			return a;
+		}
+
+		let output = [];
+		for (const line of consolidated) { // then do the conversion
+			output.push({type: 'M', args: [line[0].φ, line[0].λ]});
+			for (let i = 1; i < line.length; i ++)
+				output.push({type: 'L', args: [line[i].φ, line[i].λ]});
+		}
+		return output;
 	}
 
 	/**
-	 * return a number indicating where on the edge of map this point lies
-	 * @return the index of the edge that contains this point plus the fraccional distance from that edges start to its
-	 * end of that point, or null if there is no such edge.  also, the index of the edge loop about which we're tauking
-	 * or null if the point isn't on an edge
+	 * create an ordered Iterator of segments that form the boundary of this.
+	 * @param nodos Set of Node that are part of this group.
+	 * @return Array of PathSegments, ordered widdershins.
 	 */
-	getPositionOnEdge(φ: number, λ: number): {loop: number, index: number} {
-		for (let i = 0; i < this.getEdges().length; i ++) {
-			for (let j = 0; j < this.getEdges()[i].length; j ++) {
-				const edge = this.getEdges()[i][j];
-				if (φ >= Math.min(edge.start.φ, edge.end.φ) && φ <= Math.max(edge.start.φ, edge.end.φ) &&
-					λ >= Math.min(edge.start.λ, edge.end.λ) && λ <= Math.max(edge.start.λ, edge.end.λ)) {
-					const startToPoint = new Vector(λ - edge.start.λ, φ - edge.start.φ, 0);
-					const startToEnd = new Vector(edge.end.λ - edge.start.λ, edge.end.φ - edge.start.φ, 0);
-					return {loop: i, index: j + startToPoint.dot(startToEnd)/startToEnd.sqr()};
+	static outline(nodos: Set<Nodo>): PathSegment[] {
+		const accountedFor = new Set(); // keep track of which Edge have been done
+		const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire map?
+		for (let ind of nodos) { // look at every included node
+			for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
+				if (nodos.has(way))    continue; // (we only care if that adjacent node is excluded)
+				const startingEdge = ind.neighbors.get(way); // the edge between them defines the start of the loop
+				if (accountedFor.has(startingEdge)) continue; // (and can ignore edges we've already hit)
+
+				const loopIdx = output.length;
+				do {
+					const next = ind.leftOf(way); // look for the next triangle, going widdershins
+					if (next !== null) { // assuming there is one,
+						const vertex = next.circumcenter; // pick out its circumcenter to plot
+						output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
+						const lastEdge = ind.neighbors.get(way);
+						accountedFor.add(lastEdge); // check this edge off
+						if (nodos.has(next.acrossFrom(lastEdge))) // then, depending on the state of the Node after that Triangle
+							ind = next.acrossFrom(lastEdge); // advance one of the state nodos
+						else
+							way = next.acrossFrom(lastEdge);
+					}
+					else { // if there isn't a next triangle
+						if (output.length > loopIdx)
+							output.push({type: 'L', args: [Number.NEGATIVE_INFINITY, Number.NaN]}); // draw a line to infinity
+						else
+							break; // unless you're trying to start a new seccion; the lines to infinity must be in the middle of seccions
+						way = ind;
+						let i = 0;
+						do {
+							way = way.surface.edge.get(way).next; // and shimmy way around the internal portion of the edge
+							i ++;
+						} while (nodos.has(way)); // until it becomes external again
+						ind = way.surface.edge.get(way).prev; // then, grab the new ind and continue
+					}
+				} while (ind.neighbors.get(way) !== startingEdge && output.length < 10000); // continue until you go all the way around this loop
+
+				if (loopIdx < output.length) {
+					output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
+					output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
 				}
 			}
 		}
-		return null;
-	}
 
-	/**
-	 * generate some <path> segments to trace a line of constant latitude between two longitudes
-	 */
-	drawParallel(λ0: number, λ1: number, φ: number): PathSegment[] {
-		const {x, y} = this.project(φ, λ1);
-		return [{type: 'L', args: [x, y]}];
-	}
-
-	/**
-	 * generate some <path> segments to trace a line of constant longitude between two latitudes
-	 */
-	drawMeridian(φ0: number, φ1: number, λ: number): PathSegment[] {
-		const {x, y} = this.project(φ1, λ);
-		return [{type: 'L', args: [x, y]}];
-	}
-}
-
-
-/**
- * a Plate-Caree projection, primarily for interfacing with other mapping software.
- */
-export class Equirectangular extends MapProjection {
-	constructor(surface: Surface) {
-		super(surface, -Math.PI, Math.PI, -surface.φMax, -surface.φMin);
-	}
-
-	project(φ: number, λ: number): {x: number, y: number} {
-		return {x: λ, y: -φ};
-	}
-}
-
-/**
- * a cylindrical projection that makes loxodromes appear as straight lines.
- */
-export class Mercator extends MapProjection {
-	private readonly φRef: number[];
-	private readonly yRef: number[];
-
-	constructor(surface: Surface) {
-		super(surface, -Math.PI, Math.PI, null, 0);
-
-		this.φRef = surface.refLatitudes;
-		this.yRef = [0];
-		for (let i = 1; i < this.φRef.length; i ++) {
-			const dφ = this.φRef[i] - this.φRef[i-1];
-			const dsdφ = surface.dsdφ((this.φRef[i-1] + this.φRef[i])/2);
-			const dAds = surface.dAds((this.φRef[i-1] + this.φRef[i])/2);
-			this.yRef.push(this.yRef[i-1] - 2*Math.PI*dsdφ*dφ/dAds);
-		}
-
-		this.bottom = this.yRef[0];
-		this.top = this.yRef[this.yRef.length-1];
-		if (surface.dAds(surface.φMin) > surface.dAds(surface.φMax)) // if the South Pole is thicker than the North
-			this.top = Math.max(this.top, this.bottom - 2*Math.PI); // crop the top to make it square
-		else if (surface.dAds(surface.φMin) < surface.dAds(surface.φMax)) // if the North Pole is thicker
-			this.bottom = Math.min(this.bottom, this.top + 2*Math.PI); // crop the bottom to make it square
-		else { // if they are equally important
-			const excess = Math.max(0, this.bottom - this.top - 2*Math.PI);
-			this.top = this.top + excess/2;
-			this.bottom = this.bottom - excess/2;
-		}
-	}
-
-	project(φ: number, λ: number): {x: number, y: number} {
-		return {x: λ, y: linterp(φ, this.φRef, this.yRef)};
-	}
-}
-
-/**
- * a pseudocylindrical equal-area projection similar to Eckert IV or Natural Earth
- */
-export class EqualArea extends MapProjection {
-	private readonly φRef: number[];
-	private readonly xRef: number[];
-	private readonly yRef: number[];
-
-	constructor(surface: Surface) {
-		super(surface, null, null, null, 0);
-
-		let avgWidth = 0;
-		for (let i = 1; i < surface.refLatitudes.length; i ++) // first measure the typical width of the surface
-			avgWidth += surface.dAds((surface.refLatitudes[i-1] + surface.refLatitudes[i])/2)*
-				(surface.cumulAreas[i] - surface.cumulAreas[i-1])/surface.area;
-
-		this.φRef = surface.refLatitudes;
-		this.xRef = [];
-		this.yRef = [0];
-		for (let i = 0; i < this.φRef.length; i ++) {
-			this.xRef.push((surface.dAds(this.φRef[i]) + avgWidth)/2/(2*Math.PI));
-			if (i > 0) {
-				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
-				this.yRef.push(this.yRef[i-1] - verAre / (2*Math.PI*(this.xRef[i-1] + this.xRef[i])/2));
-			}
-		}
-
-		let maxX = 0;
-		for (const x of this.xRef)
-			if (x > maxX)
-				maxX = x;
-		this.left = -Math.PI*maxX;
-		this.right = Math.PI*maxX;
-		this.bottom = this.yRef[0];
-		this.top = this.yRef[this.yRef.length-1];
-	}
-
-	project(φ: number, λ: number): {x: number, y: number} {
-		return {x: λ*linterp(φ, this.φRef, this.xRef), y: linterp(φ, this.φRef, this.yRef)}; // TODO: use better interpolacion
-	}
-
-	drawMeridian(φ0: number, φ1: number, λ: number): PathSegment[] {
-		console.assert(φ0 !== φ1, φ0);
-		const edge = [];
-		let i0, i1;
-		if (φ1 > φ0) {
-			i0 = Math.floor(
-				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) + 1; // TODO: use bezier curves
-			i1 = Math.ceil(
-				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
-		}
-		else {
-			i0 = Math.ceil(
-				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) - 1;
-			i1 = Math.floor(
-				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
-		}
-		for (let i = i0; i !== i1; i += Math.sign(i1 - i0))
-			edge.push({type: 'L', args: [λ*this.xRef[i], this.yRef[i]]});
-		const {x, y} = this.project(φ1, λ);
-		edge.push({type: 'L', args: [x, y]});
-		return edge;
-	}
-}
-
-/**
- * an azimuthal equidistant projection
- */
-export class Azimuthal extends MapProjection {
-	private readonly rMax: number;
-	private readonly rMin: number;
-
-	constructor(surface: Surface) {
-		const r0 = surface.dAds(Math.PI/2)/(2*Math.PI);
-		const rMax = r0 + linterp(Math.PI/2, surface.refLatitudes, surface.cumulDistances);
-		super(surface, -rMax, rMax, -rMax, rMax);
-		this.rMax = rMax;
-		this.rMin = rMax - surface.height;
-	}
-
-	project(φ: number, λ: number): {x: number, y: number} {
-		const r = this.rMax - linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
-		return {x: r*Math.sin(λ), y: r*Math.cos(λ)};
-	}
-
-	drawParallel(λ0: number, λ1: number, φ: number): PathSegment[] {
-		const r = this.rMax - linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
-		const sweepFlag = (λ1 > λ0) ? 0 : 1;
-		if (r > 0) {
-			const {x, y} = this.project(φ, λ1);
-			if (Math.abs(λ0 - λ1) <= Math.PI)
-				return [
-					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
-				]
-			else
-				return [
-					{type: 'A', args: [r, r, 0, 0, sweepFlag, 0, r]},
-					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
-				];
-		}
-		else
-			return [];
-	}
-
-	getCrossing(φλ0: number[], φλ1: number[]): {endpoint0: Place, endpoint1: Place} {
-		const [φ0, λ0] = φλ0;
-		const [φ1, λ1] = φλ1;
-		if (Math.abs(φ1 - φ0) > Math.PI)
-			return this.getEquatorCrossing(φ0, λ0, φ1, λ1);
-		return null;
-	}
-
-	getEdges(): MapEdge[][] {
-		if (this.edges === undefined) {
-			this.edges = [
-				[{
-					start: {φ: this.surface.φMax, λ:  Math.PI},
-					end:   {φ: this.surface.φMax, λ: -Math.PI},
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMax),
-				}],
-				[{
-					start: {φ: this.surface.φMin, λ: -Math.PI},
-					end:   {φ: this.surface.φMin, λ:  Math.PI},
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMin),
-				}],
-			];
-		}
-		return this.edges;
+		return output;
 	}
 
 }
 
-/**
- * create an ordered Iterator of segments that form all of these lines, aggregating where applicable.
- * aggregation may behave unexpectedly if some members of lines contain nonendpoints that are endpoints of others.
- * @param lines Set of lists of points to be combined and pathified.
- */
-function trace(lines: Iterable<Place[]>): PathSegment[] {
-	const queue = [...lines];
-	const consolidated: Set<Place[]> = new Set(); // first, consolidate
-	const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
-	const tails: Map<Place, Place[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
-	const torsos: Map<Place, {containing: Place[], index: number}> = new Map(); // map from midpoints to line containing midpoint
-	while (queue.length > 0) {
-		for (const l of consolidated) {
-			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
-				throw Error("up top!");
-			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
-				throw Error("up slightly lower!");
-		}
-		let line = [...queue.pop()]; // check each given line (we've only shallow-copied until now, so make sure you don't alter the input lines themselves)
-		const head = line[0], tail = line[line.length-1];
-		consolidated.add(line); // add it to the list
-		if (!heads.has(head))  heads.set(head, []); // and connect it to these existing sets
-		heads.get(head).push(line);
-		if (!tails.has(tail))  tails.set(tail, []);
-		tails.get(tail).push(line);
-		for (let i = 1; i < line.length - 1; i ++)
-			torsos.set(line[i], {containing: line, index: i});
-
-		for (const l of consolidated)
-			if (!heads.has(l[0]) || !tails.has(l[l.length-1]))
-				throw Error("that was quick.");
-
-		for (const endpoint of [head, tail]) { // first, on either end...
-			if (torsos.has(endpoint)) { // does it run into the middle of another?
-				const {containing, index} = torsos.get(endpoint); // then that one must be cut in half
-				const fragment = containing.slice(index);
-				containing.splice(index + 1);
-				consolidated.add(fragment);
-				if (endpoint === head)  tails.set(endpoint, []);
-				else                    heads.set(endpoint, []);
-				heads.get(endpoint).push(fragment);
-				tails.get(endpoint).push(containing);
-				tails.get(fragment[fragment.length-1])[tails.get(fragment[fragment.length-1]).indexOf(containing)] = fragment;
-				torsos.delete(endpoint);
-				for (let i = 1; i < fragment.length - 1; i ++)
-					torsos.set(fragment[i], {containing: fragment, index: i});
-			}
-		}
-
-		for (const l of consolidated) {
-			if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
-				throw Error(`i broke it ${l[0].φ} -> ${l[l.length-1].φ}`);
-			if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
-				throw Error(`yoo broke it! ${l[0].φ} -> ${l[l.length-1].φ}`);
-		}
-
-		if (tails.has(head)) { // does its beginning connect to another?
-			if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
-				line = combine(tails.get(head)[0], line); // put them together
-		}
-		if (heads.has(tail)) { // does its end connect to another?
-			if (heads.get(tail).length === 1 && tails.get(tail).length === 1) // if these fit together exclusively
-				line = combine(line, heads.get(tail)[0]); // put them together
-		}
-	}
-
-	function combine(a: Place[], b: Place[]): Place[] {
-		consolidated.delete(b); // delete b
-		heads.delete(b[0]);
-		tails.delete(b[0]);
-		tails.get(b[b.length-1])[tails.get(b[b.length-1]).indexOf(b)] = a; // repoint the tail reference from b to a
-		for (let i = 1; i < b.length; i ++) { // add b's elements to a
-			torsos.set(b[i-1], {containing: a, index: a.length - 1});
-			a.push(b[i]);
-		}
-		return a;
-	}
-
-	let output = [];
-	for (const line of consolidated) { // then do the conversion
-		output.push({type: 'M', args: [line[0].φ, line[0].λ]});
-		for (let i = 1; i < line.length; i ++)
-			output.push({type: 'L', args: [line[i].φ, line[i].λ]});
-	}
-	return output;
-}
-
-/**
- * create an ordered Iterator of segments that form the boundary of this.
- * @param nodos Set of Node that are part of this group.
- * @return Array of PathSegments, ordered widdershins.
- */
-function outline(nodos: Set<Nodo>): PathSegment[] {
-	const accountedFor = new Set(); // keep track of which Edge have been done
-	const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire map?
-	for (let ind of nodos) { // look at every included node
-		for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
-			if (nodos.has(way))    continue; // (we only care if that adjacent node is excluded)
-			const startingEdge = ind.neighbors.get(way); // the edge between them defines the start of the loop
-			if (accountedFor.has(startingEdge)) continue; // (and can ignore edges we've already hit)
-
-			const loopIdx = output.length;
-			do {
-				const next = ind.leftOf(way); // look for the next triangle, going widdershins
-				if (next !== null) { // assuming there is one,
-					const vertex = next.circumcenter; // pick out its circumcenter to plot
-					output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
-					const lastEdge = ind.neighbors.get(way);
-					accountedFor.add(lastEdge); // check this edge off
-					if (nodos.has(next.acrossFrom(lastEdge))) // then, depending on the state of the Node after that Triangle
-						ind = next.acrossFrom(lastEdge); // advance one of the state nodos
-					else
-						way = next.acrossFrom(lastEdge);
-				}
-				else { // if there isn't a next triangle
-					if (output.length > loopIdx)
-						output.push({type: 'L', args: [Number.NEGATIVE_INFINITY, Number.NaN]}); // draw a line to infinity
-					else
-						break; // unless you're trying to start a new seccion; the lines to infinity must be in the middle of seccions
-					way = ind;
-					let i = 0;
-					do {
-						way = way.surface.edge.get(way).next; // and shimmy way around the internal portion of the edge
-						i ++;
-					} while (nodos.has(way)); // until it becomes external again
-					ind = way.surface.edge.get(way).prev; // then, grab the new ind and continue
-				}
-			} while (ind.neighbors.get(way) !== startingEdge && output.length < 10000); // continue until you go all the way around this loop
-
-			if (loopIdx < output.length) {
-				output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
-				output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
-			}
-		}
-	}
-
-	return output;
-}
-
-/**
- * perform a Dijkstra search on the given Euclidean graph from the given nodes. return the shortest path from the node
- * that is furthest from those endpoint nodes to the endpoint node that is closest to it, as a list of indices.
- * @param nodes the locations of all of the nodes in the plane, and their connections
- * @param endpoints the indices of the possible endpoints
- * @param threshold the minimum clearance of an edge
- * @return list of indices starting with the farthest connected point and stepping through the path, and the path length
- */
-function longestShortestPath(nodes: {x: number, y: number, edges: {length: number, clearance: number}[]}[],
-							 endpoints: Set<number>, threshold: number = 0): {points: number[], length: number} {
-	const graph = [];
-	for (let i = 0; i < nodes.length; i ++)
-		graph.push({distance: Number.POSITIVE_INFINITY, cene: null, lewi: false})
-
-	const queue = new TinyQueue([], (a: {distance: number}, b: {distance: number}) => a.distance - b.distance);
-	for (const i of endpoints)
-		queue.push({start: null, end: i, distance: 0}); // populate the queue with the endpoints
-
-	let furthest = null;
-	while (queue.length > 0) { // while there are places whither you can go
-		const {start, end, distance} = queue.pop(); // look for the closest one
-		if (!graph[end].lewi) { // only look at each one once
-			for (let next = 0; next < nodes.length; next ++) { // add its neighbors to the queue
-				if (nodes[end].edges[next] !== null && nodes[end].edges[next].clearance >= threshold) // if they are connected with enough clearance
-					queue.push({start: end, end: next, distance: distance + nodes[end].edges[next].length});
-			}
-			graph[end] = {distance: distance, cene: start, lewi: true}; // mark this as visited
-			furthest = end; // and as the furthest yet visited
-		}
-	}
-
-	const points = [furthest];
-	let length = 0;
-	let i = furthest; // starting at the furthest point you found,
-	while (graph[i].cene !== null) { // step backwards and record the path
-		length += nodes[i].edges[graph[i].cene].length;
-		i = graph[i].cene;
-		points.push(i);
-	}
-	return {points: points, length: length};
-}
-
-/**
- * find out if a point is contained by a polygon, using an even/odd rule.
- * @param polygon
- * @param point
- * @return whether point is inside polygon
- */
-function contains(polygon: PathSegment[], point: {x: number, y: number}): boolean {
-	let contained = false;
-	for (let i = 0; i < polygon.length; i ++)
-		console.assert(polygon[i].type === 'M' || polygon[i].type === 'L', "I can't do that segment type.");
-	for (let i = 1; i < polygon.length; i ++) {
-		if (polygon[i].type === 'L') {
-			const [x0, y0] = polygon[i-1].args;
-			const [x1, y1] = polygon[i].args;
-			if ((y0 < point.y) !== (y1 < point.y))
-				if (x0 + (point.y - y0)/(y1 - y0)*(x1 - x0) > point.x)
-					contained = !contained;
-		}
-	}
-	return contained;
-}
-
-/**
- * the edge of a map projection
- */
-interface MapEdge {
-	start: Place;
-	end: Place;
-	trace: (φ0: number, λ0: number, φ1: number, λ1: number) => PathSegment[];
-}
-
-/**
- * something that can be dropped into an SVG <path>.
- */
-interface PathSegment {
-	type: string;
-	args: number[];
-}

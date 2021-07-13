@@ -1,15 +1,45 @@
-// index.ts: interfaces with forms and plots
-
-import "./lib/jquery.min.js";//TODO: I should not be using jquery here
-import {generateTerrain} from "./terrain.js";
-import {Disc, LockedDisc, Sphere, Spheroid, Surface, Toroid} from "./surface.js";
-import {World} from "./world.js";
-import {Convention} from "./language.js";
-import {Azimuthal, Chart, EqualArea, Equirectangular, Mercator} from "./map.js";
-import {Random} from "./random.js";
+/**
+ * MIT License
+ *
+ * Copyright (c) 2021 Justin Kunimune
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+import "../lib/jquery.min.js"; //TODO: I should not be using jquery
+import {generateTerrain} from "../society/terrain.js";
+import {Surface} from "../planet/surface.js";
+import {World} from "../society/world.js";
+import {Random} from "../util/random.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
-import "./lib/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
+import "../lib/plotly.min.js";
+import {Chart} from "../map/chart.js";
+import {Azimuthal} from "../map/azimuthal.js";
+import {Equirectangular} from "../map/equirectangular.js";
+import {Mercator} from "../map/mercator.js";
+import {EqualArea} from "../map/equalarea.js";
+import {Style} from "../language/script.js";
+import {Spheroid} from "../planet/spheroid.js";
+import {Sphere} from "../planet/sphere.js";
+import {Disc} from "../planet/disc.js";
+import {Toroid} from "../planet/toroid.js";
+import {LockedDisc} from "../planet/lockeddisc.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -247,13 +277,13 @@ function mapApply() {
 
 	let convention;
 	if (baxe === 'en')
-		convention = Convention.ENGLI;
+		convention = Style.ENGLI;
 	else if (baxe === 'es')
-		convention = Convention.ESPANI;
+		convention = Style.ESPANI;
 	else if (baxe === 'jp')
-		convention = Convention.NIPONI;
+		convention = Style.NIPONI;
 	else if (baxe === 'pd')
-		convention = Convention.PANDUNI;
+		convention = Style.PANDUNI;
 
 	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade, dexnam, xanonam, convention);
 
