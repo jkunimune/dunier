@@ -81,7 +81,10 @@
             <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">歴史</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="true">地図</a>
+            <a class="nav-link" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">地図</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">文書</a>
           </li>
         </ul>
 
@@ -245,7 +248,7 @@
             </div>
           </div>
 
-          <div class="tab-pane show active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
+          <div class="tab-pane" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
             <div class="container mt-2">
               <div class="row">
                 <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
@@ -473,6 +476,14 @@
                        viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
                   </svg>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tab-pane show active" id="pdf-panel" role="tabpanel" aria-labelledby="pdf-tab">
+            <div class="container mt-2">
+              <div class="col-12">
+                <embed id="pdf-embed" type="application/pdf" width="100%" height="600px" src="https://www.maths.usyd.edu.au/u/SMS/texdoc/pst-user.pdf">
               </div>
             </div>
           </div>

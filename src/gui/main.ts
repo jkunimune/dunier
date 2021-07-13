@@ -22,13 +22,12 @@
  * SOFTWARE.
  */
 import "../lib/jquery.min.js"; //TODO: I should not be using jquery
+// import "../lib/jspdf.umd.min.js";
+import "../lib/plotly.min.js";
 import {generateTerrain} from "../society/terrain.js";
 import {Surface} from "../planet/surface.js";
 import {World} from "../society/world.js";
 import {Random} from "../util/random.js";
-// @ts-ignore
-const $ = window.$; // why is this like this? I don't know.
-import "../lib/plotly.min.js";
 import {Chart} from "../map/chart.js";
 import {Azimuthal} from "../map/azimuthal.js";
 import {Equirectangular} from "../map/equirectangular.js";
@@ -40,6 +39,10 @@ import {Sphere} from "../planet/sphere.js";
 import {Disc} from "../planet/disc.js";
 import {Toroid} from "../planet/toroid.js";
 import {LockedDisc} from "../planet/lockeddisc.js"; // note that I modified this copy of Plotly to work in vanilla ES6
+// @ts-ignore
+const $ = window.$; // why is this like this? I don't know.
+// @ts-ignore
+// const jsPDF = window.jsPDF.jsPDF;
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -65,6 +68,7 @@ let planetOutOfSync = true;
 let terrainOutOfSync = true;
 let historyOutOfSync = true;
 let mapOutOfSync = true;
+let pdfOutOfSync = true;
 let surface: Surface = null;
 let world: World = null;
 let inProgress: boolean = false;
@@ -293,9 +297,31 @@ function mapApply() {
 
 
 /**
- * set the GUI to prevent user input while a process is running
+ * Generate a final formatted map.
  */
-function disableButtons() {
+function pdfApply() {
+	if (mapOutOfSync)
+		mapApply();
+
+	console.log("jena pdf...");
+	// const doc = new jsPDF();
+	// doc.text("Hello world!", 10, 10);
+	// const pdf = doc.output('blob');
+	// const url = URL.createObjectURL(pdf);
+	$('#pdf-embed').attr('src', "https://media.wizards.com/2018/dnd/downloads/DnD_BasicRules_2018.pdf");
+
+	console.log("fina!");
+	pdfOutOfSync = false;
+}
+
+
+/**
+ * disable all the buttons, turn on the loading icon, call the funccion, wait, then set
+ * everything back to how it was before.
+ * @param func
+ */
+function disableButtonsAndDo(func: () => void) {
+	inProgress = true;
 	for (const tab of ['planet', 'terrain', 'history', 'map']) {
 		const btn = $(`#${tab}-apply`);
 		const rediLoge = $(`#${tab}-redi`);
@@ -304,20 +330,24 @@ function disableButtons() {
 		rediLoge.hide();
 		ladaLoge.show();
 	}
-}
 
-/**
- * set the GUI to allow user input now that a process is done
- */
-function enableButtons() {
-	for (const tab of ['planet', 'terrain', 'history', 'map']) {
-		const btn = $(`#${tab}-apply`);
-		const rediLoge = $(`#${tab}-redi`);
-		const ladaLoge = $(`#${tab}-lada`);
-		btn.prop('disabled', false);
-		ladaLoge.hide();
-		rediLoge.show();
-	}
+	setTimeout(() => {
+		try {
+			func();
+		} catch (error) {
+			console.error(error);
+		}
+
+		inProgress = false;
+		for (const tab of ['planet', 'terrain', 'history', 'map']) {
+			const btn = $(`#${tab}-apply`);
+			const rediLoge = $(`#${tab}-redi`);
+			const ladaLoge = $(`#${tab}-lada`);
+			btn.prop('disabled', false);
+			ladaLoge.hide();
+			rediLoge.show();
+		}
+	}, 10);
 }
 
 
@@ -327,79 +357,40 @@ function enableButtons() {
  * must update every time the tab is opened because of Plotly.
  */
 $('#planet-apply, #planet-tab').on('click', () => {
-	if (!inProgress) {
-		inProgress = true;
-		disableButtons();
-		setTimeout(() => {
-			try {
-				planetApply();
-			} catch (error) {
-				console.error(error);
-			}
-			inProgress = false;
-			enableButtons();
-		}, 10);
-	}
+	if (!inProgress)
+		disableButtonsAndDo(planetApply);
 });
-
 
 /**
  * When the terrain button is clicked, do its thing
  */
 $('#terrain-apply, #terrain-tab').on('click', () => {
-	if (terrainOutOfSync && !inProgress) {
-		inProgress = true;
-		disableButtons();
-		setTimeout(() => {
-			try {
-				terrainApply();
-			} catch (error) {
-				console.error(error);
-			}
-			inProgress = false;
-			enableButtons();
-		}, 10);
-	}
+	if (terrainOutOfSync && !inProgress)
+		disableButtonsAndDo(terrainApply);
 });
-
 
 /**
  * When the history button is clicked, activate its purpose.
  */
 $('#history-apply, #history-tab').on('click', () => {
-	if (historyOutOfSync && !inProgress) {
-		inProgress = true;
-		disableButtons();
-		setTimeout(() => {
-			try {
-				historyApply();
-			} catch (error) {
-				console.error(error);
-			}
-			inProgress = false;
-			enableButtons();
-		}, 10);
-	}
+	if (historyOutOfSync && !inProgress)
+		disableButtonsAndDo(historyApply);
 });
-
 
 /**
  * When the map button is clicked, reveal its true form.
  */
 $('#map-apply, #map-tab').on('click', () => {
-	if (mapOutOfSync && !inProgress) {
-		inProgress = true;
-		disableButtons();
-		setTimeout(() => {
-			try {
-				mapApply();
-			} catch (error) {
-				console.error(error);
-			}
-			inProgress = false;
-			enableButtons();
-		}, 10);
-	}
+	if (mapOutOfSync && !inProgress)
+		disableButtonsAndDo(mapApply);
+});
+
+/**
+ * When the pdf button is clicked, generate the PDF.
+ */
+$('#pdf-tab').on('click', () => {
+	if (pdfOutOfSync && !inProgress)
+		disableButtonsAndDo(pdfApply);
 });
 
 
@@ -408,21 +399,25 @@ $('#planet-panel :input').on('change', () => {
 	terrainOutOfSync = true;
 	historyOutOfSync = true;
 	mapOutOfSync = true;
+	pdfOutOfSync = true;
 });
 
 $('#terrain-panel :input').on('change', () => {
 	terrainOutOfSync = true;
 	historyOutOfSync = true;
 	mapOutOfSync = true;
+	pdfOutOfSync = true;
 });
 
 $('#history-panel :input').on('change', () => {
 	historyOutOfSync = true;
 	mapOutOfSync = true;
+	pdfOutOfSync = true;
 });
 
 $('#map-panel :input').on('change', () => {
 	mapOutOfSync = true;
+	pdfOutOfSync = true;
 });
 
 
@@ -431,5 +426,5 @@ $('#map-panel :input').on('change', () => {
  */
 $(document).ready(() => {
 	console.log("ready!");
-	$('#map-apply').click();
+	$('#pdf-tab').click();
 }); // TODO: warn before leaving page

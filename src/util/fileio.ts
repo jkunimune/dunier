@@ -33,7 +33,7 @@
  */
 export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: RegExp = null): string[][] {
 	const xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", `/res/${filename}`, false); // get the file
+	xmlHttp.open("GET", `/res/${filename}`, false); // get the file TODO: use a thread for this stuff
 	xmlHttp.send();
 	if (xmlHttp.status !== 200)
 		throw `${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`;
