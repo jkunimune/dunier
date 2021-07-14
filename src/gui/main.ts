@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import "../lib/jquery.min.js"; //TODO: I should not be using jquery
-// import "../lib/jspdf.umd.min.js";
+import "../lib/jspdf.umd.min.js";
 import "../lib/plotly.min.js";
 import {generateTerrain} from "../society/terrain.js";
 import {Surface} from "../planet/surface.js";
@@ -42,7 +42,7 @@ import {LockedDisc} from "../planet/lockeddisc.js"; // note that I modified this
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 // @ts-ignore
-// const jsPDF = window.jsPDF.jsPDF;
+const jsPDF = window.jspdf.jsPDF;
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -304,11 +304,11 @@ function pdfApply() {
 		mapApply();
 
 	console.log("jena pdf...");
-	// const doc = new jsPDF();
-	// doc.text("Hello world!", 10, 10);
-	// const pdf = doc.output('blob');
-	// const url = URL.createObjectURL(pdf);
-	$('#pdf-embed').attr('src', "https://media.wizards.com/2018/dnd/downloads/DnD_BasicRules_2018.pdf");
+	const doc = new jsPDF();
+	doc.text("Hello world!", 10, 10);
+	const pdf = doc.output('blob');
+	const url = URL.createObjectURL(pdf);
+	$('#pdf-embed').attr('src', url);
 
 	console.log("fina!");
 	pdfOutOfSync = false;
