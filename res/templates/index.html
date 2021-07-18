@@ -75,13 +75,13 @@
             <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">{{param.planete}}</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">{{param.zemforme}}</a>
+            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">{{param.geoforme}}</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">{{param.histor}}</a>
+            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">{{param.histori}}</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">{{param.zemgraf}}</a>
+            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">{{param.geograf}}</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">{{param.dokume}}</a>
@@ -96,33 +96,33 @@
                 <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
                   <form>
                     <div class="form-group">
-                      <label for="planet-type">{{param.forme}}</label>
+                      <label for="planet-type">{{param.planete.forme}}</label>
                       <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value)">
-                        <option selected value="0">{{param.bol}}</option>
-                        <option value="1">{{param.wen}}</option>
-                        <option value="2">{{param.plate}}</option>
+                        <option selected value="0">{{param.planete.bol}}</option>
+                        <option value="1">{{param.planete.wen}}</option>
+                        <option value="2">{{param.planete.plate}}</option>
                       </select>
                     </div>
                     <div class="form-group">
                       <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked)">
-                        <label class="custom-control-label" for="planet-locked">{{param.sori}}</label>
+                        <label class="custom-control-label" for="planet-locked">{{param.planete.sori}}</label>
                       </div>
                     </div>
                     <div class="form-group">
-                      <label for="planet-size">{{param.cirkometre}}</label>
+                      <label for="planet-size">{{param.planete.cirkometre}}</label>
                       <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-gravity">{{param.baria}}</label>
+                      <label for="planet-gravity">{{param.planete.baria}}</label>
                       <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-day">{{param.den}}</label>
+                      <label for="planet-day">{{param.planete.den}}</label>
                       <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="{{unmetre.hor}}" id="planet-day"/>
                     </div>
                     <div class="form-group">
-                      <label for="planet-tilt">{{param.terchia}}</label>
+                      <label for="planet-tilt">{{param.planete.terchia}}</label>
                       <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
@@ -153,27 +153,27 @@
                       <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-sem"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-continents">{{param.daynes}}</label>
+                      <label for="terrain-continents">{{param.geoforme.daynes}}</label>
                       <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-hay">{{param.haygawia}}</label>
+                      <label for="terrain-hay">{{param.geoforme.haygawia}}</label>
                       <select class="custom-select" id="terrain-hay">
-                        <option value="4">{{param.gawi-3}}</option>
-                        <option value="3">{{param.gawi-2}}</option>
-                        <option value="2">{{param.gawi-1}}</option>
-                        <option selected value="1.5">{{param.medi}}</option>
-                        <option value="1">{{param.tali-1}}</option>
-                        <option value="-0.5">{{param.tali-2}}</option>
-                        <option value="-1.5">{{param.tali-3}}</option>
+                        <option value="4">{{param.geoforme.gawi-3}}</option>
+                        <option value="3">{{param.geoforme.gawi-2}}</option>
+                        <option value="2">{{param.geoforme.gawi-1}}</option>
+                        <option selected value="1.5">{{param.geoforme.medi}}</option>
+                        <option value="1">{{param.geoforme.tali-1}}</option>
+                        <option value="-0.5">{{param.geoforme.tali-2}}</option>
+                        <option value="-1.5">{{param.geoforme.tali-3}}</option>
                       </select>
                     </div>
                     <div class="form-group">
-                      <label for="terrain-terme">{{param.terme}}</label>
+                      <label for="terrain-terme">{{param.geoforme.terme}}</label>
                       <select class="custom-select" id="terrain-terme">
-                        <option value="308">{{param.garmi}}</option>
-                        <option selected value="288">{{param.medi}}</option>
-                        <option value="268">{{param.lengi}}</option>
+                        <option value="308">{{param.geoforme.garmi}}</option>
+                        <option selected value="288">{{param.geoforme.medi}}</option>
+                        <option value="268">{{param.geoforme.lengi}}</option>
                       </select>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="terrain-apply" disabled>
@@ -207,16 +207,16 @@
                       <input type="number" value="0" min="0" max="99999999" step="1" id="history-sem"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-nen">{{param.nenmesden}}</label>
+                      <label for="history-nen">{{param.histori.nenmesden}}</label>
                       <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="{{unmetre.nen}}" id="history-nen"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-katastrof">{{param.katastrof}}</label>
+                      <label for="history-katastrof">{{param.histori.katastrof}}</label>
                       <select class="custom-select" id="history-katastrof">
-                        <option selected value="0">{{param.nol}}</option>
-                        <option value="1e-4">{{param.un}}</option>
-                        <option value="1e-3">{{param.mey-kilonen}}</option>
-                        <option value="1e-2">{{param.mey-honnen}}</option>
+                        <option selected value="0">{{param.histori.nol}}</option>
+                        <option value="1e-4">{{param.histori.un}}</option>
+                        <option value="1e-3">{{param.histori.mey-kilonen}}</option>
+                        <option value="1e-2">{{param.histori.mey-honnen}}</option>
                       </select>
                     </div>
                     <button type="button" class="btn btn-block btn-primary" id="history-apply" disabled>
@@ -249,32 +249,32 @@
                       <div class="card-header" id="headingOne">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                            {{param.lancograf}}
+                            {{param.geograf.lancograf}}
                           </button>
                         </h5>
                       </div>
                       <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
                         <div class="card-body">
                           <div class="form-group">
-                            <label for="map-projection">{{param.tipe}}</label>
+                            <label for="map-projection">{{param.geograf.tipe}}</label>
                             <select class="custom-select" id="map-projection">
-                              <option value="equirectangular">{{param.chargon}}</option>
-                              <option value="mercator">{{param.merkator}}</option>
-                              <option value="azimuthal-equidistant">{{param.asimuti}}</option>
-                              <option selected value="eckert">{{param.ekerte}}</option>
-                              <option value="bonne">{{param.bone}}</option>
-                              <option value="conformal-conic">{{param.konusi}}</option>
+                              <option value="equirectangular">{{param.geograf.chargon}}</option>
+                              <option value="mercator">{{param.geograf.merkator}}</option>
+                              <option value="azimuthal-equidistant">{{param.geograf.asimuti}}</option>
+                              <option selected value="eckert">{{param.geograf.ekerte}}</option>
+                              <option value="bonne">{{param.geograf.bone}}</option>
+                              <option value="conformal-conic">{{param.geograf.konusi}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-dish">{{param.dish}}</label>
+                            <label for="map-dish">{{param.geograf.dish}}</label>
                             <select class="custom-select" id="map-dish">
-                              <option selected value="norde">{{param.norde}}</option>
-                              <option value="sude">{{param.sude}}</option>
+                              <option selected value="norde">{{param.geograf.norde}}</option>
+                              <option value="sude">{{param.geograf.sude}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-jung">{{param.jung}}</label>
+                            <label for="map-jung">{{param.geograf.jung}}</label>
                             <select class="custom-select" id="map-jung">
                               <option selected value="0">United States of America</option>
                               <option value="1">China</option>
@@ -287,76 +287,76 @@
                       <div class="card-header" id="headingTwo">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                            {{param.rang}}
+                            {{param.geograf.rang}}
                           </button>
                         </h5>
                       </div>
                       <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
                         <div class="card-body">
                           <div class="form-group">
-                            <label for="map-zemrang">{{param.zemrang}}</label>
+                            <label for="map-zemrang">{{param.geograf.zemrang}}</label>
                             <select class="custom-select" id="map-zemrang">
-                              <option value="baki">{{param.baki}}</option>
-                              <option value="huyi">{{param.huyi}}</option>
-                              <option selected value="jivi">{{param.jivi}}</option>
-                              <option value="politiki">{{param.politiki}}</option>
-                              <option value="gawia">{{param.gawia}}</option>
+                              <option value="baki">{{param.geograf.baki}}</option>
+                              <option value="huyi">{{param.geograf.huyi}}</option>
+                              <option selected value="jivi">{{param.geograf.jivi}}</option>
+                              <option value="politiki">{{param.geograf.politiki}}</option>
+                              <option value="gawia">{{param.geograf.gawia}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-hayrang">{{param.hayrang}}</label>
+                            <label for="map-hayrang">{{param.geograf.hayrang}}</label>
                             <select class="custom-select" id="map-hayrang">
-                              <option value="baki">{{param.baki}}</option>
-                              <option value="huyi">{{param.huyi}}</option>
-                              <option selected value="nili">{{param.nili}}</option>
-                              <option value="cerni">{{param.cerni}}</option>
-                              <option value="gawia">{{param.gawia}}</option>
+                              <option value="baki">{{param.geograf.baki}}</option>
+                              <option value="huyi">{{param.geograf.huyi}}</option>
+                              <option selected value="nili">{{param.geograf.nili}}</option>
+                              <option value="cerni">{{param.geograf.cerni}}</option>
+                              <option value="gawia">{{param.geograf.gawia}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-filter">{{param.filter}}</label>
+                            <label for="map-filter">{{param.geograf.filter}}</label>
                             <select class="custom-select" id="map-filter">
-                              <option selected value="nol">{{param.nol}}</option>
-                              <option value="pili">{{param.pili}}</option>
-                              <option value="bakocerni">{{param.bakocerni}}</option>
-                              <option value="mirdi">{{param.mirdi}}</option>
+                              <option selected value="nol">{{param.geograf.nol}}</option>
+                              <option value="pili">{{param.geograf.pili}}</option>
+                              <option value="bakocerni">{{param.geograf.bakocerni}}</option>
+                              <option value="mirdi">{{param.geograf.mirdi}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <h6>{{param.zemforme}}</h6>
+                            <h6>{{param.geograf.geoforme}}</h6>
                             <div class="form-check">
                               <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kal" value="kal" checked>
-                              <label class="form-check-label" for="map-zemforme-kal">{{param.kal}}</label>
+                              <label class="form-check-label" for="map-zemforme-kal">{{param.geograf.kal}}</label>
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desen" value="desen">
-                              <label class="form-check-label" for="map-zemforme-desen">{{param.desen}}</label>
+                              <label class="form-check-label" for="map-zemforme-desen">{{param.geograf.desen}}</label>
                             </div>
                           </div>
                           <div class="form-group">
-                            <h6>{{param.hay}}</h6>
+                            <h6>{{param.geograf.hay}}</h6>
                             <div class="form-check">
                               <input class="form-check-input" type="radio" name="hay" id="map-hay-kal" value="kal" checked>
-                              <label class="form-check-label" for="map-hay-kal">{{param.kal}}</label>
+                              <label class="form-check-label" for="map-hay-kal">{{param.geograf.kal}}</label>
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="radio" name="hay" id="map-hay-linye" value="linye">
-                              <label class="form-check-label" for="map-hay-linye">{{param.desen}}</label>
+                              <label class="form-check-label" for="map-hay-linye">{{param.geograf.desen}}</label>
                             </div>
                           </div>
                           <div class="form-group">
-                            <h6>{{param.site}}</h6>
+                            <h6>{{param.geograf.site}}</h6>
                             <div class="form-check">
                               <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kal" checked>
-                              <label class="form-check-label" for="map-site-nol">{{param.kal}}</label>
+                              <label class="form-check-label" for="map-site-nol">{{param.geograf.kal}}</label>
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                              <label class="form-check-label" for="map-site-binde">{{param.binde}}</label>
+                              <label class="form-check-label" for="map-site-binde">{{param.geograf.binde}}</label>
                             </div>
                             <div class="form-check">
                               <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desen">
-                              <label class="form-check-label" for="map-site-grafe">{{param.desen}}</label>
+                              <label class="form-check-label" for="map-site-grafe">{{param.geograf.desen}}</label>
                             </div>
                           </div>
                         </div>
@@ -366,7 +366,7 @@
                       <div class="card-header" id="headingThree">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                            {{param.sif}}
+                            {{param.geograf.sif}}
                           </button>
                         </h5>
                       </div>
@@ -375,49 +375,49 @@
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-nade">
-                              <label class="custom-control-label" for="map-nade">{{param.nade}}</label>
+                              <label class="custom-control-label" for="map-nade">{{param.geograf.nade}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-kenar" checked>
-                              <label class="custom-control-label" for="map-kenar">{{param.kenar}}</label>
+                              <label class="custom-control-label" for="map-kenar">{{param.geograf.kenar}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-say">
-                              <label class="custom-control-label" for="map-say">{{param.say}}</label>
+                              <label class="custom-control-label" for="map-say">{{param.geograf.say}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                              <label class="custom-control-label" for="map-zemnete">{{param.zemnete}}</label>
+                              <label class="custom-control-label" for="map-zemnete">{{param.geograf.zemnete}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                              <label class="custom-control-label" for="map-dawnete">{{param.dawnete}}</label>
+                              <label class="custom-control-label" for="map-dawnete">{{param.geograf.dawnete}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                              <label class="custom-control-label" for="map-pontopine">{{param.pontopine}}</label>
+                              <label class="custom-control-label" for="map-pontopine">{{param.geograf.pontopine}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
-                              <label class="custom-control-label" for="map-deshnam">{{param.deshnam}}</label>
+                              <label class="custom-control-label" for="map-deshnam">{{param.geograf.deshnam}}</label>
                             </div>
                           </div>
                           <div class="form-group">
                             <div class="custom-control custom-checkbox">
                               <input type="checkbox" class="custom-control-input" id="map-shannam">
-                              <label class="custom-control-label" for="map-shannam">{{param.shannam}}</label>
+                              <label class="custom-control-label" for="map-shannam">{{param.geograf.shannam}}</label>
                             </div>
                           </div>
                         </div>
@@ -427,34 +427,34 @@
                       <div class="card-header" id="headingFour">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                            {{param.basha-e-daita}}
+                            {{param.geograf.basha-e-daita}}
                           </button>
                         </h5>
                       </div>
                       <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
                         <div class="card-body">
                           <div class="form-group">
-                            <label for="map-bash">{{param.kitabe}}</label>
+                            <label for="map-bash">{{param.geograf.kitabe}}</label>
                             <select class="custom-select" id="map-bash">
-                              <option selected value="novyangi">{{param.novyangi}}</option>
-                              <option value="en">{{param.en}}</option>
-                              <option value="es">{{param.es}}</option>
-                              <option value="la">{{param.la}}</option>
+                              <option selected value="novyangi">{{param.geograf.novyangi}}</option>
+                              <option value="en">{{param.geograf.en}}</option>
+                              <option value="es">{{param.geograf.es}}</option>
+                              <option value="la">{{param.geograf.la}}</option>
                               <!--TODO it would be nice if it could automatically select the system that goes with the language-->
-                              <option value="jp">{{param.jp}}</option>
-                              <option value="pd">{{param.pd}}</option>
+                              <option value="jp">{{param.geograf.jp}}</option>
+                              <option value="pd">{{param.geograf.pd}}</option>
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-grosta">{{param.grosta}}</label>
+                            <label for="map-grosta">{{param.geograf.grosta}}</label>
                             <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-grosta"/>
                           </div>
                           <div class="form-group">
-                            <label for="map-gauta">{{param.gauta}}</label>
+                            <label for="map-gauta">{{param.geograf.gauta}}</label>
                             <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-gauta"/>
                           </div>
                           <div class="form-group">
-                            <label for="map-dpi">{{param.dpi}}</label>
+                            <label for="map-dpi">{{param.geograf.dpi}}</label>
                             <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-dpi"/>
                           </div>
                         </div>
