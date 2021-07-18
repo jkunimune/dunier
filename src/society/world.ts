@@ -38,22 +38,20 @@ export class World {
 	public static readonly authoritarianism = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
 	public static readonly libertarianism = 2e-7; // [1/year/km^2] rate at which peeple start revolucions
 	public static readonly nationalism = 3.0; // [] factor by which oppressed minorities are more likely to rebel
+	public static readonly imperialism = 1e-1; // [km/y] the rate at which denizens conquer
+	public static readonly intelligence = 1e-7; // [1/y] the rate at which denizens have good ideas
 	public static readonly carryingCapacity = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 	public static readonly valueOfKnowledge = .50; // [] value of a single technological advancement
 	public static readonly powerOfMemes = .02; // [1/year] probability that an idea spreads across a border in a year
 	public static readonly apocalypseSurvivalRate = .50; // [] the fraccion of the populacion a country gets to keep after a cataclysm
 
-	public readonly imperialism: number; // [km/y] the rate at which denizens conquer
-	public readonly intelligence: number; // [1/y] the rate at which denizens have good ideas
 	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
 	public civs: Set<Civ>;
 	politicalMap: Map<Nodo, Civ>;
 
 
-	constructor(imperialism: number, intelligence: number, cataclysms: number, planet: Surface) {
-		this.imperialism = imperialism;
-		this.intelligence = intelligence;
+	constructor(cataclysms: number, planet: Surface) {
 		this.cataclysms = cataclysms;
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world

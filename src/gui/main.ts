@@ -42,7 +42,7 @@ import {LockedDisc} from "../planet/lockeddisc.js"; // note that I modified this
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 // @ts-ignore
-const jsPDF = window.jspdf.jsPDF;
+const jsPDF = window.jspdf;
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -228,11 +228,9 @@ function historyApply() {
 	console.log("jena histore...");
 	const randomSeme = Number($('#history-sem').val());
 	const year = Number($('#history-nen').val());
-	const imperistia = Number($('#history-imperistia').val()) / 1e3; // km/year
-	const injenivia = Number($('#history-injenivia').val()) / 1e9; // 1/y
 	const katastrofe = Number($('#history-katastrof').val());
 
-	world = new World(imperistia, injenivia, katastrofe, surface);
+	world = new World(katastrofe, surface);
 
 	let rng = new Random(randomSeme); // use the random seed
 	world.generateHistory(
@@ -303,12 +301,19 @@ function pdfApply() {
 	if (mapOutOfSync)
 		mapApply();
 
-	console.log("jena pdf...");
-	const doc = new jsPDF();
-	doc.text("Hello world!", 10, 10);
+	console.log("jena pdf..."); // TODO: refactor map so that I can get this in a form that I can rite directly to the PDF.  I should probably also allow export as png somehow?
+	const doc = new jsPDF.jsPDF(); // instantiate the PDF document
+	// doc.addSvgAsImage = jsPDF.svg.addSvgAsImage; // and include the svg module
+	// doc.addImage(mapUrl, "SVG", 5, 5, 287, 200);
+
+	doc.addPage("a4", "portrait");
+
+	doc.setFontSize(22); // TODO find a better font
+	doc.text("Culture notes", 20, 20, {baseline: 'top'});
+
 	const pdf = doc.output('blob');
-	const url = URL.createObjectURL(pdf);
-	$('#pdf-embed').attr('src', url);
+	const pdfUrl = URL.createObjectURL(pdf);
+	$('#pdf-embed').attr('src', pdfUrl);
 
 	console.log("fina!");
 	pdfOutOfSync = false;

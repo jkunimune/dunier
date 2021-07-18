@@ -189,7 +189,7 @@ export class Civ {
 		if (this.nodos.size > 0) {
 			this.militarism *= Math.exp(-World.timeStep / SOCIAL_DECAY_PERIOD);
 			this.technology += World.valueOfKnowledge * rng.poisson(
-				this.world.intelligence*World.timeStep*this.getPopulation()); // TODO: subsequent technologies should be harder to reach, making this truly exponential
+				World.intelligence*World.timeStep*this.getPopulation()); // TODO: subsequent technologies should be harder to reach, making this truly exponential
 		}
 	}
 
@@ -207,7 +207,7 @@ export class Civ {
 		const elevation = start.gawe - end.gawe;
 		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation)/Civ.getPasablia(end);
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
-			return rng.exponential(distanceEff/this.world.imperialism/(momentum - resistance));
+			return rng.exponential(distanceEff/World.imperialism/(momentum - resistance));
 		else
 			return Infinity;
 	}

@@ -15,7 +15,7 @@ for filename in os.listdir('../../res/templates/'):
 			lang = json.load(lang_file)
 		for key, value in lang.items():
 			page = page.replace(f'{{{{{key}}}}}', value)
-		remaining_keys = re.search(r'\{\{([a-z-.]+)\}\}', page)
+		remaining_keys = re.search(r'\{\{([a-zA-Z0-9-.]+)\}\}', page)
 		if remaining_keys:
 			raise KeyError(f"no jana cabe {remaining_keys.group(1)}!")
 		page = re.sub(r'\{\{.*\}\}', "MISSINGNO", page)

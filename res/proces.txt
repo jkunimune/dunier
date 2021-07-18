@@ -123,6 +123,7 @@
 010 mute [ +TENUIS +ALVEO +STOP ] > [ +GLOT ] / [ +PRIMARY ] _ [ -LIQ ]		% t glottalizacion
 050 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +VELAR +STOP ] _	% kl > kj
 010 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +STOP ] _			% tl > tj
+100 mute [ +AFFR ] > [ +FRIC ] / _ [ +LIQ ]									% t͡ʃl > ʃl
 010 mute [ +DENTAL +STOP -PHARYNGEALIZ ] > [ +ALVEO +FRIC ] / _ [ -CONT ]	% t > s
 010 mute [ -TENUIS +STOP -PHARYNGEALIZ ] > [ +FRIC ] / [ +CONT ] _			% stop to fricative
 002 mute [ +STOP -PHARYNGEALIZ ] > [ +FRIC ] / _ [ -VOCOID ]				% stop to fricative
@@ -169,7 +170,7 @@
 200 mute [ +LONG +VOWEL ] > [ +TENSE ] /									% length-based tensing
 050 mute [ +STRESS +VOWEL ] > [ +TENSE ] /
 020 mute [ +LONG +VOWEL ] > [ +RAISED ] / _ [ -GLIDE ]						% Anglic vowel shift
-010 mute [ +STRESS ] > [ +RAISED ] / _ #									% raise stressd final vowels
+010 mute [ +STRESS +VOWEL ] > [ +RAISED ] / _ #								% raise stressd final vowels
 002 mute [ +MID ] > [ +HIGH ] /												% 3-vowel system
 010 mute [ +CLOSE +VOWEL ] > [ +LONG ] /
 010 mute [ +OBSTR +OCCL -VOICE ] > [ +ASPIR ] / _ [ +STRESS ]				% tenuis to aspirated
@@ -301,6 +302,7 @@
 
 %%	METATHESIS
 010 mute [ +VOWEL ] [ +LIQ ] > [ ]1 [ ]0 / [ -SONOR -CONT ] _				% gar > gra
+010 mute [ +LIQ ] [ +VOWEL ] > [ ]1 [ ]0 / [ +NONSYLLAB ] _					% gra > gar
 010 mute [ +SIBILANT ] [ -CORON +STOP ] > [ ]1 [ ]0 / _	[ +VOCOID ]			% ask > aks
 010 mute [ +STOP ] [ +SIBILANT ] > [ ]1 [ ]0 / _							% aks > ask
 010 mute [ +CORON +STOP ] [ -CORON +STOP ] > [ ]1 [ ]0 / _					% tp > pt

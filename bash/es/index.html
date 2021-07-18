@@ -81,10 +81,10 @@
             <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">Historia</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">Mapa</a>
+            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">Mapa</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link active" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">Descarga</a>
+            <a class="nav-link" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">Descarga</a>
           </li>
         </ul>
 
@@ -211,14 +211,6 @@
                       <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="" id="history-nen"/>
                     </div>
                     <div class="form-group">
-                      <label for="history-imperistia">Ritmo de expansión imperial</label>
-                      <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="m/a" id="history-imperistia"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="history-injenivia">Ritmo de ideas nuevas</label>
-                      <input type="number" value="100" data-decimals="0" min="10" max="1000" step="10" data-suffix="/Ga" id="history-injenivia"/>
-                    </div>
-                    <div class="form-group">
                       <label for="history-katastrof">Cataclismos</label>
                       <select class="custom-select" id="history-katastrof">
                         <option selected value="0">Nunca</option>
@@ -248,7 +240,7 @@
             </div>
           </div>
 
-          <div class="tab-pane" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
+          <div class="tab-pane show active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
             <div class="container mt-2">
               <div class="row">
                 <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
@@ -282,8 +274,11 @@
                             </select>
                           </div>
                           <div class="form-group">
-                            <label for="map-dongwestia">Meridiano central</label>
-                            <input type="number" value="0" data-decimals="0" min="-180" max="180" step="15" data-suffix="°" id="map-dongwestia"/>
+                            <label for="map-jung">Centro</label>
+                            <select class="custom-select" id="map-jung">
+                              <option selected value="0">United States of America</option>
+                              <option value="1">China</option>
+                            </select>
                           </div>
                         </div>
                       </div>
@@ -413,6 +408,18 @@
                               <label class="custom-control-label" for="map-pontopine">Rosa de los vientos</label>
                             </div>
                           </div>
+                          <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                              <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
+                              <label class="custom-control-label" for="map-deshnam">Etiquetas politicales</label>
+                            </div>
+                          </div>
+                          <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                              <input type="checkbox" class="custom-control-input" id="map-shannam">
+                              <label class="custom-control-label" for="map-shannam">Etiquetas fisicales</label>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -420,24 +427,12 @@
                       <div class="card-header" id="headingFour">
                         <h5 class="mb-0">
                           <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                            Etiquetas
+                            Formateo
                           </button>
                         </h5>
                       </div>
                       <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
                         <div class="card-body">
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
-                              <label class="custom-control-label" for="map-deshnam">Political</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-shannam">
-                              <label class="custom-control-label" for="map-shannam">Fisical</label>
-                            </div>
-                          </div>
                           <div class="form-group">
                             <label for="map-bash">Transcripción</label>
                             <select class="custom-select" id="map-bash">
@@ -451,15 +446,21 @@
                             </select>
                           </div>
                           <div class="form-group">
-                            <div class="form-group">
-                              <label for="map-kitabodayia">Tamaño de texto</label>
-                              <input type="number" value="12" data-decimals="0" min="2" max="72" step="1" id="map-kitabodayia"/>
-                            </div>
+                            <label for="map-grosta">Anchura</label>
+                            <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-grosta"/>
+                          </div>
+                          <div class="form-group">
+                            <label for="map-gauta">Altura</label>
+                            <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-gauta"/>
+                          </div>
+                          <div class="form-group">
+                            <label for="map-dpi">Resolución</label>
+                            <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-dpi"/>
                           </div>
                         </div>
                       </div>
                     </div>
-                    <button type="button" class="btn btn-block btn-primary" id="map-apply" disabled>
+                    <button type="button" class="btn btn-block btn-primary mt-2" id="map-apply" disabled>
                       <span id="map-redi" style="display: none">
                         Aplicar
                       </span>
@@ -467,6 +468,9 @@
                         <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
                         Trabajando…
                       </span>
+                    </button>
+                    <button type="button" class="btn btn-block btn-primary" id="map-sekura" disabled>
+                      Descargar
                     </button>
                   </form>
                 </div>
@@ -480,7 +484,7 @@
             </div>
           </div>
 
-          <div class="tab-pane show active" id="pdf-panel" role="tabpanel" aria-labelledby="pdf-tab">
+          <div class="tab-pane" id="pdf-panel" role="tabpanel" aria-labelledby="pdf-tab">
             <div class="container mt-2">
               <div class="col-12">
                 <embed id="pdf-embed" type="application/pdf" width="100%" height="500px">
