@@ -33,12 +33,13 @@ import {Azimuthal} from "../map/azimuthal.js";
 import {Equirectangular} from "../map/equirectangular.js";
 import {Mercator} from "../map/mercator.js";
 import {EqualArea} from "../map/equalarea.js";
-import {Style} from "../language/script.js";
+import {Style, transcribe} from "../language/script.js";
 import {Spheroid} from "../planet/spheroid.js";
 import {Sphere} from "../planet/sphere.js";
 import {Disc} from "../planet/disc.js";
 import {Toroid} from "../planet/toroid.js";
-import {LockedDisc} from "../planet/lockeddisc.js"; // note that I modified this copy of Plotly to work in vanilla ES6
+import {LockedDisc} from "../planet/lockeddisc.js";
+import {generateFactSheet} from "../society/factsheet.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 // @ts-ignore
@@ -305,11 +306,11 @@ function pdfApply() {
 	const doc = new jsPDF.jsPDF(); // instantiate the PDF document
 	// doc.addSvgAsImage = jsPDF.svg.addSvgAsImage; // and include the svg module
 	// doc.addImage(mapUrl, "SVG", 5, 5, 287, 200);
+	doc.text("I have to add something to this page or delete it.", 20, 20, {baseline: 'top'});
 
-	doc.addPage("a4", "portrait");
-
-	doc.setFontSize(22); // TODO find a better font
-	doc.text("Culture notes", 20, 20, {baseline: 'top'});
+	for (const civ of world.civs) {
+		generateFactSheet(doc, civ);
+	}
 
 	const pdf = doc.output('blob');
 	const pdfUrl = URL.createObjectURL(pdf);

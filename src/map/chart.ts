@@ -329,6 +329,8 @@ export class Chart {
 	 *                    will return null.
 	 */
 	label(nodos: Nodo[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
+		if (nodos.length === 0)
+			throw "nodos to label must be at least length 2";
 		this.testText.textContent = '..'+label+'..';
 		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
 		this.testText.textContent = '';

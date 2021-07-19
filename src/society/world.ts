@@ -130,6 +130,9 @@ export class World {
 				}
 			}
 		}
+		for (const civ of this.civs)
+			if (civ.getArea() === 0)
+				this.civs.delete(civ); // clear out any Civs that no longer exist
 	}
 
 	/**

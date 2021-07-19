@@ -212,11 +212,15 @@ export class Civ {
 			return Infinity;
 	}
 
-	getStrength(kontra: Civ, sa: Nodo) : number { // TODO zero strength in exclaves
+	getStrength(kontra: Civ, sa: Nodo) : number { // TODO automatically lose exclaves
 		let linguisticModifier = 1;
 		if (kontra != null && kontra.languages.get(sa).isIntelligible(this.officialLanguage))
 			linguisticModifier = World.nationalism;
 		return this.militarism*this.technology*linguisticModifier;
+	}
+
+	getArea(): number {
+		return this.nodos.size; // TODO: allow nodos to have their one areas
 	}
 
 	getPopulation(): number {
