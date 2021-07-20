@@ -41,7 +41,7 @@ export function generateFactSheet(doc: any, topick: Civ) {
 	doc.setFont("NotoSans"); // set font
 	doc.setFontSize(24); // TODO find a better font
 	doc.text(
-		format("{0} (IPA: [{1}])",
+		format("{0} (pronounced: [{1}])",
 			topick.getName(Style.CHANSAGI_0),
 			topick.getName(Style.NASOMEDI)),
 		20, 20, {baseline: 'top'}); // TODO: have a Word kno which Style it should use
@@ -62,10 +62,21 @@ export function generateFactSheet(doc: any, topick: Civ) {
 function format(format: string, ...args: (string|number)[]): string {
 	for (let i = 0; i < args.length; i ++) {
 		let convertedArg: string;
-		if (typeof args[i] === 'string')
+		if (typeof args[i] === 'string') {
 			convertedArg = <string>args[i];
-		else if (typeof args[i] == 'number')
-			convertedArg = Math.round(<number>args[i]).toString();
+		}
+		else if (typeof args[i] == 'number') {
+			if (args[i] === 0) {
+				convertedArg = "0";
+			}
+			else {
+				const magnitude = Math.pow(10, Math.floor(Math.log10(<number>args[i])) - 3); // determine its order of magnitude
+				const value = Math.round(<number>args[i]/magnitude)*magnitude; // round to three decimal points below that
+				convertedArg = value.toString().split("").reverse().join(""); // reverse it
+				convertedArg = convertedArg.replace(/(\d\d\d)/g, '$1 ').replace(/,$/, ''); // add thousands separators
+				convertedArg = convertedArg.split("").reverse().join(""); // reverse it back
+			}
+		}
 		format = format.replace(`{${i}}`, convertedArg);
 	}
 	return format;

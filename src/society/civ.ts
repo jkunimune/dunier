@@ -227,7 +227,7 @@ export class Civ {
 	}
 
 	getPopulation(): number {
-		return World.carryingCapacity*this.arableLand*this.technology;
+		return Math.round(World.carryingCapacity*this.arableLand*this.technology);
 	}
 
 	getName(convention: Style = Style.NASOMEDI): string {
