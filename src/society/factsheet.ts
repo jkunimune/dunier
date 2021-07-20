@@ -37,6 +37,8 @@ export function generateFactSheet(doc: any, topick: Civ) {
 	});
 	doc.deletePage(0);
 	doc.addPage("a4", "portrait");
+	doc.addFont("res/kitabuforme/NotoSans-Regular.ttf", "NotoSans", "normal");
+	doc.setFont("NotoSans"); // set font
 	doc.setFontSize(24); // TODO find a better font
 	doc.text(
 		format("{0} (IPA: [{1}])",
@@ -48,7 +50,7 @@ export function generateFactSheet(doc: any, topick: Civ) {
 		format("Area: {0} km²\nPopulation: {1}",
 			topick.getArea(),
 			topick.getPopulation()),
-		20, 30, {baseline: 'top'});
+		20, 35, {baseline: 'top'});
 }
 
 /**
