@@ -27,7 +27,7 @@ import {delaunayTriangulate} from "../util/delaunay.js";
 
 
 const INTEGRATION_RESOLUTION = 32;
-const TILE_AREA = 30000; // typical area of a tile in km^2
+const TILE_AREA = 30000; // target area of a tile in km^2
 
 
 /**
@@ -262,7 +262,8 @@ export class Nodo {
 	public downwind: Nodo[];
 	public liwe: number;
 	public flag: boolean;
-	
+	private area: number;
+
 	constructor(index: number, position: Place, surface: Surface) {
 		this.surface = surface;
 		this.index = index;
@@ -282,6 +283,7 @@ export class Nodo {
 		this.barxe = 0;
 		this.gawe = 0;
 		this.biome = null;
+		this.area = null;
 	}
 
 	/**
@@ -302,6 +304,16 @@ export class Nodo {
 			return this.neighbors.get(that).triangleR;
 		else
 			return this.neighbors.get(that).triangleL;
+	}
+
+	getArea(): number {
+		if (this.area === null) {
+			let radius = 0;
+			for (const neibor of this.neighbors.keys())
+				radius += this.surface.distance(this, neibor)/2/this.neighbors.size;
+			this.area = Math.PI*radius*radius;
+		}
+		return this.area;
 	}
 }
 

@@ -220,7 +220,10 @@ export class Civ {
 	}
 
 	getArea(): number {
-		return this.nodos.size; // TODO: allow nodos to have their one areas
+		let area = 0;
+		for (const nodo of this.nodos)
+			area += nodo.getArea();
+		return area;
 	}
 
 	getPopulation(): number {
@@ -242,7 +245,7 @@ export class Civ {
 					val += OCEAN_UTILITY;
 			}
 		}
-		return val*tile.surface.area/tile.surface.nodos.size;
+		return val*tile.getArea();
 	}
 
 	static getPasablia(tile: Nodo): number {
