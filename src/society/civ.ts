@@ -22,10 +22,11 @@
  * SOFTWARE.
  */
 import {Nodo} from "../planet/surface.js";
-import {DeuteroLang, Language, ProtoLang, WordType} from "../language/language.js";
+import {WordType} from "../language/language.js";
 import {Random} from "../util/random.js";
 import {World} from "./world.js";
 import {Style, transcribe} from "../language/script.js";
+import {Kultur} from "./culture.js";
 
 
 const SOCIAL_DECAY_PERIOD = 1000; // [year] time it takes for an empire's might to decay by 2.7
@@ -41,7 +42,7 @@ const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population 
 	['taige',       0.3],
 	['piristan',    0.1],
 	['grasistan',   1.0],
-	['registan',    0.1],
+	['registan',    0.0],
 	['tundre',      0.1],
 	['aise',        0.0],
 ]);
@@ -70,8 +71,8 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
 export class Civ {
 	public readonly id: number;
 	private arableLand: number; // the population, pre technology modifier
-	public languages: Map<Nodo, Language>; // the languages of this country
-	public officialLanguage: Language;
+	public kultur: Map<Nodo, Kultur>; // the cultures of this country
+	public maxoriaKultur: Kultur; // the culture of the ruling class
 	public readonly capital: Nodo; // the capital city
 	public readonly nodos: Set<Nodo>; // the tiles it owns
 	public readonly kenare: Map<Nodo, Set<Nodo>>; // the set of tiles it owns that are adjacent to tiles it doesn't
@@ -94,12 +95,12 @@ export class Civ {
 		this.arableLand = 0;
 		this.nodos = new Set();
 		this.kenare = new Map<Nodo, Set<Nodo>>();
-		this.languages = new Map();
+		this.kultur = new Map();
 
 		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
-			this.officialLanguage = new ProtoLang(rng); // make up a language
+			this.maxoriaKultur = new Kultur(null, rng); // make up a proto-kultur
 		else // if it's based on an existing one
-			this.officialLanguage = null; // the language will get automatically set when the capital is conquered
+			this.maxoriaKultur = null; // the language will get automatically set when the capital is conquered
 
 		this.capital = capital;
 		this.conquer(capital);
@@ -115,14 +116,14 @@ export class Civ {
 	conquer(tile: Nodo) {
 		const loser = this.world.currentRuler(tile);
 		if (loser !== null) {
-			const language = loser.languages.get(tile); // update the language state
-			this.languages.set(tile, language);
-			if (this.officialLanguage === null)
-				this.officialLanguage = language; // and take it as our official language if we don't have one already
+			const kultur = loser.kultur.get(tile); // update the language state
+			this.kultur.set(tile, kultur);
+			if (this.maxoriaKultur === null)
+				this.maxoriaKultur = kultur; // and take it as our official language if we don't have one already
 			loser.lose(tile); // then make it neutral territory
 		}
 		else {
-			this.languages.set(tile, this.officialLanguage);
+			this.kultur.set(tile, this.maxoriaKultur);
 		}
 
 		this.nodos.add(tile); // add it to nodos
@@ -146,7 +147,7 @@ export class Civ {
 	 * @param tile the land being taken
 	 */
 	lose(tile: Nodo) {
-		this.languages.delete(tile); // remove it from the language map
+		this.kultur.delete(tile); // remove it from the language map
 
 		this.nodos.delete(tile); // remove it from nodos
 		this.kenare.delete(tile); // adjust the border map
@@ -172,19 +173,19 @@ export class Civ {
 	 * @param rng
 	 */
 	update(rng: Random) {
-		const newLects: Map<Language, DeuteroLang> = new Map();
+		const newPeeples: Map<Kultur, Kultur> = new Map();
 		for (const nodo of this.nodos) {
-			if (this.languages.get(nodo) !== this.officialLanguage)
-				if (this.languages.get(nodo).isIntelligible(this.officialLanguage) ||
-					rng.probability(World.timeStep/CULTURAL_MEMORY))
-					this.languages.set(nodo, this.officialLanguage);
-			const currentLect = this.languages.get(nodo);
-			if (!newLects.has(currentLect))
-				newLects.set(currentLect, new DeuteroLang(currentLect, rng));
-			this.languages.set(nodo, newLects.get(currentLect));
+			if (this.kultur.get(nodo) !== this.maxoriaKultur)
+				if (this.kultur.get(nodo).isIntelligible(this.maxoriaKultur) || // assimilate anyone who is already close enuff
+					rng.probability(World.timeStep/CULTURAL_MEMORY)) // or who gets unlucky
+					this.kultur.set(nodo, this.maxoriaKultur);
+			const currentPeeple = this.kultur.get(nodo);
+			if (!newPeeples.has(currentPeeple)) // if we haven't simulated the update for this Kultur yet
+				newPeeples.set(currentPeeple, new Kultur(currentPeeple, rng)); // do that
+			this.kultur.set(nodo, newPeeples.get(currentPeeple)); // then assine the updated Kultur to this Nodo
 		}
-		if (this.nodos.has(this.capital))
-			this.officialLanguage = this.languages.get(this.capital);
+		if (this.nodos.has(this.capital)) // TODO: delete this line when it becomes impossible for a Civ to lose its capital and live
+			this.maxoriaKultur = this.kultur.get(this.capital); // set the updated kultur
 
 		if (this.nodos.size > 0) {
 			this.militarism *= Math.exp(-World.timeStep / SOCIAL_DECAY_PERIOD);
@@ -214,7 +215,7 @@ export class Civ {
 
 	getStrength(kontra: Civ, sa: Nodo) : number { // TODO automatically lose exclaves
 		let linguisticModifier = 1;
-		if (kontra != null && kontra.languages.get(sa).isIntelligible(this.officialLanguage))
+		if (kontra != null && kontra.kultur.get(sa).isIntelligible(this.maxoriaKultur))
 			linguisticModifier = World.nationalism;
 		return this.militarism*this.technology*linguisticModifier;
 	}
@@ -231,7 +232,8 @@ export class Civ {
 	}
 
 	getName(convention: Style = Style.NASOMEDI): string {
-		return transcribe(this.officialLanguage.getNamloge(this.capital.index%25, WordType.LOKONAM), convention);
+		return transcribe(this.maxoriaKultur.language.getNamloge(
+			this.capital.index%25, WordType.LOKONAM), convention); // TODO: don't mod this index
 	}
 
 

@@ -23,6 +23,7 @@
  */
 import {Civ} from "./civ.js";
 import {Style} from "../language/script.js";
+import {format} from "../util/util.js";
 
 
 /**
@@ -39,45 +40,29 @@ export function generateFactSheet(doc: any, topick: Civ) {
 	doc.addPage("a4", "portrait");
 	doc.addFont("res/kitabuforme/NotoSans-Regular.ttf", "NotoSans", "normal");
 	doc.setFont("NotoSans"); // set font
-	doc.setFontSize(24); // TODO find a better font
+
+	doc.setFontSize(24);
 	doc.text(
 		format("{0} (pronounced: [{1}])",
 			topick.getName(Style.CHANSAGI_0),
 			topick.getName(Style.NASOMEDI)),
 		20, 20, {baseline: 'top'}); // TODO: have a Word kno which Style it should use
+
 	doc.setFontSize(12);
 	doc.text(
 		format("Area: {0} km²\nPopulation: {1}",
 			topick.getArea(),
 			topick.getPopulation()),
 		20, 35, {baseline: 'top'});
+
+	doc.setFontSize(18);
+	doc.text(
+		"Culture notes", // TODO: bold this
+		20, 50, {baseline: 'top'});
+
+	doc.setFontSize(12);
+	doc.text(
+		topick.maxoriaKultur.toString(), // TODO tauk about the minorities, too
+		20, 60, {baseline: 'top'});
 }
 
-/**
- * cast the given args to strings (with a fixd format specificacion) and add them to the
- * given format in place of '{0}', '{1}', etc.
- * @param format
- * @param args
- */
-function format(format: string, ...args: (string|number)[]): string {
-	for (let i = 0; i < args.length; i ++) {
-		let convertedArg: string;
-		if (typeof args[i] === 'string') {
-			convertedArg = <string>args[i];
-		}
-		else if (typeof args[i] == 'number') {
-			if (args[i] === 0) {
-				convertedArg = "0";
-			}
-			else {
-				const magnitude = Math.pow(10, Math.floor(Math.log10(<number>args[i])) - 3); // determine its order of magnitude
-				const value = Math.round(<number>args[i]/magnitude)*magnitude; // round to three decimal points below that
-				convertedArg = value.toString().split("").reverse().join(""); // reverse it
-				convertedArg = convertedArg.replace(/(\d\d\d)/g, '$1 ').replace(/,$/, ''); // add thousands separators
-				convertedArg = convertedArg.split("").reverse().join(""); // reverse it back
-			}
-		}
-		format = format.replace(`{${i}}`, convertedArg);
-	}
-	return format;
-}

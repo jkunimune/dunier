@@ -89,7 +89,7 @@ export class World {
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
 				let linguisticModifier = World.nationalism;
-				if (ruler.languages.get(tile).isIntelligible(ruler.officialLanguage))
+				if (ruler.kultur.get(tile).isIntelligible(ruler.maxoriaKultur))
 					linguisticModifier = 1;
 				if (rng.probability(World.libertarianism*World.timeStep*demomultia*linguisticModifier)) // use the population without technology correction for balancing
 					this.civs.add(new Civ(tile, this.civs.size, this, rng, ruler.technology));

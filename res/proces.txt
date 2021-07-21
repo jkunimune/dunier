@@ -39,6 +39,7 @@
 050 mute [ +DORSAL +FRIC ] > [ +GLOT ] /									% x > h
 010 mute [ +GUTT +FRIC ] > [ +GLOT ] /										% ħ > h
 010 mute [ +DORSAL -VOCOID ] > [ +BILABIAL ] / _ [ +CORONAL ]				% kt > pt
+010 mute [ +LABIAL -VOCOID ] > [ +VELAR ] / _ [ +CORONAL ]					% pt > kt
 002 mute [ +VELAR +STOP ] > [ +GLOT ] /										% k > ʔ
 002 mute [ +CORON +STOP ] > [ +VELAR ] /									% t > k
 010 mute [ +POSTALV ] > [ +ALVEO ] /										% ʃ > s
@@ -107,6 +108,8 @@
 010 mute [ -LIQ +CORON +OCCL ] > [ +TAP ] / [ +SPOKEN -VOCOID -CORON ]		% mn > mr
 002 mute [ +NONSYLLAB ] [ +NONSYLLAB -GUTTURAL ] > [ +CLICK ]1 /			% click genesis
 002 mute [ +OCCL ] [ +CORON ] > [ +CLICK ]1 /								% click genesis
+010 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +OCCL ]						% dm > nm
+005 mute [ +!NASAL ] > [ +STOP ] / [ +STOP ] _								% tm > tp
 %%		lenition
 020 mute [ +UNSTRESS +VOWEL ] > ə /											% vowel reduction
 020 mute [ +GLIDE ] > / [ +SPOKEN -VOCOID ] _ [ +UNSTRESS ]					% falling diphthong reduction
@@ -118,7 +121,7 @@
 100 mute [ +NONSYLLAB ] > [ +SHORT ] /										% loss of gemination
 050 mute [ +VOCOID ] > [ +SHORT ] /											% loss of vowel length
 500 mute [ +NONSYLLAB ] > [ +SHORT ] / [ -VOCOID ] _						% geminates should follow vocoids
-100 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on nonvowels
+200 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on nonvowels
 010 mute [ -ASPIR +ALVEO +STOP ] > [ +VOICE +TAP ] / [ +VOCOID ] _ [ +VOWEL ]% t flapping
 010 mute [ +TENUIS +ALVEO +STOP ] > [ +GLOT ] / [ +PRIMARY ] _ [ -LIQ ]		% t glottalizacion
 050 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +VELAR +STOP ] _	% kl > kj
@@ -162,7 +165,7 @@
 010 mute [ +VELARIZ ] > ɰ [ +UNROUND ] / [ -VELAR ] _						% dark l > wl
 050 mute [ +PHARYNGEALIZ ] > [ +UNROUND ] /
 010 mute [ +PHARYNGEALIZ ] > [ +UNROUND +BREATHY ] /
-010 mute [ +NASALIZ ] > [ +UNROUND ] /
+020 mute [ +NASALIZ ] > [ +UNROUND ] /
 010 mute [ +LABIOCORON ] > [ +ALVEO ] [ +BILAB ] /							% loss of double-articulated tp
 010 mute [ +LABIOVELAR ] > [ +VELAR ] [ +BILAB ] /							% loss of double-articulated kp
 %%		fortition
@@ -197,7 +200,7 @@
 050 mute [ +PHARYNGEALIZ ] > [ +UNROUND +LONG ] /							% pharyngealization to length
 010 mute [ +CLOSE +GLIDE ] > [ +NASAL ] / [ +VOCOID ] _ [ -VOWEL ]			% offglide to nasal
 010 mute [ +VELAR +GLIDE ] > [ +UNROUND +STOP ] [ ] / [ -OBSTR ] _ [ +VOWEL ]% w > ɡw
-002 mute [ +LONG +VOWEL ] > [ +NASALIZ ] /
+001 mute [ +LONG +VOWEL ] > [ +NASALIZ ] /
 005 mute [ +LONG +FRIC ] > [ +SHORT +AFFR ] /								% create weerd affricates
 
 %%	ASSIMILATION
@@ -222,7 +225,6 @@
 050 mute [ +VOWEL ] > [ +LOWERED +PALATAL ] / [ +PHARYNG ] _				% advancement after pharangeals
 050 mute [ +VOWEL ] > [ +LOWERED +PALATAL ] / _ [ +PHARYNG ]				% advancement before pharangeals
 500 mute [ +!NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
-010 mute [ +VOICE +OCCL ] > [ +NASAL ] / _ [ +OCCL ]						% dm > nm
 100 mute [ +CORON +OBSTR ] > [ +POSTALV ] / _ [ +CORONAL +CLOSE ]			% sɹ > ʃɹ
 002 mute [ +SIBILANT ] > [ +RETRO ] / [ +RHOTIC ] _							% rs > rʂ
 010 mute [ +GLOT +FRIC ] > [ ±loke ] / _ [ +STOP ]							% ht > θt
@@ -249,7 +251,7 @@
 010 mute [ +LATERAL +CLOSE ] > [ +VELARIZ ] / _ [ -VOCOID ]					% dark l
 002 mute [ +SPOKEN -VOCOID ] > [ +PHARYNGEALIZ ] / _ [ +BREATHY ]			% pharyngealization
 002 mute [ +VELARIZ ] > [ +PHARYNGEALIZ ] /									% pharyngealization
-005 mute [ +VOCOID ] > [ +NASALIZ ] / _ [ +!NASAL ]							% nasalization
+002 mute [ +VOCOID ] > [ +NASALIZ ] / _ [ +!NASAL ]							% nasalization
 002 mute [ +SONOR ] > [ +NASALIZ ] / _ [ +NASAL ]							% nasalization spread
 %%		combination
 010 mute [ +GLIDE ] > [ ±loke ±minorLoke ] / _ [ +VOWEL ]					% we > je
@@ -305,7 +307,7 @@
 010 mute [ +LIQ ] [ +VOWEL ] > [ ]1 [ ]0 / [ +NONSYLLAB ] _					% gra > gar
 010 mute [ +SIBILANT ] [ -CORON +STOP ] > [ ]1 [ ]0 / _	[ +VOCOID ]			% ask > aks
 010 mute [ +STOP ] [ +SIBILANT ] > [ ]1 [ ]0 / _							% aks > ask
-010 mute [ +CORON +STOP ] [ -CORON +STOP ] > [ ]1 [ ]0 / _					% tp > pt
+020 mute [ +CORON +STOP ] [ -CORON +STOP ] > [ ]1 [ ]0 / _					% tp > pt
 020 mute [ +LIQUID ] [ -LIQUID ] [ +LIQUID ] > [ ]2 [ ]1 [ ]0				% ral > lar
 
 %%	INSERTION

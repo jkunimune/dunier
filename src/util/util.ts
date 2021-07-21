@@ -84,8 +84,34 @@ export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
 	return aa.concat(ba.filter(e => !aa.includes(e)));
 }
 
-
-
+/**
+ * cast the given args to strings (with a fixd format specificacion) and add them to the
+ * given format in place of '{0}', '{1}', etc.
+ * @param format
+ * @param args
+ */
+export function format(format: string, ...args: (string|number)[]): string {
+	for (let i = 0; i < args.length; i ++) {
+		let convertedArg: string;
+		if (typeof args[i] === 'string') {
+			convertedArg = <string>args[i];
+		}
+		else if (typeof args[i] == 'number') {
+			if (args[i] === 0) {
+				convertedArg = "0";
+			}
+			else {
+				const magnitude = Math.pow(10, Math.floor(Math.log10(<number>args[i])) - 3); // determine its order of magnitude
+				const value = Math.round(<number>args[i]/magnitude)*magnitude; // round to three decimal points below that
+				convertedArg = value.toString().split("").reverse().join(""); // reverse it
+				convertedArg = convertedArg.replace(/(\d\d\d)/g, '$1 ').replace(/,$/, ''); // add thousands separators
+				convertedArg = convertedArg.split("").reverse().join(""); // reverse it back
+			}
+		}
+		format = format.replace(`{${i}}`, convertedArg);
+	}
+	return format;
+}
 
 /**
  * perform a Dijkstra search on the given Euclidean graph from the given nodes. return the shortest path from the node
