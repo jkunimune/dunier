@@ -98,7 +98,7 @@ export class Civ {
 		this.kultur = new Map();
 
 		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
-			this.maxoriaKultur = new Kultur(null, capital, rng); // make up a proto-kultur
+			this.maxoriaKultur = new Kultur(null, capital, this, rng); // make up a proto-kultur
 		else // if it's based on an existing one
 			this.maxoriaKultur = null; // the language will get automatically set when the capital is conquered
 
@@ -175,7 +175,7 @@ export class Civ {
 	update(rng: Random) {
 		const newPeeples: Map<Kultur, Kultur> = new Map();
 		newPeeples.set(this.maxoriaKultur, // start by updating the ruling ethnicity's culture
-			new Kultur(this.maxoriaKultur, this.capital, rng));
+			new Kultur(this.maxoriaKultur, this.capital, this, rng));
 		for (const nodo of this.nodos) { // then update the others and assign them to locacions
 			if (this.kultur.get(nodo) !== this.maxoriaKultur)
 				if (this.kultur.get(nodo).isIntelligible(this.maxoriaKultur) || // assimilate anyone who is already close enuff
@@ -183,7 +183,7 @@ export class Civ {
 					this.kultur.set(nodo, this.maxoriaKultur);
 			const currentPeeple = this.kultur.get(nodo);
 			if (!newPeeples.has(currentPeeple)) // if we haven't simulated the update for this Kultur yet
-				newPeeples.set(currentPeeple, new Kultur(currentPeeple, null, rng)); // do that, treating them as a diaspora
+				newPeeples.set(currentPeeple, new Kultur(currentPeeple, null, this, rng)); // do that, treating them as a diaspora
 			this.kultur.set(nodo, newPeeples.get(currentPeeple)); // then assine the updated Kultur to this Nodo
 		}
 		if (this.nodos.has(this.capital)) // TODO: delete this line when it becomes impossible for a Civ to lose its capital and live

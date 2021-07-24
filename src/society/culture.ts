@@ -26,6 +26,7 @@ import {format} from "../util/util.js";
 import {DeuteroLang, Language, ProtoLang} from "../language/language.js";
 import {loadTSV} from "../util/fileio.js";
 import {Nodo} from "../planet/surface";
+import {Civ} from "./civ";
 
 
 class Sif {
@@ -68,6 +69,8 @@ class Sif {
 		for (const biome of this.forbiddenBiomes)
 			if (host.homeland.biome === biome)
 				return false;
+		if (host.government.technology < this.technology)
+			return false;
 		return true;
 	}
 
@@ -106,6 +109,7 @@ export class Kultur {
 	// private emphasis: boolean[];
 	public readonly classes: Set<string>;
 	public readonly homeland: Nodo;
+	public readonly government: Civ;
 	public readonly language: Language;
 
 	/**
@@ -113,10 +117,12 @@ export class Kultur {
 	 * @param parent the protoculture off of which this one is based
 	 * @param homeland the place that will serve as the new cultural capital, or null if
 	 *                 it will keep using the old one
+	 * @param government the Civ that rules this Nodo
 	 * @param rng
 	 */
-	constructor(parent: Kultur, homeland: Nodo, rng: Random) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
+	constructor(parent: Kultur, homeland: Nodo, government: Civ, rng: Random) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
 		this.sif = [];
+		this.government = government;
 		if (parent !== null) {
 			this.classes = parent.classes;
 			this.homeland = (homeland === null) ? parent.homeland : homeland;
@@ -170,7 +176,6 @@ export class Kultur {
 	 */
 	toString(): string {
 		let str = "";
-		console.log(this.sif);
 		for (let i = 0; i < this.sif.length; i ++) // TODO: only show some informacion for each country
 			str += format(HEADERS[i], ...this.sif[i]);
 		return str.trim();

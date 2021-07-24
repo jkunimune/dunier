@@ -137,7 +137,7 @@ partial
 lateral
 ornamented
 sculpted
-bushy
+bushy				require=kinky
 beards
 sideburns
 buzzed				tech=33.5
