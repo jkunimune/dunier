@@ -343,6 +343,8 @@ for (const procesKitabe of loadTSV('proces.txt', /\s+/, /%/)) { // load the phon
 					ka.push(sinye.slice(1));
 				}
 				else {
+					if (!'+-±'.includes(sinye.charAt(0)))
+						throw RangeError(`unreadable feature descripcion: ${sinye}`);
 					const kutube = sinye.startsWith('+') ? sa : na;
 					sinye = sinye.slice(1);
 					const starred = sinye.startsWith('!');

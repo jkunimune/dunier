@@ -24,22 +24,23 @@
 import {Random} from "../util/random.js";
 import {format} from "../util/util.js";
 import {DeuteroLang, Language, ProtoLang} from "../language/language.js";
+import {loadTSV} from "../util/fileio.js";
 
 
-const HEADERS: string[] = [
-	"muzika ye {0} e uze ba poli {1}.  ",
-	"le {0} fuku {2} {1}.  ",
-];
-const CHUZABLE: string[][][] = [
-	[
-		["tritonic", "pentatonic", "heptatonic"],
-		["drums", "panpipes", "saxophones"],
-	], [
-		["men", "women", "children"],
-		["turbans", "robes", "hats", "shoes"],
-		["white", "black"],
-	] // TODO: read from disk
-]
+const HEADERS: string[] = [];
+const CHUZABLE: string[][][] = [];
+for (const row of loadTSV('../../res/kultur.tsv')) {
+	if (row[0] === '#') {
+		HEADERS.push(row[1]);
+		CHUZABLE.push([]);
+	}
+	else if (row[0] === '##') {
+		CHUZABLE[CHUZABLE.length-1].push([]);
+	}
+	else {
+		CHUZABLE[CHUZABLE.length-1][CHUZABLE[CHUZABLE.length-1].length-1].push(row[0]); // TODO: get the proper translacion of each one
+	}
+}
 
 const FACTOID_NUMBER = 1;//4; // the average number of factoids each Kultur should have
 const FACTOID_FRACCION = FACTOID_NUMBER/CHUZABLE.length;
