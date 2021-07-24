@@ -61,8 +61,9 @@ export function generateFactSheet(doc: any, topick: Civ) {
 		20, 50, {baseline: 'top'});
 
 	doc.setFontSize(12);
+	const cultureParagraph = doc.splitTextToSize(topick.maxoriaKultur.toString(), 170);
 	doc.text(
-		topick.maxoriaKultur.toString(), // TODO tauk about the minorities, too
+		cultureParagraph, // TODO tauk about the minorities, too
 		20, 60, {baseline: 'top'});
 }
 
