@@ -432,5 +432,5 @@ $('#map-panel :input').on('change', () => {
  */
 $(document).ready(() => {
 	console.log("ready!");
-	$('#pdf-tab').click();
+	$('#pdf-tab').click(); // TODO: consider putting off the PDF generacion until the user clicks on that tab
 }); // TODO: warn before leaving page

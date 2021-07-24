@@ -56,7 +56,7 @@ singles
 leaders
 clerics
 aristocrats
-rich				tech( 5.5)
+rich				tech=5.5
 ##	tipe	1
 turban
 headband

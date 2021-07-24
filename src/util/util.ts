@@ -90,11 +90,14 @@ export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
  * @param format
  * @param args
  */
-export function format(format: string, ...args: (string|number)[]): string {
+export function format(format: string, ...args: (string|number|object)[]): string {
 	for (let i = 0; i < args.length; i ++) {
 		let convertedArg: string;
 		if (typeof args[i] === 'string') {
 			convertedArg = <string>args[i];
+		}
+		else if (typeof args[i] === 'object') {
+			convertedArg = (<object>args[i]).toString();
 		}
 		else if (typeof args[i] == 'number') {
 			if (args[i] === 0) {
