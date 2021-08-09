@@ -25,8 +25,8 @@ import {Random} from "../util/random.js";
 import {format} from "../util/util.js";
 import {DeuteroLang, Language, ProtoLang} from "../language/language.js";
 import {loadTSV} from "../util/fileio.js";
-import {Nodo} from "../planet/surface";
-import {Civ} from "./civ";
+import {Nodo} from "../planet/surface.js";
+import {Civ} from "./civ.js";
 
 
 class Sif {
@@ -36,8 +36,8 @@ class Sif {
 	private readonly forbiddenBiomes: Set<string>; // biomes where this cannot be used
 	private readonly technology: number; // the tech level needed for this
 
-	constructor(header: string, subheader: string, args: string[]) { // TODO: I still need to have it generate words for some of these
-		this.nam = args[0];
+	constructor(header: string, subheader: string, args: string[]) { // TODO: I still need to have it generate new diagetick words for some of these
+		this.nam = `data.${header}.${subheader}.${args[0]}`;
 		this.classe = subheader;
 		this.requirements = new Set<string>();
 		this.forbiddenBiomes = new Set<string>();
@@ -85,7 +85,7 @@ let header = null, subheader = null;
 for (const row of loadTSV('../../res/kultur.tsv')) {
 	if (row[0] === '#') {
 		header = row[1];
-		HEADERS.push(header);
+		HEADERS.push(`data.${header}`);
 		CHUZABLE.push([]);
 	}
 	else if (row[0] === '##') {
@@ -176,8 +176,9 @@ export class Kultur {
 	 */
 	toString(): string {
 		let str = "";
-		for (let i = 0; i < this.sif.length; i ++) // TODO: only show some informacion for each country
+		for (let i = 0; i < this.sif.length; i ++) { // TODO: only show some informacion for each country
 			str += format(HEADERS[i], ...this.sif[i]);
+		}
 		return str.trim();
 	}
 }

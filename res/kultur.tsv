@@ -1,14 +1,14 @@
-#	yamen di muzika ye {0} e uze ba poli {1}.	0.5
+#	muzika	0.5
 ##	sif	1
 tritonic
 pentatonic
 heptatonic
 chromatic
 quarter
-achromatic
 fifths
 harmony
 rapid
+slow
 asymmetric
 polyrhythm
 audience
@@ -18,78 +18,100 @@ energetic
 narrative
 repetition
 ##	tul	2
-percussion			class=perc
-pitched_percussion	class=perc		new_word=1000
-drums				class=perc
-bell				class=perc		new_word=1001
-cymbals				class=perc
-rattle				class=perc		new_word=1002
-gourd				class=perc		new_word=1003
-vocals				class=voice
-choir				class=voice
-overtone			class=voice
-ululating			class=voice
-falsetto			class=voice
-chanting			class=voice
-wind				class=wind
-short_horn			class=wind		new_word=1003
-long_horn			class=wind		new_word=1003
-panpipe				class=wind		new_word=1003
-reed				class=wind		new_word=1004
-flute				class=wind		new_word=1005
-string				class=string
-lute				class=string	new_word=1006
-harp				class=string	new_word=1007
-zither				class=string	tech=6.0		new_word=1008
-saxophones			class=wind		tech=32.0
-synthesized			class=synth		tech=33.5
-electronic			class=synth		tech=33.5		new_word=1009
-vocaloids			class=synth		tech=36.0
-#	le {0} fuku {2} {1}. le favor {3} kesh.	0.5
+percussion		class=perc
+pitched_perc	class=perc		new_word=1000
+drums			class=perc
+bell			class=perc		new_word=1001
+cymbals			class=perc
+rattle			class=perc		new_word=1002
+gourd			class=perc		new_word=1003
+vocals			class=voice
+choir			class=voice
+overtone		class=voice
+ululating		class=voice
+falsetto		class=voice
+chanting		class=voice
+wind			class=wind
+short_horn		class=wind		new_word=1003
+long_horn		class=wind		new_word=1003
+panpipe			class=wind		new_word=1003
+reed			class=wind		new_word=1004
+flute			class=wind		new_word=1005
+string			class=string
+strummed		class=string	new_word=1006
+perc_string		class=string	tech=5.5		new_word=1007
+bowed			class=string	tech=15.0		new_word=1008
+saxophones		class=wind		tech=32.0
+electronic		class=synth		tech=33.5		new_word=1009
+synthesizer		class=synth		tech=35.0
+vocaloids		class=synth		tech=36.0
+#	fuku	0.5
 ##	jan	1
-people
-men
+people			class=facehair
+men				class=facehair
 women
-elders
-soldiers
-singles
-leaders
-clerics
-aristocrats
-rich				tech=5.5
+elders			class=facehair
+soldiers		class=facehair
+leaders			class=facehair
+clerics			class=facehair
+aristocrats		class=facehair
+rich			class=facehair		tech=5.5
+##	kesh	1
+short			require=gravity
+medium			require=gravity
+long			require=gravity
+bushy			require=kinky
+bun				class=hairdo
+tail			class=hairdo		require=gravity
+braid			class=hairdo
+tails			class=hairdo		require=gravity
+knots			class=hairdo
+braids			class=hairdo
+elaborate		class=hairdo
+shaved
+partial			class=hairdo
+lateral			class=hairdo
+ornamented		class=hairdo
+sculpted		class=hairdo
+sideburns		class=hairdo		class=facehair
+buzzed								tech=33.5
+greased			class=hairdo		tech=31.0
+colorful		class=hairdo		tech=32.5
 ##	tipe	1
-turban
-headband
-vest
-mask
-veil
-sash
-skirt
-wrap
-pants				biome!=barxojangal
-sleve				biome!=barxojangal
-scarf				biome!=barxojangal
-shawl				biome!=barxojangal
-coat				biome!=barxojangal
-robe				biome!=barxojangal
-armor				biome!=barxojangal	biome!=arenaistan
-hat					require=fabric
-big_hat				require=fabric
-small_hat			require=fabric
-ring				require=fabric
-amulet				require=fabric
-headdress			require=fabric
-shoe				require=fabric
-pendant				require=fabric
-wig					require=fabric
-belt				require=fabric
-earing				require=fabric
-bracelet			require=fabric
-cord				require=fabric
-eyeware				require=fabric		tech=19.0
+turban			class=fabric
+hairpin			class=fabric		require=hairdo
+vest			class=fabric
+mask			class=fabric
+veil			class=fabric
+sash			class=fabric
+skirt			class=fabric
+drape			class=fabric
+cape			class=fabric
+tunic			class=fabric
+pants			class=fabric	biome!=barxojangal	biome!=piristan
+sleve			class=fabric	biome!=barxojangal	biome!=piristan
+scarf			class=fabric	biome!=barxojangal	biome!=piristan	biome!=registan	biome!=grasistan
+headscarf		class=fabric	biome!=barxojangal	biome!=piristan
+shawl			class=fabric	biome!=barxojangal	biome!=piristan
+coat			class=fabric	biome!=barxojangal	biome!=piristan
+robe			class=fabric	biome!=barxojangal	biome!=piristan
+armor							biome!=barxojangal	biome!=piristan
+hat
+big_hat
+small_hat
+amulet
+headdress
+shoe
+pendant
+wig
+belt
+earring
+bracelet
+cord
+eyeware			tech=19.0
 ##	sif	1
 colorful
-saphire
+sapphire
 ruby
 emerald
 amber
@@ -101,45 +123,23 @@ intricate
 feathered
 sequined
 shiny
-lavish
-extravigant
-gilded
+extravagant
 jeweled
 decorated
-fur
 ceremonial
 calligraphic
 ribboned
+fluorescent		tech=32.5
 glowing
-thick				require=fabric
-leather				require=fabric
-tie-dyed			require=fabric
-flowing				require=fabric
-loose				require=fabric
-pleated				require=fabric
-layered				require=fabric
-voluminous			require=fabric
-embroidered			require=fabric
-patterend			require=fabric
-##	kesh	1
-short
-medium
-long
-bun
-tail
-braid
-tails
-knots
-braids
-elaborate
-shaved
-partial
-lateral
-ornamented
-sculpted
-bushy				require=kinky
-beards
-sideburns
-buzzed				tech=33.5
-greased				tech=31.0
-colorful			tech=32.5
+pointy
+fur
+thick			require=fabric
+leather			require=fabric
+tiedyed			require=fabric
+flowing			require=fabric
+loose			require=fabric
+pleated			require=fabric
+layered			require=fabric
+voluminous		require=fabric
+embroidered		require=fabric
+patterend		require=fabric

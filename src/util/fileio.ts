@@ -32,13 +32,8 @@
  * @param comment the symbol that indicates the start of a comment
  */
 export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: RegExp = null): string[][] {
-	const xmlHttp = new XMLHttpRequest();
-	xmlHttp.open("GET", `/res/${filename}`, false); // get the file TODO: use a thread for this stuff
-	xmlHttp.send();
-	if (xmlHttp.status !== 200)
-		throw `${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`;
 	const arr = [];
-	for (let line of xmlHttp.responseText.split('\n')) { // read it line-by-line
+	for (let line of loadFile(filename).split('\n')) { // read it line-by-line
 		const matchObject = line.match(comment);
 		if (matchObject !== null && matchObject.index === 0) continue; // skip the line if it is all one comment
 		line = line.split(comment)[0]; // remove the comment
@@ -49,4 +44,29 @@ export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: Reg
 		if (line.length !== 0) arr.push(line.split(delimiter)); // if the line is nonempty, record it
 	}
 	return arr;
+}
+
+/**
+ * load a static JSON resource as a decent file type.
+ * @param filename
+ */
+export function loadJSON(filename: string): Map<string, string> {
+	const json: {[key: string]: string} = JSON.parse(loadFile(filename));
+	const map = new Map<string, string>();
+	for (const key of Object.keys(json))
+		map.set(key, json[key]);
+	return map;
+}
+
+/**
+ * load the contents of a static file resource as a string
+ * @param filename
+ */
+function loadFile(filename: string): string {
+	const xmlHttp = new XMLHttpRequest();
+	xmlHttp.open("GET", `/res/${filename}`, false); // get the file TODO: use a thread for this stuff
+	xmlHttp.send();
+	if (xmlHttp.status !== 200)
+		throw `${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`;
+	return xmlHttp.responseText;
 }

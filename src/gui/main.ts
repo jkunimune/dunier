@@ -23,7 +23,7 @@
  */
 import "../lib/jquery.min.js"; //TODO: I should not be using jquery
 import "../lib/jspdf.umd.min.js";
-import "../lib/plotly.min.js";
+import "../lib/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import {generateTerrain} from "../society/terrain.js";
 import {Surface} from "../planet/surface.js";
 import {World} from "../society/world.js";
@@ -33,13 +33,14 @@ import {Azimuthal} from "../map/azimuthal.js";
 import {Equirectangular} from "../map/equirectangular.js";
 import {Mercator} from "../map/mercator.js";
 import {EqualArea} from "../map/equalarea.js";
-import {Style, transcribe} from "../language/script.js";
+import {Style} from "../language/script.js";
 import {Spheroid} from "../planet/spheroid.js";
 import {Sphere} from "../planet/sphere.js";
 import {Disc} from "../planet/disc.js";
 import {Toroid} from "../planet/toroid.js";
 import {LockedDisc} from "../planet/lockeddisc.js";
-import {generateFactSheet} from "../society/factsheet.js"; // note that I modified this copy of Plotly to work in vanilla ES6
+import {generateFactSheet} from "../society/factsheet.js";
+import {loadJSON} from "../util/fileio.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 // @ts-ignore
@@ -64,6 +65,7 @@ const TERRAIN_COLORMAP = [
 	[1.00, 'rgb( 41,   4,   5)'],
 ];
 
+export const USER_STRINGS = loadJSON(`../../res/tarje/${$('#bash')[0].textContent}.json`);
 
 let planetOutOfSync = true;
 let terrainOutOfSync = true;

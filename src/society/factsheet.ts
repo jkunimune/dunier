@@ -38,26 +38,26 @@ export function generateFactSheet(doc: any, topick: Civ) {
 	});
 	doc.deletePage(0);
 	doc.addPage("a4", "portrait");
-	doc.addFont("res/kitabuforme/NotoSans-Regular.ttf", "NotoSans", "normal");
+	doc.addFont("../../res/kitabuforme/NotoSans-Regular.ttf", "NotoSans", "normal");
 	doc.setFont("NotoSans"); // set font
 
 	doc.setFontSize(24);
 	doc.text(
-		format("{0} (pronounced: [{1}])",
-			topick.getName(Style.CHANSAGI_0),
-			topick.getName(Style.NASOMEDI)),
-		20, 20, {baseline: 'top'}); // TODO: have a Word kno which Style it should use
+		format('data.temnam',
+			'"'+topick.getName(Style.CHANSAGI_0), // TODO: have a Word kno which Style it should use
+			'"'+topick.getName(Style.NASOMEDI)), // TODO: this '"' would not be necessary if there were a Word class
+		20, 20, {baseline: 'top'});
 
 	doc.setFontSize(12);
 	doc.text(
-		format("Area: {0} km²\nPopulation: {1}",
+		format('data.num',
 			topick.getArea(),
 			topick.getPopulation()),
 		20, 35, {baseline: 'top'});
 
 	doc.setFontSize(18);
 	doc.text(
-		"Culture notes", // TODO: bold this
+		format('data.demografi'), // TODO: bold this
 		20, 50, {baseline: 'top'});
 
 	doc.setFontSize(12);
