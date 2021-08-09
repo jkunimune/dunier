@@ -35,7 +35,7 @@
 010 mute [ +LABIAL -VOICE +FRIC ] > [ +GLOT ] / _ [ -LABIAL ]				% f > h
 010 mute [ +SIBILANT +FRIC ] > [ +GLOT ] / _ [ -VOCOID ]					% s > h in coda
 010 mute [ +SIBILANT +FRIC ] > [ +GLOT ] / # _								% s > h word-inicially
-002 mute [ +SIBILANT +FRIC ] > [ +GLOT ] /									% s > h
+002 mute [ +SIBILANT +FRIC ] > [ +GLOT ] / _ [ +VOCOID ]					% s > h in onset
 010 mute [ +POSTALV +FRIC -VOICE ] > [ +VELAR ] /							% ʃ > x
 050 mute [ +DORSAL +FRIC ] > [ +GLOT ] /									% x > h
 010 mute [ +GUTT +FRIC ] > [ +GLOT ] /										% ħ > h
@@ -114,7 +114,8 @@
 002 mute [ +NASAL ] > [ +NASAL ] /											% nasal vowels become nasal consonants
 002 mute [ +!NASAL ] > [ +STOP ] /											% loss of all nasal consonants
 %%		lenition
-020 mute [ +UNSTRESS +VOWEL ] > ə /											% vowel reduction
+050 mute [ +UNSTRESS +VOWEL ] > [ +MID ] /									% vowel reduction
+050 mute [ +UNSTRESS +VOWEL ] > [ +CENTRAL ] /								% vowel reduction
 020 mute [ +GLIDE ] > / [ +SPOKEN -VOCOID ] _ [ +UNSTRESS ]					% falling diphthong reduction
 020 mute [ +GLIDE ] > / [ +UNSTRESS ] _										% rising diphthong reduction
 020 mute [ +SHORT -PRIMARY +VOWEL ] > [ +LAX ] /							% length-based laxing
@@ -150,7 +151,7 @@
 050 mute [ -VOICE +SONOR ] > [ +VOICE ] /									% get rid of voiceless sonorants
 050 mute [ -VOICE +SONOR ] > [ +TENUIS +GLOT +FRIC ] /						% get rid of voiceless sonorants
 050 mute [ -VOICE +SONOR ] > /												% get rid of voiceless sonorants
-010 mute [ +RHOTIC ] > ə / _ [ -VOWEL ]										% r-dropping
+010 mute [ +RHOTIC ] > ɜ / _ [ -VOWEL ]										% r-dropping
 020 mute [ +LABIALIZ -VOCOID ] > [ +UNROUND ] /
 010 mute [ +LABIALIZ -VOCOID ] > [ +BILAB ] /
 010 mute [ +LABIALIZ -VOCOID ] > [ +UNROUND ] w / _ [ -LABIAL ]				% qu > cu
@@ -195,7 +196,7 @@
 020 mute [ +LONG +MID +VOWEL ] > [ +SHORT ]0 [ +NONSYLLAB +CLOSE +SHORT ]0 /% diphthongize mid vowels III
 020 mute [ +STRESS +VOWEL ] > [ ] [ +NONSYLLAB +CLOSE +SHORT ] / _ [ +VOWEL ]% diphthongization I
 010 mute [ +VOWEL ] > [ ] [ +NONSYLLAB +CLOSE +SHORT ] / _ [ +VOWEL ]		% diphthongization II
-002 mute [ +LAX +!PALATAL +VOWEL ] > [ +RAISED +TENSE ]0 ə̯ /				% drawl
+002 mute [ +LAX +!PALATAL +VOWEL ] > [ +RAISED +TENSE ]0 ɜ̯ /				% drawl
 010 mute [ +CENTRAL +VOWEL ] > [ +VELAR ] /
 050 mute [ +PHARYNGEALIZ +AFFR ] > [ +UNROUND +STOP ] /						% affricate to stop
 050 mute [ +PHARYNGEALIZ +OBSTR ] > [ +UNROUND +AFFR ] /					% affricate pharangealizeds
@@ -303,6 +304,7 @@
 050 mute [ -HIGH +VOWEL ] > [ +LOWERED ] / _ [ -LOW ]		 				% lowering dissimilation
 020 mute [ +LABIAL +VOWEL ] > [ +UNROUND +PALATAL ] / [ +LABIAL +VOCOID ] _	% unrounding dissimilation
 010 mute [ +LONG +VOICE +STOP ] > [ +SHORT +NASAL ] [ +SHORT ] /			% dː > nd
+010 mute [ +VOWEL ] > [ +PALATAL ] / [ +LATERAL ] _ [ +LABIAL ]				% lub > lib
 
 %%	METATHESIS
 010 mute [ +VOWEL ] [ +LIQ ] > [ ]1 [ ]0 / [ -SONOR -CONT ] _				% gar > gra
@@ -313,9 +315,9 @@
 020 mute [ +LIQUID ] [ -LIQUID ] [ +LIQUID ] > [ ]2 [ ]1 [ ]0				% ral > lar
 
 %%	INSERTION
-010 mute > ə / [ +OCCL +OBSTR ] _ [ +OCCL ]
-010 mute > ə / [ +SIBILANT ] _ [ +SIBILANT ]
-010 mute > ə / [ +CORON +STOP ] _ [ +CORON ]
+010 mute > ɜ / [ +OCCL +OBSTR ] _ [ +OCCL ]
+010 mute > ɜ / [ +SIBILANT ] _ [ +SIBILANT ]
+010 mute > ɜ / [ +CORON +STOP ] _ [ +CORON ]
 010 mute > s / [ +CORON +STOP ] _ [ +CORON +OCCL ]
 005 mute > ʔ / [ -NONSYLLAB ] _ [ +VOWEL ]
 005 mute [ +VOWEL ] > [ +NONSYLLAB +CLOSE ] [ ] / [ -NONSYLLAB ] _			% glide insertion
@@ -328,7 +330,7 @@
 050 mute [ -CORON +!NASAL ] > [ ] [ ±voze +STOP ] / _ [ +CORON +STOP ]		% md > mbd
 010 mute [ +!NASAL ] > [ ] [ +STOP ] / _ [ +FRIC ]							% ms > mbs
 010 mute [ +SIBILANT ] > [ ] [ +STOP ] / _ [ +RHOTIC ]						% sr > str
-010 mute > ə / [ -CONT ] _ [ +VIBR ]
+010 mute > ɜ / [ -CONT ] _ [ +VIBR ]
 002 mute [ +VOICE +BILAB +STOP ] > [ +NASALIZ +TRILL ] / _ [ +VELAR +VOCOID ]% ʙʙʙʙʙʙ
 002 mute [ +LABIAL +VOWEL ] > [ +BILAB +TRILL ] / [ +STOP ] _				% ʙʙʙʙʙʙ
 
@@ -360,8 +362,8 @@
 002 mute [ -STRESS +NONSYLLAB ] > / [ +SPOKEN ] _ #							% loss of final consonant
 002 mute [ -STRESS +VOCOID ] > / [ +SPOKEN ] _ #							% loss of final vowel
 005 mute [ -STRESS +VOWEL ] > / _ [ +VOWEL ]								% loss of hiatus
-005 mute [ -STRESS +LAX ] > /												% loss of lax vowel
-005 mute [ -STRESS +HIGH ] > /												% loss of high vowel
+005 mute [ +UNSTRESS +LAX ] > /												% loss of lax vowel
+005 mute [ +UNSTRESS +HIGH ] > /												% loss of high vowel
 500 mute [ -STRESS +VOICE +GLOT ] > /										% delete voiced glottal sounds
 100 mute [ -SPOKEN ] > /													% elision of pauses
 
