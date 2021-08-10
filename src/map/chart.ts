@@ -146,12 +146,12 @@ export class Chart {
 	 * @param civLabels whether to label countries
 	 * @param geoLabels whether to label mountain ranges and seas
 	 * @param fontSize the size of city labels and minimum size of country and biome labels [pt]
-	 * @param convention the transliteration convention to use for them
+	 * @param style the transliteration convention to use for them
 	 */
 	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol',
 		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
 		   civLabels: boolean = false, geoLabels: boolean = false,
-		   fontSize: number = 2, convention: Style = Style.CHANSAGI_2) {
+		   fontSize: number = 2, style: Style = null) {
 		svg.setAttribute('viewBox',
 			`${this.projection.left} ${this.projection.top}
 			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
@@ -214,7 +214,8 @@ export class Chart {
 					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
 					const text = document.createTextNode(
-						`${civ.getName(Style.CHANSAGI_2)}\n[${civ.getName(Style.NASOMEDI)}]`);
+						`${civ.getName().toString(style)}\n` +
+						`[${civ.getName().toString(Style.NASOMEDI)}]`);
 					hover.appendChild(text);
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
@@ -233,7 +234,7 @@ export class Chart {
 				if (civ.getPopulation() > 0)
 					this.label(
 						[...civ.nodos].filter(n => n.biome !== 'samud' && n.biome !== 'lage'),
-						civ.getName(convention),
+						civ.getName().toString(style),
 						svg,
 						fontSize);
 		}

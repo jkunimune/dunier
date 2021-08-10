@@ -24,7 +24,6 @@
 import "../lib/jquery.min.js";
 import {Random} from "../util/random.js";
 import {DeuteroLang, Language, ProtoLang, WordType} from "../language/language.js";
-import {Style, transcribe} from "../language/script.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 
@@ -45,15 +44,12 @@ $('#nam-apply').on('click', () => { // TODO: back button
 		bax = new DeuteroLang(bax, rng);
 
 	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
-	const style = rng.choice([
-		Style.CHANSAGI_0, Style.CHANSAGI_1, Style.CHANSAGI_2, Style.CHANSAGI_3
-	]);
 
 	for (const [i0, namliste] of [[0, $('#nam-liste-1')], [NUM_ROWS, $('#nam-liste-2')]]) {
 		namliste.empty();
 		for (let i = 0; i < NUM_ROWS; i++) {
-			const jannam = transcribe(bax.getNamloge(i0 + i, WordType.JANNAM), style);
-			const familnam = transcribe(bax.getNamloge(i0 + Math.floor(i/3), WordType.FAMILNAM), style);
+			const jannam = bax.getNamloge(i0 + i, WordType.JANNAM);
+			const familnam = bax.getNamloge(i0 + Math.floor(i/3), WordType.FAMILNAM);
 			let holnam;
 			if (type == 1)
 				holnam = `${jannam} ${familnam}`;

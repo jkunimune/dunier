@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 import {Civ} from "./civ.js";
-import {Style} from "../language/script.js";
 import {format} from "../util/util.js";
 
 
@@ -44,8 +43,8 @@ export function generateFactSheet(doc: any, topick: Civ) {
 	doc.setFontSize(24);
 	doc.text(
 		format('data.temnam',
-			'"'+topick.getName(Style.CHANSAGI_0), // TODO: have a Word kno which Style it should use
-			'"'+topick.getName(Style.NASOMEDI)), // TODO: this '"' would not be necessary if there were a Word class
+			topick.getName(),
+			topick.getName().pronunciation()),
 		20, 20, {baseline: 'top'});
 
 	doc.setFontSize(12);

@@ -204,7 +204,7 @@ function lookUp(fon: Fon, style: Style, level: number = 0): string {
  * @param lekse
  * @param style
  */
-export function transcribe(lekse: Fon[], style: Style = Style.NASOMEDI): string {
+export function transcribe(lekse: Fon[], style: Style): string {
 	lekse = lekse.slice(); // first, handle some common orthographickal rules
 	if (ORTHOGRAPHIC_FLAGS.get('diphthong as hiatus')[style]) {
 		for (let i = 0; i < lekse.length; i ++) // for this flag, go thru the original phonemick representacion
@@ -235,10 +235,10 @@ export function transcribe(lekse: Fon[], style: Style = Style.NASOMEDI): string 
 		}
 		asli = muti.substring(1, muti.length-1);
 
-		if (asli[asli.length-1] === 'ɦ' && '*-aeiouyw'.includes(asli[asli.length-2]))
-			asli = asli.substring(0, asli.length-1) + "gh";
+		if (asli[asli.length-1] === 'ɦ' && '*–aeiouyw'.includes(asli[asli.length-2]))
+			asli = asli.substring(0, asli.length-1) + "gh"; // replace word-final <h> with <gh>
 		else if ('bcdfgjklmnpqrstvz'.includes(asli[asli.length-1]) && asli[asli.length-2] === '-')
-			asli += 'ia';
+			asli += 'ia'; // add <ia> when the last vowel needs to be long
 
 		muti = "";
 		for (let i = 0; i < asli.length; i ++) {
@@ -256,7 +256,7 @@ export function transcribe(lekse: Fon[], style: Style = Style.NASOMEDI): string 
 				muti += harfe;
 			}
 			else if (asli[i] === "ɦ" &&
-				((i+1 < asli.length && !'aeiouyw'.includes(asli[i+1])) || (i-1 >= 0 && !'*-aeiouyw'.includes(asli[i-1]))))
+				((i+1 < asli.length && !'aeiouyw'.includes(asli[i+1])) || (i-1 >= 0 && !'*–aeiouyw'.includes(asli[i-1]))))
 				muti += "";
 			else if (asli[i] === "y") {
 				if (i+1 === asli.length || (i+1 < asli.length && asli[i+1] === "i") || (i-1 >= 0 && asli[i-1] === "i"))
@@ -268,11 +268,11 @@ export function transcribe(lekse: Fon[], style: Style = Style.NASOMEDI): string 
 			}
 			else if (i+1 < asli.length && asli[i] === "w" && !"aeiouy".includes(asli[i+1]))
 				muti += "u";
-			else if (asli[i] === '-') {
+			else if (asli[i] === '–') {
 				if ((i+1 < asli.length && asli[i+1] === 'ɦ') ||
 					(i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && !'aeiouy'.includes(asli[i+2])) ||
 					(i+2 === asli.length && !'aeiouy'.includes(asli[i+1])))
-					muti += (asli[i-1] === 'a') ? 'i' : (asli[i-1] === 'o') ? 'a' : (asli[i-1] === 'i') ? '' : 'e';
+					muti += (asli[i-1] === 'a') ? 'i' : (asli[i-1] === 'o') ? 'u' : (asli[i-1] === 'i') ? '' : 'e';
 			}
 			else if (asli[i] === '*') {
 				// if (i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && 'aeiouy'.includes(asli[i+2]))

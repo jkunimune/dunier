@@ -280,17 +280,21 @@ function mapApply() {
 	else
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 
-	let convention;
+	let style;
 	if (baxe === 'en')
-		convention = Style.ENGLI;
+		style = Style.ENGLI;
 	else if (baxe === 'es')
-		convention = Style.ESPANI;
+		style = Style.ESPANI;
 	else if (baxe === 'jp')
-		convention = Style.NIPONI;
+		style = Style.NIPONI;
 	else if (baxe === 'pd')
-		convention = Style.PANDUNI;
+		style = Style.PANDUNI;
+	else if (baxe === 'null')
+		style = null; // TODO this shouldn't be necessary
+	else
+		throw "eh?";
 
-	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade, dexnam, xanonam, convention);
+	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade, dexnam, xanonam, 6, style);
 
 	console.log("fina!");
 	mapOutOfSync = false;
@@ -434,5 +438,5 @@ $('#map-panel :input').on('change', () => {
  */
 $(document).ready(() => {
 	console.log("ready!");
-	$('#pdf-tab').click(); // TODO: consider putting off the PDF generacion until the user clicks on that tab
+	$('#map-tab').click();
 }); // TODO: warn before leaving page

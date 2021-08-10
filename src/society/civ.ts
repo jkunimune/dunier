@@ -25,8 +25,8 @@ import {Nodo} from "../planet/surface.js";
 import {WordType} from "../language/language.js";
 import {Random} from "../util/random.js";
 import {World} from "./world.js";
-import {Style, transcribe} from "../language/script.js";
 import {Kultur} from "./culture.js";
+import {Word} from "../language/word.js";
 
 
 const SOCIAL_DECAY_PERIOD = 1000; // [year] time it takes for an empire's might to decay by 2.7
@@ -233,9 +233,9 @@ export class Civ {
 		return Math.round(World.carryingCapacity*this.arableLand*this.technology);
 	}
 
-	getName(convention: Style = Style.NASOMEDI): string {
-		return transcribe(this.maxoriaKultur.language.getNamloge(
-			this.capital.index%25, WordType.LOKONAM), convention); // TODO: don't mod this index
+	getName(): Word {
+		return this.maxoriaKultur.language.getNamloge(
+			this.capital.index%25, WordType.LOKONAM); // TODO: don't mod this index
 	}
 
 

@@ -24,6 +24,7 @@
 // @ts-ignore
 import TinyQueue from "../lib/tinyqueue.js";
 import {USER_STRINGS} from "../gui/main.js";
+import {Word} from "../language/word.js";
 
 /**
  * maximum index.
@@ -98,11 +99,11 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
 	let format = USER_STRINGS.get(sentence);
 	for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
 		let convertedArg: string;
-		if (typeof args[i] === 'string') {
-			if ((<string>args[i]).startsWith('"'))
-				convertedArg = (<string>args[i]).substring(1); // TODO: have a Word class for this
-			else
-				convertedArg = USER_STRINGS.get(<string>args[i]); // look up strings in the resource file
+		if (args[i] instanceof Word) {
+			convertedArg = (<Word>args[i]).toString(); // transcribe words using the specified style TODO: use the user-specified style
+		}
+		else if (typeof args[i] === 'string') {
+			convertedArg = USER_STRINGS.get(<string>args[i]); // look up strings in the resource file
 		}
 		else if (typeof args[i] === 'object') {
 			convertedArg = USER_STRINGS.get((<object>args[i]).toString()); // do the same for objects

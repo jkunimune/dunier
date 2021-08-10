@@ -38,12 +38,13 @@ import {
 } from "./sound.js";
 import {ipaSymbol} from "./script.js";
 import {loadTSV} from "../util/fileio.js";
+import {Word} from "./word.js";
 
 /**
  * a process by which words change over time
  */
 export interface Proces {
-	apply(old: Fon[]): Fon[];
+	apply(old: Word): Word;
 }
 
 /**
@@ -70,16 +71,16 @@ class FonMute {
 	 * go through the word and apply this sound change.
 	 * @param old
 	 */
-	apply(old: Fon[]): Fon[] {
+	apply(old: Word): Word {
 		const drowWen: Fon[] = []; // build the neWword in reverse
 		let i = old.length;
 		while (i >= 0) {
-			if (this.applies([Fon.PAUSE].concat(old.slice(0, i)), [Fon.PAUSE].concat(drowWen))) { // if it applies here,
+			if (this.applies([Fon.PAUSE].concat(old.segments.slice(0, i)), [Fon.PAUSE].concat(drowWen))) { // if it applies here,
 				for (let j = this.pa.length - 1; j >= 0; j --) { // fill in the replacement
 					if (this.idx[j] < this.ca.length)
 						drowWen.push(this.pa[j].konformu(
-							old[i + this.idx[j] - this.ca.length], // mapping to the relevant old segments
-							this.bade.length > 0 ? old[i] : old[i-1]));
+							old.segments[i + this.idx[j] - this.ca.length], // mapping to the relevant old segments
+							this.bade.length > 0 ? old.segments[i] : old.segments[i-1]));
 					else
 						drowWen.push(this.pa[j].konformu()); // or drawing new segments from thin air
 				}
@@ -87,10 +88,10 @@ class FonMute {
 			}
 			else { // if not
 				i -= 1;
-				if (i >= 0) drowWen.push(old[i]); // just add the next character of old
+				if (i >= 0) drowWen.push(old.segments[i]); // just add the next character of old
 			}
 		}
-		return drowWen.reverse();
+		return new Word(drowWen.reverse(), old.language);
 	}
 
 	/**
@@ -138,16 +139,16 @@ class Harmonia {
 			throw `unrecognized harmony type: ${sif}`;
 	}
 
-	apply(old: Fon[]): Fon[] {
+	apply(old: Word): Word {
 		const nov: Fon[] = new Array<Fon>(old.length);
 		let val: Sif = null;
 		for (let i = 0; i < old.length; i ++) { // iterate backwards through the word
-			nov[i] = old[i]; // in most cases, we will just make this the same as it was in the old word
-			if (this.affectsConsonants || !old[i].is(Silabia.NONSYLLABIC)) { // but if this segment isn't immune
+			nov[i] = old.segments[i]; // in most cases, we will just make this the same as it was in the old word
+			if (this.affectsConsonants || !old.segments[i].is(Silabia.NONSYLLABIC)) { // but if this segment isn't immune
 				for (let sif of this.kutube) { // check its polarity
-					if (old[i].is(sif)) { // if it's polar,
+					if (old.segments[i].is(sif)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before
-							nov[i] = old[i].with(val); // and add it to the new word
+							nov[i] = old.segments[i].with(val); // and add it to the new word
 						else // or read the property to match if we haven't seen this yet
 							val = sif;
 						break;
@@ -155,7 +156,7 @@ class Harmonia {
 				}
 			}
 		}
-		return nov;
+		return new Word (nov, old.language);
 	}
 }
 
@@ -178,9 +179,9 @@ class SilaboPoze {
 		this.minSonority = minSonority;
 	}
 
-	apply(old: Fon[]): Fon[] {
+	apply(old: Word): Word {
 		const sonority = [];
-		for (const fon of old) // first calculate the sonorities
+		for (const fon of old.segments) // first calculate the sonorities
 			sonority.push(fon.getSonority());
 		const nov = []; // then copy the old word
 		for (let i = 0; i < old.length; i ++) { // and assign syllables accordingly
@@ -188,21 +189,21 @@ class SilaboPoze {
 			const l = (i-1 >= 0) ? sonority[i-1] : Number.NEGATIVE_INFINITY;
 			const r = (i+1 < old.length) ? sonority[i+1] : Number.NEGATIVE_INFINITY;
 			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) { // if it is a peak
-				if (old[i].getSonority() < this.minSonority) {
+				if (old.segments[i].getSonority() < this.minSonority) {
 					nov.push(new Fon(Mode.OPEN_MID, Loke.CENTRAL, Voze.VOICED,
-						old[i].silabia, Longia.SHORT, Latia.MEDIAN,
+						old.segments[i].silabia, Longia.SHORT, Latia.MEDIAN,
 						MinorLoke.UNROUNDED, Nosia.ORAL).with(PendaniSif.SYLLABIC));
-					nov.push(old[i].with(Silabia.NONSYLLABIC)); // insert an epenthetic schwa or
+					nov.push(old.segments[i].with(Silabia.NONSYLLABIC)); // insert an epenthetic schwa or
 				}
 				else
-					nov.push(old[i].with(PendaniSif.SYLLABIC)); // make it syllabic
+					nov.push(old.segments[i].with(PendaniSif.SYLLABIC)); // make it syllabic
 			}
-			else if (old[i].is(PendaniSif.SPOKEN)) // otherwise if it is a sound
-				nov.push(old[i].with(Silabia.NONSYLLABIC)); // make it nonsyllabic
+			else if (old.segments[i].is(PendaniSif.SPOKEN)) // otherwise if it is a sound
+				nov.push(old.segments[i].with(Silabia.NONSYLLABIC)); // make it nonsyllabic
 			else
-				nov.push(old[i]); // ignore pauses
+				nov.push(old.segments[i]); // ignore pauses
 		}
-		return nov;
+		return new Word(nov, old.language);
 	}
 }
 
@@ -233,15 +234,15 @@ export class AcentoPoze {
 		this.lengthen = lengthen
 	}
 
-	apply(old: Fon[]): Fon[] {
+	apply(old: Word): Word {
 		let nuclei: {i: number, weight: number}[] = [];
 		let numC = 1;
 		for (let i = old.length - 1; i >= 0; i --) { // first, tally up the syllables
-			if (!old[i].is(PendaniSif.SPOKEN)) { // skip past any pauses
+			if (!old.segments[i].is(PendaniSif.SPOKEN)) { // skip past any pauses
 				numC = 1;
 			}
-			else if (old[i].is(PendaniSif.SYLLABIC)) { // using syllabicity to identify nuclei
-				if (old[i].is(Longia.LONG))
+			else if (old.segments[i].is(PendaniSif.SYLLABIC)) { // using syllabicity to identify nuclei
+				if (old.segments[i].is(Longia.LONG))
 					nuclei.push({i: i, weight: 2}); // long vowels have weight 2
 				else if (numC > 1)
 					nuclei.push({i: i, weight: 1}); // codas have weight 1
@@ -250,7 +251,7 @@ export class AcentoPoze {
 				numC = 0;
 			}
 			else {
-				numC += (old[i].is(Longia.LONG)) ? 2 : 1; // long consonants count as two segments for this purpose
+				numC += (old.segments[i].is(Longia.LONG)) ? 2 : 1; // long consonants count as two segments for this purpose
 			}
 		}
 
@@ -277,23 +278,23 @@ export class AcentoPoze {
 			else            lapse = 0;
 		}
 
-		const nov: Fon[] = old.slice(); // then edit the word
+		const nov: Fon[] = old.segments.slice(); // then edit the word
 		let firstStress = true;
 		for (let i = 0; i < nuclei.length; i ++) {
 			if (!stress[i]) {
-				nov[nuclei[i].i] = old[nuclei[i].i].with(Silabia.UNSTRESSED); // stressless is stressless
+				nov[nuclei[i].i] = old.segments[nuclei[i].i].with(Silabia.UNSTRESSED); // stressless is stressless
 				if (this.lengthen && nuclei[i].weight === 2)
 					nov[nuclei[i].i] = nov[nuclei[i].i].with(Longia.SHORT); // shorten unstressed heavy syllables if Ident long is outranked
 			}
 			else {
-				nov[nuclei[i].i] = old[nuclei[i].i].with(
+				nov[nuclei[i].i] = old.segments[nuclei[i].i].with(
 					firstStress ? Silabia.PRIMARY_STRESSED : Silabia.SECONDARY_STRESSED); // the first stress is primary
 				firstStress = false;
 				if (this.lengthen && nuclei[i].weight === 0)
 					nov[nuclei[i].i] = nov[nuclei[i].i].with(Longia.LONG); // lengthen stressed open syllables if Ident long is outranked
 			}
 		}
-		return nov;
+		return new Word(nov, old.language);
 	}
 }
 
@@ -339,13 +340,17 @@ for (const procesKitabe of loadTSV('proces.txt', /\s+/, /%/)) { // load the phon
 				sa = na = ka = null;
 			}
 			else if (sinye.length >= 4) { // features are incorporated into the current phone
-				if (sinye.startsWith('±')) { // either their name goes into ka
+				if (!'+-±'.includes(sinye.charAt(0)))
+					throw RangeError(`unreadable feature descripcion: ${sinye}`);
+				else if (sinye.startsWith('±')) { // either their name goes into ka
+					if (ka === null)
+						throw RangeError(`this ${sinye} doesn't seem to be in brackets.`);
 					ka.push(sinye.slice(1));
 				}
 				else {
-					if (!'+-±'.includes(sinye.charAt(0)))
-						throw RangeError(`unreadable feature descripcion: ${sinye}`);
 					const kutube = sinye.startsWith('+') ? sa : na;
+					if (kutube === null)
+						throw RangeError(`this ${sinye} doesn't seem to be in brackets.`);
 					sinye = sinye.slice(1);
 					const starred = sinye.startsWith('!');
 					if (starred) sinye = sinye.slice(1);

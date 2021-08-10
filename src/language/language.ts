@@ -24,7 +24,8 @@
 import {Random} from "../util/random.js";
 import {Fon} from "./sound.js";
 import {DEFAULT_ACENTE, Proces, PROCES_CHUZABLE} from "./process.js";
-import {ipa} from "./script.js";
+import {ipa, Style} from "./script.js";
+import {Word} from "./word.js";
 
 
 const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
@@ -45,7 +46,15 @@ export enum WordType {
 /**
  * a collection of similar words.
  */
-export interface Language {
+export abstract class Language {
+	public readonly defaultStyle: Style;
+	public readonly rightBranching: boolean;
+
+	protected constructor(defaultStyle: Style, rightBranching: boolean) {
+		this.defaultStyle = defaultStyle;
+		this.rightBranching = rightBranching;
+	}
+
 	/**
 	 * get a name from this language. the style of name and valid indices depend on the WordType:
 	 * JANNAM - forename, indexed in [0, 50) TODO these numbers are silly.  make them all go [0, ∞)
@@ -57,22 +66,24 @@ export interface Language {
 	 * @param i the index of the name
 	 * @param type the type of name
 	 */
-	getNamloge(i: number, type: WordType): Fon[]
+	abstract getNamloge(i: number, type: WordType): Word;
 
 	/**
 	 * get the language that this was n timesteps ago
 	 * @param n the number of steps backward, in centuries.
 	 */
-	getAncestor(n: number): Language
+	abstract getAncestor(n: number): Language;
 
 	/**
 	 * is this language actually a dialect of lang?
 	 * @param lang
 	 */
-	isIntelligible(lang: Language): boolean
+	isIntelligible(lang: Language): boolean {
+		return this.getAncestor(DEVIATION_TIME) === lang.getAncestor(DEVIATION_TIME);
+	}
 }
 
-export class ProtoLang {
+export class ProtoLang extends Language {
 	private static VOWELS = ipa("aiueoɜɛɔyø");
 	private static CONSON = ipa("mnptksljwhfbdɡrzŋʃʔxqvɣθʙ");
 	private static MEDIAL = ipa("ljwr");
@@ -83,7 +94,6 @@ export class ProtoLang {
 	private static P_CODA = 0.4;
 
 	private readonly rng: Random; // this language's personal rng generator
-	private readonly rightBranching: boolean; // whether it is right-branching
 	private readonly diversity: number; // the typical number of lexical suffixes used for one type of word
 	private readonly genders: number; // the typical number of gender suffixes used for nouns
 	private readonly nConson: number; // the number of consonants in this language
@@ -103,8 +113,11 @@ export class ProtoLang {
 	private readonly logofin: Fon[][];
 
 	constructor(rng: Random) {
+		super(
+			rng.choice([Style.CHANSAGI_0, Style.CHANSAGI_1, Style.CHANSAGI_2, Style.CHANSAGI_3]),
+			rng.probability(0.2));
+
 		this.rng = rng;
-		this.rightBranching = rng.probability(0.2);
 		this.diversity = Math.floor(rng.exponential(5)); // choose how much lexical suffixing to do
 		this.genders = rng.discrete(0, 6); // choose how much basic suffixing to do
 		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
@@ -128,7 +141,7 @@ export class ProtoLang {
 		return asle[i];
 	}
 
-	getNamloge(i: number, type: WordType): Fon[] { // TODO this should return a string
+	getNamloge(i: number, type: WordType): Word { // TODO this should return a string
 		switch (type) {
 			case WordType.SITONAM:
 				return this.suffix(i, 25, 0, 6, false);
@@ -177,23 +190,23 @@ export class ProtoLang {
 	 * @param affixN
 	 * @param obligatory whether the affix cannot be noting
 	 */
-	suffix(baseI: number, base0: number, affix0: number, affixN: number, obligatory: boolean) {
+	suffix(baseI: number, base0: number, affix0: number, affixN: number, obligatory: boolean): Word {
 		const base = this.getLoge(this.logomul, base0 + baseI); // get the base
 		const numAffixen = Math.min(this.diversity, affixN - affix0); // count how many options we have for affixen
 		const affixI = baseI%(numAffixen + (obligatory ? 0 : 1)); // pick an affix (if it's nonobligatory, none is also an option)
 		const endingI = affixI%this.genders; // pick a word ending (if genders==0, there should be no ending)
 		const ending = Number.isNaN(endingI) ? [] : this.getLoge(this.logofin, endingI); // get the word ending
-		let loge: Fon[];
+		let mul: Fon[];
 		if (affixI === numAffixen)
-			loge = base; // choosing an out of bounds affix indicates that we have chosen no affix
+			mul = base; // choosing an out of bounds affix indicates that we have chosen no affix
 		else {
 			const affix = this.getLoge(this.logomul, affix0 + affixI); // otherwise get the chosen affix
 			if (this.rightBranching)
-				loge = affix.concat([Fon.PAUSE]).concat(base); // remember to put a pause between them
+				mul = affix.concat([Fon.PAUSE]).concat(base); // remember to put a pause between them
 			else
-				loge = base.concat([Fon.PAUSE]).concat(affix);
+				mul = base.concat([Fon.PAUSE]).concat(affix);
 		}
-		return DEFAULT_ACENTE.apply(loge.concat(ending));
+		return DEFAULT_ACENTE.apply(new Word(mul.concat(ending), this));
 	}
 
 	getAncestor(n: number): Language {
@@ -205,11 +218,12 @@ export class ProtoLang {
 	}
 }
 
-export class DeuteroLang {
+export class DeuteroLang extends Language {
 	private readonly parent: Language;
 	private readonly changes: Proces[];
 
 	constructor(parent: Language, rng: Random) {
+		super(parent.defaultStyle, parent.rightBranching);
 		this.parent = parent;
 		this.changes = [];
 		for (const {chanse, proces} of PROCES_CHUZABLE)
@@ -221,7 +235,7 @@ export class DeuteroLang {
 		return this.applyChanges(this.parent.getNamloge(i, type));
 	}
 
-	applyChanges(lekse: Fon[]): Fon[] {
+	applyChanges(lekse: Word): Word {
 		for (const change of this.changes)
 			lekse = change.apply(lekse);
 		return lekse;
@@ -234,7 +248,5 @@ export class DeuteroLang {
 			return this.parent.getAncestor(n - 1);
 	}
 
-	isIntelligible(lang: Language): boolean {
-		return this.getAncestor(DEVIATION_TIME) === lang.getAncestor(DEVIATION_TIME);
-	}
+
 }
