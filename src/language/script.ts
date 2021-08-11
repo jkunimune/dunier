@@ -24,53 +24,37 @@
 import {Klas, Loke, Longia, MinorLoke, Mode, Nosia, PendaniSif, Silabia, Voze, Sif, Fon, Latia} from "./sound.js";
 import {loadTSV} from "../util/fileio.js";
 
-const NUM_STYLES = 11;
-/** transcription systems */
-export enum Style {
-	NASOMEDI,
-	LATINI,
-	ESPANI,
-	ENGLI,
-	RUSI,
-	NIPONI,
-	PANDUNI,
-	CHANSAGI_0,
-	CHANSAGI_1,
-	CHANSAGI_2,
-	CHANSAGI_3,
-}
-
 
 const MODIFIERS: {klas: Klas, baze: Sif[], kode: string}[] = [ // TODO: can I rearrange this to put the macron underneath the acute accent?
-	{klas: new Klas([], [PendaniSif.SPOKEN]), baze: [], kode: 'Pau'},
-	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Gem'},
-	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'Len'},
-	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'Asp'},
-	{klas: new Klas([Voze.EJECTIVE]), baze: [Voze.TENUIS], kode: 'Ejt'},
-	{klas: new Klas([Loke.LINGUOLABIAL, PendaniSif.LIQUID]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'LnL'},
-	{klas: new Klas([Loke.LINGUOLABIAL]), baze: [Loke.BILABIAL, Loke.DENTAL], kode: 'LnL'},
-	{klas: new Klas([Loke.LABIOCORONAL]), baze: [Loke.ALVEOLAR, Loke.BILABIAL], kode: 'Dbl'},
-	{klas: new Klas([Loke.LABIOVELAR]), baze: [Loke.VELAR, Loke.BILABIAL], kode: 'Dbl'},
-	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pal'},
-	{klas: new Klas([MinorLoke.PHARYNGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Pha'},
-	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Vel'},
-	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St1'},
-	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'St2'},
-	{klas: new Klas([Nosia.NASALIZED, PendaniSif.VOCOID]), baze: [Nosia.ORAL], kode: 'Nas'},
-	{klas: new Klas([Nosia.NASALIZED], [PendaniSif.VOCOID]), baze: [Mode.NASAL, Nosia.ORAL], kode: 'PrN'},
-	{klas: new Klas([Voze.BREATHY]), baze: [Voze.VOICED], kode: 'Bre'},
-	{klas: new Klas([Voze.TENUIS, PendaniSif.SONORANT]), baze: [Voze.VOICED], kode: 'Dev'},
-	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'Gli'},
-	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'Lab'},
-	{klas: new Klas([PendaniSif.SYLLABIC], [PendaniSif.VOCOID]), baze: [Silabia.NONSYLLABIC], kode: 'Syl'},
-	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'Aff'},
-	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'Prx'},
+	{klas: new Klas([], [PendaniSif.SPOKEN]), baze: [], kode: 'pause'},
+	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'geminate'},
+	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'long'},
+	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'aspirate'},
+	{klas: new Klas([Voze.EJECTIVE]), baze: [Voze.TENUIS], kode: 'ejective'},
+	{klas: new Klas([Loke.LINGUOLABIAL, PendaniSif.LIQUID]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'linguolab'},
+	{klas: new Klas([Loke.LINGUOLABIAL]), baze: [Loke.BILABIAL, Loke.DENTAL], kode: 'linguolab'},
+	{klas: new Klas([Loke.LABIOCORONAL]), baze: [Loke.ALVEOLAR, Loke.BILABIAL], kode: 'double'},
+	{klas: new Klas([Loke.LABIOVELAR]), baze: [Loke.VELAR, Loke.BILABIAL], kode: 'double'},
+	{klas: new Klas([MinorLoke.PALATALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'palataliz'},
+	{klas: new Klas([MinorLoke.PHARYNGEALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'pharyngealiz'},
+	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'velariz'},
+	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'primary'},
+	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'secondary'},
+	{klas: new Klas([Nosia.NASALIZED, PendaniSif.VOCOID]), baze: [Nosia.ORAL], kode: 'nasaliz'},
+	{klas: new Klas([Nosia.NASALIZED], [PendaniSif.VOCOID]), baze: [Mode.NASAL, Nosia.ORAL], kode: 'prenasaliz'},
+	{klas: new Klas([Voze.BREATHY]), baze: [Voze.VOICED], kode: 'breathy'},
+	{klas: new Klas([Voze.TENUIS, PendaniSif.SONORANT]), baze: [Voze.VOICED], kode: 'devoice'},
+	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'glide'},
+	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'labializ'},
+	{klas: new Klas([PendaniSif.SYLLABIC], [PendaniSif.VOCOID]), baze: [Silabia.NONSYLLABIC], kode: 'syllabic'},
+	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'affricate'},
+	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'approx'},
 ]
 
 const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
-const TO_TEXT: Map<string, string[]> = new Map();
-const TO_DIACRITICS: Map<string, string[]> = new Map();
-const ORTHOGRAPHIC_FLAGS: Map<string, boolean[]> = new Map();
+const TO_TEXT: Map<string, Map<string, string>> = new Map();
+const TO_DIACRITICS: Map<string, Map<string, string>> = new Map();
+const ORTHOGRAPHIC_FLAGS: Map<string, Map<string, boolean>> = new Map();
 const LOKE_KODE = new Map([
 	['bl', Loke.BILABIAL],
 	['ld', Loke.LABIODENTAL],
@@ -105,9 +89,15 @@ const MODE_KODE = new Map([
 	['g!', {mode: Mode.CLICK, voze: Voze.VOICED}],
 ]);
 const harfiaTable = loadTSV('alphabet.tsv');
-for (const row of harfiaTable) { // each row of the orthographick table tells us about the different available conventions
-	const grafeme = row.slice(0, NUM_STYLES);
-	const sif = row.slice(NUM_STYLES);
+const header = harfiaTable[0];
+for (const style of header) {
+	TO_TEXT.set(style, new Map());
+	TO_DIACRITICS.set(style, new Map());
+	ORTHOGRAPHIC_FLAGS.set(style, new Map());
+}
+for (const row of harfiaTable.slice(1)) { // each row of the orthographick table tells us about the different available styles
+	const grafeme = row.slice(0, header.length);
+	const sif = row.slice(header.length);
 	if (sif.length === 3) { // first we read all the phonemes and their transcripcions
 		const silabia = sif[0].includes('s') ? Silabia.UNSTRESSED : Silabia.NONSYLLABIC;
 		const latia = sif[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
@@ -115,15 +105,17 @@ for (const row of harfiaTable) { // each row of the orthographick table tells us
 		const loke = LOKE_KODE.get(sif[1]);
 		const {mode, voze} = MODE_KODE.get(sif[2]);
 		const foneme = new Fon(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
-		FROM_IPA.set(grafeme[0], foneme);
-		TO_TEXT.set(foneme.hash(), grafeme);
+		for (let i = 0; i < header.length; i ++)
+			TO_TEXT.get(header[i]).set(foneme.hash(), grafeme[i]);
+		FROM_IPA.set(grafeme[header.indexOf('ipa')], foneme);
 	}
-	else if (sif[0].match(/^[A-Z]/)) { // then we read the modifying features and their transcripcions
-		TO_DIACRITICS.set(sif[0], grafeme);
+	else if (sif[0].match(/^\^/)) { // then we read the modifying features and their transcripcions
+		for (let i = 0; i < header.length; i ++)
+			TO_DIACRITICS.get(header[i]).set(sif[0].slice(1), grafeme[i]);
 	}
 	else if (sif[0].match(/^\?/)) { // then we read the special rules
-		ORTHOGRAPHIC_FLAGS.set(sif[0].slice(1),
-			grafeme.map((value: string) => (value === 'y')));
+		for (let i = 0; i < header.length; i ++)
+			ORTHOGRAPHIC_FLAGS.get(header[i]).set(sif[0].slice(1), grafeme[i] === 'y');
 	}
 	else {
 		throw `incomprehensible orthographickal feature: ${sif}`;
@@ -165,9 +157,11 @@ export function ipa(ipa: string): Fon[] {
  * @param style the romanization convention in which to look this up
  * @param level the number of diacritics we have already checkd (don't check them again)
  */
-function lookUp(fon: Fon, style: Style, level: number = 0): string {
-	if (TO_TEXT.has(fon.hash())) // if it's in the table
-		return TO_TEXT.get(fon.hash())[style]; // just return that
+function lookUp(fon: Fon, style: string, level: number = 0): string {
+	if (!TO_TEXT.has(style))
+		throw `there is no such transcripcion style as ${style}`;
+	if (TO_TEXT.get(style).has(fon.hash())) // if it's in the table
+		return TO_TEXT.get(style).get(fon.hash()); // just return that
 
 	for (let i = level; i < MODIFIERS.length; i ++) { // if not, look through the diacritics
 		const {klas, baze, kode} = MODIFIERS[i];
@@ -176,7 +170,8 @@ function lookUp(fon: Fon, style: Style, level: number = 0): string {
 			for (const sif of baze)
 				baziFon.push(fon.with(sif)); // if so, simplify the foneme
 
-			const diacritic = TO_DIACRITICS.get(kode)[style]; // and apply the diacritic
+			console.assert(TO_DIACRITICS.get(style).has(kode), kode); // (do JavaScript's job for it)
+			const diacritic = TO_DIACRITICS.get(style).get(kode); // and apply the diacritic
 			let graf = diacritic;
 			if (diacritic.includes('X') || diacritic.includes('x')) {
 				let X = lookUp(baziFon[0], style, i + 1);
@@ -204,15 +199,15 @@ function lookUp(fon: Fon, style: Style, level: number = 0): string {
  * @param lekse
  * @param style
  */
-export function transcribe(lekse: Fon[], style: Style): string {
+export function transcribe(lekse: Fon[], style: string): string {
 	lekse = lekse.slice(); // first, handle some common orthographickal rules
-	if (ORTHOGRAPHIC_FLAGS.get('diphthong as hiatus')[style]) {
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
 		for (let i = 0; i < lekse.length; i ++) // for this flag, go thru the original phonemick representacion
 			if (lekse[i].is(PendaniSif.HIGH)
 				&& (i+1 >= lekse.length || lekse[i+1].is(Silabia.NONSYLLABIC))) // find glides in codas
 				lekse[i] = new Klas([Silabia.UNSTRESSED]).konformu(lekse[i]); // and change them to vowels
 	}
-	if (ORTHOGRAPHIC_FLAGS.get('velar nasal as coronal')[style]) {
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
 		for (let i = 0; i < lekse.length; i ++)
 			if (lekse[i].is(Loke.VELAR) && lekse[i].is(Mode.NASAL) && i+1 < lekse.length
 				&& lekse[i+1].is(Loke.VELAR) && lekse[i+1].is(PendaniSif.OCCLUSIVE)) // find velar nasals followd by velar stops
@@ -223,11 +218,11 @@ export function transcribe(lekse: Fon[], style: Style): string {
 	for (let i = 0; i < lekse.length; i ++)
 		asli += lookUp(lekse[i], style); // form the inicial spelling by reading the transcripcion out of the table
 
-	if (style === Style.ENGLI) {
+	if (style === 'en') {
 		let muti = "#"+asli+"#";
-		for (let i = 1; i <= muti.length; i ++) { // go through the string
-			for (const vise of ENGLI_VISE) {
-				for (let j = 1; j < vise.length; j ++) { // and look through the replacements in ENGLI_VISE
+		for (const vise of ENGLI_VISE) {
+			for (let j = 1; j < vise.length; j ++) { // look through the replacements in ENGLI_VISE
+				for (let i = muti.length; i >= 1; i --) { // ang go through the string
 					if (i-vise[j].length >= 0 && muti.substring(i-vise[j].length, i) === vise[j])
 						muti = muti.substring(0, i-vise[j].length) + vise[0] + muti.substring(i);
 				}
@@ -240,12 +235,18 @@ export function transcribe(lekse: Fon[], style: Style): string {
 		else if ('bcdfgjklmnpqrstvz'.includes(asli[asli.length-1]) && asli[asli.length-2] === '-')
 			asli += 'ia'; // add <ia> when the last vowel needs to be long
 
+		if (asli.length >= 3 &&
+			'cfd'.includes(asli.charAt(asli.length-1)) &&
+			'*' === asli.charAt(asli.length-2) &&
+			(asli.length < 4 || !'aeiou'.includes(asli.charAt(asli.length-4)))) // double the final consonant if the word ends in a single short vowel followd by <c>, <f>, or <d>
+			asli += asli.charAt(asli.length-1);
+
 		muti = "";
 		for (let i = 0; i < asli.length; i ++) {
 			if (asli[i] === "c" &&
-				((i+1 < asli.length && 'eiy#'.includes(asli[i+1]))))
+				((i+1 < asli.length && 'eiy'.includes(asli[i+1])) || i+1 === asli.length)) // use <k> before front vowels and at the ends of words
 				muti += "k";
-			else if (i+1 < asli.length && asli[i] === "j" && 'eiy'.includes(asli[i+1])) {
+			else if (i+1 < asli.length && asli[i] === "j" && 'eiy'.includes(asli[i+1])) { // use <g> before front vowels when it is the last consonant in the word
 				let harfe = "g";
 				for (let j = i+1; j < asli.length; j ++) {
 					if (!'aeiouy'.includes(asli[j])) {
@@ -256,30 +257,29 @@ export function transcribe(lekse: Fon[], style: Style): string {
 				muti += harfe;
 			}
 			else if (asli[i] === "ɦ" &&
-				((i+1 < asli.length && !'aeiouyw'.includes(asli[i+1])) || (i-1 >= 0 && !'*–aeiouyw'.includes(asli[i-1]))))
+				((i+1 < asli.length && !'aeiouyw'.includes(asli[i+1])) || (i-1 >= 0 && !'*–aeiouyw'.includes(asli[i-1])))) // remove <h> in consonant clusters
 				muti += "";
 			else if (asli[i] === "y") {
-				if (i+1 === asli.length || (i+1 < asli.length && asli[i+1] === "i") || (i-1 >= 0 && asli[i-1] === "i"))
+				if (i+1 === asli.length || (i+1 < asli.length && asli[i+1] === "i") || (i-1 >= 0 && asli[i-1] === "i")) // use <y> at the ends of words and adjacent to <i>
 					muti += "y";
-				else if ((i+1 < asli.length && !'aeiou'.includes(asli[i+1])) || (i-1 >= 0 && !'aeiou'.includes(asli[i-1])))
+				else if ((i+1 < asli.length && !'aeiou'.includes(asli[i+1])) || (i-1 >= 0 && !'aeiou'.includes(asli[i-1]))) // use <i> adjacent to consonants
 					muti += "i";
 				else
 					muti += "y";
 			}
-			else if (i+1 < asli.length && asli[i] === "w" && !"aeiouy".includes(asli[i+1]))
+			else if (i+1 < asli.length && asli[i] === "w" && !"aeiouy".includes(asli[i+1])) // use <u> after vowels before consonants
 				muti += "u";
 			else if (asli[i] === '–') {
 				if ((i+1 < asli.length && asli[i+1] === 'ɦ') ||
 					(i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && !'aeiouy'.includes(asli[i+2])) ||
-					(i+2 === asli.length && !'aeiouy'.includes(asli[i+1])))
+					(i+2 === asli.length && !'aeiouy'.includes(asli[i+1]))) // lengthen long vowels that look short
 					muti += (asli[i-1] === 'a') ? 'i' : (asli[i-1] === 'o') ? 'u' : (asli[i-1] === 'i') ? '' : 'e';
 			}
 			else if (asli[i] === '*') {
 				// if (i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && 'aeiouy'.includes(asli[i+2]))
 				// 	muti += (asli[i+1] === 'k') ? 'c' : (asli[i+1] === 'j') ? '' : (asli[i+1] === 'h') ? '' : asli[i+1];
-				// else if (i+1 < asli.length && asli[i] === 'i' && 'aeiouy'.includes(asli[i+1]))
+				// else if (i+1 < asli.length && asli[i] === 'i' && 'aeiouy'.includes(asli[i+1])) // double consonants when short vowels look long
 				// 	muti = muti.substring(0, muti.length-1) + 'e';
-				muti += "";
 			}
 			else
 				muti += asli[i];
@@ -290,7 +290,7 @@ export function transcribe(lekse: Fon[], style: Style): string {
 			asli = asli.replace(ca, <string> pa);
 	}
 
-	if (ORTHOGRAPHIC_FLAGS.get('capitalization')[style]) { // finally, capitalize
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('capitalization')) { // finally, capitalize
 		let muti = "";
 		let startOfWord = true;
 		for (let i = 0; i < asli.length; i ++) {

@@ -1,3 +1,4 @@
+ipa	la	es	en	ru	jp	pd	0	1	2	3
 m	m	m	m	м	m	m	m	m	m	m		bl	n
 p	p	p	p	п	p	p	p	p	p	p		bl	p
 b	b	b	b	б	b	b	b	b	b	b		bl	b
@@ -96,16 +97,16 @@ u	u	u	ɯ–	у	u	u	u	u	u	u	sw	v	a
 ɯ̞	u	u	ɯ–	ы	u	u	ÿ	eu	ị	ɨ	s	v	1
 ʊ	u	u	u*	у	u	u	u	u	ụ	u	sw	v	1
 e	e	e	a–	э	e	e	e	e	e	e	s	c	2
-ø	œ	e	ɯr	ё	e	e	ö	oe	ẹ	ø	sw	c	2
+ø	œ	e	ɯ*r	ё	e	e	ö	oe	ẹ	ø	sw	c	2
 ɘ	œ	e	ɯ*	а	a	e	ə	e	ạ	y	s	m	2
-ɵ	œ	o	ɯr	о	o	o	ə	o	ạ	y	sw	m	2
+ɵ	œ	o	ɯ*r	о	o	o	ə	o	ạ	y	sw	m	2
 ɤ	o	e	ɯ*	ы	o	o	ë	eo	ọ	y	s	v	2
 o	o	o	o–	о	o	o	o	o	o	o	sw	v	2
 ɛ	e	e	e*	э	e	e	e	e	ẹ	e	s	c	3
-œ	œ	e	ɯr	ё	e	e	ö	oe	ẹ	ø	sw	c	3
+œ	œ	e	ɯ*r	ё	e	e	ö	oe	ẹ	ø	sw	c	3
 ɜ̯	e	e	r	а	e	e	ə	e	ạ	y		c	3
 ɜ	e	e	ɯ*	а	e	e	ə	e	ạ	y	s	m	3
-ɞ	œ	o	ɯr	о	o	o	ə	o	ọ	y	sw	m	3
+ɞ	œ	o	ɯ*r	о	o	o	ə	o	ọ	y	sw	m	3
 ʌ	o	e	ɯ*	ы	o	o	ë	eo	ọ	y	s	v	3
 ɔ	o	o	o*	о	o	o	o	o	ọ	o	sw	v	3
 æ	æ	a	a*	э	a	a	ä	a	ạ	æ	s	c	4
@@ -114,27 +115,27 @@ a	a	a	a*	а	a	a	a	a	a	a	s	c	5
 a	a	a	a*	а	a	a	a	a	a	a	s	m	5
 ɑ	a	a	a*	a	a	a	a	a	a	a	s	v	5
 ɒ	o	o	o*	о	o	o	o	ao	ọ	a	sw	v	5
-Xː	X̄	X	X	X	X-	X	xX	Xh	X	X̄	Len
-Xː	xX	X	xX	xX	xX	X	xX	xX	xX	xX	Gem
-X͡Y	Y	Y	X	XY	X	Y	XY	XY	XY	XY	Aff
-Xʰ	Xh	X	X	Xх	X	X	Xh	Xh	Xh	Xh	Asp
-Xʼ	xX	X	xX	xX	xX	X	Xʼ	xX	Xʼ	Xʼ	Ejt
-X̥	Xh	X	X	X	X	X	Xh	Xh	Xh	Xh	Dev
-X̤	X	X	X	Xх	X	X	Xh	Xh	Xh	Xh	Bre
-X̼	Y	Xl	Xl	лX	Y	Y	Ẍ	Xl	Ÿ	Ẍ	LnL
-X͡Y	yX	Y	yX	yX	Y	Y	XY	xY	xY	xY	Dbl
-Xʷ	Xv	Xu	Xw	Xу	Xu	Xy	Xw	Xw	Xw	X’	Lab
-Xʲ	Xj	Xi	Xy	Xь	Xy	Xw	Xy	Xy	X’	X’	Pal
-Xˠ	X	Xu	X	Xь	X	X	gX	Xw	X̴	X’	Vel
-Xˤ	X	X	X	X	X	X	X̣	X̰	Xʻ	Xʻ	Pha
-X̃	X	X	X	X	Xnn	Xn	X̃	X̨	X̃	Ẍ	Nas
-x͡Y	xY	xY	xY	xY	nnY	xY	xY	xY	xY	xY	PrN
-X́	X	X́	X	X́	X	X	X	X	X́	X	St1
-X̀	X	X	X	X	X	X	X	X	X	X	St2
-X̯	X	X	X	X	X	X	X	X	X̆	X	Gli
-X̩	X	eX	eX	X	X	oX	X	X'	X	X	Syl
-X̞	X	X	X	X	X	X	X	X	X	X	Prx
- 	 	 	-	-	・	 	 	 	 	-	Pau
+Xː	X̄	X	X	X	X-	X	xX	Xh	X	X̄	^long
+Xː	xX	X	xX	xX	xX	X	xX	xX	xX	xX	^geminate
+X͡Y	Y	Y	X	XY	X	Y	XY	XY	XY	XY	^affricate
+Xʰ	Xh	X	X	Xх	X	X	Xh	Xh	Xh	Xh	^aspirate
+Xʼ	xX	X	xX	xX	xX	X	Xʼ	xX	Xʼ	Xʼ	^ejective
+X̥	Xh	X	X	X	X	X	Xh	Xh	Xh	Xh	^devoice
+X̤	X	X	X	Xх	X	X	Xh	Xh	Xh	Xh	^breathy
+X̼	Y	Xl	Xl	лX	Y	Y	Ẍ	Xl	Ÿ	Ẍ	^linguolab
+X͡Y	yX	Y	yX	yX	Y	Y	XY	xY	xY	xY	^double
+Xʷ	Xv	Xu	Xw	Xу	Xu	Xy	Xw	Xw	Xw	X’	^labializ
+Xʲ	Xj	Xi	Xy	Xь	Xy	Xw	Xy	Xy	X’	X’	^palataliz
+Xˠ	X	Xu	X	Xь	X	X	gX	Xw	X̴	X’	^velariz
+Xˤ	X	X	X	X	X	X	X̣	X̰	Xʻ	Xʻ	^pharyngealiz
+X̃	X	X	X	X	Xnn	Xn	X̃	X̨	X̃	Ẍ	^nasaliz
+x͡Y	xY	xY	xY	xY	nnY	xY	xY	xY	xY	xY	^prenasaliz
+X́	X	X́	X	X́	X	X	X	X	X́	X	^primary
+X̀	X	X	X	X	X	X	X	X	X	X	^secondary
+X̯	X	X	X	X	X	X	X	X	X̆	X	^glide
+X̩	X	eX	eX	X	X	oX	X	X'	X	X	^syllabic
+X̞	X	X	X	X	X	X	X	X	X	X	^approx
+ 	 	 	-	-	・	 	 	 	 	-	^pause
 n	y	y	y	y	n	y	y	y	y	y	?capitalization
 n	y	n	y	n	y	y	y	y	y	n	?diphthong as hiatus
 n	y	y	y	y	y	y	y	n	y	n	?velar nasal as coronal

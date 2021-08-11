@@ -24,7 +24,7 @@
 import {Random} from "../util/random.js";
 import {Fon} from "./sound.js";
 import {DEFAULT_ACENTE, Proces, PROCES_CHUZABLE} from "./process.js";
-import {ipa, Style} from "./script.js";
+import {ipa} from "./script.js";
 import {Word} from "./word.js";
 
 
@@ -47,10 +47,10 @@ export enum WordType {
  * a collection of similar words.
  */
 export abstract class Language {
-	public readonly defaultStyle: Style;
+	public readonly defaultStyle: string;
 	public readonly rightBranching: boolean;
 
-	protected constructor(defaultStyle: Style, rightBranching: boolean) {
+	protected constructor(defaultStyle: string, rightBranching: boolean) {
 		this.defaultStyle = defaultStyle;
 		this.rightBranching = rightBranching;
 	}
@@ -114,7 +114,7 @@ export class ProtoLang extends Language {
 
 	constructor(rng: Random) {
 		super(
-			rng.choice([Style.CHANSAGI_0, Style.CHANSAGI_1, Style.CHANSAGI_2, Style.CHANSAGI_3]),
+			rng.discrete(0, 4).toString(),
 			rng.probability(0.2));
 
 		this.rng = rng;

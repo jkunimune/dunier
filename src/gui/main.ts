@@ -33,7 +33,6 @@ import {Azimuthal} from "../map/azimuthal.js";
 import {Equirectangular} from "../map/equirectangular.js";
 import {Mercator} from "../map/mercator.js";
 import {EqualArea} from "../map/equalarea.js";
-import {Style} from "../language/script.js";
 import {Spheroid} from "../planet/spheroid.js";
 import {Sphere} from "../planet/sphere.js";
 import {Disc} from "../planet/disc.js";
@@ -266,7 +265,7 @@ function mapApply() {
 	const shade = $('#map-say').prop('checked');
 	const dexnam = $('#map-deshnam').prop('checked');
 	const xanonam = $('#map-shannam').prop('checked');
-	const baxe = $('#map-bash').val();
+	const style = $('#map-bash').val();
 
 	let mapper;
 	if (projection === 'equirectangular')
@@ -280,21 +279,13 @@ function mapApply() {
 	else
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 
-	let style;
-	if (baxe === 'en')
-		style = Style.ENGLI;
-	else if (baxe === 'es')
-		style = Style.ESPANI;
-	else if (baxe === 'jp')
-		style = Style.NIPONI;
-	else if (baxe === 'pd')
-		style = Style.PANDUNI;
-	else if (baxe === 'null')
-		style = null; // TODO this shouldn't be necessary
-	else
-		throw "eh?";
-
-	mapper.depict(surface, world, $('#map-map')[0], zemrang, marorang, filter, nade, kenare, shade, dexnam, xanonam, 6, style);
+	mapper.depict(
+		surface, world,
+		$('#map-map')[0],
+		zemrang, marorang, filter,
+		nade, kenare, shade,
+		dexnam, xanonam, 6,
+		(style === 'null') ? null : style);
 
 	console.log("fina!");
 	mapOutOfSync = false;

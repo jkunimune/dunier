@@ -23,7 +23,7 @@
  */
 import {Fon} from "./sound.js";
 import {Language} from "./language.js";
-import {Style, transcribe} from "./script.js";
+import {transcribe} from "./script.js";
 
 export class Word {
 	public readonly segments: Fon[];
@@ -48,9 +48,9 @@ export class Word {
 	 * transcribe this in the given orthographick style, or its native romanizacion
 	 * system if none is specified
 	 */
-	toString(style: Style = null): string {
+	toString(style: string = null): string {
 		if (this.language === null) // if language is null, this is just phonetick informacion and should be put in phonetick notacion regardless of the specified Style
-			return transcribe(this.segments, Style.NASOMEDI)
+			return transcribe(this.segments, 'ipa')
 		else if (style !== null) // otherwise, use the specified style
 			return transcribe(this.segments, style);
 		else // otherwise, use the native style of this word's language

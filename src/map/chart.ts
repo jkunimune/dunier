@@ -31,7 +31,6 @@ import {
 } from "../util/util.js";
 import {World} from "../society/world.js";
 import {MapProjection, PathSegment} from "./projection.js";
-import {Style} from "../language/script.js";
 import {Civ} from "../society/civ.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
 import {circularRegression} from "../util/fitting.js";
@@ -151,7 +150,7 @@ export class Chart {
 	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol',
 		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
 		   civLabels: boolean = false, geoLabels: boolean = false,
-		   fontSize: number = 2, style: Style = null) {
+		   fontSize: number = 2, style: string = null) {
 		svg.setAttribute('viewBox',
 			`${this.projection.left} ${this.projection.top}
 			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
@@ -215,7 +214,7 @@ export class Chart {
 					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
 					const text = document.createTextNode(
 						`${civ.getName().toString(style)}\n` +
-						`[${civ.getName().toString(Style.NASOMEDI)}]`);
+						`[${civ.getName().toString('ipa')}]`);
 					hover.appendChild(text);
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
