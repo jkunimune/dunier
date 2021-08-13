@@ -54,7 +54,7 @@
 002 mute [ +LABIAL -VOCOID ] > [ +LINGUOLAB ] /
 050 mute [ +LINGUOLAB ] > [ +DENT ] /
 005 mute [ +LONG +CORON +SONOR ] > [ +SHORT +PALATAL ] /					% gemination > palatalization
-010 mute [ +NASAL ] > [ +UVULAR ] / _ [ -STOP -AFFR -VOCOID ]				% create the Japanese ɴ
+005 mute [ +NASAL ] > [ +UVULAR ] / _ [ -STOP -AFFR -VOCOID ]				% create the Japanese ɴ
 010 mute [ -DORSAL +NASAL ] > [ +DENT ] / _ [ -VOCOID ]						% merge n and m in coda
 010 mute [ -DORSAL +NASAL ] > [ +BILAB ] / _ [ -VOCOID ]					% merge m and n in coda
 010 mute [ +SYLLAB +NASAL ] > [ +BILAB ] /
@@ -302,6 +302,7 @@
 %%	DISSIMILATION
 050 mute [ +VOWEL ] > [ +RAISED ] / _ [ +LOW ]								% raising dissimilation
 050 mute [ -HIGH +VOWEL ] > [ +LOWERED ] / _ [ -LOW ]		 				% lowering dissimilation
+010 mute [ +HIGH +VOWEL ] > [ +MID ] [ +NONSYL ] / [ +HIGH ]				% wi > wej
 020 mute [ +LABIAL +VOWEL ] > [ +UNROUND +PALATAL ] / [ +LABIAL +VOCOID ] _	% unrounding dissimilation
 010 mute [ +LONG +VOICE +STOP ] > [ +SHORT +NASAL ] [ +SHORT ] /			% dː > nd
 010 mute [ +VOWEL ] > [ +PALATAL ] / [ +LATERAL ] _ [ +LABIAL ]				% lub > lib
@@ -368,6 +369,7 @@
 100 mute [ -SPOKEN ] > /													% elision of pauses
 
 %%	PROSIDY CHANGES
+500 mute [ +GLIDE ] > [ +UNSTRESS ] / [ -VOWEL ] _ [ -VOWEL ]				% glides need vowel adjacency
 030 silabe 4
 015 silabe 3
 008 silabe 2

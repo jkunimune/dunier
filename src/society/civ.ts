@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {Nodo} from "../planet/surface.js";
-import {Lect, WordType} from "../language/lect.js";
+import {Lect, LogaTipo} from "../language/lect.js";
 import {Random} from "../util/random.js";
 import {World} from "./world.js";
 import {Kultur} from "./culture.js";
@@ -219,8 +219,8 @@ export class Civ {
 	}
 
 	getName(): Word {
-		return this.capital.kultur.lect.getNamloge(
-			this.capital.index%25, WordType.LOKONAM); // TODO: don't mod this index
+		return this.capital.kultur.lect.getName(
+			this.capital.index, LogaTipo.DESHA);
 	}
 
 }

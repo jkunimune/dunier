@@ -26,6 +26,7 @@ import {Fon} from "./sound.js";
 import {DEFAULT_ACENTE, Proces, PROCES_CHUZABLE} from "./process.js";
 import {ipa} from "./script.js";
 import {Word} from "./word.js";
+import {Enumify} from "../lib/enumify.js";
 
 
 const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
@@ -34,13 +35,23 @@ const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
 /**
  * different types of nym
  */
-export enum WordType {
-	JANNAM,
-	FAMILNAM,
-	SITONAM,
-	BASHNAM,
-	LOKONAM,
-	DEMNAM,
+export class LogaTipo extends Enumify {
+	public readonly index: number;
+	public readonly numClassifiers: number;
+
+	static JAN = new LogaTipo(0, 0);
+	static FAMILI = new LogaTipo(1, 12);
+	static SITI = new LogaTipo(2, 6);
+	static BASHA = new LogaTipo(3, 1);
+	static DESHA = new LogaTipo(4, 3);
+	static NAS = new LogaTipo(5, 1);
+	static _ = LogaTipo.closeEnum();
+
+	constructor(index: number, numClassifiers: number) {
+		super();
+		this.index = index;
+		this.numClassifiers = numClassifiers;
+	}
 }
 
 /**
@@ -58,16 +69,10 @@ export abstract class Lect {
 
 	/**
 	 * get a name from this language. the style of name and valid indices depend on the WordType:
-	 * JANNAM - forename, indexed in [0, 50) TODO these numbers are silly.  make them all go [0, ∞)
-	 * FAMILNAM - surname, indexed in [0, 25)
-	 * SITONAM - city name, indexed in [0, 25), corresponds to the respective toponym
-	 * BASHNAM - glossonym, indexed in [0, 25), corresponds to the respective toponym
-	 * LOKONAM - toponym, indexed in [0, 25)
-	 * DEMNAM - ethnonym, indexed in [0, 25), corresponds to the respective toponym
 	 * @param i the index of the name
-	 * @param type the type of name
+	 * @param tipo the type of name
 	 */
-	abstract getNamloge(i: number, type: WordType): Word;
+	abstract getName(i: number, tipo: LogaTipo): Word;
 
 	/**
 	 * get the language that this was n timesteps ago
@@ -92,26 +97,18 @@ export class ProtoLang extends Lect {
 
 	private static P_ONSET = 0.8;
 	private static P_MEDIAL = 0.4;
+	private static P_NUCLEUS = 1.5;
 	private static P_CODA = 0.4;
 
 	private readonly rng: Random; // this language's personal rng generator
 	private readonly diversity: number; // the typical number of lexical suffixes used for one type of word
-	private readonly genders: number; // the typical number of gender suffixes used for nouns
 	private readonly nConson: number; // the number of consonants in this language
 	private readonly nVowel: number; // the number of vowels in this langugage
 	private readonly nMedial: number; // the numer of medials in this language
 	private readonly complexity: number; // the approximate amount of information in one syllable
-	/**
-	 * the fundamental roots of this language. they are indexed as follows:
-	 * [0, 6) - synonyms of "city"
-	 * [6, 12) - synonyms of "land"
-	 * [12, 24) - synonyms of "person"
-	 * [24, 25) - word for "language"
-	 * [25, 150) - generic roots
-	 * @param i the index of the word, in [0, 150).
-	 */
-	private readonly logomul: Fon[][];
-	private readonly logofin: Fon[][];
+	private readonly name: Map<LogaTipo, Map<number, Word>>; // the word references of each type
+	private readonly classifiers: Map<LogaTipo, Fon[][]>; // the noun classifiers
+	private readonly fin: Fon[][]; // the noun endings
 
 	constructor(rng: Random) {
 		super(
@@ -120,95 +117,96 @@ export class ProtoLang extends Lect {
 		this.macrolanguage = this;
 
 		this.rng = rng;
-		this.diversity = Math.floor(rng.exponential(5)); // choose how much lexical suffixing to do
-		this.genders = rng.discrete(0, 6); // choose how much basic suffixing to do
 		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
 		this.nVowel = 5 + rng.binomial(5, .1); // choose how many nuclei it will have
 		this.nMedial = (this.nConson > ProtoLang.R_INDEX) ? 4 : 0;
 		this.complexity = 2*Math.log10(1 + this.nConson)
 			+ Math.log10(1 + this.nMedial) + Math.log10(1 + this.nVowel);
-		this.logomul = new Array<Fon[]>(150);
-		this.logofin = new Array<Fon[]>(this.genders);
-		if (rng.probability(.5))
-			this.logomul[8] = ipa("ia"); // this is sometimes here
-	}
 
-	getLoge(asle: Fon[][], i: number): Fon[] {
-		if (i < 0 || i >= asle.length)
-			throw RangeError("baka.");
-		if (asle[i] === undefined) {
-			const nSyl = (asle === this.logofin) ? 1/2 : Math.ceil((i < 25 ? 1.5 : 4)/this.complexity);
-			asle[i] = this.newRoot(nSyl, this.rng);
+		this.fin = [];
+		for (let i = 0; i < rng.discrete(0, 6); i ++) // choose how much basic suffixing to do
+			this.fin.push(this.noveMul(-i-1, 0.5));
+
+		this.diversity = rng.uniform(0, 1); // choose how much lexical suffixing to do
+		this.name = new Map<LogaTipo, Map<number, Word>>();
+		this.classifiers = new Map<LogaTipo, Fon[][]>();
+		let j = -this.fin.length - 1;
+		for (const wordType of LogaTipo) {
+			this.name.set(<LogaTipo>wordType, new Map<number, Word>());
+			this.classifiers.set(<LogaTipo>wordType, []);
+			for (let i = 0; i < Math.round(this.diversity*(<LogaTipo>wordType).numClassifiers); i ++) // TODO countries can be named after cities
+				this.classifiers.get(<LogaTipo>wordType).push(this.noveLoga(j --, 1.5/this.complexity));
 		}
-		return asle[i];
+		if (this.diversity > 0.4 && rng.probability(.5))
+			this.classifiers.get(LogaTipo.DESHA)[0] = ipa("ia"); // this is sometimes here
 	}
 
-	getNamloge(i: number, type: WordType): Word { // TODO this should return a string
-		switch (type) {
-			case WordType.SITONAM:
-				return this.suffix(i, 25, 0, 6, false);
-			case WordType.LOKONAM:
-				return this.suffix(i, 50, 6, 12, false); // TODO countries can be named after cities
-			case WordType.DEMNAM:
-				return this.suffix(i, 50, 18, 19, true); // TODO people can be named after countries
-			case WordType.BASHNAM:
-				return this.suffix(i, 50, 24, 25, true);
-			case WordType.FAMILNAM:
-				return this.suffix(i, 75, 12, 24, false);
-			case WordType.JANNAM:
-				return this.suffix(i, 100, 0, 0, false);
+	/**
+	 * create a new noun frase to describe a person, country, city, etc.
+	 * @param index the pseudorandom seed for this word
+	 * @param tipo the type of noun classifier this will have attachd
+	 */
+	getName(index: number, tipo: LogaTipo): Word {
+		if (!this.name.get(tipo).has(index)) {
+			const base = this.noveLoga(
+				index + 1000*tipo.index,
+				4/this.complexity); // get the base
+
+			let name;
+			if (this.classifiers.get(tipo).length === 0)
+				name = base;
+			else {
+				const classifier = this.rng.choice(this.classifiers.get(tipo));
+				if (this.rightBranching)
+					name = classifier.concat([Fon.PAUSE], base);
+				else
+					name = base.concat([Fon.PAUSE], classifier);
+			}
+
+			this.name.get(tipo).set(index,
+				DEFAULT_ACENTE.apply(new Word(name, this)));
+		}
+		return this.name.get(tipo).get(index);
+	}
+
+	/**
+	 * generate a new random word, including a gender affix
+	 * @param index the pseudorandom seed for this root
+	 * @param syllables the number of syllables in the root
+	 */
+	noveLoga(index: number, syllables: number): Fon[] {
+		const base = this.noveMul(index, syllables);
+		if (this.fin.length === 0)
+			return base;
+		else {
+			const affix = this.rng.choice(this.fin); // TODO: use index to make this more pseudoly random
+			if (this.rightBranching)
+				return affix.concat(base);
+			else
+				return base.concat(affix);
 		}
 	}
 
 	/**
 	 * generate a new random word root
-	 * @param nSyllables the number of syllables in the word, or less than one to indicate a syllable with fewer letters
-	 * @param rng
+	 * @param index the pseudorandom seed for this root
+	 * @param syllables the number of syllables in this root
 	 */
-	newRoot(nSyllables: number, rng: Random): Fon[] {
-		let lekse;
-		const reduccion = Math.min(1, nSyllables);
-		do {
-			lekse = [];
-			for (let i = 0; i < nSyllables; i++) {
-				if (rng.probability(ProtoLang.P_ONSET * reduccion))
-					lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
-				if (this.nMedial > 0 && rng.probability(ProtoLang.P_MEDIAL * reduccion))
-					lekse.push(rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
-				if (rng.probability(reduccion))
-					lekse.push(rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
-				if (rng.probability(ProtoLang.P_CODA * reduccion))
-					lekse.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
-			}
-		} while (nSyllables >= 1 && lekse.length < 3);
-		return lekse;
-	}
-
-	/**
-	 * create a new word derivative based on roots
-	 * @param baseI
-	 * @param base0
-	 * @param affix0
-	 * @param affixN
-	 * @param obligatory whether the affix cannot be noting
-	 */
-	suffix(baseI: number, base0: number, affix0: number, affixN: number, obligatory: boolean): Word {
-		const base = this.getLoge(this.logomul, base0 + baseI); // get the base
-		const numAffixen = Math.min(this.diversity, affixN - affix0); // count how many options we have for affixen
-		const affixI = baseI%(numAffixen + (obligatory ? 0 : 1)); // pick an affix (if it's nonobligatory, none is also an option)
-		const endingI = affixI%this.genders; // pick a word ending (if genders==0, there should be no ending)
-		const ending = Number.isNaN(endingI) ? [] : this.getLoge(this.logofin, endingI); // get the word ending
-		let mul: Fon[];
-		if (affixI === numAffixen)
-			mul = base; // choosing an out of bounds affix indicates that we have chosen no affix
-		else {
-			const affix = this.getLoge(this.logomul, affix0 + affixI); // otherwise get the chosen affix
-			if (this.rightBranching)
-				mul = affix.concat([Fon.PAUSE]).concat(base); // remember to put a pause between them
-			else
-				mul = base.concat([Fon.PAUSE]).concat(affix);
+	noveMul(index: number, syllables: number): Fon[] {
+		const syllableNumber = Math.ceil(syllables);
+		const syllableSize = syllables/syllableNumber;
+		let mul = [];
+		for (let i = 0; i < syllableNumber; i++) {
+			if (this.rng.probability(ProtoLang.P_ONSET*syllableSize)) // TODO use the index to make this more pseudoly random
+				mul.push(this.rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
+			if (this.nMedial > 0 && this.rng.probability(ProtoLang.P_MEDIAL*syllableSize))
+				mul.push(this.rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
+			if (this.rng.probability(ProtoLang.P_NUCLEUS*syllableSize))
+				mul.push(this.rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
+			if (this.rng.probability(ProtoLang.P_CODA*syllableSize))
+				mul.push(this.rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
 		}
-		return DEFAULT_ACENTE.apply(new Word(mul.concat(ending), this));
+		return mul;
 	}
 
 	getAncestor(n: number): Lect {
@@ -235,8 +233,8 @@ export class Dialect extends Lect {
 				this.changes.push(proces);
 	}
 
-	getNamloge(i: number, type: WordType) {
-		return this.applyChanges(this.parent.getNamloge(i, type));
+	getName(i: number, tipo: LogaTipo) {
+		return this.applyChanges(this.parent.getName(i, tipo));
 	}
 
 	applyChanges(lekse: Word): Word {

@@ -23,7 +23,7 @@
  */
 import "../lib/jquery.min.js";
 import {Random} from "../util/random.js";
-import {Dialect, Lect, ProtoLang, WordType} from "../language/lect.js";
+import {Dialect, Lect, ProtoLang, LogaTipo} from "../language/lect.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 
@@ -48,8 +48,8 @@ $('#nam-apply').on('click', () => { // TODO: back button
 	for (const [i0, namliste] of [[0, $('#nam-liste-1')], [NUM_ROWS, $('#nam-liste-2')]]) {
 		namliste.empty();
 		for (let i = 0; i < NUM_ROWS; i++) {
-			const jannam = bax.getNamloge(i0 + i, WordType.JANNAM);
-			const familnam = bax.getNamloge(i0 + Math.floor(i/3), WordType.FAMILNAM);
+			const jannam = bax.getName(i0 + i, LogaTipo.JAN);
+			const familnam = bax.getName(i0 + Math.floor(i/3), LogaTipo.FAMILI);
 			let holnam;
 			if (type == 1)
 				holnam = `${jannam} ${familnam}`;
