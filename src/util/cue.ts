@@ -21,48 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Civ} from "./civ.js";
-import {format} from "../util/util.js";
 
+export class Cue<Type> {
+	private first: Link<Type>;
+	private last: Link<Type>;
 
-/**
- * add a page to this PDF document with all the interesting informacion about the given Civ
- * @param doc
- * @param topick
- */
-export function generateFactSheet(doc: any, topick: Civ) {
-	doc.setProperties({
-		title: format('param.data'),
-		creator: 'dunia hamar',
-	});
-	doc.deletePage(0);
-	doc.addPage("a4", "portrait");
-	doc.addFont("../../res/kitabuforme/NotoSans-Regular.ttf", "NotoSans", "normal");
-	doc.setFont("NotoSans"); // set font
+	constructor(initial: Type[]) {
+		this.first = null;
+		this.last = null;
+		for (const value of initial)
+			this.push(value);
+	}
 
-	doc.setFontSize(24);
-	doc.text(
-		format('data.temnam',
-			topick.getName(),
-			topick.getName().pronunciation()),
-		20, 20, {baseline: 'top'});
+	push(value: Type): void {
+		const link: Link<Type> = {value: value, next: null};
+		if (this.last !== null)
+			this.last.next = link;
+		else
+			this.first = link;
+		this.last = link;
+	}
 
-	doc.setFontSize(12);
-	doc.text(
-		format('data.num',
-			topick.getArea(),
-			topick.getPopulation()),
-		20, 35, {baseline: 'top'});
+	pop(): Type {
+		const link: Link<Type> = this.first;
+		this.first = this.first.next;
+		if (this.first === null)
+			this.last = null;
+		return link.value;
+	}
 
-	doc.setFontSize(18);
-	doc.text(
-		format('data.demografi'), // TODO: bold this
-		20, 50, {baseline: 'top'});
-
-	doc.setFontSize(12);
-	const cultureParagraph = doc.splitTextToSize(topick.capital.kultur.toString(), 170);
-	doc.text(
-		cultureParagraph, // TODO tauk about the minorities, too
-		20, 60, {baseline: 'top'});
+	isEmpty(): boolean {
+		return this.first === null;
+	}
 }
 
+interface Link<Type> {
+	value: Type;
+	next: Link<Type> | null;
+}

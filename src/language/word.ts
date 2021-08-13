@@ -22,15 +22,15 @@
  * SOFTWARE.
  */
 import {Fon} from "./sound.js";
-import {Language} from "./language.js";
+import {Lect} from "./lect.js";
 import {transcribe} from "./script.js";
 
 export class Word {
 	public readonly segments: Fon[];
-	public readonly language: Language;
+	public readonly language: Lect;
 	public readonly length: number;
 
-	constructor(segments: Fon[], language: Language) {
+	constructor(segments: Fon[], language: Lect) {
 		this.segments = segments;
 		this.language = language;
 		this.length = this.segments.length

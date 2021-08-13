@@ -23,7 +23,7 @@
  */
 import {Random} from "../util/random.js";
 import {format} from "../util/util.js";
-import {DeuteroLang, Language, ProtoLang} from "../language/language.js";
+import {Dialect, Lect, ProtoLang} from "../language/lect.js";
 import {loadTSV} from "../util/fileio.js";
 import {Nodo} from "../planet/surface.js";
 import {Civ} from "./civ.js";
@@ -94,7 +94,7 @@ for (const row of loadTSV('../../res/kultur.tsv')) {
 	}
 	else {
 		const sif = new Sif(header, subheader, row);
-		CHUZABLE[CHUZABLE.length-1][CHUZABLE[CHUZABLE.length-1].length-1].push(sif); // TODO: get the proper translacion of each one
+		CHUZABLE[CHUZABLE.length-1][CHUZABLE[CHUZABLE.length-1].length-1].push(sif);
 	}
 }
 
@@ -110,7 +110,7 @@ export class Kultur {
 	public readonly classes: Set<string>;
 	public readonly homeland: Nodo;
 	public readonly government: Civ;
-	public readonly language: Language;
+	public readonly lect: Lect;
 
 	/**
 	 * base a kultur off of some ancestor kultur, with some changes
@@ -135,7 +135,7 @@ export class Kultur {
 						this.classes.add(this.sif[i][j].classe);
 					}
 				}
-				this.language = new DeuteroLang(parent.language, rng);
+				this.lect = new Dialect(parent.lect, rng);
 			}
 		}
 		else {
@@ -144,9 +144,9 @@ export class Kultur {
 			for (let i = 0; i < CHUZABLE.length; i ++) {
 				this.sif.push([]);
 				for (let j = 0; j < CHUZABLE[i].length; j ++) {
-					this.sif[i].push(this.randomCompatibleSif(i, j, rng)); // TODO: check for compatibility before choosing cultural features
+					this.sif[i].push(this.randomCompatibleSif(i, j, rng));
 				}
-				this.language = new ProtoLang(rng); // create a new language from scratch
+				this.lect = new ProtoLang(rng); // create a new language from scratch
 			}
 		}
 	}
@@ -161,14 +161,6 @@ export class Kultur {
 		const compatible = CHUZABLE[seccionIndex][subsectionIndex].filter(
 			(sif: Sif) => sif.isCompatible(this));
 		return rng.choice(compatible);
-	}
-
-	/**
-	 * are these two Kulturs' languages mutually intelligible?
-	 * @param that
-	 */
-	isIntelligible(that: Kultur): boolean {
-		return this.language.isIntelligible(that.language);
 	}
 
 	/**

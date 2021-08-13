@@ -27,13 +27,14 @@ import TinyQueue from '../lib/tinyqueue.js';
 import {Nodo, Place, Surface, Triangle} from "../planet/surface.js";
 import {
 	Vector,
-	ErodingSegmentTree, longestShortestPath,
+	longestShortestPath,
 } from "../util/util.js";
 import {World} from "../society/world.js";
 import {MapProjection, PathSegment} from "./projection.js";
 import {Civ} from "../society/civ.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
 import {circularRegression} from "../util/fitting.js";
+import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 
 const MAP_PRECISION = 5e-2;
 const SUN_ELEVATION = 60/180*Math.PI;

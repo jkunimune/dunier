@@ -29,6 +29,37 @@ import {Random} from "../util/random.js";
 import {Civ} from "./civ.js";
 
 
+const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth
+	['samud',       0.0],
+	['potistan',    0.1],
+	['barxojangle', 0.3],
+	['jangle',      3.0],
+	['lage',        0.0],
+	['taige',       0.3],
+	['piristan',    0.1],
+	['grasistan',   1.0],
+	['registan',    0.0],
+	['tundre',      0.1],
+	['aise',        0.0],
+]);
+const RIVER_UTILITY_THRESHOLD = 1e6;
+const FRESHWATER_UTILITY = 0.1;
+const SALTWATER_UTILITY = 1.0;
+const PASABLIA = new Map([ // terrain modifiers for invasion speed
+	['samud',       0.1],
+	['potistan',    0.1],
+	['barxojangle', 0.1],
+	['jangle',      1.0],
+	['lage',        3.0],
+	['taige',       1.0],
+	['piristan',    0.3],
+	['grasistan',   3.0],
+	['registan',    0.1],
+	['tundre',      0.3],
+	['aise',        0.1],
+]);
+
+
 /**
  * collection of civilizations and languages that goes on a planet
  */
@@ -56,6 +87,21 @@ export class World {
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
 		this.politicalMap = new Map();
+
+		for (const nodo of planet.nodos) { // assine the society-relevant values to the Nodos
+			nodo.domublia = DOMUBLIA.get(nodo.biome); // start with the biome-defined habitability
+			if (nodo.domublia > 0 || nodo.biome === 'registan') { // if it is habitable at all or is a desert
+				for (const neighbor of nodo.neighbors.keys()) { // increase habitability based on adjacent water
+					if (neighbor.biome === 'lage' || nodo.neighbors.get(neighbor).liwe > RIVER_UTILITY_THRESHOLD)
+						nodo.domublia += FRESHWATER_UTILITY;
+					if (neighbor.biome === 'samud')
+						nodo.domublia += SALTWATER_UTILITY;
+				}
+			}
+			nodo.domublia *= nodo.getArea();
+
+			nodo.pasablia = PASABLIA.get(nodo.biome);
+		}
 	}
 
 	/**
@@ -81,7 +127,7 @@ export class World {
 	 */
 	spawnCivs(rng: Random) {
 		for (const tile of this.planet.nodos) {
-			const demomultia = World.carryingCapacity*Civ.getDomublia(tile); // TODO: implement nomads, city state leagues, and federal states.  we shouldn't need to call domublia here.
+			const demomultia = World.carryingCapacity*tile.domublia; // TODO: implement nomads, city state leagues, and federal states.
 			const ruler = this.currentRuler(tile);
 			if (ruler == null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(World.authoritarianism*World.timeStep*demomultia))
@@ -89,7 +135,7 @@ export class World {
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
 				let linguisticModifier = World.nationalism;
-				if (ruler.kultur.get(tile).isIntelligible(ruler.maxoriaKultur))
+				if (tile.kultur.lect.isIntelligible(ruler.capital.kultur.lect))
 					linguisticModifier = 1;
 				if (rng.probability(World.libertarianism*World.timeStep*demomultia*linguisticModifier)) // use the population without technology correction for balancing
 					this.civs.add(new Civ(tile, this.civs.size, this, rng, ruler.technology));
@@ -119,19 +165,21 @@ export class World {
 			const invadeeStrength = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
 			if (invader.nodos.has(start) && !invader.nodos.has(end) &&
 					invaderStrength > invadeeStrength) { // check that they're still doable
-				invader.conquer(end); // update the game state
-				for (const neighbor of end.neighbors.keys()) { // and move on
-					if (!invader.nodos.has(neighbor)) {
-						time = time + invader.estimateInvasionTime(end, neighbor, rng);
-						if (end <= World.timeStep) { // assuming it is possible
-							invasions.push({time: time, invader: invader, start: end, end: neighbor});
+				invader.conquer(end, start); // update the game state
+				for (const conquerdLand of invader.nodos.getAllChildren(end)) { // and set up new invasions that bild off of it
+					for (const neighbor of conquerdLand.neighbors.keys()) {
+						if (!invader.nodos.has(neighbor)) {
+							time = time + invader.estimateInvasionTime(conquerdLand, neighbor, rng);
+							if (end <= World.timeStep) {
+								invasions.push({time: time, invader: invader, start: end, end: neighbor});
+							}
 						}
 					}
-				}
+				} // note that I don't allow for counterinvasions, because I think it would be unnecessary
 			}
 		}
 		for (const civ of this.civs)
-			if (civ.getArea() === 0)
+			if (civ.getArableArea() === 0)
 				this.civs.delete(civ); // clear out any Civs that no longer exist
 	}
 

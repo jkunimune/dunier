@@ -24,6 +24,7 @@
 import {Random} from "../util/random.js";
 import {linterp, Vector, orthogonalBasis, circumcenter} from "../util/util.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
+import {Kultur} from "../society/culture";
 
 
 const INTEGRATION_RESOLUTION = 32;
@@ -257,6 +258,9 @@ export class Nodo {
 	public terme: number;
 	public barxe: number;
 	public biome: string;
+	public domublia: number;
+	public pasablia: number;
+	public kultur: Kultur;
 	public plate: number;
 	public windVelocity: Vector;
 	public downwind: Nodo[];

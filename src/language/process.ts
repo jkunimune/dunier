@@ -50,7 +50,7 @@ export interface Proces {
 /**
  * a process that causes segments to change according to a rule
  */
-class FonMute {
+class FonMute implements Proces {
 	private readonly ca: Klas[]; // original value
 	private readonly pa: Klas[]; // target value
 	private readonly idx: number[]; // reference indices for target phones
@@ -121,7 +121,7 @@ class FonMute {
 /**
  * a process that causes sounds in the same word to share a feature
  */
-class Harmonia {
+class Harmonia implements Proces {
 	private readonly kutube: Sif[];
 	private readonly affectsConsonants: boolean;
 
@@ -163,7 +163,7 @@ class Harmonia {
 /**
  * a process that places syllables according to the sonority sequencing constraint
  */
-class SilaboPoze {
+class SilaboPoze implements Proces {
 	private readonly bias: number; // amount to prefer earlier or later syllables
 	private readonly minSonority: number; // minimum allowable sonority of a nucleus
 
@@ -211,7 +211,7 @@ class SilaboPoze {
 /**
  * a process that places stress according to certain rules
  */
-export class AcentoPoze {
+export class AcentoPoze implements Proces {
 	private readonly reverse: boolean; // whether the primary stress is on the right
 	private readonly headSize: number; // the number of unstressed syllables to put between the word edge and the initial stress
 	private readonly attractors: number; // the minimum weight that attracts stress

@@ -46,9 +46,10 @@ export enum WordType {
 /**
  * a collection of similar words.
  */
-export abstract class Language {
-	public readonly defaultStyle: string;
-	public readonly rightBranching: boolean;
+export abstract class Lect {
+	public readonly defaultStyle: string; // this language's preferd romanization style
+	public readonly rightBranching: boolean; // whether this language prefers prefixen
+	public macrolanguage: Lect; // the proto-language for the set of lects intelligible to this one
 
 	protected constructor(defaultStyle: string, rightBranching: boolean) {
 		this.defaultStyle = defaultStyle;
@@ -72,18 +73,18 @@ export abstract class Language {
 	 * get the language that this was n timesteps ago
 	 * @param n the number of steps backward, in centuries.
 	 */
-	abstract getAncestor(n: number): Language;
+	abstract getAncestor(n: number): Lect;
 
 	/**
 	 * is this language actually a dialect of lang?
 	 * @param lang
 	 */
-	isIntelligible(lang: Language): boolean {
-		return this.getAncestor(DEVIATION_TIME) === lang.getAncestor(DEVIATION_TIME);
+	isIntelligible(lang: Lect): boolean {
+		return this.macrolanguage === lang.macrolanguage;
 	}
 }
 
-export class ProtoLang extends Language {
+export class ProtoLang extends Lect {
 	private static VOWELS = ipa("aiueoɜɛɔyø");
 	private static CONSON = ipa("mnptksljwhfbdɡrzŋʃʔxqvɣθʙ");
 	private static MEDIAL = ipa("ljwr");
@@ -116,6 +117,7 @@ export class ProtoLang extends Language {
 		super(
 			rng.discrete(0, 4).toString(),
 			rng.probability(0.2));
+		this.macrolanguage = this;
 
 		this.rng = rng;
 		this.diversity = Math.floor(rng.exponential(5)); // choose how much lexical suffixing to do
@@ -209,22 +211,24 @@ export class ProtoLang extends Language {
 		return DEFAULT_ACENTE.apply(new Word(mul.concat(ending), this));
 	}
 
-	getAncestor(n: number): Language {
+	getAncestor(n: number): Lect {
 		return this;
 	}
 
-	isIntelligible(lang: Language): boolean {
+	isIntelligible(lang: Lect): boolean {
 		return this === lang;
 	}
 }
 
-export class DeuteroLang extends Language {
-	private readonly parent: Language;
+export class Dialect extends Lect {
+	private readonly parent: Lect;
 	private readonly changes: Proces[];
 
-	constructor(parent: Language, rng: Random) {
+	constructor(parent: Lect, rng: Random) {
 		super(parent.defaultStyle, parent.rightBranching);
 		this.parent = parent;
+		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
+
 		this.changes = [];
 		for (const {chanse, proces} of PROCES_CHUZABLE)
 			if (rng.probability(chanse))
@@ -241,12 +245,10 @@ export class DeuteroLang extends Language {
 		return lekse;
 	}
 
-	getAncestor(n: number): Language {
+	getAncestor(n: number): Lect {
 		if (n <= 0)
 			return this;
 		else
 			return this.parent.getAncestor(n - 1);
 	}
-
-
 }

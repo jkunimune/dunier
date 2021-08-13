@@ -23,7 +23,7 @@
  */
 import "../lib/jquery.min.js";
 import {Random} from "../util/random.js";
-import {DeuteroLang, Language, ProtoLang, WordType} from "../language/language.js";
+import {Dialect, Lect, ProtoLang, WordType} from "../language/lect.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 
@@ -39,9 +39,9 @@ $('#nam-apply').on('click', () => { // TODO: back button
 	console.log("jena nam...");
 
 	const rng = new Random(seed);
-	let bax: Language = new ProtoLang(rng);
+	let bax: Lect = new ProtoLang(rng);
 	for (let i = 0; i < 30; i ++)
-		bax = new DeuteroLang(bax, rng);
+		bax = new Dialect(bax, rng);
 
 	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
 
