@@ -32,7 +32,7 @@ import {format} from "../util/util.js";
  */
 export function generateFactSheet(doc: any, topick: Civ) {
 	doc.setProperties({
-		title: format('{0}', 'menu.data'),
+		title: format('param.data'),
 		creator: 'dunia hamar',
 	});
 	doc.deletePage(0);
