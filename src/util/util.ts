@@ -100,7 +100,7 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
 	for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
 		let convertedArg: string;
 		if (args[i] instanceof Word) {
-			convertedArg = (<Word>args[i]).toString(); // transcribe words using the specified style TODO: use the user-specified style
+			convertedArg = (<Word>args[i]).toString(); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
 		}
 		else if (typeof args[i] === 'string') {
 			convertedArg = USER_STRINGS.get(<string>args[i]); // look up strings in the resource file

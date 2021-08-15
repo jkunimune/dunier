@@ -23,7 +23,7 @@
  */
 import {Random} from "../util/random.js";
 import {format} from "../util/util.js";
-import {Dialect, Lect, ProtoLang} from "../language/lect.js";
+import {Dialect, Lect, LogaTipo, ProtoLang} from "../language/lect.js";
 import {loadTSV} from "../util/fileio.js";
 import {Nodo} from "../planet/surface.js";
 import {Civ} from "./civ.js";
@@ -36,7 +36,7 @@ class Sif {
 	private readonly forbiddenBiomes: Set<string>; // biomes where this cannot be used
 	private readonly technology: number; // the tech level needed for this
 
-	constructor(header: string, subheader: string, args: string[]) { // TODO: I still need to have it generate new diagetick words for some of these
+	constructor(header: string, subheader: string, args: string[]) {
 		this.nam = `data.${header}.${subheader}.${args[0]}`;
 		this.classe = subheader;
 		this.requirements = new Set<string>();
@@ -81,15 +81,19 @@ class Sif {
 
 const HEADERS: string[] = [];
 const CHUZABLE: Sif[][][] = [];
+const LOGA_INDEX: number[] = [];
 let header = null, subheader = null;
 for (const row of loadTSV('../../res/kultur.tsv')) {
 	if (row[0] === '#') {
 		header = row[1];
+		if (LOGA_INDEX.length < HEADERS.length)
+			LOGA_INDEX.push(null);
 		HEADERS.push(`data.${header}`);
 		CHUZABLE.push([]);
 	}
 	else if (row[0] === '##') {
 		subheader = row[1];
+		LOGA_INDEX.push(CHUZABLE[CHUZABLE.length-1].length);
 		CHUZABLE[CHUZABLE.length-1].push([]);
 	}
 	else {
@@ -168,8 +172,11 @@ export class Kultur {
 	 */
 	toString(): string {
 		let str = "";
-		for (let i = 0; i < this.sif.length; i ++) { // TODO: only show some informacion for each country
-			str += format(HEADERS[i], ...this.sif[i]);
+		for (let i = 0; i < this.sif.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
+			const attributes = this.sif[i];
+			const madeUpWord = (LOGA_INDEX[i] === null) ? null : this.lect.getName(attributes[LOGA_INDEX[i]].nam, LogaTipo.ALO);
+			str += format(HEADERS[i],
+				...attributes, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
 		}
 		return str.trim();
 	}

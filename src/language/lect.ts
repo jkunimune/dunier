@@ -39,12 +39,12 @@ export class LogaTipo extends Enumify {
 	public readonly index: number;
 	public readonly numClassifiers: number;
 
-	static JAN = new LogaTipo(0, 0);
-	static FAMILI = new LogaTipo(1, 12);
-	static SITI = new LogaTipo(2, 6);
-	static BASHA = new LogaTipo(3, 1);
-	static DESHA = new LogaTipo(4, 3);
-	static NAS = new LogaTipo(5, 1);
+	static NAS = new LogaTipo(0, 1);
+	static BASHA = new LogaTipo(1, 1);
+	static DESHA = new LogaTipo(2, 3);
+	static SITI = new LogaTipo(3, 6);
+	static FAMILI = new LogaTipo(4, 12);
+	static ALO = new LogaTipo(5, 0);
 	static _ = LogaTipo.closeEnum();
 
 	constructor(index: number, numClassifiers: number) {
@@ -69,10 +69,10 @@ export abstract class Lect {
 
 	/**
 	 * get a name from this language. the style of name and valid indices depend on the WordType:
-	 * @param i the index of the name
+	 * @param label the index of the name
 	 * @param tipo the type of name
 	 */
-	abstract getName(i: number, tipo: LogaTipo): Word;
+	abstract getName(label: string, tipo: LogaTipo): Word;
 
 	/**
 	 * get the language that this was n timesteps ago
@@ -106,7 +106,7 @@ export class ProtoLang extends Lect {
 	private readonly nVowel: number; // the number of vowels in this langugage
 	private readonly nMedial: number; // the numer of medials in this language
 	private readonly complexity: number; // the approximate amount of information in one syllable
-	private readonly name: Map<LogaTipo, Map<number, Word>>; // the word references of each type
+	private readonly name: Map<LogaTipo, Map<string, Word>>; // the word references of each type
 	private readonly classifiers: Map<LogaTipo, Fon[][]>; // the noun classifiers
 	private readonly fin: Fon[][]; // the noun endings
 
@@ -125,31 +125,27 @@ export class ProtoLang extends Lect {
 
 		this.fin = [];
 		for (let i = 0; i < rng.discrete(0, 6); i ++) // choose how much basic suffixing to do
-			this.fin.push(this.noveMul(-i-1, 0.5));
+			this.fin.push(this.noveMul('fmncrh'[i], 0.5));
 
 		this.diversity = rng.uniform(0, 1); // choose how much lexical suffixing to do
-		this.name = new Map<LogaTipo, Map<number, Word>>();
+		this.name = new Map<LogaTipo, Map<string, Word>>();
 		this.classifiers = new Map<LogaTipo, Fon[][]>();
-		let j = -this.fin.length - 1;
+		let j = - 1;
 		for (const wordType of LogaTipo) {
-			this.name.set(<LogaTipo>wordType, new Map<number, Word>());
+			this.name.set(<LogaTipo>wordType, new Map<string, Word>());
 			this.classifiers.set(<LogaTipo>wordType, []);
 			for (let i = 0; i < Math.round(this.diversity*(<LogaTipo>wordType).numClassifiers); i ++) // TODO countries can be named after cities
-				this.classifiers.get(<LogaTipo>wordType).push(this.noveLoga(j --, 1.5/this.complexity));
+				this.classifiers.get(<LogaTipo>wordType).push(
+					this.noveLoga(`${wordType}${i}`, 1.5/this.complexity));
 		}
 		if (this.diversity > 0.4 && rng.probability(.5))
 			this.classifiers.get(LogaTipo.DESHA)[0] = ipa("ia"); // this is sometimes here
 	}
 
-	/**
-	 * create a new noun frase to describe a person, country, city, etc.
-	 * @param index the pseudorandom seed for this word
-	 * @param tipo the type of noun classifier this will have attachd
-	 */
-	getName(index: number, tipo: LogaTipo): Word {
-		if (!this.name.get(tipo).has(index)) {
+	getName(label: string, tipo: LogaTipo): Word {
+		if (!this.name.get(tipo).has(label)) {
 			const base = this.noveLoga(
-				index + 1000*tipo.index,
+				label,
 				4/this.complexity); // get the base
 
 			let name;
@@ -163,10 +159,10 @@ export class ProtoLang extends Lect {
 					name = base.concat([Fon.PAUSE], classifier);
 			}
 
-			this.name.get(tipo).set(index,
+			this.name.get(tipo).set(label,
 				DEFAULT_ACENTE.apply(new Word(name, this)));
 		}
-		return this.name.get(tipo).get(index);
+		return this.name.get(tipo).get(label);
 	}
 
 	/**
@@ -174,7 +170,7 @@ export class ProtoLang extends Lect {
 	 * @param index the pseudorandom seed for this root
 	 * @param syllables the number of syllables in the root
 	 */
-	noveLoga(index: number, syllables: number): Fon[] {
+	noveLoga(index: string, syllables: number): Fon[] {
 		const base = this.noveMul(index, syllables);
 		if (this.fin.length === 0)
 			return base;
@@ -192,7 +188,7 @@ export class ProtoLang extends Lect {
 	 * @param index the pseudorandom seed for this root
 	 * @param syllables the number of syllables in this root
 	 */
-	noveMul(index: number, syllables: number): Fon[] {
+	noveMul(index: string, syllables: number): Fon[] {
 		const syllableNumber = Math.ceil(syllables);
 		const syllableSize = syllables/syllableNumber;
 		let mul = [];
@@ -233,8 +229,8 @@ export class Dialect extends Lect {
 				this.changes.push(proces);
 	}
 
-	getName(i: number, tipo: LogaTipo) {
-		return this.applyChanges(this.parent.getName(i, tipo));
+	getName(label: string, tipo: LogaTipo) {
+		return this.applyChanges(this.parent.getName(label, tipo));
 	}
 
 	applyChanges(lekse: Word): Word {
