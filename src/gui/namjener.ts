@@ -48,8 +48,8 @@ $('#nam-apply').on('click', () => { // TODO: back button
 	for (const [i0, namliste] of [[0, $('#nam-liste-1')], [NUM_ROWS, $('#nam-liste-2')]]) {
 		namliste.empty();
 		for (let i = 0; i < NUM_ROWS; i++) {
-			const jannam = bax.getName(i0 + i, LogaTipo.ALO);
-			const familnam = bax.getName(i0 + Math.floor(i/3), LogaTipo.FAMILI);
+			const jannam = bax.getName(`firstname${i0 + i}`, LogaTipo.ALO);
+			const familnam = bax.getName(`lastname${i0 + Math.floor((i0 + i)/2.21)}`, LogaTipo.FAMILI);
 			let holnam;
 			if (type == 1)
 				holnam = `${jannam} ${familnam}`;

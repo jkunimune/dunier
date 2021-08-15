@@ -130,7 +130,6 @@ export class ProtoLang extends Lect {
 		this.diversity = rng.uniform(0, 1); // choose how much lexical suffixing to do
 		this.name = new Map<LogaTipo, Map<string, Word>>();
 		this.classifiers = new Map<LogaTipo, Fon[][]>();
-		let j = - 1;
 		for (const wordType of LogaTipo) {
 			this.name.set(<LogaTipo>wordType, new Map<string, Word>());
 			this.classifiers.set(<LogaTipo>wordType, []);
