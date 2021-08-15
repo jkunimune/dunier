@@ -45,11 +45,12 @@ $('#nam-apply').on('click', () => { // TODO: back button
 
 	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
 
-	for (const [i0, namliste] of [[0, $('#nam-liste-1')], [NUM_ROWS, $('#nam-liste-2')]]) {
+	let firstSeed = 0, lastSeed = 0;
+	for (const namliste of [$('#nam-liste-1'), $('#nam-liste-2')]) {
 		namliste.empty();
 		for (let i = 0; i < NUM_ROWS; i++) {
-			const jannam = bax.getName(`firstname${i0 + i}`, LogaTipo.ALO);
-			const familnam = bax.getName(`lastname${i0 + Math.floor((i0 + i)/2.21)}`, LogaTipo.FAMILI);
+			const jannam = bax.getName(`firstname${firstSeed}`, LogaTipo.ALO);
+			const familnam = bax.getName(`lastname${lastSeed}`, LogaTipo.FAMILI);
 			let holnam;
 			if (type == 1)
 				holnam = `${jannam} ${familnam}`;
@@ -62,6 +63,9 @@ $('#nam-apply').on('click', () => { // TODO: back button
 			listem.setAttribute('class', 'list-group-item');
 			listem.textContent = holnam;
 			namliste.append(listem);
+
+			firstSeed += 1;
+			if (rng.probability(0.5)) lastSeed += 1;
 		}
 	}
 
