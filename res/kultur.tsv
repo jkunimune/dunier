@@ -1,211 +1,211 @@
-#	fuku	0.5
-##	jan
-people			class=facehair
-men				class=facehair
-women
-elders			class=facehair
-soldiers		class=facehair
-leaders			class=facehair
-clerics			class=facehair
-aristocrats		class=facehair
-rich			class=facehair		tech=-700
-##	kesh	new_word
-short			require=gravity
-medium			require=gravity
-long			require=gravity
-bushy			require=kinky
-bun				class=hairdo
-tail			class=hairdo		require=gravity
-braid			class=hairdo
-tails			class=hairdo		require=gravity
-knots			class=hairdo
-braids			class=hairdo
-elaborate		class=hairdo
-shaved
-partial			class=hairdo
-lateral			class=hairdo
-ornamented		class=hairdo
-sculpted		class=hairdo
-sideburns		class=hairdo		class=facehair
-buzzed								tech=1900
-greased			class=hairdo		tech=1000
-colorful		class=hairdo		tech=1850
-##	tipe
-turban			class=fabric
-hairpin			class=fabric		require=hairdo
-vest			class=fabric
-mask			class=fabric
-veil			class=fabric
-sash			class=fabric
-skirt			class=fabric
-drape			class=fabric
-cape			class=fabric
-tunic			class=fabric
-pants			class=fabric	biome!=barxojangal	biome!=piristan
-sleve			class=fabric	biome!=barxojangal	biome!=piristan
-scarf			class=fabric	biome!=barxojangal	biome!=piristan
-headscarf		class=fabric	biome!=barxojangal	biome!=piristan
-shawl			class=fabric	biome!=barxojangal	biome!=piristan
-coat			class=fabric	biome!=barxojangal	biome!=piristan
-robe			class=fabric	biome!=barxojangal	biome!=piristan
-armor							biome!=barxojangal	biome!=piristan
-hat
-big_hat
-small_hat
-amulet
-headdress
-shoe
-pendant
-wig
-belt
-earring
-bracelet
-cord
-eyeware			tech=1100
-##	sif
-colorful
-sapphire
-ruby
-emerald
-amber
-golden
-silver
-white
-black
-intricate
-feathered
-sequined
-shiny
-extravagant
-jeweled
-decorated
-ceremonial
-calligraphic
-ribboned
-fluorescent		tech=1852
-glowing
-pointy
-fur
-thick			require=fabric
-leather			require=fabric
-tiedyed			require=fabric
-flowing			require=fabric
-loose			require=fabric
-pleated			require=fabric
-layered			require=fabric
-voluminous		require=fabric
-embroidered		require=fabric
-patterned		require=fabric
-#	dom	0.5
-##	mur
-pelt
-cloth
-thatching		require=sedentary	biome!=registan
-wood			require=sedentary	biome!=registan
-mud				require=sedentary
-mudbrick		require=sedentary
-cob				require=sedentary
-adobe			require=sedentary
-clay			require=sedentary
-marble			require=sedentary	tech=3000
-concrete		require=sedentary	tech=-800
-steel			require=sedentary	tech=3000
-##	chate
-thatching		biome!=registan
-claytile
-terracottatile
-slatetile
-metal			tech=3000
-metaltile		tech=3000
-#	yam	0.5
-##	sate
-morning
-midday
-afternoon
-evening
-##	sif
-bland
-sweet
-bitter
-sour
-salty
-savory
-spicy
-smoked
-steamed
-fried
-baked
-saucy
-chewy
-dry
-liquid
-hot				biome!=barxojangal	biome!=registan	biome!=piristan
-cold			tech=1911	biome!=tundre
-##	baze	new_word
-cereal
-rice			biome!=tundre
-tuber
-corn			biome!=tundre
-meat
-fish
-fruit
-nuts
-beans
-cheese			require=lactase
-fermented
-insect
-alcohol
-caffeine
-tea
-dessert
-gendered
-group
-#	muzika	0.5
-##	sif
-tritonic
-pentatonic
-heptatonic
-chromatic
-quarter
-fifths
-harmony
-rapid
-slow
-asymmetric
-polyrhythm
-audience
-fluid
-aggressive
-energetic
-narrative
-repetition
-##	klas
-percussion		class=perc
-vocals			class=voice
-wind			class=wind
-string			class=string
-##	tul	new_word
-pitched_perc	forbid=perc
-drums			forbid=perc
-bell			forbid=perc
-cymbals			forbid=perc
-rattle			forbid=perc
-gourd			forbid=perc
-choir			forbid=voice
-overtone		forbid=voice
-ululating		forbid=voice
-falsetto		forbid=voice
-chanting		forbid=voice
-short_horn		forbid=wind
-long_horn		forbid=wind
-panpipe			forbid=wind
-reed			forbid=wind
-flute			forbid=wind
-plucked			forbid=string
-strummed		forbid=string
-perc_string		forbid=string		tech=-700
-bowed			forbid=string		tech=700
-saxophones		forbid=wind			tech=1840
-electronic		forbid=synth		tech=1910
-synthesizer		forbid=synth		tech=1970
-vocaloids		forbid=synth		tech=2005
+# fuku	0.5
+  ## jan
+    people			class=facehair
+    men				class=facehair
+    women
+    elders			class=facehair
+    soldiers		class=facehair
+    leaders			class=facehair
+    clerics			class=facehair
+    aristocrats		class=facehair
+    rich			class=facehair		tech=-700
+  ## kesh	new_word
+    short			require=gravity
+    medium			require=gravity
+    long			require=gravity
+    bushy			require=kinky
+    bun				class=hairdo
+    tail			class=hairdo		require=gravity
+    braid			class=hairdo
+    tails			class=hairdo		require=gravity
+    knots			class=hairdo
+    braids			class=hairdo
+    elaborate		class=hairdo
+    shaved
+    partial			class=hairdo
+    lateral			class=hairdo
+    ornamented		class=hairdo
+    sculpted		class=hairdo
+    sideburns		class=hairdo		class=facehair
+    buzzed								tech=1900
+    greased			class=hairdo		tech=1000
+    colorful		class=hairdo		tech=1850
+  ## tipe
+    turban			class=fabric
+    hairpin			class=fabric		require=hairdo
+    vest			class=fabric
+    mask			class=fabric
+    veil			class=fabric
+    sash			class=fabric
+    skirt			class=fabric
+    drape			class=fabric
+    cape			class=fabric
+    tunic			class=fabric
+    pants			class=fabric	biome!=barxojangal	biome!=piristan
+    sleve			class=fabric	biome!=barxojangal	biome!=piristan
+    scarf			class=fabric	biome!=barxojangal	biome!=piristan
+    headscarf		class=fabric	biome!=barxojangal	biome!=piristan
+    shawl			class=fabric	biome!=barxojangal	biome!=piristan
+    coat			class=fabric	biome!=barxojangal	biome!=piristan
+    robe			class=fabric	biome!=barxojangal	biome!=piristan
+    armor							biome!=barxojangal	biome!=piristan
+    hat
+    big_hat
+    small_hat
+    amulet
+    headdress
+    shoe
+    pendant
+    wig
+    belt
+    earring
+    bracelet
+    cord
+    eyeware			tech=1100
+  ## sif
+    colorful
+    sapphire
+    ruby
+    emerald
+    amber
+    golden
+    silver
+    white
+    black
+    intricate
+    feathered
+    sequined
+    shiny
+    extravagant
+    jeweled
+    decorated
+    ceremonial
+    calligraphic
+    ribboned
+    fluorescent		tech=1852
+    glowing
+    pointy
+    fur
+    thick			require=fabric
+    leather			require=fabric
+    tiedyed			require=fabric
+    flowing			require=fabric
+    loose			require=fabric
+    pleated			require=fabric
+    layered			require=fabric
+    voluminous		require=fabric
+    embroidered		require=fabric
+    patterned		require=fabric
+# dom	0.5
+  ## mur
+    pelt
+    cloth
+    thatching		require=sedentary	biome!=registan
+    wood			require=sedentary	biome!=registan
+    mud				require=sedentary
+    mudbrick		require=sedentary
+    cob				require=sedentary
+    adobe			require=sedentary
+    clay			require=sedentary
+    marble			require=sedentary	tech=3000
+    concrete		require=sedentary	tech=-800
+    steel			require=sedentary	tech=3000
+  ## chate
+    thatching		biome!=registan
+    claytile
+    terracottatile
+    slatetile
+    metal			tech=3000
+    metaltile		tech=3000
+# yam	0.5
+  ## sate
+    morning
+    midday
+    afternoon
+    evening
+  ## sif
+    bland
+    sweet
+    bitter
+    sour
+    salty
+    savory
+    spicy
+    smoked
+    steamed
+    fried
+    baked
+    saucy
+    chewy
+    dry
+    liquid
+    hot				biome!=barxojangal	biome!=registan	biome!=piristan
+    cold			tech=1911	biome!=tundre
+  ## baze	new_word
+    cereal
+    rice			biome!=tundre
+    tuber
+    corn			biome!=tundre
+    meat
+    fish
+    fruit
+    nuts
+    beans
+    cheese			require=lactase
+    fermented
+    insect
+    alcohol
+    caffeine
+    tea
+    dessert
+    gendered
+    group
+# muzika	0.5
+  ## sif
+    tritonic
+    pentatonic
+    heptatonic
+    chromatic
+    quarter
+    fifths
+    harmony
+    rapid
+    slow
+    asymmetric
+    polyrhythm
+    audience
+    fluid
+    aggressive
+    energetic
+    narrative
+    repetition
+  ## klas
+    percussion		class=perc
+    vocals			class=voice
+    wind			class=wind
+    string			class=string
+  ## tul	new_word
+    pitched_perc	forbid=perc
+    drums			forbid=perc
+    bell			forbid=perc
+    cymbals			forbid=perc
+    rattle			forbid=perc
+    gourd			forbid=perc
+    choir			forbid=voice
+    overtone		forbid=voice
+    ululating		forbid=voice
+    falsetto		forbid=voice
+    chanting		forbid=voice
+    short_horn		forbid=wind
+    long_horn		forbid=wind
+    panpipe			forbid=wind
+    reed			forbid=wind
+    flute			forbid=wind
+    plucked			forbid=string
+    strummed		forbid=string
+    perc_string		forbid=string		tech=-700
+    bowed			forbid=string		tech=700
+    saxophones		forbid=wind			tech=1840
+    electronic		forbid=synth		tech=1910
+    synthesizer		forbid=synth		tech=1970
+    vocaloids		forbid=synth		tech=2005

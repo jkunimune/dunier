@@ -89,21 +89,22 @@ class Sif {
 	}
 }
 
-const HEADERS: string[] = [];
+const HEADERS: string[] = []; // read in the array of attributes from static res
 const CHUZABLE: Sif[][][] = [];
 const LOGA_INDEX: number[] = [];
 let header = null, subheader = null;
 for (const row of loadTSV('../../res/kultur.tsv')) {
-	if (row[0] === '#') {
-		header = row[1];
+	row[0] = row[0].replace(/^ +/, ''); // start by ignoring my indentacion
+	if (row[0].startsWith('# ')) {
+		header = row[0].slice(2);
 		if (LOGA_INDEX.length < HEADERS.length)
 			LOGA_INDEX.push(null);
 		HEADERS.push(`data.${header}`);
 		CHUZABLE.push([]);
 	}
-	else if (row[0] === '##') {
-		subheader = row[1];
-		if (row.length >= 2 && row[2] === 'new_word')
+	else if (row[0].startsWith('## ')) {
+		subheader = row[0].slice(3);
+		if (row.length >= 2 && row[1] === 'new_word')
 			LOGA_INDEX.push(CHUZABLE[CHUZABLE.length-1].length);
 		CHUZABLE[CHUZABLE.length-1].push([]);
 	}
@@ -112,7 +113,6 @@ for (const row of loadTSV('../../res/kultur.tsv')) {
 		CHUZABLE[CHUZABLE.length-1][CHUZABLE[CHUZABLE.length-1].length-1].push(sif);
 	}
 }
-console.log(CHUZABLE);
 
 
 const DRIFT_RATE = .05; // fraccion of minor attributes that change each century
@@ -142,6 +142,7 @@ export class Kultur {
 		if (parent !== null) {
 			this.klas = new Set<string>(parent.klas);
 			this.homeland = (homeland === null) ? parent.homeland : homeland;
+			this.lect = new Dialect(parent.lect, rng);
 			for (let i = 0; i < CHUZABLE.length; i ++) {
 				this.sif.push(parent.sif[i].slice()); // base this off of it
 				for (let j = 0; j < CHUZABLE[i].length; j ++) {
@@ -151,7 +152,6 @@ export class Kultur {
 						this.klas.add(this.sif[i][j].klas);
 					}
 				}
-				this.lect = new Dialect(parent.lect, rng);
 			}
 		}
 		else {
