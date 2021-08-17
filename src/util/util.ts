@@ -99,6 +99,11 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
 	let format = USER_STRINGS.get(sentence);
 	for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
 		let convertedArg: string;
+		if (args[i] === null || args[i] == undefined) {
+			if (sentence.includes(`{${i}}`))
+				throw `${args[i]} was passd as the ${i}° argument.  this is only allowd when the argument is absent from the format string, which was not the case here.`;
+			continue;
+		}
 		if (args[i] instanceof Word) {
 			convertedArg = (<Word>args[i]).toString(); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
 		}

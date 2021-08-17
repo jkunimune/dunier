@@ -30,28 +30,35 @@ import {Civ} from "./civ.js";
 
 
 class Sif {
+	public readonly kode: string;
 	public readonly nam: string;
-	public readonly classe: string; // describing classes
-	private readonly requirements: Set<string>; // classes that must be present for this
+	public readonly klas: string; // describing classes
+	private readonly requiredKlas: Set<string>; // classes that must be present for this
+	public readonly forbiddenKlas: Set<string>; // class that may not be present for this
 	private readonly forbiddenBiomes: Set<string>; // biomes where this cannot be used
 	private readonly technology: number; // the tech level needed for this
 
 	constructor(header: string, subheader: string, args: string[]) {
-		this.nam = `data.${header}.${subheader}.${args[0]}`;
-		this.classe = subheader;
-		this.requirements = new Set<string>();
+		this.kode = `data.${header}.${subheader}.${args[0]}`;
+		this.nam = args[0];
+		this.klas = subheader;
+		this.requiredKlas = new Set<string>();
+		this.forbiddenKlas = new Set<string>();
 		this.forbiddenBiomes = new Set<string>();
 		this.technology = 0;
 		for (let i = 1; i < args.length; i ++) {
 			if (args[i].length > 0) {
 				if (args[i].startsWith('class='))
-					this.classe = args[i].slice(6);
+					this.klas = args[i].slice(6);
 				else if (args[i].startsWith('require='))
-					this.requirements.add(args[i].slice(8));
+					this.requiredKlas.add(args[i].slice(8));
+				else if (args[i].startsWith('forbid='))
+					this.forbiddenKlas.add(args[i].slice(7));
 				else if (args[i].startsWith('biome!='))
 					this.forbiddenBiomes.add(args[i].slice(7));
 				else if (args[i].startsWith('tech='))
-					this.technology = Number.parseFloat(args[i].slice(5));
+					this.technology = Math.exp(
+						(Number.parseFloat(args[i].slice(5)) + 3000)/1400);
 				else
 					console.log(`WARN: I'm ignoring ${args[i]} for now.`);
 			}
@@ -63,8 +70,11 @@ class Sif {
 	 * @param host
 	 */
 	isCompatible(host: Kultur): boolean {
-		for (const classe of this.requirements)
-			if (!host.classes.has(classe))
+		for (const klas of this.requiredKlas)
+			if (!host.klas.has(klas))
+				return false;
+		for (const klas of this.forbiddenKlas)
+			if (host.klas.has(klas))
 				return false;
 		for (const biome of this.forbiddenBiomes)
 			if (host.homeland.biome === biome)
@@ -75,7 +85,7 @@ class Sif {
 	}
 
 	toString(): string {
-		return this.nam;
+		return this.kode;
 	}
 }
 
@@ -93,7 +103,8 @@ for (const row of loadTSV('../../res/kultur.tsv')) {
 	}
 	else if (row[0] === '##') {
 		subheader = row[1];
-		LOGA_INDEX.push(CHUZABLE[CHUZABLE.length-1].length);
+		if (row.length >= 2 && row[2] === 'new_word')
+			LOGA_INDEX.push(CHUZABLE[CHUZABLE.length-1].length);
 		CHUZABLE[CHUZABLE.length-1].push([]);
 	}
 	else {
@@ -101,6 +112,7 @@ for (const row of loadTSV('../../res/kultur.tsv')) {
 		CHUZABLE[CHUZABLE.length-1][CHUZABLE[CHUZABLE.length-1].length-1].push(sif);
 	}
 }
+console.log(CHUZABLE);
 
 
 const DRIFT_RATE = .05; // fraccion of minor attributes that change each century
@@ -111,7 +123,7 @@ const DRIFT_RATE = .05; // fraccion of minor attributes that change each century
 export class Kultur {
 	private readonly sif: Sif[][];
 	// private emphasis: boolean[];
-	public readonly classes: Set<string>;
+	public readonly klas: Set<string>;
 	public readonly homeland: Nodo;
 	public readonly government: Civ;
 	public readonly lect: Lect;
@@ -128,29 +140,30 @@ export class Kultur {
 		this.sif = [];
 		this.government = government;
 		if (parent !== null) {
-			this.classes = parent.classes;
+			this.klas = new Set<string>(parent.klas);
 			this.homeland = (homeland === null) ? parent.homeland : homeland;
 			for (let i = 0; i < CHUZABLE.length; i ++) {
 				this.sif.push(parent.sif[i].slice()); // base this off of it
 				for (let j = 0; j < CHUZABLE[i].length; j ++) {
 					if (!this.sif[i][j].isCompatible(this) || rng.probability(DRIFT_RATE)) { // and occasionally
-						this.classes.delete(this.sif[i][j].classe);
+						this.klas.delete(this.sif[i][j].klas);
 						this.sif[i][j] = this.randomCompatibleSif(i, j, rng); // make a modificacion
-						this.classes.add(this.sif[i][j].classe);
+						this.klas.add(this.sif[i][j].klas);
 					}
 				}
 				this.lect = new Dialect(parent.lect, rng);
 			}
 		}
 		else {
-			this.classes = new Set<string>();
+			this.klas = new Set<string>();
 			this.homeland = homeland;
-			for (let i = 0; i < CHUZABLE.length; i ++) {
+			this.lect = new ProtoLang(rng); // create a new language from scratch
+			for (let i = 0; i < CHUZABLE.length; i ++) { // make up a whole new culture
 				this.sif.push([]);
 				for (let j = 0; j < CHUZABLE[i].length; j ++) {
-					this.sif[i].push(this.randomCompatibleSif(i, j, rng));
+					this.sif[i].push(this.randomCompatibleSif(i, j, rng)); // pick all these things freely
+					this.klas.add(this.sif[i][j].klas); // be sure to get note their classes to keep everything compatible
 				}
-				this.lect = new ProtoLang(rng); // create a new language from scratch
 			}
 		}
 	}

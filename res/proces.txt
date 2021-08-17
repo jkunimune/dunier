@@ -119,6 +119,7 @@
 020 mute [ +GLIDE ] > / [ +SPOKEN -VOCOID ] _ [ +UNSTRESS ]					% falling diphthong reduction
 020 mute [ +GLIDE ] > / [ +UNSTRESS ] _										% rising diphthong reduction
 020 mute [ +SHORT -PRIMARY +VOWEL ] > [ +LAX ] /							% length-based laxing
+010 mute [ +UNSTRESS +VOWEL ] > [ +LOWER ] / _ #							% no ending in high vowels
 002 mute [ +UNSTRESS ] > [ +UNROUND ] /										% stress-based unrounding
 010 mute [ +UNSTRESS +!PALATAL -HIGH +VOWEL ] > [ +RAISED +LAX ] /			% weird ɛ~ɪ thing from Haw and Rus
 100 mute [ +NONSYLLAB ] > [ +SHORT ] /										% loss of gemination
