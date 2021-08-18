@@ -41,7 +41,7 @@ class Sif {
 	constructor(header: string, subheader: string, args: string[]) {
 		this.kode = `data.${header}.${subheader}.${args[0]}`;
 		this.nam = args[0];
-		this.klas = subheader;
+		this.klas = this.nam;
 		this.requiredKlas = new Set<string>();
 		this.forbiddenKlas = new Set<string>();
 		this.forbiddenBiomes = new Set<string>();

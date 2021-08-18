@@ -1,38 +1,17 @@
 # fuku	0.5
   ## jan
-    people			class=facehair
-    men				class=facehair
+    people
+    men
     women
-    elders			class=facehair
-    soldiers		class=facehair
-    leaders			class=facehair
-    clerics			class=facehair
-    aristocrats		class=facehair
-    rich			class=facehair		tech=-700
-  ## kesh	new_word
-    short			require=gravity
-    medium			require=gravity
-    long			require=gravity
-    bushy			require=kinky
-    bun				class=hairdo
-    tail			class=hairdo		require=gravity
-    braid			class=hairdo
-    tails			class=hairdo		require=gravity
-    knots			class=hairdo
-    braids			class=hairdo
-    elaborate		class=hairdo
-    shaved
-    partial			class=hairdo
-    lateral			class=hairdo
-    ornamented		class=hairdo
-    sculpted		class=hairdo
-    sideburns		class=hairdo		class=facehair
-    buzzed								tech=1900
-    greased			class=hairdo		tech=1000
-    colorful		class=hairdo		tech=1850
-  ## tipe
+    elders
+    soldiers
+    leaders
+    clerics
+    aristocrats
+    rich			tech=-700
+  ## tipe	new_word
     turban			class=fabric
-    hairpin			class=fabric		require=hairdo
+    hairpin			class=fabric		class=hairpin
     vest			class=fabric
     mask			class=fabric
     veil			class=fabric
@@ -96,6 +75,35 @@
     voluminous		require=fabric
     embroidered		require=fabric
     patterned		require=fabric
+# kesh
+  ## jan
+    people			forbid=people
+    men				forbid=men
+    women			forbid=women		class=nofacialhair
+    soldiers		forbid=soldiers
+    clerics			forbid=clerics
+    aristocrats		forbid=aristocrats
+  ## yang	new_word
+    short			forbid=hairpin
+    medium			forbid=hairpin		forbid=kinky
+    long			forbid=hairpin
+    bushy			forbid=hairpin		require=kinky
+    bun
+    tail			forbid=kinky
+    braid
+    tails			forbid=kinky
+    knots
+    braids
+    elaborate
+    shaved			forbid=hairpin
+    partial
+    lateral
+    ornamented
+    sculpted
+    sideburns		forbid=nofacehair
+    buzzed			forbid=hairpin		tech=1900
+    greased			tech=1000
+    colorful		tech=1850
 # dom	0.5
   ## mur
     pelt
@@ -131,10 +139,6 @@
     salty
     savory
     spicy
-    smoked
-    steamed
-    fried
-    baked
     saucy
     chewy
     dry
@@ -162,8 +166,9 @@
     group
 # muzika	0.5
   ## sif
-    tritonic
+    tetratonic
     pentatonic
+    hexatonic
     heptatonic
     chromatic
     quarter
@@ -180,22 +185,22 @@
     narrative
     repetition
   ## klas
-    percussion		class=perc
-    vocals			class=voice
-    wind			class=wind
-    string			class=string
+    percussion
+    vocals
+    wind
+    string
   ## tul	new_word
-    pitched_perc	forbid=perc
-    drums			forbid=perc
-    bell			forbid=perc
-    cymbals			forbid=perc
-    rattle			forbid=perc
-    gourd			forbid=perc
-    choir			forbid=voice
-    overtone		forbid=voice
-    ululating		forbid=voice
-    falsetto		forbid=voice
-    chanting		forbid=voice
+    pitched_perc	forbid=percussion
+    drums			forbid=percussion
+    bell			forbid=percussion
+    cymbals			forbid=percussion
+    rattle			forbid=percussion
+    gourd			forbid=percussion
+    choir			forbid=vocals
+    overtone		forbid=vocals
+    ululating		forbid=vocals
+    falsetto		forbid=vocals
+    chanting		forbid=vocals
     short_horn		forbid=wind
     long_horn		forbid=wind
     panpipe			forbid=wind

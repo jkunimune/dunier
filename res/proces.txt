@@ -365,7 +365,7 @@
 002 mute [ -STRESS +VOCOID ] > / [ +SPOKEN ] _ #							% loss of final vowel
 005 mute [ -STRESS +VOWEL ] > / _ [ +VOWEL ]								% loss of hiatus
 005 mute [ +UNSTRESS +LAX ] > /												% loss of lax vowel
-005 mute [ +UNSTRESS +HIGH ] > /												% loss of high vowel
+005 mute [ +UNSTRESS +HIGH ] > /											% loss of high vowel
 500 mute [ -STRESS +VOICE +GLOT ] > /										% delete voiced glottal sounds
 100 mute [ -SPOKEN ] > /													% elision of pauses
 
