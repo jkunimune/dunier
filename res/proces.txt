@@ -97,6 +97,7 @@
 005 mute [ +LABIAL +NONSYLLAB +CLOSE ] > [ +LABIODENT +TAP ] /				% w > ⱱ
 100 mute [ +LABIAL +CONT +NONSYLLAB ] > w / [ -VOCOID ] _ [ +VOCOID ]		% v > w
 010 mute [ +UNROUND -LATERAL +CLOSE +NONSYLLAB ] > [ +FRIC ] /				% frication of approximants
+005 mute [ +DORSAL +STOP ] > [ +PALATAL +CLOSE ] / [ +VOWEL ] _ [ -VOCOID ]	% k > j in coda
 100 mute [ +LABIODENT +SONOR ] > [ +FRIC ] / [ -NONSYLLAB ] _				% frication of ʋ
 020 mute [ +!PALATAL +GLIDE ] > [ +FRIC ] / [ -NONSYLLAB ] _ [ +VOWEL ]		% frication of j
 010 mute [ +VOICE  +OCCL ] > [ +NASAL ] /
@@ -307,6 +308,7 @@
 020 mute [ +LABIAL +VOWEL ] > [ +UNROUND +PALATAL ] / [ +LABIAL +VOCOID ] _	% unrounding dissimilation
 010 mute [ +LONG +VOICE +STOP ] > [ +SHORT +NASAL ] [ +SHORT ] /			% dː > nd
 010 mute [ +VOWEL ] > [ +PALATAL ] / [ +LATERAL ] _ [ +LABIAL ]				% lub > lib
+010 mute [ +CORON +STOP ] > [ +TAP ] / [ +STOP ] _							% kt > kr
 
 %%	METATHESIS
 010 mute [ +VOWEL ] [ +LIQ ] > [ ]1 [ ]0 / [ -SONOR -CONT ] _				% gar > gra

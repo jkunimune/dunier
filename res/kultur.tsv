@@ -20,6 +20,7 @@
     drape			class=fabric
     cape			class=fabric
     tunic			class=fabric
+    belt			class=fabric
     pants			class=fabric	biome!=barxojangal	biome!=piristan
     sleve			class=fabric	biome!=barxojangal	biome!=piristan
     scarf			class=fabric	biome!=barxojangal	biome!=piristan
@@ -27,6 +28,7 @@
     shawl			class=fabric	biome!=barxojangal	biome!=piristan
     coat			class=fabric	biome!=barxojangal	biome!=piristan
     robe			class=fabric	biome!=barxojangal	biome!=piristan
+    dress			class=fabric	biome!=barxojangal	biome!=piristan
     armor							biome!=barxojangal	biome!=piristan
     hat
     big_hat
@@ -36,7 +38,6 @@
     shoe
     pendant
     wig
-    belt
     earring
     bracelet
     cord
@@ -70,6 +71,7 @@
     tiedyed			require=fabric
     flowing			require=fabric
     loose			require=fabric
+    tight			require=fabric
     pleated			require=fabric
     layered			require=fabric
     voluminous		require=fabric
@@ -104,6 +106,44 @@
     buzzed			forbid=hairpin		tech=1900
     greased			tech=1000
     colorful		tech=1850
+# yam	0.5
+  ## sif
+    bland
+    sweet
+    bitter
+    sour
+    salty
+    savory
+    spicy
+    pickled
+    smoked
+    steamed
+    fried
+    baked
+    saucy
+    chewy
+    dry
+    liquid
+    hot				biome!=barxojangal	biome!=registan	biome!=piristan
+    cold			tech=1911	biome!=tundre	biome!=taige
+  ## baze	new_word
+    cereal
+    rice			biome!=tundre
+    tuber
+    corn			biome!=tundre
+    meat
+    fish
+    fruit
+    nuts
+    beans
+    cheese			require=lactase
+    fermented
+    insect
+    alcohol
+    caffeine
+    tea
+    dessert
+    group
 # dom	0.5
   ## mur
     pelt
@@ -125,45 +165,126 @@
     slatetile
     metal			tech=3000
     metaltile		tech=3000
-# yam	0.5
-  ## sate
-    morning
-    midday
-    afternoon
-    evening
-  ## sif
-    bland
-    sweet
-    bitter
-    sour
-    salty
-    savory
-    spicy
-    saucy
-    chewy
-    dry
-    liquid
-    hot				biome!=barxojangal	biome!=registan	biome!=piristan
-    cold			tech=1911	biome!=tundre
-  ## baze	new_word
-    cereal
-    rice			biome!=tundre
-    tuber
-    corn			biome!=tundre
-    meat
-    fish
-    fruit
-    nuts
-    beans
-    cheese			require=lactase
-    fermented
-    insect
-    alcohol
-    caffeine
-    tea
-    dessert
-    gendered
-    group
+# bina	0.5
+  ## kul_she
+    color
+    bridge
+    gate
+    door
+    wall
+    ceiling			tech=3000
+    roof
+    window
+    eave
+    parapet
+    keystone
+    column
+    pedestal
+    turret
+    dome			tech=3000
+    arch			tech=3000
+    bracket			tech=3000
+    spire
+    minaret
+    aqueduct
+    bell
+    porch
+    courtyard
+    garden
+    fountain
+    sculpture
+    stucco			tech=3000
+    glass
+    utilitarianism
+  ## grafi_she
+    color			forbid=color		forbid=utilitarianism
+    bridge			forbid=bridge
+    gate			forbid=gate
+    door			forbid=door
+    wall			forbid=wall
+    ceiling			forbid=ceiling
+    window			forbid=window		forbid=utilitarianism
+    eave			forbid=eave
+    parapet			forbid=parapet
+    keystone		forbid=keystone
+    column			forbid=column
+    pedestal		forbid=pedestal
+    turret			forbid=turret
+    dome			forbid=dome			forbid=utilitarianism	tech=3000
+    arch			forbid=arch			forbid=utilitarianism	tech=3000
+    bracket			forbid=bracket		forbid=utilitarianism	tech=3000
+    spire			forbid=spire
+    minaret			forbid=minaret
+    aqueduct		forbid=aqueduct
+    bell			forbid=bell
+    porch			forbid=porch
+    fountain		forbid=fountain		forbid=utilitarianism
+  ## grafi	new_word
+    gods
+    spirits
+    plants
+    animals
+    birds
+    fish			biome!=registan
+    serpents
+    cats
+    dragons
+    flowers
+    trees			biome!=registan
+    fossils
+    rivers
+    stars
+    sun
+    maps
+    events
+    celebrities
+    politicians
+    commoners
+    monsters
+    shapes
+# sundar_shutu	0.5
+  ## yang
+    squares
+    circles
+    stars
+    swirls
+    hexagons
+    lines
+    tesselation
+    bright_colors
+    weird_colors
+    parallels
+    segments
+    outlines
+    weird_sun
+    weird_clouds
+    weird_ocean			require=coastal
+    people_no_arms
+    people_no_legs
+    people_no_nose
+    people_big_heads
+  ## she	new_word
+    ma
+    realism
+    scale
+    asymmetry
+    miniature
+    colossus
+    calligraphy
+    lighting
+    fractal
+    faces
+    cats
+    buddha
+    fraternity
+    mortality
+    fertility
+    piety
+    jihad
+    nature				forbid=people_no_arms	forbid=people_no_legs	forbid=people_no_nose	forbid=people_big_heads
+    technology
+    sex
+    romance
 # muzika	0.5
   ## sif
     tetratonic
