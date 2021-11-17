@@ -1,4 +1,4 @@
-# fuku	0.5
+# fuku	0.2
   ## jan
     people
     men
@@ -29,14 +29,13 @@
     coat			class=fabric	biome!=barxojangal	biome!=piristan
     robe			class=fabric	biome!=barxojangal	biome!=piristan
     dress			class=fabric	biome!=barxojangal	biome!=piristan
-    armor							biome!=barxojangal	biome!=piristan
     hat
     big_hat
     small_hat
     amulet
-    headdress
     shoe
     pendant
+    tail
     wig
     earring
     bracelet
@@ -77,15 +76,7 @@
     voluminous		require=fabric
     embroidered		require=fabric
     patterned		require=fabric
-# kesh
-  ## jan
-    people			forbid=people
-    men				forbid=men
-    women			forbid=women		class=nofacialhair
-    soldiers		forbid=soldiers
-    clerics			forbid=clerics
-    aristocrats		forbid=aristocrats
-  ## yang	new_word
+  ## kesh
     short			forbid=hairpin
     medium			forbid=hairpin		forbid=kinky
     long			forbid=hairpin
@@ -106,7 +97,7 @@
     buzzed			forbid=hairpin		tech=1900
     greased			tech=1000
     colorful		tech=1850
-# yam	0.5
+# yam	0.2
   ## sif
     bland
     sweet
@@ -139,40 +130,39 @@
     cheese			require=lactase
     fermented
     insect
-    alcohol
-    caffeine
-    tea
     dessert
     group
-# dom	0.5
+# dom	0.2
   ## mur
     pelt
     cloth
-    thatching		require=sedentary	biome!=registan
-    wood			require=sedentary	biome!=registan
+    thatching		biome!=registan	biome!=tundre
+    wood			require=sedentary	biome!=registan	biome!=tundre
     mud				require=sedentary
     mudbrick		require=sedentary
     cob				require=sedentary
     adobe			require=sedentary
     clay			require=sedentary
-    marble			require=sedentary	tech=3000
+    marble			require=sedentary
+    icebrick		require=sedentary	biome=tundre
     concrete		require=sedentary	tech=-800
-    steel			require=sedentary	tech=3000
+    steel			require=sedentary	tech=1000
+    floating		biome=barxojangal
   ## chate
     thatching		biome!=registan
     claytile
     terracottatile
     slatetile
-    metal			tech=3000
-    metaltile		tech=3000
-# bina	0.5
+    metal			require=sedentary	tech=1840
+    metaltile		require=sedentary	tech=-300
+# bina	0.2
   ## kul_she
     color
     bridge
     gate
     door
     wall
-    ceiling			tech=3000
+    ceiling
     roof
     window
     eave
@@ -181,9 +171,9 @@
     column
     pedestal
     turret
-    dome			tech=3000
-    arch			tech=3000
-    bracket			tech=3000
+    dome			tech=-300
+    arch
+    bracket			tech=1200
     spire
     minaret
     aqueduct
@@ -193,7 +183,7 @@
     garden
     fountain
     sculpture
-    stucco			tech=3000
+    stucco			tech=200
     glass
     utilitarianism
   ## grafi_she
@@ -210,9 +200,9 @@
     column			forbid=column
     pedestal		forbid=pedestal
     turret			forbid=turret
-    dome			forbid=dome			forbid=utilitarianism	tech=3000
-    arch			forbid=arch			forbid=utilitarianism	tech=3000
-    bracket			forbid=bracket		forbid=utilitarianism	tech=3000
+    dome			forbid=dome			forbid=utilitarianism	tech=-300
+    arch			forbid=arch			forbid=utilitarianism
+    bracket			forbid=bracket		forbid=utilitarianism	tech=1200
     spire			forbid=spire
     minaret			forbid=minaret
     aqueduct		forbid=aqueduct
@@ -233,7 +223,7 @@
     trees			biome!=registan
     fossils
     rivers
-    stars
+    stars			require=days
     sun
     maps
     events
@@ -242,7 +232,7 @@
     commoners
     monsters
     shapes
-# sundar_shutu	0.5
+# sundar_shutu	0.2
   ## yang
     squares
     circles
@@ -258,7 +248,7 @@
     outlines
     weird_sun
     weird_clouds
-    weird_ocean			require=coastal
+    weird_ocean		require=coastal
     people_no_arms
     people_no_legs
     people_no_nose
@@ -281,11 +271,11 @@
     fertility
     piety
     jihad
-    nature				forbid=people_no_arms	forbid=people_no_legs	forbid=people_no_nose	forbid=people_big_heads
+    nature			forbid=people_no_arms	forbid=people_no_legs	forbid=people_no_nose	forbid=people_big_heads
     technology
     sex
     romance
-# muzika	0.5
+# muzika	0.2
   ## sif
     tetratonic
     pentatonic
@@ -335,3 +325,167 @@
     electronic		forbid=synth		tech=1910
     synthesizer		forbid=synth		tech=1970
     vocaloids		forbid=synth		tech=2005
+# esporte	0.2
+  ## ate
+    push
+    throw
+    roll
+    carry
+    hit
+    kick
+  ## she
+    ball			forbid=push
+    rock			forbid=hit	forbid=kick
+    sack			forbid=push	forbid=roll
+    disc			forbid=push	forbid=hit	forbid=kick	forbid=bat
+    javelin			forbid=push	forbid=roll	forbid=hit	forbid=kick	forbid=bat
+    pole			forbid=hit	forbid=kick	forbid=bat
+    stick			forbid=push	forbid=roll	forbid=hit	forbid=kick	forbid=bat
+    others			forbid=roll	forbid=kick	forbid=bat
+  ## gol
+    far
+    posts
+    net
+    hoop			forbid=push	forbid=roll
+    hole			forbid=carry
+    pole			forbid=push	forbid=carry
+    barrier			forbid=push	forbid=carry	forbid=roll
+    line
+    target			forbid=push	forbid=carry
+    players			forbid=push	forbid=carry	forbid=others
+  ## sharti	new_word
+    ground			forbid=roll	forbid=push	forbid=others
+    horse
+    fire
+    race
+    time			tech=-1500
+    rhythm
+    bat				require=hit
+    racket			require=hit
+    lacrosse		forbid=push
+    salmon
+    judge
+    telekinesis
+    broomstick
+    spoon
+    skating			biome!=barxojangal	biome!=registan	biome!=piristan
+    swimming		biome!=tundre	biome!=taige	forbid=roll
+    phone			tech=2000
+# suna	0.2
+  ## kas
+    coronation
+    spring			rquire=seasons
+    summer			require=seasons
+    autumn			require=seasons
+    winter			require=seasons
+    year			require=seasons
+    bounty
+    eclipse
+    birthday
+    politician
+    victory
+    sports
+    guests
+    gods
+    dead
+    full_moon
+    marriage
+    independence	require=state
+  ## festa
+    drinking
+    feast
+    animals
+    humans
+    sweets
+    bitters
+    pastries
+    rocks
+    dances
+    screaming
+    tournament		forbid=sports
+    fireworks		tech=1110
+    bells
+    drums
+    gifts
+    party
+    acid
+    clothes
+    grass			biome=grasistan
+    prayer
+  ## suna
+    dddduel
+    age
+    dating
+    shoes
+    funeral
+    military
+    dowry
+    bride_price
+    favors
+    literacy		tech=-1500
+    omen
+    cats
+    name
+    siesta
+    meals
+    omiyage
+    guest
+    bow
+    handshake
+    hug
+    noses
+    kiss
+    try_the_floor
+    anticle
+    creche
+    adults
+    language
+# shutu	0.5
+  ## shutu	new_word
+    painting
+    sculpture
+    carving
+    printing		tech=200
+    mosaic
+    geoglyph
+    storytelling
+    monuments
+    conservative
+    liberal
+    metric_system
+    roads
+    mustache
+    piercings
+    jewelry
+    body_paint
+    makeup
+    tatoos
+    scarring
+    irrigation
+    spear
+    archery
+    sword			tech=-1600
+    rifle			tech=1740
+    fistery
+    pottery
+    metalworking
+    woodworking
+    glassworking	tech=-2500
+    fireworks		tech=1110
+    horseback
+    seafaring		tech=-2100
+    flying			tech=1903
+    cinema			tech=1888
+    theatre
+    weaving
+    alcohol
+    massages
+    puppetry
+    wirecraft		tech=1850
+    terraces		require=mountainous
+    navigation
+    hospitals
+    dams
+    knots
+    fishing
+    pyramids

@@ -95,22 +95,22 @@ const LOGA_INDEX: number[] = [];
 let header = null, subheader = null;
 for (const row of loadTSV('../../res/kultur.tsv')) {
 	row[0] = row[0].replace(/^ +/, ''); // start by ignoring my indentacion
-	if (row[0].startsWith('# ')) {
+	if (row[0].startsWith('# ')) { // when you see a main header
 		header = row[0].slice(2);
-		if (LOGA_INDEX.length < HEADERS.length)
+		if (LOGA_INDEX.length < HEADERS.length) // pad LOGA_INDEX with null if there was no new word index last seccion
 			LOGA_INDEX.push(null);
-		HEADERS.push(`data.${header}`);
-		CHUZABLE.push([]);
+		HEADERS.push(`data.${header}`); // get the header
+		CHUZABLE.push([]); // and set up the new section object
 	}
-	else if (row[0].startsWith('## ')) {
+	else if (row[0].startsWith('## ')) { // when you see a subheader
 		subheader = row[0].slice(3);
 		if (row.length >= 2 && row[1] === 'new_word')
-			LOGA_INDEX.push(CHUZABLE[CHUZABLE.length-1].length);
-		CHUZABLE[CHUZABLE.length-1].push([]);
+			LOGA_INDEX.push(CHUZABLE[CHUZABLE.length-1].length); // look to see if it is a new word index
+		CHUZABLE[CHUZABLE.length-1].push([]); // and set up the subsection object
 	}
-	else {
-		const sif = new Sif(header, subheader, row);
-		CHUZABLE[CHUZABLE.length-1][CHUZABLE[CHUZABLE.length-1].length-1].push(sif);
+	else { // when you see anything else
+		const sif = new Sif(header, subheader, row); // make it an object
+		CHUZABLE[CHUZABLE.length-1][CHUZABLE[CHUZABLE.length-1].length-1].push(sif); // add it to the list
 	}
 }
 
