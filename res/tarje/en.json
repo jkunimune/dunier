@@ -597,9 +597,9 @@
 	"data.gun":"The bulk of the military comprises {3}, {0} with {1} who wear {2}",
 	"data.gul":"The national drink is {2}, which is {0} and served {1}",
 	"data.danse":"The national dance is {2}, characterized by {0} and originally meant to {1}",
-	"temnam.metrografjener":"Fantasy map generator &ndash; Dunhamar",
-	"temnam.namjener":"Fantasy name generator &ndash; Dunhamar",
-	"temnam.tema":"About &ndash; Dunhamar",
-	"kitabe.tema":"About Dunhamar",
-	"kitabe.sif":"<p>Dunhamar (pronounced /ˈdun.hə.ˌmɑr/) is a tool to help authors, gamemasters, and conlangers construct realistic fictional worlds in which their creations can thrive. It takes a random seed and several parameters and produces a stylized map, a historical timeline, and info sheets on each of the countries and languages. While no computer program can replace the joy and creativity of the entire worldbuilding process, Dunhamar can handle the parts that not all humans feel able or motivated to do.</p> <p>Dunhamar is inspired by previous fantasy map generators like <a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">Azgaar's one</a>, but has more of an emphasis on realism. It is not as interactive as some generators, and it does not generate as many fine details like mine locations and diplomatic relations. It does, however, account for several features missing in other generators that are noticeable on the macroscopic scale, such as planetary curvature, plate tectonics, and linguistic drift.</p>"
+	"temnam.metrografjener":"Fantasy map generator &ndash; Dunia Hamar",
+	"temnam.namjener":"Fantasy name generator &ndash; Dunia Hamar",
+	"temnam.tema":"About &ndash; Dunia Hamar",
+	"kitabe.tema":"About Dunia Hamar",
+	"kitabe.sif":"<p>Dunia Hamar (pronounced /ˈdu.ni.ə ˈhæ.mər/) is a tool to help authors, gamemasters, and conlangers construct realistic fictional worlds in which their creations can thrive. It takes a random seed and several parameters and produces a stylized map, a historical timeline, and info sheets on each of the countries and languages. While no computer program can replace the joy and creativity of the entire worldbuilding process, Dunia Hamar can handle the parts that not all humans feel able or motivated to do.</p> <p>Dunia Hamar is inspired by previous fantasy map generators like <a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">Azgaar's one</a>, but has more of an emphasis on realism. It is not as interactive as some generators, and it does not generate as many fine details like mine locations and diplomatic relations. It does, however, account for several features missing in other generators that are noticeable on the macroscopic scale, such as planetary curvature, plate tectonics, and linguistic drift.</p>"
 }
