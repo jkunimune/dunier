@@ -42,10 +42,10 @@ export class Disc extends Surface {
 
 	partition(): {triangles: Triangle[], nodos: Nodo[]} {
 		const nodos: Nodo[] = [
-			new Nodo(null, {φ: Math.atan(1/8), λ: 0}, this),
-			new Nodo(null, {φ: Math.atan(1/8), λ: Math.PI/2}, this),
-			new Nodo(null, {φ: Math.atan(1/8), λ: Math.PI}, this),
-			new Nodo(null, {φ: Math.atan(1/8), λ: 3*Math.PI/2}, this),
+			new Nodo(null, {ф: Math.atan(1/8), λ: 0}, this),
+			new Nodo(null, {ф: Math.atan(1/8), λ: Math.PI/2}, this),
+			new Nodo(null, {ф: Math.atan(1/8), λ: Math.PI}, this),
+			new Nodo(null, {ф: Math.atan(1/8), λ: 3*Math.PI/2}, this),
 		];
 
 		const triangles: Triangle[] = [
@@ -56,17 +56,17 @@ export class Disc extends Surface {
 		return {triangles: triangles, nodos: nodos};
 	}
 
-	dsdφ(φ: number): number {
-		return this.firmamentHite*Math.pow(Math.sin(φ), -2);
+	dsdф(ф: number): number {
+		return this.firmamentHite*Math.pow(Math.sin(ф), -2);
 	}
 
-	dAds(φ: number): number {
-		return 2*Math.PI*this.firmamentHite/Math.tan(φ);
+	dAds(ф: number): number {
+		return 2*Math.PI*this.firmamentHite/Math.tan(ф);
 	}
 
-	insolation(φ: number): number {
+	insolation(ф: number): number {
 		const cosψ = Math.cos(2*this.effectiveObliquity)
-		const ρ = this.firmamentHite/this.radius/Math.tan(φ);
+		const ρ = this.firmamentHite/this.radius/Math.tan(ф);
 		return 7.0/(
 			(3.865*cosψ + 6.877) -
 			(44.803*cosψ +  1.216)*Math.pow(ρ, 2) +
@@ -74,22 +74,22 @@ export class Disc extends Surface {
 			(38.728*cosψ -  8.049)*Math.pow(ρ, 6));
 	}
 
-	windConvergence(φ: number): number {
-		return 1.5*(Math.sin(2*φ)**2 + Math.sin(3*φ)**2 - 0.5)
+	windConvergence(ф: number): number {
+		return 1.5*(Math.sin(2*ф)**2 + Math.sin(3*ф)**2 - 0.5)
 	}
 
-	windVelocity(φ: number): {nord: number, dong: number} {
-		return {nord: Math.sin(2*φ), dong: 0};
+	windVelocity(ф: number): {nord: number, dong: number} {
+		return {nord: Math.sin(2*ф), dong: 0};
 	}
 
-	xyz(φ: number, λ: number): Vector {
-		const r = this.firmamentHite/Math.tan(φ);
+	xyz(ф: number, λ: number): Vector {
+		const r = this.firmamentHite/Math.tan(ф);
 		return new Vector(r*Math.sin(λ), -r*Math.cos(λ), 0);
 	}
 
-	φλ(x: number, y: number, z: number): Place {
+	фλ(x: number, y: number, z: number): Place {
 		return {
-			φ: Math.max(Math.atan(this.firmamentHite/Math.hypot(x, y)), this.φMin),
+			ф: Math.max(Math.atan(this.firmamentHite/Math.hypot(x, y)), this.фMin),
 			λ: Math.atan2(x, -y)};
 	}
 
@@ -98,8 +98,8 @@ export class Disc extends Surface {
 	}
 
 	distance(a: Place, b: Place): number {
-		const ar = this.firmamentHite/Math.tan(a.φ);
-		const br = this.firmamentHite/Math.tan(b.φ);
+		const ar = this.firmamentHite/Math.tan(a.ф);
+		const br = this.firmamentHite/Math.tan(b.ф);
 		return Math.sqrt(ar*ar + br*br - 2*ar*br*Math.cos(a.λ - b.λ));
 	}
 }

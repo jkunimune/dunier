@@ -34,25 +34,25 @@ export class Sphere extends Spheroid {
 		super(radius, 1, 0, Number.NaN);
 	}
 
-	insolation(φ: number): number {
-		return 2.0*Math.max(0, Math.sin(φ));
+	insolation(ф: number): number {
+		return 2.0*Math.max(0, Math.sin(ф));
 	}
 
-	windConvergence(φ: number): number {
-		return Math.cos(φ);
+	windConvergence(ф: number): number {
+		return Math.cos(ф);
 	}
 
-	windVelocity(φ: number): {nord: number, dong: number} {
-		return {nord: -Math.cos(φ), dong: 0};
+	windVelocity(ф: number): {nord: number, dong: number} {
+		return {nord: -Math.cos(ф), dong: 0};
 	}
 
-	xyz(φ: number, λ: number): Vector {
-		const {x, y, z} = super.xyz(φ, λ);
+	xyz(ф: number, λ: number): Vector {
+		const {x, y, z} = super.xyz(ф, λ);
 		return new Vector(x, z, -y);
 	}
 
-	φλ(x: number, y: number, z: number): Place {
-		return super.φλ(x, -z, y);
+	фλ(x: number, y: number, z: number): Place {
+		return super.фλ(x, -z, y);
 	}
 
 	normal(node: Nodo): Vector {

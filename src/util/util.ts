@@ -87,6 +87,20 @@ export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
 }
 
 /**
+ * it's like the built-in filter funccion for arrays, but it works on other iterables.
+ * @param set
+ * @param condition
+ */
+export function filterSet<T>(set: Iterable<T>, condition: (item: T) => boolean): Set<T> {
+	const output = new Set<T>();
+	for (const item of set) {
+		if (condition.call(null, item))
+			output.add(item);
+	}
+	return output;
+}
+
+/**
  * cast the given args to user strings (with a fixd format specificacion) and add them to
  * the given format in place of '{0}', '{1}', etc.  output will all ultimately be
  * extracted from USER_STRINGS.

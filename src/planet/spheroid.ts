@@ -54,13 +54,13 @@ export class Spheroid extends Surface {
 		for (let i = 1; i < n; i ++) // construct a grid of points,
 			for (let j = 0; j < m; j ++)
 				nodos.push(new Nodo(null, {
-					φ: Math.PI*(i/n - .5),
+					ф: Math.PI*(i/n - .5),
 					λ: 2*Math.PI*(j + .5*(i%2))/m,
 				}, this));
 		const kS = nodos.length; // assign Nodes to the poles,
-		nodos.push(new Nodo(null, { φ: -Math.PI/2, λ: 0 }, this));
+		nodos.push(new Nodo(null, { ф: -Math.PI/2, λ: 0 }, this));
 		const kN = nodos.length;
-		nodos.push(new Nodo(null, { φ: Math.PI/2, λ: 0 }, this));
+		nodos.push(new Nodo(null, { ф: Math.PI/2, λ: 0 }, this));
 
 		const triangles = []; // and strew it all with triangles
 		for (let j = 0; j < m; j ++)
@@ -96,59 +96,59 @@ export class Spheroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	dsdφ(φ: number): number {
-		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
-		const dβdφ = this.aspectRatio/(
-			Math.pow(Math.sin(φ), 2) +
-			Math.pow(this.aspectRatio*Math.cos(φ), 2));
+	dsdф(ф: number): number {
+		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
+		const dβdф = this.aspectRatio/(
+			Math.pow(Math.sin(ф), 2) +
+			Math.pow(this.aspectRatio*Math.cos(ф), 2));
 		const dsdβ = this.radius*
 			Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(β), 2));
-		return dsdβ*dβdφ;
+		return dsdβ*dβdф;
 	}
 
-	dAds(φ: number): number {
-		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
+	dAds(ф: number): number {
+		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
 		return 2*Math.PI*this.radius*Math.cos(β);
 	}
 
-	insolation(φ: number): number {
-		return Spheroid.annualInsolationFunction(this.obliquity, φ);
+	insolation(ф: number): number {
+		return Spheroid.annualInsolationFunction(this.obliquity, ф);
 	}
 
-	windConvergence(φ: number): number {
-		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
+	windConvergence(ф: number): number {
+		return Math.pow(Math.cos(ф), 2) + Math.pow(Math.cos(3*ф), 2);
 	}
 
-	windVelocity(φ: number): {nord: number, dong: number} {
-		return {nord: 0, dong: Math.cos(φ)}; // realistically this should change direccion, but this formula makes orographs more apparent
+	windVelocity(ф: number): {nord: number, dong: number} {
+		return {nord: 0, dong: Math.cos(ф)}; // realistically this should change direccion, but this formula makes orographs more apparent
 	}
 
-	xyz(φ: number, λ: number): Vector {
-		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
+	xyz(ф: number, λ: number): Vector {
+		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
 		return new Vector(
 			this.radius*Math.cos(β)*Math.sin(λ),
 			-this.radius*Math.cos(β)*Math.cos(λ),
 			this.radius*Math.sin(β)/this.aspectRatio);
 	}
 
-	φλ(x: number, y: number, z: number): Place {
+	фλ(x: number, y: number, z: number): Place {
 		const β = Math.atan2(this.aspectRatio*z, Math.hypot(x, y));
 		const λ = Math.atan2(x, -y);
-		return {φ: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
+		return {ф: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
 	}
 
 	normal(node: Place): Vector {
 		return new Vector(
-			Math.cos(node.φ)*Math.sin(node.λ),
-			-Math.cos(node.φ)*Math.cos(node.λ),
-			Math.sin(node.φ));
+			Math.cos(node.ф)*Math.sin(node.λ),
+			-Math.cos(node.ф)*Math.cos(node.λ),
+			Math.sin(node.ф));
 	}
 
 	distance(a: Place, b: Place): number { // TODO: check
-		const s = Math.acos(Math.sin(a.φ)*Math.sin(b.φ) +
-			Math.cos(a.φ)*Math.cos(b.φ)*Math.cos(a.λ - b.λ));
-		const p = (a.φ + b.φ)/2;
-		const q = (b.φ - a.φ)/2;
+		const s = Math.acos(Math.sin(a.ф)*Math.sin(b.ф) +
+			Math.cos(a.ф)*Math.cos(b.ф)*Math.cos(a.λ - b.λ));
+		const p = (a.ф + b.ф)/2;
+		const q = (b.ф - a.ф)/2;
 		const x = (s - Math.sin(s))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(s/2), 2);
 		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
 		return this.radius*(s - this.flattening/2*(x + y));

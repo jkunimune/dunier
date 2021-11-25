@@ -220,7 +220,7 @@ export class Civ {
 
 	getName(): Word {
 		return this.capital.kultur.lect.getName(
-			this.capital.index, LogaTipo.DESHA);
+			this.capital.index.toString(), LogaTipo.DESHA);
 	}
 
 }

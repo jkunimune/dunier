@@ -31,12 +31,12 @@ export class LockedDisc extends Disc {
 		super(radius, Number.NaN, 2);
 	}
 
-	insolation(φ: number): number {
-		return 2.0/Math.pow(1 + Math.pow(Math.tan(φ), -2), 3/2.);
+	insolation(ф: number): number {
+		return 2.0/Math.pow(1 + Math.pow(Math.tan(ф), -2), 3/2.);
 	}
 
-	windConvergence(φ: number): number {
-		return Math.pow(Math.sin(φ), 2);
+	windConvergence(ф: number): number {
+		return Math.pow(Math.sin(ф), 2);
 	}
 }
 

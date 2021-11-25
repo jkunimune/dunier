@@ -23,13 +23,13 @@
  */
 
 /**
- * a data structure storing a series of nonintersecting segments on a line, with the ability
- * to efficiently erode all segments by the same amount.
+ * a data structure storing a series of nonintersecting segments on a line tha break it up
+ * into two regions, the empty, and the filled.
  */
 export class ErodingSegmentTree {
-	/** the remaining height it can erode before being empty (half-width of the largest interval) */
+	/** the remaining height it can erode before being empty (half-width of the largest empty interval) */
 	private radius: number;
-	/** the center of the largest remaining interval */
+	/** the center of the largest empty interval */
 	private pole: number;
 	/** the link with the leftmost endpoint */
 	private minim: Link;
@@ -52,11 +52,11 @@ export class ErodingSegmentTree {
 	}
 
 	/**
-	 * remove the region between xL and xR from the segments.
+	 * fill the region between xL and xR.
 	 * @param xL
 	 * @param xR
 	 */
-	block(xL: number, xR: number): void {
+	fill(xL: number, xR: number): void {
 		if (xL > xR)
 			throw RangeError("blocking range must be positive!");
 		let left = this.search(xL, this.mul); // find the left bound
@@ -85,7 +85,7 @@ export class ErodingSegmentTree {
 	}
 
 	/**
-	 * move all endpoints inward by t, and remove now empty intervals.
+	 * set all points within t of a full region to full.
 	 * @param t
 	 */
 	erode(t: number): void {
@@ -106,10 +106,10 @@ export class ErodingSegmentTree {
 	}
 
 	/**
-	 * is this value contained in one of the segments?
+	 * is this value in an empty region?
 	 * @param value
 	 */
-	contains(value: number): boolean {
+	emptyAt(value: number): boolean {
 		const left = this.search(value, this.mul);
 		return left !== null && left.esaLeft;
 	}
@@ -276,12 +276,21 @@ export class ErodingSegmentTree {
 		return this.maxim.val;
 	}
 
-	getRadius(): number {
-		return this.radius;
-	}
-
-	getPole(): number {
-		return this.pole;
+	/**
+	 * get the locacion of the point furthest from any filld region, and the distance
+	 * from it to the two adjacent filld regions.
+	 * @param periodic whether we should treat it as an angular coordinate where -π is the
+	 *                 same as +π
+	 */
+	getPole(periodic: boolean = false): { location: number, radius: number } {
+		if (periodic && this.minim.val == -Math.PI && this.maxim.val == Math.PI) { // if it's periodic
+			const leftGap = this.minim.bad.val - this.minim.val; // you haff to check the outside
+			const riteGap = this.maxim.val - this.maxim.cen.val;
+			if (leftGap + riteGap > 2*this.radius) // to see if that's better
+				return { location: (leftGap - riteGap)/2 + Math.PI,
+						 radius: (leftGap + riteGap)/2 };
+		}
+		return { location: this.pole, radius: this.radius }; // otherwise it's just these instance variables of which you've kept track
 	}
 
 	print(subtree: Link = null, indent: number = 0): void {

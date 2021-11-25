@@ -212,7 +212,7 @@ function terrainApply() {
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new Azimuthal(surface));
+	const mapper = new Chart(new Azimuthal(surface, true, null));
 	mapper.depict(surface, null, $('#terrain-map')[0], 'jivi', 'nili');
 
 	console.log("fina!");
@@ -240,8 +240,21 @@ function historyApply() {
 		rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new Azimuthal(surface));
+	const mapper = new Chart(new Azimuthal(surface, true, null));
 	mapper.depict(surface, world, $('#history-map')[0], 'politiki', 'nili');
+
+	console.log("mute ba chuze bil...");
+	const countries = world.getCivs(true);
+	const picker = document.getElementById('map-jung');
+	picker.textContent = "";
+	for (let i = 0; i < countries.length; i ++) {
+		const country = countries[i];
+		const option = document.createElement('option');
+		option.selected = (i == 0);
+		option.setAttribute('value', country.id.toString());
+		option.textContent = country.getName().toString();
+		picker.appendChild(option);
+	}
 
 	console.log("fina!");
 	historyOutOfSync = false;
@@ -257,6 +270,8 @@ function mapApply() {
 
 	console.log("grafa zemgrafe...");
 	const projection = $('#map-projection').val();
+	const norde = ($('#map-dish').val() == 'norde');
+	const locus = Chart.border(world.getCiv($('#map-jung').val()));
 	const zemrang = $('#map-zemrang').val();
 	const marorang = $('#map-hayrang').val();
 	const filter = $('#map-filter').val();
@@ -267,15 +282,15 @@ function mapApply() {
 	const xanonam = $('#map-shannam').prop('checked');
 	const style = $('#map-bash').val();
 
-	let mapper;
+	let mapper: Chart;
 	if (projection === 'equirectangular')
-		mapper = new Chart(new Equirectangular(surface));
+		mapper = new Chart(new Equirectangular(surface, norde, locus));
 	else if (projection === 'azimuthal-equidistant')
-		mapper = new Chart(new Azimuthal(surface));
+		mapper = new Chart(new Azimuthal(surface, norde, locus));
 	else if (projection == 'mercator')
-		mapper = new Chart(new Mercator(surface));
+		mapper = new Chart(new Mercator(surface, norde, locus));
 	else if (projection == 'eckert')
-		mapper = new Chart(new EqualArea(surface));
+		mapper = new Chart(new EqualArea(surface, norde, locus));
 	else
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 
@@ -305,7 +320,7 @@ function pdfApply() {
 	// doc.addImage(mapUrl, "SVG", 5, 5, 287, 200);
 	doc.text("I have to add something to this page or delete it.", 20, 20, {baseline: 'top'});
 
-	for (const civ of world.civs) {
+	for (const civ of world.getCivs(true)) {
 		generateFactSheet(doc, civ);
 	}
 

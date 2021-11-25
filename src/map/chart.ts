@@ -21,13 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// @ts-ignore
-import TinyQueue from '../lib/tinyqueue.js';
-
 import {Nodo, Place, Surface, Triangle} from "../planet/surface.js";
 import {
 	Vector,
-	longestShortestPath,
+	longestShortestPath, filterSet,
 } from "../util/util.js";
 import {World} from "../society/world.js";
 import {MapProjection, PathSegment} from "./projection.js";
@@ -170,13 +167,16 @@ export class Chart {
 
 		let nadorang = 'none';
 		if (marorang === 'nili') { // color the sea deep blue
-			this.fill([...surface.nodos].filter(n => n.biome === 'samud'), g, BIOME_COLORS.get('samud'));
+			this.fill(
+				filterSet(surface.nodos, n => n.biome === 'samud'),
+				g, BIOME_COLORS.get('samud'));
 			nadorang = BIOME_COLORS.get('samud');
 		} else if (marorang === 'gawia') { // color the sea by altitude
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
 				const min = (i !== 0) ? i * DEPTH_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Number.POSITIVE_INFINITY;
-				this.fill([...surface.nodos].filter(n => n.biome === 'samud' && -n.gawe >= min && -n.gawe < max),
+				this.fill(
+					filterSet(surface.nodos, n => n.biome === 'samud' && -n.gawe >= min && -n.gawe < max),
 					g, DEPTH_COLORS[i]); // TODO: enforce contiguity of shallow ocean?
 			}
 			nadorang = DEPTH_COLORS[0]; // TODO: outline ocean + cerni nade?
@@ -185,20 +185,26 @@ export class Chart {
 		if (zemrang === 'jivi') { // draw the biomes
 			for (const biome of BIOME_COLORS.keys())
 				if (biome !== 'samud')
-					this.fill([...surface.nodos].filter(n => n.biome === biome), g, BIOME_COLORS.get(biome));
+					this.fill(
+						filterSet(surface.nodos, n => n.biome === biome),
+						g, BIOME_COLORS.get(biome));
 		}
 		else if (zemrang === 'politiki' && world !== null) { // draw the countries
-			this.fill([...surface.nodos].filter(n => n.biome !== 'samud'), g, BIOME_COLORS.get('kagaze'));
-			const biggestCivs = new TinyQueue([...world.civs],
-				(a: Civ, b: Civ) => b.getPopulation() - a.getPopulation());
+			this.fill(
+				filterSet(surface.nodos, n => n.biome !== 'samud'),
+				g, BIOME_COLORS.get('kagaze'));
+			const biggestCivs = world.getCivs(true).reverse();
 			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i++)
-				this.fill([...biggestCivs.pop().nodos].filter(n => n.biome !== 'samud'), g, COUNTRY_COLORS[i]);
+				this.fill(
+					filterSet(biggestCivs.pop().nodos, n => n.biome !== 'samud'),
+					g, COUNTRY_COLORS[i]);
 		}
 		else if (zemrang === 'gawia') { // color the sea by altitude
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Number.POSITIVE_INFINITY;
-				this.fill([...surface.nodos].filter(n => n.biome !== 'samud' && n.gawe >= min && n.gawe < max),
+				this.fill(
+					filterSet(surface.nodos, n => n.biome !== 'samud' && n.gawe >= min && n.gawe < max),
 					g, ALTITUDE_COLORS[i]);
 			}
 		}
@@ -209,7 +215,7 @@ export class Chart {
 		}
 
 		if (kenare && world !== null) {
-			for (const civ of world.civs) {
+			for (const civ of world.getCivs()) {
 				if (civ.getPopulation() > 0) {
 					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
@@ -219,7 +225,9 @@ export class Chart {
 					hover.appendChild(text);
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
-					this.fill([...civ.nodos].filter(n => n.biome !== 'samud'), titledG,
+					this.fill(
+						filterSet(civ.nodos, n => n.biome !== 'samud'),
+						titledG,
 						'none', '#000', 0.7).setAttribute('pointer-events', 'all');
 				}
 			}
@@ -230,7 +238,7 @@ export class Chart {
 		}
 
 		if (civLabels && world !== null) {
-			for (const civ of world.civs) // TODO: the hover text should go on this
+			for (const civ of world.getCivs()) // TODO: the hover text should go on this
 				if (civ.getPopulation() > 0)
 					this.label(
 						[...civ.nodos].filter(n => n.biome !== 'samud' && n.biome !== 'lage'),
@@ -250,11 +258,11 @@ export class Chart {
 	 * @param smooth whether to apply Bezier smoothing to the outline
 	 * @return the newly created element encompassing these triangles.
 	 */
-	fill(nodos: Nodo[], svg: SVGGElement, color: string,
+	fill(nodos: Set<Nodo>, svg: SVGGElement, color: string,
 		 stroke: string = 'none', strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
-		if (nodos.length <= 0)
+		if (nodos.size <= 0)
 			return this.draw([], svg);
-		const path = this.draw(this.map(Chart.outline(new Set(nodos)), smooth, true), svg);
+		const path = this.draw(this.map(Chart.outline(nodos), smooth, true), svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
 		return path;
@@ -291,7 +299,7 @@ export class Chart {
 		for (const t of triangles) { // start by computing slopes of all of the things
 			const p = [];
 			for (const node of t.vertices) {
-				const {x, y} = this.projection.project(node.φ, node.λ);
+				const {x, y} = this.projection.project(node.ф, node.λ);
 				const z = Math.max(0, node.gawe);
 				p.push(new Vector(x, -y, z));
 			}
@@ -306,7 +314,7 @@ export class Chart {
 		for (const t of triangles) { // for each triangle
 			const path = [];
 			for (const node of t.vertices)
-				path.push({type: 'L', args: [node.φ, node.λ]}); // put its values in a plottable form
+				path.push({type: 'L', args: [node.ф, node.λ]}); // put its values in a plottable form
 			path.push({type: 'L', args: [...path[0].args]});
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
@@ -535,24 +543,27 @@ export class Chart {
 			let halfHeight = 0; // iterate height upward until only one segment is left
 			let best;
 			while (true) {
-				if (wedges.length > 0 && wedges[wedges.length-1].y - halfHeight < validRegion.getRadius()/aspect) { // either go to the next wedge if it comes before we run out of space
+				const pole = validRegion.getPole();
+				if (wedges.length > 0 &&
+					wedges[wedges.length-1].y - halfHeight < pole.location/aspect) { // either go to the next wedge if it comes before we run out of space
 					const {xL, xR, y} = wedges.pop();
 					validRegion.erode((y - halfHeight)*aspect);
 					halfHeight = y;
-					if (validRegion.getMinim() >= xL && validRegion.getMaxim() <= xR) {
-						if (validRegion.contains(0))
+					if (validRegion.getMinim() >= xL && validRegion.getMaxim() <= xR) { // potentially stopping if it fills the entire remaining area
+						console.log(validRegion);
+						if (validRegion.emptyAt(0))
 							best = 0;
 						else
 							best = validRegion.getClosest(0);
 						break;
 					}
 					else {
-						validRegion.block(xL, xR);
+						validRegion.fill(xL, xR);
 					}
 				}
 				else { // or go to here we run out of space
-					best = validRegion.getPole();
-					halfHeight += validRegion.getRadius()/aspect;
+					best = pole.location;
+					halfHeight += pole.radius/aspect;
 					break;
 				}
 			}
@@ -638,14 +649,16 @@ export class Chart {
 		if (segments.length === 0) // what're you trying to pull here?
 			return [];
 
+		segments = this.projection.transform(segments);
+
 		let touchedEdge = false;
 		for (let i = 1; i < segments.length; i ++) { // first, handle places where it crosses the edge of the map
 			if (segments[i].type === 'L') {
 				if (!Number.isFinite(segments[i].args[0])) { // if a point is at infinity
 					if (segments[i].args[0] < 0)
 						segments.splice(i, 1, // remove it
-							{type: 'L', args: [this.projection.surface.φMin, segments[i-1].args[1]]},
-							{type: 'M', args: [this.projection.surface.φMin, segments[i+1].args[1]]}); // and add a moveto along the South edge
+							{type: 'L', args: [this.projection.surface.фMin, segments[i-1].args[1]]},
+							{type: 'M', args: [this.projection.surface.фMin, segments[i+1].args[1]]}); // and add a moveto along the South edge
 					else
 						throw "I haven't accounted for positive infinity points.";
 					touchedEdge = true;
@@ -655,8 +668,8 @@ export class Chart {
 				if (crossing !== null) { // otherwise, if it jumps across an interruption
 					const {endpoint0, endpoint1} = crossing;
 					segments.splice(i, 0,
-						{type: 'L', args: [endpoint0.φ, endpoint0.λ]}, // insert a line to the very edge
-						{type: 'M', args: [endpoint1.φ, endpoint1.λ]}); // and then a moveto to the other side
+						{type: 'L', args: [endpoint0.ф, endpoint0.λ]}, // insert a line to the very edge
+						{type: 'M', args: [endpoint1.ф, endpoint1.λ]}); // and then a moveto to the other side
 					touchedEdge = true;
 					i --; // then step back to check if there was another one
 				}
@@ -680,8 +693,8 @@ export class Chart {
 		while (jinPoints !== undefined) {
 			const base = cutPoints.length;
 			for (let i = 0; i < jinPoints.length; i ++) { // now run through the section
-				const [φ1, λ1] = jinPoints[i].args;
-				const {x, y} = this.projection.project(φ1, λ1); // projecting points and adding them to the thing
+				const [ф1, λ1] = jinPoints[i].args;
+				const {x, y} = this.projection.project(ф1, λ1); // projecting points and adding them to the thing
 				cutPoints.push({type: jinPoints[i].type, args: [x, y]});
 			}
 
@@ -690,11 +703,11 @@ export class Chart {
 				const [x0, y0] = cutPoints[i-1].args;
 				const [x1, y1] = cutPoints[i].args;
 				if (Math.hypot(x1 - x0, y1 - y0) > precision) { // and fill in segments that are too long
-					const [φ0, λ0] = jinPoints[i-base-1].args;
-					const [φ1, λ1] = jinPoints[i-base].args;
-					const {φ, λ} = this.projection.getMidpoint(φ0, λ0, φ1, λ1); // by splitting them in half
-					const {x, y} = this.projection.project(φ, λ);
-					jinPoints.splice(i-base, 0, {type: 'L', args: [φ, λ]}); // and adding the midpoints to the polygon
+					const [ф0, λ0] = jinPoints[i-base-1].args;
+					const [ф1, λ1] = jinPoints[i-base].args;
+					const {ф, λ} = this.projection.getMidpoint(ф0, λ0, ф1, λ1); // by splitting them in half
+					const {x, y} = this.projection.project(ф, λ);
+					jinPoints.splice(i-base, 0, {type: 'L', args: [ф, λ]}); // and adding the midpoints to the polygon
 					cutPoints.splice(i,           0, {type: 'L', args: [x, y]});
 					i --; // and check again
 					repeatCount ++;
@@ -733,8 +746,8 @@ export class Chart {
 					const restart = possibleStarts[bestSection];
 					for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
 						const edge = edges[i%edges.length];
-						const currentPlace = (i === endEdge) ? end : [edge.start.φ, edge.start.λ];
-						const targetPlace = (i === restartEdge) ? restart : [edge.end.φ, edge.end.λ];
+						const currentPlace = (i === endEdge) ? end : [edge.start.ф, edge.start.λ];
+						const targetPlace = (i === restartEdge) ? restart : [edge.end.ф, edge.end.λ];
 						if (currentPlace !== targetPlace)
 							cutPoints.push(...edge.trace(
 								currentPlace[0], currentPlace[1], targetPlace[0], targetPlace[1],
@@ -792,10 +805,10 @@ export class Chart {
 			if (insideOut) { // if it is
 				for (const loop of this.projection.getEdges()) { // draw the outline of the entire map to contain it
 					const startingPoint = loop[0].start;
-					const {x, y} = this.projection.project(startingPoint.φ, startingPoint.λ);
+					const {x, y} = this.projection.project(startingPoint.ф, startingPoint.λ);
 					cutPoints.push({type: 'M', args: [x, y]});
 					for (const edge of loop)
-						cutPoints.push(...edge.trace(edge.start.φ, edge.start.λ, edge.end.φ, edge.end.λ));
+						cutPoints.push(...edge.trace(edge.start.ф, edge.start.λ, edge.end.ф, edge.end.λ));
 				}
 			}
 		}
@@ -894,9 +907,9 @@ export class Chart {
 
 			for (const l of consolidated) {
 				if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
-					throw Error(`i broke it ${l[0].φ} -> ${l[l.length-1].φ}`);
+					throw Error(`i broke it ${l[0].ф} -> ${l[l.length-1].ф}`);
 				if (torsos.has(l[0]) || torsos.has(l[l.length - 1]))
-					throw Error(`yoo broke it! ${l[0].φ} -> ${l[l.length-1].φ}`);
+					throw Error(`yoo broke it! ${l[0].ф} -> ${l[l.length-1].ф}`);
 			}
 
 			if (tails.has(head)) { // does its beginning connect to another?
@@ -923,15 +936,24 @@ export class Chart {
 
 		let output = [];
 		for (const line of consolidated) { // then do the conversion
-			output.push({type: 'M', args: [line[0].φ, line[0].λ]});
+			output.push({type: 'M', args: [line[0].ф, line[0].λ]});
 			for (let i = 1; i < line.length; i ++)
-				output.push({type: 'L', args: [line[i].φ, line[i].λ]});
+				output.push({type: 'L', args: [line[i].ф, line[i].λ]});
 		}
 		return output;
 	}
 
 	/**
-	 * create an ordered Iterator of segments that form the boundary of this.
+	 * create an ordered Iterator of segments that form the border of this civ
+	 * @param civ the Civ whose outline is desired
+	 */
+	static border(civ: Civ): PathSegment[] {
+		const landNodos = filterSet(civ.nodos, (n) => n.biome != 'samud');
+		return Chart.outline(landNodos);
+	}
+
+	/**
+	 * create an ordered Iterator of segments that form the boundary of these nodos.
 	 * @param nodos Set of Node that are part of this group.
 	 * @return Array of PathSegments, ordered widdershins.
 	 */
@@ -949,7 +971,7 @@ export class Chart {
 					const next = ind.leftOf(way); // look for the next triangle, going widdershins
 					if (next !== null) { // assuming there is one,
 						const vertex = next.circumcenter; // pick out its circumcenter to plot
-						output.push({type: 'L', args: [vertex.φ, vertex.λ]}); // make the Path segment
+						output.push({type: 'L', args: [vertex.ф, vertex.λ]}); // make the Path segment
 						const lastEdge = ind.neighbors.get(way);
 						accountedFor.add(lastEdge); // check this edge off
 						if (nodos.has(next.acrossFrom(lastEdge))) // then, depending on the state of the Node after that Triangle

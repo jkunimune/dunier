@@ -137,8 +137,6 @@ export class ProtoLang extends Lect {
 				this.classifiers.get(<LogaTipo>wordType).push(
 					this.noveLoga(`${wordType}${i}`, 1.5/this.complexity));
 		}
-		if (this.diversity > 0.4 && rng.probability(.5))
-			this.classifiers.get(LogaTipo.DESHA)[0] = ipa("ia"); // this is sometimes here
 	}
 
 	getName(label: string, tipo: LogaTipo): Word {

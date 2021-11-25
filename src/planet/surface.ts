@@ -42,17 +42,17 @@ export abstract class Surface {
 	public height: number;
 	public axis: Vector; // orientation of geodetic coordinate system
 	public edge: Map<Nodo, {prev: Nodo, next: Nodo}>;
-	readonly φMin: number;
-	readonly φMax: number;
+	readonly фMin: number;
+	readonly фMax: number;
 	refLatitudes: number[];
 	cumulAreas: number[];
 	cumulDistances: number[];
 
 
-	protected constructor(φMin: number, φMax: number) {
+	protected constructor(фMin: number, фMax: number) {
 		this.nodos = new Set();
-		this.φMin = φMin;
-		this.φMax = φMax;
+		this.фMin = фMin;
+		this.фMax = фMax;
 		this.axis = null;
 		this.edge = new Map();
 	}
@@ -64,17 +64,17 @@ export abstract class Surface {
 		this.refLatitudes = []; // fill in latitude-integrated values
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
-		let φ = this.φMin, A = 0, s = 0;
-		const dφ = (this.φMax - this.φMin)/INTEGRATION_RESOLUTION;
+		let ф = this.фMin, A = 0, s = 0;
+		const dф = (this.фMax - this.фMin)/INTEGRATION_RESOLUTION;
 		for (let i = 0; i <= INTEGRATION_RESOLUTION; i ++) {
-			this.refLatitudes.push(φ);
+			this.refLatitudes.push(ф);
 			this.cumulAreas.push(A);
 			this.cumulDistances.push(s);
-			const dsdφ = this.dsdφ(φ + dφ/2); // a simple middle Riemann sum will do
-			const dAds = this.dAds(φ + dφ/2);
-			φ += dφ;
-			A += dAds*dsdφ*dφ;
-			s += dsdφ*dφ;
+			const dsdф = this.dsdф(ф + dф/2); // a simple middle Riemann sum will do
+			const dAds = this.dAds(ф + dф/2);
+			ф += dф;
+			A += dAds*dsdф*dф;
+			s += dsdф*dф;
 		}
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
@@ -153,8 +153,8 @@ export abstract class Surface {
 	randomPoint(rng: Random): Place {
 		const λ = rng.uniform(-Math.PI, Math.PI);
 		const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
-		const φ = linterp(A, this.cumulAreas, this.refLatitudes);
-		return {φ: φ, λ: λ};
+		const ф = linterp(A, this.cumulAreas, this.refLatitudes);
+		return {ф: ф, λ: λ};
 	}
 
 	/**
@@ -164,15 +164,15 @@ export abstract class Surface {
 		const n = 2*resolution, m = 4*resolution;
 		const X = [], Y = [], Z = [], S = [];
 		for (let i = 0; i <= n; i ++) {
-			const φ = i/n*(this.φMax - this.φMin) + this.φMin; // map i to the valid range for φ
-			const s = this.insolation(φ);
+			const ф = i/n*(this.фMax - this.фMin) + this.фMin; // map i to the valid range for ф
+			const s = this.insolation(ф);
 			X.push([]);
 			Y.push([]);
 			Z.push([]);
 			S.push([]);
 			for (let j = 0; j <= m; j ++) {
 				const λ = j/m*2*Math.PI; // I think λ always represents some [0, 2*pi) angle
-				const {x, y, z} = this.xyz(φ, λ);
+				const {x, y, z} = this.xyz(ф, λ);
 				X[i].push(x);
 				Y[i].push(y);
 				Z[i].push(z);
@@ -192,37 +192,37 @@ export abstract class Surface {
 	/**
 	 * return the local length-to-latitude rate [km]
 	 */
-	abstract dsdφ(φ: number): number;
+	abstract dsdф(ф: number): number;
 
 	/**
 	 * return the local effective width [km]
 	 */
-	abstract dAds(φ: number): number;
+	abstract dAds(ф: number): number;
 
 	/**
 	 * return the amount of solar radiation at a latitude, normalized to average to 1.
 	 */
-	abstract insolation(φ: number): number;
+	abstract insolation(ф: number): number;
 
 	/**
 	 * return the amount of moisture accumulation at a latitude, normalized to peak at 1.
 	 */
-	abstract windConvergence(φ: number): number;
+	abstract windConvergence(ф: number): number;
 
 	/**
 	 * for the purposes of the orographic effect, return a dimensionless tangent velocity.
 	 */
-	abstract windVelocity(φ: number): {nord: number, dong: number};
+	abstract windVelocity(ф: number): {nord: number, dong: number};
 
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
-	abstract xyz(φ: number, λ: number): Vector;
+	abstract xyz(ф: number, λ: number): Vector;
 
 	/**
 	 * return the 2D parameterization corresponding to the given parameters
 	 */
-	abstract φλ(x: number, y: number, z: number): Place;
+	abstract фλ(x: number, y: number, z: number): Place;
 
 	/**
 	 * return the normalized vector pointing outward at this node. the node may be assumed
@@ -244,7 +244,7 @@ export abstract class Surface {
 export class Nodo {
 	public readonly surface: Surface;
 	public readonly index: number;
-	public readonly φ: number;
+	public readonly ф: number;
 	public readonly λ: number;
 	public readonly pos: Vector;
 	public readonly normal: Vector;
@@ -271,9 +271,9 @@ export class Nodo {
 	constructor(index: number, position: Place, surface: Surface) {
 		this.surface = surface;
 		this.index = index;
-		this.φ = position.φ;
+		this.ф = position.ф;
 		this.λ = position.λ;
-		this.pos = surface.xyz(this.φ, this.λ);
+		this.pos = surface.xyz(this.ф, this.λ);
 		const basis = orthogonalBasis(surface.normal(this), true, surface.axis, this.pos.times(-1));
 		this.normal = basis.n;
 		this.nord = basis.v;
@@ -326,7 +326,7 @@ export class Nodo {
  * A voronoi vertex, which exists at the confluence of three Nodos
  */
 export class Triangle {
-	public φ: number;
+	public ф: number;
 	public λ: number;
 	public vertices: Nodo[];
 	public edges: Edge[];
@@ -365,7 +365,7 @@ export class Triangle {
 	}
 
 	/**
-	 * compute the φ-λ parameterization of the circumcenter in the plane normal to the sum
+	 * compute the ф-λ parameterization of the circumcenter in the plane normal to the sum
 	 * of the vertices' normal vectors.
 	 */
 	computeCircumcenter() {
@@ -385,9 +385,9 @@ export class Triangle {
 		for (const nodo of projected)
 			z += nodo.z/3;
 		const center = u.times(x).plus(v.times(y)).plus(n.times(z));
-		this.circumcenter = this.surface.φλ(center.x, center.y, center.z); // finally, put it back in φ-λ space
+		this.circumcenter = this.surface.фλ(center.x, center.y, center.z); // finally, put it back in ф-λ space
 
-		this.φ = this.circumcenter.φ; // and make these values a bit easier to access
+		this.ф = this.circumcenter.ф; // and make these values a bit easier to access
 		this.λ = this.circumcenter.λ;
 	}
 
@@ -449,7 +449,7 @@ export class Edge {
  * Similar to a Vector but in spherical coordinates
  */
 export interface Place {
-	φ: number;
+	ф: number;
 	λ: number;
 }
 

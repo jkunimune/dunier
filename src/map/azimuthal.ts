@@ -32,24 +32,24 @@ export class Azimuthal extends MapProjection {
 	private readonly rMax: number;
 	private readonly rMin: number;
 
-	constructor(surface: Surface) {
+	constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
 		const r0 = surface.dAds(Math.PI/2)/(2*Math.PI);
 		const rMax = r0 + linterp(Math.PI/2, surface.refLatitudes, surface.cumulDistances);
-		super(surface, -rMax, rMax, -rMax, rMax);
+		super(surface, norde, locus, -rMax, rMax, -rMax, rMax);
 		this.rMax = rMax;
 		this.rMin = rMax - surface.height;
 	}
 
-	project(φ: number, λ: number): {x: number, y: number} {
-		const r = this.rMax - linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
+	project(ф: number, λ: number): {x: number, y: number} {
+		const r = this.rMax - linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
 		return {x: r*Math.sin(λ), y: r*Math.cos(λ)};
 	}
 
-	drawParallel(λ0: number, λ1: number, φ: number): PathSegment[] {
-		const r = this.rMax - linterp(φ, this.surface.refLatitudes, this.surface.cumulDistances);
+	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
+		const r = this.rMax - linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
 		const sweepFlag = (λ1 > λ0) ? 0 : 1;
 		if (r > 0) {
-			const {x, y} = this.project(φ, λ1);
+			const {x, y} = this.project(ф, λ1);
 			if (Math.abs(λ0 - λ1) <= Math.PI)
 				return [
 					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
@@ -64,11 +64,11 @@ export class Azimuthal extends MapProjection {
 			return [];
 	}
 
-	getCrossing(φλ0: number[], φλ1: number[]): {endpoint0: Place, endpoint1: Place} {
-		const [φ0, λ0] = φλ0;
-		const [φ1, λ1] = φλ1;
-		if (Math.abs(φ1 - φ0) > Math.PI)
-			return this.getEquatorCrossing(φ0, λ0, φ1, λ1);
+	getCrossing(фλ0: number[], фλ1: number[]): {endpoint0: Place, endpoint1: Place} {
+		const [ф0, λ0] = фλ0;
+		const [ф1, λ1] = фλ1;
+		if (Math.abs(ф1 - ф0) > Math.PI)
+			return this.getEquatorCrossing(ф0, λ0, ф1, λ1);
 		return null;
 	}
 
@@ -76,14 +76,14 @@ export class Azimuthal extends MapProjection {
 		if (this.edges === undefined) {
 			this.edges = [
 				[{
-					start: {φ: this.surface.φMax, λ:  Math.PI},
-					end:   {φ: this.surface.φMax, λ: -Math.PI},
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMax),
+					start: {ф: this.surface.фMax, λ:  Math.PI},
+					end:   {ф: this.surface.фMax, λ: -Math.PI},
+					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.фMax),
 				}],
 				[{
-					start: {φ: this.surface.φMin, λ: -Math.PI},
-					end:   {φ: this.surface.φMin, λ:  Math.PI},
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.φMin),
+					start: {ф: this.surface.фMin, λ: -Math.PI},
+					end:   {ф: this.surface.фMin, λ:  Math.PI},
+					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.фMin),
 				}],
 			];
 		}

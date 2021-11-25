@@ -22,17 +22,17 @@
  * SOFTWARE.
  */
 import {Surface} from "../planet/surface.js";
-import {MapProjection} from "./projection.js";
+import {MapProjection, PathSegment} from "./projection.js";
 
 /**
  * a Plate-Caree projection, primarily for interfacing with other mapping software.
  */
 export class Equirectangular extends MapProjection {
-	constructor(surface: Surface) {
-		super(surface, -Math.PI, Math.PI, -surface.φMax, -surface.φMin);
+	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
+		super(surface, northUp, locus, -Math.PI, Math.PI, -surface.фMax, -surface.фMin);
 	}
 
-	project(φ: number, λ: number): {x: number, y: number} {
-		return {x: λ, y: -φ};
+	project(ф: number, λ: number): {x: number, y: number} {
+		return {x: λ, y: -ф};
 	}
 }

@@ -95,10 +95,10 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
 
 	for (const node of surf.nodos) { // and then throw in the baseline
 		node.terme += Math.pow(
-			surf.insolation(node.φ)*Math.exp(-node.gawe/ATMOSPHERE_THICKNESS),
+			surf.insolation(node.ф)*Math.exp(-node.gawe/ATMOSPHERE_THICKNESS),
 			1/4.)*avgTerme - 273;
-		node.barxe += surf.windConvergence(node.φ);
-		const {nord, dong} = surf.windVelocity(node.φ);
+		node.barxe += surf.windConvergence(node.ф);
+		const {nord, dong} = surf.windVelocity(node.ф);
 		node.windVelocity = node.nord.times(nord).plus(node.dong.times(dong));
 	}
 

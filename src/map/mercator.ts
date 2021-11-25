@@ -22,33 +22,33 @@
  * SOFTWARE.
  */
 import {Surface} from "../planet/surface.js";
-import {MapProjection} from "./projection.js";
+import {MapProjection, PathSegment} from "./projection.js";
 import {linterp} from "../util/util.js";
 
 /**
  * a cylindrical projection that makes loxodromes appear as straight lines.
  */
 export class Mercator extends MapProjection {
-	private readonly φRef: number[];
+	private readonly фRef: number[];
 	private readonly yRef: number[];
 
-	constructor(surface: Surface) {
-		super(surface, -Math.PI, Math.PI, null, 0);
+	constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
+		super(surface, norde, locus, -Math.PI, Math.PI, null, 0);
 
-		this.φRef = surface.refLatitudes;
+		this.фRef = surface.refLatitudes;
 		this.yRef = [0];
-		for (let i = 1; i < this.φRef.length; i ++) {
-			const dφ = this.φRef[i] - this.φRef[i-1];
-			const dsdφ = surface.dsdφ((this.φRef[i-1] + this.φRef[i])/2);
-			const dAds = surface.dAds((this.φRef[i-1] + this.φRef[i])/2);
-			this.yRef.push(this.yRef[i-1] - 2*Math.PI*dsdφ*dφ/dAds);
+		for (let i = 1; i < this.фRef.length; i ++) {
+			const dф = this.фRef[i] - this.фRef[i-1];
+			const dsdф = surface.dsdф((this.фRef[i-1] + this.фRef[i])/2);
+			const dAds = surface.dAds((this.фRef[i-1] + this.фRef[i])/2);
+			this.yRef.push(this.yRef[i-1] - 2*Math.PI*dsdф*dф/dAds);
 		}
 
 		this.bottom = this.yRef[0];
 		this.top = this.yRef[this.yRef.length-1];
-		if (surface.dAds(surface.φMin) > surface.dAds(surface.φMax)) // if the South Pole is thicker than the North
+		if (surface.dAds(surface.фMin) > surface.dAds(surface.фMax)) // if the South Pole is thicker than the North
 			this.top = Math.max(this.top, this.bottom - 2*Math.PI); // crop the top to make it square
-		else if (surface.dAds(surface.φMin) < surface.dAds(surface.φMax)) // if the North Pole is thicker
+		else if (surface.dAds(surface.фMin) < surface.dAds(surface.фMax)) // if the North Pole is thicker
 			this.bottom = Math.min(this.bottom, this.top + 2*Math.PI); // crop the bottom to make it square
 		else { // if they are equally important
 			const excess = Math.max(0, this.bottom - this.top - 2*Math.PI);
@@ -57,7 +57,7 @@ export class Mercator extends MapProjection {
 		}
 	}
 
-	project(φ: number, λ: number): {x: number, y: number} {
-		return {x: λ, y: linterp(φ, this.φRef, this.yRef)};
+	project(ф: number, λ: number): {x: number, y: number} {
+		return {x: λ, y: linterp(ф, this.фRef, this.yRef)};
 	}
 }

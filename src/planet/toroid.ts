@@ -54,10 +54,10 @@ export class Toroid extends Surface {
 		const n = 4*Math.trunc(m*this.majorRadius/(this.minorRadius*this.elongation));
 		const nodos = [];
 		for (let i = 0; i < n; i ++) { // construct a chain of points,
-			const φ0 = (i%2 === 0) ? 0 : Math.PI/m;
+			const ф0 = (i%2 === 0) ? 0 : Math.PI/m;
 			for (let j = 0; j < m; j ++)
 				nodos.push(new Nodo(null, {
-					φ: φ0 + 2*Math.PI/m * j,
+					ф: ф0 + 2*Math.PI/m * j,
 					λ: 2*Math.PI/n * i,
 				}, this));
 		}
@@ -85,26 +85,26 @@ export class Toroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	dsdφ(φ: number): number {
-		const β = Math.atan(Math.tan(φ)*this.elongation);
-		const dβdφ = this.elongation/(
-			Math.pow(Math.cos(φ), 2) +
-			Math.pow(this.elongation*Math.sin(φ), 2));
+	dsdф(ф: number): number {
+		const β = Math.atan(Math.tan(ф)*this.elongation);
+		const dβdф = this.elongation/(
+			Math.pow(Math.cos(ф), 2) +
+			Math.pow(this.elongation*Math.sin(ф), 2));
 		const dsdβ = this.minorRadius*
 			Math.hypot(Math.sin(β), this.elongation*Math.cos(β));
-		return dsdβ*dβdφ;
+		return dsdβ*dβdф;
 	}
 
-	dAds(φ: number): number {
-		const β = Math.atan2(Math.sin(φ)*this.elongation, Math.cos(φ));
+	dAds(ф: number): number {
+		const β = Math.atan2(Math.sin(ф)*this.elongation, Math.cos(ф));
 		return 2*Math.PI*(this.majorRadius + this.minorRadius*Math.cos(β));
 	}
 
-	insolation(φ: number): number {
-		const β = Math.atan(Math.tan(φ)*this.elongation);
-		const incident = Spheroid.annualInsolationFunction(this.obliquity, φ);
+	insolation(ф: number): number {
+		const β = Math.atan(Math.tan(ф)*this.elongation);
+		const incident = Spheroid.annualInsolationFunction(this.obliquity, ф);
 		let opacity;
-		if (Math.cos(φ) >= 0)
+		if (Math.cos(ф) >= 0)
 			opacity = 0;
 		else if (this.obliquity === 0)
 			opacity = 1;
@@ -113,49 +113,49 @@ export class Toroid extends Surface {
 			opacity =
 				Math.min(1, Math.min(1, (1 - Math.sin(β))/dz) * Math.min(1, (1 + Math.sin(β))/dz) +
 					0.4*Math.pow(Math.sin(2*β), 2)/(1 + dz) -
-					0.8*this.elongation*this.minorRadius/this.majorRadius * Math.pow(Math.cos(φ), 3));
+					0.8*this.elongation*this.minorRadius/this.majorRadius * Math.pow(Math.cos(ф), 3));
 		}
 		return incident*(1 - opacity);
 	}
 
-	windConvergence(φ: number): number {
-		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
+	windConvergence(ф: number): number {
+		return Math.pow(Math.cos(ф), 2) + Math.pow(Math.cos(3*ф), 2);
 	}
 
-	windVelocity(φ: number): {nord: number, dong: number} {
-		return {nord: 0, dong: Math.cos(φ)};
+	windVelocity(ф: number): {nord: number, dong: number} {
+		return {nord: 0, dong: Math.cos(ф)};
 	}
 
-	xyz(φ: number, λ: number): Vector {
-		const β = Math.atan2(Math.sin(φ)*this.elongation, Math.cos(φ));
+	xyz(ф: number, λ: number): Vector {
+		const β = Math.atan2(Math.sin(ф)*this.elongation, Math.cos(ф));
 		const r = this.majorRadius + this.minorRadius*Math.cos(β);
 		const z = this.elongation*this.minorRadius*Math.sin(β);
 		return new Vector(
 			r*Math.sin(λ), -r*Math.cos(λ), z);
 	}
 
-	φλ(x: number, y: number, z: number): Place {
+	фλ(x: number, y: number, z: number): Place {
 		const r = Math.hypot(x, y);
 		const β = Math.atan2(z/this.elongation, r - this.majorRadius);
 		return {
-			φ: Math.atan2(Math.sin(β)/this.elongation, Math.cos(β)),
+			ф: Math.atan2(Math.sin(β)/this.elongation, Math.cos(β)),
 			λ: Math.atan2(x, -y)};
 	}
 
 	normal(node: Place): Vector {
 		return new Vector(
-			Math.cos(node.φ)*Math.sin(node.λ),
-			-Math.cos(node.φ)*Math.cos(node.λ),
-			Math.sin(node.φ));
+			Math.cos(node.ф)*Math.sin(node.λ),
+			-Math.cos(node.ф)*Math.cos(node.λ),
+			Math.sin(node.ф));
 	}
 
 	distance(a: Place, b: Place): number {
 		const rAvg = 2/(
-			1/(this.majorRadius + this.minorRadius*Math.cos(a.φ)) +
-			1/(this.majorRadius + this.minorRadius*Math.cos(b.φ)));
-		const aAvg = (this.dsdφ(a.φ) + this.dsdφ(b.φ))/2;
+			1/(this.majorRadius + this.minorRadius*Math.cos(a.ф)) +
+			1/(this.majorRadius + this.minorRadius*Math.cos(b.ф)));
+		const aAvg = (this.dsdф(a.ф) + this.dsdф(b.ф))/2;
 		const sTor = rAvg * (Math.abs(a.λ - b.λ) % (2*Math.PI));
-		const sPol = aAvg * Math.abs((a.φ - b.φ) % (2*Math.PI));
+		const sPol = aAvg * Math.abs((a.ф - b.ф) % (2*Math.PI));
 		return Math.hypot(sTor, sPol);
 	}
 }

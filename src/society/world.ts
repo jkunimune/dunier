@@ -78,7 +78,7 @@ export class World {
 
 	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
-	public civs: Set<Civ>;
+	private readonly civs: Set<Civ>;
 	politicalMap: Map<Nodo, Civ>;
 
 
@@ -233,5 +233,29 @@ export class World {
 			return this.politicalMap.get(tile);
 		else
 			return null;
+	}
+
+	/**
+	 * get a copied list of the id of every country currently in this world, sorted from
+	 * most to least populous
+	 */
+	getCivs(sorted: boolean = false): Civ[] {
+		const output = [];
+		for (const civ of this.civs)
+			output.push(civ);
+		if (sorted)
+			output.sort((a, b) => b.getPopulation() - a.getPopulation());
+		return output;
+	}
+
+	/**
+	 * get the Civ from this set that has this ID
+	 * @param id
+	 */
+	getCiv(id: number): Civ {
+		for (const civ of this.civs)
+			if (civ.id == id)
+				return civ;
+		throw new RangeError(`there is no civ with id ${id}`);
 	}
 }
