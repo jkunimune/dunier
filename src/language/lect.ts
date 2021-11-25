@@ -90,7 +90,7 @@ export abstract class Lect {
 }
 
 export class ProtoLang extends Lect {
-	private static VOWELS = ipa("aiueoɜɛɔyø");
+	private static VOWELS = ipa("aiueoəɛɔyø");
 	private static CONSON = ipa("mnptksljwhfbdɡrzŋʃʔxqvɣθʙ");
 	private static MEDIAL = ipa("ljwr");
 	private static R_INDEX = ProtoLang.CONSON.indexOf(ipa("r")[0]); // note the index of r, because it's phonotactically important

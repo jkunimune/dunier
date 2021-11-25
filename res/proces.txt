@@ -96,7 +96,7 @@
 010 mute [ +ALVEO +TRILL ] > [ +CLOSE ] /									% trills are hard
 200 mute [ +LONG +TAP ] > [ +SHORT +TRILL ] /								% taps geminate to trills
 100 mute [ +LABIAL +NONSYLLAB +CLOSE ] > [ +LABIODENT ] /					% w > ʋ
-005 mute [ +LABIAL +NONSYLLAB +CLOSE ] > [ +LABIODENT +TAP ] /				% w > ⱱ
+002 mute [ +LABIAL +NONSYLLAB +CLOSE ] > [ +LABIODENT +TAP ] /				% w > ⱱ
 100 mute [ +LABIAL +CONT +NONSYLLAB ] > w / [ -VOCOID ] _ [ +VOCOID ]		% v > w
 010 mute [ +UNROUND -LATERAL +CLOSE +NONSYLLAB ] > [ +FRIC ] /				% frication of approximants
 005 mute [ +DORSAL +STOP ] > [ +PALATAL +CLOSE ] / [ +VOWEL ] _ [ -VOCOID ]	% k > j in coda
@@ -156,7 +156,7 @@
 050 mute [ -VOICE +SONOR ] > [ +VOICE ] /									% get rid of voiceless sonorants
 050 mute [ -VOICE +SONOR ] > [ +TENUIS +GLOT +FRIC ] /						% get rid of voiceless sonorants
 050 mute [ -VOICE +SONOR ] > /												% get rid of voiceless sonorants
-010 mute [ +RHOTIC ] > ɜ / _ [ -VOWEL ]										% r-dropping
+010 mute [ +RHOTIC ] > ə̯ / _ [ -VOWEL ]										% r-dropping
 020 mute [ +LABIALIZ -VOCOID ] > [ +UNROUND ] /
 010 mute [ +LABIALIZ -VOCOID ] > [ +BILAB ] /
 010 mute [ +LABIALIZ -VOCOID ] > [ +UNROUND ] w / _ [ -LABIAL ]				% qu > cu
@@ -202,7 +202,7 @@
 020 mute [ +LONG +MID +VOWEL ] > [ +SHORT ]0 [ +NONSYLLAB +CLOSE +SHORT ]0 /% diphthongize mid vowels III
 020 mute [ +STRESS +VOWEL ] > [ ] [ +NONSYLLAB +CLOSE +SHORT ] / _ [ +VOWEL ]% diphthongization I
 010 mute [ +VOWEL ] > [ ] [ +NONSYLLAB +CLOSE +SHORT ] / _ [ +VOWEL ]		% diphthongization II
-002 mute [ +LAX +!PALATAL +VOWEL ] > [ +RAISED +TENSE ]0 ɜ̯ /				% drawl
+002 mute [ +LAX +!PALATAL +VOWEL ] > [ +RAISED +TENSE ]0 ə̯ /				% drawl
 010 mute [ +CENTRAL +VOWEL ] > [ +VELAR ] /
 050 mute [ +PHARYNGEALIZ +AFFR ] > [ +UNROUND +STOP ] /						% affricate to stop
 050 mute [ +PHARYNGEALIZ +OBSTR ] > [ +UNROUND +AFFR ] /					% affricate pharangealizeds
@@ -325,9 +325,9 @@
 020 mute [ +LIQUID ] [ -LIQUID ] [ +LIQUID ] > [ ]2 [ ]1 [ ]0				% ral > lar
 
 %%	INSERTION
-010 mute > ɜ / [ +OCCL +OBSTR ] _ [ +OCCL ]
-010 mute > ɜ / [ +SIBILANT ] _ [ +SIBILANT ]
-010 mute > ɜ / [ +CORON +STOP ] _ [ +CORON ]
+010 mute > ə / [ +OCCL +OBSTR ] _ [ +OCCL ]
+010 mute > ə / [ +SIBILANT ] _ [ +SIBILANT ]
+010 mute > ə / [ +CORON +STOP ] _ [ +CORON ]
 010 mute > s / [ +CORON +STOP ] _ [ +CORON +OCCL ]
 005 mute > ʔ / [ -NONSYLLAB ] _ [ +VOWEL ]
 005 mute [ +VOWEL ] > [ +NONSYLLAB +CLOSE ] [ ] / [ -NONSYLLAB ] _			% glide insertion
@@ -340,7 +340,7 @@
 050 mute [ -CORON +!NASAL ] > [ ] [ ±voze +STOP ] / _ [ +CORON +STOP ]		% md > mbd
 010 mute [ +!NASAL ] > [ ] [ +STOP ] / _ [ +FRIC ]							% ms > mbs
 010 mute [ +SIBILANT ] > [ ] [ +STOP ] / _ [ +RHOTIC ]						% sr > str
-010 mute > ɜ / [ -CONT ] _ [ +VIBR ]
+010 mute > ə / [ -CONT ] _ [ +VIBR ]
 002 mute [ +VOICE +BILAB +STOP ] > [ +NASALIZ +TRILL ] / _ [ +VELAR +VOCOID ]% ʙʙʙʙʙʙ
 002 mute [ +LABIAL +VOWEL ] > [ +BILAB +TRILL ] / [ +STOP ] _				% ʙʙʙʙʙʙ
 
