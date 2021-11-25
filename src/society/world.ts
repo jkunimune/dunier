@@ -79,13 +79,15 @@ export class World {
 	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
 	private readonly civs: Set<Civ>;
-	politicalMap: Map<Nodo, Civ>;
+	private readonly politicalMap: Map<Nodo, Civ>;
+	private nextID: number;
 
 
 	constructor(cataclysms: number, planet: Surface) {
 		this.cataclysms = cataclysms;
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
+		this.nextID = 0;
 		this.politicalMap = new Map();
 
 		for (const nodo of planet.nodos) { // assine the society-relevant values to the Nodos
@@ -131,15 +133,16 @@ export class World {
 			const ruler = this.currentRuler(tile);
 			if (ruler == null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(World.authoritarianism*World.timeStep*demomultia))
-					this.civs.add(new Civ(tile, this.civs.size, this, rng));
+					this.civs.add(new Civ(tile, this.nextID, this, rng));
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
 				let linguisticModifier = World.nationalism;
 				if (tile.kultur.lect.isIntelligible(ruler.capital.kultur.lect))
 					linguisticModifier = 1;
 				if (rng.probability(World.libertarianism*World.timeStep*demomultia*linguisticModifier)) // use the population without technology correction for balancing
-					this.civs.add(new Civ(tile, this.civs.size, this, rng, ruler.technology));
+					this.civs.add(new Civ(tile, this.nextID, this, rng, ruler.technology));
 			}
+			this.nextID ++;
 		}
 	}
 
