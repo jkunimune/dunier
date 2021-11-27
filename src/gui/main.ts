@@ -30,6 +30,7 @@ import {World} from "../society/world.js";
 import {Random} from "../util/random.js";
 import {Chart} from "../map/chart.js";
 import {Azimuthal} from "../map/azimuthal.js";
+import {Bonne} from "../map/bonne.js";
 import {Equirectangular} from "../map/equirectangular.js";
 import {Mercator} from "../map/mercator.js";
 import {EqualArea} from "../map/equalarea.js";
@@ -291,6 +292,8 @@ function mapApply() {
 		mapper = new Chart(new Mercator(surface, norde, locus));
 	else if (projection == 'eckert')
 		mapper = new Chart(new EqualArea(surface, norde, locus));
+	else if (projection == 'bonne')
+		mapper = new Chart(new Bonne(surface, norde, locus));
 	else
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 

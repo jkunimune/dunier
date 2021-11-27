@@ -488,6 +488,7 @@ export class Chart {
 		let axisValue = Number.NEGATIVE_INFINITY;
 		let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisH = null;
 		for (const candidate of candidates) { // for each candidate label axis
+			if (candidate.length < 3) continue; // with at least three points
 			const {R, cx, cy} = circularRegression(candidate.map((i: number) => centers[i]));
 			const midpoint = centers[candidate[Math.trunc(candidate.length/2)]];
 
@@ -501,7 +502,7 @@ export class Chart {
 				circularPoints.push({x: xp, y: yp});
 			}
 
-			let xMin = -Math.PI*R, xMax = Math.PI*R;
+			let xMin = -Math.PI*R, xMax = Math.PI*R; // TODO: move more of this into separate funccions
 			const wedges: {xL: number, xR: number, y: number}[] = []; // get wedges from edges
 			for (let i = 0; i < points.length; i ++) { // there's a wedge associated with each pair of points
 				const p0 = circularPoints[i];
@@ -538,35 +539,8 @@ export class Chart {
 				continue; // just skip them
 			wedges.sort((a: {y: number}, b: {y: number}) => b.y - a.y); // TODO it would be slightly more efficient if I can merge wedges that share a min vertex
 
-			const validRegion = new ErodingSegmentTree(xMin, xMax); // construct segment tree
+			let {location, halfHeight} = Chart.findOpenSpotOnArc(xMin, xMax, aspect, wedges);
 
-			let halfHeight = 0; // iterate height upward until only one segment is left
-			let best;
-			while (true) {
-				const pole = validRegion.getPole();
-				if (wedges.length > 0 &&
-					wedges[wedges.length-1].y - halfHeight < pole.location/aspect) { // either go to the next wedge if it comes before we run out of space
-					const {xL, xR, y} = wedges.pop();
-					validRegion.erode((y - halfHeight)*aspect);
-					halfHeight = y;
-					if (validRegion.getMinim() >= xL && validRegion.getMaxim() <= xR) { // potentially stopping if it fills the entire remaining area
-						console.log(validRegion);
-						if (validRegion.emptyAt(0))
-							best = 0;
-						else
-							best = validRegion.getClosest(0);
-						break;
-					}
-					else {
-						validRegion.fill(xL, xR);
-					}
-				}
-				else { // or go to here we run out of space
-					best = pole.location;
-					halfHeight += pole.radius/aspect;
-					break;
-				}
-			}
 			const area = halfHeight*halfHeight, bendRatio = halfHeight/R, horizontality = -Math.sin(θ0);
 			if (horizontality < 0) // if it's going to be upside down
 				halfHeight *= -1; // flip it around
@@ -576,8 +550,8 @@ export class Chart {
 				axisR = R;
 				axisCx = cx;
 				axisCy = cy;
-				axisΘL = θ0 + best/R - halfHeight*aspect/R;
-				axisΘR = θ0 + best/R + halfHeight*aspect/R;
+				axisΘL = θ0 + location/R - halfHeight*aspect/R;
+				axisΘR = θ0 + location/R + halfHeight*aspect/R;
 				axisH = 2*Math.abs(halfHeight); // TODO: enforce font size limit
 			}
 		}
@@ -619,6 +593,36 @@ export class Chart {
 		this.labelIndex += 1;
 
 		return textGroup;
+	}
+
+	private static findOpenSpotOnArc(min: number, max: number, aspect: number,
+							  wedges: {xL: number, xR: number, y: number}[]
+	): { location: number, halfHeight: number } {
+
+		const validRegion = new ErodingSegmentTree(min, max); // construct segment tree
+		let y = 0; // iterate height upward until no segments are left
+		while (true) {
+			if (wedges.length > 0) {
+				const pole = validRegion.getCenter();
+				const next = wedges.pop();
+				if (next.y < y + pole.radius/aspect) { // if the next wedge comes before we run out of space
+					validRegion.erode((next.y - y)*aspect); // go up to it
+					y = next.y;
+					if (validRegion.getMinim() >= next.xL && validRegion.getMaxim() <= next.xR) { // if it obstructs the entire remaining area
+						if (validRegion.contains(0)) // pick a remaining spot and return the current heit
+							return {halfHeight: y, location: 0};
+						else
+							return {halfHeight: y, location: validRegion.getClosest(0)};
+					}
+					else {
+						validRegion.remove(next.xL, next.xR); // or just cover up whatever area it obstructs
+					}
+				}
+				else { // if the next wedge comes to late, find the last remaining point
+					return {location: pole.location, halfHeight: pole.radius/aspect};
+				}
+			}
+		}
 	}
 
 	/**

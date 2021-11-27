@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {Place, Surface} from "../planet/surface.js";
-import {Vector} from "../util/util.js";
+import {standardizeAngle, Vector} from "../util/util.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 
 
@@ -68,7 +68,7 @@ export abstract class MapProjection {
 
 		this.northUp = northUp;
 		if (locus != null)
-			this.center = MapProjection.largest_gap(locus) + Math.PI;
+			this.center = MapProjection.centralMeridian(locus);
 		else
 			this.center = 0;
 	}
@@ -88,13 +88,12 @@ export abstract class MapProjection {
 		const output: PathSegment[] = [];
 		for (const segment of segments) {
 			const [фi, λi] = segment.args;
-			let λo = λi - this.center; // shift to the central meridian
+			let λo = standardizeAngle(λi - this.center); // shift to the central meridian and snap the longitude into the [-π, π] domain
 			let фo = фi;
 			if (!this.northUp) { // flip the map over if it should be south-up
 				фo *= -1;
 				λo *= -1;
 			}
-			λo = λo - Math.floor((λo + Math.PI)/(2*Math.PI))*2*Math.PI; // snap the longitude into the [-π, π] domain
 			output.push({ type: segment.type, args: [фo, λo] })
 		}
 		return output;
@@ -236,21 +235,21 @@ export abstract class MapProjection {
 	 * @param segments the list of segments that fill up some region in n dimensions
 	 * distances between the ritemost endpoint and +π and the leftmost endpoint and -π
 	 */
-	static largest_gap(segments: PathSegment[]): number {
-		const coverage: ErodingSegmentTree = new ErodingSegmentTree(-Math.PI, Math.PI);
+	static centralMeridian(segments: PathSegment[]): number {
+		const emptyLongitudes: ErodingSegmentTree = new ErodingSegmentTree(-Math.PI, Math.PI);
 		for (let i = 1; i < segments.length; i ++) {
 			if (segments[i].type != 'M') {
 				const x1 = segments[i - 1].args[1];
 				const x2 = segments[i].args[1];
 				if (Math.abs(x1 - x2) < Math.PI) {
-					coverage.fill(Math.min(x1, x2), Math.max(x1, x2));
+					emptyLongitudes.remove(Math.min(x1, x2), Math.max(x1, x2));
 				}
 				else {
-					coverage.fill(Math.max(x1, x2), Math.PI);
-					coverage.fill(-Math.PI, Math.min(x1, x2));
+					emptyLongitudes.remove(Math.max(x1, x2), Math.PI);
+					emptyLongitudes.remove(-Math.PI, Math.min(x1, x2));
 				}
 			}
 		}
-		return coverage.getPole(true).location;
+		return emptyLongitudes.getCenter(true).location + Math.PI;
 	}
 }

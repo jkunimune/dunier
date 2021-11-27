@@ -67,7 +67,6 @@ export class EqualArea extends MapProjection {
 	}
 
 	drawMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
-		console.assert(ф0 !== ф1, ф0);
 		const edge = [];
 		let i0, i1;
 		if (ф1 > ф0) {

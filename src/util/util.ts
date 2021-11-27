@@ -78,6 +78,14 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 }
 
 /**
+ * shift a number by hole multiples of 2π to put it in the range
+ * @param angle
+ */
+export function standardizeAngle(angle: number): number {
+	return angle - Math.floor((angle + Math.PI)/(2*Math.PI))*2*Math.PI
+}
+
+/**
  * combine the two arrays and remove duplicates.
  */
 export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {

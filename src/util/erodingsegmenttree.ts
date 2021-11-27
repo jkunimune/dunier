@@ -23,8 +23,7 @@
  */
 
 /**
- * a data structure storing a series of nonintersecting segments on a line tha break it up
- * into two regions, the empty, and the filled.
+ * a data structure storing a series of nonintersecting line segments that shrink.
  */
 export class ErodingSegmentTree {
 	/** the remaining height it can erode before being empty (half-width of the largest empty interval) */
@@ -56,9 +55,9 @@ export class ErodingSegmentTree {
 	 * @param xL
 	 * @param xR
 	 */
-	fill(xL: number, xR: number): void {
+	public remove(xL: number, xR: number): void {
 		if (xL > xR)
-			throw RangeError("blocking range must be positive!");
+			throw RangeError("removal range must be positive!");
 		let left = this.search(xL, this.mul); // find the left bound
 		if (left !== null && left.esaLeft) // if it is in an included area
 			left = this.insert(xL, false, this.mul); // insert a new Link
@@ -85,7 +84,7 @@ export class ErodingSegmentTree {
 	}
 
 	/**
-	 * set all points within t of a full region to full.
+	 * shorten all line segments by t at each end.
 	 * @param t
 	 */
 	erode(t: number): void {
@@ -106,25 +105,12 @@ export class ErodingSegmentTree {
 	}
 
 	/**
-	 * is this value in an empty region?
+	 * is this value on one of the line segments?
 	 * @param value
 	 */
-	emptyAt(value: number): boolean {
+	public contains(value: number): boolean {
 		const left = this.search(value, this.mul);
 		return left !== null && left.esaLeft;
-	}
-
-	/**
-	 * find the endpoint nearest this value.
-	 * @param value
-	 */
-	nearest(value: number): number {
-		const left = this.search(value, this.mul);
-		const rait = left.bad;
-		if (value - left.val < rait.val - value)
-			return left.val;
-		else
-			return rait.val;
 	}
 
 	/**
@@ -133,7 +119,7 @@ export class ErodingSegmentTree {
 	 * @param left
 	 * @param start
 	 */
-	insert(value: number, left: boolean, start: Link): Link {
+	private insert(value: number, left: boolean, start: Link): Link {
 		if (start.val <= value) {
 			if (start.raitPute !== null)
 				return this.insert(value, left, start.raitPute); // look in the right subtree
@@ -153,7 +139,7 @@ export class ErodingSegmentTree {
 	 * @param value
 	 * @param start
 	 */
-	search(value: number, start: Link): Link {
+	private search(value: number, start: Link): Link {
 		if (start.val <= value) { // if it could be start
 			let res = null;
 			if (start.raitPute !== null) // look in the right subtree
@@ -177,10 +163,12 @@ export class ErodingSegmentTree {
 	 * @param rait
 	 * @param start the root of the subtree where we're doing
 	 */
-	deleteBetween(left: Link, rait: Link, start: Link): void { // TODO how will this work with identical leavs?
+	private deleteBetween(left: Link, rait: Link, start: Link): void { // TODO how will this work with identical leavs?
 		if (start === this.mul) { // if this is the top level, there's some stuff we need to check
 			if (left === null && rait === null) { // if we're deleting the whole thing
 				this.mul = null; // delete the whole thing and be done
+				this.maxim = null;
+				this.minim = null;
 				return;
 			}
 			else if (left === null) // if we're deleting the left side
@@ -222,7 +210,7 @@ export class ErodingSegmentTree {
 	 * remove a single node from the tree, keeping its children
 	 * @param link
 	 */
-	delete(link: Link) {
+	private delete(link: Link) {
 		if (link.leftPute === null) {
 			if (link.raitPute === null) { // if there are no children
 				if (link.jener === null)
@@ -257,32 +245,38 @@ export class ErodingSegmentTree {
 		}
 	}
 
-	getClosest(value: number) {
-		let closest = Number.NaN;
-		let link = this.minim;
-		while (link !== null) {
-			if (Number.isNaN(closest) || Math.abs(link.val - value) < Math.abs(closest - value))
-				closest = link.val;
-			link = link.bad;
-		}
-		return closest;
+	/**
+	 * get the nearest point to value that is contained in one of the line segments.
+	 * @param value
+	 */
+	public getClosest(value: number): number {
+		const left = this.search(value, this.mul);
+		if (left === null)
+			return this.minim.val;
+		else if (left.bad === null)
+			return this.maxim.val;
+		const rait = left.bad;
+		if (value - left.val < rait.val - value)
+			return left.val;
+		else
+			return rait.val;
 	}
 
-	getMinim(): number {
+	public getMinim(): number {
 		return this.minim.val;
 	}
 
-	getMaxim(): number {
+	public getMaxim(): number {
 		return this.maxim.val;
 	}
 
 	/**
-	 * get the locacion of the point furthest from any filld region, and the distance
-	 * from it to the two adjacent filld regions.
+	 * get the midpoint of the longest line segment, and half the length of the longest
+	 * line segment.
 	 * @param periodic whether we should treat it as an angular coordinate where -π is the
 	 *                 same as +π
 	 */
-	getPole(periodic: boolean = false): { location: number, radius: number } {
+	public getCenter(periodic: boolean = false): { location: number, radius: number } {
 		if (periodic && this.minim.val == -Math.PI && this.maxim.val == Math.PI) { // if it's periodic
 			const leftGap = this.minim.bad.val - this.minim.val; // you haff to check the outside
 			const riteGap = this.maxim.val - this.maxim.cen.val;
@@ -293,7 +287,7 @@ export class ErodingSegmentTree {
 		return { location: this.pole, radius: this.radius }; // otherwise it's just these instance variables of which you've kept track
 	}
 
-	print(subtree: Link = null, indent: number = 0): void {
+	public print(subtree: Link = null, indent: number = 0): void {
 		if (subtree === null)
 			subtree = this.mul;
 		if (subtree === null) {
