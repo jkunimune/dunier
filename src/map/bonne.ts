@@ -23,7 +23,6 @@
  */
 import {MapProjection, PathSegment} from "./projection.js";
 import {Surface} from "../planet/surface.js";
-import {standardizeAngle} from "../util/util.js";
 
 export class Bonne extends MapProjection {
 	private readonly EDGE_RESOLUTION = 18; // the number of points per radian
@@ -35,7 +34,7 @@ export class Bonne extends MapProjection {
 
 	public constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
 		super(surface, norde, locus,
-			0, 0, 0, 0); // compute the central meridian
+			null, null, null, null); // compute the central meridian
 
 		let minф = Number.POSITIVE_INFINITY; // get the bounds of the locus
 		let maxф = Number.NEGATIVE_INFINITY;
@@ -66,17 +65,18 @@ export class Bonne extends MapProjection {
 		this.maxλ = Math.min(Math.PI, 2*maxλ);
 		this.minλ = -this.maxλ;
 
-		this.top = this.project(this.maxф, 0).y; // then determine the dimensions of this map
-		this.bottom = this.project(this.minф, 0).y;
+		let top = this.project(this.maxф, 0).y; // then determine the dimensions of this map
+		let bottom = this.project(this.minф, 0).y;
+		let right = 0;
 		for (const {args} of this.drawMeridian(this.minф, this.maxф, this.maxλ)) {
-			if (args[0] > this.right)
-				this.right = args[0];
-			if (args[1] < this.top)
-				this.top = args[1];
-			if (args[1] > this.bottom)
-				this.bottom = args[1];
+			if (args[0] > right)
+				right = args[0];
+			if (args[1] < top)
+				top = args[1];
+			if (args[1] > bottom)
+				bottom = args[1];
 		}
-		this.left = -this.right;
+		this.setDimensions(-right, right, top, bottom);
 	}
 
 	project(ф: number, λ: number): { x: number; y: number } {

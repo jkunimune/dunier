@@ -27,7 +27,7 @@ import {
 	longestShortestPath, filterSet,
 } from "../util/util.js";
 import {World} from "../society/world.js";
-import {MapProjection, PathSegment} from "./projection.js";
+import {Direction, MapEdge, MapProjection, PathSegment} from "./projection.js";
 import {Civ} from "../society/civ.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
 import {circularRegression} from "../util/fitting.js";
@@ -149,17 +149,17 @@ export class Chart {
 		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
 		   civLabels: boolean = false, geoLabels: boolean = false,
 		   fontSize: number = 2, style: string = null) {
+		const bbox = this.projection.getDimensions();
 		svg.setAttribute('viewBox',
-			`${this.projection.left} ${this.projection.top}
-			 ${this.projection.right - this.projection.left} ${this.projection.bottom - this.projection.top}`);
+			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
 		svg.textContent = ''; // clear the layer
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 		g.setAttribute('id', 'jeni-zemgrafe');
 		svg.appendChild(g);
 
 		this.testTextSize = Math.min(
-			(this.projection.right - this.projection.left)/18,
-			this.projection.bottom - this.projection.top);
+			(bbox.width)/18,
+			bbox.height);
 		this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 		this.testText.setAttribute('class', 'zemgrafe-label');
 		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`);
@@ -216,7 +216,7 @@ export class Chart {
 
 		if (kenare && world !== null) {
 			for (const civ of world.getCivs()) {
-				if (civ.getPopulation() > 0) {
+				// if (civ.getPopulation() > 0) {
 					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
 					const text = document.createTextNode(
@@ -229,7 +229,7 @@ export class Chart {
 						filterSet(civ.nodos, n => n.biome !== 'samud'),
 						titledG,
 						'none', '#000', 0.7).setAttribute('pointer-events', 'all');
-				}
+				// }
 			}
 		}
 
@@ -279,7 +279,7 @@ export class Chart {
 	 */
 	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number,
 		   smooth: boolean = false): SVGPathElement {
-		const path = this.draw(this.map(Chart.trace(strokes), smooth, false), svg);
+		const path = this.draw(this.map(Chart.aggregate(strokes), smooth, false), svg);
 		path.setAttribute('style',
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: round; stroke-linecap: round;`);
 		return path;
@@ -343,7 +343,7 @@ export class Chart {
 		this.testText.textContent = '..'+label+'..';
 		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
 		this.testText.textContent = '';
-		const mapScale = svg.clientWidth/(this.projection.right - this.projection.left); // and also the current size of the map in px for reference
+		const mapScale = svg.clientWidth/this.projection.getDimensions().width; // and also the current size of the map in px for reference
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
@@ -689,8 +689,7 @@ export class Chart {
 			}
 		}
 
-		const precision = MAP_PRECISION*Math.hypot(
-			this.projection.right - this.projection.left, this.projection.top - this.projection.bottom)
+		const precision = MAP_PRECISION*this.projection.getDimensions().diagonal;
 		const cutPoints: PathSegment[] = []; // now start putting together the projected points
 		let jinPoints = sections.pop();
 		let supersectionStart = jinPoints[0].args;
@@ -730,7 +729,7 @@ export class Chart {
 			else {
 				const endPosition = this.projection.getPositionOnEdge(end[0], end[1]);
 				if (endPosition !== null) { // if we ended hitting a wall
-					const edges = this.projection.getEdges()[endPosition.loop];
+					const edges = this.projection.edges[endPosition.loop];
 
 					const possibleStarts = sections.map((s) => s[0].args).concat([supersectionStart]);
 					let bestSection = null, bestPosition = Number.POSITIVE_INFINITY;
@@ -750,12 +749,9 @@ export class Chart {
 					const restart = possibleStarts[bestSection];
 					for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
 						const edge = edges[i%edges.length];
-						const currentPlace = (i === endEdge) ? end : [edge.start.ф, edge.start.λ];
-						const targetPlace = (i === restartEdge) ? restart : [edge.end.ф, edge.end.λ];
-						if (currentPlace !== targetPlace)
-							cutPoints.push(...edge.trace(
-								currentPlace[0], currentPlace[1], targetPlace[0], targetPlace[1],
-							));
+						const currentPlace = (i === endEdge) ? end : null;
+						const targetPlace = (i === restartEdge) ? restart : null; // TODO: I used to hav something here about the current place not equalling the target place... does that ever come up?  should I have a check before the for loop?  does it even matter?
+						cutPoints.push(...this.trace(edge, currentPlace, targetPlace));
 					}
 					if (bestSection !== sections.length) // if you found a new place to restart
 						jinPoints = sections.splice(bestSection, 1)[0].slice(1); // and then take that as the next section without its moveto
@@ -807,12 +803,12 @@ export class Chart {
 				}
 			}
 			if (insideOut) { // if it is
-				for (const loop of this.projection.getEdges()) { // draw the outline of the entire map to contain it
+				for (const loop of this.projection.edges) { // draw the outline of the entire map to contain it
 					const startingPoint = loop[0].start;
 					const {x, y} = this.projection.project(startingPoint.ф, startingPoint.λ);
 					cutPoints.push({type: 'M', args: [x, y]});
 					for (const edge of loop)
-						cutPoints.push(...edge.trace(edge.start.ф, edge.start.λ, edge.end.ф, edge.end.λ));
+						cutPoints.push(...this.trace(edge));
 				}
 			}
 		}
@@ -831,6 +827,22 @@ export class Chart {
 		}
 
 		return cutPoints;
+	}
+
+
+
+	trace(edge: MapEdge, start: number[] = null, end: number[] = null): PathSegment[] {
+		if (start === null)
+			start = [edge.start.ф, edge.start.λ];
+		if (end === null)
+			end = [edge.end.ф, edge.end.λ];
+
+		if (edge.direction === Direction.GING)
+			return this.projection.drawMeridian(start[0], end[0], end[1]);
+		else if (edge.direction === Direction.VEI)
+			return this.projection.drawParallel(start[1], end[1], end[0]);
+		else
+			throw `there are only three direccions... ${edge.direction}`;
 	}
 
 
@@ -865,7 +877,7 @@ export class Chart {
 	 * nonendpoints that are endpoints of others.
 	 * @param lines Set of lists of points to be combined and pathified.
 	 */
-	static trace(lines: Iterable<Place[]>): PathSegment[] {
+	static aggregate(lines: Iterable<Place[]>): PathSegment[] {
 		const queue = [...lines];
 		const consolidated: Set<Place[]> = new Set(); // first, consolidate
 		const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]

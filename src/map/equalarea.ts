@@ -56,10 +56,11 @@ export class EqualArea extends MapProjection {
 		for (const x of this.xRef)
 			if (x > maxX)
 				maxX = x;
-		this.left = -Math.PI*maxX;
-		this.right = Math.PI*maxX;
-		this.bottom = this.yRef[0];
-		this.top = this.yRef[this.yRef.length-1];
+		this.setDimensions(
+			-Math.PI*maxX,
+			Math.PI*maxX,
+			this.yRef[this.yRef.length-1],
+			this.yRef[0]);
 	}
 
 	project(ф: number, λ: number): {x: number, y: number} {

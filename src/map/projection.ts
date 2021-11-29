@@ -27,12 +27,20 @@ import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 
 
 /**
+ * the direccion and shape of a line on the surface
+ */
+export enum Direction {
+	GING, // along a meridian
+	VEI, // along a parallel
+}
+
+/**
  * the edge of a map projection
  */
 export interface MapEdge {
 	start: Place;
 	end: Place;
-	trace: (ф0: number, λ0: number, ф1: number, λ1: number) => PathSegment[];
+	direction: Direction;
 }
 
 /**
@@ -50,33 +58,62 @@ export abstract class MapProjection {
 	public readonly surface: Surface;
 	public readonly northUp: boolean;
 	public readonly center: number;
-	public left: number;
-	public right: number;
-	public top: number;
-	public bottom: number;
-	protected edges: MapEdge[][];
+	public readonly edges: MapEdge[][];
+	private left: number;
+	private right: number;
+	private top: number;
+	private bottom: number;
 
 	protected constructor(surface: Surface,
 						  northUp: boolean, locus: PathSegment[],
 						  left: number, right:number,
-						  top: number, bottom: number) {
+						  top: number, bottom: number,
+						  edges: MapEdge[][] = null) {
 		this.surface = surface;
-		this.left = left;
-		this.right = right;
-		this.top = top;
-		this.bottom = bottom;
-
 		this.northUp = northUp;
+		this.setDimensions(left, right, top, bottom);
+
 		if (locus != null)
-			this.center = MapProjection.centralMeridian(locus);
+			this.center = MapProjection.centralMeridian(locus); // choose a center based on the locus
 		else
 			this.center = 0;
+
+		if (edges === null) // the default set of edges is a rectangle around the map
+			edges = [[
+				{ start: {ф: this.surface.фMax, λ: Math.PI}, end: null,
+					direction: Direction.VEI },
+				{ start: {ф: this.surface.фMax, λ: - Math.PI}, end: null,
+					direction: Direction.GING },
+				{ start: {ф: this.surface.фMin, λ: - Math.PI}, end: null,
+					direction: Direction.VEI },
+				{ start: {ф: this.surface.фMin, λ: Math.PI}, end: null,
+					direction: Direction.GING },
+			]];
+		this.edges = edges;
+		for (let i = 0; i < this.edges[0].length; i ++) // enforce the contiguity of the edge loops
+			this.edges[0][i].end = this.edges[0][(i+1)%this.edges[0].length].start;
 	}
 
 	/**
 	 * transform the given parametric coordinates to Cartesian ones.
 	 */
 	abstract project(ф: number, λ: number): {x: number, y: number}
+
+	/**
+	 * generate some <path> segments to trace a line of constant latitude between two longitudes
+	 */
+	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
+		const {x, y} = this.project(ф, λ1);
+		return [{type: 'L', args: [x, y]}];
+	}
+
+	/**
+	 * generate some <path> segments to trace a line of constant longitude between two latitudes
+	 */
+	drawMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
+		const {x, y} = this.project(ф1, λ);
+		return [{type: 'L', args: [x, y]}];
+	}
 
 	/**
 	 * make any preliminary transformations that don't depend on the type of map
@@ -118,7 +155,8 @@ export abstract class MapProjection {
 	 * compute the coordinates at which the line between these two points crosses the y-z plane.  two Places will be
 	 * returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.
 	 */
-	getMeridianCrossing(ф0: number, λ0: number, ф1: number, λ1: number) {
+	getMeridianCrossing(ф0: number, λ0: number, ф1: number, λ1: number
+	): {endpoint0: Place, endpoint1: Place} {
 		const pos0 = this.surface.xyz(ф0, λ0);
 		const pos1 = this.surface.xyz(ф1, λ1);
 		const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
@@ -135,7 +173,8 @@ export abstract class MapProjection {
 	 * compute the coordinates at which the line between these two points crosses the equatorial plane.  two Places
 	 * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.
 	 */
-	getEquatorCrossing(ф0: number, λ0: number, ф1: number, λ1: number) {
+	getEquatorCrossing(ф0: number, λ0: number, ф1: number, λ1: number
+	): {endpoint0: Place, endpoint1: Place} {
 		const pos0 = this.surface.xyz(ф0, λ0);
 		const pos1 = this.surface.xyz(ф1, λ1);
 		const posX = pos0.times(pos1.z).plus(pos1.times(-pos0.z)).over(
@@ -164,44 +203,15 @@ export abstract class MapProjection {
 	}
 
 	/**
-	 * bild the lists of map edges.  each list represents one continuous loop of chaind loxodromes.
-	 */
-	getEdges(): MapEdge[][] {
-		if (this.edges === undefined) {
-			this.edges = [[
-				{
-					start: {ф: this.surface.фMax, λ:  Math.PI}, end: null,
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.фMax),
-				},
-				{
-					start: {ф: this.surface.фMax, λ: -Math.PI}, end: null,
-					trace: (ф0, _0, ф1, _1) => this.drawMeridian(ф0, ф1, -Math.PI),
-				},
-				{
-					start: {ф: this.surface.фMin, λ: -Math.PI}, end: null,
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.фMin),
-				},
-				{
-					start: {ф: this.surface.фMin, λ:  Math.PI}, end: null,
-					trace: (ф0, _0, ф1, _1) => this.drawMeridian(ф0, ф1, Math.PI),
-				},
-			]];
-			for (let i = 0; i < this.edges[0].length; i ++)
-				this.edges[0][i].end = this.edges[0][(i+1)%this.edges[0].length].start;
-		}
-		return this.edges;
-	}
-
-	/**
 	 * return a number indicating where on the edge of map this point lies
 	 * @return the index of the edge that contains this point plus the fraccional distance from that edges start to its
 	 * end of that point, or null if there is no such edge.  also, the index of the edge loop about which we're tauking
 	 * or null if the point isn't on an edge
 	 */
 	getPositionOnEdge(ф: number, λ: number): {loop: number, index: number} {
-		for (let i = 0; i < this.getEdges().length; i ++) {
-			for (let j = 0; j < this.getEdges()[i].length; j ++) {
-				const edge = this.getEdges()[i][j];
+		for (let i = 0; i < this.edges.length; i ++) {
+			for (let j = 0; j < this.edges[i].length; j ++) {
+				const edge = this.edges[i][j];
 				if (ф >= Math.min(edge.start.ф, edge.end.ф) && ф <= Math.max(edge.start.ф, edge.end.ф) &&
 					λ >= Math.min(edge.start.λ, edge.end.λ) && λ <= Math.max(edge.start.λ, edge.end.λ)) {
 					const startToPoint = new Vector(λ - edge.start.λ, ф - edge.start.ф, 0);
@@ -213,20 +223,26 @@ export abstract class MapProjection {
 		return null;
 	}
 
-	/**
-	 * generate some <path> segments to trace a line of constant latitude between two longitudes
-	 */
-	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
-		const {x, y} = this.project(ф, λ1);
-		return [{type: 'L', args: [x, y]}];
+	getDimensions(): { left: number, right: number, top: number, bottom: number, width: number, height: number, diagonal: number } {
+		return {
+			left: this.left, right: this.right, width: this.right - this.left,
+			top: this.top, bottom: this.bottom, height: this.bottom - this.top,
+			diagonal: Math.hypot(this.left - this.right, this.bottom - this.top)
+		};
 	}
 
 	/**
-	 * generate some <path> segments to trace a line of constant longitude between two latitudes
+	 * set the dimensions of this map, to which it will be cropd
+	 * @param left
+	 * @param right
+	 * @param top
+	 * @param bottom
 	 */
-	drawMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
-		const {x, y} = this.project(ф1, λ);
-		return [{type: 'L', args: [x, y]}];
+	protected setDimensions(left: number, right: number, top: number, bottom: number) {
+		this.left = left;
+		this.right = right;
+		this.top = top;
+		this.bottom = bottom;
 	}
 
 	/**

@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {Place, Surface} from "../planet/surface.js";
-import {MapEdge, MapProjection, PathSegment} from "./projection.js";
+import {Direction, MapProjection, PathSegment} from "./projection.js";
 import {linterp} from "../util/util.js";
 
 /**
@@ -35,7 +35,21 @@ export class Azimuthal extends MapProjection {
 	constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
 		const r0 = surface.dAds(Math.PI/2)/(2*Math.PI);
 		const rMax = r0 + linterp(Math.PI/2, surface.refLatitudes, surface.cumulDistances);
-		super(surface, norde, locus, -rMax, rMax, -rMax, rMax);
+		super(
+			surface, norde, locus,
+			-rMax, rMax, -rMax, rMax,
+			[
+				[{
+					start: {ф: surface.фMax, λ:  Math.PI},
+					end:   {ф: surface.фMax, λ: -Math.PI},
+					direction: Direction.VEI,
+				}],
+				[{
+					start: {ф: surface.фMin, λ: -Math.PI},
+					end:   {ф: surface.фMin, λ:  Math.PI},
+					direction: Direction.VEI,
+				}],
+			]);
 		this.rMax = rMax;
 		this.rMin = rMax - surface.height;
 	}
@@ -71,23 +85,4 @@ export class Azimuthal extends MapProjection {
 			return this.getEquatorCrossing(ф0, λ0, ф1, λ1);
 		return null;
 	}
-
-	getEdges(): MapEdge[][] {
-		if (this.edges === undefined) {
-			this.edges = [
-				[{
-					start: {ф: this.surface.фMax, λ:  Math.PI},
-					end:   {ф: this.surface.фMax, λ: -Math.PI},
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.фMax),
-				}],
-				[{
-					start: {ф: this.surface.фMin, λ: -Math.PI},
-					end:   {ф: this.surface.фMin, λ:  Math.PI},
-					trace: (_0, λ0, _1, λ1) => this.drawParallel(λ0, λ1, this.surface.фMin),
-				}],
-			];
-		}
-		return this.edges;
-	}
-
 }

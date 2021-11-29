@@ -64,7 +64,7 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
  * collection of civilizations and languages that goes on a planet
  */
 export class World {
-	public static readonly startOfHumanHistory = -3000; // [BCE]
+	public static readonly startOfHumanHistory = -3200; // [BCE]
 	public static readonly timeStep = 100; // [year]
 	public static readonly authoritarianism = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
 	public static readonly libertarianism = 2e-7; // [1/year/km^2] rate at which peeple start revolucions
@@ -239,15 +239,18 @@ export class World {
 	}
 
 	/**
-	 * get a copied list of the id of every country currently in this world, sorted from
-	 * most to least populous
+	 * get a copied list of the id of every country currently in this world
+	 * @param sorted if true, return items sorted from largest to smallest
+	 * @param minSize exclude all countries with fewer than minSize tiles
 	 */
-	getCivs(sorted: boolean = false): Civ[] {
-		const output = [];
+	getCivs(sorted: boolean = false, minSize: number = 0): Civ[] {
+		let output = [];
 		for (const civ of this.civs)
 			output.push(civ);
 		if (sorted)
-			output.sort((a, b) => b.getPopulation() - a.getPopulation());
+			output.sort((a, b) => b.getArea() - a.getArea());
+		if (minSize > 0)
+			output = output.filter((c) => c.nodos.size() > minSize);
 		return output;
 	}
 

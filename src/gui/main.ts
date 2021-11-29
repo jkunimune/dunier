@@ -245,7 +245,7 @@ function historyApply() {
 	mapper.depict(surface, world, $('#history-map')[0], 'politiki', 'nili');
 
 	console.log("mute ba chuze bil...");
-	const countries = world.getCivs(true);
+	const countries = world.getCivs(true, 3); // TODO: if there are no countries, use fisickall rejons instead
 	const picker = document.getElementById('map-jung');
 	picker.textContent = "";
 	for (let i = 0; i < countries.length; i ++) {
