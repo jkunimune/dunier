@@ -78,11 +78,11 @@ export class Azimuthal extends MapProjection {
 			return [];
 	}
 
-	getCrossing(фλ0: number[], фλ1: number[]): {endpoint0: Place, endpoint1: Place} {
+	getCrossing(фλ0: number[], фλ1: number[]): Place[] {
 		const [ф0, λ0] = фλ0;
 		const [ф1, λ1] = фλ1;
 		if (Math.abs(ф1 - ф0) > Math.PI)
-			return this.getEquatorCrossing(ф0, λ0, ф1, λ1);
+			return this.getParallelCrossing(ф0, λ0, ф1, λ1);
 		return null;
 	}
 }

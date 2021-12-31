@@ -65,6 +65,8 @@ const TERRAIN_COLORMAP = [
 	[1.00, 'rgb( 41,   4,   5)'],
 ];
 
+const MIN_SIZE_TO_ZOOM = 6;
+
 export const USER_STRINGS = loadJSON(`../../res/tarje/${$('#bash')[0].textContent}.json`);
 
 let planetOutOfSync = true;
@@ -245,7 +247,7 @@ function historyApply() {
 	mapper.depict(surface, world, $('#history-map')[0], 'politiki', 'nili');
 
 	console.log("mute ba chuze bil...");
-	const countries = world.getCivs(true, 3); // TODO: if there are no countries, use fisickall rejons instead
+	const countries = world.getCivs(true, MIN_SIZE_TO_ZOOM); // TODO: if there are no countries, use fisickall rejons instead
 	const picker = document.getElementById('map-jung');
 	picker.textContent = "";
 	for (let i = 0; i < countries.length; i ++) {

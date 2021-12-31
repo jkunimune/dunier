@@ -348,12 +348,15 @@ export class Chart {
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
 		const path = this.map(Chart.outline(new Set(nodos)), false, true); // do the projection
+		if (path.length === 0)
+			return null;
+
 		for (let i = path.length - 1; i >= 1; i --) { // convert it into a simplified polygon
 			if (path[i].type === 'A') { // turn arcs into triscadecagons TODO: find out if this can create coincident nodes and thereby Delaunay Triangulation to fail
 				const x0 = path[i-1].args[path[i-1].args.length-2], y0 = path[i-1].args[path[i-1].args.length-1];
 				const x1 = path[i].args[path[i].args.length-2], y1 = path[i].args[path[i].args.length-1];
 				const l = Math.hypot(x1 - x0, y1 - y0);
-				const r = (path[i].args[0] + path[i].args[1])/2;
+				const r = Math.abs(path[i].args[0] + path[i].args[1])/2;
 				const cx = 0, cy = 0; // XXX: this could be an actual calculation, but I know that the only time an arc will come up is when it is centered on the origin
 				const Δθ = 2*Math.asin(l/(2*r));
 				const θ0 = Math.atan2(y0 - cy, x0 - cx);
@@ -393,6 +396,7 @@ export class Chart {
 					}
 				}
 			}
+			console.assert(longI >= 0, path);
 			path.splice(longI, 0, { // and split it
 				type: 'L',
 				args: [(path[longI].args[0] + path[longI-1].args[0])/2, (path[longI].args[1] + path[longI-1].args[1])/2]
@@ -458,6 +462,7 @@ export class Chart {
 			if (centers[i].isContained && (argmax < 0 || centers[i].r > centers[argmax].r))
 				argmax = i;
 		}
+		console.assert(argmax >= 0, label, points, centers);
 
 		const candidates: number[][] = []; // next collect candidate paths along which you might fit labels
 		let minClearance = centers[argmax].r;
@@ -658,7 +663,10 @@ export class Chart {
 		let touchedEdge = false;
 		for (let i = 1; i < segments.length; i ++) { // first, handle places where it crosses the edge of the map
 			if (segments[i].type === 'L') {
-				if (!Number.isFinite(segments[i].args[0])) { // if a point is at infinity
+				if (Number.isNaN(segments[i].args[0])) { // if a point is nan
+					continue; // that means it's off the map, so don't worry about it
+				}
+				else if (!Number.isFinite(segments[i].args[0])) { // if a point is at infinity
 					if (segments[i].args[0] < 0)
 						segments.splice(i, 1, // remove it
 							{type: 'L', args: [this.projection.surface.фMin, segments[i-1].args[1]]},
@@ -670,7 +678,7 @@ export class Chart {
 
 				const crossing = this.projection.getCrossing(segments[i-1].args, segments[i].args);
 				if (crossing !== null) { // otherwise, if it jumps across an interruption
-					const {endpoint0, endpoint1} = crossing;
+					const [endpoint0, endpoint1] = crossing;
 					segments.splice(i, 0,
 						{type: 'L', args: [endpoint0.ф, endpoint0.λ]}, // insert a line to the very edge
 						{type: 'M', args: [endpoint1.ф, endpoint1.λ]}); // and then a moveto to the other side
@@ -680,38 +688,46 @@ export class Chart {
 			}
 		}
 
-		const sections: PathSegment[][] = []; // then, break this up into sections
+		const jinSections: PathSegment[][] = []; // then, break this up into sections
 		let start = 0;
 		for (let i = 1; i <= segments.length; i ++) { // sweep through the result
 			if (i === segments.length || segments[i].type === 'M') { // and split it up at movetos and endings
-				sections.push(segments.slice(start, i));
+				jinSections.push(segments.slice(start, i));
 				start = i;
 			}
 		}
 
 		const precision = MAP_PRECISION*this.projection.getDimensions().diagonal;
-		const cutPoints: PathSegment[] = []; // now start putting together the projected points
-		let jinPoints = sections.pop();
-		let supersectionStart = jinPoints[0].args;
-		while (jinPoints !== undefined) {
-			const base = cutPoints.length;
-			for (let i = 0; i < jinPoints.length; i ++) { // now run through the section
-				const [ф1, λ1] = jinPoints[i].args;
-				const {x, y} = this.projection.project(ф1, λ1); // projecting points and adding them to the thing
-				cutPoints.push({type: jinPoints[i].type, args: [x, y]});
+		const cutSections: PathSegment[][] = []; // now do the projections
+		const startPositions: { loop: number, index: number }[] = [];
+		const weHaveDrawn: boolean[] = [];
+		loopingThruTheSections:
+		for (let i = 0; i < jinSections.length; i ++) {
+			const jinSection = jinSections[i];
+			const cutSection: PathSegment[] = [];
+			for (let j = 0; j < jinSection.length; j ++) { // first project the whole section
+				const [ф1, λ1] = jinSection[j].args;
+				const {x, y} = this.projection.project(ф1, λ1);
+				if (Number.isNaN(x)) { // if anything projects to nan
+					jinSections.splice(i, 1); // that means we should abandon this section
+					i --;
+					continue loopingThruTheSections;
+				}
+				cutSection.push({type: jinSection[j].type, args: [x, y]});
 			}
 
 			let repeatCount = 0;
-			for (let i = base + 1; i < cutPoints.length; i ++) { // then go back through
-				const [x0, y0] = cutPoints[i-1].args;
-				const [x1, y1] = cutPoints[i].args;
+			for (let i = 1; i < cutSection.length; i ++) { // then go back thru
+				const [x0, y0] = cutSection[i-1].args;
+				const [x1, y1] = cutSection[i].args;
 				if (Math.hypot(x1 - x0, y1 - y0) > precision) { // and fill in segments that are too long
-					const [ф0, λ0] = jinPoints[i-base-1].args;
-					const [ф1, λ1] = jinPoints[i-base].args;
+					const [ф0, λ0] = jinSection[i-1].args;
+					const [ф1, λ1] = jinSection[i].args;
 					const {ф, λ} = this.projection.getMidpoint(ф0, λ0, ф1, λ1); // by splitting them in half
 					const {x, y} = this.projection.project(ф, λ);
-					jinPoints.splice(i-base, 0, {type: 'L', args: [ф, λ]}); // and adding the midpoints to the polygon
-					cutPoints.splice(i,           0, {type: 'L', args: [x, y]});
+					console.assert(!Number.isNaN(x), "I'm leaving a known bug here because I don't think it will ever come up, but if it does, this is because I only approximately check if a line segment crosses the bounding parallels!");
+					jinSection.splice(i, 0, {type: 'L', args: [ф, λ]}); // and adding the midpoints to the polygon
+					cutSection.splice(i, 0, {type: 'L', args: [x, y]});
 					i --; // and check again
 					repeatCount ++;
 				}
@@ -719,65 +735,92 @@ export class Chart {
 					throw "_someone_ (not pointing any fingers) missd an interrupcion.";
 			}
 
-			const end = jinPoints[jinPoints.length-1].args; // when all that's done, look at where we are
+			cutSections.push(cutSection); // unless something happend, save this section to the projected list
+			startPositions.push(this.projection.getPositionOnEdge(
+				jinSection[0].args[0], jinSection[0].args[1])); // and also save the edge position of its start
+			weHaveDrawn.push(false);
+		}
+		console.assert(jinSections.length === cutSections.length && cutSections.length === startPositions.length && startPositions.length === weHaveDrawn.length);
+
+		if (jinSections.length === 0) // if it's all off the map
+			return []; // goodbye
+
+		for (const section of cutSections)
+			for (const segment of section)
+				console.assert(!Number.isNaN(segment.args[0]), cutSections);
+
+		const cutPoints: PathSegment[] = []; // now start putting together the projected points
+		let sectionIndex = 0;
+		let startingANewSupersection = true;
+		while (sectionIndex !== undefined) {
+			let jinSection = jinSections[sectionIndex]; // take a section
+			let cutSection = cutSections[sectionIndex];
+			if (!startingANewSupersection)
+				cutSection = cutSection.slice(1); // take off its moveto
+			cutPoints.push(...cutSection); // add its points to the thing
+			weHaveDrawn[sectionIndex] = true; // mark it as drawn
+			const sectionEnd = jinSection[jinSection.length-1].args; // then look at where on Earth we are
+
 			if (!closed) { // if we're not worrying about closing it off
-				jinPoints = null; // forget it and move onto whatever else
-			}
-			else if (supersectionStart[0] === end[0] && supersectionStart[1] === end[1]) { // if this whole section is one big loop
-				jinPoints = null; // also move on
+				sectionIndex = null; // forget it and move onto a random section
 			}
 			else {
-				const endPosition = this.projection.getPositionOnEdge(end[0], end[1]);
+				const endPosition = this.projection.getPositionOnEdge(
+					sectionEnd[0], sectionEnd[1]);
 				if (endPosition !== null) { // if we ended hitting a wall
 					const edges = this.projection.edges[endPosition.loop];
 
-					const possibleStarts = sections.map((s) => s[0].args).concat([supersectionStart]);
-					let bestSection = null, bestPosition = Number.POSITIVE_INFINITY;
-					for (let i = 0; i < possibleStarts.length; i ++) { // check the remaining sections
-						const restart = possibleStarts[i];
-						let restartPosition = this.projection.getPositionOnEdge(restart[0], restart[1]);
-						if (restartPosition !== null && restartPosition.loop === endPosition.loop) {
-							if (restartPosition.index < endPosition.index)
-								restartPosition.index += edges.length;
-							if (restartPosition.index < bestPosition) {
-								bestSection = i; // to find which one should come next
-								bestPosition = restartPosition.index;
+					let bestSection = null, bestPositionIndex = null;
+					for (let i = 0; i < startPositions.length; i ++) { // check the remaining sections
+						const startPosition = startPositions[i];
+						if (startPosition !== null && startPosition.loop === endPosition.loop) { // for any on the same edge loop as us
+							if (startPosition.index < endPosition.index)
+								startPosition.index += edges.length;
+							if (bestPositionIndex === null || startPosition.index < bestPositionIndex) {
+								bestSection = i; // calculate which one should come next
+								bestPositionIndex = startPosition.index;
 							}
+							startPosition.index %= edges.length;
 						}
 					}
-					const endEdge = Math.trunc(endPosition.index), restartEdge = Math.trunc(bestPosition);
-					const restart = possibleStarts[bestSection];
+					const endEdge = Math.trunc(endPosition.index);
+					const restartEdge = Math.trunc(bestPositionIndex);
+					const nextStart = jinSections[bestSection][0].args;
 					for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
 						const edge = edges[i%edges.length];
-						const currentPlace = (i === endEdge) ? end : null;
-						const targetPlace = (i === restartEdge) ? restart : null; // TODO: I used to hav something here about the current place not equalling the target place... does that ever come up?  should I have a check before the for loop?  does it even matter?
+						const currentPlace = (i === endEdge) ? sectionEnd : null;
+						const targetPlace = (i === restartEdge) ? nextStart : null; // TODO: I used to hav something here about the current place not equalling the target place... does that ever come up?  should I have a check before the for loop?  does it even matter?
 						cutPoints.push(...this.trace(edge, currentPlace, targetPlace));
 					}
-					if (bestSection !== sections.length) // if you found a new place to restart
-						jinPoints = sections.splice(bestSection, 1)[0].slice(1); // and then take that as the next section without its moveto
-					else
-						jinPoints = null; // or move on if that was the end
+					if (weHaveDrawn[bestSection]) // if you rapd around to a place we've already been
+						sectionIndex = null; // move on to a random section
+					else // if you found a new place to restart
+						sectionIndex = bestSection; // go to it
 				}
 				else { // if we ended in the middle someplace
-					jinPoints = null;
-					for (let i = 0; i < sections.length; i ++) { // look for the one that picks up from here
-						const start = sections[i][0];
-						if (start.args[0] === end[0] && start.args[1] === end[1]) {
-							jinPoints = sections.splice(i, 1)[0].slice(1); // and skip its moveto
+					sectionIndex = null;
+					for (let i = 0; i < jinSections.length; i ++) { // look for the one that picks up from here
+						const start = jinSections[i][0].args;
+						if (start[0] === sectionEnd[0] && start[1] === sectionEnd[1]) {
+							sectionIndex = i; // and go there
 							break;
 						}
 					}
-					if (jinPoints === null)
-						throw new Error("I was left hanging.");
+					console.assert(sectionIndex !== null, "I was left hanging.");
+					if (weHaveDrawn[sectionIndex]) // if that one has already been drawn
+						sectionIndex = null; // move on randomly
 				}
 			}
-			if (jinPoints === null) { // if we were planning to move onto whatever else for the next section
-				if (sections.length === 0) // we may be done
-					break;
-				else { // if not
-					jinPoints = sections.pop(); // just choose the next section arbitrarily
-					supersectionStart = jinPoints[0].args;
-				}
+			if (sectionIndex === null) { // if we were planning to move onto whatever else for the next section
+				sectionIndex = 0;
+				while (sectionIndex < jinSections.length && weHaveDrawn[sectionIndex])
+					sectionIndex ++; // sweep thru it until we find one that has not been drawn
+				if (sectionIndex === jinSections.length) // if you can't find any
+					break; // we're done!
+				startingANewSupersection = true;
+			}
+			else { // if we're continuing an existing supersection
+				startingANewSupersection = false; // say so
 			}
 		}
 

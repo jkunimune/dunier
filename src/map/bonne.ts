@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {MapProjection, PathSegment} from "./projection.js";
-import {Surface} from "../planet/surface.js";
+import {Place, Surface} from "../planet/surface.js";
 
 export class Bonne extends MapProjection {
 	private readonly EDGE_RESOLUTION = 18; // the number of points per radian
@@ -34,10 +34,10 @@ export class Bonne extends MapProjection {
 
 	public constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
 		super(surface, norde, locus,
-			null, null, null, null); // compute the central meridian
+			null, null, null, null, []);
 
 		let minф = Number.POSITIVE_INFINITY; // get the bounds of the locus
-		let maxф = Number.NEGATIVE_INFINITY;
+		let maxф = Number.NEGATIVE_INFINITY; // TODO: integrate this in case it's not a sphere
 		let maxλ = Number.NEGATIVE_INFINITY;
 		for (const segment of this.transform(locus)) {
 			let [ф, λ] = segment.args;
@@ -65,6 +65,8 @@ export class Bonne extends MapProjection {
 		this.maxλ = Math.min(Math.PI, 2*maxλ);
 		this.minλ = -this.maxλ;
 
+		this.edges = MapProjection.buildEdges(this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges
+
 		let top = this.project(this.maxф, 0).y; // then determine the dimensions of this map
 		let bottom = this.project(this.minф, 0).y;
 		let right = 0;
@@ -80,6 +82,8 @@ export class Bonne extends MapProjection {
 	}
 
 	project(ф: number, λ: number): { x: number; y: number } {
+		if (ф < this.minф || ф > this.maxф || λ < this.minλ || λ > this.maxλ)
+			return { x: NaN, y: NaN };
 		if (Number.isFinite(this.radius)) { // use these formulas for normal maps
 			const r = this.radius - ф;
 			const E = (r != 0) ? λ*Math.cos(ф)/r : 0;
@@ -96,15 +100,39 @@ export class Bonne extends MapProjection {
 		}
 	}
 
+	getCrossing(фλ0: number[], фλ1: number[]): Place[] {
+		const basicCrossing = super.getCrossing(фλ0, фλ1);
+		if (basicCrossing != null) // if the line between them goes around the back
+			return basicCrossing; // split it there so that we can deal with each half more cleanly
+
+		const [ф0, λ0] = фλ0;
+		const [ф1, λ1] = фλ1;
+		const фS = Math.min(ф0, ф1);
+		const фN = Math.max(ф0, ф1);
+		const λW = Math.min(λ0, λ1);
+		const λE = Math.max(λ0, λ1);
+
+		if (λW < this.minλ && λE > this.minλ) // if they are on opposite sides of the west bound
+			return this.getMeridianCrossing(ф0, λ0, ф1, λ1, this.minλ);
+		else if (λW < this.maxλ && λE > this.maxλ) // if they are on opposite sides of the east bound
+			return this.getMeridianCrossing(ф0, λ0, ф1, λ1, this.maxλ);
+		else if (фS < this.minф && фN > this.minф) // if they are on opposite sides of the south bound
+			return this.getParallelCrossing(ф0, λ0, ф1, λ1, this.minф);
+		else if (фS < this.maxф && фN > this.maxф) // if they are on opposite sides of the north bound
+			return this.getParallelCrossing(ф0, λ0, ф1, λ1, this.maxф);
+
+		return null;
+	}
+
 	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
 		const {x, y} = this.project(ф, λ1);
-		const r = this.radius - ф;
+		const r = Math.abs(this.radius - ф);
 		return [{
 			type: 'A',
 			args: [
 				r, r, 0,
 				(Math.abs(λ1 - λ0) > Math.PI) ? 1 : 0,
-				((λ1 > λ0) == (this.radius > 0)) ? 1 : 0,
+				((λ1 > λ0) == (this.radius < 0)) ? 1 : 0,
 				x, y],
 		}];
 	}

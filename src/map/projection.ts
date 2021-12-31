@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Place, Surface} from "../planet/surface.js";
+import { Place, Surface} from "../planet/surface.js";
 import {standardizeAngle, Vector} from "../util/util.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 
@@ -58,7 +58,7 @@ export abstract class MapProjection {
 	public readonly surface: Surface;
 	public readonly northUp: boolean;
 	public readonly center: number;
-	public readonly edges: MapEdge[][];
+	public edges: MapEdge[][];
 	private left: number;
 	private right: number;
 	private top: number;
@@ -79,28 +79,22 @@ export abstract class MapProjection {
 			this.center = 0;
 
 		if (edges === null) // the default set of edges is a rectangle around the map
-			edges = [[
-				{ start: {ф: this.surface.фMax, λ: Math.PI}, end: null,
-					direction: Direction.VEI },
-				{ start: {ф: this.surface.фMax, λ: - Math.PI}, end: null,
-					direction: Direction.GING },
-				{ start: {ф: this.surface.фMin, λ: - Math.PI}, end: null,
-					direction: Direction.VEI },
-				{ start: {ф: this.surface.фMin, λ: Math.PI}, end: null,
-					direction: Direction.GING },
-			]];
+			edges = MapProjection.buildEdges(surface.фMin, surface.фMax, -Math.PI, Math.PI);
 		this.edges = edges;
-		for (let i = 0; i < this.edges[0].length; i ++) // enforce the contiguity of the edge loops
-			this.edges[0][i].end = this.edges[0][(i+1)%this.edges[0].length].start;
 	}
 
 	/**
 	 * transform the given parametric coordinates to Cartesian ones.
+	 * @param ф the transformed latitude in radians
+	 * @param λ the transformed longitude in the range [-π, π]
 	 */
 	abstract project(ф: number, λ: number): {x: number, y: number}
 
 	/**
 	 * generate some <path> segments to trace a line of constant latitude between two longitudes
+	 * @param ф the relative latitude in radians
+	 * @param λ0 the relative starting longitude in the range [-π, π]
+	 * @param λ1 the relative ending longitude in the range [-π, π]
 	 */
 	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
 		const {x, y} = this.project(ф, λ1);
@@ -109,6 +103,9 @@ export abstract class MapProjection {
 
 	/**
 	 * generate some <path> segments to trace a line of constant longitude between two latitudes
+	 * @param ф0 the relative starting latitude in radians
+	 * @param ф1 the relative ending latitude in radians
+	 * @param λ the relative longitude in the range [-π, π]
 	 */
 	drawMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
 		const {x, y} = this.project(ф1, λ);
@@ -119,7 +116,8 @@ export abstract class MapProjection {
 	 * make any preliminary transformations that don't depend on the type of map
 	 * projection.  this method accounts for south-up maps and central meridians, and
 	 * should almost always be calld before project or getCrossing.
-	 * @param segments the jeograffickal imputs
+	 * @param segments the jeograffickal imputs in absolute coordinates
+	 * @returns the relative outputs in transformed coordinates
 	 */
 	transform(segments: PathSegment[]): PathSegment[] {
 		const output: PathSegment[] = [];
@@ -152,58 +150,80 @@ export abstract class MapProjection {
 	}
 
 	/**
-	 * compute the coordinates at which the line between these two points crosses the y-z plane.  two Places will be
-	 * returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.
+	 * compute the coordinates at which the line between these two points crosses a particular meridian.  two Places
+	 * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.  if the
+	 * meridian is not the antimeridian, then they will just be the same.
+	 * @param ф0 the transformed latitude of the zeroth point
+	 * @param λ0 the transformed longitude of the zeroth point
+	 * @param ф1 the transformed latitude of the oneth point
+	 * @param λ1 the transformed longitude of the oneth point
+	 * @param λX the longitude of the meridian
 	 */
-	getMeridianCrossing(ф0: number, λ0: number, ф1: number, λ1: number
-	): {endpoint0: Place, endpoint1: Place} {
-		const pos0 = this.surface.xyz(ф0, λ0);
-		const pos1 = this.surface.xyz(ф1, λ1);
+	getMeridianCrossing(
+		ф0: number, λ0: number, ф1: number, λ1: number, λX: number = Math.PI
+	): Place[] {
+		const pos0 = this.surface.xyz(ф0, λ0 - λX);
+		const pos1 = this.surface.xyz(ф1, λ1 - λX);
 		const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
 			pos1.x - pos0.x);
 		const фX = this.surface.фλ(posX.x, posX.y, posX.z).ф;
-		const λX = (λ0 > λ1) ? Math.PI : -Math.PI;
-		return {
-			endpoint0: {ф: фX, λ: λX},
-			endpoint1: {ф: фX, λ: -λX},
-		};
+		if (λX === Math.PI && λ0 < λ1)
+			return [ {ф: фX, λ: -Math.PI},
+				     {ф: фX, λ:  Math.PI} ];
+		else if (λX === Math.PI)
+			return [ {ф: фX, λ:  Math.PI},
+				     {ф: фX, λ: -Math.PI} ];
+		else
+			return [ {ф: фX, λ: λX},
+				     {ф: фX, λ: λX} ];
 	}
 
 	/**
-	 * compute the coordinates at which the line between these two points crosses the equatorial plane.  two Places
-	 * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.
+	 * compute the coordinates at which the line between these two points crosses a particular parallel.  two Places
+	 * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.  if the
+	 * parallel is not the antiequator
+	 * @param ф0 the transformed latitude of the zeroth point
+	 * @param λ0 the transformed longitude of the zeroth point
+	 * @param ф1 the transformed latitude of the oneth point
+	 * @param λ1 the transformed longitude of the oneth point
+	 * @param фX the latitude of the parallel
 	 */
-	getEquatorCrossing(ф0: number, λ0: number, ф1: number, λ1: number
-	): {endpoint0: Place, endpoint1: Place} {
-		const pos0 = this.surface.xyz(ф0, λ0);
-		const pos1 = this.surface.xyz(ф1, λ1);
-		const posX = pos0.times(pos1.z).plus(pos1.times(-pos0.z)).over(
-			pos1.z - pos0.z);
-		const фX = (ф0 > ф1) ? Math.PI : -Math.PI;
-		const λX = this.surface.фλ(posX.x, posX.y, posX.z).λ;
-		return {
-			endpoint0: {ф: фX, λ: λX},
-			endpoint1: {ф: -фX, λ: λX},
-		};
+	getParallelCrossing(
+		ф0: number, λ0: number, ф1: number, λ1: number, фX: number = Math.PI
+	): Place[] {
+		const λX = ((ф1 - фX)*λ0 + (фX - ф0)*λ1)/(ф1 - ф0); // this solution is not as exact as the meridian one,
+		if (фX === Math.PI && ф0 < ф1) // but it's good enuff.  the interseccion between a cone and a line is too hard.
+			return [ {ф: -Math.PI, λ: λX},
+				     {ф:  Math.PI, λ: λX} ];
+		else if (фX === Math.PI)
+			return [ {ф:  Math.PI, λ: λX},
+				     {ф: -Math.PI, λ: λX} ];
+		else
+			return [ {ф: фX, λ: λX},
+				     {ф: фX, λ: λX} ];
 	}
 
 	/**
 	 * compute the coordinates at which the line between these two points crosses an interrupcion in the map.  if
 	 * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
 	 * the 1th point's side.
+	 * @param фλ0 the transformed coordinates of the zeroth point
+	 * @param фλ1 the transformed coordinates of the oneth point
 	 */
-	getCrossing(фλ0: number[], фλ1: number[]): {endpoint0: Place, endpoint1: Place} {
+	getCrossing(фλ0: number[], фλ1: number[]): Place[] {
 		const [ф0, λ0] = фλ0;
 		const [ф1, λ1] = фλ1;
 		if (Math.abs(λ1 - λ0) > Math.PI)
 			return this.getMeridianCrossing(ф0, λ0, ф1, λ1);
 		else if (Math.abs(ф1 - ф0) > Math.PI)
-			return this.getEquatorCrossing(ф0, λ0, ф1, λ1);
+			return this.getParallelCrossing(ф0, λ0, ф1, λ1);
 		return null;
 	}
 
 	/**
 	 * return a number indicating where on the edge of map this point lies
+	 * @param ф the transformed latitude in radians
+	 * @param λ the transformed longitude on the [-π, π] interval
 	 * @return the index of the edge that contains this point plus the fraccional distance from that edges start to its
 	 * end of that point, or null if there is no such edge.  also, the index of the edge loop about which we're tauking
 	 * or null if the point isn't on an edge
@@ -267,5 +287,25 @@ export abstract class MapProjection {
 			}
 		}
 		return emptyLongitudes.getCenter(true).location + Math.PI;
+	}
+
+	/**
+	 * create an array of edges for a map with a fixed rectangular bound in lat/lon space,
+	 * for use in the edge cutting algorithm.
+	 */
+	static buildEdges(фMin: number, фMax: number, λMin: number, λMax: number): MapEdge[][] {
+		const edges: MapEdge[][] = [[
+			{ start: { ф: фMax, λ: λMax }, end: null,
+				direction: Direction.VEI },
+			{ start: { ф: фMax, λ: λMin }, end: null,
+				direction: Direction.GING },
+			{ start: { ф: фMin, λ: λMin }, end: null,
+				direction: Direction.VEI },
+			{ start: { ф: фMin, λ: λMax }, end: null,
+				direction: Direction.GING },
+		]];
+		for (let i = 0; i < edges[0].length; i ++) // enforce the contiguity of the edge loops
+			edges[0][i].end = edges[0][(i+1)%edges[0].length].start;
+		return edges;
 	}
 }
