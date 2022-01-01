@@ -24,7 +24,7 @@
 import {Nodo, Place, Surface, Triangle} from "../planet/surface.js";
 import {
 	Vector,
-	longestShortestPath, filterSet,
+	longestShortestPath, filterSet, chordCenter,
 } from "../util/util.js";
 import {World} from "../society/world.js";
 import {Direction, MapEdge, MapProjection, PathSegment} from "./projection.js";
@@ -357,15 +357,16 @@ export class Chart {
 				const x1 = path[i].args[path[i].args.length-2], y1 = path[i].args[path[i].args.length-1];
 				const l = Math.hypot(x1 - x0, y1 - y0);
 				const r = Math.abs(path[i].args[0] + path[i].args[1])/2;
-				const cx = 0, cy = 0; // XXX: this could be an actual calculation, but I know that the only time an arc will come up is when it is centered on the origin
+				const c = chordCenter({x: x0, y: y0}, {x: x1, y: y1}, r,
+					path[i].args[3] === path[i].args[4]);
 				const Δθ = 2*Math.asin(l/(2*r));
-				const θ0 = Math.atan2(y0 - cy, x0 - cx);
+				const θ0 = Math.atan2(y0 - c.y, x0 - c.x);
 				const nSegments = Math.ceil(N_DEGREES*Δθ);
 				const lineApprox = [];
 				for (let j = 1; j <= nSegments; j ++)
 					lineApprox.push({type: 'L', args: [
-							cx + r*Math.cos(θ0 + Δθ*j/nSegments),
-							cy + r*Math.sin(θ0 + Δθ*j/nSegments)]});
+							c.x + r*Math.cos(θ0 + Δθ*j/nSegments),
+							c.y + r*Math.sin(θ0 + Δθ*j/nSegments)]});
 				path.splice(i, 1, ...lineApprox);
 			}
 		}

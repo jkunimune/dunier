@@ -59,22 +59,29 @@ export function legendreP6(y: number): number {
 }
 
 /**
+ * search a sorted array for the index of the last element less than or equal to a value
+ */
+export function binarySearch(value: number, array: number[]): number {
+	let min = 0, max = array.length;
+	while (max - min > 1) {
+		const mid = Math.trunc((min + max)/2);
+		if (array[mid] <= value)
+			min = mid;
+		else
+			max = mid;
+	}
+	return min;
+}
+
+/**
  * linearly interpolate x from the sorted function X onto the corresponding output Y.
  */
 export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
 	if (inRef.length !== exRef.length)
 		throw "array lengths must match";
 
-	let min = 0, max = inRef.length - 1;
-	while (max - min > 1) {
-		const mid = Math.trunc((min + max)/2);
-		if (inRef[mid] <= inVal)
-			min = mid;
-		else
-			max = mid;
-	}
-
-	return (inVal - inRef[min])/(inRef[max] - inRef[min])*(exRef[max] - exRef[min]) + exRef[min];
+	const i = binarySearch(inVal, inRef);
+	return (inVal - inRef[i])/(inRef[i+1] - inRef[i])*(exRef[i+1] - exRef[i]) + exRef[i];
 }
 
 /**
@@ -202,7 +209,7 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
  */
 export function circumcenter(points: {x: number, y: number}[]): {x: number, y: number} {
 	if (points.length !== 3)
-		console.log("it has to be 3.");
+		throw "it has to be 3.";
 	let xNumerator = 0, yNumerator = 0;
 	let denominator = 0;
 	for (let i = 0; i < 3; i++) { // do the 2D circumcenter calculation
@@ -216,6 +223,26 @@ export function circumcenter(points: {x: number, y: number}[]): {x: number, y: n
 	return {
 		x: xNumerator/denominator/2,
 		y: yNumerator/denominator/2};
+}
+
+
+/**
+ * get the center of a circle given two points on it and its radius
+ * @param a the first point on the circle
+ * @param b the second point on the circle
+ * @param r the radius of the circle
+ * @param onTheLeft whether the center is on the left of the strait-line path from a to b
+ */
+export function chordCenter(a: {x: number, y: number}, b: {x: number, y: number}, r: number, onTheLeft: boolean) {
+	const d = Math.hypot(b.x - a.x, b.y - a.y);
+	let l = Math.sqrt(r*r - d*d/4);
+	if (onTheLeft) l *= -1;
+	const sinθ =  (b.y - a.y)/d;
+	const cosθ = -(b.x - a.x)/d;
+	return {
+		x: (a.x + b.x)/2 + l*sinθ,
+		y: (a.y + b.y)/2 + l*cosθ,
+	}
 }
 
 

@@ -23,10 +23,14 @@
  */
 import {MapProjection, PathSegment} from "./projection.js";
 import {Place, Surface} from "../planet/surface.js";
+import {linterp} from "../util/util.js";
 
 export class Bonne extends MapProjection {
 	private readonly EDGE_RESOLUTION = 18; // the number of points per radian
-	private readonly radius: number;
+	private readonly yJong: number;
+	private readonly фRef: number[];
+	private readonly yRef: number[];
+	private readonly sRef: number[];
 	private readonly minф: number;
 	private readonly maxф: number;
 	private readonly minλ: number;
@@ -49,20 +53,32 @@ export class Bonne extends MapProjection {
 				maxλ = λ;
 		}
 
-		let ф1;
+		let ф0;
 		if (maxф == Math.PI/2 && minф == -Math.PI/2) // choose a standard parallel
-			ф1 = 0;
+			ф0 = 0;
 		else if (maxф == Math.PI/2)
-			ф1 = maxф;
+			ф0 = maxф;
 		else if (minф == -Math.PI/2)
-			ф1 = minф;
+			ф0 = minф;
 		else
-			ф1 = Math.atan((Math.tan(maxф) + Math.tan(minф))/2);
-		this.radius = 1/Math.tan(ф1) + ф1; // convert it into an equatorial radius
+			ф0 = Math.atan((Math.tan(maxф) + Math.tan(minф))/2);
+		const dф = 1e-2;
+		const d2Ads2 = (surface.dAds(ф0 + dф) - surface.dAds(ф0 - dф))/
+			(surface.dsdф(ф0) * 2*dф);
+		const distance0 = linterp(ф0, surface.refLatitudes, surface.cumulDistances);
+		this.yJong = surface.dAds(ф0)/d2Ads2;
 
-		this.maxф = Math.min(Math.PI/2, 1.5*maxф - 0.5*minф); // spread the limits out a bit to give a contextual view
-		this.minф = Math.max(-Math.PI/2, 1.5*minф - 0.5*maxф);
-		this.maxλ = Math.min(Math.PI, 2*maxλ);
+		this.фRef = surface.refLatitudes; // do the necessary integrals
+		this.yRef = []; // to get the y positions of the prime meridian
+		this.sRef = []; // and the arc lengths corresponding to one radian
+		for (let i = 0; i < this.фRef.length; i ++) {
+			this.yRef.push(distance0 - surface.cumulDistances[i]);
+			this.sRef.push(surface.dAds(this.фRef[i])/(2*Math.PI));
+		}
+
+		this.maxф = Math.min(Math.PI/2, 1.4*maxф - 0.4*minф); // spread the limits out a bit to give a contextual view
+		this.minф = Math.max(-Math.PI/2, 1.4*minф - 0.4*maxф);
+		this.maxλ = Math.min(Math.PI, 1.8*maxλ);
 		this.minλ = -this.maxλ;
 
 		this.edges = MapProjection.buildEdges(this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges
@@ -70,13 +86,23 @@ export class Bonne extends MapProjection {
 		let top = this.project(this.maxф, 0).y; // then determine the dimensions of this map
 		let bottom = this.project(this.minф, 0).y;
 		let right = 0;
-		for (const {args} of this.drawMeridian(this.minф, this.maxф, this.maxλ)) {
-			if (args[0] > right)
-				right = args[0];
-			if (args[1] < top)
-				top = args[1];
-			if (args[1] > bottom)
-				bottom = args[1];
+		for (const ф of surface.refLatitudes.concat(this.minф, this.maxф)) {
+			const {x, y} = this.project(ф, this.maxλ);
+			if (!Number.isNaN(x)) {
+				if (x > right)
+					right = x;
+				if (y < top)
+					top = y;
+				if (y > bottom)
+					bottom = y;
+			}
+		}
+		for (const ф of [this.minф, this.maxф]) {
+			const r = Math.abs(this.radius(ф));
+			if (Math.abs(this.maxλ*this.sRadian(ф)) > Math.PI*r/2) {
+				if (r > right)
+					right = r;
+			}
 		}
 		this.setDimensions(-right, right, top, bottom);
 	}
@@ -84,20 +110,52 @@ export class Bonne extends MapProjection {
 	project(ф: number, λ: number): { x: number; y: number } {
 		if (ф < this.minф || ф > this.maxф || λ < this.minλ || λ > this.maxλ)
 			return { x: NaN, y: NaN };
-		if (Number.isFinite(this.radius)) { // use these formulas for normal maps
-			const r = this.radius - ф;
-			const E = (r != 0) ? λ*Math.cos(ф)/r : 0;
+		const y0 = this.yVertex(ф);
+		const s1 = this.sRadian(ф);
+		if (Number.isFinite(this.yJong)) {
+			const R = y0 - this.yJong;
 			return {
-				x: r*Math.sin(E),
-				y: r*Math.cos(E),
-			};
+				x: R*Math.sin(s1/R*λ),
+				y: R*Math.cos(s1/R*λ) + this.yJong };
 		}
-		else { // resort to sinusoidal in the limit of large radius
+		else
 			return {
-				x: λ*Math.cos(ф),
-				y: Math.sin(ф)
-			};
+				x: s1*λ,
+				y: y0 };
+	}
+
+	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
+		const {x, y} = this.project(ф, λ1);
+		if (Number.isFinite(this.yJong)) {
+			const r = Math.hypot(x, y - this.yJong);
+			return [{
+				type: 'A',
+				args: [
+					r, r, 0,
+					(this.sRadian(ф)*Math.abs(λ1 - λ0) > Math.PI*r) ? 1 : 0,
+					((λ1 > λ0) === (this.yJong > 0)) ? 1 : 0,
+					x, y],
+			}];
 		}
+		else {
+			return [{
+				type: 'L',
+				args: [x, y],
+			}]
+		}
+	}
+
+	drawMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
+		const edge: PathSegment[] = [];
+		const n = Math.ceil(Math.abs(ф1 - ф0)*this.EDGE_RESOLUTION);
+		for (let i = 1; i <= n; i ++) {
+			let dф = (ф1 - ф0)*i/n;
+			if (Math.abs(dф) > Math.abs(ф1 - ф0))
+				dф = ф1 - ф0;
+			const {x, y} = this.project(ф0 + dф, λ);
+			edge.push({type: 'L', args: [x, y]});
+		}
+		return edge;
 	}
 
 	getCrossing(фλ0: number[], фλ1: number[]): Place[] {
@@ -124,27 +182,16 @@ export class Bonne extends MapProjection {
 		return null;
 	}
 
-	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
-		const {x, y} = this.project(ф, λ1);
-		const r = Math.abs(this.radius - ф);
-		return [{
-			type: 'A',
-			args: [
-				r, r, 0,
-				(Math.abs(λ1 - λ0) > Math.PI) ? 1 : 0,
-				((λ1 > λ0) == (this.radius < 0)) ? 1 : 0,
-				x, y],
-		}];
+	private sRadian(ф: number): number {
+		return linterp(ф, this.фRef, this.sRef);
 	}
 
-	drawMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
-		const edge: PathSegment[] = [];
-		const n = Math.ceil(Math.abs(ф1 - ф0)*this.EDGE_RESOLUTION);
-		for (let i = 1; i <= n; i ++) {
-			const {x, y} = this.project(ф0 + (ф1 - ф0)*i/n, λ);
-			edge.push({type: 'L', args: [x, y]});
-		}
-		return edge;
+	private yVertex(ф: number): number {
+		return linterp(ф, this.фRef, this.yRef);
+	}
+
+	private radius(ф: number): number {
+		return this.yVertex(ф) - this.yJong;
 	}
 
 }
