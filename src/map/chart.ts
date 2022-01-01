@@ -165,6 +165,13 @@ export class Chart {
 		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`);
 		svg.appendChild(this.testText);
 
+		// const rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+		// rectangle.setAttribute('x', `${this.projection.getDimensions().left}`);
+		// rectangle.setAttribute('y', `${this.projection.getDimensions().top}`);
+		// rectangle.setAttribute('width', `${this.projection.getDimensions().width}`);
+		// rectangle.setAttribute('height', `${this.projection.getDimensions().height}`);
+		// g.appendChild(rectangle);
+
 		let nadorang = 'none';
 		if (marorang === 'nili') { // color the sea deep blue
 			this.fill(

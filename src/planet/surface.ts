@@ -182,6 +182,14 @@ export abstract class Surface {
 		return {x: X, y: Y, z: Z, I: S};
 	}
 
+	d2Ads2(ф: number): number {
+		let фL = ф - 1e-2, фR = ф + 1e-2;
+		if (фL < this.фMin) фL = this.фMin;
+		if (фR > this.фMax) фR = this.фMax;
+		return (this.dAds(фR) - this.dAds(фL))/
+			(this.dsdф(ф) * (фR - фL));
+	}
+
 	/**
 	 * return a list of nodes along with an associated list of triangles that
 	 * completely cover this Surface. The mesh must never diverge from the surface farther

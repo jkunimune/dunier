@@ -40,45 +40,21 @@ export class Bonne extends MapProjection {
 		super(surface, norde, locus,
 			null, null, null, null, []);
 
-		let minф = Number.POSITIVE_INFINITY; // get the bounds of the locus
-		let maxф = Number.NEGATIVE_INFINITY; // TODO: integrate this in case it's not a sphere
-		let maxλ = Number.NEGATIVE_INFINITY;
-		for (const segment of this.transform(locus)) {
-			let [ф, λ] = segment.args;
-			if (ф < minф)
-				minф = ф;
-			if (ф > maxф)
-				maxф = ф; // TODO: this won't notice when the pole is included in the region
-			if (λ > maxλ)
-				maxλ = λ;
-		}
-
-		let ф0;
-		if (maxф == Math.PI/2 && minф == -Math.PI/2) // choose a standard parallel
-			ф0 = 0;
-		else if (maxф == Math.PI/2)
-			ф0 = maxф;
-		else if (minф == -Math.PI/2)
-			ф0 = minф;
-		else
-			ф0 = Math.atan((Math.tan(maxф) + Math.tan(minф))/2);
-		const dф = 1e-2;
-		const d2Ads2 = (surface.dAds(ф0 + dф) - surface.dAds(ф0 - dф))/
-			(surface.dsdф(ф0) * 2*dф);
-		const distance0 = linterp(ф0, surface.refLatitudes, surface.cumulDistances);
-		this.yJong = surface.dAds(ф0)/d2Ads2;
+		const focus = MapProjection.standardParallels(locus, this);
+		const distance0 = linterp(focus.фStd, surface.refLatitudes, surface.cumulDistances);
+		this.yJong = surface.dAds(focus.фStd)/surface.d2Ads2(focus.фStd);
 
 		this.фRef = surface.refLatitudes; // do the necessary integrals
 		this.yRef = []; // to get the y positions of the prime meridian
 		this.sRef = []; // and the arc lengths corresponding to one radian
 		for (let i = 0; i < this.фRef.length; i ++) {
 			this.yRef.push(distance0 - surface.cumulDistances[i]);
-			this.sRef.push(surface.dAds(this.фRef[i])/(2*Math.PI));
+			this.sRef.push(surface.dAds(this.фRef[i])/(2*Math.PI)); // TODO: try this with something that spans both poles.  I feel like it probably won't work
 		}
 
-		this.maxф = Math.min(Math.PI/2, 1.4*maxф - 0.4*minф); // spread the limits out a bit to give a contextual view
-		this.minф = Math.max(-Math.PI/2, 1.4*minф - 0.4*maxф);
-		this.maxλ = Math.min(Math.PI, 1.8*maxλ);
+		this.maxф = Math.min(Math.PI/2, 1.4*focus.фMax - 0.4*focus.фMin); // spread the limits out a bit to give a contextual view
+		this.minф = Math.max(-Math.PI/2, 1.4*focus.фMin - 0.4*focus.фMax);
+		this.maxλ = Math.min(Math.PI, 1.8*focus.λMax);
 		this.minλ = -this.maxλ;
 
 		this.edges = MapProjection.buildEdges(this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges

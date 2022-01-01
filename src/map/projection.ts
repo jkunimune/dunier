@@ -290,6 +290,40 @@ export abstract class MapProjection {
 	}
 
 	/**
+	 * what are the coordinate bounds of these segments?
+	 * @param segments the points on which the map will focus
+	 * @param projection a projection with its central meridian and orientation set
+	 * so that we can properly transform the points
+	 */
+	static standardParallels(segments: PathSegment[], projection: MapProjection
+	): {фStd: number, фMin: number, фMax: number, λMin: number, λMax: number} {
+		let фMin = Number.POSITIVE_INFINITY; // get the bounds of the locus
+		let фMax = Number.NEGATIVE_INFINITY;
+		let λMax = Number.NEGATIVE_INFINITY; // you don't need λMin because the central meridian should be set to make it symmetrical
+		for (const segment of projection.transform(segments)) {
+			let [ф, λ] = segment.args;
+			if (ф < фMin)
+				фMin = ф;
+			if (ф > фMax)
+				фMax = ф; // TODO: this won't notice when the pole is included in the region
+			if (λ > λMax)
+				λMax = λ;
+		}
+
+		let фStd;
+		if (фMax == Math.PI/2 && фMin == -Math.PI/2) // choose a standard parallel
+			фStd = 0;
+		else if (фMax == Math.PI/2)
+			фStd = фMax;
+		else if (фMin == -Math.PI/2)
+			фStd = фMin;
+		else
+			фStd = Math.atan((Math.tan(фMax) + Math.tan(фMin))/2);
+
+		return {фStd: фStd, фMin: фMin, фMax: фMax, λMin: -λMax, λMax: λMax};
+	}
+
+	/**
 	 * create an array of edges for a map with a fixed rectangular bound in lat/lon space,
 	 * for use in the edge cutting algorithm.
 	 */

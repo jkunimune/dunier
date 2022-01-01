@@ -41,6 +41,7 @@ import {Toroid} from "../planet/toroid.js";
 import {LockedDisc} from "../planet/lockeddisc.js";
 import {generateFactSheet} from "../society/factsheet.js";
 import {loadJSON} from "../util/fileio.js";
+import {Conic} from "../map/conic.js";
 // @ts-ignore
 const $ = window.$; // why is this like this? I don't know.
 // @ts-ignore
@@ -290,12 +291,14 @@ function mapApply() {
 		mapper = new Chart(new Equirectangular(surface, norde, locus));
 	else if (projection === 'azimuthal-equidistant')
 		mapper = new Chart(new Azimuthal(surface, norde, locus));
-	else if (projection == 'mercator')
+	else if (projection === 'mercator')
 		mapper = new Chart(new Mercator(surface, norde, locus));
-	else if (projection == 'eckert')
+	else if (projection === 'eckert')
 		mapper = new Chart(new EqualArea(surface, norde, locus));
-	else if (projection == 'bonne')
+	else if (projection === 'bonne')
 		mapper = new Chart(new Bonne(surface, norde, locus));
+	else if (projection === 'conic')
+		mapper = new Chart(new Conic(surface, norde, locus));
 	else
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 
