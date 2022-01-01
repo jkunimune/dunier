@@ -149,10 +149,10 @@ export class Bonne extends MapProjection {
 		const edge: PathSegment[] = [];
 		const n = Math.ceil(Math.abs(ф1 - ф0)*this.EDGE_RESOLUTION);
 		for (let i = 1; i <= n; i ++) {
-			let dф = (ф1 - ф0)*i/n;
-			if (Math.abs(dф) > Math.abs(ф1 - ф0))
-				dф = ф1 - ф0;
-			const {x, y} = this.project(ф0 + dф, λ);
+			let ф = ф0 + (ф1 - ф0)*i/n;
+			ф = Math.max(this.minф, ф);
+			ф = Math.min(this.maxф, ф);
+			const {x, y} = this.project(ф, λ);
 			edge.push({type: 'L', args: [x, y]});
 		}
 		return edge;
