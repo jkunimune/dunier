@@ -66,7 +66,8 @@ const TERRAIN_COLORMAP = [
 	[1.00, 'rgb( 41,   4,   5)'],
 ];
 
-const MIN_SIZE_TO_ZOOM = 6;
+const MIN_SIZE_TO_LIST = 6;
+const MAX_COUNTRIES_TO_LIST = 20;
 
 export const USER_STRINGS = loadJSON(`../../res/tarje/${$('#bash')[0].textContent}.json`);
 
@@ -248,7 +249,8 @@ function historyApply() {
 	mapper.depict(surface, world, $('#history-map')[0], 'politiki', 'nili');
 
 	console.log("mute ba chuze bil...");
-	const countries = world.getCivs(true, MIN_SIZE_TO_ZOOM); // TODO: if there are no countries, use fisickall rejons instead
+	const countries = world.getCivs(true, MIN_SIZE_TO_LIST) // list the biggest countries for the centering selection
+		.slice(0, MAX_COUNTRIES_TO_LIST); // TODO: if there are no countries, use fisickall rejons instead
 	const picker = document.getElementById('map-jung');
 	picker.textContent = "";
 	for (let i = 0; i < countries.length; i ++) {

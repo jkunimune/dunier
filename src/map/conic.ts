@@ -26,7 +26,6 @@ import {Surface} from "../planet/surface.js";
 import {linterp} from "../util/util.js";
 
 export class Conic extends MapProjection {
-	private static SPREAD = 0.4;
 	private readonly yJong: number;
 	private readonly n: number;
 
@@ -35,34 +34,46 @@ export class Conic extends MapProjection {
 			null, null, null, null);
 
 		const focus = MapProjection.standardParallels(locus, this);
-		const dф = 1e-2;
 		const y0 = -linterp(focus.фStd, surface.refLatitudes, surface.cumulDistances);
 		this.yJong = surface.dAds(focus.фStd)/surface.d2Ads2(focus.фStd) + y0; // TODO: try this with something that spans both poles.  I feel like it probably won't work
 		this.n = (Number.isFinite(this.yJong)) ?
 			surface.dAds(focus.фStd)/(2*Math.PI*(y0 - this.yJong)) :
 			surface.dAds(focus.фStd)/(2*Math.PI); // use that to calculate the angular scale
 
-		// for (let i = 0; i < 2; i ++) { TODO: there are absolute limits that the map should not get bigger than
-		let top = y0; // then determine the dimensions of this map
-		let bottom = y0;
-		let right = 0;
-		for (const ф of [focus.фMin, focus.фMax]) {
-			for (const λ of [0, Math.min(Math.PI/2/Math.abs(this.n), focus.λMax)]) {
-				const {x, y} = this.project(ф, λ);
-				if (y > bottom)
-					bottom = y;
-				if (y < top)
-					top = y;
-				if (x > right)
-					right = x;
+		let locusTop = Number.POSITIVE_INFINITY; // then determine the dimensions of this map
+		let locusBottom = Number.NEGATIVE_INFINITY;
+		let locusRight = 0;
+		for (const segment of this.transform(locus)) { // check the extent of the thing we're mapping
+			const [ф, λ] = segment.args;
+			const {x, y} = this.project(ф, λ);
+			if (y < locusTop)
+				locusTop = y;
+			if (y > locusBottom)
+				locusBottom = y;
+			if (Math.abs(x) > locusRight)
+				locusRight = Math.abs(x);
+		}
+
+		let coneTop = Number.POSITIVE_INFINITY;
+		let coneBottom = Number.NEGATIVE_INFINITY;
+		let coneRight = 0;
+		for (const ф of [surface.фMin, surface.фMax]) { // and check the extent of the whole world
+			for (const λ of [0, Math.PI/2/this.n, Math.PI]) {
+				if (Math.abs(λ) <= Math.PI) {
+					const {x, y} = this.project(ф, λ);
+					if (y > coneBottom)
+						coneBottom = y;
+					if (y < coneTop)
+						coneTop = y;
+					if (Math.abs(x) > coneRight)
+						coneRight = Math.abs(x);
+				}
 			}
 		}
-		// }
-		const spread = Conic.SPREAD, spreadp1 = Conic.SPREAD + 1;
-		top = spreadp1*top - spread*bottom; // spread the limits out a bit to give a contextual view
-		bottom = spreadp1*bottom - spread/spreadp1*(spread*bottom + top);
-		right = (2*spread + 1)*right;
 
+		const top = Math.max(coneTop, 1.4*locusTop - 0.4*locusBottom);
+		const bottom = Math.min(coneBottom, 1.4*locusBottom - 0.4*locusTop);
+		const right = Math.min(coneRight, 1.8*locusRight);
 		this.setDimensions(-right, right, top, bottom);
 	}
 
@@ -88,8 +99,8 @@ export class Conic extends MapProjection {
 				type: 'A',
 				args: [
 					r, r, 0,
-					(this.n*Math.abs(λ1 - λ0) > Math.PI) ? 1 : 0,
-					((λ1 > λ0) != (this.yJong > 0)) ? 1 : 0,
+					(Math.abs(this.n*(λ1 - λ0)) > Math.PI) ? 1 : 0,
+					((λ1 > λ0) === (this.yJong > 0)) ? 1 : 0,
 					x, y],
 			}];
 		}

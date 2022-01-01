@@ -259,6 +259,8 @@ export abstract class MapProjection {
 	 * @param bottom
 	 */
 	protected setDimensions(left: number, right: number, top: number, bottom: number) {
+		if (left !== null && (left >= right || top >= bottom))
+			throw `the axis bounds ${left}, ${right}, ${top}, ${bottom} are invalid.`;
 		this.left = left;
 		this.right = right;
 		this.top = top;

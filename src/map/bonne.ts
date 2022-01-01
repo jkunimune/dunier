@@ -136,7 +136,7 @@ export class Bonne extends MapProjection {
 
 	getCrossing(фλ0: number[], фλ1: number[]): Place[] {
 		const basicCrossing = super.getCrossing(фλ0, фλ1);
-		if (basicCrossing != null) // if the line between them goes around the back
+		if (basicCrossing !== null) // if the line between them goes around the back
 			return basicCrossing; // split it there so that we can deal with each half more cleanly
 
 		const [ф0, λ0] = фλ0;
