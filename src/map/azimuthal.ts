@@ -21,8 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Place, Surface} from "../planet/surface.js";
-import {Direction, MapProjection, PathSegment} from "./projection.js";
+import {Surface} from "../planet/surface.js";
+import {LongLineType, MapProjection, PathSegment} from "./projection.js";
 import {linterp} from "../util/util.js";
 
 /**
@@ -40,14 +40,14 @@ export class Azimuthal extends MapProjection {
 			-rMax, rMax, -rMax, rMax,
 			[
 				[{
-					start: {ф: surface.фMax, λ:  Math.PI},
-					end:   {ф: surface.фMax, λ: -Math.PI},
-					direction: Direction.VEI,
+					start: [surface.фMax,  Math.PI],
+					end:   [surface.фMax, -Math.PI],
+					type: LongLineType.VEI,
 				}],
 				[{
-					start: {ф: surface.фMin, λ: -Math.PI},
-					end:   {ф: surface.фMin, λ:  Math.PI},
-					direction: Direction.VEI,
+					start: [surface.фMin, -Math.PI],
+					end:   [surface.фMin,  Math.PI],
+					type: LongLineType.VEI,
 				}],
 			]);
 		this.rMax = rMax;
@@ -76,13 +76,5 @@ export class Azimuthal extends MapProjection {
 		}
 		else
 			return [];
-	}
-
-	getCrossing(фλ0: number[], фλ1: number[]): Place[] {
-		const [ф0, λ0] = фλ0;
-		const [ф1, λ1] = фλ1;
-		if (Math.abs(ф1 - ф0) > Math.PI)
-			return this.getParallelCrossing(ф0, λ0, ф1, λ1);
-		return null;
 	}
 }

@@ -22,32 +22,35 @@
  * SOFTWARE.
  */
 import { Place, Surface} from "../planet/surface.js";
-import {standardizeAngle, Vector} from "../util/util.js";
+import {intersection, standardizeAngle} from "../util/util.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 
 
 /**
- * the direccion and shape of a line on the surface
+ * the direccion and shape of a long "strait" line
  */
-export enum Direction {
+export enum LongLineType {
+	ORTO, // in a strait line
 	GING, // along a meridian
 	VEI, // along a parallel
 }
 
 /**
- * the edge of a map projection
+ * an edge on a map projection
  */
 export interface MapEdge {
-	start: Place;
-	end: Place;
-	direction: Direction;
+	start: number[];
+	end: number[];
+	type: string | LongLineType;
 }
 
 /**
  * something that can be dropped into an SVG <path>.
+ * in addition to the basic SVG 'M', 'L', 'Z', 'A', etc., this also supports types of
+ * long line, which are only defined on the surface, not on the map
  */
 export interface PathSegment {
-	type: string;
+	type: string | LongLineType;
 	args: number[];
 }
 
@@ -58,7 +61,8 @@ export abstract class MapProjection {
 	public readonly surface: Surface;
 	public readonly northUp: boolean;
 	public readonly center: number;
-	public edges: MapEdge[][];
+	public geoEdges: MapEdge[][];
+	public mapEdges: MapEdge[][];
 	private left: number;
 	private right: number;
 	private top: number;
@@ -80,7 +84,7 @@ export abstract class MapProjection {
 
 		if (edges === null) // the default set of edges is a rectangle around the map
 			edges = MapProjection.buildEdges(surface.фMin, surface.фMax, -Math.PI, Math.PI);
-		this.edges = edges;
+		this.geoEdges = edges;
 	}
 
 	/**
@@ -161,21 +165,21 @@ export abstract class MapProjection {
 	 */
 	getMeridianCrossing(
 		ф0: number, λ0: number, ф1: number, λ1: number, λX: number = Math.PI
-	): Place[] {
+	): number[][] {
 		const pos0 = this.surface.xyz(ф0, λ0 - λX);
 		const pos1 = this.surface.xyz(ф1, λ1 - λX);
 		const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
 			pos1.x - pos0.x);
 		const фX = this.surface.фλ(posX.x, posX.y, posX.z).ф;
 		if (λX === Math.PI && λ0 < λ1)
-			return [ {ф: фX, λ: -Math.PI},
-				     {ф: фX, λ:  Math.PI} ];
+			return [ [ фX, -Math.PI ],
+				     [ фX,  Math.PI ] ];
 		else if (λX === Math.PI)
-			return [ {ф: фX, λ:  Math.PI},
-				     {ф: фX, λ: -Math.PI} ];
+			return [ [ фX,  Math.PI ],
+				     [ фX, -Math.PI ] ];
 		else
-			return [ {ф: фX, λ: λX},
-				     {ф: фX, λ: λX} ];
+			return [ [ фX, λX ],
+				     [ фX, λX ] ];
 	}
 
 	/**
@@ -190,53 +194,103 @@ export abstract class MapProjection {
 	 */
 	getParallelCrossing(
 		ф0: number, λ0: number, ф1: number, λ1: number, фX: number = Math.PI
-	): Place[] {
+	): number[][] {
 		const λX = ((ф1 - фX)*λ0 + (фX - ф0)*λ1)/(ф1 - ф0); // this solution is not as exact as the meridian one,
 		if (фX === Math.PI && ф0 < ф1) // but it's good enuff.  the interseccion between a cone and a line is too hard.
-			return [ {ф: -Math.PI, λ: λX},
-				     {ф:  Math.PI, λ: λX} ];
+			return [ [ -Math.PI, λX ],
+				     [  Math.PI, λX ] ];
 		else if (фX === Math.PI)
-			return [ {ф:  Math.PI, λ: λX},
-				     {ф: -Math.PI, λ: λX} ];
+			return [ [  Math.PI, λX ],
+				     [ -Math.PI, λX ] ];
 		else
-			return [ {ф: фX, λ: λX},
-				     {ф: фX, λ: λX} ];
+			return [ [ фX, λX ],
+				     [ фX, λX ] ];
 	}
 
 	/**
 	 * compute the coordinates at which the line between these two points crosses an interrupcion in the map.  if
 	 * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
 	 * the 1th point's side.
-	 * @param фλ0 the transformed coordinates of the zeroth point
-	 * @param фλ1 the transformed coordinates of the oneth point
 	 */
-	getCrossing(фλ0: number[], фλ1: number[]): Place[] {
-		const [ф0, λ0] = фλ0;
+	getGeoedgeCrossing(фλ0: number[], фλ1: number[]): number[][] {
+		const [ф0, λ0] = фλ0; // extract the input coordinates
 		const [ф1, λ1] = фλ1;
-		if (Math.abs(λ1 - λ0) > Math.PI)
-			return this.getMeridianCrossing(ф0, λ0, ф1, λ1);
-		else if (Math.abs(ф1 - ф0) > Math.PI)
-			return this.getParallelCrossing(ф0, λ0, ф1, λ1);
+		const фS = Math.min(ф0, ф1), фN = Math.max(ф0, ф1); // sort these by location
+		const λW = Math.min(λ0, λ1), λE = Math.max(λ0, λ1);
+		for (const loop of this.geoEdges) { // then look at each edge
+			for (const edge of loop) {
+				if (edge.type === LongLineType.GING) { // if it is a meridian
+					if (Math.abs(λ1 - λ0) > Math.PI) // first check to see if the point crosses the _prime_ meridian
+						return this.getMeridianCrossing(ф0, λ0, ф1, λ1);
+					if (λW < edge.start[1] && λE > edge.start[1]) // then check to see if it crosses this edge
+						return this.getMeridianCrossing(ф0, λ0, ф1, λ1, edge.start[1]);
+				}
+				else if (edge.type === LongLineType.VEI) { // do the same thing for parallels
+					if (Math.abs(ф1 - ф0) > Math.PI)
+						return this.getParallelCrossing(ф0, λ0, ф1, λ1);
+					if (фS < edge.start[0] && фN > edge.start[0])
+						return this.getParallelCrossing(ф0, λ0, ф1, λ1, edge.start[0]);
+				}
+				else {
+					throw `I don't think you're allowd to use ${edge.type} here`;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * compute the coordinates at which the line between these two points crosses the bordor of the map.  if
+	 * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
+	 * the 1th point's side.
+	 */
+	getLineCrossing(xy0: number[], xy1: number[]): number[][] {
+		for (const loop of this.geoEdges) {
+			for (const edge of loop) {
+				const crossing = intersection(
+					{x: xy0[0], y: xy0[1]}, {x: xy1[0], y: xy1[1]},
+					{x: edge.start[0], y: edge.start[1]}, {x: edge.end[0], y: edge.end[1]}
+				);
+				if (crossing !== null)
+					return [
+						[crossing.x, crossing.y],
+						[crossing.x, crossing.y]];
+			}
+		}
 		return null;
 	}
 
 	/**
 	 * return a number indicating where on the edge of map this point lies
-	 * @param ф the transformed latitude in radians
-	 * @param λ the transformed longitude on the [-π, π] interval
+	 * @param coords the coordinates of the point
+	 * @param edges the loops of edges on which we are trying to place it
 	 * @return the index of the edge that contains this point plus the fraccional distance from that edges start to its
 	 * end of that point, or null if there is no such edge.  also, the index of the edge loop about which we're tauking
 	 * or null if the point isn't on an edge
 	 */
-	getPositionOnEdge(ф: number, λ: number): {loop: number, index: number} {
-		for (let i = 0; i < this.edges.length; i ++) {
-			for (let j = 0; j < this.edges[i].length; j ++) {
-				const edge = this.edges[i][j];
-				if (ф >= Math.min(edge.start.ф, edge.end.ф) && ф <= Math.max(edge.start.ф, edge.end.ф) &&
-					λ >= Math.min(edge.start.λ, edge.end.λ) && λ <= Math.max(edge.start.λ, edge.end.λ)) {
-					const startToPoint = new Vector(λ - edge.start.λ, ф - edge.start.ф, 0);
-					const startToEnd = new Vector(edge.end.λ - edge.start.λ, edge.end.ф - edge.start.ф, 0);
-					return {loop: i, index: j + startToPoint.dot(startToEnd)/startToEnd.sqr()};
+	static getPositionOnEdge(coords: number[], edges: MapEdge[][]): {loop: number, index: number} {
+		for (let i = 0; i < edges.length; i ++) {
+			for (let j = 0; j < edges[i].length; j ++) { // start by choosing an edge
+				const edge = edges[i][j];
+				let onThisEdge = true;
+				for (let k = 0; k < coords.length; k ++) {
+					if (coords[k] < Math.min(edge.start[k], edge.end[k]))
+						onThisEdge = false;
+					if (coords[k] > Math.max(edge.start[k], edge.end[k]))
+						onThisEdge = false;
+				}
+				if (onThisEdge) {
+					const startToPointVector = [];
+					const startToEndVector = [];
+					let startToEndSqr = 0;
+					let dotProduct = 0;
+					for (let k = 0; k < coords.length; k ++) {
+						startToPointVector.push(coords[k] - edge.start[k]);
+						startToEndVector.push(edge.end[k] - edge.start[k]);
+						startToEndSqr += Math.pow(startToEndVector[k], 2);
+						dotProduct += startToPointVector[k]*startToEndVector[k];
+					}
+					return { loop: i, index: j + dotProduct/startToEndSqr };
 				}
 			}
 		}
@@ -265,6 +319,31 @@ export abstract class MapProjection {
 		this.right = right;
 		this.top = top;
 		this.bottom = bottom;
+		const edges: MapEdge[][] = [[
+			{ start: [right, top], end: null, type: 'L' },
+			{ start: [left, top], end: null, type: 'L' },
+			{ start: [left, bottom], end: null, type: 'L' },
+			{ start: [right, bottom], end: null, type: 'L' },
+		]];
+		for (let i = 0; i < edges[0].length; i ++) // enforce the contiguity of the edge loops
+			edges[0][i].end = edges[0][(i+1)%edges[0].length].start;
+		this.mapEdges = edges;
+	}
+
+	/**
+	 * create an array of edges for a map with a fixed rectangular bound in lat/lon space,
+	 * for use in the edge cutting algorithm.
+	 */
+	static buildEdges(фMin: number, фMax: number, λMin: number, λMax: number): MapEdge[][] {
+		const edges: MapEdge[][] = [[
+			{ start: [фMax, λMax], end: null, type: LongLineType.VEI },
+			{ start: [фMax, λMin], end: null, type: LongLineType.GING },
+			{ start: [фMin, λMin], end: null, type: LongLineType.VEI },
+			{ start: [фMin, λMax], end: null, type: LongLineType.GING },
+		]];
+		for (let i = 0; i < edges[0].length; i ++) // enforce the contiguity of the edge loops
+			edges[0][i].end = edges[0][(i+1)%edges[0].length].start;
+		return edges;
 	}
 
 	/**
@@ -323,25 +402,5 @@ export abstract class MapProjection {
 			фStd = Math.atan((Math.tan(фMax) + Math.tan(фMin))/2);
 
 		return {фStd: фStd, фMin: фMin, фMax: фMax, λMin: -λMax, λMax: λMax};
-	}
-
-	/**
-	 * create an array of edges for a map with a fixed rectangular bound in lat/lon space,
-	 * for use in the edge cutting algorithm.
-	 */
-	static buildEdges(фMin: number, фMax: number, λMin: number, λMax: number): MapEdge[][] {
-		const edges: MapEdge[][] = [[
-			{ start: { ф: фMax, λ: λMax }, end: null,
-				direction: Direction.VEI },
-			{ start: { ф: фMax, λ: λMin }, end: null,
-				direction: Direction.GING },
-			{ start: { ф: фMin, λ: λMin }, end: null,
-				direction: Direction.VEI },
-			{ start: { ф: фMin, λ: λMax }, end: null,
-				direction: Direction.GING },
-		]];
-		for (let i = 0; i < edges[0].length; i ++) // enforce the contiguity of the edge loops
-			edges[0][i].end = edges[0][(i+1)%edges[0].length].start;
-		return edges;
 	}
 }

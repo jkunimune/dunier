@@ -92,6 +92,15 @@ export function standardizeAngle(angle: number): number {
 	return angle - Math.floor((angle + Math.PI)/(2*Math.PI))*2*Math.PI
 }
 
+
+/**
+ * a quick way to get, for instance, the x and y of an SVG path argument list
+ * @param array
+ */
+export function last_two(array: any[]): any[] {
+	return array.slice(array.length - 2);
+}
+
 /**
  * combine the two arrays and remove duplicates.
  */
@@ -205,10 +214,16 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 }
 
 
+interface Point {
+	x: number;
+	y: number;
+}
+
+
 /**
  * compute the point equidistant from the three points given.
  */
-export function circumcenter(points: {x: number, y: number}[]): {x: number, y: number} {
+export function circumcenter(points: Point[]): Point {
 	if (points.length !== 3)
 		throw "it has to be 3.";
 	let xNumerator = 0, yNumerator = 0;
@@ -234,7 +249,7 @@ export function circumcenter(points: {x: number, y: number}[]): {x: number, y: n
  * @param r the radius of the circle
  * @param onTheLeft whether the center is on the left of the strait-line path from a to b
  */
-export function chordCenter(a: {x: number, y: number}, b: {x: number, y: number}, r: number, onTheLeft: boolean) {
+export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean) {
 	const d = Math.hypot(b.x - a.x, b.y - a.y);
 	let l = Math.sqrt(r*r - d*d/4);
 	if (onTheLeft) l *= -1;
@@ -244,6 +259,49 @@ export function chordCenter(a: {x: number, y: number}, b: {x: number, y: number}
 		x: (a.x + b.x)/2 + l*sinθ,
 		y: (a.y + b.y)/2 + l*cosθ,
 	}
+}
+
+
+export function distance(p: Point, a: Point, b: Point): number {
+	const r = {x: p.x - a.x, y: p.y - a.y};
+	const l = {x: b.x - a.x, y: b.y - a.y};
+	const length = Math.hypot(l.x, l.y);
+	const area = r.y*l.x - r.x*l.y;
+	return area/length;
+}
+
+
+/**
+ * find the intersection between two line segments.  for the purposes of this function,
+ * when one endpoint is coincident with the other segment, it is not counted as an
+ * intersection.  it just works out better this way for the purpose of edges
+ * @returns the location where
+ */
+export function intersection(
+	p1: Point, p2: Point,
+	q1: Point, q2: Point): Point {
+	if (q1.x === q2.x) {
+		if (Math.min(p1.x, p2.x) < q1.x && Math.max(p1.x, p2.x) > q1.x) {
+			const r = {x: q1.x, y: (q1.x - p1.x)/(p2.x - p1.x)*(p2.y - p1.y) + p1.y};
+			if (r.y > Math.min(q1.y, q2.y) && r.y < Math.max(q1.y, q2.y))
+				return r;
+		}
+		return null;
+	}
+	else if (q1.y === q2.y) {
+		return transpose(intersection(
+			transpose(p1), transpose(p2), transpose(q1), transpose(q2)));
+	}
+	else {
+		throw "I haven't implemented obleke intersections, but if you want, try https://blogs.sas.com/content/iml/2018/07/09/intersection-line-segments.html";
+	}
+}
+
+function transpose(p: Point): Point {
+	if (p === null)
+		return null;
+	else
+		return {x: p.y, y: p.x};
 }
 
 

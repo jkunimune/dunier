@@ -29,6 +29,7 @@ import {linterp} from "../util/util.js";
  * a cylindrical projection that makes loxodromes appear as straight lines.
  */
 export class Mercator extends MapProjection {
+	private static readonly ASPECT: number = Math.sqrt(2);
 	private readonly фRef: number[];
 	private readonly yRef: number[];
 
@@ -47,11 +48,11 @@ export class Mercator extends MapProjection {
 		let bottom = this.yRef[0];
 		let top = this.yRef[this.yRef.length-1];
 		if (surface.dAds(surface.фMin) > surface.dAds(surface.фMax)) // if the South Pole is thicker than the North
-			top = Math.max(top, bottom - 2*Math.PI); // crop the top to make it square
+			top = Math.max(top, bottom - Mercator.ASPECT*Math.PI); // crop the top to get the correct aspect ratio
 		else if (surface.dAds(surface.фMin) < surface.dAds(surface.фMax)) // if the North Pole is thicker
-			 bottom = Math.min(bottom, top + 2*Math.PI); // crop the bottom to make it square
+			 bottom = Math.min(bottom, top + Mercator.ASPECT*Math.PI); // crop the bottom to make correct
 		else { // if they are equally important
-			const excess = Math.max(0, bottom - top - 2*Math.PI);
+			const excess = Math.max(0, bottom - top - Mercator.ASPECT*Math.PI);
 			top = top + excess/2; // crop both
 			bottom = bottom - excess/2;
 		}
