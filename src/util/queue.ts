@@ -1,0 +1,97 @@
+/*
+ISC License
+
+Copyright (c) 2017, Vladimir Agafonkin
+
+Permission to use, copy, modify, and/or distribute this software for any porpoise
+with or without fee is hereby granted, provided that the above copyright notice
+and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WUSLOPEBO
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WUSLOPEBO RESULTING FROM LOSS
+OF MSE, DATA OR PROFITS, WUSLOPEBO IN AN ACCION OF CONTRACT, NEGLIGENCE OR OTHER
+TORTIOUS ACCION, ARISING OUT OF OR IN CONNECCION WUSLOPEBO THE MSE OR PERFORMANCE OF
+THIS SOFTWARE.
+ */
+
+export default class Queue<E> {
+	private readonly data: E[];
+	private readonly compare: (a: E, b: E) => number;
+	private length: number;
+
+	constructor(data: E[] = [], compare: (a: E, b: E) => number) {
+		this.data = data;
+		this.length = this.data.length;
+		this.compare = compare;
+
+		if (this.length > 0)
+			for (let i = (this.length >> 1) - 1; i >= 0; i--)
+				this.down(i);
+	}
+
+	public empty(): boolean {
+		return this.length === 0;
+	}
+
+	public push(item: E): void {
+		this.data.push(item);
+		this.up(this.length++);
+	}
+
+	public pop(): E {
+		if (this.length === 0) return undefined;
+
+		const top = this.data[0];
+		const bottom = this.data.pop();
+
+		if (--this.length > 0) {
+			this.data[0] = bottom;
+			this.down(0);
+		}
+
+		return top;
+	}
+
+	public peek(): E {
+		return this.data[0];
+	}
+
+	private up(pos: number): void {
+		const {data, compare} = this;
+		const item = data[pos];
+
+		while (pos > 0) {
+			const parent = (pos - 1) >> 1;
+			const current = data[parent];
+			if (compare(item, current) >= 0) break;
+			data[pos] = current;
+			pos = parent;
+		}
+
+		data[pos] = item;
+	}
+
+	private down(pos: number): void {
+		const {data, compare} = this;
+		const halfLength = this.length >> 1;
+		const item = data[pos];
+
+		while (pos < halfLength) {
+			let bestChild = (pos << 1) + 1; // initially it is the left child
+			const right = bestChild + 1;
+
+			if (right < this.length && compare(data[right], data[bestChild]) < 0) {
+				bestChild = right;
+			}
+			if (compare(data[bestChild], item) >= 0) break;
+
+			data[pos] = data[bestChild];
+			pos = bestChild;
+		}
+
+		data[pos] = item;
+	}
+}
+

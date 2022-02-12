@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 // @ts-ignore
-import TinyQueue from '../lib/tinyqueue.js';
+import Queue from '../util/queue.js';
 
 import {Nodo, Surface} from "../planet/surface.js";
 import {Random} from "../util/random.js";
@@ -151,7 +151,8 @@ export class World {
 	 * @param rng the random number generator to use
 	 */
 	spreadCivs(rng: Random) {
-		const invasions	= new TinyQueue([], (a: {time: number}, b: {time: number}) => a.time - b.time); // keep track of all current invasions
+		const invasions: Queue<{time: number, invader: Civ, start: Nodo, end: Nodo}> = new Queue(
+			[], (a, b) => a.time - b.time); // keep track of all current invasions
 		for (const invader of this.civs) {
 			for (const ourTile of invader.kenare.keys()) { // each civ initiates all its invasions
 				for (const theirTile of invader.kenare.get(ourTile)) {
@@ -161,7 +162,7 @@ export class World {
 				}
 			}
 		}
-		while (invasions.length > 0) {
+		while (!invasions.empty()) {
 			let {time, invader, start, end} = invasions.pop(); // as invasions finish
 			const invadee = this.currentRuler(end);
 			const invaderStrength = invader.getStrength(invadee, end);
@@ -173,7 +174,7 @@ export class World {
 					for (const neighbor of conquerdLand.neighbors.keys()) {
 						if (!invader.nodos.has(neighbor)) {
 							time = time + invader.estimateInvasionTime(conquerdLand, neighbor, rng);
-							if (end <= World.timeStep) {
+							if (time <= World.timeStep) {
 								invasions.push({time: time, invader: invader, start: end, end: neighbor});
 							}
 						}

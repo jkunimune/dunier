@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 // @ts-ignore
-import TinyQueue from '../lib/tinyqueue.js';
+import Queue from '../util/queue.js';
 
 import {Surface, Triangle, Nodo} from "../planet/surface.js";
 import {Random} from "../util/random.js";
@@ -62,6 +62,15 @@ const TRENCH_WIDTH = 100; // km
 const SLOPE_WIDTH = 200; // km
 const RIFT_WIDTH = 800; // km
 const OCEAN_SIZE = 0.2; // as a fraction of continental length scale
+
+
+enum FaultType {
+	SAN,
+	KAVE,
+	NESIA,
+	FENTOPIA,
+	PANDE,
+}
 
 
 /**
@@ -109,7 +118,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
 		let bestNode = null, bestDixe = null; // define node.upwind as the neighbor that is in the upwindest direction of each node
 		for (const neighbor of node.neighbors.keys()) {
 			const dix = neighbor.pos.minus(node.pos).norm();
-			if (bestDixe == null ||
+			if (bestDixe === null ||
 				dix.dot(node.windVelocity) < bestDixe.dot(node.windVelocity)) {
 				bestNode = neighbor;
 				bestDixe = dix;
@@ -209,22 +218,22 @@ function movePlates(surf: Surface, rng: Random) {
 
 	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
 
-	const hpQueue = new TinyQueue([], (a: {distance: number}, b: {distance: number}) => a.distance - b.distance);
-	const lpQueue = new TinyQueue([], (a: {distance: number}, b: {distance: number}) => a.distance - b.distance);
+	const hpQueue: Queue<{node: Nodo, distance: number, width: number, speed: number, type: FaultType}> = new Queue([], (a, b) => a.distance - b.distance);
+	const lpQueue: Queue<{node: Nodo, distance: number, width: number, speed: number, type: FaultType}> = new Queue([], (a, b) => a.distance - b.distance);
 	for (const node of surf.nodos) { // now for phase 2:
 		let fault = null;
 		let minDistance = Number.POSITIVE_INFINITY;
 		for (const neighbor of node.neighbors.keys()) { // look for adjacent nodes
 			if (neighbor.plate !== node.plate) { // that are on different plates
 				const distance = node.neighbors.get(neighbor).length;
-				if (fault == null || distance < minDistance) {
+				if (fault === null || distance < minDistance) {
 					fault = neighbor;
 					minDistance = distance;
 				}
 			}
 		}
 
-		if (fault != null) { // if you found one,
+		if (fault !== null) { // if you found one,
 			let nodePos = new Vector(0, 0, 0); // do some additional computation to smooth out the boundaries
 			let faultPos = new Vector(0, 0, 0);
 			let nodeMass = 0, faultMass = 0;
@@ -244,33 +253,33 @@ function movePlates(surf: Surface, rng: Random) {
 			let type, width; // and whether these are both continents or if this is a top or a bottom or what
 			if (relSpeed < 0) { // TODO: make relspeed also depend on adjacent tiles to smooth out the fault lines and make better oceans
 				if (node.gawe > 0 && fault.gawe > 0) {
-					type = 'xan'; // continental collision
+					type = FaultType.SAN; // continental collision
 					width = -relSpeed*MOUNTAIN_WIDTH*Math.sqrt(2);
 				}
 				else if (node.gawe < fault.gawe) {
-					type = 'kav'; // deep sea trench
+					type = FaultType.KAVE; // deep sea trench
 					width = TRENCH_WIDTH*Math.sqrt(2);
 				}
 				else {
-					type = 'nesokurbe'; // island arc
+					type = FaultType.NESIA; // island arc
 					width = MOUNTAIN_WIDTH*Math.sqrt(2);
 				}
 			}
 			else {
 				if (node.gawe < 0) {
-					type = 'fenia'; // mid-oceanic rift
+					type = FaultType.FENTOPIA; // mid-oceanic rift
 					width = relSpeed*RIFT_WIDTH*2;
 				}
 				else {
-					type = 'rampe'; // mid-oceanic rift plus continental slope
+					type = FaultType.PANDE; // mid-oceanic rift plus continental slope
 					width = relSpeed*oceanWidth;
 				}
 			}
 			const queueElement = {
 				node: node, distance: minDistance/2, width: width,
 				speed: Math.abs(relSpeed), type: type}; // add it to the queue
-			if (type === 'rampo')	hpQueue.push(queueElement);
-			else                    lpQueue.push(queueElement); // which queue depends on priority
+			if (type === FaultType.PANDE)	hpQueue.push(queueElement);
+			else                    		lpQueue.push(queueElement); // which queue depends on priority
 			// node.relSpeed = relSpeed;
 		}
 		else
@@ -280,32 +289,32 @@ function movePlates(surf: Surface, rng: Random) {
 	}
 
 	for (const queue of [hpQueue, lpQueue]) { // now, we iterate through the queues
-		while (queue.length > 0) { // in order of priority
+		while (!queue.empty()) { // in order of priority
 			const {node, distance, width, speed, type} = queue.pop(); // each element of the queue is a node waiting to be affected by plate tectonics
 			if (node.flag)  continue; // some of them may have already come up
 			if (distance > width)   continue; // there's also always a possibility we are out of the range of influence of this fault
-			if (type === 'xan') { // based on the type, find the height change as a function of distance
+			if (type === FaultType.SAN) { // based on the type, find the height change as a function of distance
 				const x = distance / (speed*MOUNTAIN_WIDTH);
 				node.gawe += Math.sqrt(speed) * MOUNTAIN_HEIGHT * // continent-continent ranges are even
 					bellCurve(x) * wibbleCurve(x); // (the sinusoidal term makes it a little more rugged)
 			}
-			else if (type === 'kav') {
+			else if (type === FaultType.KAVE) {
 				const x = distance / TRENCH_WIDTH;
 				node.gawe -= speed * TRENCH_DEPTH *
 					digibbalCurve(x) * wibbleCurve(x); // while subductive faults are odd
 			}
-			else if (type === 'nesokurbe') {
+			else if (type === FaultType.NESIA) {
 				const x = distance / MOUNTAIN_WIDTH;
 				node.gawe += speed * VOLCANO_HEIGHT *
 					digibbalCurve(x) * wibbleCurve(x);
 			}
-			else if (type === 'fenia') {
+			else if (type === FaultType.FENTOPIA) {
 				const dS = speed*oceanWidth;
 				const dR = Math.min(0, dS - 2*SLOPE_WIDTH - 2*RIFT_WIDTH);
 				const xR = (distance - dR) / RIFT_WIDTH;
 				node.gawe += RIFT_HEIGHT * Math.exp(-xR);
 			}
-			else if (type === 'rampe') {
+			else if (type === FaultType.PANDE) {
 				const dS = speed*oceanWidth; // passive margins are kind of complicated
 				const dR = Math.min(0, dS - 2*SLOPE_WIDTH - 2*RIFT_WIDTH);
 				const xS = (dS - distance) / SLOPE_WIDTH;
@@ -341,10 +350,10 @@ function fillOcean(level: number, surf: Surface) {
 		let start = null;
 		for (const node of surf.nodos) {
 			if (node.biome !== 'samud' && node.gawe <= level &&
-				(start == null || node.gawe < start.gawe)) // the lowest point that we haven't already tried is a good way to test
+				(start === null || node.gawe < start.gawe)) // the lowest point that we haven't already tried is a good way to test
 				start = node;
 		}
-		if (start == null) // stop when we can't find any suitable starts
+		if (start === null) // stop when we can't find any suitable starts
 			break;
 		let size = floodFrom(start, level);
 		if (size > bestSize) {
@@ -355,7 +364,7 @@ function fillOcean(level: number, surf: Surface) {
 			break;
 	}
 
-	if (bestStart == null)
+	if (bestStart === null)
 		return; // it's theoretically possible there wasn't any suitable start point. shikata wa nai yo.
 
 	for (const node of surf.nodos) // finally, clear all attempts
@@ -380,7 +389,8 @@ function addRivers(surf: Surface) {
 
 	const riverDistance: Map<Nodo | Triangle, number> = new Map();
 
-	const nadeQueue = new TinyQueue([], (a: {slope: number}, b: {slope: number}) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
+	const nadeQueue: Queue<{nice: Nodo | Triangle, supr: Triangle, slope: number}> = new Queue(
+		[], (a, b) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
 	for (const vertex of surf.triangles) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
 		for (const tile of vertex.vertices) {
 			if (tile.biome === 'samud') {
@@ -391,7 +401,7 @@ function addRivers(surf: Surface) {
 		}
 	}
 
-	while (nadeQueue.length > 0) { // then iteratively extend them
+	while (!nadeQueue.empty()) { // then iteratively extend them
 		const {nice, supr} = nadeQueue.pop(); // pick out the steepest potential river
 		if (supr.liwonice === undefined) { // if it's available
 			supr.liwonice = nice; // take it
@@ -417,10 +427,10 @@ function addRivers(surf: Surface) {
 
 	surf.rivers = new Set();
 
-	const liweQueue = new TinyQueue([...surf.triangles],
+	const liweQueue: Queue<Triangle> = new Queue([...surf.triangles],
 		(a: Triangle, b: Triangle) => riverDistance.get(b) - riverDistance.get(a)); // now we need to flow the water downhill
 	const unitArea = surf.area/surf.nodos.size;
-	while (liweQueue.length > 0) {
+	while (!liweQueue.empty()) {
 		const vertex = liweQueue.pop(); // at each river vertex
 		if (vertex.liwonice instanceof Triangle) {
 			for (const tile of vertex.vertices) { // compute the sum of rainfall and inflow (with some adjustments)
@@ -489,7 +499,7 @@ function setBiomes(surf: Surface) {
 					node.neighbors.get(neighbor).liwe > RAINFALL_NEEDED_TO_CREATE_MARSH)
 				adjacentWater = true;
 
-		if (node.biome == null) {
+		if (node.biome === null) {
 			if (node.terme < RIVER_THRESH)
 				node.biome = 'aise';
 			else if (node.terme < TUNDRA_TEMP)
@@ -520,8 +530,8 @@ function setBiomes(surf: Surface) {
  */
 function floodFrom(start: Nodo, level: number): number {
 	let numFilled = 0;
-	const queue = new TinyQueue([start], (a: Nodo, b: Nodo) => a.gawe - b.gawe); // it shall seed our ocean
-	while (queue.length > 0 && queue.peek().gawe <= level) { // flood all available nodes
+	const queue = new Queue([start], (a, b) => a.gawe - b.gawe); // it shall seed our ocean
+	while (!queue.empty() && queue.peek().gawe <= level) { // flood all available nodes
 		const next = queue.pop();
 		if (next.biome !== 'samud') {
 			next.biome = 'samud';

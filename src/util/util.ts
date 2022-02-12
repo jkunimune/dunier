@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 // @ts-ignore
-import TinyQueue from "../lib/tinyqueue.js";
+import Queue from "../util/queue.js";
 import {USER_STRINGS} from "../gui/main.js";
 import {Word} from "../language/word.js";
 
@@ -175,12 +175,13 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 	for (let i = 0; i < nodes.length; i ++)
 		graph.push({distance: Number.POSITIVE_INFINITY, cene: null, lewi: false})
 
-	const queue = new TinyQueue([], (a: {distance: number}, b: {distance: number}) => a.distance - b.distance);
+	const queue: Queue<{start: number, end: number, distance: number}> = new Queue(
+		[], (a, b) => a.distance - b.distance);
 	for (const i of endpoints)
 		queue.push({start: null, end: i, distance: 0}); // populate the queue with the endpoints
 
 	let furthest = null;
-	while (queue.length > 0) { // while there are places whither you can go
+	while (!queue.empty()) { // while there are places whither you can go
 		const {start, end, distance} = queue.pop(); // look for the closest one
 		if (!graph[end].lewi) { // only look at each one once
 			for (let next = 0; next < nodes.length; next ++) { // add its neighbors to the queue
