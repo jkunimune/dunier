@@ -107,6 +107,7 @@
 002 mute [ +!NASAL ] > [ +NASALIZ +STOP ] / _ [ +HIGH ]						% prenasalized stops II
 100 mute [ +!NASAL ] > [ +STOP ] / _ [ +LIQ ]
 200 mute [ +PHARYNG +STOP ] > [ +FRIC ] /
+200 mute [ +VOICE +PHARYNG +FRIC ] > [ +CLOSE ] /
 050 mute [ +GLOT ] > [ +FRIC ] /
 010 mute [ -LIQ +CORON +OCCL ] > [ +TAP ] / [ +SPOKEN -VOCOID -CORON ]		% mn > mr
 002 mute [ +NONSYLLAB ] [ +NONSYLLAB -GUTTURAL ] > [ +CLICK ]1 /			% click genesis
@@ -244,6 +245,7 @@
 002 mute [ -LOW -MID +SHORT ] > [ +TENUIS ] / [ -VOICE +SPOKEN ] _ [ -VOICE ]% vowel devoicing
 010 mute [ +LOW +VOWEL ] > [ +LABIALIZ ] / [ +LABIAL +GLIDE ] _				% wa > wo
 010 mute [ +LOW +VOWEL ] > [ +MID ] / [ +HIGH ] _
+010 mute [ +VOWEL ] > [ +TENSE ] / _ [ +TENSE +GLIDE ]								% ɛj > ej
 %%		secondary articulations
 002 mute [ +VELAR +OCCL ] > [ +LABIOVELAR ] / _ [ +LABIAL ]					% double articulation
 002 mute [ +VELAR +OCCL ] > [ +LABIOVELAR ] / [ +LABIAL ] _ #				% double articulation
@@ -255,8 +257,8 @@
 002 mute [ +SPOKEN -VOCOID ] > [ +PALATALIZ ] / _ [ +PALATAL +VOCOID ]		% palatalization
 002 mute [ +SPOKEN -VOCOID ] > [ +PALATALIZ ] / [ +PALATAL +VOCOID ] _		% palatalization
 001 mute [ +SPOKEN -VOCOID ] > [ +VELARIZ ] / _ [ +VELAR +VOCOID ]			% velarization
-001 mute [ +CORON +SONOR ] > [ +VELARIZ ] / _ [ +VELAR +VOCOID ]			% velarization
-001 mute [ +CORON +CONT ] > [ +VELARIZ ] / _ [ +VELAR +VOCOID ]				% velarization
+001 mute [ +CORON +SONOR -PALATAL ] > [ +VELARIZ ] / _ [ +VELAR +VOCOID ]	% velarization
+001 mute [ +CORON +CONT -PALATAL ] > [ +VELARIZ ] / _ [ +VELAR +VOCOID ]	% velarization
 001 mute [ +LABIAL -VOCOID ] > [ +VELARIZ ] / _ [ +VELAR +VOCOID ]			% velarization
 010 mute [ +LATERAL +CLOSE ] > [ +VELARIZ ] / _ [ -VOCOID ]					% dark l
 002 mute [ +SPOKEN -VOCOID ] > [ +PHARYNGEALIZ ] / _ [ +BREATHY ]			% pharyngealization
@@ -269,7 +271,7 @@
 010 mute [ +LABIAL +GLIDE ] > / _ [ +LABIAL +VOWEL ]						% wo > o
 010 mute [ +PALATAL +GLIDE ] > / _ [ +PALATAL +VOWEL ]						% je > e
 100 mute [ +LAX ] [ +LAX ] > [ +LONG ±loke ]0 /								% assimilation of lax vowels
-100 mute [ +GLIDE ] [ +GLIDE ] > [ ±minorLoke ]0 /							% assimilation of semivowels
+200 mute [ +GLIDE ] [ +GLIDE ] > [ ±minorLoke ]0 /							% assimilation of semivowels
 100 mute [ +HIGH +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG ±loke ]0 /				% assimilation of ij
 020 mute [ +MID +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG +HIGH ±loke ]0 /		% assimilation of ej
 020 mute [ +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG +MID ±loke ]0 /				% assimilation of aj and ej
