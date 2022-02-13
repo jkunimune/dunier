@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import { Place, Surface} from "../planet/surface.js";
-import {intersection, last_two, localizeInRange} from "../util/util.js";
+import {intersection, isBetween, last_two, localizeInRange} from "../util/util.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 
 
@@ -239,7 +239,7 @@ export abstract class MapProjection {
 					segments.splice(i, 0,
 						{type: 'L', args: point0}, // insert a line to the very edge
 						{type: 'M', args: point1}); // and then a moveto to the other side
-					if (loopIndex >= 0 && MapProjection.getPositionOnEdge(point0,  edges))
+					if (loopIndex >= 0)
 						touchedLoop[loopIndex] = true; // take note if it crossd an on-screen edge
 					i --; // then step back to check if there was another one
 				}
@@ -545,14 +545,16 @@ export abstract class MapProjection {
 					if (λW < edge.start[1] && λE > edge.start[1]) { // check to see if it crosses this edge
 						const { point0, point1 } = this.getMeridianCrossing(
 							ф0, λ0, ф1, λ1, edge.start[1]);
-						return { point0: point0, point1: point1, loopIndex: i };
+						if (isBetween(point0[0], edge.start[0], edge.end[0]))
+							return { point0: point0, point1: point1, loopIndex: i };
 					}
 				}
 				else if (edge.type === LongLineType.VEI) { // do the same thing for parallels
 					if (фS < edge.start[0] && фN > edge.start[0]) {
 						const { point0, point1 } = this.getParallelCrossing(
 							ф0, λ0, ф1, λ1, edge.start[0]);
-						return { point0: point0, point1: point1, loopIndex: i };
+						if (isBetween(point0[1], edge.start[1], edge.end[1]))
+							return { point0: point0, point1: point1, loopIndex: i };
 					}
 				}
 				else {

@@ -96,6 +96,20 @@ export function localizeInRange(value: number, min: number, max: number): number
 }
 
 /**
+ * is value inside the inclusive interval bounded by a and b,
+ * in whichever direction makes sense?
+ * @param value
+ * @param a
+ * @param b
+ */
+export function isBetween(value: number, a: number, b: number): boolean {
+	if (a < b)
+		return value >= a && value <= b;
+	else
+		return value >= b && value <= a;
+}
+
+/**
  * a quick way to get, for instance, the x and y of an SVG path argument list
  * @param array
  */
