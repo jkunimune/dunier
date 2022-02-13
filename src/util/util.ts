@@ -85,13 +85,15 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 }
 
 /**
- * shift a number by hole multiples of 2π to put it in the range [-π, π]
- * @param angle
+ * shift a number by hole multiples of (max - min) to put it in the range [min, max],
+ * assuming max > min.  if not, it will automatically reverse them.
+ * @param value
+ * @param min
+ * @param max
  */
-export function standardizeAngle(angle: number): number {
-	return angle - Math.floor((angle + Math.PI)/(2*Math.PI))*2*Math.PI
+export function localizeInRange(value: number, min: number, max: number): number {
+	return value - Math.floor((value - min)/(max - min))*(max - min);
 }
-
 
 /**
  * a quick way to get, for instance, the x and y of an SVG path argument list
@@ -137,7 +139,7 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
 	let format = USER_STRINGS.get(sentence);
 	for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
 		let convertedArg: string;
-		if (args[i] === null || args[i] == undefined) {
+		if (args[i] === null || args[i] === undefined) {
 			if (sentence.includes(`{${i}}`))
 				throw `${args[i]} was passd as the ${i}° argument.  this is only allowd when the argument is absent from the format string, which was not the case here.`;
 			continue;
@@ -179,10 +181,10 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
  * @return list of indices starting with the farthest connected point and stepping through the path, and the path length
  */
 export function longestShortestPath(nodes: {x: number, y: number, edges: {length: number, clearance: number}[]}[],
-							 endpoints: Set<number>, threshold: number = 0): {points: number[], length: number} {
+							 endpoints: Set<number>, threshold = 0): {points: number[], length: number} {
 	const graph = [];
 	for (let i = 0; i < nodes.length; i ++)
-		graph.push({distance: Number.POSITIVE_INFINITY, cene: null, lewi: false})
+		graph.push({distance: Number.POSITIVE_INFINITY, cene: null, lewi: false});
 
 	const queue: Queue<{start: number, end: number, distance: number}> = new Queue(
 		[], (a, b) => a.distance - b.distance);

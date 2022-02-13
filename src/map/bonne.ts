@@ -59,12 +59,12 @@ export class Bonne extends MapProjection {
 
 		this.geoEdges = MapProjection.buildEdges(this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges
 
-		let top = this.project(this.maxф, 0).y; // then determine the dimensions of this map
-		let bottom = this.project(this.minф, 0).y;
+		let top = this.projectPoint(this.maxф, 0).y; // then determine the dimensions of this map
+		let bottom = this.projectPoint(this.minф, 0).y;
 		let right = 0;
 		for (const ф of surface.refLatitudes.concat(this.minф, this.maxф)) {
 			if (ф >= this.minф && ф <= this.maxф) {
-				const {x, y} = this.project(ф, this.maxλ);
+				const {x, y} = this.projectPoint(ф, this.maxλ);
 				if (x > right)
 					right = x;
 				if (y < top)
@@ -83,7 +83,7 @@ export class Bonne extends MapProjection {
 		this.setDimensions(-right, right, top, bottom);
 	}
 
-	project(ф: number, λ: number): { x: number; y: number } {
+	projectPoint(ф: number, λ: number): { x: number; y: number } {
 		const y0 = this.yVertex(ф);
 		const s1 = this.sRadian(ф);
 		if (Number.isFinite(this.yJong)) {
@@ -98,8 +98,8 @@ export class Bonne extends MapProjection {
 				y: y0 };
 	}
 
-	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
-		const {x, y} = this.project(ф, λ1);
+	projectParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
+		const {x, y} = this.projectPoint(ф, λ1);
 		if (Number.isFinite(this.yJong)) {
 			const r = Math.hypot(x, y - this.yJong);
 			return [{
@@ -115,18 +115,18 @@ export class Bonne extends MapProjection {
 			return [{
 				type: 'L',
 				args: [x, y],
-			}]
+			}];
 		}
 	}
 
-	drawMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
+	projectMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
 		const edge: PathSegment[] = [];
 		const n = Math.ceil(Math.abs(ф1 - ф0)*this.EDGE_RESOLUTION);
 		for (let i = 1; i <= n; i ++) {
 			let ф = ф0 + (ф1 - ф0)*i/n;
 			ф = Math.max(this.minф, ф);
 			ф = Math.min(this.maxф, ф);
-			const {x, y} = this.project(ф, λ);
+			const {x, y} = this.projectPoint(ф, λ);
 			edge.push({type: 'L', args: [x, y]});
 		}
 		return edge;

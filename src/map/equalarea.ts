@@ -63,11 +63,11 @@ export class EqualArea extends MapProjection {
 			this.yRef[0]);
 	}
 
-	project(ф: number, λ: number): {x: number, y: number} {
+	projectPoint(ф: number, λ: number): {x: number, y: number} {
 		return {x: λ*linterp(ф, this.фRef, this.xRef), y: linterp(ф, this.фRef, this.yRef)}; // TODO: use better interpolacion
 	}
 
-	drawMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
+	projectMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
 		const edge = [];
 		let i0, i1;
 		if (ф1 > ф0) {
@@ -84,7 +84,7 @@ export class EqualArea extends MapProjection {
 		}
 		for (let i = i0; i !== i1; i += Math.sign(i1 - i0))
 			edge.push({type: 'L', args: [λ*this.xRef[i], this.yRef[i]]});
-		const {x, y} = this.project(ф1, λ);
+		const {x, y} = this.projectPoint(ф1, λ);
 		edge.push({type: 'L', args: [x, y]});
 		return edge;
 	}

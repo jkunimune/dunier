@@ -22,15 +22,14 @@
  * SOFTWARE.
  */
 import {Nodo, Place, Surface, Triangle} from "../planet/surface.js";
-import {chordCenter, filterSet, last_two, longestShortestPath, Vector,} from "../util/util.js";
+import {chordCenter, filterSet, longestShortestPath, Vector} from "../util/util.js";
 import {World} from "../society/world.js";
-import {LongLineType, MapEdge, MapProjection, PathSegment} from "./projection.js";
+import {MapProjection, PathSegment} from "./projection.js";
 import {Civ} from "../society/civ.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
 import {circularRegression} from "../util/fitting.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 
-const MAP_PRECISION = 5e-2;
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2 TODO: display rivers that connect lakes to shown rivers
@@ -142,10 +141,10 @@ export class Chart {
 	 * @param fontSize the size of city labels and minimum size of country and biome labels [pt]
 	 * @param style the transliteration convention to use for them
 	 */
-	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter: string = 'nol',
-		   nade: boolean = true, kenare: boolean = true, shade: boolean = false,
-		   civLabels: boolean = false, geoLabels: boolean = false,
-		   fontSize: number = 2, style: string = null) {
+	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter = 'nol',
+		   nade = true, kenare = true, shade = false,
+		   civLabels = false, geoLabels = false,
+		   fontSize: number = 2, style: string = null): void {
 		const bbox = this.projection.getDimensions();
 		svg.setAttribute('viewBox',
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
@@ -171,7 +170,6 @@ export class Chart {
 
 		let nadorang = 'none';
 		if (marorang === 'nili') { // color the sea deep blue
-			console.log("the sea");
 			this.fill(
 				filterSet(surface.nodos, n => n.biome === 'samud'),
 				g, BIOME_COLORS.get('samud'));
@@ -267,7 +265,7 @@ export class Chart {
 		 stroke: string = 'none', strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
 		if (nodos.size <= 0)
 			return this.draw([], svg);
-		const path = this.draw(this.map(Chart.outline(nodos), smooth, true), svg);
+		const path = this.draw(this.projection.project(Chart.outline(nodos), smooth, true), svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
 		return path;
@@ -284,7 +282,7 @@ export class Chart {
 	 */
 	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number,
 		   smooth: boolean = false): SVGPathElement {
-		const path = this.draw(this.map(Chart.aggregate(strokes), smooth, false), svg);
+		const path = this.draw(this.projection.project(Chart.aggregate(strokes), smooth, false), svg);
 		path.setAttribute('style',
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: round; stroke-linecap: round;`);
 		return path;
@@ -304,7 +302,7 @@ export class Chart {
 		for (const t of triangles) { // start by computing slopes of all of the things
 			const p = [];
 			for (const node of t.vertices) {
-				const {x, y} = this.projection.project(node.ф, node.λ);
+				const {x, y} = this.projection.projectPoint(node.ф, node.λ);
 				const z = Math.max(0, node.gawe);
 				p.push(new Vector(x, -y, z));
 			}
@@ -324,7 +322,7 @@ export class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
-			this.draw(this.map(path, false, true), svg).setAttribute('style',
+			this.draw(this.projection.project(path, false, true), svg).setAttribute('style',
 				`fill: '#000'; fill-opacity: ${1-brightness};`);
 		}
 	}
@@ -352,7 +350,7 @@ export class Chart {
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.map(Chart.outline(new Set(nodos)), false, true); // do the projection
+		const path = this.projection.project(Chart.outline(new Set(nodos)), false, true); // do the projection
 		if (path.length === 0)
 			return null;
 
@@ -434,7 +432,7 @@ export class Chart {
 				r: 0, isContained: false, edges: new Array(triangulation.triangles.length).fill(null),
 			});
 			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
-			centers[i].isContained = Chart.contains(path, [centers[i].x, -centers[i].y]);
+			centers[i].isContained = MapProjection.contains(path, [centers[i].x, -centers[i].y]);
 			if (centers[i].isContained) {
 				for (let j = 0; j < i; j ++) {
 					if (centers[j].isContained) {
@@ -567,7 +565,7 @@ export class Chart {
 			}
 		}
 		if (axisR === null) {
-			console.log(`all ${candidates.length} candidates were somehow incredible garbage`);
+			console.error(`all ${candidates.length} candidates were somehow incredible garbage`);
 			return null;
 		}
 
@@ -651,301 +649,6 @@ export class Chart {
 		path.setAttribute('vector-effect', 'non-scaling-stroke');
 		return svg.appendChild(path); // put it in the SVG
 	}
-
-	/**
-	 * project and convert a list of SVG paths in latitude-longitude coordinates representing a series of closed paths
-	 * into an SVG.Path object, and add that Path to the given SVG.
-	 * @param segments ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
-	 * @param smooth an optional feature that will smooth the Path out into Bezier curves
-	 * @param closed if this is set to true, the map will make adjustments to account for its complete nature
-	 * @returns SVG.Path object
-	 */
-	map(segments: PathSegment[], smooth: boolean, closed: boolean): PathSegment[] {
-		if (segments.length === 0) // what're you trying to pull here?
-			return [];
-
-		segments = this.projection.transform(segments);
-
-		let touchedEdge = false;
-		for (let i = 0; i < segments.length; i ++) { // first, handle places where it crosses the edge of the map
-			if (segments[i].type === 'L') {
-				if (!Number.isFinite(segments[i].args[0])) { // if a point is at infinity
-					if (segments[i].args[0] < 0)
-						segments.splice(i, 1, // remove it
-							{type: 'L', args: [this.projection.surface.фMin, segments[i-1].args[1]]},
-							{type: 'M', args: [this.projection.surface.фMin, segments[i+1].args[1]]}); // and add a moveto along the South edge
-					else
-						throw "I haven't accounted for positive infinity points.";
-					touchedEdge = true;
-				}
-
-				const crossing = this.projection.getGeoedgeCrossing(segments[i-1].args, segments[i].args);
-				if (crossing !== null) { // otherwise, if it jumps across an interruption
-					const [endpoint0, endpoint1] = crossing;
-					segments.splice(i, 0,
-						{type: 'L', args: endpoint0}, // insert a line to the very edge
-						{type: 'M', args: endpoint1}); // and then a moveto to the other side
-					if (MapProjection.getPositionOnEdge(endpoint0, this.projection.geoEdges))
-						touchedEdge = true; // take note if it crossd an on-screen edge
-					i --; // then step back to check if there was another one
-				}
-			}
-			else if (segments[i].type === 'A') {
-				throw "AAAAAAAAAAAHHHHHHH";
-			}
-		}
-
-		const jinSections: PathSegment[][] = []; // then, break this up into sections
-		let start = 0;
-		for (let i = 1; i <= segments.length; i ++) { // sweep through the result
-			if (i === segments.length || segments[i].type === 'M') { // and split it up at movetos and endings
-				if (Chart.envelops(this.projection.geoEdges, segments.slice(start, i)))
-					jinSections.push(segments.slice(start, i)); // but only keep the ones that are in bounds
-				start = i;
-			}
-		}
-		if (jinSections.length === 0) // if it's all off the map
-			return []; // goodbye
-
-		const startPositions: { loop: number, index: number }[] = [];
-		const weHaveDrawn: boolean[] = []; // set up some section-indexed vectors
-		for (const jinSection of jinSections) {
-			startPositions.push(MapProjection.getPositionOnEdge(
-				jinSection[0].args, this.projection.geoEdges));
-			weHaveDrawn.push(false);
-		}
-
-		const jinPoints: PathSegment[] = []; // now start re-stitching it all together
-		let sectionIndex = 0;
-		let startingANewSupersection = true;
-		while (sectionIndex !== undefined) {
-			let jinSection = jinSections[sectionIndex]; // take a section
-			if (!startingANewSupersection)
-				jinSection = jinSection.slice(1); // take off its moveto
-			jinPoints.push(...jinSection); // add its points to the thing
-			weHaveDrawn[sectionIndex] = true; // mark it as drawn
-			const sectionEnd = jinSection[jinSection.length-1].args; // then look at where on Earth we are
-
-			if (!closed) { // if we're not worrying about closing it off
-				sectionIndex = null; // forget it and move onto a random section
-			}
-			else {
-				const endPosition = MapProjection.getPositionOnEdge(
-					sectionEnd, this.projection.geoEdges);
-				if (endPosition !== null) { // if we ended hitting a wall
-					const edges = this.projection.geoEdges[endPosition.loop];
-
-					let bestSection = null, bestPositionIndex = null;
-					for (let i = 0; i < startPositions.length; i ++) { // check the remaining sections
-						const startPosition = startPositions[i];
-						if (startPosition !== null && startPosition.loop === endPosition.loop) { // for any on the same edge loop as us
-							if (startPosition.index < endPosition.index)
-								startPosition.index += edges.length;
-							if (bestPositionIndex === null || startPosition.index < bestPositionIndex) {
-								bestSection = i; // calculate which one should come next
-								bestPositionIndex = startPosition.index;
-							}
-							startPosition.index %= edges.length;
-						}
-					}
-					const endEdge = Math.trunc(endPosition.index);
-					const restartEdge = Math.trunc(bestPositionIndex);
-					const nextStart = jinSections[bestSection][0].args;
-					for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
-						const edge = edges[i%edges.length];
-						const targetPlace = (i === restartEdge) ? nextStart : edge.end; // TODO: I used to hav something here about the current place not equalling the target place... does that ever come up?  should I have a check before the for loop?  does it even matter?
-						jinPoints.push({type: edge.type, args: targetPlace});
-					}
-					if (weHaveDrawn[bestSection]) // if you rapd around to a place we've already been
-						sectionIndex = null; // move on to a random section
-					else // if you found a new place to restart
-						sectionIndex = bestSection; // go to it
-				}
-				else { // if we ended in the middle someplace
-					sectionIndex = null;
-					for (let i = 0; i < jinSections.length; i ++) { // look for the one that picks up from here
-						const start = jinSections[i][0].args;
-						if (start[0] === sectionEnd[0] && start[1] === sectionEnd[1]) {
-							sectionIndex = i; // and go there
-							break;
-						}
-					}
-					console.assert(sectionIndex !== null, "I was left hanging.");
-					if (weHaveDrawn[sectionIndex]) // if that one has already been drawn
-						sectionIndex = null; // move on randomly
-				}
-			}
-			if (sectionIndex === null) { // if we were planning to move onto whatever else for the next section
-				sectionIndex = 0;
-				while (sectionIndex < jinSections.length && weHaveDrawn[sectionIndex])
-					sectionIndex ++; // sweep thru it until we find one that has not been drawn
-				if (sectionIndex === jinSections.length) // if you can't find any
-					break; // we're done!
-				startingANewSupersection = true;
-			}
-			else { // if we're continuing an existing supersection
-				startingANewSupersection = false; // say so
-			}
-		}
-
-		const precision = MAP_PRECISION*this.projection.getDimensions().diagonal;
-		let repeatCount = 0; // now do the projection
-		const cutPoints: PathSegment[] = []; // start a list of the projected points that are done
-		const pendingPoints: PathSegment[] = []; // and a list of projected points that mite come later (in reverse order)
-		let i = 0; // and the index in jinPoints that corresponds to the end of cutPoints
-		while (i < jinPoints.length) {
-			if (jinPoints[i].type === LongLineType.GING) { // do the projection
-				const [ф0, _] = jinPoints[i-1].args;
-				const [ф1, λ] = jinPoints[i].args;
-				cutPoints.push(...this.projection.drawMeridian(ф0, ф1, λ));
-				i ++;
-			}
-			else if (jinPoints[i].type === LongLineType.VEI) {
-				const [_, λ0] = jinPoints[i-1].args;
-				const [ф, λ1] = jinPoints[i].args;
-				cutPoints.push(...this.projection.drawParallel(λ0, λ1, ф));
-				i ++;
-			}
-			else if (jinPoints[i].type === 'M') {
-				const [ф, λ] = jinPoints[i].args;
-				const {x, y} = this.projection.project(ф, λ);
-				cutPoints.push({type: 'M', args: [x, y]});
-				i ++;
-			}
-			else if (jinPoints[i].type === 'L') {
-				const [ф, λ] = jinPoints[i].args;
-				let {x, y} = this.projection.project(ф, λ);
-				pendingPoints.push({type: 'L', args: [x, y]}); // put a pin in it; we mite haff to split it in haff
-			}
-			else {
-				throw `I don't think you can use ${jinPoints[i].type} here`;
-			}
-
-			while (pendingPoints.length > 0) { // now, if there are points in the pending cue
-				const [x0, y0] = last_two(cutPoints[cutPoints.length - 1].args); // check the map distance
-				const [x1, y1] = last_two(pendingPoints[pendingPoints.length - 1].args); // between the end of cutPoints and the start of pendingPoints
-				if (Math.hypot(x1 - x0, y1 - y0) < precision) { // if it's short enuff
-					cutPoints.push(pendingPoints.pop()); // unpend it
-					i ++;
-				}
-				else { // if it's too long
-					const [ф0, λ0] = jinPoints[i-1].args;
-					const [ф1, λ1] = jinPoints[i].args;
-					const {ф, λ} = this.projection.getMidpoint(ф0, λ0, ф1, λ1); // that means we need to plot a midpoint
-					jinPoints.splice(i, 0, {type: 'L', args: [ф, λ]});
-					repeatCount ++;
-					break; // break out of this so we can go project it
-				}
-			}
-
-			if (repeatCount > 10000)
-				throw `why can't I find a point between ${jinPoints[i - 1].args}->${cutPoints[cutPoints.length - 1].args} and ${jinPoints[i].args}->${pendingPoints[pendingPoints.length - 1].args}`;
-		}
-		for (const segment of cutPoints)
-			for (const arg of segment.args)
-				console.assert(!Number.isNaN(arg), cutPoints);
-
-		console.log(closed, touchedEdge);
-		if (closed && !touchedEdge) { // if it matters which side is inside and which side out, draw the outline of the map
-			let xTest = null;
-			let yMax = Number.NEGATIVE_INFINITY;
-			let insideOut = null;
-			for (let i = 1; i < cutPoints.length; i ++) { // look through the path
-				const [x0, y0] = cutPoints[i - 1].args;
-				const [x1, y1] = cutPoints[i].args;
-				if (cutPoints[i].type === 'L' && x0 !== x1) { // examine the lines
-					if (xTest === null)
-						xTest = (x0 + x1)/2; // choose an x value
-					if (x0 < xTest !== x1 <= xTest) { // look for segments that cross that x value
-						const y = y0*(x1 - xTest)/(x1 - x0) + y1*(xTest - x0)/(x1 - x0); // find the y value where they cross
-						if (y > yMax) { // the lowest one will tell us
-							yMax = y;
-							insideOut = x1 < x0; // if this path is inside out
-						}
-					}
-				}
-			}
-			console.log(insideOut);
-			if (insideOut) { // if it is
-				for (const loop of this.projection.geoEdges) { // draw the outline of the entire map to contain it
-					const {x, y} = this.projection.project(loop[0].start[0], loop[0].start[1]);
-					cutPoints.push({type: 'M', args: [x, y]});
-					for (const edge of loop) {
-						if (edge.type === LongLineType.GING)
-							cutPoints.push(...this.projection.drawMeridian(
-								edge.start[0], edge.end[0], edge.end[1]));
-						else if (edge.type === LongLineType.VEI)
-							cutPoints.push(...this.projection.drawParallel(
-								edge.start[1], edge.end[1], edge.end[0]));
-						else
-							throw `You can't have a ${edge.type} edge here.`;
-					}
-				}
-			}
-		}
-
-		if (smooth) { // smooth it, if desired
-			for (let i = cutPoints.length - 2; i >= 0; i --) {
-				const newEnd: number[] = [ // look ahead to the midpoint between this and the next
-					(cutPoints[i].args[0] + cutPoints[i+1].args[0])/2,
-					(cutPoints[i].args[1] + cutPoints[i+1].args[1])/2];
-				if (cutPoints[i].type === 'L' && cutPoints[i+1].type !== 'M') // look for points that are sharp angles
-					cutPoints[i] = {type: 'Q', args: [...cutPoints[i].args, ...newEnd]}; // and extend those lines into curves
-				else if (cutPoints[i].type === 'M' && cutPoints[i+1].type === 'Q') { // look for curves that start with Bezier curves
-					cutPoints.splice(i + 1, 0, {type: 'L', args: newEnd}); // assume we put it there and restore some linearity
-				}
-			}
-		}
-
-		return cutPoints;
-	}
-
-
-	/**
-	 * find out if a point is contained by a set of edges, using an even/odd rule.
-	 * @param edges
-	 * @param points
-	 * @return whether all of points are inside edges
-	 */
-	static envelops(edges: MapEdge[][], points: PathSegment[]): boolean {
-		const polygon: PathSegment[] = [];
-		for (const loop of edges) {
-			polygon.push({type: 'M', args: loop[0].start});
-			for (const edge of loop) {
-				polygon.push({type: 'L', args: edge.end});
-			}
-		}
-		for (const point of points)
-			if (MapProjection.getPositionOnEdge(point.args, edges) === null) // ignore points that are _on_ an edge
-				if (!Chart.contains(polygon, point.args))
-					return false;
-		return true;
-	}
-
-
-	/**
-	 * find out if a point is contained by a polygon, using an even/odd rule.
-	 * @param polygon
-	 * @param point
-	 * @return whether point is inside polygon
-	 */
-	static contains(polygon: PathSegment[], point: number[]): boolean {
-		let contained = false;
-		for (let i = 0; i < polygon.length; i ++)
-			console.assert(polygon[i].type === 'M' || polygon[i].type === 'L', "I can't do that segment type.");
-		const [x, y] = point;
-		for (let i = 1; i < polygon.length; i ++) {
-			if (polygon[i].type === 'L') {
-				const [x0, y0] = polygon[i-1].args;
-				const [x1, y1] = polygon[i].args;
-				if ((y0 < y) !== (y1 < y))
-					if (x0 + (y - y0)/(y1 - y0)*(x1 - x0) > x)
-						contained = !contained;
-			}
-		}
-		return contained;
-	}
-
 
 
 	/**
@@ -1041,7 +744,7 @@ export class Chart {
 	 * @param civ the Civ whose outline is desired
 	 */
 	static border(civ: Civ): PathSegment[] {
-		const landNodos = filterSet(civ.nodos, (n) => n.biome != 'samud');
+		const landNodos = filterSet(civ.nodos, (n) => n.biome !== 'samud');
 		return Chart.outline(landNodos);
 	}
 

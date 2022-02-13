@@ -59,7 +59,7 @@ export class Mercator extends MapProjection {
 		this.setDimensions(-Math.PI, Math.PI, top, bottom);
 	}
 
-	project(ф: number, λ: number): {x: number, y: number} {
+	projectPoint(ф: number, λ: number): {x: number, y: number} {
 		return {x: λ, y: linterp(ф, this.фRef, this.yRef)};
 	}
 }

@@ -197,7 +197,7 @@ function planetApply() {
 /**
  * Generate the heightmap and biomes on the planet's surface.
  */
-function terrainApply() {
+function terrainApply(): void {
 	if (planetOutOfSync)
 		planetApply();
 
@@ -228,7 +228,7 @@ function terrainApply() {
 /**
  * Generate the countries on the planet's surface.
  */
-function historyApply() {
+function historyApply(): void {
 	if (terrainOutOfSync)
 		terrainApply();
 
@@ -256,7 +256,7 @@ function historyApply() {
 	for (let i = 0; i < countries.length; i ++) {
 		const country = countries[i];
 		const option = document.createElement('option');
-		option.selected = (i == 0);
+		option.selected = (i === 0);
 		option.setAttribute('value', country.id.toString());
 		option.textContent = country.getName().toString();
 		picker.appendChild(option);
@@ -270,13 +270,13 @@ function historyApply() {
 /**
  * Generate a final formatted map.
  */
-function mapApply() {
+function mapApply(): void {
 	if (historyOutOfSync)
 		historyApply();
 
 	console.log("grafa zemgrafe...");
 	const projection = $('#map-projection').val();
-	const norde = ($('#map-dish').val() == 'norde');
+	const norde = ($('#map-dish').val() === 'norde');
 	const locus = Chart.border(world.getCiv($('#map-jung').val()));
 	const zemrang = $('#map-zemrang').val();
 	const marorang = $('#map-hayrang').val();
@@ -320,7 +320,7 @@ function mapApply() {
 /**
  * Generate a final formatted map.
  */
-function pdfApply() {
+function pdfApply(): void {
 	if (mapOutOfSync)
 		mapApply();
 

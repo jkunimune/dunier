@@ -32,7 +32,7 @@ export class Equirectangular extends MapProjection {
 		super(surface, northUp, locus, -Math.PI, Math.PI, -surface.фMax, -surface.фMin);
 	}
 
-	project(ф: number, λ: number): {x: number, y: number} {
+	projectPoint(ф: number, λ: number): {x: number, y: number} {
 		return {x: λ, y: -ф};
 	}
 }

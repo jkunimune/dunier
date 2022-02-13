@@ -54,16 +54,16 @@ export class Azimuthal extends MapProjection {
 		this.rMin = rMax - surface.height;
 	}
 
-	project(ф: number, λ: number): {x: number, y: number} {
+	projectPoint(ф: number, λ: number): {x: number, y: number} {
 		const r = this.rMax - linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
 		return {x: r*Math.sin(λ), y: r*Math.cos(λ)};
 	}
 
-	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
+	projectParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
 		const r = this.rMax - linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
 		const sweepFlag = (λ1 > λ0) ? 0 : 1;
 		if (r > 0) {
-			const {x, y} = this.project(ф, λ1);
+			const {x, y} = this.projectPoint(ф, λ1);
 			if (Math.abs(λ0 - λ1) <= Math.PI)
 				return [
 					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},

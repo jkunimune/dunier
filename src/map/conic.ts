@@ -45,7 +45,7 @@ export class Conic extends MapProjection {
 		let locusRight = 0;
 		for (const segment of this.transform(locus)) { // check the extent of the thing we're mapping
 			const [ф, λ] = segment.args;
-			const {x, y} = this.project(ф, λ);
+			const {x, y} = this.projectPoint(ф, λ);
 			if (y < locusTop)
 				locusTop = y;
 			if (y > locusBottom)
@@ -60,7 +60,7 @@ export class Conic extends MapProjection {
 		for (const ф of [surface.фMin, surface.фMax]) { // and check the extent of the whole world
 			for (const λ of [0, Math.PI/2/this.n, Math.PI]) {
 				if (Math.abs(λ) <= Math.PI) {
-					const {x, y} = this.project(ф, λ);
+					const {x, y} = this.projectPoint(ф, λ);
 					if (y > coneBottom)
 						coneBottom = y;
 					if (y < coneTop)
@@ -77,7 +77,7 @@ export class Conic extends MapProjection {
 		this.setDimensions(-right, right, top, bottom);
 	}
 
-	project(ф: number, λ: number): { x: number; y: number } {
+	projectPoint(ф: number, λ: number): { x: number; y: number } {
 		const y0 = -linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
 		if (Number.isFinite(this.yJong)) {
 			const R = y0 - this.yJong;
@@ -91,8 +91,8 @@ export class Conic extends MapProjection {
 				y: y0 };
 	}
 
-	drawParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
-		const {x, y} = this.project(ф, λ1);
+	projectParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
+		const {x, y} = this.projectPoint(ф, λ1);
 		if (Number.isFinite(this.yJong)) {
 			const r = Math.hypot(x, y - this.yJong);
 			return [{
