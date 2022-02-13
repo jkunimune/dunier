@@ -366,9 +366,12 @@ export abstract class MapProjection {
 							if (wraps) // account for rapping
 								crossesTestLine = !crossesTestLine;
 							if (crossesTestLine) {
-								const dy = localizeInRange(y1 - y0, -period/2., period/2.);
-								const dy0 = localizeInRange(yTest - y0, -period/2., period/2.);
-								const dy1 = localizeInRange(y1 - yTest, -period/2., period/2.);
+								let dy = y1 - y0, dy0 = yTest - y0, dy1 = y1 - yTest;
+								if (wraps) {
+									dy = localizeInRange(dy, -period/2., period/2.);
+									dy0 = localizeInRange(dy0, -period/2., period/2.);
+									dy1 = localizeInRange(dy1, -period/2., period/2.);
+								}
 								const x = x0*dy1/dy + x1*dy0/dy; // find the x value where they cross
 								if (Math.abs(x - xEdge) < dMin) { // the one nearest the edge will tell us
 									dMin = Math.abs(x - xEdge);
