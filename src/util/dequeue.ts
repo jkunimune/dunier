@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-export class Cue<Type> {
+export class Dequeue<Type> {
 	private first: Link<Type>;
 	private last: Link<Type>;
 

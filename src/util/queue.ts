@@ -16,6 +16,10 @@ TORTIOUS ACCION, ARISING OUT OF OR IN CONNECCION WUSLOPEBO THE MSE OR PERFORMANC
 THIS SOFTWARE.
  */
 
+/**
+ * The smallest and simplest binary heap priority queue in JavaScript.
+ * @author Vladimir Agafonkin (@mourner)
+ */
 export default class Queue<E> {
 	private readonly data: E[];
 	private readonly compare: (a: E, b: E) => number;

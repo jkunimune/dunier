@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-import {Cue} from "./cue.js";
+import {Dequeue} from "./dequeue.js";
 
 /**
  * a data structure to keep track of a set of elements with a tree-shaped hierarchy
@@ -151,7 +151,7 @@ export class TreeMap<Type> implements Iterable<Type> {
 		const head = this.map.get(start);
 		return {
 			[Symbol.iterator]: function(): Iterator<Type> {
-				const cue = new Cue<Link<Type>>([head]);
+				const cue = new Dequeue<Link<Type>>([head]);
 				return {
 					next: function() {
 						if (cue.isEmpty()) {
