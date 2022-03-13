@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {MapProjection, PathSegment} from "./projection.js";
+import {MapProjection} from "./projection.js";
 import {Surface} from "../planet/surface.js";
 import {linterp} from "../util/util.js";
+import {PathSegment} from "../util/coordinates.js";
 
 export class Bonne extends MapProjection {
 	private readonly EDGE_RESOLUTION = 18; // the number of points per radian
@@ -57,7 +58,8 @@ export class Bonne extends MapProjection {
 		this.maxλ = Math.min(Math.PI, 1.8*focus.λMax);
 		this.minλ = -this.maxλ;
 
-		this.geoEdges = MapProjection.buildEdges(this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges
+		this.geoEdges = MapProjection.buildEdges(
+			this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges
 
 		let top = this.projectPoint(this.maxф, 0).y; // then determine the dimensions of this map
 		let bottom = this.projectPoint(this.minф, 0).y;
@@ -124,8 +126,8 @@ export class Bonne extends MapProjection {
 		const n = Math.ceil(Math.abs(ф1 - ф0)*this.EDGE_RESOLUTION);
 		for (let i = 1; i <= n; i ++) {
 			let ф = ф0 + (ф1 - ф0)*i/n;
-			ф = Math.max(this.minф, ф);
-			ф = Math.min(this.maxф, ф);
+			if (i === 0) ф = ф0; // do this because of roundoff
+			if (i === n) ф = ф1;
 			const {x, y} = this.projectPoint(ф, λ);
 			edge.push({type: 'L', args: [x, y]});
 		}

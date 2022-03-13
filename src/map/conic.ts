@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {MapProjection, PathSegment} from "./projection.js";
+import {MapProjection} from "./projection.js";
 import {Surface} from "../planet/surface.js";
 import {linterp} from "../util/util.js";
+import {PathSegment} from "../util/coordinates.js";
 
 export class Conic extends MapProjection {
 	private readonly yJong: number;

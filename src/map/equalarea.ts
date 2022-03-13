@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 import {Surface} from "../planet/surface.js";
-import {MapProjection, PathSegment} from "./projection.js";
+import {MapProjection} from "./projection.js";
 import {linterp} from "../util/util.js";
+import {PathSegment} from "../util/coordinates.js";
 
 /**
  * a pseudocylindrical equal-area projection similar to Eckert IV or Natural Earth

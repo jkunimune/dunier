@@ -21,14 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Nodo, Place, Surface, Triangle} from "../planet/surface.js";
+import {Nodo, Surface, Triangle} from "../planet/surface.js";
 import {chordCenter, filterSet, longestShortestPath, Vector} from "../util/util.js";
 import {World} from "../society/world.js";
-import {MapProjection, PathSegment} from "./projection.js";
+import {MapProjection} from "./projection.js";
 import {Civ} from "../society/civ.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
 import {circularRegression} from "../util/fitting.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
+import {assert_xy, endpoint, PathSegment, Place} from "../util/coordinates.js";
 
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
@@ -174,7 +175,8 @@ export class Chart {
 				filterSet(surface.nodos, n => n.biome === 'samud'),
 				g, BIOME_COLORS.get('samud'));
 			nadorang = BIOME_COLORS.get('samud');
-		} else if (marorang === 'gawia') { // color the sea by altitude
+		}
+		else if (marorang === 'gawia') { // color the sea by altitude
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
 				const min = (i !== 0) ? i * DEPTH_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Number.POSITIVE_INFINITY;
@@ -258,14 +260,14 @@ export class Chart {
 	 * @param color color of the interior.
 	 * @param stroke color of the outline.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
-	 * @param smooth whether to apply Bezier smoothing to the outline
 	 * @return the newly created element encompassing these triangles.
 	 */
 	fill(nodos: Set<Nodo>, svg: SVGGElement, color: string,
-		 stroke: string = 'none', strokeWidth: number = 0, smooth: boolean = false): SVGPathElement {
+		 stroke: string = 'none', strokeWidth: number = 0): SVGPathElement {
 		if (nodos.size <= 0)
 			return this.draw([], svg);
-		const path = this.draw(this.projection.project(Chart.outline(nodos), smooth, true), svg);
+		const segments = this.projection.project(Chart.outline(nodos), true);
+		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
 		return path;
@@ -281,8 +283,11 @@ export class Chart {
 	 * @returns the newly created element comprising all these lines
 	 */
 	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number,
-		   smooth: boolean = false): SVGPathElement {
-		const path = this.draw(this.projection.project(Chart.aggregate(strokes), smooth, false), svg);
+		   smooth = false): SVGPathElement {
+		let segments = this.projection.project(Chart.aggregate(strokes), false);
+		if (smooth)
+			segments = Chart.smooth(segments);
+		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: round; stroke-linecap: round;`);
 		return path;
@@ -322,7 +327,7 @@ export class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
-			this.draw(this.projection.project(path, false, true), svg).setAttribute('style',
+			this.draw(this.projection.project(path, true), svg).setAttribute('style',
 				`fill: '#000'; fill-opacity: ${1-brightness};`);
 		}
 	}
@@ -350,20 +355,20 @@ export class Chart {
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.projection.project(Chart.outline(new Set(nodos)), false, true); // do the projection
+		const path = this.projection.project(Chart.outline(new Set(nodos)), true); // do the projection
 		if (path.length === 0)
 			return null;
 
 		for (let i = path.length - 1; i >= 1; i --) { // convert it into a simplified polygon
 			if (path[i].type === 'A') { // turn arcs into triscadecagons TODO: find out if this can create coincident nodes and thereby Delaunay Triangulation to fail
-				const x0 = path[i-1].args[path[i-1].args.length-2], y0 = path[i-1].args[path[i-1].args.length-1];
-				const x1 = path[i].args[path[i].args.length-2], y1 = path[i].args[path[i].args.length-1];
-				const l = Math.hypot(x1 - x0, y1 - y0);
+				const start = assert_xy(endpoint(path[i-1].args));
+				const end = assert_xy(endpoint(path[i].args));
+				const l = Math.hypot(end.x - start.x, end.y - start.y);
 				const r = Math.abs(path[i].args[0] + path[i].args[1])/2;
-				const c = chordCenter({x: x0, y: y0}, {x: x1, y: y1}, r,
+				const c = chordCenter(start, end, r,
 					path[i].args[3] === path[i].args[4]);
 				const Δθ = 2*Math.asin(l/(2*r));
-				const θ0 = Math.atan2(y0 - c.y, x0 - c.x);
+				const θ0 = Math.atan2(start.y - c.y, start.x - c.x);
 				const nSegments = Math.ceil(N_DEGREES*Δθ);
 				const lineApprox = [];
 				for (let j = 1; j <= nSegments; j ++)
@@ -432,7 +437,8 @@ export class Chart {
 				r: 0, isContained: false, edges: new Array(triangulation.triangles.length).fill(null),
 			});
 			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
-			centers[i].isContained = MapProjection.contains(path, [centers[i].x, -centers[i].y]);
+			centers[i].isContained = MapProjection.contains(
+				path,  {s: centers[i].x, t: -centers[i].y});
 			if (centers[i].isContained) {
 				for (let j = 0; j < i; j ++) {
 					if (centers[j].isContained) {
@@ -652,6 +658,68 @@ export class Chart {
 
 
 	/**
+	 * create an ordered Iterator of segments that form the border of this civ
+	 * @param civ the Civ whose outline is desired
+	 */
+	static border(civ: Civ): PathSegment[] {
+		const landNodos = filterSet(civ.nodos, (n) => n.biome !== 'samud');
+		return Chart.outline(landNodos);
+	}
+
+	/**
+	 * create an ordered Iterator of segments that form the boundary of these nodos.
+	 * @param nodos Set of Node that are part of this group.
+	 * @return Array of PathSegments, ordered widdershins.
+	 */
+	static outline(nodos: Nodo[] | Set<Nodo>): PathSegment[] {
+		nodos = new Set(nodos);
+		const accountedFor = new Set(); // keep track of which Edge have been done
+		const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire map?
+		for (let ind of nodos) { // look at every included node
+			for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
+				if (nodos.has(way))    continue; // (we only care if that adjacent node is excluded)
+				const startingEdge = ind.neighbors.get(way); // the edge between them defines the start of the loop
+				if (accountedFor.has(startingEdge)) continue; // (and can ignore edges we've already hit)
+
+				const loopIdx = output.length;
+				do {
+					const next = ind.leftOf(way); // look for the next triangle, going widdershins
+					if (next !== null) { // assuming there is one,
+						const vertex = next.circumcenter; // pick out its circumcenter to plot
+						output.push({type: 'L', args: [vertex.ф, vertex.λ]}); // make the Path segment
+						const lastEdge = ind.neighbors.get(way);
+						accountedFor.add(lastEdge); // check this edge off
+						if (nodos.has(next.acrossFrom(lastEdge))) // then, depending on the state of the Node after that Triangle
+							ind = next.acrossFrom(lastEdge); // advance one of the state nodos
+						else
+							way = next.acrossFrom(lastEdge);
+					}
+					else { // if there isn't a next triangle
+						if (output.length > loopIdx)
+							output.push({type: 'L', args: [Number.NEGATIVE_INFINITY, Number.NaN]}); // draw a line to infinity
+						else
+							break; // unless you're trying to start a new seccion; the lines to infinity must be in the middle of seccions
+						way = ind;
+						let i = 0;
+						do {
+							way = way.surface.edge.get(way).next; // and shimmy way around the internal portion of the edge
+							i ++;
+						} while (nodos.has(way)); // until it becomes external again
+						ind = way.surface.edge.get(way).prev; // then, grab the new ind and continue
+					}
+				} while (ind.neighbors.get(way) !== startingEdge && output.length < 10000); // continue until you go all the way around this loop
+
+				if (loopIdx < output.length) {
+					output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
+					output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
+				}
+			}
+		}
+
+		return output;
+	}
+
+	/**
 	 * create an ordered Iterator of segments that form all of these lines, aggregating where
 	 * applicable. aggregation may behave unexpectedly if some members of lines contain
 	 * nonendpoints that are endpoints of others.
@@ -739,65 +807,19 @@ export class Chart {
 		return output;
 	}
 
-	/**
-	 * create an ordered Iterator of segments that form the border of this civ
-	 * @param civ the Civ whose outline is desired
-	 */
-	static border(civ: Civ): PathSegment[] {
-		const landNodos = filterSet(civ.nodos, (n) => n.biome !== 'samud');
-		return Chart.outline(landNodos);
-	}
-
-	/**
-	 * create an ordered Iterator of segments that form the boundary of these nodos.
-	 * @param nodos Set of Node that are part of this group.
-	 * @return Array of PathSegments, ordered widdershins.
-	 */
-	static outline(nodos: Set<Nodo>): PathSegment[] {
-		const accountedFor = new Set(); // keep track of which Edge have been done
-		const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire map?
-		for (let ind of nodos) { // look at every included node
-			for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
-				if (nodos.has(way))    continue; // (we only care if that adjacent node is excluded)
-				const startingEdge = ind.neighbors.get(way); // the edge between them defines the start of the loop
-				if (accountedFor.has(startingEdge)) continue; // (and can ignore edges we've already hit)
-
-				const loopIdx = output.length;
-				do {
-					const next = ind.leftOf(way); // look for the next triangle, going widdershins
-					if (next !== null) { // assuming there is one,
-						const vertex = next.circumcenter; // pick out its circumcenter to plot
-						output.push({type: 'L', args: [vertex.ф, vertex.λ]}); // make the Path segment
-						const lastEdge = ind.neighbors.get(way);
-						accountedFor.add(lastEdge); // check this edge off
-						if (nodos.has(next.acrossFrom(lastEdge))) // then, depending on the state of the Node after that Triangle
-							ind = next.acrossFrom(lastEdge); // advance one of the state nodos
-						else
-							way = next.acrossFrom(lastEdge);
-					}
-					else { // if there isn't a next triangle
-						if (output.length > loopIdx)
-							output.push({type: 'L', args: [Number.NEGATIVE_INFINITY, Number.NaN]}); // draw a line to infinity
-						else
-							break; // unless you're trying to start a new seccion; the lines to infinity must be in the middle of seccions
-						way = ind;
-						let i = 0;
-						do {
-							way = way.surface.edge.get(way).next; // and shimmy way around the internal portion of the edge
-							i ++;
-						} while (nodos.has(way)); // until it becomes external again
-						ind = way.surface.edge.get(way).prev; // then, grab the new ind and continue
-					}
-				} while (ind.neighbors.get(way) !== startingEdge && output.length < 10000); // continue until you go all the way around this loop
-
-				if (loopIdx < output.length) {
-					output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
-					output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
-				}
+	static smooth(input: PathSegment[]): PathSegment[] {
+		const segments = input.slice();
+		for (let i = segments.length - 2; i >= 0; i --) {
+			const newEnd = [ // look ahead to the midpoint between this and the next
+				(segments[i].args[0] + segments[i+1].args[0])/2,
+				(segments[i].args[1] + segments[i+1].args[1])/2];
+			if (segments[i].type === 'L' && segments[i+1].type !== 'M') // look for points that are sharp angles
+				segments[i] = {type: 'Q', args: [...segments[i].args, ...newEnd]}; // and extend those lines into curves
+			else if (segments[i].type === 'M' && segments[i+1].type === 'Q') { // look for curves that start with Bezier curves
+				segments.splice(i + 1, 0, {type: 'L', args: newEnd}); // assume we put it there and restore some linearity
 			}
 		}
-
-		return output;
+		return segments;
 	}
 
 }

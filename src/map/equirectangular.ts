@@ -22,7 +22,8 @@
  * SOFTWARE.
  */
 import {Surface} from "../planet/surface.js";
-import {MapProjection, PathSegment} from "./projection.js";
+import {MapProjection} from "./projection.js";
+import {PathSegment} from "../util/coordinates.js";
 
 /**
  * a Plate-Caree projection, primarily for interfacing with other mapping software.

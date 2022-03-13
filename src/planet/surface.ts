@@ -24,7 +24,8 @@
 import {Random} from "../util/random.js";
 import {linterp, Vector, orthogonalBasis, circumcenter} from "../util/util.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
-import {Kultur} from "../society/culture";
+import {Kultur} from "../society/culture.js";
+import {Place} from "../util/coordinates.js";
 
 
 const INTEGRATION_RESOLUTION = 32;
@@ -60,7 +61,7 @@ export abstract class Surface {
 	/**
 	 * do the general constructor stuff that has to be done after the subclass constructor
 	 */
-	initialize() {
+	initialize(): void {
 		this.refLatitudes = []; // fill in latitude-integrated values
 		this.cumulAreas = []; // for use in map projections
 		this.cumulDistances = [];
@@ -86,7 +87,7 @@ export abstract class Surface {
 	/**
 	 * fill this.nodes with random nodes.
 	 */
-	populate(rng: Random) {
+	populate(rng: Random): void {
 		const nodos: Nodo[] = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
 			nodos.push(new Nodo(i, this.randomPoint(rng), this)); // push a bunch of new ones
@@ -342,7 +343,7 @@ export class Triangle {
 	public surface: Surface;
 	public circumcenter: Place;
 
-	public gawe: number
+	public gawe: number;
 	public liwe: number;
 	public liwonice: Triangle | Nodo;
 
@@ -350,7 +351,7 @@ export class Triangle {
 		const nodeDix = a.normal.plus(b.normal).plus(c.normal);
 		const faceDix = b.pos.minus(a.pos).cross(c.pos.minus(a.pos));
 		if (nodeDix.dot(faceDix) <= 0)
-			throw "triangles must be instantiated facing outward, but this one was not."
+			throw "triangles must be instantiated facing outward, but this one was not.";
 		this.vertices = [a, b, c]; // nodes, ordered widdershins
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
 		this.neighbors = new Map(); // adjacent triangles
@@ -376,7 +377,7 @@ export class Triangle {
 	 * compute the ф-λ parameterization of the circumcenter in the plane normal to the sum
 	 * of the vertices' normal vectors.
 	 */
-	computeCircumcenter() {
+	computeCircumcenter(): void {
 		let nAvg = new Vector(0, 0, 0);
 		for (const vertex of this.vertices)
 			nAvg = nAvg.plus(vertex.normal);
@@ -451,14 +452,3 @@ export class Edge {
 		return `${this.node0.pos}--${this.node1.pos}`;
 	}
 }
-
-
-/**
- * Similar to a Vector but in spherical coordinates
- */
-export interface Place {
-	ф: number;
-	λ: number;
-}
-
-

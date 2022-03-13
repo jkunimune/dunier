@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 import {Surface} from "../planet/surface.js";
-import {LongLineType, MapProjection, PathSegment} from "./projection.js";
+import {MapProjection} from "./projection.js";
 import {linterp} from "../util/util.js";
+import {LongLineType, PathSegment} from "../util/coordinates.js";
 
 /**
  * an azimuthal equidistant projection
@@ -40,13 +41,13 @@ export class Azimuthal extends MapProjection {
 			-rMax, rMax, -rMax, rMax,
 			[
 				[{
-					start: [surface.фMax,  Math.PI],
-					end:   [surface.фMax, -Math.PI],
+					start: { s: surface.фMax, t:  Math.PI },
+					end:   { s: surface.фMax, t: -Math.PI },
 					type: LongLineType.VEI,
 				}],
 				[{
-					start: [surface.фMin, -Math.PI],
-					end:   [surface.фMin,  Math.PI],
+					start: { s: surface.фMin, t: -Math.PI },
+					end:   { s: surface.фMin, t:  Math.PI },
 					type: LongLineType.VEI,
 				}],
 			]);
@@ -56,7 +57,10 @@ export class Azimuthal extends MapProjection {
 
 	projectPoint(ф: number, λ: number): {x: number, y: number} {
 		const r = this.rMax - linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
-		return {x: r*Math.sin(λ), y: r*Math.cos(λ)};
+		if (Math.abs(λ) !== Math.PI)
+			return { x: r*Math.sin(λ), y: r*Math.cos(λ) };
+		else
+			return { x: 0, y: -r };
 	}
 
 	projectParallel(λ0: number, λ1: number, ф: number): PathSegment[] {

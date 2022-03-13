@@ -25,6 +25,21 @@
 import Queue from "../util/queue.js";
 import {USER_STRINGS} from "../gui/main.js";
 import {Word} from "../language/word.js";
+import {Point} from "./coordinates.js";
+
+/**
+ * return whether these two arrays are equal to each other
+ * @param a
+ * @param b
+ */
+export function arraysEqual(a: number[], b: number[]): boolean {
+	if (a.length !== b.length)
+		return false;
+	for (let i = 0; i < a.length; i ++)
+		if (a[i] !== b[i])
+			return false;
+	return true;
+}
 
 /**
  * maximum index.
@@ -107,14 +122,6 @@ export function isBetween(value: number, a: number, b: number): boolean {
 		return value >= a && value <= b;
 	else
 		return value >= b && value <= a;
-}
-
-/**
- * a quick way to get, for instance, the x and y of an SVG path argument list
- * @param array
- */
-export function last_two(array: any[]): any[] {
-	return array.slice(array.length - 2);
 }
 
 /**
@@ -230,9 +237,33 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 }
 
 
-interface Point {
-	x: number;
-	y: number;
+/**
+ * calculate the sign of this triangle
+ * @param a
+ * @param b
+ * @param c
+ * @return a positive number if the triangle goes widdershins, a negative number if it
+ *         goes clockwise, and zero if it is degenerate.  in actuality, this returns
+ *         two times the area of the triangle formd by these points, so if there is
+ *         roundoff error, it will be of that order.
+ */
+export function signAngle(a: Point, b: Point, c: Point): number {
+	const bax = a.x - b.x, bay = a.y - b.y;
+	const bcx = c.x - b.x, bcy = c.y - b.y;
+	return bcx*bay - bax*bcy;
+}
+
+
+/**
+ * determine whether the angle abc is acute or not
+ * @param a
+ * @param b
+ * @param c
+ */
+export function isAcute(a: Point, b: Point, c: Point): boolean {
+	const bax = a.x - b.x, bay = a.y - b.y;
+	const bcx = c.x - b.x, bcy = c.y - b.y;
+	return bax*bcx + bay*bcy > 0;
 }
 
 
@@ -265,7 +296,7 @@ export function circumcenter(points: Point[]): Point {
  * @param r the radius of the circle
  * @param onTheLeft whether the center is on the left of the strait-line path from a to b
  */
-export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean) {
+export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean): Point {
 	const d = Math.hypot(b.x - a.x, b.y - a.y);
 	let l = Math.sqrt(r*r - d*d/4);
 	if (onTheLeft) l *= -1;
@@ -274,10 +305,16 @@ export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean) {
 	return {
 		x: (a.x + b.x)/2 + l*sinθ,
 		y: (a.y + b.y)/2 + l*cosθ,
-	}
+	};
 }
 
 
+/**
+ * calculate the distance between a point and a line segment in the plane
+ * @param p
+ * @param a
+ * @param b
+ */
 export function distance(p: Point, a: Point, b: Point): number {
 	const r = {x: p.x - a.x, y: p.y - a.y};
 	const l = {x: b.x - a.x, y: b.y - a.y};
@@ -293,7 +330,7 @@ export function distance(p: Point, a: Point, b: Point): number {
  * intersection.  it just works out better this way for the purpose of edges
  * @returns the location where
  */
-export function intersection(
+export function lineLineIntersection(
 	p1: Point, p2: Point,
 	q1: Point, q2: Point): Point {
 	if (q1.x === q2.x) {
@@ -305,7 +342,7 @@ export function intersection(
 		return null;
 	}
 	else if (q1.y === q2.y) {
-		return transpose(intersection(
+		return transpose(lineLineIntersection(
 			transpose(p1), transpose(p2), transpose(q1), transpose(q2)));
 	}
 	else {
@@ -313,6 +350,59 @@ export function intersection(
 	}
 }
 
+
+/**
+ * find the intersections between a line segment and an arc.  for the purposes of this
+ * function, tangency does not count as an intersection.
+ * @param p0 one endpoint of the line segment
+ * @param p1 the other endpoint of the line segment
+ * @param o the center of the arc
+ * @param r the radius of the arc
+ * @param q0 the point on the rite of the arc (viewd from the center)
+ * @param q1 the point on the left of the arc (viewd from the center)
+ * @param epsilon amount of roundoff for which to account
+ */
+export function lineArcIntersections(
+	p0: Point, p1: Point, o: Point, r: number, q0: Point, q1: Point, epsilon=1e-15
+): Point[] {
+	const scale = Math.pow(p1.x - p0.x, 2) + Math.pow(p1.y - p0.y, 2);
+	const pitch = (p0.x - o.x)*(p1.x - p0.x) + (p0.y - o.y)*(p1.y - p0.y);
+	const distance = (p0.x + q0.x - 2*o.x)*(p0.x - q0.x) +
+		             (p0.y + q0.y - 2*o.y)*(p0.y - q0.y);
+	const vertex = -pitch/scale;
+	const discriminant = vertex*vertex - distance/scale;
+	// if this quadratic is solvable, extract the roots
+	if (discriminant > r*r/scale*epsilon) {
+		const sqrtDiscriminant = Math.sqrt(discriminant);
+		const roots = [
+			vertex + sqrtDiscriminant,
+			vertex - sqrtDiscriminant];
+		const crossings: Point[] = [];
+
+		// then, check each one to see if it is between the line segment endpoints
+		for (const t of roots) {
+			if (t > 0 && t < 1) {
+				const x = { x: p0.x + (p1.x - p0.x)*t, y: p0.y + (p1.y - p0.y)*t };
+				// and if it is between the arc endpoints
+				const largeArc = signAngle(o, q0, q1) < 0;
+				const afterQ0 = signAngle(o, q0, x) > r*r*epsilon;
+				const aforeQ1 = signAngle(o, x, q1) > r*r*epsilon;
+				if ((afterQ0 && aforeQ1) || (largeArc && afterQ0 !== aforeQ1))
+					crossings.push(x);
+			}
+		}
+		return crossings;
+	}
+	else {
+		return [];
+	}
+}
+
+
+/**
+ * exchange x and y for this point
+ * @param p
+ */
 function transpose(p: Point): Point {
 	if (p === null)
 		return null;
@@ -330,7 +420,7 @@ function transpose(p: Point): Point {
  * @returns three vectors, u, v, and n.  if they are normalized, u×v=n, v×n=u, and n×u=v.  if they aren’t then the
  * magnitudes will be whatever.  also, u will always be orthogonal to axis.  if there is an opcion,
  */
-export function orthogonalBasis(n: Vector, normalize: boolean = false, axis: Vector = new Vector(0, 0, 1), bias: Vector = new Vector(1, 0, 0)): {u: Vector, v: Vector, n: Vector} {
+export function orthogonalBasis(n: Vector, normalize = false, axis = new Vector(0, 0, 1), bias = new Vector(1, 0, 0)): {u: Vector, v: Vector, n: Vector} {
 	if (axis.cross(n).sqr() === 0) {
 		axis = bias;
 		if (bias.cross(n).sqr() === 0) {
@@ -352,7 +442,6 @@ export function orthogonalBasis(n: Vector, normalize: boolean = false, axis: Vec
 
 	return {u: u, v: v, n: n};
 }
-
 
 
 /**

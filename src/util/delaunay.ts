@@ -33,9 +33,9 @@ import {orthogonalBasis, Vector} from "./util.js";
  * the partition must contain all points if given, and must be given for non-planes.
  */
 export function delaunayTriangulate(points: Vector[],
-									normals: Vector[] = [new Vector(0, 0, 1)],
+									normals = [new Vector(0, 0, 1)],
 									sample: Vector[] = [],
-									sampleNormals: Vector[] = [new Vector(0, 0, 1)],
+									sampleNormals = [new Vector(0, 0, 1)],
 									partition: number[][] = []
 ): {triangles: number[][], parentage: number[][], between: number[][][]} {
 	if (partition.length === 0) { // start by creating a partition if we have none
@@ -468,7 +468,7 @@ class DelaunayTriangle {
 	public readonly basic: boolean;
 	public readonly n: Vector;
 
-	constructor(a: DelaunayNodo, b: DelaunayNodo, c: DelaunayNodo, basic: boolean = false) {
+	constructor(a: DelaunayNodo, b: DelaunayNodo, c: DelaunayNodo, basic = false) {
 		this.nodos = [a, b, c];
 		this.children = null;
 		this.basic = basic;
