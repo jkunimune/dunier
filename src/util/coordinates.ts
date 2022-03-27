@@ -66,9 +66,9 @@ export enum LongLineType {
 
 /**
  * extract the endpoint from a segment (i.e. the last two args)
- * @param args
  */
-export function endpoint(args: number[]): Location {
+export function endpoint(segment: PathSegment): Location {
+	const args = segment.args;
 	return { s: args[args.length - 2], t: args[args.length - 1] };
 }
 

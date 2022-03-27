@@ -27,36 +27,37 @@ import Queue from '../util/queue.js';
 import {Nodo, Surface} from "../planet/surface.js";
 import {Random} from "../util/random.js";
 import {Civ} from "./civ.js";
+import {Biome} from "./terrain.js";
 
 
 const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population growth
-	['samud',       0.0],
-	['potistan',    0.1],
-	['barxojangle', 0.3],
-	['jangle',      3.0],
-	['lage',        0.0],
-	['taige',       0.3],
-	['piristan',    0.1],
-	['grasistan',   1.0],
-	['registan',    0.0],
-	['tundre',      0.1],
-	['aise',        0.0],
+	[Biome.HAI,         0.0],
+	[Biome.FANTOPIA,    0.1],
+	[Biome.BARSAJANGAL, 0.3],
+	[Biome.JANGAL,      3.0],
+	[Biome.LAK,         0.0],
+	[Biome.TAIGA,       0.3],
+	[Biome.HOGOTOPIA,   0.1],
+	[Biome.GAZOTOPIA,   1.0],
+	[Biome.ARENATOPIA,  0.0],
+	[Biome.TUNDRA,      0.1],
+	[Biome.AIS,         0.0],
 ]);
 const RIVER_UTILITY_THRESHOLD = 1e6;
 const FRESHWATER_UTILITY = 0.1;
 const SALTWATER_UTILITY = 1.0;
 const PASABLIA = new Map([ // terrain modifiers for invasion speed
-	['samud',       0.1],
-	['potistan',    0.1],
-	['barxojangle', 0.1],
-	['jangle',      1.0],
-	['lage',        3.0],
-	['taige',       1.0],
-	['piristan',    0.3],
-	['grasistan',   3.0],
-	['registan',    0.1],
-	['tundre',      0.3],
-	['aise',        0.1],
+	[Biome.HAI,         0.1],
+	[Biome.FANTOPIA,    0.1],
+	[Biome.BARSAJANGAL, 0.1],
+	[Biome.JANGAL,      1.0],
+	[Biome.LAK,         3.0],
+	[Biome.TAIGA,       1.0],
+	[Biome.HOGOTOPIA,   0.3],
+	[Biome.GAZOTOPIA,   3.0],
+	[Biome.ARENATOPIA,  0.1],
+	[Biome.TUNDRA,      0.3],
+	[Biome.AIS,         0.1],
 ]);
 
 
@@ -78,8 +79,8 @@ export class World {
 
 	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
+	public readonly politicalMap: Map<Nodo, Civ>;
 	private readonly civs: Set<Civ>;
-	private readonly politicalMap: Map<Nodo, Civ>;
 	private nextID: number;
 
 
@@ -92,11 +93,11 @@ export class World {
 
 		for (const nodo of planet.nodos) { // assine the society-relevant values to the Nodos
 			nodo.domublia = DOMUBLIA.get(nodo.biome); // start with the biome-defined habitability
-			if (nodo.domublia > 0 || nodo.biome === 'registan') { // if it is habitable at all or is a desert
+			if (nodo.domublia > 0 || nodo.biome === Biome.ARENATOPIA) { // if it is habitable at all or is a desert
 				for (const neighbor of nodo.neighbors.keys()) { // increase habitability based on adjacent water
-					if (neighbor.biome === 'lage' || nodo.neighbors.get(neighbor).liwe > RIVER_UTILITY_THRESHOLD)
+					if (neighbor.biome === Biome.LAK || nodo.neighbors.get(neighbor).liwe > RIVER_UTILITY_THRESHOLD)
 						nodo.domublia += FRESHWATER_UTILITY;
-					if (neighbor.biome === 'samud')
+					if (neighbor.biome === Biome.HAI)
 						nodo.domublia += SALTWATER_UTILITY;
 				}
 			}
@@ -131,7 +132,7 @@ export class World {
 		for (const tile of this.planet.nodos) {
 			const demomultia = World.carryingCapacity*tile.domublia; // TODO: implement nomads, city state leagues, and federal states.
 			const ruler = this.currentRuler(tile);
-			if (ruler == null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
+			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(World.authoritarianism*World.timeStep*demomultia))
 					this.civs.add(new Civ(tile, this.nextID, this, rng));
 			}

@@ -24,7 +24,7 @@
 import {Surface} from "../planet/surface.js";
 import {MapProjection} from "./projection.js";
 import {linterp} from "../util/util.js";
-import {PathSegment} from "../util/coordinates.js";
+import {PathSegment, Place, Point} from "../util/coordinates.js";
 
 /**
  * a cylindrical projection that makes loxodromes appear as straight lines.
@@ -60,7 +60,7 @@ export class Mercator extends MapProjection {
 		this.setDimensions(-Math.PI, Math.PI, top, bottom);
 	}
 
-	projectPoint(ф: number, λ: number): {x: number, y: number} {
-		return {x: λ, y: linterp(ф, this.фRef, this.yRef)};
+	projectPoint(point: Place): Point {
+		return {x: point.λ, y: linterp(point.ф, this.фRef, this.yRef)};
 	}
 }

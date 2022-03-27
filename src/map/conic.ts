@@ -24,7 +24,7 @@
 import {MapProjection} from "./projection.js";
 import {Surface} from "../planet/surface.js";
 import {linterp} from "../util/util.js";
-import {PathSegment} from "../util/coordinates.js";
+import {assert_фλ, endpoint, PathSegment, Place, Point} from "../util/coordinates.js";
 
 export class Conic extends MapProjection {
 	private readonly yJong: number;
@@ -45,8 +45,8 @@ export class Conic extends MapProjection {
 		let locusBottom = Number.NEGATIVE_INFINITY;
 		let locusRight = 0;
 		for (const segment of this.transform(locus)) { // check the extent of the thing we're mapping
-			const [ф, λ] = segment.args;
-			const {x, y} = this.projectPoint(ф, λ);
+			const point = assert_фλ(endpoint(segment));
+			const {x, y} = this.projectPoint(point);
 			if (y < locusTop)
 				locusTop = y;
 			if (y > locusBottom)
@@ -61,7 +61,7 @@ export class Conic extends MapProjection {
 		for (const ф of [surface.фMin, surface.фMax]) { // and check the extent of the whole world
 			for (const λ of [0, Math.PI/2/this.n, Math.PI]) {
 				if (Math.abs(λ) <= Math.PI) {
-					const {x, y} = this.projectPoint(ф, λ);
+					const {x, y} = this.projectPoint({ф: ф, λ: λ});
 					if (y > coneBottom)
 						coneBottom = y;
 					if (y < coneTop)
@@ -78,22 +78,22 @@ export class Conic extends MapProjection {
 		this.setDimensions(-right, right, top, bottom);
 	}
 
-	projectPoint(ф: number, λ: number): { x: number; y: number } {
-		const y0 = -linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
+	projectPoint(point: Place): Point {
+		const y0 = -linterp(point.ф, this.surface.refLatitudes, this.surface.cumulDistances);
 		if (Number.isFinite(this.yJong)) {
 			const R = y0 - this.yJong;
 			return {
-				x: R*Math.sin(this.n*λ),
-				y: R*Math.cos(this.n*λ) + this.yJong };
+				x: R*Math.sin(this.n*point.λ),
+				y: R*Math.cos(this.n*point.λ) + this.yJong };
 		}
 		else
 			return {
-				x: this.n*λ,
+				x: this.n*point.λ,
 				y: y0 };
 	}
 
 	projectParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
-		const {x, y} = this.projectPoint(ф, λ1);
+		const {x, y} = this.projectPoint({ф: ф, λ: λ1});
 		if (Number.isFinite(this.yJong)) {
 			const r = Math.hypot(x, y - this.yJong);
 			return [{

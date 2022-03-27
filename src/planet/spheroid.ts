@@ -21,8 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Nodo, Place, Surface, Triangle} from "./surface.js";
-import {legendreP2, legendreP4, legendreP6, Vector} from "../util/util.js";
+import {Nodo, Surface, Triangle} from "./surface.js";
+import {legendreP2, legendreP4, legendreP6} from "../util/util.js";
+import {Place} from "../util/coordinates.js";
+import {Vector} from "../util/geometry.js";
 
 /**
  * an oblate spheroid
@@ -123,17 +125,17 @@ export class Spheroid extends Surface {
 		return {nord: 0, dong: Math.cos(ф)}; // realistically this should change direccion, but this formula makes orographs more apparent
 	}
 
-	xyz(ф: number, λ: number): Vector {
-		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
+	xyz(place: Place): Vector {
+		const β = Math.atan(Math.tan(place.ф)/this.aspectRatio);
 		return new Vector(
-			this.radius*Math.cos(β)*Math.sin(λ),
-			-this.radius*Math.cos(β)*Math.cos(λ),
+			this.radius*Math.cos(β)*Math.sin(place.λ),
+			-this.radius*Math.cos(β)*Math.cos(place.λ),
 			this.radius*Math.sin(β)/this.aspectRatio);
 	}
 
-	фλ(x: number, y: number, z: number): Place {
-		const β = Math.atan2(this.aspectRatio*z, Math.hypot(x, y));
-		const λ = Math.atan2(x, -y);
+	фλ(point: Vector): Place {
+		const β = Math.atan2(this.aspectRatio*point.z, Math.hypot(point.x, point.y));
+		const λ = Math.atan2(point.x, -point.y);
 		return {ф: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
 	}
 

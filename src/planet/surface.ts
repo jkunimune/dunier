@@ -22,10 +22,12 @@
  * SOFTWARE.
  */
 import {Random} from "../util/random.js";
-import {linterp, Vector, orthogonalBasis, circumcenter} from "../util/util.js";
+import {linterp, noisyProfile} from "../util/util.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
 import {Kultur} from "../society/culture.js";
-import {Place} from "../util/coordinates.js";
+import {Biome} from "../society/terrain.js";
+import {Location, Place} from "../util/coordinates.js";
+import {circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
 
 
 const INTEGRATION_RESOLUTION = 32;
@@ -51,7 +53,7 @@ export abstract class Surface {
 
 
 	protected constructor(фMin: number, фMax: number) {
-		this.nodos = new Set();
+		this.nodos = null;
 		this.фMin = фMin;
 		this.фMax = фMax;
 		this.axis = null;
@@ -80,21 +82,25 @@ export abstract class Surface {
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
-		this.axis = this.xyz(1, Math.PI/2).minus(this.xyz(1, 0)).cross(
-			this.xyz(1, Math.PI).minus(this.xyz(1, Math.PI/2))).norm(); // figure out which way the coordinate system points
+		this.axis = this.xyz({ф: 1, λ: Math.PI/2}).minus(this.xyz({ф: 1, λ: 0})).cross(
+			this.xyz({ф: 1, λ: Math.PI}).minus(this.xyz({ф: 1, λ: Math.PI/2}))).norm(); // figure out which way the coordinate system points
 	}
 
 	/**
 	 * fill this.nodes with random nodes.
 	 */
 	populate(rng: Random): void {
+		// generate the nodes
 		const nodos: Nodo[] = []; // remember to clear the old nodes, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
 			nodos.push(new Nodo(i, this.randomPoint(rng), this)); // push a bunch of new ones
 		this.nodos = new Set(nodos); // keep that list, but save it as a set as well
 
+		// seed the surface
 		const partition = this.partition();
-		const triangulation = delaunayTriangulate( // call the delaunay triangulation subroutine
+
+		// call the delaunay triangulation subroutine
+		const triangulation = delaunayTriangulate(
 			nodos.map((n: Nodo) => n.pos),
 			nodos.map((n: Nodo) => n.normal),
 			partition.nodos.map((n: Nodo) => n.pos),
@@ -103,7 +109,7 @@ export abstract class Surface {
 		);
 		this.triangles = new Set(); // unpack the resulting triangles
 		for (const [ia, ib, ic] of triangulation.triangles) {
-			this.triangles.add(new Triangle(nodos[ia], nodos[ib], nodos[ic]));
+			this.triangles.add(new Triangle(nodos[ia], nodos[ib], nodos[ic])); // this will automatically generate the Edges
 		}
 		for (let i = 0; i < nodos.length; i ++) {
 			for (const j of triangulation.parentage[i]) // as well as the parentage
@@ -112,7 +118,8 @@ export abstract class Surface {
 				nodos[i].between.push([nodos[j], nodos[k]]);
 		}
 
-		for (let i = 1; i < nodos.length; i ++) { // after all that's through, some nodes won't have any parents
+		// after all that's through, some nodes won't have any parents
+		for (let i = 1; i < nodos.length; i ++) {
 			if (nodos[i].parents.length === 0) { // if that's so,
 				const orphan = nodos[i];
 				let closest = null; // the easiest thing to do is to just assign it the closest node that came before it using the list
@@ -128,7 +135,8 @@ export abstract class Surface {
 			}
 		}
 
-		for (const triangle of this.triangles) { // finally, complete the remaining triangles' network graphs
+		// finally, complete the remaining triangles' network graphs
+		for (const triangle of this.triangles) {
 			for (let i = 0; i < 3; i ++) {
 				const edge = triangle.edges[i];
 				if (triangle === edge.triangleL)
@@ -139,12 +147,22 @@ export abstract class Surface {
 			triangle.computeCircumcenter();
 		}
 
-		for (const nodo of this.nodos) // and find the edge, if there is one
+		// and find the edge, if there is one
+		for (const nodo of this.nodos)
 			for (const neibor of nodo.neighbors.keys())
 				if (nodo.rightOf(neibor) === null)
 					this.edge.set(nodo, {next: neibor, prev: null});
 		for (const nodo of this.edge.keys()) // and make it back-searchable
 			this.edge.get(this.edge.get(nodo).next).prev = nodo;
+
+		// finally, add the greebles
+		for (const triangle of this.triangles) {
+			for (const edge of triangle.edges) {
+				if (edge.path.length <= 2) {
+					edge.path = edge.coordinateTransform(noisyProfile(rng));
+				}
+			}
+		}
 	}
 
 	/**
@@ -173,7 +191,7 @@ export abstract class Surface {
 			S.push([]);
 			for (let j = 0; j <= m; j ++) {
 				const λ = j/m*2*Math.PI; // I think λ always represents some [0, 2*pi) angle
-				const {x, y, z} = this.xyz(ф, λ);
+				const {x, y, z} = this.xyz({ф: ф, λ: λ});
 				X[i].push(x);
 				Y[i].push(y);
 				Z[i].push(z);
@@ -226,12 +244,12 @@ export abstract class Surface {
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
-	abstract xyz(ф: number, λ: number): Vector;
+	abstract xyz(place: Place): Vector;
 
 	/**
 	 * return the 2D parameterization corresponding to the given parameters
 	 */
-	abstract фλ(x: number, y: number, z: number): Place;
+	abstract фλ(point: {x: number, y: number, z: number}): Place;
 
 	/**
 	 * return the normalized vector pointing outward at this node. the node may be assumed
@@ -266,7 +284,7 @@ export class Nodo {
 	public gawe: number;
 	public terme: number;
 	public barxe: number;
-	public biome: string;
+	public biome: Biome;
 	public domublia: number;
 	public pasablia: number;
 	public kultur: Kultur;
@@ -282,7 +300,7 @@ export class Nodo {
 		this.index = index;
 		this.ф = position.ф;
 		this.λ = position.λ;
-		this.pos = surface.xyz(this.ф, this.λ);
+		this.pos = surface.xyz(this);
 		const basis = orthogonalBasis(surface.normal(this), true, surface.axis, this.pos.times(-1));
 		this.normal = basis.n;
 		this.nord = basis.v;
@@ -319,6 +337,10 @@ export class Nodo {
 			return this.neighbors.get(that).triangleL;
 	}
 
+	isWater(): boolean {
+		return this.biome === Biome.HAI || this.biome === Biome.LAK;
+	}
+
 	getArea(): number {
 		if (this.area === null) {
 			let radius = 0;
@@ -342,6 +364,7 @@ export class Triangle {
 	public neighbors: Map<Triangle, Edge>;
 	public surface: Surface;
 	public circumcenter: Place;
+	public circumcenterPos: Vector;
 
 	public gawe: number;
 	public liwe: number;
@@ -393,8 +416,8 @@ export class Triangle {
 		let z = 0;
 		for (const nodo of projected)
 			z += nodo.z/3;
-		const center = u.times(x).plus(v.times(y)).plus(n.times(z));
-		this.circumcenter = this.surface.фλ(center.x, center.y, center.z); // finally, put it back in ф-λ space
+		this.circumcenterPos = u.times(x).plus(v.times(y)).plus(n.times(z));
+		this.circumcenter = this.surface.фλ(this.circumcenterPos); // finally, put it back in ф-λ space
 
 		this.ф = this.circumcenter.ф; // and make these values a bit easier to access
 		this.λ = this.circumcenter.λ;
@@ -436,6 +459,8 @@ export class Edge {
 	public triangleR: Triangle;
 	public length: number;
 	public liwe: number;
+	public isCoast: boolean;
+	public path: Place[];
 
 	constructor(node0: Nodo, triangleR: Triangle, node1: Nodo, triangleL: Triangle, length: number) {
 		this.node0 = node0; // save these new values for the edge
@@ -443,9 +468,43 @@ export class Edge {
 		this.node1 = node1;
 		this.triangleL = triangleL;
 		this.length = length;
+		this.isCoast = false;
+		this.path = [node0, node1];
 
 		node0.neighbors.set(node1, this);
 		node1.neighbors.set(node0, this);
+	}
+
+	/**
+	 * transform these points onto the surface so that t maps to the direction along the
+	 * voronoi edge, and s maps to the perpendicular direction.  specifically (0,0)
+	 * corresponds to triangleL, (0, 1) corresponds to triangleR, and (1, 1/2) corresponds
+	 * to node1.
+	 * @param points
+	 */
+	coordinateTransform(points: Location[]): Place[] {
+		// define the inicial coordinate vectors
+		const origin = this.triangleL.circumcenterPos; // compute its coordinate system
+		const et = this.triangleR.circumcenterPos.minus(origin);
+		const en = this.node0.normal.plus(this.node1.normal);
+		let es = en.cross(et); // this one's magnitude is not set in stone
+		const limit = {
+			s: this.node0.pos.minus(origin).dot(es)/es.sqr(),
+			t: this.node0.pos.minus(origin).dot(et)/et.sqr(),
+		};
+		const sMax = Math.min(
+			Math.abs(limit.s/(2*limit.t)),
+			Math.abs(limit.s/(2*(1 - limit.t)))
+		);
+		es = es.times(sMax);
+
+		// then apply the linear transformation
+		const output: Place[] = [];
+		for (const {s, t} of points) {
+			const transformed = origin.plus(es.times(s).plus(et.times(t)));
+			output.push(this.node0.surface.фλ(transformed));
+		}
+		return output;
 	}
 
 	toString(): string {

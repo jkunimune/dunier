@@ -24,7 +24,7 @@
 import {Surface} from "../planet/surface.js";
 import {MapProjection} from "./projection.js";
 import {linterp} from "../util/util.js";
-import {LongLineType, PathSegment} from "../util/coordinates.js";
+import {LongLineType, PathSegment, Place, Point} from "../util/coordinates.js";
 
 /**
  * an azimuthal equidistant projection
@@ -55,10 +55,10 @@ export class Azimuthal extends MapProjection {
 		this.rMin = rMax - surface.height;
 	}
 
-	projectPoint(ф: number, λ: number): {x: number, y: number} {
-		const r = this.rMax - linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
-		if (Math.abs(λ) !== Math.PI)
-			return { x: r*Math.sin(λ), y: r*Math.cos(λ) };
+	projectPoint(point: Place): Point {
+		const r = this.rMax - linterp(point.ф, this.surface.refLatitudes, this.surface.cumulDistances);
+		if (Math.abs(point.λ) !== Math.PI)
+			return { x: r*Math.sin(point.λ), y: r*Math.cos(point.λ) };
 		else
 			return { x: 0, y: -r };
 	}
@@ -67,7 +67,7 @@ export class Azimuthal extends MapProjection {
 		const r = this.rMax - linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
 		const sweepFlag = (λ1 > λ0) ? 0 : 1;
 		if (r > 0) {
-			const {x, y} = this.projectPoint(ф, λ1);
+			const {x, y} = this.projectPoint({ф: ф, λ: λ1});
 			if (Math.abs(λ0 - λ1) <= Math.PI)
 				return [
 					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},

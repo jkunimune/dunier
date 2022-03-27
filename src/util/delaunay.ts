@@ -21,16 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {orthogonalBasis, Vector} from "./util.js";
+import {orthogonalBasis, Vector} from "./geometry.js";
 
 /**
- * cover a field of points in Delaunay triangles.
+ * cover a 3D surface full of points in Delaunay triangles.
  * @param points the list of points in 3-space that are to be triangulated
  * @param normals the normal vector of the triangulated circle at each point, assumed to be [0,0,1] if not specified.
  * @param sample optional set of dummy points to seed the surface
  * @param sampleNormals normal vectors to go with sample
  * @param partition optional set of starter triangles to establish topology, represented as arrays of sample indices.
  * the partition must contain all points if given, and must be given for non-planes.
+ * @return triangles – the indices of the nodes that form each triangle in the mesh
+ *         parentage – the indices of all parents of each node
+ *         between – the indices for all pairs of points that each node separated
  */
 export function delaunayTriangulate(points: Vector[],
 									normals = [new Vector(0, 0, 1)],

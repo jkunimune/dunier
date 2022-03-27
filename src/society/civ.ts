@@ -28,6 +28,7 @@ import {World} from "./world.js";
 import {Kultur} from "./culture.js";
 import {Word} from "../language/word.js";
 import {TreeMap} from "../util/treemap.js";
+import {Biome} from "./terrain.js";
 
 
 const SOCIAL_DECAY_PERIOD = 1000; // [year] time it takes for an empire's might to decay by 2.7
@@ -190,7 +191,7 @@ export class Civ {
 
 	getStrength(kontra: Civ, sa: Nodo) : number {
 		let linguisticModifier = 1;
-		if (kontra != null && sa.kultur.lect.isIntelligible(this.capital.kultur.lect))
+		if (kontra !== null && sa.kultur.lect.isIntelligible(this.capital.kultur.lect))
 			linguisticModifier = World.nationalism;
 		return this.militarism*this.technology*linguisticModifier;
 	}
@@ -201,7 +202,7 @@ export class Civ {
 	getArea(): number {
 		let area = 0;
 		for (const nodo of this.nodos)
-			if (nodo.biome !== 'samud') // TODO: save this in a dynamically updating variable like the arable area
+			if (nodo.biome !== Biome.HAI) // TODO: save this in a dynamically updating variable like the arable area
 				area += nodo.getArea();
 		return area;
 	}

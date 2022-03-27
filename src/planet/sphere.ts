@@ -22,8 +22,9 @@
  * SOFTWARE.
  */
 import {Spheroid} from "./spheroid.js";
-import {Vector} from "../util/util.js";
-import {Nodo, Place} from "./surface.js";
+import {Vector} from "../util/geometry.js";
+import {Nodo} from "./surface.js";
+import {Place} from "../util/coordinates.js";
 
 /**
  * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the y direction
@@ -46,13 +47,13 @@ export class Sphere extends Spheroid {
 		return {nord: -Math.cos(ф), dong: 0};
 	}
 
-	xyz(ф: number, λ: number): Vector {
-		const {x, y, z} = super.xyz(ф, λ);
+	xyz(place: Place): Vector {
+		const {x, y, z} = super.xyz(place);
 		return new Vector(x, z, -y);
 	}
 
-	фλ(x: number, y: number, z: number): Place {
-		return super.фλ(x, -z, y);
+	фλ(point: Vector): Place {
+		return super.фλ(new Vector(point.x, -point.z, point.y));
 	}
 
 	normal(node: Nodo): Vector {

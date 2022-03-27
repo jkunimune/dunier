@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Vector} from "../util/util.js";
-import {Nodo, Place, Surface, Triangle} from "./surface.js";
+import {Nodo, Surface, Triangle} from "./surface.js";
 import {Spheroid} from "./spheroid.js";
+import {Place} from "../util/coordinates.js";
+import {Vector} from "../util/geometry.js";
 
 
 /**
@@ -126,20 +127,20 @@ export class Toroid extends Surface {
 		return {nord: 0, dong: Math.cos(ф)};
 	}
 
-	xyz(ф: number, λ: number): Vector {
-		const β = Math.atan2(Math.sin(ф)*this.elongation, Math.cos(ф));
+	xyz(place: Place): Vector {
+		const β = Math.atan2(Math.sin(place.ф)*this.elongation, Math.cos(place.ф));
 		const r = this.majorRadius + this.minorRadius*Math.cos(β);
 		const z = this.elongation*this.minorRadius*Math.sin(β);
 		return new Vector(
-			r*Math.sin(λ), -r*Math.cos(λ), z);
+			r*Math.sin(place.λ), -r*Math.cos(place.λ), z);
 	}
 
-	фλ(x: number, y: number, z: number): Place {
-		const r = Math.hypot(x, y);
-		const β = Math.atan2(z/this.elongation, r - this.majorRadius);
+	фλ(point: Vector): Place {
+		const r = Math.hypot(point.x, point.y);
+		const β = Math.atan2(point.z/this.elongation, r - this.majorRadius);
 		return {
 			ф: Math.atan2(Math.sin(β)/this.elongation, Math.cos(β)),
-			λ: Math.atan2(x, -y)};
+			λ: Math.atan2(point.x, -point.y)};
 	}
 
 	normal(node: Place): Vector {

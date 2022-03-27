@@ -21,8 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Vector} from "../util/util.js";
-import {Nodo, Place, Surface, Triangle} from "./surface.js";
+import {Nodo, Surface, Triangle} from "./surface.js";
+import {Vector} from "../util/geometry.js";
+import {Place} from "../util/coordinates.js";
 
 /**
  * a planar planet based on the modern flat earth model, where the sun circles in a horizontal plane above the world,
@@ -33,7 +34,7 @@ export class Disc extends Surface {
 	protected readonly firmamentHite: number;
 	private readonly effectiveObliquity: number;
 
-	constructor(radius: number, obliquity: number, aspectRatio: number = 4.) {
+	constructor(radius: number, obliquity: number, aspectRatio = 4.) {
 		super(Math.atan(1/aspectRatio), Math.PI/2);
 		this.radius = radius;
 		this.firmamentHite = radius/aspectRatio;
@@ -41,14 +42,14 @@ export class Disc extends Surface {
 	}
 
 	partition(): {triangles: Triangle[], nodos: Nodo[]} {
-		const nodos: Nodo[] = [
+		const nodos = [
 			new Nodo(null, {ф: Math.atan(1/8), λ: 0}, this),
 			new Nodo(null, {ф: Math.atan(1/8), λ: Math.PI/2}, this),
 			new Nodo(null, {ф: Math.atan(1/8), λ: Math.PI}, this),
 			new Nodo(null, {ф: Math.atan(1/8), λ: 3*Math.PI/2}, this),
 		];
 
-		const triangles: Triangle[] = [
+		const triangles = [
 			new Triangle(nodos[0], nodos[1], nodos[2]),
 			new Triangle(nodos[2], nodos[3], nodos[0]),
 		];
@@ -65,7 +66,7 @@ export class Disc extends Surface {
 	}
 
 	insolation(ф: number): number {
-		const cosψ = Math.cos(2*this.effectiveObliquity)
+		const cosψ = Math.cos(2*this.effectiveObliquity);
 		const ρ = this.firmamentHite/this.radius/Math.tan(ф);
 		return 7.0/(
 			(3.865*cosψ + 6.877) -
@@ -75,22 +76,22 @@ export class Disc extends Surface {
 	}
 
 	windConvergence(ф: number): number {
-		return 1.5*(Math.sin(2*ф)**2 + Math.sin(3*ф)**2 - 0.5)
+		return 1.5*(Math.sin(2*ф)**2 + Math.sin(3*ф)**2 - 0.5);
 	}
 
 	windVelocity(ф: number): {nord: number, dong: number} {
 		return {nord: Math.sin(2*ф), dong: 0};
 	}
 
-	xyz(ф: number, λ: number): Vector {
-		const r = this.firmamentHite/Math.tan(ф);
-		return new Vector(r*Math.sin(λ), -r*Math.cos(λ), 0);
+	xyz(place: Place): Vector {
+		const r = this.firmamentHite/Math.tan(place.ф);
+		return new Vector(r*Math.sin(place.λ), -r*Math.cos(place.λ), 0);
 	}
 
-	фλ(x: number, y: number, z: number): Place {
+	фλ(point: Vector): Place {
 		return {
-			ф: Math.max(Math.atan(this.firmamentHite/Math.hypot(x, y)), this.фMin),
-			λ: Math.atan2(x, -y)};
+			ф: Math.max(Math.atan(this.firmamentHite/Math.hypot(point.x, point.y)), this.фMin),
+			λ: Math.atan2(point.x, -point.y)};
 	}
 
 	normal(node: Place): Vector {

@@ -26,7 +26,8 @@ import Queue from '../util/queue.js';
 
 import {Surface, Triangle, Nodo} from "../planet/surface.js";
 import {Random} from "../util/random.js";
-import {argmax, union, Vector} from "../util/util.js";
+import {argmax, union} from "../util/util.js";
+import {Vector} from "../util/geometry.js";
 
 
 const TERME_NOISE_LEVEL = 12;
@@ -73,6 +74,21 @@ enum FaultType {
 }
 
 
+export enum Biome {
+	HAI,
+	LAK,
+	AIS,
+	TUNDRA,
+	TAIGA,
+	JANGAL,
+	BARSAJANGAL,
+	ARENATOPIA,
+	GAZOTOPIA,
+	FANTOPIA,
+	HOGOTOPIA,
+}
+
+
 /**
  * create all of the continents and biomes and rivers that go into the physical geography
  * of a good fictional world.
@@ -82,7 +98,7 @@ enum FaultType {
  * @param surf the surface to modify
  * @param rng the seeded random number generator to use
  */
-export function generateTerrain(numContinents: number, seaLevel: number, avgTerme: number, surf: Surface, rng: Random) {
+export function generateTerrain(numContinents: number, seaLevel: number, avgTerme: number, surf: Surface, rng: Random): void {
 	generateContinents(numContinents, surf, rng);
 	rng = rng.reset();
 	movePlates(surf, rng);
@@ -93,7 +109,7 @@ export function generateTerrain(numContinents: number, seaLevel: number, avgTerm
 	setBiomes(surf);
 }
 
-function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
+function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
 	for (const node of surf.nodos) { // assign each node random values
 		node.terme = getNoiseFunction(node, node.parents, 'terme', surf, rng,
@@ -125,7 +141,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
 			}
 		}
 		bestNode.downwind.push(node); // and make sure that all nodes know who is downwind of them
-		if (node.biome === 'samud') // also seed the orographic effect in the oceans
+		if (node.biome === Biome.HAI) // also seed the orographic effect in the oceans
 			queue.push({node: node, moisture: OROGRAPHIC_MAGNITUDE});
 		if (node.gawe > CLOUD_HEIGHT) // and also remove some moisture from mountains
 			node.barxe -= OROGRAPHIC_MAGNITUDE;
@@ -134,7 +150,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
 		const {node, moisture} = queue.pop(); // each node looks downwind
 		node.barxe += moisture;
 		for (const downwind of node.downwind) {
-			if (downwind.biome !== 'samud' && downwind.gawe <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
+			if (downwind.biome !== Biome.HAI && downwind.gawe <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
 				const distance = node.neighbors.get(downwind).length;
 				queue.push({
 					node: downwind,
@@ -151,7 +167,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random) {
  * @param surf the surface on which to generate these continents
  * @param rng the seeded random number generator to use
  */
-function generateContinents(numPlates: number, surf: Surface, rng: Random) {
+function generateContinents(numPlates: number, surf: Surface, rng: Random): void {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
 	for (const node of surf.nodos) { // start by assigning plates
 		if (node.index < numPlates) {
@@ -205,7 +221,7 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random) {
 /**
  * apply plate tectonics to the surface!
  */
-function movePlates(surf: Surface, rng: Random) {
+function movePlates(surf: Surface, rng: Random): void {
 	const velocities = [];
 	for (const node of surf.nodos) { // start by counting up all the plates
 		if (node.plate >= velocities.length) // and assigning them random velocities // TODO allow for plate rotation in the tangent plane
@@ -343,13 +359,13 @@ function movePlates(surf: Surface, rng: Random) {
  * @param level the altitude up to which to fill
  * @param surf the surface
  */
-function fillOcean(level: number, surf: Surface) {
+function fillOcean(level: number, surf: Surface): void {
 	let bestStart = null; // the size of the ocean depends heavily on where we start
 	let bestSize = 0;
 	while (true) { // we want to find the start point that maximizes that size
 		let start = null;
 		for (const node of surf.nodos) {
-			if (node.biome !== 'samud' && node.gawe <= level &&
+			if (node.biome !== Biome.HAI && node.gawe <= level &&
 				(start === null || node.gawe < start.gawe)) // the lowest point that we haven't already tried is a good way to test
 				start = node;
 		}
@@ -373,6 +389,10 @@ function fillOcean(level: number, surf: Surface) {
 
 	for (const node of surf.nodos) // and set sea level to 0
 		node.gawe -= level;
+
+	for (const node of surf.nodos) // finally, set the coast edges
+		for (const edge of node.neighbors.values())
+			edge.isCoast = edge.node0.isWater() !== edge.node1.isWater();
 }
 
 
@@ -380,7 +400,7 @@ function fillOcean(level: number, surf: Surface) {
  * give the surface some rivers to draw, and also set up some nearby lakes.
  * @param surf the Surface on which this takes place
  */
-function addRivers(surf: Surface) {
+function addRivers(surf: Surface): void {
 	for (const vertex of surf.triangles) {
 		vertex.gawe = 0; // first define altitudes for vertices, which only matters for this one purpose
 		for (const tile of vertex.vertices)
@@ -393,7 +413,7 @@ function addRivers(surf: Surface) {
 		[], (a, b) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
 	for (const vertex of surf.triangles) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
 		for (const tile of vertex.vertices) {
-			if (tile.biome === 'samud') {
+			if (tile.biome === Biome.HAI) {
 				riverDistance.set(tile, 0);
 				nadeQueue.push({nice: tile, supr: vertex, slope: Number.POSITIVE_INFINITY});
 				break;
@@ -427,7 +447,7 @@ function addRivers(surf: Surface) {
 
 	surf.rivers = new Set();
 
-	const liweQueue: Queue<Triangle> = new Queue([...surf.triangles],
+	const liweQueue = new Queue([...surf.triangles],
 		(a: Triangle, b: Triangle) => riverDistance.get(b) - riverDistance.get(a)); // now we need to flow the water downhill
 	const unitArea = surf.area/surf.nodos.size;
 	while (!liweQueue.empty()) {
@@ -450,7 +470,7 @@ function addRivers(surf: Surface) {
 	queue:
 	while (lageQueue.length > 0) { // now look at the tiles
 		const tile = lageQueue.pop(); // TODO: make lakes more likely to appear on large rivers
-		if (tile.biome === 'samud' || tile.biome === 'lage' || tile.terme < RIVER_THRESH)
+		if (tile.isWater() || tile.terme < RIVER_THRESH)
 			continue; // ignoring things that are already water or too cold for this
 
 		let seenRightEdge = false; // check that there is up to 1 continuous body of water at its border
@@ -460,10 +480,10 @@ function addRivers(surf: Surface) {
 		do {
 			const vertex = tile.leftOf(last); // look at the vertex next to it
 			const next = vertex.widershinsOf(last);
-			if (next.biome === 'samud') // ocean adjacent tiles have a slight possibility of become lakes.
+			if (next.biome === Biome.HAI) // ocean adjacent tiles have a slight possibility of become lakes.
 				continue queue; // don't let it happen
-			const lastIsWater = tile.neighbors.get(last).liwe > 0 || last.biome === 'lage';
-			const nextIsWater = tile.neighbors.get(next).liwe > 0 || next.biome === 'lage';
+			const lastIsWater = tile.neighbors.get(last).liwe > 0 || last.biome === Biome.LAK;
+			const nextIsWater = tile.neighbors.get(next).liwe > 0 || next.biome === Biome.LAK;
 			const betweenIsWater = last.neighbors.get(next).liwe > 0;
 			if ((!lastIsWater && nextIsWater) || (!lastIsWater && !nextIsWater && betweenIsWater)) { // if this has the right edge of a body of water
 				if (seenRightEdge) // if there's already been a right edge
@@ -479,7 +499,7 @@ function addRivers(surf: Surface) {
 			continue; // then there's nothing to feed the lake
 
 		if (outflow !== null && outflow.gawe - outflow.liwonice.gawe < LAKE_THRESH) { // if we made it through all that, make an altitude check
-			tile.biome = 'lage'; // and assign lake status. you've earned it, tile.
+			tile.biome = Biome.LAK; // and assign lake status. you've earned it, tile.
 			for (const neighbor of tile.neighbors.keys())
 				lageQueue.push(); // tell your friends.
 		}
@@ -491,33 +511,33 @@ function addRivers(surf: Surface) {
  * assign biomes to all unassigned tiles according to simple rules.
  * @param surf the surface to which we're doing this
  */
-function setBiomes(surf: Surface) {
+function setBiomes(surf: Surface): void {
 	for (const node of surf.nodos) {
 		let adjacentWater = false;
 		for (const neighbor of node.neighbors.keys())
-			if (neighbor.biome === 'samud' || neighbor.biome === 'lage' ||
+			if (neighbor.biome === Biome.HAI || neighbor.biome === Biome.LAK ||
 					node.neighbors.get(neighbor).liwe > RAINFALL_NEEDED_TO_CREATE_MARSH)
 				adjacentWater = true;
 
 		if (node.biome === null) {
 			if (node.terme < RIVER_THRESH)
-				node.biome = 'aise';
+				node.biome = Biome.AIS;
 			else if (node.terme < TUNDRA_TEMP)
-				node.biome = 'tundre';
+				node.biome = Biome.TUNDRA;
 			else if (node.terme > DESERT_SLOPE*node.barxe + DESERT_INTERCEPT)
-				node.biome = 'registan';
+				node.biome = Biome.ARENATOPIA;
 			else if (node.terme < TAIGA_TEMP)
-				node.biome = 'taige';
+				node.biome = Biome.TAIGA;
 			else if (node.terme > FLASH_TEMP)
-				node.biome = 'piristan';
+				node.biome = Biome.HOGOTOPIA;
 			else if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
-				node.biome = 'grasistan';
+				node.biome = Biome.GAZOTOPIA;
 			else if (node.barxe >= MARSH_THRESH && node.gawe < CLOUD_HEIGHT && adjacentWater)
-				node.biome = 'potistan';
+				node.biome = Biome.FANTOPIA;
 			else if (node.terme < TROPIC_TEMP)
-				node.biome = 'jangle';
+				node.biome = Biome.JANGAL;
 			else
-				node.biome = 'barxojangle';
+				node.biome = Biome.BARSAJANGAL;
 		}
 	}
 }
@@ -533,8 +553,8 @@ function floodFrom(start: Nodo, level: number): number {
 	const queue = new Queue([start], (a, b) => a.gawe - b.gawe); // it shall seed our ocean
 	while (!queue.empty() && queue.peek().gawe <= level) { // flood all available nodes
 		const next = queue.pop();
-		if (next.biome !== 'samud') {
-			next.biome = 'samud';
+		if (next.biome !== Biome.HAI) {
+			next.biome = Biome.HAI;
 			numFilled ++;
 			for (const neighbor of next.neighbors.keys())
 				queue.push(neighbor); // spreading the water to their neighbors
@@ -558,7 +578,7 @@ function floodFrom(start: Nodo, level: number): number {
  * @return the value of attr this node should take
  */
 function getNoiseFunction(node: Nodo, parents: Nodo[], attr: string, surf: Surface, rng: Random,
-						  maxScale: number, level: number, slope: number) {
+						  maxScale: number, level: number, slope: number): number {
 	let scale = 0;
 	let weightSum = 0;
 	let value = 0;
@@ -585,15 +605,14 @@ function getNoiseFunction(node: Nodo, parents: Nodo[], attr: string, surf: Surfa
 	return value;
 }
 
-
-function bellCurve(x: number) {
+function bellCurve(x: number): number {
 	return (1 - x*x*(1 - x*x/4));
 }
 
-function digibbalCurve(x: number) {
+function digibbalCurve(x: number): number {
 	return Math.sqrt(3125/512)*x*(1 - x*x*(1 - x*x/4));
 }
 
-function wibbleCurve(x: number) {
+function wibbleCurve(x: number): number {
 	return 1 + Math.cos(12*Math.PI*x)/6;
 }

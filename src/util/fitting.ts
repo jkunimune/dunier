@@ -21,7 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {circumcenter, Matrix} from "./util.js";
+import {Matrix} from "./util.js";
+import {circumcenter} from "./geometry.js";
 
 
 /**
@@ -35,7 +36,7 @@ export function circularRegression(
 	points: {x: number, y: number}[]): {cx: number, cy: number, R: number} {
 	if (points.length <= 1)
 		throw "you need more than one point to fit a circle, dingus.";
-	else if (points.length == 2)
+	else if (points.length === 2)
 		throw "I suppose I could fit a line thru these two points, but with the way you've parameterized it, that's not really doable.";
 	else if (points.length === 3) {
 		const c = circumcenter(points);

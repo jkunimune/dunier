@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {Nodo, Surface, Triangle} from "../planet/surface.js";
-import {chordCenter, filterSet, longestShortestPath, Vector} from "../util/util.js";
+import {filterSet, longestShortestPath} from "../util/util.js";
 import {World} from "../society/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../society/civ.js";
@@ -30,6 +30,8 @@ import {delaunayTriangulate} from "../util/delaunay.js";
 import {circularRegression} from "../util/fitting.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 import {assert_xy, endpoint, PathSegment, Place} from "../util/coordinates.js";
+import {chordCenter, Vector} from "../util/geometry.js";
+import {Biome} from "../society/terrain.js";
 
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
@@ -39,19 +41,18 @@ const N_DEGREES = 6; // number of line segments into which to break one radian o
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 
 const BIOME_COLORS = new Map([
-	['samud',       '#06267f'],
-	['lage',        '#06267f'],
-	['potistan',    '#444921'],
-	['barxojangle', '#176D0D'],
-	['jangle',      '#647F45'],
-	['taige',       '#4EA069'],
-	['piristan',    '#DD9C6F'],
-	['grasistan',   '#BED042'],
-	['registan',    '#F5E292'],
-	['tundre',      '#FFFFFF'],
-	['aise',        '#FFFFFF'],
-	['kagaze',      '#FAF2E4'],
-	[null,          '#000000'],
+	[Biome.HAI,         '#06267f'],
+	[Biome.LAK,         '#06267f'],
+	[Biome.FANTOPIA,    '#444921'],
+	[Biome.BARSAJANGAL, '#176D0D'],
+	[Biome.JANGAL,      '#647F45'],
+	[Biome.TAIGA,       '#4EA069'],
+	[Biome.HOGOTOPIA,   '#DD9C6F'],
+	[Biome.GAZOTOPIA,   '#BED042'],
+	[Biome.ARENATOPIA,  '#F5E292'],
+	[Biome.TUNDRA,      '#FFFFFF'],
+	[Biome.AIS,         '#FFFFFF'],
+	[null,              '#FAF2E4'],
 ]);
 
 const COUNTRY_COLORS = [
@@ -145,7 +146,7 @@ export class Chart {
 	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter = 'nol',
 		   nade = true, kenare = true, shade = false,
 		   civLabels = false, geoLabels = false,
-		   fontSize: number = 2, style: string = null): void {
+		   fontSize = 2, style: string = null): void {
 		const bbox = this.projection.getDimensions();
 		svg.setAttribute('viewBox',
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
@@ -172,45 +173,45 @@ export class Chart {
 		let nadorang = 'none';
 		if (marorang === 'nili') { // color the sea deep blue
 			this.fill(
-				filterSet(surface.nodos, n => n.biome === 'samud'),
-				g, BIOME_COLORS.get('samud'));
-			nadorang = BIOME_COLORS.get('samud');
+				filterSet(surface.nodos, n => n.biome === Biome.HAI),
+				g, BIOME_COLORS.get(Biome.HAI), true);
+			nadorang = BIOME_COLORS.get(Biome.HAI);
 		}
 		else if (marorang === 'gawia') { // color the sea by altitude
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
 				const min = (i !== 0) ? i * DEPTH_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Number.POSITIVE_INFINITY;
 				this.fill(
-					filterSet(surface.nodos, n => n.biome === 'samud' && -n.gawe >= min && -n.gawe < max),
-					g, DEPTH_COLORS[i]); // TODO: enforce contiguity of shallow ocean?
+					filterSet(surface.nodos, n => n.biome === Biome.HAI && -n.gawe >= min && -n.gawe < max),
+					g, DEPTH_COLORS[i], true); // TODO: enforce contiguity of shallow ocean?
 			}
 			nadorang = DEPTH_COLORS[0]; // TODO: outline ocean + cerni nade?
 		}
 
 		if (zemrang === 'jivi') { // draw the biomes
 			for (const biome of BIOME_COLORS.keys())
-				if (biome !== 'samud')
+				if (biome !== Biome.HAI)
 					this.fill(
 						filterSet(surface.nodos, n => n.biome === biome),
-						g, BIOME_COLORS.get(biome));
+						g, BIOME_COLORS.get(biome), false);
 		}
 		else if (zemrang === 'politiki' && world !== null) { // draw the countries
 			this.fill(
-				filterSet(surface.nodos, n => n.biome !== 'samud'),
-				g, BIOME_COLORS.get('kagaze'));
+				filterSet(surface.nodos, n => n.biome !== Biome.HAI),
+				g, BIOME_COLORS.get(null), true);
 			const biggestCivs = world.getCivs(true).reverse();
 			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i++)
 				this.fill(
-					filterSet(biggestCivs.pop().nodos, n => n.biome !== 'samud'),
-					g, COUNTRY_COLORS[i]);
+					filterSet(biggestCivs.pop().nodos, n => n.biome !== Biome.HAI),
+					g, COUNTRY_COLORS[i], true);
 		}
 		else if (zemrang === 'gawia') { // color the sea by altitude
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Number.POSITIVE_INFINITY;
 				this.fill(
-					filterSet(surface.nodos, n => n.biome !== 'samud' && n.gawe >= min && n.gawe < max),
-					g, ALTITUDE_COLORS[i]);
+					filterSet(surface.nodos, n => n.biome !== Biome.HAI && n.gawe >= min && n.gawe < max),
+					g, ALTITUDE_COLORS[i], true);
 			}
 		}
 
@@ -231,9 +232,9 @@ export class Chart {
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
 					this.fill(
-						filterSet(civ.nodos, n => n.biome !== 'samud'),
+						filterSet(civ.nodos, n => n.biome !== Biome.HAI),
 						titledG,
-						'none', '#000', 0.7).setAttribute('pointer-events', 'all');
+						'none', true, '#000', 0.7).setAttribute('pointer-events', 'all');
 				// }
 			}
 		}
@@ -246,7 +247,7 @@ export class Chart {
 			for (const civ of world.getCivs()) // TODO: the hover text should go on this
 				if (civ.getPopulation() > 0)
 					this.label(
-						[...civ.nodos].filter(n => n.biome !== 'samud' && n.biome !== 'lage'),
+						[...civ.nodos].filter(n => !n.isWater()),
 						civ.getName().toString(style),
 						svg,
 						fontSize);
@@ -258,15 +259,17 @@ export class Chart {
 	 * @param nodos Iterator of Node to be colored in.
 	 * @param svg object on which to put the Path.
 	 * @param color color of the interior.
+	 * @param greeble whether to greeble the edge
 	 * @param stroke color of the outline.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
 	 * @return the newly created element encompassing these triangles.
 	 */
-	fill(nodos: Set<Nodo>, svg: SVGGElement, color: string,
-		 stroke: string = 'none', strokeWidth: number = 0): SVGPathElement {
+	fill(nodos: Set<Nodo>, svg: SVGGElement, color: string, greeble: boolean,
+		 stroke = 'none', strokeWidth = 0): SVGPathElement {
 		if (nodos.size <= 0)
 			return this.draw([], svg);
-		const segments = this.projection.project(Chart.outline(nodos), true);
+		const segments = this.projection.project(
+			Chart.outline(nodos, greeble), true);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
@@ -298,7 +301,7 @@ export class Chart {
 	 * @param triangles Array of Triangle to shade.
 	 * @param svg SVG object on which to shade.
 	 */
-	shade(triangles: Set<Triangle>, svg: SVGGElement) { // TODO use separate delaunay triangulation
+	shade(triangles: Set<Triangle>, svg: SVGGElement): void { // TODO use separate delaunay triangulation
 		if (!triangles)
 			return;
 
@@ -307,7 +310,7 @@ export class Chart {
 		for (const t of triangles) { // start by computing slopes of all of the things
 			const p = [];
 			for (const node of t.vertices) {
-				const {x, y} = this.projection.projectPoint(node.ф, node.λ);
+				const {x, y} = this.projection.projectPoint(node);
 				const z = Math.max(0, node.gawe);
 				p.push(new Vector(x, -y, z));
 			}
@@ -355,14 +358,14 @@ export class Chart {
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.projection.project(Chart.outline(new Set(nodos)), true); // do the projection
+		const path = this.projection.project(Chart.outline(new Set(nodos), false), true); // do the projection
 		if (path.length === 0)
 			return null;
 
 		for (let i = path.length - 1; i >= 1; i --) { // convert it into a simplified polygon
 			if (path[i].type === 'A') { // turn arcs into triscadecagons TODO: find out if this can create coincident nodes and thereby Delaunay Triangulation to fail
-				const start = assert_xy(endpoint(path[i-1].args));
-				const end = assert_xy(endpoint(path[i].args));
+				const start = assert_xy(endpoint(path[i-1]));
+				const end = assert_xy(endpoint(path[i]));
 				const l = Math.hypot(end.x - start.x, end.y - start.y);
 				const r = Math.abs(path[i].args[0] + path[i].args[1])/2;
 				const c = chordCenter(start, end, r,
@@ -479,7 +482,7 @@ export class Chart {
 		while (candidates.length < RALF_NUM_CANDIDATES && minClearance >= minFontSize) {
 			minClearance /= 1.4; // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
 			const minLength = minClearance*aspect;
-			const usedPoints: Set<number> = new Set();
+			const usedPoints = new Set<number>();
 			while (usedPoints.size < centers.length) {
 				const newEndpoint = longestShortestPath(
 					centers,
@@ -662,56 +665,80 @@ export class Chart {
 	 * @param civ the Civ whose outline is desired
 	 */
 	static border(civ: Civ): PathSegment[] {
-		const landNodos = filterSet(civ.nodos, (n) => n.biome !== 'samud');
-		return Chart.outline(landNodos);
+		const landNodos = filterSet(civ.nodos, (n) => n.biome !== Biome.HAI);
+		return Chart.outline(landNodos, true);
 	}
 
 	/**
 	 * create an ordered Iterator of segments that form the boundary of these nodos.
 	 * @param nodos Set of Node that are part of this group.
+	 * @param greeble whether to greeble non-coastlines
 	 * @return Array of PathSegments, ordered widdershins.
 	 */
-	static outline(nodos: Nodo[] | Set<Nodo>): PathSegment[] {
+	static outline(nodos: Nodo[] | Set<Nodo>, greeble: boolean): PathSegment[] {
 		nodos = new Set(nodos);
 		const accountedFor = new Set(); // keep track of which Edge have been done
-		const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire map?
-		for (let ind of nodos) { // look at every included node
-			for (let way of ind.neighbors.keys()) { // and every node adjacent to an included one
-				if (nodos.has(way))    continue; // (we only care if that adjacent node is excluded)
-				const startingEdge = ind.neighbors.get(way); // the edge between them defines the start of the loop
-				if (accountedFor.has(startingEdge)) continue; // (and can ignore edges we've already hit)
+		const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire surface?
+		for (let inNodo of nodos) { // look at every included node
+			for (let esNodo of inNodo.neighbors.keys()) { // and every node adjacent to an included one
+				if (nodos.has(esNodo))
+					continue; // (we only care if that adjacent node is excluded)
+				const startingEdge = inNodo.neighbors.get(esNodo); // the edge between them defines the start of the loop
+				if (accountedFor.has(startingEdge))
+					continue; // (and can ignore edges we've already hit)
 
 				const loopIdx = output.length;
 				do {
-					const next = ind.leftOf(way); // look for the next triangle, going widdershins
+					const next = inNodo.leftOf(esNodo); // look for the next triangle, going widdershins
+
 					if (next !== null) { // assuming there is one,
 						const vertex = next.circumcenter; // pick out its circumcenter to plot
-						output.push({type: 'L', args: [vertex.ф, vertex.λ]}); // make the Path segment
-						const lastEdge = ind.neighbors.get(way);
-						accountedFor.add(lastEdge); // check this edge off
-						if (nodos.has(next.acrossFrom(lastEdge))) // then, depending on the state of the Node after that Triangle
-							ind = next.acrossFrom(lastEdge); // advance one of the state nodos
+						const edge = inNodo.neighbors.get(esNodo); // and the edge between them
+
+						// add the edge to the complete Path
+						if (greeble || edge.isCoast) {
+							let path;
+							if (edge.triangleR === next)
+								path = edge.path;
+							else
+								path = edge.path.slice().reverse();
+							for (const place of path.slice(1))
+								output.push({type: 'L', args: [place.ф, place.λ]});
+						}
+						else {
+							output.push({type: 'L', args: [vertex.ф, vertex.λ]}); // make the Path segment
+						}
+
+						accountedFor.add(edge); // check this edge off
+						if (nodos.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
+							inNodo = next.acrossFrom(edge); // advance one of the state nodos
 						else
-							way = next.acrossFrom(lastEdge);
+							esNodo = next.acrossFrom(edge);
 					}
 					else { // if there isn't a next triangle
 						if (output.length > loopIdx)
 							output.push({type: 'L', args: [Number.NEGATIVE_INFINITY, Number.NaN]}); // draw a line to infinity
 						else
 							break; // unless you're trying to start a new seccion; the lines to infinity must be in the middle of seccions
-						way = ind;
+
+						esNodo = inNodo;
 						let i = 0;
 						do {
-							way = way.surface.edge.get(way).next; // and shimmy way around the internal portion of the edge
+							esNodo = esNodo.surface.edge.get(esNodo).next; // and shimmy esNodo around the internal portion of the edge
 							i ++;
-						} while (nodos.has(way)); // until it becomes external again
-						ind = way.surface.edge.get(way).prev; // then, grab the new ind and continue
+						} while (nodos.has(esNodo)); // until it becomes external again
+
+						inNodo = esNodo.surface.edge.get(esNodo).prev; // then, grab the new inNodo and continue
 					}
-				} while (ind.neighbors.get(way) !== startingEdge && output.length < 10000); // continue until you go all the way around this loop
+				} while (inNodo.neighbors.get(esNodo) !== startingEdge && output.length < 100000); // continue until you go all the esNodo around this loop
 
 				if (loopIdx < output.length) {
 					output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
 					output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
+				}
+				if (!MapProjection.isClosed(output)) {
+					console.log(output);
+					throw "bad";
 				}
 			}
 		}
@@ -727,7 +754,7 @@ export class Chart {
 	 */
 	static aggregate(lines: Iterable<Place[]>): PathSegment[] {
 		const queue = [...lines];
-		const consolidated: Set<Place[]> = new Set(); // first, consolidate
+		const consolidated = new Set<Place[]>(); // first, consolidate
 		const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
 		const tails: Map<Place, Place[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
 		const torsos: Map<Place, {containing: Place[], index: number}> = new Map(); // map from midpoints to line containing midpoint

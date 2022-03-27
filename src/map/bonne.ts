@@ -24,7 +24,7 @@
 import {MapProjection} from "./projection.js";
 import {Surface} from "../planet/surface.js";
 import {linterp} from "../util/util.js";
-import {PathSegment} from "../util/coordinates.js";
+import {PathSegment, Place, Point} from "../util/coordinates.js";
 
 export class Bonne extends MapProjection {
 	private readonly EDGE_RESOLUTION = 18; // the number of points per radian
@@ -61,12 +61,12 @@ export class Bonne extends MapProjection {
 		this.geoEdges = MapProjection.buildEdges(
 			this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges
 
-		let top = this.projectPoint(this.maxф, 0).y; // then determine the dimensions of this map
-		let bottom = this.projectPoint(this.minф, 0).y;
+		let top = this.projectPoint({ф: this.maxф, λ: 0}).y; // then determine the dimensions of this map
+		let bottom = this.projectPoint({ф: this.minф, λ: 0}).y;
 		let right = 0;
 		for (const ф of surface.refLatitudes.concat(this.minф, this.maxф)) {
 			if (ф >= this.minф && ф <= this.maxф) {
-				const {x, y} = this.projectPoint(ф, this.maxλ);
+				const {x, y} = this.projectPoint({ф: ф, λ: this.maxλ});
 				if (x > right)
 					right = x;
 				if (y < top)
@@ -85,23 +85,23 @@ export class Bonne extends MapProjection {
 		this.setDimensions(-right, right, top, bottom);
 	}
 
-	projectPoint(ф: number, λ: number): { x: number; y: number } {
-		const y0 = this.yVertex(ф);
-		const s1 = this.sRadian(ф);
+	projectPoint(point: Place): Point {
+		const y0 = this.yVertex(point.ф);
+		const s1 = this.sRadian(point.ф);
 		if (Number.isFinite(this.yJong)) {
 			const R = y0 - this.yJong;
 			return {
-				x: R*Math.sin(s1/R*λ),
-				y: R*Math.cos(s1/R*λ) + this.yJong };
+				x: R*Math.sin(s1/R*point.λ),
+				y: R*Math.cos(s1/R*point.λ) + this.yJong };
 		}
 		else
 			return {
-				x: s1*λ,
+				x: s1*point.λ,
 				y: y0 };
 	}
 
 	projectParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
-		const {x, y} = this.projectPoint(ф, λ1);
+		const {x, y} = this.projectPoint({ф: ф, λ: λ1});
 		if (Number.isFinite(this.yJong)) {
 			const r = Math.hypot(x, y - this.yJong);
 			return [{
@@ -128,15 +128,17 @@ export class Bonne extends MapProjection {
 			let ф = ф0 + (ф1 - ф0)*i/n;
 			if (i === 0) ф = ф0; // do this because of roundoff
 			if (i === n) ф = ф1;
-			const {x, y} = this.projectPoint(ф, λ);
+			const {x, y} = this.projectPoint({ф: ф, λ: λ});
 			edge.push({type: 'L', args: [x, y]});
 		}
+		const test = this.projectPoint({ф: ф1, λ: λ});
+		console.assert(test.x === edge[edge.length-1].args[0] && test.y === edge[edge.length-1].args[1]);
 		return edge;
 	}
 
 
 	private sRadian(ф: number): number {
-		return linterp(ф, this.фRef, this.sRef);
+		return linterp(ф, this.фRef, this.sRef); // TODO: use better interpolation
 	}
 
 	private yVertex(ф: number): number {

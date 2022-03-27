@@ -24,7 +24,7 @@
 import {Surface} from "../planet/surface.js";
 import {MapProjection} from "./projection.js";
 import {linterp} from "../util/util.js";
-import {PathSegment} from "../util/coordinates.js";
+import {PathSegment, Place, Point} from "../util/coordinates.js";
 
 /**
  * a pseudocylindrical equal-area projection similar to Eckert IV or Natural Earth
@@ -64,8 +64,10 @@ export class EqualArea extends MapProjection {
 			this.yRef[0]);
 	}
 
-	projectPoint(ф: number, λ: number): {x: number, y: number} {
-		return {x: λ*linterp(ф, this.фRef, this.xRef), y: linterp(ф, this.фRef, this.yRef)}; // TODO: use better interpolacion
+	projectPoint(point: Place): Point {
+		return {
+			x: linterp(point.ф, this.фRef, this.xRef)*point.λ,
+			y: linterp(point.ф, this.фRef, this.yRef)}; // TODO: use better interpolacion
 	}
 
 	projectMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
@@ -85,7 +87,7 @@ export class EqualArea extends MapProjection {
 		}
 		for (let i = i0; i !== i1; i += Math.sign(i1 - i0))
 			edge.push({type: 'L', args: [λ*this.xRef[i], this.yRef[i]]});
-		const {x, y} = this.projectPoint(ф1, λ);
+		const {x, y} = this.projectPoint({ф: ф1, λ: λ});
 		edge.push({type: 'L', args: [x, y]});
 		return edge;
 	}
