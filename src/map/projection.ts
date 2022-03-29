@@ -320,39 +320,44 @@ export abstract class MapProjection {
 
 		const output: PathSegment[] = []; // now start re-stitching it all together
 		let sectionIndex = 0;
-		let supersectionStart = null;
+		let supersectionStart = -1;
 		let startingANewSupersection = true;
 		while (true) {
+
 			let jinSection = sections[sectionIndex]; // take a section
 			if (!startingANewSupersection)
 				jinSection = jinSection.slice(1); // take off its moveto
 			else
-				supersectionStart = endpoint(jinSection[0]);
+				supersectionStart = sectionIndex;
+			startingANewSupersection = false; // turn off this notification flag until we need it agen
+
 			output.push(...jinSection); // add its points to the thing
 			weHaveDrawn[sectionIndex] = true; // mark it as drawn
 			const sectionEnd = endpoint(jinSection[jinSection.length-1]); // then look at where on Earth we are
 
 			if (!closePath) { // if we're not worrying about closing it off
-				sectionIndex = null; // forget it and move onto a random section
+				startingANewSupersection = true; // forget it and move onto a random section
 			}
 			else {
 				const endPosition = MapProjection.getPositionOnEdge(
 					sectionEnd, edges);
 
 				if (endPosition !== null) { // if we ended hitting a wall
-					const endLoop = edges[endPosition.loop];
+					const endLoop = edges[endPosition.loop]; // then we should move to another point on a wall
 
 					let bestSection = null, bestPositionIndex = null;
 					for (let i = 0; i < startPositions.length; i ++) { // check the remaining sections
 						const startPosition = startPositions[i];
 						if (startPosition !== null && startPosition.loop === endPosition.loop) { // for any on the same edge loop as us
-							if (startPosition.index < endPosition.index)
-								startPosition.index += endLoop.length;
-							if (bestPositionIndex === null || startPosition.index < bestPositionIndex) {
-								bestSection = i; // calculate which one should come next
-								bestPositionIndex = startPosition.index;
+							if (!weHaveDrawn[i] || i === supersectionStart) {
+								if (startPosition.index < endPosition.index)
+									startPosition.index += endLoop.length;
+								if (bestPositionIndex === null || startPosition.index < bestPositionIndex) {
+									bestSection = i; // calculate which one should come next
+									bestPositionIndex = startPosition.index;
+								}
+								startPosition.index %= endLoop.length;
 							}
-							startPosition.index %= endLoop.length;
 						}
 					}
 					if (bestSection === null)
@@ -367,9 +372,9 @@ export abstract class MapProjection {
 						output.push({type: edge.type,
 							         args: [targetPlace.s, targetPlace.t]});
 					}
-					if (weHaveDrawn[bestSection]) // if you rapd around to a place we've already been
-						sectionIndex = null; // move on to a random section
-					else // if you found a new place to restart
+					if (bestSection === supersectionStart) // if this brings us back to where we started this supersection
+						startingANewSupersection = true; // move on randomly
+					else if (!weHaveDrawn[bestSection]) // otherwise, if you found a fresh place to restart
 						sectionIndex = bestSection; // go to it
 				}
 				else { // if we ended in the middle someplace
@@ -381,26 +386,18 @@ export abstract class MapProjection {
 							break;
 						}
 					}
-					console.assert(sectionIndex !== null, "I was left hanging.", edges, segments, sections, weHaveDrawn);
+					if (sectionIndex === null)
+						throw `I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`;
 					if (weHaveDrawn[sectionIndex]) // if that one has already been drawn
-						sectionIndex = null; // move on randomly
+						startingANewSupersection = true; // move on randomly
 				}
 			}
-			if (sectionIndex === null) { // if we were planning to move onto whatever else for the next section
-				const supersectionEnd = endpoint(output[output.length-1]); // first check that we correctly closed this one
-				console.assert(supersectionStart !== null &&
-				               supersectionStart.s === supersectionEnd.s &&
-				               supersectionStart.t === supersectionEnd.t,
-					"I think that this outline is self-intersecting."); // TODO: to make this more robust, I can have it search for the next section from the section start, not end
+			if (startingANewSupersection) { // if we were planning to move onto whatever else for the next section
 				sectionIndex = 0;
 				while (sectionIndex < sections.length && weHaveDrawn[sectionIndex])
 					sectionIndex ++; // sweep thru it until we find one that has not been drawn
 				if (sectionIndex === sections.length) // if you can't find any
 					break; // we're done!
-				startingANewSupersection = true;
-			}
-			else { // if we're continuing an existing supersection
-				startingANewSupersection = false; // say so
 			}
 		}
 
