@@ -32,6 +32,7 @@ import {circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
 
 const INTEGRATION_RESOLUTION = 32;
 const TILE_AREA = 30000; // target area of a tile in km^2
+const FINEST_SCALE = 20; // the smallest edge lengths that it will generate
 
 
 /**
@@ -159,7 +160,7 @@ export abstract class Surface {
 		for (const triangle of this.triangles) {
 			for (const edge of triangle.edges) {
 				if (edge.path.length <= 2) {
-					edge.path = edge.coordinateTransform(noisyProfile(rng));
+					edge.path = edge.coordinateTransform(noisyProfile(edge.length/FINEST_SCALE, 0.3, rng));
 				}
 			}
 		}
