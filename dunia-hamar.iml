@@ -3,7 +3,10 @@
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output />
     <content url="file://$USER_HOME$/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Python 3.9" />
-    <content url="file://$MODULE_DIR$" />
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/bootstrap-4.5.2-dist" />
+      <excludeFolder url="file://$MODULE_DIR$/src/lib" />
+    </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="feather-icons" level="application" />
   </component>

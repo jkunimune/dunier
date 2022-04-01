@@ -239,32 +239,29 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 
 /**
  * randomly generate a series of points that form a fractyllic squiggly line.  it will
- * start at (0, 0), and at (0, 1), and will all fall within the envelope formed with
- * (1, 1/2) and (-1, 1/2).
+ * start at (0, 0), and at (0, 1), and will all fall within the envelope formed by the
+ * provided bounds polygon.
  * @param maxLength the segment will have at most this many segments
- * @param smoothness a factor that determines the steepness of the fractal
  * @param rng the random number generator
+ * @param bounds a closed polygon that the profile will try not to cross; must be convex
  */
-export function noisyProfile(maxLength: number, smoothness: number, rng: Random): Location[] {
-	if (smoothness <= 0 || smoothness >= 0.5)
-		throw `smoothness must be between 0 and 1/2, but you gave ${smoothness}`;
+export function noisyProfile(maxLength: number, rng: Random, bounds: Location[] = []): Location[] {
 	const profile = [{t: 0, s: 0}];
-	const kMax = Math.max(0, Math.floor(Math.log2(maxLength)));
-	const len = Math.pow(2, kMax);
-	for (let i = 1; i < len; i ++) {
+	const maxIndex = Math.max(0, Math.floor(Math.log2(maxLength)));
+	const length = Math.pow(2, maxIndex);
+	for (let i = 1; i < length; i ++)
 		profile.push(null);
-	}
 	profile.push({t: 1, s: 0});
 	let k = 0;
-	while (k < kMax) { // at each scale
-		const stepSize = len/Math.pow(2, k + 1);
-		const range = smoothness*Math.pow((1 - smoothness)/2., k);
-		for (let i = stepSize; i < len; i += 2*stepSize) { // iterate thru the relevant nodes
+	while (k < maxIndex) { // at each scale
+		const stepSize = length/Math.pow(2, k + 1);
+		const scale = 0.5*stepSize/length;
+		for (let i = stepSize; i < length; i += 2*stepSize) { // iterate thru the relevant nodes
 			console.assert(profile[i] === null);
 			const leftParent = profile[i - stepSize];
 			const riteParent = profile[i + stepSize];
 			const mean = (leftParent.s + riteParent.s)/2;
-			profile[i] = { t: i/len, s: mean + range*Math.asin(rng.uniform(-1, 1))/(Math.PI/2) }; // TODO: arcsin
+			profile[i] = { t: i/length, s: rng.normal(mean, scale) };
 		}
 		k ++;
 	}

@@ -32,7 +32,7 @@ import {circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
 
 const INTEGRATION_RESOLUTION = 32;
 const TILE_AREA = 30000; // target area of a tile in km^2
-const FINEST_SCALE = 20; // the smallest edge lengths that it will generate
+const FINEST_SCALE = 5; // the smallest edge lengths that it will generate
 
 
 /**
@@ -160,7 +160,7 @@ export abstract class Surface {
 		for (const triangle of this.triangles) {
 			for (const edge of triangle.edges) {
 				if (edge.path.length <= 2) {
-					edge.path = edge.coordinateTransform(noisyProfile(edge.length/FINEST_SCALE, 0.3, rng));
+					edge.path = edge.coordinateTransform(noisyProfile(edge.transverseLength()/FINEST_SCALE, rng));
 				}
 			}
 		}
@@ -477,6 +477,16 @@ export class Edge {
 	}
 
 	/**
+	 * this length must be computed after the edge has ben fully initialized and will only
+	 * be accurate if it is short.
+	 */
+	transverseLength(): number {
+		const a = this.triangleL.circumcenterPos;
+		const b = this.triangleR.circumcenterPos;
+		return Math.sqrt(a.minus(b).sqr());
+	}
+
+	/**
 	 * transform these points onto the surface so that t maps to the direction along the
 	 * voronoi edge, and s maps to the perpendicular direction.  specifically (0,0)
 	 * corresponds to triangleL, (0, 1) corresponds to triangleR, and (1, 1/2) corresponds
@@ -488,16 +498,8 @@ export class Edge {
 		const origin = this.triangleL.circumcenterPos; // compute its coordinate system
 		const et = this.triangleR.circumcenterPos.minus(origin);
 		const en = this.node0.normal.plus(this.node1.normal);
-		let es = en.cross(et); // this one's magnitude is not set in stone
-		const limit = {
-			s: this.node0.pos.minus(origin).dot(es)/es.sqr(),
-			t: this.node0.pos.minus(origin).dot(et)/et.sqr(),
-		};
-		const sMax = Math.min(
-			Math.abs(limit.s/(2*limit.t)),
-			Math.abs(limit.s/(2*(1 - limit.t)))
-		);
-		es = es.times(sMax);
+		let es = en.cross(et);
+		es = es.times(Math.sqrt(et.sqr()/es.sqr())); // make sure |et| == |es|
 
 		// then apply the linear transformation
 		const output: Place[] = [];
