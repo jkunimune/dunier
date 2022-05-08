@@ -124,10 +124,11 @@ export function distance(p: Point, a: Point, b: Point): number {
 
 
 /**
- * find the intersection between two line segments.  for the purposes of this function,
- * when one endpoint is coincident with the other segment, it is not counted as an
- * intersection.  it just works out better this way for the purpose of edges
- * @returns the location where
+ * find the intersection between two line segments, or determine that there isn't one.
+ * for the purposes of this function, when one endpoint is coincident with the other
+ * segment, it is not counted as an intersection.  it just works out better this way for
+ * the purpose of edges.
+ * @returns the location where they cross, or null if they don't
  */
 export function lineLineIntersection(
 	p1: Point, p2: Point,
@@ -147,6 +148,24 @@ export function lineLineIntersection(
 	else {
 		throw "I haven't implemented obleke intersections, but if you want, try https://blogs.sas.com/content/iml/2018/07/09/intersection-line-segments.html";
 	}
+}
+
+
+/**
+ * find the intersection between two lines given in point–velocity form, returning it in
+ * both cartesian and parametric coordinates.
+ * @returns the location where the lines cross and the corresponding times
+ */
+export function trajectoryIntersection(
+	a: Point, va: { x: number, y: number },
+	b: Point, vb: { x: number, y: number }): { x: number, y: number, ta: number, tb: number} {
+	const ta = (vb.x*(a.y - b.y) - vb.y*(a.x - b.x))/
+		(va.x*vb.y - va.y*vb.x);
+	const x = a.x + va.x*ta;
+	const y = a.y + va.y*ta;
+	const tb = (vb.y === 0) ? (x - b.x)/vb.x:
+	                           (y - b.y)/vb.y;
+	return { x: x, y: y, ta: ta, tb: tb };
 }
 
 

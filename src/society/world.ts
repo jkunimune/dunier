@@ -244,15 +244,24 @@ export class World {
 	 * get a copied list of the id of every country currently in this world
 	 * @param sorted if true, return items sorted from largest to smallest
 	 * @param minSize exclude all countries with fewer than minSize tiles
+	 * @param minNumber return at least this many, even if they are below minSize
 	 */
-	getCivs(sorted: boolean = false, minSize: number = 0): Civ[] {
+	getCivs(sorted: boolean = false, minSize: number = 0, minNumber: number = 0): Civ[] {
 		let output = [];
 		for (const civ of this.civs)
 			output.push(civ);
 		if (sorted)
 			output.sort((a, b) => b.getArea() - a.getArea());
+		if (minNumber > 0) {
+			if (!sorted)
+				throw "I have only implemented the minNumber constraint when the countries are sorted by size";
+			minNumber = Math.min(minNumber, output.length);
+			if (minNumber === 0)
+				throw "There are no countries in the world";
+			minSize = Math.min(minSize, output[minNumber - 1].nodos.size());
+		}
 		if (minSize > 0)
-			output = output.filter((c) => c.nodos.size() > minSize);
+			output = output.filter((c) => c.nodos.size() >= minSize);
 		return output;
 	}
 
@@ -262,7 +271,7 @@ export class World {
 	 */
 	getCiv(id: number): Civ {
 		for (const civ of this.civs)
-			if (civ.id == id)
+			if (civ.id === id)
 				return civ;
 		throw new RangeError(`there is no civ with id ${id}`);
 	}

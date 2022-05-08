@@ -67,6 +67,7 @@ const TERRAIN_COLORMAP = [
 ];
 
 const MIN_SIZE_TO_LIST = 6;
+const MIN_COUNTRIES_TO_LIST = 3;
 const MAX_COUNTRIES_TO_LIST = 20;
 
 export const USER_STRINGS = loadJSON(`../../res/tarje/${$('#bash')[0].textContent}.json`);
@@ -249,7 +250,7 @@ function historyApply(): void {
 	mapper.depict(surface, world, $('#history-map')[0], 'politiki', 'nili');
 
 	console.log("mute ba chuze bil...");
-	const countries = world.getCivs(true, MIN_SIZE_TO_LIST) // list the biggest countries for the centering selection
+	const countries = world.getCivs(true, MIN_SIZE_TO_LIST, MIN_COUNTRIES_TO_LIST) // list the biggest countries for the centering selection
 		.slice(0, MAX_COUNTRIES_TO_LIST); // TODO: if there are no countries, use fisickall rejons instead
 	const picker = document.getElementById('map-jung');
 	picker.textContent = "";
@@ -277,7 +278,7 @@ function mapApply(): void {
 	console.log("grafa zemgrafe...");
 	const projection = $('#map-projection').val();
 	const norde = ($('#map-dish').val() === 'norde');
-	const locus = Chart.border(world.getCiv($('#map-jung').val()));
+	const locus = Chart.border(world.getCiv(Number.parseInt($('#map-jung').val())));
 	const zemrang = $('#map-zemrang').val();
 	const marorang = $('#map-hayrang').val();
 	const filter = $('#map-filter').val();
@@ -454,5 +455,6 @@ $('#map-panel :input').on('change', () => {
  */
 $(document).ready(() => {
 	console.log("ready!");
+
 	$('#map-tab').click();
 }); // TODO: warn before leaving page

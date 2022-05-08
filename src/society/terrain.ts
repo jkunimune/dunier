@@ -491,7 +491,7 @@ function addRivers(surf: Surface): void {
 				else
 					seenRightEdge = true;
 			}
-			if (outflow === null || riverDistance.get(vertex) < riverDistance.get(outflow)) // find the vertex with the most ultimate flow
+			if (outflow === null || riverDistance.get(vertex) <= riverDistance.get(outflow)) // find the vertex with the most ultimate flow
 				outflow = vertex;
 			last = next;
 		} while (last !== start);

@@ -26,13 +26,14 @@ import {linterp, noisyProfile} from "../util/util.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
 import {Kultur} from "../society/culture.js";
 import {Biome} from "../society/terrain.js";
-import {Location, Place} from "../util/coordinates.js";
+import {Place, Point} from "../util/coordinates.js";
 import {circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
+import {straightSkeleton} from "../util/straightskeleton.js";
 
 
 const INTEGRATION_RESOLUTION = 32;
 const TILE_AREA = 30000; // target area of a tile in km^2
-const FINEST_SCALE = 5; // the smallest edge lengths that it will generate
+const FINEST_SCALE = 10; // the smallest edge lengths that it will generate
 
 
 /**
@@ -156,14 +157,39 @@ export abstract class Surface {
 		for (const nodo of this.edge.keys()) // and make it back-searchable
 			this.edge.get(this.edge.get(nodo).next).prev = nodo;
 
-		// finally, add the greebles
-		for (const triangle of this.triangles) {
-			for (const edge of triangle.edges) {
-				if (edge.path.length <= 2) {
-					edge.path = edge.coordinateTransform(noisyProfile(edge.transverseLength()/FINEST_SCALE, rng));
+		// now we can save each node's strait skeleton
+		for (const nodo of this.nodos) {
+			const vertices: Point[] = [];
+			for (const {vertex} of nodo.getPolygon()) {
+				vertices.push({
+					x: vertex.minus(nodo.pos).dot(nodo.dong), // project the voronoi polygon into 2D
+					y: vertex.minus(nodo.pos).dot(nodo.nord),
+				});
+			}
+			let skeletonLeaf = straightSkeleton(vertices); // get the strait skeleton
+			for (const {edge} of nodo.getPolygon()) {
+				const arc = skeletonLeaf.pathToNextLeaf();
+				const projectedArc: Vector[] = [];
+				for (const joint of arc) {
+					const {x, y} = joint.value;
+					projectedArc.push( // project it back
+						nodo.pos.plus(
+							nodo.dong.times(x).plus(
+							nodo.nord.times(y))));
 				}
+				if (edge.node0 === nodo) // then save it to the edge
+					edge.backBorder = projectedArc;
+				else
+					edge.foreBorder = projectedArc;
+				skeletonLeaf = arc[arc.length - 1]; // move onto the next one
 			}
 		}
+
+		// finally, add the greebles
+		for (const triangle of this.triangles) // TODO this probably belongs in terrain.ts, no?
+			for (const edge of triangle.edges)
+				if (edge.path === null)
+					edge.path = edge.generateGreebles(rng);
 	}
 
 	/**
@@ -351,6 +377,35 @@ export class Nodo {
 		}
 		return this.area;
 	}
+
+	/**
+	 * return an orderd list that goes around the edge (widdershins, ofc).  each element
+	 * of the list is the circumcenter of a triangle and the edge that leads from it to
+	 * the next one.
+	 */
+	getPolygon(): { vertex: Vector, edge: Edge }[] {
+		const output = [];
+		let start;
+		if (this.surface.edge.has(this))
+			start = this.surface.edge.get(this).prev;
+		else
+			start = this.neighbors.keys().next().value;
+
+		let nodo = start;
+		do {
+			const triangle = this.leftOf(nodo);
+			if (triangle === null)
+				break;
+			nodo = triangle.widershinsOf(nodo);
+
+			output.push({
+				vertex: triangle.centerPos,
+				edge: this.neighbors.get(nodo)
+			});
+		} while (nodo !== start);
+
+		return output;
+	}
 }
 
 
@@ -364,8 +419,8 @@ export class Triangle {
 	public edges: Edge[];
 	public neighbors: Map<Triangle, Edge>;
 	public surface: Surface;
-	public circumcenter: Place;
-	public circumcenterPos: Vector;
+	public center: Place; // circumcenter (the locacion of the vertex on the Voronoi graph)
+	public centerPos: Vector; // circumcenter (in 3D this time)
 
 	public gawe: number;
 	public liwe: number;
@@ -417,11 +472,11 @@ export class Triangle {
 		let z = 0;
 		for (const nodo of projected)
 			z += nodo.z/3;
-		this.circumcenterPos = u.times(x).plus(v.times(y)).plus(n.times(z));
-		this.circumcenter = this.surface.фλ(this.circumcenterPos); // finally, put it back in ф-λ space
+		this.centerPos = u.times(x).plus(v.times(y)).plus(n.times(z));
+		this.center = this.surface.фλ(this.centerPos); // finally, put it back in ф-λ space
 
-		this.ф = this.circumcenter.ф; // and make these values a bit easier to access
-		this.λ = this.circumcenter.λ;
+		this.ф = this.center.ф; // and make these values a bit easier to access
+		this.λ = this.center.λ;
 	}
 
 	/**
@@ -462,6 +517,8 @@ export class Edge {
 	public liwe: number;
 	public isCoast: boolean;
 	public path: Place[];
+	public foreBorder: Vector[]; // these borders are the limits of the greebling
+	public backBorder: Vector[];
 
 	constructor(node0: Nodo, triangleR: Triangle, node1: Nodo, triangleL: Triangle, length: number) {
 		this.node0 = node0; // save these new values for the edge
@@ -470,20 +527,13 @@ export class Edge {
 		this.triangleL = triangleL;
 		this.length = length;
 		this.isCoast = false;
-		this.path = [node0, node1];
+		this.path = null;
 
 		node0.neighbors.set(node1, this);
 		node1.neighbors.set(node0, this);
-	}
 
-	/**
-	 * this length must be computed after the edge has ben fully initialized and will only
-	 * be accurate if it is short.
-	 */
-	transverseLength(): number {
-		const a = this.triangleL.circumcenterPos;
-		const b = this.triangleR.circumcenterPos;
-		return Math.sqrt(a.minus(b).sqr());
+		this.foreBorder = [];
+		this.backBorder = [];
 	}
 
 	/**
@@ -491,20 +541,32 @@ export class Edge {
 	 * voronoi edge, and s maps to the perpendicular direction.  specifically (0,0)
 	 * corresponds to triangleL, (0, 1) corresponds to triangleR, and (1, 1/2) corresponds
 	 * to node1.
-	 * @param points
 	 */
-	coordinateTransform(points: Location[]): Place[] {
+	generateGreebles(rng: Random): Place[] {
 		// define the inicial coordinate vectors
-		const origin = this.triangleL.circumcenterPos; // compute its coordinate system
-		const et = this.triangleR.circumcenterPos.minus(origin);
-		const en = this.node0.normal.plus(this.node1.normal);
-		let es = en.cross(et);
-		es = es.times(Math.sqrt(et.sqr()/es.sqr())); // make sure |et| == |es|
+		const origin = this.triangleL.centerPos; // compute its coordinate system
+		const i = this.triangleR.centerPos.minus(origin);
+		const k = this.node0.normal.plus(this.node1.normal);
+		let j = k.cross(i);
+		j = j.times(Math.sqrt(i.sqr()/j.sqr())); // make sure |i| == |j|
 
-		// then apply the linear transformation
+		// transform the border into the plane
+		const bounds = [];
+		for (const vector of this.foreBorder.concat(this.backBorder))
+			bounds.push({
+				x: vector.minus(origin).dot(i)/i.sqr(),
+				y: vector.minus(origin).dot(j)/j.sqr(),
+			});
+
+		// generate the random curve
+		const points = noisyProfile(
+			FINEST_SCALE/Math.sqrt(i.sqr()),
+			rng, bounds, .35);
+
+		// then transform the result out of the plane
 		const output: Place[] = [];
-		for (const {s, t} of points) {
-			const transformed = origin.plus(es.times(s).plus(et.times(t)));
+		for (const {x, y} of points) {
+			const transformed = origin.plus(i.times(x).plus(j.times(y)));
 			output.push(this.node0.surface.фλ(transformed));
 		}
 		return output;

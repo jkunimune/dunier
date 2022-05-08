@@ -352,13 +352,13 @@ export abstract class MapProjection {
 				const endPosition = MapProjection.getPositionOnEdge(
 					sectionEnd, edges);
 
-				if (endPosition !== null) { // if we ended hitting a wall
+				if (endPosition.loop !== null) { // if we ended hitting a wall
 					const endLoop = edges[endPosition.loop]; // then we should move to another point on a wall
 
 					let bestSection = null, bestPositionIndex = null;
 					for (let i = 0; i < startPositions.length; i ++) { // check the remaining sections
 						const startPosition = startPositions[i];
-						if (startPosition !== null && startPosition.loop === endPosition.loop) { // for any on the same edge loop as us
+						if (startPosition.loop === endPosition.loop) { // for any on the same edge loop as us
 							if (!weHaveDrawn[i] || i === supersectionStart) {
 								if (startPosition.index < endPosition.index)
 									startPosition.index += endLoop.length;
@@ -693,7 +693,8 @@ export abstract class MapProjection {
 							return {
 								place0: place0, place1: place1,
 								loopIndex: i,
-								exiting: (end.λ > start.λ) === (ф̄1 > ф̄0)};
+								exiting: (end.λ > start.λ) === (ф̄1 > ф̄0)
+							};
 					}
 				}
 				else {
@@ -793,7 +794,7 @@ export abstract class MapProjection {
 				}
 			}
 		}
-		return null;
+		return { loop: null, index: null };
 	}
 
 	getDimensions(): { left: number, right: number, top: number, bottom: number, width: number, height: number, diagonal: number } {

@@ -692,11 +692,11 @@ export class Chart {
 					const next = inNodo.leftOf(esNodo); // look for the next triangle, going widdershins
 
 					if (next !== null) { // assuming there is one,
-						const vertex = next.circumcenter; // pick out its circumcenter to plot
+						const vertex = next.center; // pick out its circumcenter to plot
 						const edge = inNodo.neighbors.get(esNodo); // and the edge between them
 
 						// add the edge to the complete Path
-						if (greeble || edge.isCoast) {
+						if (greeble || edge.isCoast) { // TODO: it would be cool if borders between uninhabitable areas were drawn strait
 							let path;
 							if (edge.triangleR === next)
 								path = edge.path;

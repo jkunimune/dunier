@@ -97,7 +97,12 @@ export function delaunayTriangulate(points: Vector[],
 
 	for (const node of nodos.slice(0, sample.length)) // now remove the partition vertices
 		triangles.push(...removeNode(node));
+	for (const triangle of triangles)
+		if (triangle.children === null)
+			for (const nodo of triangle.nodos)
+				console.assert(nodo.i >= 0, triangle, points);
 
+	// finally, convert to built-in types
 	const triangleIdx = triangles.filter((t: DelaunayTriangle) => t.children === null)
 		.map((t: DelaunayTriangle) => t.nodos.map((n: DelaunayNodo) => n.i));
 	const parentIdx = nodos.filter((n: DelaunayNodo) => n.i >= 0)

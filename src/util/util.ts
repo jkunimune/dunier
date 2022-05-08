@@ -25,22 +25,9 @@
 import Queue from "../util/queue.js";
 import {USER_STRINGS} from "../gui/main.js";
 import {Word} from "../language/word.js";
-import {Location} from "./coordinates.js";
+import {Point} from "./coordinates.js";
 import {Random} from "./random.js";
-
-/**
- * return whether these two arrays are equal to each other
- * @param a
- * @param b
- */
-export function arraysEqual(a: number[], b: number[]): boolean {
-	if (a.length !== b.length)
-		return false;
-	for (let i = 0; i < a.length; i ++)
-		if (a[i] !== b[i])
-			return false;
-	return true;
-}
+import {trajectoryIntersection, Vector} from "./geometry.js";
 
 /**
  * maximum index.
@@ -72,6 +59,22 @@ export function legendreP4(y: number): number {
  */
 export function legendreP6(y: number): number {
 	return (((231*y*y - 315)*y*y + 105)*y*y - 5)/16;
+}
+
+export function tanh(x: number): number {
+	if (!Number.isFinite(x) && x < 0) // tanh(-∞) = -1
+		return -1;
+	else if (!Number.isFinite(x) && x > 0) // tanh(+∞) = 1
+		return 1;
+	else { // tanh(x) = (exp(x) - exp(-x))/(exp(x) + exp(-x))
+		const plus = Math.exp(x);
+		const minus = Math.exp(- x);
+		return (plus - minus)/(plus + minus);
+	}
+}
+
+export function arctanh(x: number): number {
+	return (Math.log(1 + x) - Math.log(1 - x))/2.;
 }
 
 /**
@@ -237,35 +240,57 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 	return {points: points, length: length};
 }
 
+
 /**
  * randomly generate a series of points that form a fractyllic squiggly line.  it will
  * start at (0, 0), and at (0, 1), and will all fall within the envelope formed by the
  * provided bounds polygon.
- * @param maxLength the segment will have at most this many segments
+ * @param minScale all segments will be at most this long
  * @param rng the random number generator
- * @param bounds a closed polygon that the profile will try not to cross; must be convex
+ * @param bounds a closed polygon that the profile will try not to cross
+ * @param alpha a dimensionless parameter that alters how noisy it is (limit is 1 or so)
  */
-export function noisyProfile(maxLength: number, rng: Random, bounds: Location[] = []): Location[] {
-	const profile = [{t: 0, s: 0}];
-	const maxIndex = Math.max(0, Math.floor(Math.log2(maxLength)));
-	const length = Math.pow(2, maxIndex);
-	for (let i = 1; i < length; i ++)
-		profile.push(null);
-	profile.push({t: 1, s: 0});
-	let k = 0;
-	while (k < maxIndex) { // at each scale
-		const stepSize = length/Math.pow(2, k + 1);
-		const scale = 0.5*stepSize/length;
-		for (let i = stepSize; i < length; i += 2*stepSize) { // iterate thru the relevant nodes
-			console.assert(profile[i] === null);
-			const leftParent = profile[i - stepSize];
-			const riteParent = profile[i + stepSize];
-			const mean = (leftParent.s + riteParent.s)/2;
-			profile[i] = { t: i/length, s: rng.normal(mean, scale) };
+export function noisyProfile(minScale: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
+	const confirmd = [{x: 0, y: 0}]; // the profile, which we will build gradually
+	const pending = [{x: 1, y: 0}]; // the points that will go in the profile after something else (reversed)
+	while (pending.length > 0) {
+		const last = confirmd[confirmd.length - 1]; // look at the upcoming segment
+		const next = pending[pending.length - 1];
+		const distance = Math.hypot(next.x - last.x, next.y - last.y);
+		if (distance > minScale) { // if it is too long
+			const r0 = new Vector((last.x + next.x)/2, (last.y + next.y)/2, 0); // find the point between them
+			const axis = new Vector((last.y - next.y)/2, (next.x - last.x)/2, 0); // find the axis perpendicular to them
+
+			let min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY; // now enforce the bounds
+			for (let i = 0; i < bounds.length; i ++) {
+				const a = bounds[i];
+				const b = bounds[(i + 1)%bounds.length];
+				const intersect = trajectoryIntersection(
+					r0, axis, a, { x: b.x - a.x, y: b.y - a.y });
+				const rX = new Vector(intersect.x, intersect.y, 0);
+				const yX = (rX.minus(r0)).dot(axis)/axis.sqr();
+				if (yX > 0)
+					max = Math.min(max, yX);
+				else
+					min = Math.max(min, yX);
+			}
+
+			const y = alpha*arctanh(rng.uniform(tanh(min/alpha), tanh(max/alpha))); // TODO: also prevent self-intersection TODO: is there a more efficient function I can use?
+
+			const nov = { x: r0.x + y*axis.x, y: r0.y + y*axis.y };
+			console.assert(Number.isFinite(nov.x), bounds, r0, axis, min, max, y, nov);
+			pending.push(nov); // and check it
 		}
-		k ++;
+		else { // if it is short
+			confirmd.push(pending.pop()); // confirm it
+		}
+
+		if (confirmd.length + pending.length > 1000) {
+			console.error("I think something went rong??");
+			return confirmd.concat(pending.slice().reverse());
+		}
 	}
-	return profile;
+	return confirmd;
 }
 
 

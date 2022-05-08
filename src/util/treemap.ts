@@ -26,6 +26,7 @@ import {Dequeue} from "./dequeue.js";
 
 /**
  * a data structure to keep track of a set of elements with a tree-shaped hierarchy
+ * that also keeps a Map to efficiently look up elements in the Tree
  */
 export class TreeMap<Type> implements Iterable<Type> {
 	private readonly map: Map<Type, Link<Type>>;
@@ -46,7 +47,7 @@ export class TreeMap<Type> implements Iterable<Type> {
 		if (this.seed === null)
 			return 0;
 		else
-			return this.seed.value;
+			return this.seed.total;
 	}
 
 	/**
@@ -84,9 +85,9 @@ export class TreeMap<Type> implements Iterable<Type> {
 		this.map.set(item, childLink);
 		const value = this.valuation(item);
 		do {
-			childLink.value += value;
+			childLink.total += value;
 			childLink = childLink.parent;
-		} while (childLink !== null)
+		} while (childLink !== null);
 	}
 
 	/**
@@ -127,7 +128,7 @@ export class TreeMap<Type> implements Iterable<Type> {
 			let parent = head.parent; // otherwise get its parent
 			parent.children.splice(parent.children.indexOf(head), 1); // erase it from it's parent's memory
 			do {
-				parent.value -= head.value; // reduce all preceding values
+				parent.total -= head.total; // reduce all preceding values
 				parent = parent.parent;
 			} while (parent !== null);
 			this._delete(this.map.get(item)); // then deal with the map recursively
@@ -138,7 +139,7 @@ export class TreeMap<Type> implements Iterable<Type> {
 	 * remove this link and all of its descendants from the map in linear time.
 	 * @param parent
 	 */
-	_delete(parent: Link<Type>) {
+	_delete(parent: Link<Type>): void {
 		this.map.delete(parent.item);
 		for (const child of parent.children)
 			this._delete(child);
@@ -164,9 +165,9 @@ export class TreeMap<Type> implements Iterable<Type> {
 							return {done: false, value: next.item};
 						}
 					}
-				}
+				};
 			}
-		}
+		};
 	}
 
 	[Symbol.iterator](): Iterator<Type> {
@@ -178,12 +179,12 @@ class Link<Type> {
 	public readonly item: Type;
 	public readonly parent: Link<Type>;
 	public readonly children: Link<Type>[];
-	public value: number;
+	public total: number;
 
 	constructor(value: Type, parent: Link<Type>) {
 		this.item = value;
 		this.parent = parent;
 		this.children = [];
-		this.value = 0;
+		this.total = 0;
 	}
 }
