@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="{bash.kode}">
   <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -10,7 +10,7 @@
 
     <link rel="stylesheet" href="/res/style.css">
 
-    <title>Generador de nombres fantásticos &ndash; Dunia Hamar</title>
+    <title>{temnam.{.name}}</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
   </head>
@@ -25,39 +25,39 @@
             dunia hamar
           </a>
 
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="Pasar barra de navegación">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="{menu.muta-fash}">
             <span class="navbar-toggler-icon"></span>
           </button>
 
           <div class="collapse navbar-collapse" id="siri-daweurekia">
             <div class="navbar-nav">
-              <a class="nav-item nav-link" href="./index.html">Mapas</a>
-              <a class="nav-item nav-link" href="./nam.html">Nombres <span class="sr-only">(actual)</span></a>
-              <a class="nav-item nav-link" href="./tema.html">Sobre</a>
-              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">Contáctanos</a>
+              <a class="nav-item nav-link" href="./index.html">{menu.dom}{If"index" <span class="sr-only">{menu.zay}</span>}</a>
+              <a class="nav-item nav-link" href="./nam.html">{menu.nam}{If"nam" <span class="sr-only">{menu.zay}</span>}</a>
+              <a class="nav-item nav-link" href="./tema.html">{menu.tema}{If"tema" <span class="sr-only">{menu.zay}</span>}</a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">{menu.poste}</a>
             </div>
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="Idioma">
+                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="{menu.bash}">
                   <svg class="bi" width="20" viewBox="-38 -38 76 86" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path fill="none" stroke-width="4" d="M0,-36 A36,36,0,0,0,0,36 A18,36,0,0,0,0,-36 A18,36,0,0,0,0,36 A36,36,0,0,0,0,-36 L0,36 M-36,0 L36,0 M-25.5,25.5 A36,36,0,0,1,25.5,25.5 M-25.5,-25.5 A36,36,0,0,0,25.5,-25.5"/>
                   </svg>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right" role="menu" aria-orientation="vertical">
-                  <a class="dropdown-item" href="/bash/en/nam.html" role="menuitem">
+                  <a class="dropdown-item" href="/bash/en/{.name}.html" role="menuitem">
                     <img src="/res/flags/gb-eng.svg" width="20" height="20" alt="">&nbsp;
                     English
                   </a>
-                  <a class="dropdown-item" href="/bash/es/nam.html" role="menuitem">
+                  <a class="dropdown-item" href="/bash/es/{.name}.html" role="menuitem">
                     <img src="/res/flags/es.svg" width="20" height="20" alt="">&nbsp;
                     español
                   </a>
-                  <a class="dropdown-item" href="/bash/jp/nam.html" role="menuitem">
+                  <a class="dropdown-item" href="/bash/jp/{.name}.html" role="menuitem">
                     <img src="/res/flags/jp.svg" width="20" height="20" alt="">&nbsp;
                     日本語
                   </a>
-                  <a class="dropdown-item" href="/bash/pd/nam.html" role="menuitem">
+                  <a class="dropdown-item" href="/bash/pd/{.name}.html" role="menuitem">
                     <img src="/res/flags/pandunia.svg" width="20" height="20" alt="">&nbsp;
                     pandunia
                   </a>
@@ -70,57 +70,24 @@
     </header>
 
     <main role="main">
-      <!-- generation scripts -->
-<script src="/src/gui/namjener.js" type="module" defer></script>
-
-<div class="container-lg mt-3 mb-5">
-  <div id="alert-box">
-  </div>
-
-  <div class="row justify-content-center p-2">
-    <div id="xef-kolum" class="col-xs-12 col-md-12 col-lg-8 col-xl-6">
-      <form>
-        <button type="button" class="btn btn-block btn-primary" id="nam-apply">
-          <span id="nam-redi">
-            Generar
-          </span>
-          <span id="nam-lada" style="display: none" role="status">
-            <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
-            Trabajando…
-          </span>
-        </button>
-      </form>
-    </div>
-  </div>
-  <div class="row justify-content-center p-2">
-    <div id="ten-kolum-1" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
-      <ul id="nam-liste-1" class="list-group">
-      </ul>
-    </div>
-    <div id="ten-kolum-2" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
-      <ul id="nam-liste-2" class="list-group">
-      </ul>
-    </div>
-  </div>
-</div>
-
+      {Content}
     </main>
 
       <footer>
         <div class="container-lg">
           <div class="row justify-content-center">
             <div class="col-6 col-sm-5 col-md-3">
-              <h5>Páginas</h5>
+              <h5>{menu.loka}</h5>
               <ul class="list-unstyled text-small">
-                <li><a class="text-muted" href="./index.html">Mapas</a></li>
-                <li><a class="text-muted" href="./nam.html">Nombres</a></li>
-                <li><a class="text-muted" href="./tema.html">Sobre</a></li>
-                <li><a class="text-muted" href="https://kunimune.home.blog/contact/">Contáctanos</a></li>
+                <li><a class="text-muted" href="./index.html">{menu.dom}</a></li>
+                <li><a class="text-muted" href="./nam.html">{menu.nam}</a></li>
+                <li><a class="text-muted" href="./tema.html">{menu.tema}</a></li>
+                <li><a class="text-muted" href="https://kunimune.home.blog/contact/">{menu.poste}</a></li>
               </ul>
             </div>
 
             <div class="col-6 col-sm-5 col-md-3">
-              <h5>Idiomas</h5>
+              <h5>{menu.basa}</h5>
               <ul class="list-unstyled text-small">
                 <li><a class="text-muted" href="/bash/en/">English</a></li>
                 <li><a class="text-muted" href="/bash/es">español</a></li>
@@ -156,7 +123,7 @@
 
     </div>
 
-    <div id="bash" style="display: none;">es</div>
+    <div id="bash" style="display: none;">{bash.kode}</div>
 
     <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="/src/lib/jquery.min.js" crossorigin="anonymous"></script>

@@ -1,3 +1,22 @@
+html, body {
+    height: 100%;
+}
+body {
+    display: flex;
+    flex-direction: column;
+}
+main {
+    flex: 1 0 auto;
+}
+footer {
+    flex-shrink: 0;
+    padding-top: 1rem;
+}
+
+header, footer {
+    background-color: #f3f3f3;
+}
+
 .scrolling-sidebar {
     overflow: auto;
     padding-bottom: 1em;
@@ -23,3 +42,4 @@
         height: 75vh;
     }
 }
+

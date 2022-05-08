@@ -17,22 +17,26 @@
 
   <body>
     <header>
-      <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
+      <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-lg">
+
           <a class="navbar-brand" href="#">
             <img src="/res/logo.svg" width="35" height="35" alt="">
             dunia hamar
           </a>
+
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="sira/xowa fash da daweureke">
             <span class="navbar-toggler-icon"></span>
           </button>
+
           <div class="collapse navbar-collapse" id="siri-daweurekia">
             <div class="navbar-nav">
-              <a class="nav-item nav-link" href="./index.html">metrograf<span class="sr-only"> (zay)</span></a>
-              <a class="nav-item nav-link" href="#">nam</a>
+              <a class="nav-item nav-link" href="./index.html">metrograf</a>
+              <a class="nav-item nav-link" href="./nam.html">nam <span class="sr-only">(zay)</span></a>
               <a class="nav-item nav-link" href="./tema.html">tema</a>
               <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">poste</a>
             </div>
+
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="bash">
@@ -66,37 +70,91 @@
     </header>
 
     <main role="main">
-      <div class="container mt-3 mb-5">
-        <div id="alert-box">
-        </div>
+      <!-- generation scripts -->
+<script src="/src/gui/namjener.js" type="module" defer></script>
 
-        <div class="row justify-content-center p-2">
-          <div id="xef-kolum" class="col-xs-12 col-md-12 col-lg-8 col-xl-6">
-            <form>
-              <button type="button" class="btn btn-block btn-primary" id="nam-apply">
-                <span id="nam-redi">
-                  jena
-                </span>
-                <span id="nam-lada" style="display: none">
-                  <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                  lada…
-                </span>
-              </button>
-            </form>
-          </div>
-        </div>
-        <div class="row justify-content-center p-2">
-          <div id="ten-kolum-1" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
-            <ul id="nam-liste-1" class="list-group">
-            </ul>
-          </div>
-          <div id="ten-kolum-2" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
-            <ul id="nam-liste-2" class="list-group">
-            </ul>
-          </div>
-        </div>
-      </div>
+<div class="container-lg mt-3 mb-5">
+  <div id="alert-box">
+  </div>
+
+  <div class="row justify-content-center p-2">
+    <div id="xef-kolum" class="col-xs-12 col-md-12 col-lg-8 col-xl-6">
+      <form>
+        <button type="button" class="btn btn-block btn-primary" id="nam-apply">
+          <span id="nam-redi">
+            jena
+          </span>
+          <span id="nam-lada" style="display: none" role="status">
+            <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
+            lada…
+          </span>
+        </button>
+      </form>
+    </div>
+  </div>
+  <div class="row justify-content-center p-2">
+    <div id="ten-kolum-1" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
+      <ul id="nam-liste-1" class="list-group">
+      </ul>
+    </div>
+    <div id="ten-kolum-2" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
+      <ul id="nam-liste-2" class="list-group">
+      </ul>
+    </div>
+  </div>
+</div>
+
     </main>
+
+      <footer>
+        <div class="container-lg">
+          <div class="row justify-content-center">
+            <div class="col-6 col-sm-5 col-md-3">
+              <h5>varka</h5>
+              <ul class="list-unstyled text-small">
+                <li><a class="text-muted" href="./index.html">metrograf</a></li>
+                <li><a class="text-muted" href="./nam.html">nam</a></li>
+                <li><a class="text-muted" href="./tema.html">tema</a></li>
+                <li><a class="text-muted" href="https://kunimune.home.blog/contact/">poste</a></li>
+              </ul>
+            </div>
+
+            <div class="col-6 col-sm-5 col-md-3">
+              <h5>basa</h5>
+              <ul class="list-unstyled text-small">
+                <li><a class="text-muted" href="/bash/en/">English</a></li>
+                <li><a class="text-muted" href="/bash/es">español</a></li>
+                <li><a class="text-muted" href="/bash/jp/">日本語</a></li>
+                <li><a class="text-muted" href="/bash/pd/">pandunia</a></li>
+              </ul>
+            </div>
+
+            <div class="col-12 col-sm-10 col-md-6">
+              <p>
+                <a rel="license"
+                   href="http://creativecommons.org/publicdomain/zero/1.0/">
+                  <img src="https://licensebuttons.net/p/zero/1.0/88x31.png" style="border-style: none;" alt="CC0" />
+                </a>
+                <br />
+                To the extent possible under law,
+                <a rel="dct:publisher"
+                   href="https://jkunimune.github.io/dunia-hama">
+                  <span property="dct:title">Justin Kunimune</span>
+                </a>
+                has waived all copyright and related or neighboring rights to
+                <span property="dct:title">Dunia Hama</span>.
+                This work is published from the
+                <span property="vcard:Country" datatype="dct:ISO3166"
+                      content="US" about="jkunimune.github.io/dunia-hama">
+                  United States
+                </span>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </div>
 
     <div id="bash" style="display: none;">pd</div>
 
@@ -106,11 +164,7 @@
     <script src="/bootstrap-4.5.2-dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
     <script src="/src/lib/bootstrap-input-spinner.js"></script>
     <script>
-      $("input[type='number']").inputSpinner()
+      $("input[type='number']").inputSpinner();
     </script>
-
-    <!-- generation scripts -->
-    <script src="/src/gui/namjener.js" type="module"></script>
-
   </body>
 </html>

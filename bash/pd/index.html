@@ -17,22 +17,26 @@
 
   <body>
     <header>
-      <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container">
+      <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container-lg">
+
           <a class="navbar-brand" href="#">
             <img src="/res/logo.svg" width="35" height="35" alt="">
             dunia hamar
           </a>
+
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="sira/xowa fash da daweureke">
             <span class="navbar-toggler-icon"></span>
           </button>
+
           <div class="collapse navbar-collapse" id="siri-daweurekia">
             <div class="navbar-nav">
-              <a class="nav-item nav-link" href="#">metrograf<span class="sr-only"> (zay)</span></a>
+              <a class="nav-item nav-link" href="./index.html">metrograf <span class="sr-only">(zay)</span></a>
               <a class="nav-item nav-link" href="./nam.html">nam</a>
               <a class="nav-item nav-link" href="./tema.html">tema</a>
               <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">poste</a>
             </div>
+
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="bash">
@@ -41,19 +45,19 @@
                   </svg>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right" role="menu" aria-orientation="vertical">
-                  <a class="dropdown-item" href="/bash/en/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/en/index.html" role="menuitem">
                     <img src="/res/flags/gb-eng.svg" width="20" height="20" alt="">&nbsp;
                     English
                   </a>
-                  <a class="dropdown-item" href="/bash/es/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/es/index.html" role="menuitem">
                     <img src="/res/flags/es.svg" width="20" height="20" alt="">&nbsp;
                     español
                   </a>
-                  <a class="dropdown-item" href="/bash/jp/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/jp/index.html" role="menuitem">
                     <img src="/res/flags/jp.svg" width="20" height="20" alt="">&nbsp;
                     日本語
                   </a>
-                  <a class="dropdown-item" href="/bash/pd/" role="menuitem">
+                  <a class="dropdown-item" href="/bash/pd/index.html" role="menuitem">
                     <img src="/res/flags/pandunia.svg" width="20" height="20" alt="">&nbsp;
                     pandunia
                   </a>
@@ -66,434 +70,500 @@
     </header>
 
     <main role="main">
-      <div class="container mt-3 mb-5">
-        <div id="alert-box">
+      <!-- generation scripts -->
+<script src="/src/gui/main.js" type="module" defer></script>
+
+<!-- UI functions -->
+<script>
+  function disableTidalLocking(type) {
+    const checkbox = $('#planet-locked');
+    if (type === '1') { // if it's toroidal now
+      if (checkbox.prop('checked')) { // uncheck tidal locking if we need to
+        checkbox.click();
+        disableRotationParams(checkbox.prop('checked'));
+      }
+      checkbox.prop('disabled', true); // and disable it
+    } else { // if it's anything else
+      checkbox.prop('disabled', false); // enable it
+    }
+  }
+
+  function disableRotationParams(locked) {
+    $('#planet-day').prop('disabled', locked); // rotation period
+    $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
+  }
+</script>
+
+<div class="container-lg mt-3 mb-5">
+  <div id="alert-box">
+  </div>
+
+  <ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">planete</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">geoforme</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">histor</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">zemgraf</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">data</a>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <div class="tab-pane" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form>
+            <div class="form-group">
+              <label for="planet-type">forme</label>
+              <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value);">
+                <option selected value="0">bol</option>
+                <option value="1">ring</option>
+                <option value="2">plate</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked);">
+                <label class="custom-control-label" for="planet-locked">chawo sammari</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="planet-size">cirkometre</label>
+              <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
+            </div>
+            <div class="form-group">
+              <label for="planet-gravity">fasi baria</label>
+              <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
+            </div>
+            <div class="form-group">
+              <label for="planet-day">dur da den</label>
+              <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="h" id="planet-day"/>
+            </div>
+            <div class="form-group">
+              <label for="planet-tilt">terchia da akse</label>
+              <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
+              <span id="planet-redi" style="display: none">
+                nova
+              </span>
+              <span id="planet-lada" role="status">
+                <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
+                lada…
+              </span>
+            </button>
+          </form>
         </div>
 
-        <ul class="nav nav-tabs" id="myTab" role="tablist">
-          <li class="nav-item">
-            <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">planete</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">geoforme</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">histor</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">zemgraf</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">data</a>
-          </li>
-        </ul>
-
-        <div class="tab-content">
-
-          <div class="tab-pane" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
-            <div class="container mt-2">
-              <div class="row">
-                <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
-                  <form>
-                    <div class="form-group">
-                      <label for="planet-type">forme</label>
-                      <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value)">
-                        <option selected value="0">bol</option>
-                        <option value="1">ring</option>
-                        <option value="2">plate</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked)">
-                        <label class="custom-control-label" for="planet-locked">chawo sammari</label>
-                      </div>
-                    </div>
-                    <div class="form-group">
-                      <label for="planet-size">cirkometre</label>
-                      <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="planet-gravity">fasi baria</label>
-                      <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="planet-day">dur da den</label>
-                      <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="h" id="planet-day"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="planet-tilt">terchia da akse</label>
-                      <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
-                    </div>
-                    <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
-                      <span id="planet-redi" style="display: none">
-                        nova
-                      </span>
-                      <span id="planet-lada">
-                        <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                        lada…
-                      </span>
-                    </button>
-                  </form>
-                </div>
-
-                <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9" id="planet-map">
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tab-pane" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
-            <div class="container mt-2">
-              <div class="row">
-                <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
-                  <form>
-                    <div class="form-group">
-                      <label for="terrain-sem">falsozari sem</label>
-                      <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-sem"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="terrain-continents">nombre da daynes</label>
-                      <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="terrain-hay">gawia da hay</label>
-                      <select class="custom-select" id="terrain-hay">
-                        <option value="4">dayo gawi</option>
-                        <option value="3">gawi</option>
-                        <option value="2">lilo gawi</option>
-                        <option selected value="1.5">normi</option>
-                        <option value="1">lilo tali</option>
-                        <option value="-0.5">tali</option>
-                        <option value="-1.5">day tali</option>
-                      </select>
-                    </div>
-                    <div class="form-group">
-                      <label for="terrain-terme">medodarji terme</label>
-                      <select class="custom-select" id="terrain-terme">
-                        <option value="308">garmi</option>
-                        <option selected value="288">normi</option>
-                        <option value="268">lengi</option>
-                      </select>
-                    </div>
-                    <button type="button" class="btn btn-block btn-primary" id="terrain-apply" disabled>
-                      <span id="terrain-redi" style="display: none">
-                        nova
-                      </span>
-                      <span id="terrain-lada">
-                        <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                        lada…
-                      </span>
-                    </button>
-                  </form>
-                </div>
-
-                <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
-                  <svg xmlns="http://www.w3.org/2000/svg"
-                       viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tab-pane" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
-            <div class="container mt-2">
-              <div class="row">
-                <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
-                  <form>
-                    <div class="form-group">
-                      <label for="history-sem">falsozari sem</label>
-                      <input type="number" value="0" min="0" max="99999999" step="1" id="history-sem"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="history-nen">nen</label>
-                      <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="" id="history-nen"/>
-                    </div>
-                    <div class="form-group">
-                      <label for="history-katastrof">katastrof</label>
-                      <select class="custom-select" id="history-katastrof">
-                        <option selected value="0">nol</option>
-                        <option value="1e-4">un</option>
-                        <option value="1e-3">un a mey kilonen</option>
-                        <option value="1e-2">un a mey shatonen</option>
-                      </select>
-                    </div>
-                    <button type="button" class="btn btn-block btn-primary" id="history-apply" disabled>
-                      <span id="history-redi" style="display: none">
-                        nova
-                      </span>
-                      <span id="history-lada">
-                        <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                        lada…
-                      </span>
-                    </button>
-                  </form>
-                </div>
-
-                <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
-                  <svg xmlns="http://www.w3.org/2000/svg"
-                       viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tab-pane show active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
-            <div class="container mt-2">
-              <div class="row">
-                <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
-                  <form id="accordion">
-                    <div class="card">
-                      <div class="card-header" id="headingOne">
-                        <h5 class="mb-0">
-                          <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                            graflance
-                          </button>
-                        </h5>
-                      </div>
-                      <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
-                        <div class="card-body">
-                          <div class="form-group">
-                            <label for="map-projection">metode</label>
-                            <select class="custom-select" id="map-projection">
-                              <option value="equirectangular">bazi</option>
-                              <option value="mercator">daweureki</option>
-                              <option value="azimuthal-equidistant">aksi</option>
-                              <option value="eckert">egali are</option>
-                              <option selected value="bonne">feni (puronyangi)</option>
-                              <option value="conic">feni (novyangi)</option>
-                            </select>
-                          </div>
-                          <div class="form-group">
-                            <label for="map-dish">rote</label>
-                            <select class="custom-select" id="map-dish">
-                              <option selected value="norde">norde gawi</option>
-                              <option value="sude">sude gawi</option>
-                            </select>
-                          </div>
-                          <div class="form-group">
-                            <label for="map-jung">jung</label>
-                            <select class="custom-select" id="map-jung">
-                              <option selected value="0">United States of America</option>
-                              <option value="1">China</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="card">
-                      <div class="card-header" id="headingTwo">
-                        <h5 class="mb-0">
-                          <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                            rang e rupe
-                          </button>
-                        </h5>
-                      </div>
-                      <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
-                        <div class="card-body">
-                          <div class="form-group">
-                            <label for="map-zemrang">rang da zem</label>
-                            <select class="custom-select" id="map-zemrang">
-                              <option value="baki">baki</option>
-                              <option value="huyi">huyi</option>
-                              <option selected value="jivi">biwsistem</option>
-                              <option value="politiki">desh</option>
-                              <option value="gawia">gawia</option>
-                            </select>
-                          </div>
-                          <div class="form-group">
-                            <label for="map-hayrang">rang da hay</label>
-                            <select class="custom-select" id="map-hayrang">
-                              <option value="baki">baki</option>
-                              <option value="huyi">huyi</option>
-                              <option selected value="nili">nili</option>
-                              <option value="cerni">siahi</option>
-                              <option value="gawia">gawia</option>
-                            </select>
-                          </div>
-                          <div class="form-group">
-                            <label for="map-filter">filter da rang</label>
-                            <select class="custom-select" id="map-filter">
-                              <option selected value="nol">nol</option>
-                              <option value="pili">pilrangi</option>
-                              <option value="bakocerni">bakosiahi</option>
-                              <option value="mirdi">mirdi</option>
-                            </select>
-                          </div>
-                          <div class="form-group">
-                            <h6>rupe da zem</h6>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kal" value="kal" checked>
-                              <label class="form-check-label" for="map-zemforme-kal">kali</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desen" value="desen">
-                              <label class="form-check-label" for="map-zemforme-desen">grafi</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <h6>rupe da hay</h6>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="hay" id="map-hay-kal" value="kal" checked>
-                              <label class="form-check-label" for="map-hay-kal">kali</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="hay" id="map-hay-linye" value="linye">
-                              <label class="form-check-label" for="map-hay-linye">grafi</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <h6>rupe da site</h6>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kal" checked>
-                              <label class="form-check-label" for="map-site-nol">kali</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                              <label class="form-check-label" for="map-site-binde">bindi</label>
-                            </div>
-                            <div class="form-check">
-                              <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desen">
-                              <label class="form-check-label" for="map-site-grafe">grafi</label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="card">
-                      <div class="card-header" id="headingThree">
-                        <h5 class="mb-0">
-                          <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                            sif
-                          </button>
-                        </h5>
-                      </div>
-                      <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
-                        <div class="card-body">
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-nade">
-                              <label class="custom-control-label" for="map-nade">nade</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-kenar" checked>
-                              <label class="custom-control-label" for="map-kenar">deshi kenar</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-say">
-                              <label class="custom-control-label" for="map-say">xani say</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                              <label class="custom-control-label" for="map-zemnete">nete da lokonombre</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                              <label class="custom-control-label" for="map-dawnete">nete da hayrute</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                              <label class="custom-control-label" for="map-pontopine">pontopine</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
-                              <label class="custom-control-label" for="map-deshnam">desha nam</label>
-                            </div>
-                          </div>
-                          <div class="form-group">
-                            <div class="custom-control custom-checkbox">
-                              <input type="checkbox" class="custom-control-input" id="map-shannam">
-                              <label class="custom-control-label" for="map-shannam">zemsif nam</label>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="card">
-                      <div class="card-header" id="headingFour">
-                        <h5 class="mb-0">
-                          <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                            basha e daita
-                          </button>
-                        </h5>
-                      </div>
-                      <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
-                        <div class="card-body">
-                          <div class="form-group">
-                            <label for="map-bash">transokitabe</label>
-                            <select class="custom-select" id="map-bash">
-                              <option selected value="null">novyangi</option>
-                              <option value="en">engli</option>
-                              <option value="es">espani</option>
-                              <option value="la">latini</option>
-                              <!--TODO it would be nice if it could automatically select the system that goes with the language-->
-                              <option value="jp">niponi</option>
-                              <option value="pd">panduni</option>
-                            </select>
-                          </div>
-                          <div class="form-group">
-                            <label for="map-grosta">gros</label>
-                            <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-grosta"/>
-                          </div>
-                          <div class="form-group">
-                            <label for="map-gauta">gau</label>
-                            <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-gauta"/>
-                          </div>
-                          <div class="form-group">
-                            <label for="map-dpi">piksel</label>
-                            <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-dpi"/>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <button type="button" class="btn btn-block btn-primary mt-2" id="map-apply" disabled>
-                      <span id="map-redi" style="display: none">
-                        nova
-                      </span>
-                      <span id="map-lada">
-                        <img src="/res/lada.gif" height="20" role="status" aria-hidden="true" alt="">
-                        lada…
-                      </span>
-                    </button>
-                    <button type="button" class="btn btn-block btn-primary" id="map-sekura" disabled>
-                      sekura
-                    </button>
-                  </form>
-                </div>
-
-                <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
-                  <svg xmlns="http://www.w3.org/2000/svg"
-                       viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="tab-pane" id="pdf-panel" role="tabpanel" aria-labelledby="pdf-tab">
-            <div class="container mt-2">
-              <div class="col-12">
-                <embed id="pdf-embed" type="application/pdf" width="100%" height="500px">
-              </div>
-            </div>
-          </div>
+        <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9" id="planet-map">
         </div>
       </div>
+    </div>
+
+    <div class="tab-pane" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form>
+            <div class="form-group">
+              <label for="terrain-sem">falsozari sem</label>
+              <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-sem"/>
+            </div>
+            <div class="form-group">
+              <label for="terrain-continents">nombre da daynes</label>
+              <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
+            </div>
+            <div class="form-group">
+              <label for="terrain-hay">gawia da hay</label>
+              <select class="custom-select" id="terrain-hay">
+                <option value="4">dayo gawi</option>
+                <option value="3">gawi</option>
+                <option value="2">lilo gawi</option>
+                <option selected value="1.5">normi</option>
+                <option value="1">lilo tali</option>
+                <option value="-0.5">tali</option>
+                <option value="-1.5">day tali</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="terrain-terme">medodarji terme</label>
+              <select class="custom-select" id="terrain-terme">
+                <option value="308">garmi</option>
+                <option selected value="288">normi</option>
+                <option value="268">lengi</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="terrain-apply" disabled>
+              <span id="terrain-redi" style="display: none">
+                nova
+              </span>
+              <span id="terrain-lada" role="status">
+                <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
+                lada…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form>
+            <div class="form-group">
+              <label for="history-sem">falsozari sem</label>
+              <input type="number" value="0" min="0" max="99999999" step="1" id="history-sem"/>
+            </div>
+            <div class="form-group">
+              <label for="history-nen">nen</label>
+              <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="" id="history-nen"/>
+            </div>
+            <div class="form-group">
+              <label for="history-katastrof">katastrof</label>
+              <select class="custom-select" id="history-katastrof">
+                <option selected value="0">nol</option>
+                <option value="1e-4">un</option>
+                <option value="1e-3">un a mey kilonen</option>
+                <option value="1e-2">un a mey shatonen</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="history-apply" disabled>
+              <span id="history-redi" style="display: none">
+                nova
+              </span>
+              <span id="history-lada" role="status">
+                <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
+                lada…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane show active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form id="accordion">
+            <div class="card">
+              <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    graflance
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-projection">metode</label>
+                    <select class="custom-select" id="map-projection">
+                      <option value="equirectangular">bazi</option>
+                      <option value="mercator">daweureki</option>
+                      <option value="azimuthal-equidistant">aksi</option>
+                      <option value="eckert">egali are</option>
+                      <option selected value="bonne">feni (puronyangi)</option>
+                      <option value="conic">feni (novyangi)</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-dish">rote</label>
+                    <select class="custom-select" id="map-dish">
+                      <option selected value="norde">norde gawi</option>
+                      <option value="sude">sude gawi</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-jung">jung</label>
+                    <select class="custom-select" id="map-jung">
+                      <option selected value="0">United States of America</option>
+                      <option value="1">China</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" id="headingTwo">
+                <h5 class="mb-0">
+                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    rang e rupe
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-zemrang">rang da zem</label>
+                    <select class="custom-select" id="map-zemrang">
+                      <option value="baki">baki</option>
+                      <option value="huyi">huyi</option>
+                      <option selected value="jivi">biwsistem</option>
+                      <option value="politiki">desh</option>
+                      <option value="gawia">gawia</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-hayrang">rang da hay</label>
+                    <select class="custom-select" id="map-hayrang">
+                      <option value="baki">baki</option>
+                      <option value="huyi">huyi</option>
+                      <option selected value="nili">nili</option>
+                      <option value="cerni">siahi</option>
+                      <option value="gawia">gawia</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-filter">filter da rang</label>
+                    <select class="custom-select" id="map-filter">
+                      <option selected value="nol">nol</option>
+                      <option value="pili">pilrangi</option>
+                      <option value="bakocerni">bakosiahi</option>
+                      <option value="mirdi">mirdi</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <h6>rupe da zem</h6>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kal" value="kal" checked>
+                      <label class="form-check-label" for="map-zemforme-kal">kali</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desen" value="desen">
+                      <label class="form-check-label" for="map-zemforme-desen">grafi</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <h6>rupe da hay</h6>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="hay" id="map-hay-kal" value="kal" checked>
+                      <label class="form-check-label" for="map-hay-kal">kali</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="hay" id="map-hay-linye" value="linye">
+                      <label class="form-check-label" for="map-hay-linye">grafi</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <h6>rupe da site</h6>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kal" checked>
+                      <label class="form-check-label" for="map-site-nol">kali</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
+                      <label class="form-check-label" for="map-site-binde">bindi</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desen">
+                      <label class="form-check-label" for="map-site-grafe">grafi</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" id="headingThree">
+                <h5 class="mb-0">
+                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    sif
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-nade">
+                      <label class="custom-control-label" for="map-nade">nade</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-kenar" checked>
+                      <label class="custom-control-label" for="map-kenar">deshi kenar</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-say">
+                      <label class="custom-control-label" for="map-say">xani say</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-zemnete">
+                      <label class="custom-control-label" for="map-zemnete">nete da lokonombre</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-dawnete">
+                      <label class="custom-control-label" for="map-dawnete">nete da hayrute</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-pontopine">
+                      <label class="custom-control-label" for="map-pontopine">pontopine</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
+                      <label class="custom-control-label" for="map-deshnam">desha nam</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-shannam">
+                      <label class="custom-control-label" for="map-shannam">zemsif nam</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" id="headingFour">
+                <h5 class="mb-0">
+                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                    basha e daita
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-bash">transokitabe</label>
+                    <select class="custom-select" id="map-bash">
+                      <option selected value="null">novyangi</option>
+                      <option value="en">engli</option>
+                      <option value="es">espani</option>
+                      <option value="la">latini</option>
+                      <!--TODO it would be nice if it could automatically select the system that goes with the language-->
+                      <option value="jp">niponi</option>
+                      <option value="pd">panduni</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-grosta">gros</label>
+                    <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-grosta"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-gauta">gau</label>
+                    <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-gauta"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-dpi">piksel</label>
+                    <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-dpi"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-block btn-primary mt-2" id="map-apply" disabled>
+              <span id="map-redi" style="display: none">
+                nova
+              </span>
+              <span id="map-lada" role="status">
+                <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
+                lada…
+              </span>
+            </button>
+            <button type="button" class="btn btn-block btn-primary" id="map-sekura" disabled>
+              sekura
+            </button>
+          </form>
+        </div>
+
+        <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="pdf-panel" role="tabpanel" aria-labelledby="pdf-tab">
+      <div class="row mt-2">
+        <div class="col-12">
+          <embed id="pdf-embed" type="application/pdf" width="100%" height="500px">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
     </main>
+
+      <footer>
+        <div class="container-lg">
+          <div class="row justify-content-center">
+            <div class="col-6 col-sm-5 col-md-3">
+              <h5>varka</h5>
+              <ul class="list-unstyled text-small">
+                <li><a class="text-muted" href="./index.html">metrograf</a></li>
+                <li><a class="text-muted" href="./nam.html">nam</a></li>
+                <li><a class="text-muted" href="./tema.html">tema</a></li>
+                <li><a class="text-muted" href="https://kunimune.home.blog/contact/">poste</a></li>
+              </ul>
+            </div>
+
+            <div class="col-6 col-sm-5 col-md-3">
+              <h5>basa</h5>
+              <ul class="list-unstyled text-small">
+                <li><a class="text-muted" href="/bash/en/">English</a></li>
+                <li><a class="text-muted" href="/bash/es">español</a></li>
+                <li><a class="text-muted" href="/bash/jp/">日本語</a></li>
+                <li><a class="text-muted" href="/bash/pd/">pandunia</a></li>
+              </ul>
+            </div>
+
+            <div class="col-12 col-sm-10 col-md-6">
+              <p>
+                <a rel="license"
+                   href="http://creativecommons.org/publicdomain/zero/1.0/">
+                  <img src="https://licensebuttons.net/p/zero/1.0/88x31.png" style="border-style: none;" alt="CC0" />
+                </a>
+                <br />
+                To the extent possible under law,
+                <a rel="dct:publisher"
+                   href="https://jkunimune.github.io/dunia-hama">
+                  <span property="dct:title">Justin Kunimune</span>
+                </a>
+                has waived all copyright and related or neighboring rights to
+                <span property="dct:title">Dunia Hama</span>.
+                This work is published from the
+                <span property="vcard:Country" datatype="dct:ISO3166"
+                      content="US" about="jkunimune.github.io/dunia-hama">
+                  United States
+                </span>.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </div>
 
     <div id="bash" style="display: none;">pd</div>
 
@@ -503,31 +573,7 @@
     <script src="/bootstrap-4.5.2-dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
     <script src="/src/lib/bootstrap-input-spinner.js"></script>
     <script>
-      $("input[type='number']").inputSpinner()
-    </script>
-
-    <!-- generation scripts -->
-    <script src="/src/gui/main.js" type="module"></script>
-
-    <!-- UI functions -->
-    <script>
-      function disableTidalLocking(type) {
-          const checkbox = $('#planet-locked');
-          if (type === '1') { // if it's toroidal now
-              if (checkbox.prop('checked')) { // uncheck tidal locking if we need to
-                  checkbox.click();
-                  disableRotationParams(checkbox.prop('checked'));
-              }
-              checkbox.prop('disabled', true); // and disable it
-          } else { // if it's anything else
-              checkbox.prop('disabled', false); // enable it
-          }
-      }
-
-      function disableRotationParams(locked) {
-          $('#planet-day').prop('disabled', locked); // rotation period
-          $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
-      }
+      $("input[type='number']").inputSpinner();
     </script>
   </body>
 </html>
