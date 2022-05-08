@@ -233,50 +233,59 @@ export abstract class MapProjection {
 		for (let i = 0; i < edges.length; i ++)
 			touchedLoop.push(false);
 
+		const segmentCue = segments.slice().reverse();
 		const sections: PathSegment[][] = [];
 		let currentSection: PathSegment[] = null;
+		const upcomingMovetos: boolean[] = [];
 		let iterations = 0;
-		for (let i = 0; i <= segments.length; i ++) { // first, break it up into sections
-			if (i === segments.length || segments[i].type === 'M') { // at movetos and at the end
+		while (true) { // first, break it up into sections
+			const thisSegment = (segmentCue.length > 0 ? segmentCue.pop() : null);
+
+			if (thisSegment === null || thisSegment.type === 'M') { // at movetos and at the end
 				if (currentSection !== null) {
-					if (MapProjection.envelops(edges, currentSection[currentSection.length - 1]))
-						sections.push(currentSection); // save what we have if it's inside (XXX there is a *slite* chance that this will fail if a moveto is on an edge)
+					let currentSectionIsIn = null;
+					if (upcomingMovetos.length > 0) // check if we have catalogd it (we should have if it's on an edge)
+						currentSectionIsIn = upcomingMovetos.pop(); // if so, we have noted whether the current section is in
+					else // if not
+						currentSectionIsIn = MapProjection.envelops( // we need to check if the last point is containd (we know it's not on an edge)
+							edges, currentSection[currentSection.length - 1]); // XXX there is a *slite* chance that this will fail if a moveto is on an edge
+					if (currentSectionIsIn)
+						sections.push(currentSection); // save if so TODO: save if no also
 				}
-				if (i < segments.length)
-					currentSection = [segments[i]]; // and start a new section
+				if (thisSegment !== null)
+					currentSection = [thisSegment]; // and start a new section
+				else
+					break; // or stop if we're done
 			}
+
 			else {
 				if (currentSection === null)
 					throw "it didn't start with 'M', I gess?";
 
 				const lastSegment = currentSection[currentSection.length - 1];
 				const crossing = this.getEdgeCrossing(
-					lastSegment, segments[i], edges); // otherwise, check for interruption
+					lastSegment, thisSegment, edges); // otherwise, check for interruption
 
 				if (crossing === null) { // for uninterrupted segments
-					currentSection.push(segments[i]); // just add them to the thing
+					currentSection.push(thisSegment); // just add them to the thing
 				}
 				else { // otherwise, if it jumps across an interruption
 					const { intersect0, intersect1, loopIndex, exiting } = crossing;
 					touchedLoop[loopIndex] = true; // take note that it crossd an on-screen edge
+					upcomingMovetos.push(exiting); // record whether this was going in or out
 
-					if (segments[i].type === 'L') {
-						if (exiting) { // if the stuff we were just looking at was inside
-							currentSection.push(
-								{ type: 'L', args: [intersect0.s, intersect0.t] } // insert a line to the very edge
-							);
-							sections.push(currentSection); // and save that
-						}
-						currentSection = [
-							{ type: 'M', args: [intersect1.s, intersect1.t] } // and then jump to the other side
-						];
-						i --; // then step back to check if there was another one
+					if (thisSegment.type === 'L') { // to split a line
+						segmentCue.push(
+							thisSegment, // leave the current segment in so we can check for further interruptions
+							{ type: 'M', args: [intersect1.s, intersect1.t] }, // but also insert a jump to the other side
+							{ type: 'L', args: [intersect0.s, intersect0.t] }, // preceded by a line up to the very edge
+						); // (don't forget to reverse because it's FILO)
 					}
-					else if (segments[i].type === 'A') {
+					else if (thisSegment.type === 'A') { // to split an arc
 						const a = assert_xy(endpoint(lastSegment));
 						const b = assert_xy(intersect0);
 						const c = assert_xy(intersect1);
-						const [r1, r2, rot, _, sweepDirection, dx, dy] = segments[i].args; // for the arc splicing,
+						const [r1, r2, rot, _, sweepDirection, dx, dy] = thisSegment.args;
 						const d = { x: dx, y: dy };
 						const endpoints = [a, d];
 						let largeArc: number[] = []; // you haff to figure out whether to change the large arc flag for the children
@@ -286,25 +295,26 @@ export abstract class MapProjection {
 							largeArc.push(acute ? 0 : 1);
 							console.assert(largeArc[i] <= _);
 						}
-						if (exiting) { // if the stuff we were just looking at was inside
-							currentSection.push({
+						segmentCue.push(
+							{
 								type: 'A',
-								args: [r1, r2, rot, largeArc[0], sweepDirection, b.x, b.y]
-							}); // insert an arc to the very edge
-							sections.push(currentSection);
-						}
-						currentSection = [{ type: 'M', args: [c.x, c.y] }]; // and then jump to the other side
-						segments[i].args[3] = largeArc[1]; // adjust the length of this arc for when we check it the second time
-						i --; // then step back to check if there was another one
+								args: [r1, r2, rot, largeArc[1], sweepDirection, d.x, d.y]
+							}, // insert the second segment
+							{ type: 'M', args: [c.x, c.y] }, // preceded by the jump
+							{
+								type: 'A',
+								args: [r1, r2, rot, largeArc[0], sweepDirection, b.x, b.y] // preceded by
+							}, // preceded by the first segment
+						); // (don't forget to reverse because it's FILO)
 					}
 					else {
-						throw `can't use '${segments[i].type}' here`;
+						throw `can't use '${thisSegment.type}' here`;
 					}
 				}
 			}
 			iterations ++;
 			if (iterations > 100000)
-				throw `*Someone* (not pointing any fingers) messd up an interruption between ${segments[i-1].args} and ${segments[i].args}.`;
+				throw `*Someone* (not pointing any fingers) messd up an interruption between ${currentSection.pop()} and ${thisSegment}.`;
 		}
 
 		if (sections.length === 0) // if it's all off the map
