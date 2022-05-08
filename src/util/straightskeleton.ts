@@ -55,25 +55,14 @@ export function straightSkeleton(polygon: Point[]): Tree<Point> {
 		upcomingMergers.push(new Merger(
 			initialNodes[i], initialNodes[(i + 1)%polygon.length]));
 	}
-	let verbose = false;
 
 	// then advance the wavefronts
 	while (!upcomingMergers.empty()) {
 		const { left, rite, time, place } = upcomingMergers.pop(); // take the next merger coming up
-		if (time < 0) { // this should never happen ideally
-			console.log("ah.");
-			console.log(polygon);
-			verbose = true;
+		if (time < 0) // this should never happen ideally
 			continue; // but sometimes if the polygon is slitely concave we haff to check
-		}
 		if (left.parent === null && rite.parent === null) { // if these are both still waiting to get a parent
 			// merge them
-			if (verbose) {
-				console.log(`we merge`);
-				console.log(left);
-				console.log(rite);
-				console.log(`at time t = ${time} at (${place.x}, ${place.y})`);
-			}
 			const newNodo = new Nodo(left.leftEdge, rite.riteEdge, place, time, left, rite);
 			newNodo.linkLeft(left.leftNeibor); // and update the connectivity graff
 			newNodo.linkRite(rite.riteNeibor);
