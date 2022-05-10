@@ -24,18 +24,19 @@
 import "../lib/jquery.min.js";
 import {Random} from "../util/random.js";
 import {Dialect, Lect, ProtoLang, LogaTipo} from "../language/lect.js";
-// @ts-ignore
-const $ = window.$; // why is this like this? I don't know.
+import {Selector} from "../util/selector.js";
 
 
 const NUM_ROWS = 12;
+
+const dom = new Selector(document);
 
 let seed = 0; // TODO the actual version should use the current time.
 
 /**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
-$('#nam-apply').on('click', () => { // TODO: back button
+dom.elm('nam-apply').addEventListener('click', () => { // TODO: back button
 	console.log("jena nam...");
 
 	const rng = new Random(seed);
@@ -46,15 +47,15 @@ $('#nam-apply').on('click', () => { // TODO: back button
 	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
 
 	let firstSeed = 0, lastSeed = 0;
-	for (const namliste of [$('#nam-liste-1'), $('#nam-liste-2')]) {
-		namliste.empty();
+	for (const namliste of [dom.elm('nam-liste-1'), dom.elm('nam-liste-2')]) {
+		namliste.textContent = '';
 		for (let i = 0; i < NUM_ROWS; i++) {
 			const jannam = bax.getName(`firstname${firstSeed}`, LogaTipo.ALO);
 			const familnam = bax.getName(`lastname${lastSeed}`, LogaTipo.FAMILI);
 			let holnam;
-			if (type == 1)
+			if (type === 1)
 				holnam = `${jannam} ${familnam}`;
-			else if (type == 0)
+			else if (type === 0)
 				holnam = `${jannam}`;
 			else
 				holnam = `${familnam} ${jannam}`;
@@ -78,7 +79,7 @@ $('#nam-apply').on('click', () => { // TODO: back button
 /**
  * Once the page is ready, start the algorithm!
  */
-$(document).ready(() => {
+document.addEventListener("DOMContentLoaded", () => {
 	console.log("ready!");
-	$('#nam-apply').click();
+	(dom.elm('nam-apply') as HTMLElement).click();
 });

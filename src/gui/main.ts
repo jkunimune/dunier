@@ -42,8 +42,8 @@ import {LockedDisc} from "../planet/lockeddisc.js";
 import {generateFactSheet} from "../society/factsheet.js";
 import {loadJSON} from "../util/fileio.js";
 import {Conic} from "../map/conic.js";
-// @ts-ignore
-const $ = window.$; // why is this like this? I don't know.
+import {Selector} from "../util/selector.js";
+import {straightSkeleton} from "../util/straightskeleton.js";
 // @ts-ignore
 const jsPDF = window.jspdf;
 // @ts-ignore
@@ -70,57 +70,80 @@ const MIN_SIZE_TO_LIST = 6;
 const MIN_COUNTRIES_TO_LIST = 3;
 const MAX_COUNTRIES_TO_LIST = 20;
 
-export const USER_STRINGS = loadJSON(`../../res/tarje/${$('#bash')[0].textContent}.json`);
+const dom = new Selector(document);
 
-let planetOutOfSync = true;
-let terrainOutOfSync = true;
-let historyOutOfSync = true;
-let mapOutOfSync = true;
-let pdfOutOfSync = true;
+export const USER_STRINGS = loadJSON(`../../res/tarje/${dom.elm('bash').textContent}.json`);
+
+enum Layer {
+	NONE,
+	PLANET,
+	TERRAIN,
+	HISTORY,
+	MAP,
+	PDF
+}
+
+/** which level of the model currently has all input changes applied */
+let lastUpdated = Layer.NONE;
+/** whether the plotly image is up to date with the model */
+let planetRendered = false;
+/** whether a process is currently running */
+let inProgress: boolean = false; // TODO; I can't remember why this is here; if I click forward in the tabs while it's loading, does everything update?
+/** the planet on which the map is defined */
 let surface: Surface = null;
+/** the human world on that planet */
 let world: World = null;
-let inProgress: boolean = false;
 
 
 /**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
-function planetApply() {
+function applyPlanet() {
 	console.log("jena planete...");
-	const planetType = $('#planet-type').val(); // read input
-	const tidallyLocked = $('#planet-locked').prop('checked');
-	const radius = Number($('#planet-size').val()) / (2*Math.PI);
-	const gravity = Number($('#planet-gravity').val()) * 9.8;
-	const spinRate = 1 / Number($('#planet-day').val()) * 2*Math.PI / 3600;
-	const obliquity = Number($('#planet-tilt').val()) * Math.PI / 180;
+	console.log(dom.elm('planet-type'));
+	console.log(dom.val('planet-type'));
+	const planetType = dom.val('planet-type'); // read input
+	const tidallyLocked = dom.checked('planet-locked');
+	const radius = Number(dom.val('planet-size')) / (2*Math.PI);
+	const gravity = Number(dom.val('planet-gravity')) * 9.8;
+	const spinRate = 1 / Number(dom.val('planet-day')) * 2*Math.PI / 3600;
+	const obliquity = Number(dom.val('planet-tilt')) * Math.PI / 180;
 
 	try { // create a surface
-		if (planetType === '0') { // spheroid
+		if (planetType === 'bol') { // spheroid
 			if (tidallyLocked) { // spherical
 				surface = new Sphere(
 					radius);
-			} else { // oblate
+			}
+			else { // oblate
 				surface = new Spheroid(
 					radius,
 					gravity,
 					spinRate,
 					obliquity);
 			}
-		} else if (planetType === '1') { // toroid
+		}
+		else if (planetType === 'wen') { // toroid
 			surface = new Toroid(
 				radius,
 				gravity,
 				spinRate,
 				obliquity);
-		} else if (planetType === '2') { // plane
+		}
+		else if (planetType === 'plate') { // plane
 			if (tidallyLocked) { // with static sun
 				surface = new LockedDisc(
 					radius);
-			} else { // with orbiting sun
+			}
+			else { // with orbiting sun
 				surface = new Disc(
 					radius,
 					obliquity);
 			}
+		}
+		else {
+			console.error(`What kind of planet is ${planetType}`);
+			return;
 		}
 	} catch (err) {
 		if (err instanceof RangeError) {
@@ -129,7 +152,7 @@ function planetApply() {
 				message = "The planet tore itself apart. Please choose a longer day length."; // TODO: translate this.  and/or automatically correct it.
 			else if (err.message.startsWith("Too slow"))
 				message = "The planet broke into pieces. Please choose a shorter day length."; // TODO: translate this.  and/or automatically correct it.
-			$('#alert-box').append(
+			dom.elm('alert-box').append(
 				"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
 				`  ${message}\n` +
 				"  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>\n" +
@@ -142,112 +165,121 @@ function planetApply() {
 	}
 	surface.initialize();
 
-	const plotDiv = $('#planet-map');
-	if (plotDiv.is(':visible')) {
-		console.log("grafa...");
-		const {x, y, z, I} = surface.parameterize(18);
-		Plotly.react(
-			plotDiv[0],
-			[{
-				type: 'surface',
-				x: x,
-				y: y,
-				z: z,
-				surfacecolor: I,
-				cmin: 0.,
-				cmax: 2.,
-				colorscale: TERRAIN_COLORMAP,
-				showscale: false,
-				lightposition: {x: 1000, y: 0, z: 0},
-				hoverinfo: "none",
-				contours: {
-					x: {highlight: false},
-					y: {highlight: false},
-					z: {highlight: false}},
-			}],
-			{
-				margin: {l: 20, r: 20, t: 20, b: 20},
-				scene: {
-					xaxis: {
-						showspikes: false,
-						range: [-radius, radius],
-					},
-					yaxis: {
-						showspikes: false,
-						range: [-radius, radius],
-					},
-					zaxis: {
-						showspikes: false,
-						range: [-radius, radius],
-					},
-					aspectmode: 'cube',
+	console.log("fina!");
+	lastUpdated = Layer.PLANET;
+	planetRendered = false;
+}
+
+
+function renderPlanet() {
+	if (lastUpdated < Layer.PLANET)
+		applyPlanet();
+
+	console.log("grafa planete...");
+	const radius = Number(dom.val('planet-size')) / (2*Math.PI);
+
+	const {x, y, z, I} = surface.parameterize(18);
+	Plotly.react(
+		dom.elm('planet-map'),
+		[{
+			type: 'surface',
+			x: x,
+			y: y,
+			z: z,
+			surfacecolor: I,
+			cmin: 0.,
+			cmax: 2.,
+			colorscale: TERRAIN_COLORMAP,
+			showscale: false,
+			lightposition: {x: 1000, y: 0, z: 0},
+			hoverinfo: "none",
+			contours: {
+				x: {highlight: false},
+				y: {highlight: false},
+				z: {highlight: false}},
+		}],
+		{
+			margin: {l: 20, r: 20, t: 20, b: 20},
+			scene: {
+				xaxis: {
+					showspikes: false,
+					range: [-radius, radius],
 				},
+				yaxis: {
+					showspikes: false,
+					range: [-radius, radius],
+				},
+				zaxis: {
+					showspikes: false,
+					range: [-radius, radius],
+				},
+				aspectmode: 'cube',
 			},
-			{
-				responsive: true,
-			}
-		).then(() => {
-		});
-	}
+		},
+		{
+			responsive: true,
+		}
+	).then(() => {
+	});
 
 	console.log("fina!");
-	planetOutOfSync = false;
+	planetRendered = true;
 }
 
 
 /**
  * Generate the heightmap and biomes on the planet's surface.
  */
-function terrainApply(): void {
-	if (planetOutOfSync)
-		planetApply();
+function applyTerrain(): void {
+	if (lastUpdated < Layer.PLANET)
+		applyPlanet();
 
 	console.log("jena zemforme...");
-	const randomSeme = Number($('#terrain-sem').val());
-	const numContinents = Number($('#terrain-continents').val()) * 2;
-	const seaLevel = Number($('#terrain-hay').val());
-	const avgTerme = Number($('#terrain-terme').val());
-
-	let rng = new Random(randomSeme); // use the random seed
+	let rng = new Random(Number(dom.val('terrain-sem'))); // use the random seed
 	surface.populate(rng); // finish constructing the surface
 	rng = rng.reset();
 	generateTerrain(
-		numContinents,
-		seaLevel,
-		avgTerme,
+		Number(dom.val('terrain-continents')) * 2,
+		Number(dom.val('terrain-hay')),
+		Number(dom.val('terrain-terme')),
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
 	const mapper = new Chart(new Azimuthal(surface, true, null));
-	mapper.depict(surface, null, $('#terrain-map')[0], 'jivi', 'nili');
+	mapper.depict(surface,
+	              null,
+	              dom.elm('terrain-map') as SVGGElement,
+	              'jivi',
+	              'nili');
 
 	console.log("fina!");
-	terrainOutOfSync = false;
+	lastUpdated = Layer.TERRAIN;
 }
 
 
 /**
  * Generate the countries on the planet's surface.
  */
-function historyApply(): void {
-	if (terrainOutOfSync)
-		terrainApply();
+function applyHistory(): void {
+	if (lastUpdated < Layer.TERRAIN)
+		applyTerrain();
 
 	console.log("jena histore...");
-	const randomSeme = Number($('#history-sem').val());
-	const year = Number($('#history-nen').val());
-	const katastrofe = Number($('#history-katastrof').val());
-
-	world = new World(katastrofe, surface);
-
-	let rng = new Random(randomSeme); // use the random seed
+	world = new World(
+		Number(dom.val('history-katastrof')),
+		surface);
+	let rng = new Random(Number(dom.val('history-sem'))); // use the random seed
 	world.generateHistory(
-		year,
+		Number(dom.val('history-nen')),
 		rng); // create the terrain!
 
 	console.log("grafa...");
 	const mapper = new Chart(new Azimuthal(surface, true, null));
-	mapper.depict(surface, world, $('#history-map')[0], 'politiki', 'nili');
+	mapper.depict(surface,
+	              world,
+	              dom.elm('history-map') as SVGGElement,
+	              'politiki',
+	              'nili');
 
 	console.log("mute ba chuze bil...");
 	const countries = world.getCivs(true, MIN_SIZE_TO_LIST, MIN_COUNTRIES_TO_LIST) // list the biggest countries for the centering selection
@@ -264,30 +296,21 @@ function historyApply(): void {
 	}
 
 	console.log("fina!");
-	historyOutOfSync = false;
+	lastUpdated = Layer.HISTORY;
 }
 
 
 /**
  * Generate a final formatted map.
  */
-function mapApply(): void {
-	if (historyOutOfSync)
-		historyApply();
+function applyMap(): void {
+	if (lastUpdated < Layer.HISTORY)
+		applyHistory();
 
 	console.log("grafa zemgrafe...");
-	const projection = $('#map-projection').val();
-	const norde = ($('#map-dish').val() === 'norde');
-	const locus = Chart.border(world.getCiv(Number.parseInt($('#map-jung').val())));
-	const zemrang = $('#map-zemrang').val();
-	const marorang = $('#map-hayrang').val();
-	const filter = $('#map-filter').val();
-	const nade = $('#map-nade').prop('checked');
-	const kenare = $('#map-kenar').prop('checked');
-	const shade = $('#map-say').prop('checked');
-	const dexnam = $('#map-deshnam').prop('checked');
-	const xanonam = $('#map-shannam').prop('checked');
-	const style = $('#map-bash').val();
+	const projection = dom.val('map-projection');
+	const norde = (dom.val('map-dish') === 'norde');
+	const locus = Chart.border(world.getCiv(Number.parseInt(dom.val('map-jung'))));
 
 	let mapper: Chart;
 	if (projection === 'equirectangular')
@@ -306,24 +329,34 @@ function mapApply(): void {
 		throw new Error(`no jana metode da graflance: '${projection}'.`);
 
 	mapper.depict(
-		surface, world,
-		$('#map-map')[0],
-		zemrang, marorang, filter,
-		nade, kenare, shade,
-		dexnam, xanonam, 6,
-		(style === 'null') ? null : style);
+		surface,
+		world,
+		dom.elm('map-map') as SVGGElement,
+		dom.val('map-zemrang'),
+		dom.val('map-hayrang'),
+		dom.val('map-filter'),
+		dom.checked('map-nade'),
+		dom.checked('map-kenar'),
+		dom.checked('map-say'),
+		dom.checked('map-deshnam'),
+		dom.checked('map-shannam'),
+		6,
+		(dom.val('map-bash') === 'null') ?
+			null :
+			dom.val('map-bash')
+	);
 
 	console.log("fina!");
-	mapOutOfSync = false;
+	lastUpdated = Layer.MAP;
 }
 
 
 /**
  * Generate a final formatted map.
  */
-function pdfApply(): void {
-	if (mapOutOfSync)
-		mapApply();
+function applyPdf(): void {
+	if (lastUpdated < Layer.MAP)
+		applyMap();
 
 	console.log("jena pdf..."); // TODO: refactor map so that I can get this in a form that I can rite directly to the PDF.  I should probably also allow export as png somehow?
 	const doc = new jsPDF.jsPDF(); // instantiate the PDF document
@@ -337,10 +370,10 @@ function pdfApply(): void {
 
 	const pdf = doc.output('blob');
 	const pdfUrl = URL.createObjectURL(pdf);
-	$('#pdf-embed').attr('src', pdfUrl);
+	dom.elm('pdf-embed').setAttribute('src', pdfUrl);
 
 	console.log("fina!");
-	pdfOutOfSync = false;
+	lastUpdated = Layer.PDF;
 }
 
 
@@ -349,15 +382,12 @@ function pdfApply(): void {
  * everything back to how it was before.
  * @param func
  */
-function disableButtonsAndDo(func: () => void) {
+function disableButtonsAndDo(func: () => void): void {
 	inProgress = true;
 	for (const tab of ['planet', 'terrain', 'history', 'map']) {
-		const btn = $(`#${tab}-apply`);
-		const rediLoge = $(`#${tab}-redi`);
-		const ladaLoge = $(`#${tab}-lada`);
-		btn.prop('disabled', true);
-		rediLoge.hide();
-		ladaLoge.show();
+		dom.elm(`${tab}-apply`).setAttribute('disabled', '');
+		dom.elm(`${tab}-redi`).style.display = 'none';
+		dom.elm(`${tab}-lada`).style.display = null;
 	}
 
 	setTimeout(() => {
@@ -369,92 +399,96 @@ function disableButtonsAndDo(func: () => void) {
 
 		inProgress = false;
 		for (const tab of ['planet', 'terrain', 'history', 'map']) {
-			const btn = $(`#${tab}-apply`);
-			const rediLoge = $(`#${tab}-redi`);
-			const ladaLoge = $(`#${tab}-lada`);
-			btn.prop('disabled', false);
-			ladaLoge.hide();
-			rediLoge.show();
+			dom.elm(`${tab}-apply`).removeAttribute('disabled');
+			dom.elm(`${tab}-redi`).style.display = null;
+			dom.elm(`${tab}-lada`).style.display = 'none';
 		}
 	}, 10);
 }
 
 
-/**
- * When the planet button is clicked, call its function.
- * Note that this does not check if the planet is out of sync; it
- * must update every time the tab is opened because of Plotly.
- */
-$('#planet-apply, #planet-tab').on('click', () => {
-	if (!inProgress)
-		disableButtonsAndDo(planetApply);
-});
+for (const suffix of ['apply', 'tab']) {
+	/**
+	 * When the planet button is clicked, call its function.
+	 * Note that this does not check if the planet is out of sync; it
+	 * must update every time the tab is opened because of Plotly.
+	 */
+	dom.elm(`planet-${suffix}`).addEventListener('click', () => {
+		if (!planetRendered && !inProgress)
+			disableButtonsAndDo(renderPlanet);
+	});
 
-/**
- * When the terrain button is clicked, do its thing
- */
-$('#terrain-apply, #terrain-tab').on('click', () => {
-	if (terrainOutOfSync && !inProgress)
-		disableButtonsAndDo(terrainApply);
-});
+	/**
+	 * When the terrain button is clicked, do its thing
+	 */
+	dom.elm(`terrain-${suffix}`).addEventListener('click', () => {
+		if (lastUpdated < Layer.TERRAIN && !inProgress)
+			disableButtonsAndDo(applyTerrain);
+	});
 
-/**
- * When the history button is clicked, activate its purpose.
- */
-$('#history-apply, #history-tab').on('click', () => {
-	if (historyOutOfSync && !inProgress)
-		disableButtonsAndDo(historyApply);
-});
+	/**
+	 * When the history button is clicked, activate its purpose.
+	 */
+	dom.elm(`history-${suffix}`).addEventListener('click', () => {
+		if (lastUpdated < Layer.HISTORY && !inProgress)
+			disableButtonsAndDo(applyHistory);
+	});
 
-/**
- * When the map button is clicked, reveal its true form.
- */
-$('#map-apply, #map-tab').on('click', () => {
-	if (mapOutOfSync && !inProgress)
-		disableButtonsAndDo(mapApply);
-});
+	/**
+	 * When the map button is clicked, reveal its true form.
+	 */
+	dom.elm(`map-${suffix}`).addEventListener('click', () => {
+		if (lastUpdated < Layer.MAP && !inProgress)
+			disableButtonsAndDo(applyMap);
+	});
+}
 
 /**
  * When the pdf button is clicked, generate the PDF.
  */
-$('#pdf-tab').on('click', () => {
-	if (pdfOutOfSync && !inProgress)
-		disableButtonsAndDo(pdfApply);
+dom.elm('pdf-tab').addEventListener('click', () => {
+	if (lastUpdated < Layer.PDF && !inProgress)
+		disableButtonsAndDo(applyPdf);
 });
 
 
-$('#planet-panel :input').on('change', () => {
-	planetOutOfSync = true;
-	terrainOutOfSync = true;
-	historyOutOfSync = true;
-	mapOutOfSync = true;
-	pdfOutOfSync = true;
-});
-
-$('#terrain-panel :input').on('change', () => {
-	terrainOutOfSync = true;
-	historyOutOfSync = true;
-	mapOutOfSync = true;
-	pdfOutOfSync = true;
-});
-
-$('#history-panel :input').on('change', () => {
-	historyOutOfSync = true;
-	mapOutOfSync = true;
-	pdfOutOfSync = true;
-});
-
-$('#map-panel :input').on('change', () => {
-	mapOutOfSync = true;
-	pdfOutOfSync = true;
-});
+/**
+ * when the inputs change, forget what we know
+ */
+const tabs = [
+	{ layer: Layer.PLANET, name: 'planet' },
+	{ layer: Layer.TERRAIN, name: 'terrain' },
+	{ layer: Layer.HISTORY, name: 'history' },
+	{ layer: Layer.MAP, name: 'map' },
+	{ layer: Layer.PDF, name: 'pdf' },
+];
+for (const { layer, name } of tabs) {
+	Selector.mapToAllChildren(dom.elm(`${name}-panel`), (element) => {
+		const tagName = element.tagName.toLowerCase();
+		if (tagName === 'input' || tagName === 'select') {
+			element.addEventListener('change', () => {
+				lastUpdated = Math.min(lastUpdated, layer - 1);
+				if (lastUpdated < Layer.PLANET)
+					planetRendered = false;
+			});
+		}
+	});
+}
 
 
 /**
  * Once the page is ready, start the algorithm!
  */
-$(document).ready(() => {
+document.addEventListener("DOMContentLoaded", () => {
 	console.log("ready!");
-
-	$('#map-tab').click();
+	// (dom.elm('map-tab') as HTMLElement).click();
+	const polygon = [
+		{x: 5.465, y: 55.752},
+		{x: -68.341, y: -90.632},
+		{x: 2.739, y: -166.634},
+		{x: 116.678, y: -147.812},
+		{x: 188.6615, y: -99.2585},
+		{x: 188.6650, y: -99.2645},
+	];
+	console.log(straightSkeleton(polygon));
 }); // TODO: warn before leaving page
