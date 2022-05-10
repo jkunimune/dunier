@@ -92,16 +92,16 @@ export class World {
 		this.politicalMap = new Map();
 
 		for (const nodo of planet.nodos) { // assine the society-relevant values to the Nodos
-			nodo.domublia = DOMUBLIA.get(nodo.biome); // start with the biome-defined habitability
-			if (nodo.domublia > 0 || nodo.biome === Biome.ARENATOPIA) { // if it is habitable at all or is a desert
+			nodo.popDensity = DOMUBLIA.get(nodo.biome); // start with the biome-defined habitability
+			if (nodo.popDensity > 0 || nodo.biome === Biome.ARENATOPIA) { // if it is habitable at all or is a desert
 				for (const neighbor of nodo.neighbors.keys()) { // increase habitability based on adjacent water
 					if (neighbor.biome === Biome.LAK || nodo.neighbors.get(neighbor).liwe > RIVER_UTILITY_THRESHOLD)
-						nodo.domublia += FRESHWATER_UTILITY;
+						nodo.popDensity += FRESHWATER_UTILITY;
 					if (neighbor.biome === Biome.HAI)
-						nodo.domublia += SALTWATER_UTILITY;
+						nodo.popDensity += SALTWATER_UTILITY;
 				}
 			}
-			nodo.domublia *= nodo.getArea();
+			nodo.domublia = nodo.popDensity*nodo.getArea();
 
 			nodo.pasablia = PASABLIA.get(nodo.biome);
 		}

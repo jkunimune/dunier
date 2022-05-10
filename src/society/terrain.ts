@@ -389,10 +389,6 @@ function fillOcean(level: number, surf: Surface): void {
 
 	for (const node of surf.nodos) // and set sea level to 0
 		node.gawe -= level;
-
-	for (const node of surf.nodos) // finally, set the coast edges
-		for (const edge of node.neighbors.values())
-			edge.isCoast = edge.node0.isWater() !== edge.node1.isWater();
 }
 
 

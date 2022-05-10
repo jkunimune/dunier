@@ -927,6 +927,7 @@ export abstract class MapProjection {
 	}
 }
 
+
 /**
  * an edge on a map projection
  */

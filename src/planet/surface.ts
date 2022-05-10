@@ -312,6 +312,7 @@ export class Nodo {
 	public terme: number;
 	public barxe: number;
 	public biome: Biome;
+	public popDensity: number;
 	public domublia: number;
 	public pasablia: number;
 	public kultur: Kultur;
@@ -515,7 +516,6 @@ export class Edge {
 	public triangleR: Triangle;
 	public length: number;
 	public liwe: number;
-	public isCoast: boolean;
 	public path: Place[];
 	public foreBorder: Vector[]; // these borders are the limits of the greebling
 	public backBorder: Vector[];
@@ -526,7 +526,6 @@ export class Edge {
 		this.node1 = node1;
 		this.triangleL = triangleL;
 		this.length = length;
-		this.isCoast = false;
 		this.path = null;
 
 		node0.neighbors.set(node1, this);

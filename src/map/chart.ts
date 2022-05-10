@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Nodo, Surface, Triangle} from "../planet/surface.js";
+import {Edge, Nodo, Surface, Triangle} from "../planet/surface.js";
 import {filterSet, longestShortestPath} from "../util/util.js";
 import {World} from "../society/world.js";
 import {MapProjection} from "./projection.js";
@@ -35,7 +35,8 @@ import {Biome} from "../society/terrain.js";
 
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
-const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2 TODO: display rivers that connect lakes to shown rivers
+const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2
+const BORDER_SPECIFY_THRESHOLD = 0.45;
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const N_DEGREES = 6; // number of line segments into which to break one radian of arc
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
@@ -111,6 +112,12 @@ const DEPTH_COLORS = [
 	'rgb(23, 34, 118)',
 ];
 
+enum Layer {
+	GEO,
+	BIO,
+	KULTUR,
+}
+
 
 /**
  * a class to handle all of the graphical arrangement stuff.
@@ -174,7 +181,7 @@ export class Chart {
 		if (marorang === 'nili') { // color the sea deep blue
 			this.fill(
 				filterSet(surface.nodos, n => n.biome === Biome.HAI),
-				g, BIOME_COLORS.get(Biome.HAI), true);
+				g, BIOME_COLORS.get(Biome.HAI), Layer.GEO);
 			nadorang = BIOME_COLORS.get(Biome.HAI);
 		}
 		else if (marorang === 'gawia') { // color the sea by altitude
@@ -183,7 +190,7 @@ export class Chart {
 				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Number.POSITIVE_INFINITY;
 				this.fill(
 					filterSet(surface.nodos, n => n.biome === Biome.HAI && -n.gawe >= min && -n.gawe < max),
-					g, DEPTH_COLORS[i], true); // TODO: enforce contiguity of shallow ocean?
+					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
 			}
 			nadorang = DEPTH_COLORS[0]; // TODO: outline ocean + cerni nade?
 		}
@@ -193,17 +200,17 @@ export class Chart {
 				if (biome !== Biome.HAI)
 					this.fill(
 						filterSet(surface.nodos, n => n.biome === biome),
-						g, BIOME_COLORS.get(biome), false);
+						g, BIOME_COLORS.get(biome), Layer.BIO);
 		}
 		else if (zemrang === 'politiki' && world !== null) { // draw the countries
 			this.fill(
 				filterSet(surface.nodos, n => n.biome !== Biome.HAI),
-				g, BIOME_COLORS.get(null), true);
+				g, BIOME_COLORS.get(null), Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
 			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i++)
 				this.fill(
 					filterSet(biggestCivs.pop().nodos, n => n.biome !== Biome.HAI),
-					g, COUNTRY_COLORS[i], true);
+					g, COUNTRY_COLORS[i], Layer.KULTUR);
 		}
 		else if (zemrang === 'gawia') { // color the sea by altitude
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
@@ -211,7 +218,7 @@ export class Chart {
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Number.POSITIVE_INFINITY;
 				this.fill(
 					filterSet(surface.nodos, n => n.biome !== Biome.HAI && n.gawe >= min && n.gawe < max),
-					g, ALTITUDE_COLORS[i], true);
+					g, ALTITUDE_COLORS[i], Layer.GEO);
 			}
 		}
 
@@ -234,7 +241,7 @@ export class Chart {
 					this.fill(
 						filterSet(civ.nodos, n => n.biome !== Biome.HAI),
 						titledG,
-						'none', true, '#000', 0.7).setAttribute('pointer-events', 'all');
+						'none', Layer.KULTUR, '#000', 0.7).setAttribute('pointer-events', 'all');
 				// }
 			}
 		}
@@ -264,7 +271,7 @@ export class Chart {
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
 	 * @return the newly created element encompassing these triangles.
 	 */
-	fill(nodos: Set<Nodo>, svg: SVGGElement, color: string, greeble: boolean,
+	fill(nodos: Set<Nodo>, svg: SVGGElement, color: string, greeble: Layer,
 		 stroke = 'none', strokeWidth = 0): SVGPathElement {
 		if (nodos.size <= 0)
 			return this.draw([], svg);
@@ -358,7 +365,7 @@ export class Chart {
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.projection.project(Chart.outline(new Set(nodos), false), true); // do the projection
+		const path = this.projection.project(Chart.outline(new Set(nodos), Layer.KULTUR), true); // do the projection
 		if (path.length === 0)
 			return null;
 
@@ -666,16 +673,16 @@ export class Chart {
 	 */
 	static border(civ: Civ): PathSegment[] {
 		const landNodos = filterSet(civ.nodos, (n) => n.biome !== Biome.HAI);
-		return Chart.outline(landNodos, true);
+		return Chart.outline(landNodos, Layer.KULTUR);
 	}
 
 	/**
 	 * create an ordered Iterator of segments that form the boundary of these nodos.
 	 * @param nodos Set of Node that are part of this group.
-	 * @param greeble whether to greeble non-coastlines
+	 * @param greeble how to greeble
 	 * @return Array of PathSegments, ordered widdershins.
 	 */
-	static outline(nodos: Nodo[] | Set<Nodo>, greeble: boolean): PathSegment[] {
+	static outline(nodos: Nodo[] | Set<Nodo>, greeble: Layer): PathSegment[] {
 		nodos = new Set(nodos);
 		const accountedFor = new Set(); // keep track of which Edge have been done
 		const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire surface?
@@ -696,7 +703,7 @@ export class Chart {
 						const edge = inNodo.neighbors.get(esNodo); // and the edge between them
 
 						// add the edge to the complete Path
-						if (greeble || edge.isCoast) { // TODO: it would be cool if borders between uninhabitable areas were drawn strait
+						if (Chart.weShouldGreeble(edge, greeble)) {
 							let path;
 							if (edge.triangleR === next)
 								path = edge.path;
@@ -847,6 +854,19 @@ export class Chart {
 			}
 		}
 		return segments;
+	}
+
+	static weShouldGreeble(edge: Edge, layer: Layer): boolean {
+		if (layer === Layer.GEO)
+			return true;
+		else if (edge.node0.isWater() !== edge.node1.isWater())
+			return true;
+		else if (layer === Layer.BIO)
+			return false;
+		else if (edge.node0.popDensity + edge.node1.popDensity < BORDER_SPECIFY_THRESHOLD)
+			return false;
+		else
+			return true;
 	}
 
 }
