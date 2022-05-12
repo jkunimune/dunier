@@ -52,7 +52,7 @@ export class Conic extends MapProjection {
 			if (y > locusBottom)
 				locusBottom = y;
 			if (Math.abs(x) > locusRight)
-				locusRight = Math.abs(x);
+				locusRight = Math.abs(x); // TODO this generally makes the map too big when the projected country is asymmetrical
 		}
 
 		let coneTop = Number.POSITIVE_INFINITY;

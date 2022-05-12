@@ -27,7 +27,7 @@ import {delaunayTriangulate} from "../util/delaunay.js";
 import {Kultur} from "../society/culture.js";
 import {Biome} from "../society/terrain.js";
 import {Place, Point} from "../util/coordinates.js";
-import {circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
+import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
 import {straightSkeleton} from "../util/straightskeleton.js";
 
 
@@ -166,6 +166,7 @@ export abstract class Surface {
 					y: vertex.minus(nodo.pos).dot(nodo.nord),
 				});
 			}
+			checkVoronoiPolygon(vertices); // validate it
 			let skeletonLeaf = straightSkeleton(vertices); // get the strait skeleton
 			for (const {edge} of nodo.getPolygon()) {
 				const arc = skeletonLeaf.pathToNextLeaf();

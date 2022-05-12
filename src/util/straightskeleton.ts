@@ -80,6 +80,7 @@ export function straightSkeleton(polygon: Point[]): Tree<Point> {
 		}
 	}
 
+	console.error(polygon);
 	throw "I don't remember when I got here";
 }
 

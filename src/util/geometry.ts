@@ -218,6 +218,25 @@ export function lineArcIntersections(
 
 
 /**
+ * edit a polygon in place so that if its vertices are approximately orderd
+ * counterclockwise from the POV of the origin, then they are made exactly orderd
+ * widdershins from the POV of the origin
+ * @param vertexen
+ */
+export function checkVoronoiPolygon(vertexen: Point[]): void {
+	const origen = { x: 0, y: 0 };
+	for (let i = 0; i < vertexen.length; i ++) {
+		const j = (i + 1)%vertexen.length;
+		if (signAngle(vertexen[i], origen, vertexen[j]) > 0) {
+			const vertex = vertexen[i];
+			vertexen[i] = vertexen[j];
+			vertexen[j] = vertex;
+		}
+	}
+}
+
+
+/**
  * exchange x and y for this point
  * @param p
  */

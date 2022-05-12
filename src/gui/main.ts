@@ -242,7 +242,7 @@ function applyTerrain(): void {
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new Azimuthal(surface, true, null));
+	const mapper = new Chart(new EqualArea(surface, true, null));
 	mapper.depict(surface,
 	              null,
 	              dom.elm('terrain-map') as SVGGElement,
@@ -271,7 +271,7 @@ function applyHistory(): void {
 		rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new Azimuthal(surface, true, null));
+	const mapper = new Chart(new EqualArea(surface, true, null));
 	mapper.depict(surface,
 	              world,
 	              dom.elm('history-map') as SVGGElement,
