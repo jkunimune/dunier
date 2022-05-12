@@ -43,7 +43,6 @@ import {generateFactSheet} from "../society/factsheet.js";
 import {loadJSON} from "../util/fileio.js";
 import {Conic} from "../map/conic.js";
 import {Selector} from "../util/selector.js";
-import {straightSkeleton} from "../util/straightskeleton.js";
 // @ts-ignore
 const jsPDF = window.jspdf;
 // @ts-ignore
@@ -100,8 +99,6 @@ let world: World = null;
  */
 function applyPlanet() {
 	console.log("jena planete...");
-	console.log(dom.elm('planet-type'));
-	console.log(dom.val('planet-type'));
 	const planetType = dom.val('planet-type'); // read input
 	const tidallyLocked = dom.checked('planet-locked');
 	const radius = Number(dom.val('planet-size')) / (2*Math.PI);
@@ -481,14 +478,5 @@ for (const { layer, name } of tabs) {
  */
 document.addEventListener("DOMContentLoaded", () => {
 	console.log("ready!");
-	// (dom.elm('map-tab') as HTMLElement).click();
-	const polygon = [
-		{x: 5.465, y: 55.752},
-		{x: -68.341, y: -90.632},
-		{x: 2.739, y: -166.634},
-		{x: 116.678, y: -147.812},
-		{x: 188.6615, y: -99.2585},
-		{x: 188.6650, y: -99.2645},
-	];
-	console.log(straightSkeleton(polygon));
+	(dom.elm('map-tab') as HTMLElement).click();
 }); // TODO: warn before leaving page
