@@ -58,7 +58,7 @@ export class Bonne extends MapProjection {
 		this.maxλ = Math.min(Math.PI, 1.8*focus.λMax);
 		this.minλ = -this.maxλ;
 
-		this.geoEdges = MapProjection.buildEdges(
+		this.geoEdges = MapProjection.buildGeoEdges(
 			this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges
 
 		let top = this.projectPoint({ф: this.maxф, λ: 0}).y; // then determine the dimensions of this map

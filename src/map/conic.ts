@@ -43,6 +43,7 @@ export class Conic extends MapProjection {
 
 		let locusTop = Number.POSITIVE_INFINITY; // then determine the dimensions of this map
 		let locusBottom = Number.NEGATIVE_INFINITY;
+		let locusLeft = 0;
 		let locusRight = 0;
 		for (const segment of this.transform(locus)) { // check the extent of the thing we're mapping
 			const point = assert_фλ(endpoint(segment));
@@ -51,8 +52,10 @@ export class Conic extends MapProjection {
 				locusTop = y;
 			if (y > locusBottom)
 				locusBottom = y;
-			if (Math.abs(x) > locusRight)
-				locusRight = Math.abs(x); // TODO this generally makes the map too big when the projected country is asymmetrical
+			if (x < locusLeft)
+				locusLeft = x;
+			if (x > locusRight)
+				locusRight = x;
 		}
 
 		let coneTop = Number.POSITIVE_INFINITY;
@@ -74,7 +77,7 @@ export class Conic extends MapProjection {
 
 		const top = Math.max(coneTop, 1.4*locusTop - 0.4*locusBottom);
 		const bottom = Math.min(coneBottom, 1.4*locusBottom - 0.4*locusTop);
-		const right = Math.min(coneRight, 1.8*locusRight);
+		const right = Math.min(coneRight, 0.9*(locusRight - locusLeft));
 		this.setDimensions(-right, right, top, bottom);
 	}
 

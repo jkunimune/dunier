@@ -22,22 +22,20 @@
  * SOFTWARE.
  */
 import {Surface} from "../planet/surface.js";
-import {
-	isBetween,
-	localizeInRange
-} from "../util/util.js";
+import {isBetween, localizeInRange} from "../util/util.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 import {
 	assert_xy,
+	assert_фλ,
 	endpoint,
 	Location,
 	LongLineType,
 	PathSegment,
-	Point,
 	Place,
-	assert_фλ
+	Point
 } from "../util/coordinates.js";
 import {
+	calculateDistance,
 	chordCenter,
 	isAcute,
 	lineArcIntersections,
@@ -47,6 +45,7 @@ import {
 
 
 const MAP_PRECISION = 5e-2;
+const π = Math.PI;
 
 /**
  * a class to manage the plotting of points from a Surface onto a plane.
@@ -77,7 +76,7 @@ export abstract class MapProjection {
 			this.center = 0;
 
 		if (edges === null) // the default set of edges is a rectangle around the map
-			edges = MapProjection.buildEdges(surface.фMin, surface.фMax, -Math.PI, Math.PI);
+			edges = MapProjection.buildGeoEdges(surface.фMin, surface.фMax, -π, π);
 		this.geoEdges = edges;
 	}
 
@@ -92,7 +91,7 @@ export abstract class MapProjection {
 		const output: PathSegment[] = [];
 		for (const segment of segments) {
 			const [фi, λi] = segment.args;
-			let λo = localizeInRange(λi - this.center, -Math.PI, Math.PI); // shift to the central meridian and snap the longitude into the [-π, π] domain
+			let λo = localizeInRange(λi - this.center, -π, π); // shift to the central meridian and snap the longitude into the [-π, π] domain
 			let фo = фi;
 			if (!this.northUp) { // flip the map over if it should be south-up
 				фo *= -1;
@@ -273,43 +272,12 @@ export abstract class MapProjection {
 					const { intersect0, intersect1, loopIndex, exiting } = crossing;
 					touchedLoop[loopIndex] = true; // take note that it crossd an on-screen edge
 					upcomingMovetos.push(exiting); // record whether this was going in or out
-
-					if (thisSegment.type === 'L') { // to split a line
-						segmentCue.push(
-							thisSegment, // leave the current segment in so we can check for further interruptions
-							{ type: 'M', args: [intersect1.s, intersect1.t] }, // but also insert a jump to the other side
-							{ type: 'L', args: [intersect0.s, intersect0.t] }, // preceded by a line up to the very edge
-						); // (don't forget to reverse because it's FILO)
-					}
-					else if (thisSegment.type === 'A') { // to split an arc
-						const a = assert_xy(endpoint(lastSegment));
-						const b = assert_xy(intersect0);
-						const c = assert_xy(intersect1);
-						const [r1, r2, rot, _, sweepDirection, dx, dy] = thisSegment.args;
-						const d = { x: dx, y: dy };
-						const endpoints = [a, d];
-						let largeArc: number[] = []; // you haff to figure out whether to change the large arc flag for the children
-						for (let i = 0; i < 2; i ++) {
-							const acute = isAcute(
-								b, endpoints[1 - i], endpoints[i]); // luckily, this angle tells you whether the arc is big
-							largeArc.push(acute ? 0 : 1);
-							console.assert(largeArc[i] <= _);
-						}
-						segmentCue.push(
-							{
-								type: 'A',
-								args: [r1, r2, rot, largeArc[1], sweepDirection, d.x, d.y]
-							}, // insert the second segment
-							{ type: 'M', args: [c.x, c.y] }, // preceded by the jump
-							{
-								type: 'A',
-								args: [r1, r2, rot, largeArc[0], sweepDirection, b.x, b.y] // preceded by
-							}, // preceded by the first segment
-						); // (don't forget to reverse because it's FILO)
-					}
-					else {
-						throw `can't use '${thisSegment.type}' here`;
-					}
+					segmentCue.push(
+						...MapProjection.spliceSegment(
+							endpoint(lastSegment), thisSegment,
+							intersect0, intersect1,
+						).reverse() // remember to reverse it for the FILO segment cue
+					);
 				}
 			}
 			iterations ++;
@@ -396,8 +364,10 @@ export abstract class MapProjection {
 							break;
 						}
 					}
-					if (sectionIndex === null)
+					if (sectionIndex === null) {
+						console.error(sections);
 						throw `I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`;
+					}
 					if (weHaveDrawn[sectionIndex]) // if that one has already been drawn
 						startingANewSupersection = true; // move on randomly
 				}
@@ -487,6 +457,61 @@ export abstract class MapProjection {
 
 
 	/**
+	 * convert a continuous path segment to an equivalent list of path segments that are
+	 * careful to step over the intersection point (which should be on the input segment)
+	 * @param start
+	 * @param segment
+	 * @param intersect0 the intersection point. in the event that the coordinate system
+	 *                   is not 1:1, this will be on the side corresponding to start.
+	 * @param intersect1 the intersection point. in the event that the coordinate system
+	 *                   is not 1:1, this will be on the side of segment's endpoint.
+	 */
+	static spliceSegment(start: Location, segment: PathSegment, intersect0: Location, intersect1: Location): PathSegment[] {
+		if (segment.type === 'L') { // to split a line
+			return [
+				{ type: 'L', args: [intersect0.s, intersect0.t] }, // it's a line up to the very edge
+				{ type: 'M', args: [intersect1.s, intersect1.t] }, // then a jump to the other side
+				segment, // followd by the final stretch to the end
+			];
+		}
+
+		else if (segment.type === 'A') { // to split an arc
+			const a = assert_xy(start);
+			const b = assert_xy(intersect0);
+			const c = assert_xy(intersect1);
+			const [r1, r2, rot, oldLargeArc, sweepDirection, dx, dy] = segment.args;
+			const d = { x: dx, y: dy };
+			console.assert(r1 === r2);
+			console.assert(b.x === c.x && b.y === c.y);
+
+			const endpoints = [a, d];
+			let newLargeArc: number[] = []; // you haff to figure out whether to change the large arc flag for the children
+			for (let i = 0; i < 2; i ++) {
+				const acute = isAcute(
+					b, endpoints[1 - i], endpoints[i]); // luckily, this angle tells you whether the arc is big
+				newLargeArc.push(acute ? 0 : 1);
+				console.assert(newLargeArc[i] <= oldLargeArc);
+			}
+			return [
+				{
+					type: 'A',
+					args: [r1, r2, rot, newLargeArc[0], sweepDirection, b.x, b.y],
+				}, // the first segment
+				{ type: 'M', args: [c.x, c.y] }, //the jump
+				{
+					type: 'A',
+					args: [r1, r2, rot, newLargeArc[1], sweepDirection, d.x, d.y]
+				}, // the twoth segment
+			];
+		}
+
+		else {
+			throw `can't use '${segment.type}' here`;
+		}
+	}
+
+
+	/**
 	 * find out if all of the given points are contained by a set of edges, using an
 	 * even/odd rule.
 	 * @param edges
@@ -565,19 +590,21 @@ export abstract class MapProjection {
 			const crossing = this.getGeoEdgeCrossing(coords0, coords1, edges);
 			if (crossing === null)
 				return null;
-			const { place0, place1, loopIndex, exiting } = crossing;
+			const { place0, place1, edge, exiting } = crossing;
 			return { intersect0: { s: place0.ф, t: place0.λ },
 			         intersect1: { s: place1.ф, t: place1.λ },
-			         loopIndex: loopIndex, exiting: exiting };
+			         loopIndex: edge.loopIndex,
+					 exiting: exiting || edge.twoWay }; // note that if this is a double edge, it is always exiting
 		}
 		else if (edges[0][0].type === 'L') {
 			const crossing = this.getMapEdgeCrossing(coords0, coords1, edges);
 			if (crossing === null)
 				return null;
-			const { point0, point1, loopIndex, exiting } = crossing;
+			const { point0, point1, edge, exiting } = crossing;
 			return { intersect0: { s: point0.x, t: point0.y },
 			         intersect1: { s: point1.x, t: point1.y },
-			         loopIndex: loopIndex, exiting: exiting };
+			         loopIndex: edge.loopIndex,
+					 exiting: exiting || edge.twoWay }; // even if the getCrossing function thaut it was only entering
 		}
 		else {
 			throw "no.";
@@ -590,7 +617,7 @@ export abstract class MapProjection {
 	 * the 1th point's side.  also, the index of the loop on which this crossing lies.
 	 */
 	getMapEdgeCrossing(coords0: PathSegment, coords1: PathSegment, edges: MapEdge[][]
-	): { point0: Point, point1: Point, loopIndex: number, exiting: boolean } | null {
+	): { point0: Point, point1: Point, edge: MapEdge, exiting: boolean } | null {
 		for (const edgeLoop of edges)
 			for (const edge of edgeLoop)
 				console.assert(edge.type === 'L', `You can't use ${edge.type} edges in this funccion.`);
@@ -607,8 +634,8 @@ export abstract class MapProjection {
 					if (intersect !== null)
 						return {
 							point0: intersect, point1: intersect,
-							loopIndex: i,
-							exiting: signCrossing(a, b, start, end) > 0 };
+							edge: edge,
+							exiting: signCrossing(a, b, start, end) < 0 };
 				}
 			}
 			return null;
@@ -637,7 +664,7 @@ export abstract class MapProjection {
 						return {
 							point0: intersect,
 							point1: intersect,
-							loopIndex: i,
+							edge: edge,
 							exiting: signCrossing(points[0], target, start, end) > 0 };
 					}
 				}
@@ -656,7 +683,7 @@ export abstract class MapProjection {
 	 */
 	getGeoEdgeCrossing(
 		coords0: PathSegment, coords1: PathSegment, edges: MapEdge[][]
-	): { place0: Place, place1: Place, loopIndex: number, exiting: boolean } | null {
+	): { place0: Place, place1: Place, edge: MapEdge, exiting: boolean } | null {
 		for (const coords of [coords0, coords1])
 			console.assert(coords.type === 'M' || coords.type === 'L',
 				`You can't use arcs in this funccion.`);
@@ -670,29 +697,29 @@ export abstract class MapProjection {
 				const end = assert_фλ(edge.end);
 				if (edge.type === LongLineType.GING) { // if it is a meridian
 					const λX = start.λ;
-					const λ̄0 = localizeInRange(λ0, λX, λX + 2*Math.PI);
-					const λ̄1 = localizeInRange(λ1, λX, λX + 2*Math.PI);
-					if (λ̄0 !== λX && λ̄1 !== λX && Math.abs(λ̄0 - λ̄1) >= Math.PI) { // check to see if it crosses this edge
+					const λ̄0 = localizeInRange(λ0, λX, λX + 2*π);
+					const λ̄1 = localizeInRange(λ1, λX, λX + 2*π);
+					if (λ̄0 !== λX && λ̄1 !== λX && Math.abs(λ̄0 - λ̄1) >= π) { // check to see if it crosses this edge
 						const {place0, place1} = this.getMeridianCrossing(
 							ф0, λ0, ф1, λ1, λX);
 						if (isBetween(place0.ф, start.ф, end.ф))
 							return {
 								place0: place0, place1: place1,
-								loopIndex: i,
+								edge: edge,
 								exiting: (end.ф > start.ф) !== (λ̄1 > λ̄0) };
 					}
 				}
 				else if (edge.type === LongLineType.VEI) { // do the same thing for parallels
 					const фX = start.ф;
-					const ф̄0 = localizeInRange(ф0, фX, фX + 2*Math.PI);
-					const ф̄1 = localizeInRange(ф1, фX, фX + 2*Math.PI);
-					if (ф̄0 !== фX && ф̄1 !== фX && Math.abs(ф̄0 - ф̄1) >= Math.PI) {
+					const ф̄0 = localizeInRange(ф0, фX, фX + 2*π);
+					const ф̄1 = localizeInRange(ф1, фX, фX + 2*π);
+					if (ф̄0 !== фX && ф̄1 !== фX && Math.abs(ф̄0 - ф̄1) >= π) {
 						const {place0, place1} = this.getParallelCrossing(
 							ф0, λ0, ф1, λ1, start.ф);
 						if (isBetween(place0.λ, start.λ, end.λ))
 							return {
 								place0: place0, place1: place1,
-								loopIndex: i,
+								edge: edge,
 								exiting: (end.λ > start.λ) === (ф̄1 > ф̄0)
 							};
 					}
@@ -717,19 +744,19 @@ export abstract class MapProjection {
 	 * @param λX the longitude of the meridian
 	 */
 	getMeridianCrossing(
-		ф0: number, λ0: number, ф1: number, λ1: number, λX = Math.PI
+		ф0: number, λ0: number, ф1: number, λ1: number, λX = π
 	): { place0: Place, place1: Place } {
 		const pos0 = this.surface.xyz({ф: ф0, λ: λ0 - λX});
 		const pos1 = this.surface.xyz({ф: ф1, λ: λ1 - λX});
 		const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
 			pos1.x - pos0.x);
 		const фX = this.surface.фλ(posX).ф;
-		if (Math.abs(λX) === Math.PI && λ0 < λ1)
-			return { place0: { ф: фX, λ: -Math.PI },
-			         place1: { ф: фX, λ:  Math.PI } };
-		else if (Math.abs(λX) === Math.PI)
-			return { place0: { ф: фX, λ:  Math.PI },
-			         place1: { ф: фX, λ: -Math.PI } };
+		if (Math.abs(λX) === π && λ0 < λ1)
+			return { place0: { ф: фX, λ: -π },
+			         place1: { ф: фX, λ:  π } };
+		else if (Math.abs(λX) === π)
+			return { place0: { ф: фX, λ:  π },
+			         place1: { ф: фX, λ: -π } };
 		else
 			return { place0: { ф: фX, λ: λX },
 			         place1: { ф: фX, λ: λX } };
@@ -746,15 +773,15 @@ export abstract class MapProjection {
 	 * @param фX the latitude of the parallel
 	 */
 	getParallelCrossing(
-		ф0: number, λ0: number, ф1: number, λ1: number, фX = Math.PI
+		ф0: number, λ0: number, ф1: number, λ1: number, фX = π
 	): { place0: Place, place1: Place } {
 		const λX = ((ф1 - фX)*λ0 + (фX - ф0)*λ1)/(ф1 - ф0); // this solution is not as exact as the meridian one,
-		if (фX === Math.PI && ф0 < ф1) // but it's good enuff.  the interseccion between a cone and a line is too hard.
-			return { place0: { ф: -Math.PI, λ: λX }, // TODO: this won't work for the antiequator; need to weigh by sin(ф-фX)
-			         place1: { ф:  Math.PI, λ: λX } };
-		else if (фX === Math.PI)
-			return { place0: { ф:  Math.PI, λ: λX },
-			         place1: { ф: -Math.PI, λ: λX } };
+		if (фX === π && ф0 < ф1) // but it's good enuff.  the interseccion between a cone and a line is too hard.
+			return { place0: { ф: -π, λ: λX }, // TODO: this won't work for the antiequator; need to weigh by sin(ф-фX)
+			         place1: { ф:  π, λ: λX } };
+		else if (фX === π)
+			return { place0: { ф:  π, λ: λX },
+			         place1: { ф: -π, λ: λX } };
 		else
 			return { place0: { ф: фX, λ: λX },
 			         place1: { ф: фX, λ: λX } };
@@ -821,30 +848,77 @@ export abstract class MapProjection {
 		this.right = right;
 		this.top = top;
 		this.bottom = bottom;
-		const edges: MapEdge[][] = [[
-			{ start: {s: left, t: top}, end: null, type: 'L' },
-			{ start: {s: left, t: bottom}, end: null, type: 'L' },
-			{ start: {s: right, t: bottom}, end: null, type: 'L' },
-			{ start: {s: right, t: top}, end: null, type: 'L' },
-		]];
-		for (let i = 0; i < edges[0].length; i ++) // enforce the contiguity of the edge loops
-			edges[0][i].end = edges[0][(i+1)%edges[0].length].start;
-		this.mapEdges = edges;
+		this.mapEdges = MapProjection.validateEdges([[
+			{ type: 'L', start: {s: left, t: top}, },
+			{ type: 'L', start: {s: left, t: bottom}, },
+			{ type: 'L', start: {s: right, t: bottom}, },
+			{ type: 'L', start: {s: right, t: top}, },
+		]]);
 	}
 
 	/**
 	 * create an array of edges for a map with a fixed rectangular bound in lat/lon space,
 	 * for use in the edge cutting algorithm.
 	 */
-	static buildEdges(фMin: number, фMax: number, λMin: number, λMax: number): MapEdge[][] {
-		const edges: MapEdge[][] = [[
-			{ start: {s: фMax, t: λMax}, end: null, type: LongLineType.VEI },
-			{ start: {s: фMax, t: λMin}, end: null, type: LongLineType.GING },
-			{ start: {s: фMin, t: λMin}, end: null, type: LongLineType.VEI },
-			{ start: {s: фMin, t: λMax}, end: null, type: LongLineType.GING },
-		]];
-		for (let i = 0; i < edges[0].length; i ++) // enforce the contiguity of the edge loops
-			edges[0][i].end = edges[0][(i+1)%edges[0].length].start;
+	static buildGeoEdges(фMin: number, фMax: number, λMin: number, λMax: number): MapEdge[][] {
+		return this.validateEdges([[
+			{ type: LongLineType.VEI, start: {s: фMax, t: λMax} },
+			{ type: LongLineType.GING, start: {s: фMax, t: λMin} },
+			{ type: LongLineType.VEI, start: {s: фMin, t: λMin} },
+			{ type: LongLineType.GING, start: {s: фMin, t: λMax} },
+		]]);
+
+	}
+
+	static validateEdges(inputs: { start: Location, type: LongLineType | string }[][]): MapEdge[][] {
+		// first, bild the loops
+		const edges: MapEdge[][] = [];
+		for (let i = 0; i < inputs.length; i ++) {
+			edges.push([]);
+			for (const {start, type} of inputs[i]) {
+				edges[i].push({
+					start: start,
+					end: null,
+					type: type,
+					loopIndex: i,
+					twoWay: false,
+				});
+			}
+			// enforce the contiguity of the edge loops
+			for (let j = 0; j < edges[i].length; j ++)
+				edges[i][j].end = edges[i][(j+1)%edges[i].length].start;
+		}
+		// finally, check for coincident edges
+		for (let i = 0; i < edges.length; i ++) {
+			for (let j = 0; j < edges[i].length; j ++) {
+				const edgeA = edges[i][j];
+				for (let k = 0; k < edges.length; k ++) {
+					for (let l = 0; l < edges[k].length; l ++) {
+						const edgeB = edges[k][l];
+						if ((i !== k || j !== l) && edgeA.type === edgeB.type) {
+							let distance;
+							if (edgeA.type === LongLineType.GING)
+								distance = localizeInRange(edgeA.start.t - edgeB.start.t, 0, 2*π);
+							else if (edgeA.type === LongLineType.VEI)
+								distance = localizeInRange(edgeA.start.s - edgeB.start.s, 0, 2*π);
+							else if (edgeA.type === 'L') {
+								const a1 = assert_xy(edgeA.start), a2 = assert_xy(edgeA.end);
+								const b1 = assert_xy(edgeB.start), b2 = assert_xy(edgeB.end);
+								const parallel = signCrossing(a1, a2, b1, b2) === 0;
+								distance = (parallel) ?
+									calculateDistance(a1, b1, b2) :
+									Number.POSITIVE_INFINITY;
+							}
+							else
+								throw `unrecognized edge type: ${edgeA.type}`;
+							if (distance === 0) // note that this generally assumes all coincident edges also share endpoints
+								edges[i][j].twoWay = true;
+						}
+					}
+				}
+			}
+		}
+		console.log(edges);
 		return edges;
 	}
 
@@ -855,21 +929,21 @@ export abstract class MapProjection {
 	 * distances between the ritemost endpoint and +π and the leftmost endpoint and -π
 	 */
 	static centralMeridian(segments: PathSegment[]): number {
-		const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI);
+		const emptyLongitudes = new ErodingSegmentTree(-π, π);
 		for (let i = 1; i < segments.length; i ++) {
 			if (segments[i].type !== 'M') {
 				const x1 = segments[i - 1].args[1];
 				const x2 = segments[i].args[1];
-				if (Math.abs(x1 - x2) < Math.PI) {
+				if (Math.abs(x1 - x2) < π) {
 					emptyLongitudes.remove(Math.min(x1, x2), Math.max(x1, x2));
 				}
 				else {
-					emptyLongitudes.remove(Math.max(x1, x2), Math.PI);
-					emptyLongitudes.remove(-Math.PI, Math.min(x1, x2));
+					emptyLongitudes.remove(Math.max(x1, x2), π);
+					emptyLongitudes.remove(-π, Math.min(x1, x2));
 				}
 			}
 		}
-		return emptyLongitudes.getCenter(true).location + Math.PI;
+		return emptyLongitudes.getCenter(true).location + π;
 	}
 
 	/**
@@ -894,11 +968,11 @@ export abstract class MapProjection {
 		}
 
 		let фStd;
-		if (фMax === Math.PI/2 && фMin === -Math.PI/2) // choose a standard parallel
+		if (фMax === π/2 && фMin === -π/2) // choose a standard parallel
 			фStd = 0;
-		else if (фMax === Math.PI/2)
+		else if (фMax === π/2)
 			фStd = фMax;
-		else if (фMin === -Math.PI/2)
+		else if (фMin === -π/2)
 			фStd = фMin;
 		else
 			фStd = Math.atan((Math.tan(фMax) + Math.tan(фMin))/2);
@@ -935,4 +1009,6 @@ interface MapEdge {
 	start: Location;
 	end: Location;
 	type: string | LongLineType;
+	loopIndex: number;
+	twoWay: boolean;
 }

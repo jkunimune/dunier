@@ -41,14 +41,18 @@ export class Azimuthal extends MapProjection {
 			-rMax, rMax, -rMax, rMax,
 			[
 				[{
+					type: LongLineType.VEI,
 					start: { s: surface.фMax, t:  Math.PI },
 					end:   { s: surface.фMax, t: -Math.PI },
-					type: LongLineType.VEI,
+					loopIndex: 0,
+					twoWay: surface.фMax - surface.фMin >= 2*Math.PI,
 				}],
 				[{
+					type: LongLineType.VEI,
 					start: { s: surface.фMin, t: -Math.PI },
 					end:   { s: surface.фMin, t:  Math.PI },
-					type: LongLineType.VEI,
+					loopIndex: 1,
+					twoWay: surface.фMax - surface.фMin >= 2*Math.PI,
 				}],
 			]);
 		this.rMax = rMax;

@@ -114,7 +114,7 @@ export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean): 
  * @param a
  * @param b
  */
-export function distance(p: Point, a: Point, b: Point): number {
+export function calculateDistance(p: Point, a: Point, b: Point): number {
 	const r = {x: p.x - a.x, y: p.y - a.y};
 	const l = {x: b.x - a.x, y: b.y - a.y};
 	const length = Math.hypot(l.x, l.y);
