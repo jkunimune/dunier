@@ -47,11 +47,15 @@ export class Selector {
 		else if (element.hasAttribute('value'))
 			return element.getAttribute('value');
 		else
-			throw `This element has no value:\n${this.elm(id)}`;
+			throw `This element has no value:\n${element}`;
 	}
 
 	checked(id: string): boolean {
-		return this.elm(id).hasAttribute('checked');
+		const element = this.elm(id);
+		if (element.tagName.toLowerCase() === 'input')
+			return (<HTMLInputElement> element).checked;
+		else
+			throw `this element has no checked property:\n${element}`;
 	}
 
 	/**

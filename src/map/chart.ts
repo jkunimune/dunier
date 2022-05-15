@@ -241,7 +241,7 @@ export class Chart {
 					this.fill(
 						filterSet(civ.nodos, n => n.biome !== Biome.HAI),
 						titledG,
-						'none', Layer.KULTUR, '#000', 0.7).setAttribute('pointer-events', 'all');
+						'none', Layer.KULTUR, '#111', 0.7).setAttribute('pointer-events', 'all');
 				// }
 			}
 		}
