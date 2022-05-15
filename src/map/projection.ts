@@ -895,12 +895,12 @@ export abstract class MapProjection {
 	 * distances between the ritemost endpoint and +π and the leftmost endpoint and -π
 	 */
 	static centralMeridian(segments: PathSegment[]): number {
-		const emptyLongitudes = new ErodingSegmentTree(-π, π);
+		const emptyLongitudes = new ErodingSegmentTree(-π, π); // start with all longitudes empty
 		for (let i = 1; i < segments.length; i ++) {
 			if (segments[i].type !== 'M') {
 				const x1 = segments[i - 1].args[1];
 				const x2 = segments[i].args[1];
-				if (Math.abs(x1 - x2) < π) {
+				if (Math.abs(x1 - x2) < π) { // and then remove the space corresponding to each segment
 					emptyLongitudes.remove(Math.min(x1, x2), Math.max(x1, x2));
 				}
 				else {
@@ -909,7 +909,10 @@ export abstract class MapProjection {
 				}
 			}
 		}
-		return emptyLongitudes.getCenter(true).location + π;
+		if (emptyLongitudes.getCenter(true).location !== null)
+			return emptyLongitudes.getCenter(true).location + π;
+		else
+			return 0; // default to 0°E TODO it would be really cool if I could pick a number more intelligently
 	}
 
 	/**

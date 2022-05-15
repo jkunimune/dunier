@@ -71,7 +71,7 @@ export class ErodingSegmentTree {
 
 		if ((left === null || this.pole >= left.val) || (rait === null || this.pole <= rait.val)) { // if you touched the pole, recalculate it
 			this.radius = 0;
-			this.pole = Number.NaN;
+			this.pole = null;
 			let link = this.minim;
 			while (link !== null) {
 				if (link.bad.val - link.val > 2 * this.radius) {
@@ -87,7 +87,7 @@ export class ErodingSegmentTree {
 	 * shorten all line segments by t at each end.
 	 * @param t
 	 */
-	erode(t: number): void {
+	public erode(t: number): void {
 		let link = this.minim;
 		while (link !== null) {
 			if (link.bad.val - link.val <= 2*t) {
@@ -272,12 +272,12 @@ export class ErodingSegmentTree {
 
 	/**
 	 * get the midpoint of the longest line segment, and half the length of the longest
-	 * line segment.
+	 * line segment.  return zero if there are no line segments left.
 	 * @param periodic whether we should treat it as an angular coordinate where -π is the
 	 *                 same as +π
 	 */
 	public getCenter(periodic: boolean = false): { location: number, radius: number } {
-		if (periodic && this.minim.val == -Math.PI && this.maxim.val == Math.PI) { // if it's periodic
+		if (periodic && this.minim.val === -Math.PI && this.maxim.val === Math.PI) { // if it's periodic
 			const leftGap = this.minim.bad.val - this.minim.val; // you haff to check the outside
 			const riteGap = this.maxim.val - this.maxim.cen.val;
 			if (leftGap + riteGap > 2*this.radius) // to see if that's better
