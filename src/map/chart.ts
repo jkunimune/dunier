@@ -275,8 +275,9 @@ export class Chart {
 		 stroke = 'none', strokeWidth = 0): SVGPathElement {
 		if (nodos.size <= 0)
 			return this.draw([], svg);
+		const closePath = color !== 'none'; // leave the polygons open if we're not coloring them in
 		const segments = this.projection.project(
-			Chart.outline(nodos, greeble), true);
+			Chart.outline(nodos, greeble), closePath);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
