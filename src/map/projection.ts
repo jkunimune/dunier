@@ -34,14 +34,7 @@ import {
 	Place,
 	Point
 } from "../util/coordinates.js";
-import {
-	calculateDistance,
-	chordCenter,
-	isAcute,
-	lineArcIntersections,
-	lineLineIntersection,
-	signCrossing
-} from "../util/geometry.js";
+import {chordCenter, isAcute, lineArcIntersections, lineLineIntersection} from "../util/geometry.js";
 
 
 const MAP_PRECISION = 5e-2;
@@ -195,7 +188,7 @@ export abstract class MapProjection {
 				else { // if it's too long
 					const aGeo = assert_фλ(endpoint(jinPoints[i-1]));
 					const bGeo = assert_фλ(endpoint(jinPoints[i]));
-					const {ф, λ} = this.getMidpoint(aGeo, bGeo); // that means we need to plot a midpoint
+					const {ф, λ} = this.getGeoMidpoint(aGeo, bGeo); // that means we need to plot a midpoint
 					jinPoints.splice(i, 0, {type: 'L', args: [ф, λ]});
 					ogi.splice(i, 0, ogi[i]);
 					break; // break out of this so we can go project it
@@ -228,27 +221,16 @@ export abstract class MapProjection {
 		if (closePath && !MapProjection.isClosed(segments))
 			throw `ew, it's open.  go make sure your projections are 1:1!`;
 
-		const touchedLoop: boolean[] = []; // keep track of which loops it touches
-		for (let i = 0; i < edges.length; i ++)
-			touchedLoop.push(false);
-
 		const segmentCue = segments.slice().reverse();
 		const sections: PathSegment[][] = [];
 		let currentSection: PathSegment[] = null;
-		const upcomingMovetos: boolean[] = [];
 		let iterations = 0;
 		while (true) { // first, break it up into sections
 			const thisSegment = (segmentCue.length > 0 ? segmentCue.pop() : null);
 
 			if (thisSegment === null || thisSegment.type === 'M') { // at movetos and at the end
 				if (currentSection !== null) {
-					let currentSectionIsIn = null;
-					if (upcomingMovetos.length > 0) // check if we have catalogd it (we should have if it's on an edge)
-						currentSectionIsIn = upcomingMovetos.pop(); // if so, we have noted whether the current section is in
-					else // if not
-						currentSectionIsIn = MapProjection.envelops( // we need to check if the last point is containd (we know it's not on an edge)
-							edges, currentSection[currentSection.length - 1]); // XXX there is a *slite* chance that this will fail if a moveto is on an edge
-					if (currentSectionIsIn)
+					if (this.encompasses(edges, currentSection))
 						sections.push(currentSection); // save if so TODO: save if no also
 				}
 				if (thisSegment !== null)
@@ -269,9 +251,7 @@ export abstract class MapProjection {
 					currentSection.push(thisSegment); // just add them to the thing
 				}
 				else { // otherwise, if it jumps across an interruption
-					const { intersect0, intersect1, loopIndex, exiting } = crossing;
-					touchedLoop[loopIndex] = true; // take note that it crossd an on-screen edge
-					upcomingMovetos.push(exiting); // record whether this was going in or out
+					const { intersect0, intersect1 } = crossing;
 					segmentCue.push(
 						...MapProjection.spliceSegment(
 							endpoint(lastSegment), thisSegment,
@@ -286,7 +266,7 @@ export abstract class MapProjection {
 		}
 
 		if (sections.length === 0) // if it's all off the map
-			return []; // goodbye TODO: keep the discarded sections and use them to determine if you need to trace the edge here
+			return []; // goodbye TODO: have a way to check if we need to shade in the entire map
 
 		const startPositions: { loop: number, index: number }[] = [];
 		const weHaveDrawn: boolean[] = []; // set up some section-indexed vectors
@@ -298,43 +278,51 @@ export abstract class MapProjection {
 
 		const output: PathSegment[] = []; // now start re-stitching it all together
 		let sectionIndex = 0;
-		let supersectionStart = -1;
+		let supersectionIndex = -1;
+		let supersectionStart = null;
 		let startingANewSupersection = true;
 		while (true) {
 
 			let jinSection = sections[sectionIndex]; // take a section
-			if (!startingANewSupersection)
-				jinSection = jinSection.slice(1); // take off its moveto
-			else
-				supersectionStart = sectionIndex;
+			if (!startingANewSupersection) {
+				jinSection = jinSection.slice(1); // remove its moveto
+			}
+			else {
+				supersectionIndex = sectionIndex;
+				supersectionStart = endpoint(jinSection[0]);
+			}
 			startingANewSupersection = false; // turn off this notification flag until we need it agen
 
 			output.push(...jinSection); // add its points to the thing
 			weHaveDrawn[sectionIndex] = true; // mark it as drawn
-			const sectionEnd = endpoint(jinSection[jinSection.length-1]); // then look at where on Earth we are
 
 			if (!closePath) { // if we're not worrying about closing it off
 				startingANewSupersection = true; // forget it and move onto a random section
 			}
 			else {
+				const sectionEnd = endpoint(jinSection[jinSection.length-1]); // otherwise, look at where on Earth we are
 				const endPosition = MapProjection.getPositionOnEdge(
 					sectionEnd, edges);
 
-				if (endPosition.loop !== null) { // if we ended hitting a wall
+				if (sectionEnd.s === supersectionStart.s &&
+					sectionEnd.t === supersectionStart.t) { // first, check if we have closed this supersection
+					startingANewSupersection = true; // if so, don't look any further
+				}
+				else if (endPosition.loop !== null) { // if we ended hitting a wall
 					const endLoop = edges[endPosition.loop]; // then we should move to another point on a wall
 
 					let bestSection = null, bestPositionIndex = null;
 					for (let i = 0; i < startPositions.length; i ++) { // check the remaining sections
 						const startPosition = startPositions[i];
 						if (startPosition.loop === endPosition.loop) { // for any on the same edge loop as us
-							if (!weHaveDrawn[i] || i === supersectionStart) {
+							if (!weHaveDrawn[i] || i === supersectionIndex) {
+								let relativeIndex = startPosition.index;
 								if (startPosition.index < endPosition.index)
-									startPosition.index += endLoop.length;
-								if (bestPositionIndex === null || startPosition.index < bestPositionIndex) {
+									relativeIndex += endLoop.length;
+								if (bestPositionIndex === null || relativeIndex < bestPositionIndex) {
 									bestSection = i; // calculate which one should come next
-									bestPositionIndex = startPosition.index;
+									bestPositionIndex = relativeIndex;
 								}
-								startPosition.index %= endLoop.length;
 							}
 						}
 					}
@@ -346,14 +334,16 @@ export abstract class MapProjection {
 					const nextStart = endpoint(sections[bestSection][0]);
 					for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
 						const edge = endLoop[i%endLoop.length];
-						const targetPlace = (i === restartEdge) ? nextStart : edge.end; // TODO: I used to hav something here about the current place not equalling the target place... does that ever come up?  should I have a check before the for loop?  does it even matter?
+						const targetPlace = (i === restartEdge) ? nextStart : edge.end;
 						output.push({type: edge.type,
 							         args: [targetPlace.s, targetPlace.t]});
 					}
-					if (bestSection === supersectionStart) // if this brings us back to where we started this supersection
+					if (bestSection === supersectionIndex) // if this brings us back to where we started this supersection
 						startingANewSupersection = true; // move on randomly
 					else if (!weHaveDrawn[bestSection]) // otherwise, if you found a fresh place to restart
 						sectionIndex = bestSection; // go to it
+					else
+						throw "I don't think it should be possible to rap around to a drawn section that's not this one";
 				}
 				else { // if we ended in the middle someplace
 					sectionIndex = null;
@@ -365,6 +355,7 @@ export abstract class MapProjection {
 						}
 					}
 					if (sectionIndex === null) {
+						console.error(edges);
 						console.error(sections);
 						throw `I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`;
 					}
@@ -381,63 +372,13 @@ export abstract class MapProjection {
 			}
 		}
 
-		for (let i = output.length - 1; i >= 2; i --) { // remove any zero-length segments
-			if (output[i].type === 'A' && output[i-1].type === 'A' && output[i-2].type === 'A')
-				throw "woit!";
-		}
 		if (closePath) { // if it matters which side is inside and which side out, draw the outline of the map
 			for (let i = 0; i < edges.length; i ++) { // for each loop
-				if (!touchedLoop[i]) { // which was not already tuchd
-					const edge = edges[i][0]; // pick one edge
-					console.assert(edge.start.s === edge.end.s, "conceptually there's noting rong with what you've done, but I've only accounted for vertical edges here");
-					const periodic = edges[i].length === 1; // check for periodicity in the form of an open edge
-					const period = (periodic) ? Math.abs(edge.end.t - edge.start.t) : 0; // and measure the period
-					const sEdge = edge.start.s;
-					let tTest = null;
-					let dMin = Number.POSITIVE_INFINITY;
-					let antiparallel = null;
-					for (let i = 1; i < output.length; i ++) { // look through the path
-						if (output[i].type === 'M') {  // ignore moves
-						}
-						else if (output[i].type === 'A') { // do something with arcs
-							antiparallel = false;
-							break; // well, assume that if there’s an arc, it’s never going to be inside out
-						}
-						else if (output[i].type === 'L') { // check lines and LongLines for crossings
-							const a = endpoint(output[i - 1]);
-							const b = endpoint(output[i]);
-							if (a.t !== b.t) {
-								const wraps = periodic && Math.abs(b.t - a.t) > period/2.; // if the domain is periodic and this line is long enuff, ita ctually raps around
-								if (tTest === null) {
-									tTest = (a.t + b.t)/2; // choose a y value
-									// if (wraps) tTest = localizeInRange(tTest, edge.start.t, edge.end.t); // adjust for rapping, if necessary
-								}
-								let crossesTestLine = (a.t < tTest) !== (b.t < tTest); // look for segments that cross that y value
-								if (wraps) // account for rapping
-									crossesTestLine = !crossesTestLine;
-								if (crossesTestLine) {
-									let dt = b.t - a.t, dta = tTest - a.t, dtb = b.t - tTest;
-									if (wraps) {
-										dt = localizeInRange(dt, - period/2., period/2.);
-										dta = localizeInRange(dta, - period/2., period/2.);
-										dtb = localizeInRange(dtb, - period/2., period/2.);
-									}
-									const s = a.s*dtb/dt + b.s*dta/dt; // find the x value where they cross
-									if (Math.abs(s - sEdge) < dMin) { // the one nearest the edge will tell us
-										dMin = Math.abs(s - sEdge);
-										antiparallel = (a.t < b.t) !== (edge.start.t < edge.end.t); // if this path is widdershins relative to the edge
-										if (wraps) antiparallel = !antiparallel; // account for rapping
-									}
-								}
-							}
-						}
-					}
-					if (antiparallel) { // if it is
-						const start = edges[i][0].start;
-						output.push({type: 'M', args: [start.s, start.t]}); // draw the outline of the entire map to contain it
-						for (const edge of edges[i])
-							output.push({type: edge.type, args: [edge.end.s, edge.end.t]});
-					}
+				if (MapProjection.isInsideOut(output, edges[i])) { // if it is
+					const start = edges[i][0].start;
+					output.push({type: 'M', args: [start.s, start.t]}); // draw the outline of the entire map to contain it
+					for (const edge of edges[i])
+						output.push({type: edge.type, args: [edge.end.s, edge.end.t]});
 				}
 			}
 		}
@@ -512,29 +453,42 @@ export abstract class MapProjection {
 
 
 	/**
-	 * find out if all of the given points are contained by a set of edges, using an
-	 * even/odd rule.
+	 * find out if the given points are contained by a set of edges, using an even/odd
+	 * rule. it is assumed that they are either all in or all out.  points on an edge are
+	 * considerd ambiguous
 	 * @param edges
-	 * @param point
+	 * @param points
 	 * @return whether all of points are inside edges
 	 */
-	static envelops(edges: MapEdge[][], point: PathSegment): boolean {
+	encompasses(edges: MapEdge[][], points: PathSegment[]): boolean {
 		const polygon: PathSegment[] = [];
 		for (const loop of edges) {
 			polygon.push({type: 'M', args: [loop[0].start.s, loop[0].start.t]});
 			for (const edge of loop)
 				polygon.push({type: 'L', args: [edge.end.s, edge.end.t]});
 		}
-		return MapProjection.contains(polygon, endpoint(point));
+		for (let i = 0; i < points.length; i ++) { // the fastest way to judge this is to just look at the first point
+			const containd = MapProjection.contains(polygon, endpoint(points[i]));
+			if (containd !== null) // that is not ambiguous
+				return containd;
+		}
+		for (let i = 1; i < points.length; i ++) { // if that didn't work, use midpoints
+			const containd = MapProjection.contains(
+				polygon,
+				this.getMidpoint(points[i - 1], points[i], edges[0][0].type === 'L'));
+			if (containd !== null) // in practice, this should always be unambiguous
+				return containd;
+		}
+		return false; // if it's completely on the edge, mark it as out so it goes away
 	}
 
 
 	/**
 	 * find out if a point is contained by a polygon, using an even/odd rule.
-	 * if a point is on the polygon, count it as in
+	 * if a point is on the polygon, return null to mark it as ambiguous.
 	 * @param polygon
 	 * @param point
-	 * @return whether point is inside polygon
+	 * @return whether point is inside polygon, or null if it is on the edge.
 	 */
 	static contains(polygon: PathSegment[], point: Location): boolean {
 		let contained = false;
@@ -550,9 +504,11 @@ export abstract class MapProjection {
 				const [s0, t0] = polygon[i-1].args;
 				const [s1, t1] = polygon[i].args;
 
-				// if the point is on an edge, call it in.
-				if (s >= Math.min(s0, s1) && s <= Math.max(s0, s1) && t >= Math.min(t0, t1) && t <= Math.max(t0, t1) && (s0 === s1 || t0 === t1))
-					return true;
+				// if the point is on an edge, return null
+				if (s >= Math.min(s0, s1) && s <= Math.max(s0, s1) &&
+					t >= Math.min(t0, t1) && t <= Math.max(t0, t1) &&
+					(s0 === s1 || t0 === t1))
+					return null;
 				// otherwise, toggle depending on if our virtual s-ward ray crosses the edge
 				if ((t < t0) !== (t < t1))
 					if (s0 + (t - t0)/(t1 - t0)*(s1 - s0) > s)
@@ -568,10 +524,62 @@ export abstract class MapProjection {
 
 
 	/**
+	 * return a point on the given segment.
+	 * @param prev
+	 * @param segment
+	 * @param planar
+	 */
+	getMidpoint(prev: PathSegment, segment: PathSegment, planar: boolean): Location {
+		if (planar) {
+			if (segment.type === 'L') {
+				const start = endpoint(prev);
+				const end = endpoint(segment);
+				return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
+			}
+			else if (segment.type === 'A') {
+				const start = assert_xy(endpoint(prev));
+				const [r, , , largeArc, sweep, end_s, end_t] = segment.args;
+				const end = { x: end_s, y: end_t };
+				const center = chordCenter(start, end, r, sweep !== largeArc);
+				let direction = {
+					x: (start.x + end.x)/2 - center.x,
+					y: (start.y + end.y)/2 - center.y
+				};
+				if (largeArc)
+					direction = { x: -direction.x, y: -direction.y };
+				const scale = Math.hypot(direction.x, direction.y);
+				return {
+					s: center.x + direction.x/scale*r,
+					t: center.y + direction.y/scale*r
+				};
+			}
+			else {
+				throw `don't know how to take the midpoint of ${segment.type} segments`;
+			}
+		}
+		else {
+			if (segment.type === 'L') {
+				const midpoint = this.getGeoMidpoint(assert_фλ(endpoint(prev)),
+				                                     assert_фλ(endpoint(segment)));
+				return { s: midpoint.ф, t: midpoint.λ };
+			}
+			else if (segment.type === LongLineType.GING || segment.type === LongLineType.VEI) {
+				const start = endpoint(prev);
+				const end = endpoint(segment);
+				return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
+			}
+			else {
+				throw `don't know how to take the midpoint of ${segment.type} segments`;
+			}
+		}
+	}
+
+
+	/**
 	 * compute the coordinates of the midpoint between these two lines.
 	 * @return Place
 	 */
-	getMidpoint(a: Place, b: Place): Place {
+	getGeoMidpoint(a: Place, b: Place): Place {
 		const posA = this.surface.xyz(a);
 		const posB = this.surface.xyz(b);
 		const posM = posA.plus(posB).over(2);
@@ -585,26 +593,24 @@ export abstract class MapProjection {
 	 */
 	getEdgeCrossing(
 		coords0: PathSegment, coords1: PathSegment, edges: MapEdge[][]
-	): { intersect0: Location, intersect1: Location, loopIndex: number, exiting: boolean } | null {
+	): { intersect0: Location, intersect1: Location, loopIndex: number } | null {
 		if (edges[0][0].type === LongLineType.GING || edges[0][0].type === LongLineType.VEI) {
 			const crossing = this.getGeoEdgeCrossing(coords0, coords1, edges);
 			if (crossing === null)
 				return null;
-			const { place0, place1, edge, exiting } = crossing;
+			const { place0, place1, loopIndex } = crossing;
 			return { intersect0: { s: place0.ф, t: place0.λ },
 			         intersect1: { s: place1.ф, t: place1.λ },
-			         loopIndex: edge.loopIndex,
-					 exiting: exiting || edge.twoWay }; // note that if this is a double edge, it is always exiting
+			         loopIndex: loopIndex }; // note that if this is a double edge, it is always exiting
 		}
 		else if (edges[0][0].type === 'L') {
 			const crossing = this.getMapEdgeCrossing(coords0, coords1, edges);
 			if (crossing === null)
 				return null;
-			const { point0, point1, edge, exiting } = crossing;
+			const { point0, point1, loopIndex } = crossing;
 			return { intersect0: { s: point0.x, t: point0.y },
 			         intersect1: { s: point1.x, t: point1.y },
-			         loopIndex: edge.loopIndex,
-					 exiting: exiting || edge.twoWay }; // even if the getCrossing function thaut it was only entering
+			         loopIndex: loopIndex }; // even if the getCrossing function thaut it was only entering
 		}
 		else {
 			throw "no.";
@@ -617,7 +623,7 @@ export abstract class MapProjection {
 	 * the 1th point's side.  also, the index of the loop on which this crossing lies.
 	 */
 	getMapEdgeCrossing(coords0: PathSegment, coords1: PathSegment, edges: MapEdge[][]
-	): { point0: Point, point1: Point, edge: MapEdge, exiting: boolean } | null {
+	): { point0: Point, point1: Point, loopIndex: number } | null {
 		for (const edgeLoop of edges)
 			for (const edge of edgeLoop)
 				console.assert(edge.type === 'L', `You can't use ${edge.type} edges in this funccion.`);
@@ -631,17 +637,18 @@ export abstract class MapProjection {
 					const end = assert_xy(edge.end);
 					const intersect = lineLineIntersection(
 						a, b, start, end);
-					if (intersect !== null)
+					if (intersect !== null && // if there is an intersection
+						!(intersect.x === a.x && intersect.y === a.y) &&
+						!(intersect.x === b.x && intersect.y === b.y)) // and that intersection is not on one of the endpoints
 						return {
 							point0: intersect, point1: intersect,
-							edge: edge,
-							exiting: signCrossing(a, b, start, end) < 0 };
+							loopIndex: i }; // return it!
 				}
 			}
 			return null;
 		}
 		else if (coords1.type === 'A') { // if it's an arc
-			const [r, rOther, rot, largeArc, sweepDirection, bx, by] = coords1.args; // get the parameters
+			const [r, rOther, , largeArc, sweepDirection, , ] = coords1.args; // get the parameters
 			console.assert(r === rOther, "I haven't accounted for ellipses.");
 
 			if (sweepDirection === 0) { // arrange a and b so that it sweeps clockwise (in graphical coordinates)
@@ -658,14 +665,10 @@ export abstract class MapProjection {
 					const points = lineArcIntersections(start, end, center, r, a, b); // check for intersections
 					if (points.length > 0) {
 						const intersect = points[0];
-						const vx = center.y - intersect.y;
-						const vy = intersect.x - center.x;
-						const target = { x: intersect.x + vx, y: intersect.y + vy };
 						return {
 							point0: intersect,
 							point1: intersect,
-							edge: edge,
-							exiting: signCrossing(points[0], target, start, end) > 0 };
+							loopIndex: i };
 					}
 				}
 			}
@@ -683,7 +686,7 @@ export abstract class MapProjection {
 	 */
 	getGeoEdgeCrossing(
 		coords0: PathSegment, coords1: PathSegment, edges: MapEdge[][]
-	): { place0: Place, place1: Place, edge: MapEdge, exiting: boolean } | null {
+	): { place0: Place, place1: Place, loopIndex: number } | null {
 		for (const coords of [coords0, coords1])
 			console.assert(coords.type === 'M' || coords.type === 'L',
 				`You can't use arcs in this funccion.`);
@@ -704,9 +707,7 @@ export abstract class MapProjection {
 							ф0, λ0, ф1, λ1, λX);
 						if (isBetween(place0.ф, start.ф, end.ф))
 							return {
-								place0: place0, place1: place1,
-								edge: edge,
-								exiting: (end.ф > start.ф) !== (λ̄1 > λ̄0) };
+								place0: place0, place1: place1, loopIndex: i };
 					}
 				}
 				else if (edge.type === LongLineType.VEI) { // do the same thing for parallels
@@ -718,10 +719,7 @@ export abstract class MapProjection {
 							ф0, λ0, ф1, λ1, start.ф);
 						if (isBetween(place0.λ, start.λ, end.λ))
 							return {
-								place0: place0, place1: place1,
-								edge: edge,
-								exiting: (end.λ > start.λ) === (ф̄1 > ф̄0)
-							};
+								place0: place0, place1: place1, loopIndex: i };
 					}
 				}
 				else {
@@ -877,48 +875,16 @@ export abstract class MapProjection {
 			edges.push([]);
 			for (const {start, type} of inputs[i]) {
 				edges[i].push({
+					type: type,
 					start: start,
 					end: null,
-					type: type,
-					loopIndex: i,
-					twoWay: false,
 				});
 			}
+
 			// enforce the contiguity of the edge loops
 			for (let j = 0; j < edges[i].length; j ++)
 				edges[i][j].end = edges[i][(j+1)%edges[i].length].start;
 		}
-		// finally, check for coincident edges
-		for (let i = 0; i < edges.length; i ++) {
-			for (let j = 0; j < edges[i].length; j ++) {
-				const edgeA = edges[i][j];
-				for (let k = 0; k < edges.length; k ++) {
-					for (let l = 0; l < edges[k].length; l ++) {
-						const edgeB = edges[k][l];
-						if ((i !== k || j !== l) && edgeA.type === edgeB.type) {
-							let distance;
-							if (edgeA.type === LongLineType.GING)
-								distance = localizeInRange(edgeA.start.t - edgeB.start.t, 0, 2*π);
-							else if (edgeA.type === LongLineType.VEI)
-								distance = localizeInRange(edgeA.start.s - edgeB.start.s, 0, 2*π);
-							else if (edgeA.type === 'L') {
-								const a1 = assert_xy(edgeA.start), a2 = assert_xy(edgeA.end);
-								const b1 = assert_xy(edgeB.start), b2 = assert_xy(edgeB.end);
-								const parallel = signCrossing(a1, a2, b1, b2) === 0;
-								distance = (parallel) ?
-									calculateDistance(a1, b1, b2) :
-									Number.POSITIVE_INFINITY;
-							}
-							else
-								throw `unrecognized edge type: ${edgeA.type}`;
-							if (distance === 0) // note that this generally assumes all coincident edges also share endpoints
-								edges[i][j].twoWay = true;
-						}
-					}
-				}
-			}
-		}
-		console.log(edges);
 		return edges;
 	}
 
@@ -981,6 +947,57 @@ export abstract class MapProjection {
 	}
 
 	/**
+	 * calculate whether the given closed curve curls in the direction opposite the given
+	 * edge loop
+	 * @param segments
+	 * @param edges
+	 */
+	static isInsideOut(segments: PathSegment[], edges: MapEdge[]): boolean {
+		const edge = edges[0]; // pick one edge
+		console.assert(edge.start.s === edge.end.s, "conceptually there's noting rong with what you've done, but I've only accounted for vertical edges here");
+		const periodic = edges.length === 1; // check for periodicity in the form of an open edge
+		const period = (periodic) ? Math.abs(edge.end.t - edge.start.t) : 0; // and measure the period
+		const sEdge = edge.start.s;
+		let tTest = null;
+		let dMin = Number.POSITIVE_INFINITY;
+		let antiparallel = null;
+		for (let i = 1; i < segments.length; i ++) { // look through the path
+			if (segments[i].type === 'M') {  // ignore moves
+			}
+			else if (segments[i].type === 'A') { // do something with arcs
+				return false; // well, assume that if there’s an arc, it’s never going to be inside out
+			}
+			else { // check lines and LongLines
+				const a = endpoint(segments[i - 1]);
+				const b = endpoint(segments[i]);
+				if (a.t !== b.t) {
+					const wraps = periodic && Math.abs(b.t - a.t) > period/2.; // if the domain is periodic and this line is long enuff, ita ctually raps around
+					if (tTest === null)
+						tTest = (a.t + b.t)/2; // choose a y value
+					let crossesTestLine = (a.t < tTest) !== (b.t < tTest); // look for segments that cross that y value
+					if (wraps) // account for rapping
+						crossesTestLine = !crossesTestLine;
+					if (crossesTestLine) {
+						let dt = b.t - a.t, dta = tTest - a.t, dtb = b.t - tTest;
+						if (wraps) {
+							dt = localizeInRange(dt, - period/2., period/2.);
+							dta = localizeInRange(dta, - period/2., period/2.);
+							dtb = localizeInRange(dtb, - period/2., period/2.);
+						}
+						const s = a.s*dtb/dt + b.s*dta/dt; // find the x value where they cross
+						if (Math.abs(s - sEdge) < dMin) { // the one nearest the edge will tell us
+							dMin = Math.abs(s - sEdge);
+							antiparallel = (a.t < b.t) !== (edge.start.t < edge.end.t); // if this path is widdershins relative to the edge
+							if (wraps) antiparallel = !antiparallel; // account for rapping
+						}
+					}
+				}
+			}
+		}
+		return antiparallel;
+	}
+
+	/**
 	 * just make sure it eventually returns to each moveto.
 	 * @param segments
 	 */
@@ -1006,9 +1023,7 @@ export abstract class MapProjection {
  * an edge on a map projection
  */
 interface MapEdge {
+	type: string | LongLineType;
 	start: Location;
 	end: Location;
-	type: string | LongLineType;
-	loopIndex: number;
-	twoWay: boolean;
 }

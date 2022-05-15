@@ -115,8 +115,7 @@ export function localizeInRange(value: number, min: number, max: number): number
 }
 
 /**
- * is value inside the inclusive interval bounded by a and b,
- * in whichever direction makes sense?
+ * is value inside the inclusive interval bounded by a and b (order of a and b matters not)
  * @param value
  * @param a
  * @param b

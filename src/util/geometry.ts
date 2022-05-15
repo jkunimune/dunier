@@ -126,17 +126,16 @@ export function calculateDistance(p: Point, a: Point, b: Point): number {
 /**
  * find the intersection between two line segments, or determine that there isn't one.
  * for the purposes of this function, when one endpoint is coincident with the other
- * segment, it is not counted as an intersection.  it just works out better this way for
- * the purpose of edges.
+ * segment, it is counted as an intersection.
  * @returns the location where they cross, or null if they don't
  */
 export function lineLineIntersection(
 	p1: Point, p2: Point,
 	q1: Point, q2: Point): Point {
 	if (q1.x === q2.x) {
-		if (Math.min(p1.x, p2.x) < q1.x && Math.max(p1.x, p2.x) > q1.x) {
+		if (Math.min(p1.x, p2.x) <= q1.x && Math.max(p1.x, p2.x) >= q1.x) {
 			const r = {x: q1.x, y: (q1.x - p1.x)/(p2.x - p1.x)*(p2.y - p1.y) + p1.y};
-			if (r.y > Math.min(q1.y, q2.y) && r.y < Math.max(q1.y, q2.y))
+			if (r.y >= Math.min(q1.y, q2.y) && r.y <= Math.max(q1.y, q2.y))
 				return r;
 		}
 		return null;
