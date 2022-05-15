@@ -540,17 +540,17 @@ export abstract class MapProjection {
 				const start = assert_xy(endpoint(prev));
 				const [r, , , largeArc, sweep, end_s, end_t] = segment.args;
 				const end = { x: end_s, y: end_t };
-				const center = chordCenter(start, end, r, sweep !== largeArc);
-				let direction = {
-					x: (start.x + end.x)/2 - center.x,
-					y: (start.y + end.y)/2 - center.y
+				const center = chordCenter(start, end, r, sweep !== largeArc); // find the center
+				let direction = { // draw a ray thru the arc (bias it toward the start to avoid roundoff issues)
+					x: (2*start.x + end.x)/3 - center.x,
+					y: (2*start.y + end.y)/3 - center.y
 				};
 				if (largeArc)
 					direction = { x: -direction.x, y: -direction.y };
 				const scale = Math.hypot(direction.x, direction.y);
 				return {
-					s: center.x + direction.x/scale*r,
-					t: center.y + direction.y/scale*r
+					s: center.x + direction.x/scale*r, // and then construct the point
+					t: center.y + direction.y/scale*r,
 				};
 			}
 			else {
