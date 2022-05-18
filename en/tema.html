@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
   <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
     <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="/bootstrap-4.5.2-dist/css/bootstrap.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="/res/bootstrap-4.5.2-dist/css/bootstrap.min.css" crossorigin="anonymous">
 
     <link rel="stylesheet" href="/res/style.css">
 
-    <title>Generador de nombres fantásticos &ndash; Dunia Hamar</title>
+    <title>About &ndash; Dunia Hamar</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
   </head>
@@ -25,39 +25,39 @@
             dunia hamar
           </a>
 
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="Pasar barra de navegación">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="Toggle navigation bar">
             <span class="navbar-toggler-icon"></span>
           </button>
 
           <div class="collapse navbar-collapse" id="siri-daweurekia">
             <div class="navbar-nav">
-              <a class="nav-item nav-link" href="./index.html">Mapas</a>
-              <a class="nav-item nav-link" href="./nam.html">Nombres <span class="sr-only">(actual)</span></a>
-              <a class="nav-item nav-link" href="./tema.html">Sobre</a>
-              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">Contáctanos</a>
+              <a class="nav-item nav-link" href="./index.html">Maps</a>
+              <a class="nav-item nav-link" href="./nam.html">Names</a>
+              <a class="nav-item nav-link" href="./tema.html">About <span class="sr-only">(current)</span></a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">Contact</a>
             </div>
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="Idioma">
+                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="Language">
                   <svg class="bi" width="20" viewBox="-38 -38 76 86" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path fill="none" stroke-width="4" d="M0,-36 A36,36,0,0,0,0,36 A18,36,0,0,0,0,-36 A18,36,0,0,0,0,36 A36,36,0,0,0,0,-36 L0,36 M-36,0 L36,0 M-25.5,25.5 A36,36,0,0,1,25.5,25.5 M-25.5,-25.5 A36,36,0,0,0,25.5,-25.5"/>
                   </svg>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right" role="menu" aria-orientation="vertical">
-                  <a class="dropdown-item" href="/bash/en/nam.html" role="menuitem">
+                  <a class="dropdown-item" href="/en/tema.html" role="menuitem">
                     <img src="/res/flags/gb-eng.svg" width="20" height="20" alt="">&nbsp;
                     English
                   </a>
-                  <a class="dropdown-item" href="/bash/es/nam.html" role="menuitem">
+                  <a class="dropdown-item" href="/es/tema.html" role="menuitem">
                     <img src="/res/flags/es.svg" width="20" height="20" alt="">&nbsp;
                     español
                   </a>
-                  <a class="dropdown-item" href="/bash/jp/nam.html" role="menuitem">
+                  <a class="dropdown-item" href="/jp/tema.html" role="menuitem">
                     <img src="/res/flags/jp.svg" width="20" height="20" alt="">&nbsp;
                     日本語
                   </a>
-                  <a class="dropdown-item" href="/bash/pd/nam.html" role="menuitem">
+                  <a class="dropdown-item" href="/pd/tema.html" role="menuitem">
                     <img src="/res/flags/pandunia.svg" width="20" height="20" alt="">&nbsp;
                     pandunia
                   </a>
@@ -70,38 +70,9 @@
     </header>
 
     <main role="main">
-      <!-- generation scripts -->
-<script src="/src/gui/namjener.js" type="module" defer></script>
-
-<div class="container-lg mt-3 mb-5">
-  <div id="alert-box">
-  </div>
-
-  <div class="row justify-content-center p-2">
-    <div id="xef-kolum" class="col-xs-12 col-md-12 col-lg-8 col-xl-6">
-      <form>
-        <button type="button" class="btn btn-block btn-primary" id="nam-apply">
-          <span id="nam-redi">
-            Generar
-          </span>
-          <span id="nam-lada" style="display: none" role="status">
-            <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
-            Trabajando…
-          </span>
-        </button>
-      </form>
-    </div>
-  </div>
-  <div class="row justify-content-center p-2">
-    <div id="ten-kolum-1" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
-      <ul id="nam-liste-1" class="list-group">
-      </ul>
-    </div>
-    <div id="ten-kolum-2" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
-      <ul id="nam-liste-2" class="list-group">
-      </ul>
-    </div>
-  </div>
+      <div class="container-md mt-5 mb-5">
+	<h2>About Dunia Hamar</h2>
+	<p>Dunia Hamar (pronounced /ˈdu.ni.ə ˈhæ.mər/) is a tool to help authors, gamemasters, and conlangers construct realistic fictional worlds in which their creations can thrive. It takes a random seed and several parameters and produces a stylized map, a historical timeline, and info sheets on each of the countries and languages. While no computer program can replace the joy and creativity of the entire worldbuilding process, Dunia Hamar can handle the parts that not all humans feel able or motivated to do.</p> <p>Dunia Hamar is inspired by previous fantasy map generators like <a href="https://azgaar.github.io/Fantasy-Map-Generator">Azgaar's one</a>, but has more of an emphasis on realism. It is not as interactive as some generators, and it does not generate as many fine details like mine locations and diplomatic relations. It does, however, account for several features missing in other generators that are noticeable on the macroscopic scale, such as planetary curvature, plate tectonics, and linguistic drift.</p>
 </div>
 
     </main>
@@ -109,25 +80,6 @@
       <footer>
         <div class="container-lg">
           <div class="row justify-content-center">
-            <div class="col-6 col-sm-5 col-md-3">
-              <h5>Páginas</h5>
-              <ul class="list-unstyled text-small">
-                <li><a class="text-muted" href="./index.html">Mapas</a></li>
-                <li><a class="text-muted" href="./nam.html">Nombres</a></li>
-                <li><a class="text-muted" href="./tema.html">Sobre</a></li>
-                <li><a class="text-muted" href="https://kunimune.home.blog/contact/">Contáctanos</a></li>
-              </ul>
-            </div>
-
-            <div class="col-6 col-sm-5 col-md-3">
-              <h5>Idiomas</h5>
-              <ul class="list-unstyled text-small">
-                <li><a class="text-muted" href="/bash/en/">English</a></li>
-                <li><a class="text-muted" href="/bash/es">español</a></li>
-                <li><a class="text-muted" href="/bash/jp/">日本語</a></li>
-                <li><a class="text-muted" href="/bash/pd/">pandunia</a></li>
-              </ul>
-            </div>
 
             <div class="col-12 col-sm-10 col-md-6">
               <p>
@@ -150,18 +102,39 @@
                 </span>.
               </p>
             </div>
+
+            <div class="col-6 col-sm-5 col-md-3">
+              <h5>Pages</h5>
+              <ul class="list-unstyled text-small">
+                <li><a class="text-muted" href="./index.html">Maps</a></li>
+                <li><a class="text-muted" href="./nam.html">Names</a></li>
+                <li><a class="text-muted" href="./tema.html">About</a></li>
+                <li><a class="text-muted" href="https://kunimune.home.blog/contact/">Contact</a></li>
+              </ul>
+            </div>
+
+            <div class="col-6 col-sm-5 col-md-3">
+              <h5>Languages</h5>
+              <ul class="list-unstyled text-small">
+                <li><a class="text-muted" href="/en/tema.html">English</a></li>
+                <li><a class="text-muted" href="/es/tema.html">español</a></li>
+                <li><a class="text-muted" href="/jp/tema.html">日本語</a></li>
+                <li><a class="text-muted" href="/pd/tema.html">pandunia</a></li>
+              </ul>
+            </div>
+
           </div>
         </div>
       </footer>
 
     </div>
 
-    <div id="bash" style="display: none;">es</div>
+    <div id="bash" style="display: none;">en</div>
 
     <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="/src/lib/jquery.min.js" crossorigin="anonymous"></script>
     <script src="/src/lib/popper.min.js" crossorigin="anonymous"></script>
-    <script src="/bootstrap-4.5.2-dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
+    <script src="/res/bootstrap-4.5.2-dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
     <script src="/src/lib/bootstrap-input-spinner.js"></script>
     <script>
       $("input[type='number']").inputSpinner();

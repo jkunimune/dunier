@@ -40,7 +40,7 @@ for filename in os.listdir('../../res/templates/'):
 		page = re.sub(fr'{{If"[^"]*"[^}}]*}}', '', page)
 
 		# save the result
-		with open(f'../../bash/{lang_code}/{filename}.html', 'w', encoding='utf8') as page_file:
+		with open(f'../../{lang_code}/{filename}.html', 'w', encoding='utf8') as page_file:
 			page_file.write(page)
 		if lang_code == DEFAULT_LANGUAGE:
 			with open(f'../../{filename}.html', 'w', encoding='utf8') as page_file:
