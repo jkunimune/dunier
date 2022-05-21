@@ -21,8 +21,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import "../lib/jquery.min.js"; //TODO: I should not be using jquery
-import "../lib/jspdf.umd.min.js";
 import "../lib/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import {generateTerrain} from "../society/terrain.js";
 import {Surface} from "../planet/surface.js";
@@ -43,8 +41,8 @@ import {generateFactSheet} from "../society/factsheet.js";
 import {loadJSON} from "../util/fileio.js";
 import {Conic} from "../map/conic.js";
 import {Selector} from "../util/selector.js";
-// @ts-ignore
-const jsPDF = window.jspdf;
+import {PortableDocument} from "./document.js";
+import {format} from "../util/util.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -356,18 +354,10 @@ function applyPdf(): void {
 		applyMap();
 
 	console.log("jena pdf..."); // TODO: refactor map so that I can get this in a form that I can rite directly to the PDF.  I should probably also allow export as png somehow?
-	const doc = new jsPDF.jsPDF(); // instantiate the PDF document
-	// doc.addSvgAsImage = jsPDF.svg.addSvgAsImage; // and include the svg module
-	// doc.addImage(mapUrl, "SVG", 5, 5, 287, 200);
-	doc.text("I have to add something to this page or delete it.", 20, 20, {baseline: 'top'});
-
-	for (const civ of world.getCivs(true)) {
+	const doc = new PortableDocument(format('param.data'));
+	for (const civ of world.getCivs(true)) // TODO: only civs on the map
 		generateFactSheet(doc, civ);
-	}
-
-	const pdf = doc.output('blob');
-	const pdfUrl = URL.createObjectURL(pdf);
-	dom.elm('pdf-embed').setAttribute('src', pdfUrl);
+	dom.elm('pdf-embed').setAttribute('src', doc.getUrl());
 
 	console.log("fina!");
 	lastUpdated = Layer.PDF;

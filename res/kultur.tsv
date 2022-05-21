@@ -35,6 +35,7 @@
     amulet
     shoe
     pendant
+    necklace
     tail
     wig
     earring
@@ -61,10 +62,12 @@
     ceremonial
     calligraphic
     ribboned
+    flowered
     fluorescent		tech=1852
     glowing
     pointy
     fur
+    barkcloth		require=fabric	biome!=arenatopia
     thick			require=fabric
     leather			require=fabric
     tiedyed			require=fabric
@@ -76,6 +79,7 @@
     voluminous		require=fabric
     embroidered		require=fabric
     patterned		require=fabric
+    aloha			require=fabric
   ## kesh
     short			forbid=hairpin
     medium			forbid=hairpin		forbid=kinky
@@ -144,7 +148,7 @@
     adobe			require=sedentary
     clay			require=sedentary
     marble			require=sedentary
-    icebrick		require=sedentary	biome=tundre
+    snowbrick		require=sedentary	biome=tundre
     concrete		require=sedentary	tech=-800
     steel			require=sedentary	tech=1000
     floating		biome=barxojangal
@@ -293,6 +297,7 @@
     fluid
     aggressive
     energetic
+    costumed
     narrative
     repetition
   ## klas
@@ -312,6 +317,7 @@
     ululating		forbid=vocals
     falsetto		forbid=vocals
     chanting		forbid=vocals
+    shouting		forbid=vocals
     short_horn		forbid=wind
     long_horn		forbid=wind
     panpipe			forbid=wind
@@ -356,6 +362,7 @@
   ## sharti	new_word
     ground			forbid=roll	forbid=push	forbid=others
     horse
+    elephant		biome=barxojangal	biome=grasistan
     fire
     race
     time			tech=-1500
@@ -374,7 +381,7 @@
 # suna	0.2
   ## kas
     coronation
-    spring			rquire=seasons
+    spring			require=seasons
     summer			require=seasons
     autumn			require=seasons
     winter			require=seasons
@@ -389,6 +396,7 @@
     gods
     dead
     full_moon
+    new_moon
     marriage
     independence	require=state
   ## festa
@@ -430,6 +438,7 @@
     meals
     omiyage
     guest
+    salute
     bow
     handshake
     hug
@@ -440,6 +449,9 @@
     creche
     adults
     language
+    geophagy		biome!=desert
+    eatsand			biome=desert
+    weekday			forbid=sapphire	forbid=ruby	forbid=emerald	forbid=amber
 # shutu	0.5
   ## shutu	new_word
     painting
@@ -473,6 +485,7 @@
     glassworking	tech=-2500
     fireworks		tech=1110
     horseback
+    elephant		biome=barxojangal	biome=grasistan
     seafaring		tech=-2100
     flying			tech=1903
     cinema			tech=1888

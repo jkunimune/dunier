@@ -208,6 +208,31 @@ export class Civ {
 	}
 
 	/**
+	 * list the cultures present in this country, along with each's share of the
+	 * population, starting with the ruling class and then in descending order by pop.
+	 */
+	getCultures(): { kultur: Kultur, abundance: number }[] {
+		// count up the population fraccion of each culture
+		const kulturMap = new Map<Kultur, number>();
+		for (const nodo of this.nodos) {
+			const kulturPopula = kulturMap.has(nodo.kultur) ?
+				kulturMap.get(nodo.kultur) : 0;
+			kulturMap.set(nodo.kultur, kulturPopula + nodo.arableArea/this.getArableArea());
+		}
+		// convert to list and sort
+		const kulturList = [...kulturMap.keys()];
+		kulturList.sort((a, b) => kulturMap.get(b) - kulturMap.get(a));
+		// then move the capital culture to the top
+		kulturList.splice(kulturList.indexOf(this.capital.kultur), 1);
+		kulturList.splice(0, 0, this.capital.kultur);
+		// finally, bild the output object
+		const output = [];
+		for (const kultur of kulturList)
+			output.push({ kultur: kultur, abundance: kulturMap.get(kultur) });
+		return output;
+	}
+
+	/**
 	 * get the controlld area scaled by how effectively it can support populacion.  this
 	 * number is more important and therefore faster to obtain than the land area.
 	 */

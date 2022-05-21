@@ -23,6 +23,7 @@
  */
 import {Civ} from "./civ.js";
 import {format} from "../util/util.js";
+import {PortableDocument} from "../gui/document.js";
 
 
 /**
@@ -30,39 +31,39 @@ import {format} from "../util/util.js";
  * @param doc
  * @param topick
  */
-export function generateFactSheet(doc: any, topick: Civ) {
-	doc.setProperties({
-		title: format('param.data'),
-		creator: 'dunia hamar',
-	});
-	doc.deletePage(0);
-	doc.addPage("a4", "portrait");
-	doc.addFont("../../res/kitabuforme/NotoSans-Regular.ttf", "NotoSans", "normal");
-	doc.setFont("NotoSans"); // set font
+export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO: this file is kind of empty; consider pushing this method somewhere else
 
-	doc.setFontSize(24);
-	doc.text(
+	doc.addPage("a4", "portrait", { left: 30, rite: 30, top: 30, bottom: 30});
+	doc.addParagraph(
 		format('data.temnam',
 			topick.getName(),
 			topick.getName().pronunciation()),
-		20, 20, {baseline: 'top'});
+		24);
 
-	doc.setFontSize(12);
-	doc.text(
+	doc.addParagraph(
 		format('data.num',
 			topick.getArea(),
 			topick.getPopulation()),
-		20, 35, {baseline: 'top'});
+		12);
 
-	doc.setFontSize(18);
-	doc.text(
+	doc.addParagraph(
+		format('data.geografi'), // TODO: bold this
+		18);
+
+	doc.addParagraph(
 		format('data.demografi'), // TODO: bold this
-		20, 50, {baseline: 'top'});
+		18);
 
-	doc.setFontSize(12);
-	const cultureParagraph = doc.splitTextToSize(topick.capital.kultur.toString(), 170);
-	doc.text(
-		cultureParagraph, // TODO tauk about the minorities, too
-		20, 60, {baseline: 'top'});
+	for (const {kultur, abundance} of topick.getCultures())
+		doc.addParagraph(
+			format((abundance < 1) ?
+				       'data.demografi.percentage' :
+				       'data.demografi.predominantGroup',
+			       kultur.getName(),
+			       0,
+			       Math.round(abundance*100),
+			       topick.getName()) +
+			kultur.toString(),
+			12, true);
 }
 

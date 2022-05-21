@@ -182,6 +182,11 @@ export class Kultur {
 		return rng.choice(compatible);
 	}
 
+	getName(): Word {
+		return this.lect.getName(
+			this.homeland.index.toString(), LogaTipo.NAS);
+	}
+
 	/**
 	 * format this Kultur as a nice short paragraff
 	 */
