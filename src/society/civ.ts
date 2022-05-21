@@ -42,7 +42,7 @@ const HUMAN_WEIGHT = 100; // [] multiplier on vertical distances TODO: use the m
 export class Civ {
 	public readonly id: number;
 	public readonly capital: Nodo; // the capital city
-	public readonly nodos: TreeMap<Nodo>; // the tiles it owns and the order in which it acquired them
+	public readonly nodos: TreeMap<Nodo>; // the tiles it owns and the order in which it acquired them (also stores the normalized population)
 	public readonly kenare: Map<Nodo, Set<Nodo>>; // the set of tiles it owns that are adjacent to tiles it doesn't
 	private readonly world: World;
 
@@ -60,7 +60,7 @@ export class Civ {
 	constructor(capital: Nodo, id: number, world: World, rng: Random, technology: number = 1) {
 		this.world = world; // TODO if every Civ has its own rng, it would make things a bit more stable
 		this.id = id;
-		this.nodos = new TreeMap<Nodo>((nodo: Nodo) => nodo.domublia);
+		this.nodos = new TreeMap<Nodo>((nodo: Nodo) => nodo.arableArea);
 		this.kenare = new Map<Nodo, Set<Nodo>>();
 
 		this.capital = capital;
@@ -114,7 +114,7 @@ export class Civ {
 
 		if (loser !== null) {
 			for (const child of loser.nodos.getChildren(tile)) // then recurse
-				if (child.domublia > 0)
+				if (child.arableArea > 0)
 					this._conquer(child, tile, loser);
 		}
 		else {

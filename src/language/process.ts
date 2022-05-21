@@ -60,6 +60,8 @@ class FonMute implements Proces {
 	constructor(ca: Klas[], pa: Klas[], idx: number[], bada: Klas[], chena: Klas[]) {
 		if (idx.length !== pa.length)
 			throw RangeError(`The pa array must be properly indexed: ${ca} > ${pa} / ${bada} _ ${chena}`);
+		if (pa.length === 0 && bada.every((klas) => klas.macha(Fon.PAUSE)) && chena.every((klas) => klas.macha(Fon.PAUSE)))
+			throw RangeError(`this deletion event is unchecked: ${ca} > ${pa} / ${bada} _ ${chena}`);
 		this.ca = ca;
 		this.pa = pa;
 		this.idx = idx;
@@ -103,7 +105,7 @@ class FonMute implements Proces {
 		if (this.chen.length + this.ca.length > oldWord.length || this.bade.length > novWord.length)
 			return false;
 		if (this.ca.length === 1 && this.chen.length > 0 && this.bade.length > 0 &&
-			(oldWord[oldWord.length-1].longia === Longia.LONG || oldWord[oldWord.length-1].minorLoke == MinorLoke.PHARYNGEALIZED)) // geminates and emphatics are immune to /X_X processes
+			(oldWord[oldWord.length-1].longia === Longia.LONG || oldWord[oldWord.length-1].minorLoke === MinorLoke.PHARYNGEALIZED)) // geminates and emphatics are immune to /X_X processes
 			return false;
 		for (let j = 0; j < this.chen.length; j ++) // start with the left half of the context
 			if (!this.chen[j].macha(oldWord[j - this.ca.length - this.chen.length + oldWord.length])) // check if it matches

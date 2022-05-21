@@ -21,9 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// @ts-ignore
 import Queue from '../util/queue.js';
-
 import {Nodo, Surface} from "../planet/surface.js";
 import {Random} from "../util/random.js";
 import {Civ} from "./civ.js";
@@ -37,7 +35,7 @@ const DOMUBLIA = new Map([ // terrain modifiers for civ spawning and population 
 	[Biome.JANGAL,      3.0],
 	[Biome.LAK,         0.0],
 	[Biome.TAIGA,       0.3],
-	[Biome.HOGOTOPIA,   0.1],
+	[Biome.AGNITOPIA,   0.1],
 	[Biome.GAZOTOPIA,   1.0],
 	[Biome.ARENATOPIA,  0.0],
 	[Biome.TUNDRA,      0.1],
@@ -53,7 +51,7 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
 	[Biome.JANGAL,      1.0],
 	[Biome.LAK,         3.0],
 	[Biome.TAIGA,       1.0],
-	[Biome.HOGOTOPIA,   0.3],
+	[Biome.AGNITOPIA,   0.3],
 	[Biome.GAZOTOPIA,   3.0],
 	[Biome.ARENATOPIA,  0.1],
 	[Biome.TUNDRA,      0.3],
@@ -67,11 +65,11 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
 export class World {
 	public static readonly startOfHumanHistory = -3200; // [BCE]
 	public static readonly timeStep = 100; // [year]
-	public static readonly authoritarianism = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
+	public static readonly authoritarianism = 5e-8; // [1/year/km^2] rate at which people coalesce into kingdoms
 	public static readonly libertarianism = 2e-7; // [1/year/km^2] rate at which peeple start revolucions
 	public static readonly nationalism = 3.0; // [] factor by which oppressed minorities are more likely to rebel
 	public static readonly imperialism = 1e-1; // [km/y] the rate at which denizens conquer
-	public static readonly intelligence = 1e-7; // [1/y] the rate at which denizens have good ideas
+	public static readonly intelligence = 5e-8; // [1/y] the rate at which denizens have good ideas
 	public static readonly carryingCapacity = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 	public static readonly valueOfKnowledge = .50; // [] value of a single technological advancement
 	public static readonly powerOfMemes = .02; // [1/year] probability that an idea spreads across a border in a year
@@ -92,16 +90,16 @@ export class World {
 		this.politicalMap = new Map();
 
 		for (const nodo of planet.nodos) { // assine the society-relevant values to the Nodos
-			nodo.popDensity = DOMUBLIA.get(nodo.biome); // start with the biome-defined habitability
-			if (nodo.popDensity > 0 || nodo.biome === Biome.ARENATOPIA) { // if it is habitable at all or is a desert
+			nodo.arability = DOMUBLIA.get(nodo.biome); // start with the biome-defined habitability
+			if (nodo.arability > 0 || nodo.biome === Biome.ARENATOPIA) { // if it is habitable at all or is a desert
 				for (const neighbor of nodo.neighbors.keys()) { // increase habitability based on adjacent water
 					if (neighbor.biome === Biome.LAK || nodo.neighbors.get(neighbor).liwe > RIVER_UTILITY_THRESHOLD)
-						nodo.popDensity += FRESHWATER_UTILITY;
+						nodo.arability += FRESHWATER_UTILITY;
 					if (neighbor.biome === Biome.HAI)
-						nodo.popDensity += SALTWATER_UTILITY;
+						nodo.arability += SALTWATER_UTILITY;
 				}
 			}
-			nodo.domublia = nodo.popDensity*nodo.getArea();
+			nodo.arableArea = nodo.arability*nodo.getArea();
 
 			nodo.pasablia = PASABLIA.get(nodo.biome);
 		}
@@ -130,7 +128,7 @@ export class World {
 	 */
 	spawnCivs(rng: Random) {
 		for (const tile of this.planet.nodos) {
-			const demomultia = World.carryingCapacity*tile.domublia; // TODO: implement nomads, city state leagues, and federal states.
+			const demomultia = World.carryingCapacity*tile.arableArea; // TODO: implement nomads, city state leagues, and federal states.
 			const ruler = this.currentRuler(tile);
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(World.authoritarianism*World.timeStep*demomultia))

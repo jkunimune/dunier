@@ -231,8 +231,14 @@ export class Dialect extends Lect {
 	}
 
 	applyChanges(lekse: Word): Word {
-		for (const change of this.changes)
-			lekse = change.apply(lekse);
+		for (const change of this.changes) {
+			try {
+				lekse = change.apply(lekse);
+			} catch (e) {
+				console.error("could not apply", change, "to", lekse, "because");
+				throw e;
+			}
+		}
 		return lekse;
 	}
 

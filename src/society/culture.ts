@@ -27,6 +27,8 @@ import {Dialect, Lect, LogaTipo, ProtoLang} from "../language/lect.js";
 import {loadTSV} from "../util/fileio.js";
 import {Nodo} from "../planet/surface.js";
 import {Civ} from "./civ.js";
+import {Biome, BIOME_NAMES} from "./terrain.js";
+import {Word} from "../language/word.js";
 
 
 class Sif {
@@ -35,7 +37,7 @@ class Sif {
 	public readonly klas: string; // describing classes
 	private readonly requiredKlas: Set<string>; // classes that must be present for this
 	public readonly forbiddenKlas: Set<string>; // class that may not be present for this
-	private readonly forbiddenBiomes: Set<string>; // biomes where this cannot be used
+	private readonly forbiddenBiomes: Set<Biome>; // biomes where this cannot be used
 	private readonly technology: number; // the tech level needed for this
 
 	constructor(header: string, subheader: string, args: string[]) {
@@ -44,7 +46,7 @@ class Sif {
 		this.klas = this.nam;
 		this.requiredKlas = new Set<string>();
 		this.forbiddenKlas = new Set<string>();
-		this.forbiddenBiomes = new Set<string>();
+		this.forbiddenBiomes = new Set<Biome>();
 		this.technology = 0;
 		for (let i = 1; i < args.length; i ++) {
 			if (args[i].length > 0) {
@@ -55,7 +57,7 @@ class Sif {
 				else if (args[i].startsWith('forbid='))
 					this.forbiddenKlas.add(args[i].slice(7));
 				else if (args[i].startsWith('biome!='))
-					this.forbiddenBiomes.add(args[i].slice(7));
+					this.forbiddenBiomes.add(BIOME_NAMES.get(args[i].slice(7)));
 				else if (args[i].startsWith('tech='))
 					this.technology = Math.exp(
 						(Number.parseFloat(args[i].slice(5)) + 3000)/1400);

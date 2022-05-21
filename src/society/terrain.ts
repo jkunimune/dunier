@@ -21,9 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// @ts-ignore
 import Queue from '../util/queue.js';
-
 import {Surface, Triangle, Nodo} from "../planet/surface.js";
 import {Random} from "../util/random.js";
 import {argmax, union} from "../util/util.js";
@@ -85,8 +83,21 @@ export enum Biome {
 	ARENATOPIA,
 	GAZOTOPIA,
 	FANTOPIA,
-	HOGOTOPIA,
+	AGNITOPIA,
 }
+export const BIOME_NAMES: Map<string, Biome> = new Map([
+	["hai", Biome.HAI],
+	["lak", Biome.LAK],
+	["ais", Biome.AIS],
+	["tundra", Biome.TUNDRA],
+	["taiga", Biome.TAIGA],
+	["jangal", Biome.JANGAL],
+	["barsajangal", Biome.BARSAJANGAL],
+	["arenatopia", Biome.ARENATOPIA],
+	["gazotopia", Biome.GAZOTOPIA],
+	["fantopia", Biome.FANTOPIA],
+	["agnitopia", Biome.AGNITOPIA],
+]);
 
 
 /**
@@ -525,7 +536,7 @@ function setBiomes(surf: Surface): void {
 			else if (node.terme < TAIGA_TEMP)
 				node.biome = Biome.TAIGA;
 			else if (node.terme > FLASH_TEMP)
-				node.biome = Biome.HOGOTOPIA;
+				node.biome = Biome.AGNITOPIA;
 			else if (node.terme > FOREST_SLOPE*node.barxe + FOREST_INTERCEPT)
 				node.biome = Biome.GAZOTOPIA;
 			else if (node.barxe >= MARSH_THRESH && node.gawe < CLOUD_HEIGHT && adjacentWater)

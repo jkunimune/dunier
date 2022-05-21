@@ -313,8 +313,8 @@ export class Nodo {
 	public terme: number;
 	public barxe: number;
 	public biome: Biome;
-	public popDensity: number;
-	public domublia: number;
+	public arability: number;
+	public arableArea: number;
 	public pasablia: number;
 	public kultur: Kultur;
 	public plate: number;

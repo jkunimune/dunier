@@ -46,7 +46,8 @@
 002 mute [ +VELAR +STOP ] > [ +GLOT ] /										% k > ʔ
 002 mute [ +CORON +STOP ] > [ +VELAR ] /									% t > k
 010 mute [ +POSTALV ] > [ +ALVEO ] /										% ʃ > s
-020 mute [ +POSTALV +CONT ] > [ +RETRO ] /									% ʃ > ʂ
+010 mute [ +POSTALV ] > [ +RETRO ] /										% ʃ > ʂ
+010 mute [ +VOICE +POSTALV ] > [ +TENUIS +RETRO ] /							% ʒ > ʂ
 002 mute [ +POSTALV ] > [ +LATERAL ] /										% ʃ > ɬ
 010 mute [ +LATERAL +OBSTR ] > [ +MEDIAN +POSTALV ] /						% ɬ > ʃ
 010 mute [ +UVULAR ] > [ +PHARYNG ] /										% χ > ħ
@@ -54,11 +55,11 @@
 005 mute [ +VOICE +DORSAL +STOP ] > [ +PALATAL ] /							% ɡ > ɟ
 010 mute [ +VELAR ] > [ +UVULAR ] / _ [ +VELAR +VOCOID ]					% retraction before back vowels
 002 mute [ +LABIAL -VOCOID ] > [ +LINGUOLAB ] /
-050 mute [ +LINGUOLAB ] > [ +DENT ] /
+050 mute [ +LINGUOLAB ] > [ +DENTAL ] /
 005 mute [ +LONG +CORON +SONOR ] > [ +SHORT +PALATAL ] /					% gemination > palatalization
 005 mute [ +NASAL ] > [ +UVULAR ] / _ [ -STOP -AFFR -VOCOID ]				% create the Japanese ɴ
-010 mute [ -DORSAL +NASAL ] > [ +DENT ] / _ [ -VOCOID ]						% merge n and m in coda
-010 mute [ -DORSAL +NASAL ] > [ +BILAB ] / _ [ -VOCOID ]					% merge m and n in coda
+010 mute [ -DORSAL +NONSYLLAB ] > [ +DENTAL ] / _ [ -VOCOID ]				% merge n and m in coda
+005 mute [ -DORSAL +NASAL ] > [ +BILAB ] / _ [ -VOCOID ]					% merge m and n in coda
 010 mute [ +SYLLAB +NASAL ] > [ +BILAB ] /
 002 mute [ +FRIC ] > [ +GLOT ] /											% delete all fricatives
 %%		manner
@@ -66,11 +67,11 @@
 100 mute [ +VOICE +SIBILANT ] > [ +AFFR ] /									% ʒ > dʒ
 200 mute [ +VOICE +ALVEO +AFFR ] > [ +FRIC ] /								% dz > z
 100 mute [ +VOICE +ALVEO +AFFR ] > [ +TENUIS ] /							% dz > ts
-020 mute [ +ALVEO +AFFR ] > [ +DENT +FRIC ] /								% ts > θ
+020 mute [ +ALVEO +AFFR ] > [ +DENTAL +FRIC ] /								% ts > θ
 020 mute [ +AFFR ] > [ +STOP ] /											% ts > t
 050 mute [ +LABIAL -VOICE +STOP ] > [ +TENUIS +FRIC ] / [ -OCCL ] _			% fricate p specifically
 050 mute [ +LABIAL -VOICE +STOP ] > [ +TENUIS +FRIC ] /						% fricate p specifically
-010 mute [ +ASPIR +DENT +STOP ] > [ +ALVEO +AFFR ] /						% the thing only I do
+010 mute [ +ASPIR +DENTAL +STOP ] > [ +ALVEO +AFFR ] /						% the thing only I do
 002 mute [ +DENTAL +STOP ] > [ +ALVEO +AFFR ] / _ [ +HIGH +VELAR ]			% tu > tsu
 050 mute [ +LATERAL ] > [ +ALVEO ] /										% ʎ > l
 050 mute [ +LATERAL -CORON ] > [ +MEDIAN ] /								% ʎ > j
@@ -129,12 +130,14 @@
 050 mute [ +VOCOID ] > [ +SHORT ] /											% loss of vowel length
 500 mute [ +NONSYLLAB ] > [ +SHORT ] / [ -VOCOID ] _						% geminates should follow vocoids
 200 mute [ +NASALIZ -VOWEL ] > [ +ORAL ] /									% denasalization on nonvowels
-010 mute [ -ASPIR +ALVEO +STOP ] > [ +VOICE +TAP ] / [ +VOCOID ] _ [ +VOWEL ]% t flapping
+010 mute [ -ASPIR +ALVEO +STOP ] > [ +VOICE +TAP ] / [ +VOCOID ] _ [ +VOWEL ]% t flapping (between vowels)
+005 mute [ -ASPIR +ALVEO +STOP ] > [ +VOICE +TAP ] / _ #					% t flapping (at word end)
 010 mute [ +ALVEO +STOP ] > [ +VOICE +LATERAL +CLOSE ] / [ +STOP ] _		% t lateralizacion
 010 mute [ +TENUIS +ALVEO +STOP ] > [ +GLOT ] / [ +PRIMARY ] _ [ -LIQ ]		% t glottalizacion
 050 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +VELAR +STOP ] _	% kl > kj
 010 mute [ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +STOP ] _			% tl > tj
 100 mute [ +AFFR ] > [ +FRIC ] / _ [ +LIQ ]									% t͡ʃl > ʃl
+005 mute [ +LATERAL +CORON ] > [ +RETRO +MEDIAN ] / _ [ -PALATAL ]			% lu > ɻu
 010 mute [ +DENTAL +STOP -PHARYNGEALIZ ] > [ +ALVEO +FRIC ] / _ [ -CONT ]	% t > s
 010 mute [ -TENUIS +STOP -PHARYNGEALIZ ] > [ +FRIC ] / [ +CONT ] _			% stop to fricative
 002 mute [ +STOP -PHARYNGEALIZ ] > [ +FRIC ] / _ [ -VOCOID ]				% stop to fricative
@@ -156,7 +159,6 @@
 050 mute [ -VOICE +SONOR ] > [ +FRIC ] /									% get rid of voiceless sonorants
 050 mute [ -VOICE +SONOR ] > [ +VOICE ] /									% get rid of voiceless sonorants
 050 mute [ -VOICE +SONOR ] > [ +TENUIS +GLOT +FRIC ] /						% get rid of voiceless sonorants
-050 mute [ -VOICE +SONOR ] > /												% get rid of voiceless sonorants
 010 mute [ +RHOTIC ] > ə̯ / _ [ -VOWEL ]										% r-dropping
 020 mute [ +LABIALIZ -VOCOID ] > [ +UNROUND ] /
 010 mute [ +LABIALIZ -VOCOID ] > [ +BILAB ] /
@@ -237,8 +239,9 @@
 500 mute [ +!NASAL ] > [ ±loke ] / _ [ +OBSTR ]								% np > mp
 100 mute [ +CORON +OBSTR ] > [ +POSTALV ] / _ [ +CORONAL +CLOSE ]			% sɹ > ʃɹ
 002 mute [ +SIBILANT ] > [ +RETRO ] / [ +RHOTIC ] _							% rs > rʂ
-005 mute [ +PALATAL +HIGH ] > [ +RETRO +CLOSE ] / [ +SIBIL -POSTALV ] _		% si > sɹ
+005 mute [ +UNROUND +HIGH ] > [ +RETRO +CLOSE ] / [ +SIBIL -POSTALV ] _		% si > sɻ
 010 mute [ +GLOT +FRIC ] > [ ±loke ] / _ [ +STOP ]							% ht > θt
+100 mute [ +CORON ] > [ +RETRO ] / _ [ +RETRO ]								% lɻ > ɭɻ
 %%		featural
 010 mute [ +TENUIS +OBSTR +OCCL ] > [ +VOICE ] / [ +VOICE +NASAL ] _		% nasals voice stops
 100 mute [ +OBSTR ] > [ ±voze ] / _ [ +OBSTR ]								% voicing assimilation
@@ -273,7 +276,8 @@
 100 mute [ +LAX ] [ +LAX ] > [ +LONG ±loke ]0 /								% assimilation of lax vowels
 200 mute [ +GLIDE ] [ +GLIDE ] > [ ±minorLoke ]0 /							% assimilation of semivowels
 100 mute [ +HIGH +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG ±loke ]0 /				% assimilation of ij
-020 mute [ +MID +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG +HIGH ±loke ]0 /		% assimilation of ej
+050 mute [ +MID +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG +HIGH ±loke ]0 /		% assimilation of ej
+050 mute [ +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG +MID ]1 /					% assimilation of aj and ej
 020 mute [ +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG +MID ±loke ]0 /				% assimilation of aj and ej
 020 mute [ +GLIDE ] [ +LAX ] > [ +LONG +SYLLAB ]0 /							% assimilation of jə
 200 mute [ +HIGH +VOWEL ] [ +HIGH +VOWEL ] > [ +LONG ±loke ]0 /				% assimilation of iu
@@ -312,7 +316,7 @@
 %%	DISSIMILATION
 050 mute [ +VOWEL ] > [ +RAISED ] / _ [ +LOW ]								% raising dissimilation
 050 mute [ -HIGH +VOWEL ] > [ +LOWERED ] / _ [ -LOW ]		 				% lowering dissimilation
-010 mute [ +HIGH +VOWEL ] > [ +MID ] [ +NONSYL ] / [ +HIGH ]				% wi > wej
+010 mute [ +HIGH +VOWEL ] > [ +MID ] [ +NONSYLLAB ] / [ +HIGH ]				% wi > wej
 020 mute [ +LABIAL +VOWEL ] > [ +UNROUND +PALATAL ] / [ +LABIAL +VOCOID ] _	% unrounding dissimilation
 010 mute [ +LONG +VOICE +STOP ] > [ +SHORT +NASAL ] [ +SHORT ] /			% dː > nd
 010 mute [ +VOWEL ] > [ +PALATAL ] / [ +LATERAL ] _ [ +LABIAL ]				% lub > lib
@@ -332,6 +336,7 @@
 010 mute > ə / [ +CORON +STOP ] _ [ +CORON ]
 010 mute > s / [ +CORON +STOP ] _ [ +CORON +OCCL ]
 005 mute > ʔ / [ -NONSYLLAB ] _ [ +VOWEL ]
+005 mute > ʔ / [ +HIGH +VOWEL ] _ [ +VOWEL ]
 005 mute [ +VOWEL ] > [ +NONSYLLAB +CLOSE ] [ ] / [ -NONSYLLAB ] _			% glide insertion
 010 mute [ +!PALATAL -VOCOID ] > j [ +ALVEO ] / [ +SYLLAB ] _
 005 mute > j / [ +POSTALV ] _ [ +VOWEL ]
@@ -347,38 +352,39 @@
 002 mute [ +LABIAL +VOWEL ] > [ +BILAB +TRILL ] / [ +STOP ] _				% ʙʙʙʙʙʙ
 
 %%	DELETION
-020 mute [ -STRESS +GLOT +FRIC ] > /										% h dropping
-050 mute [ -STRESS +GLOT +FRIC ] > / _ [ -STRESS ]							% h dropping when unstressd
+020 mute [ -STRESS +GLOT +FRIC ] > / _ [ +SPOKEN ]							% h dropping
+050 mute [ -STRESS +GLOT +FRIC ] > / _ [ +SPOKEN -STRESS ]					% h dropping when unstressd
 050 mute [ -STRESS +GLOT +FRIC ] > / _ [ +HIGH ]							% h dropping before high vowel
-200 mute [ -STRESS +GLOT ] > / _ [ -VOCOID ]								% h dropping before consonants
+200 mute [ -STRESS +GLOT ] > / _ [ +SPOKEN -VOCOID ]						% h dropping before consonants
 100 mute [ -STRESS +GLOT ] > / [ +SPOKEN -VOCOID ] _						% h dropping after consonants
 500 mute [ +SYLLAB ] [ -STRESS +GLOT ] > [ +LONG ]0 / _ [ -VOCOID ]			% h dropping in coda
 010 mute [ +PALATAL +GLIDE +MEDIAN ] > / [ +CORONAL ] _						% yod dropping
 010 mute [ +LABIAL +GLIDE ] > / [ +LABIAL ] _								% wubble-u dropping
-005 mute [ +VELAR +GLIDE ] > / [ -DORSAL ] _								% more w dropping
+005 mute [ +VELAR +GLIDE ] > / [ -DORSAL +SPOKEN ] _						% more w dropping
 010 mute [ +VELAR +GLIDE ] > / _ [ +PALATAL +VOCOID ]						% more w dropping
-010 mute [ +VELAR +UNROUND +GLIDE ] > /										% loss of nonlabial velar approx
-200 mute [ +CENTRAL +GLIDE ] > /											% loss of central glides
+010 mute [ +VELAR +UNROUND +GLIDE ] > / _ [ +SPOKEN ]						% loss of nonlabial velar approx
+200 mute [ +CENTRAL +GLIDE ] > / _ [ +SPOKEN ]								% loss of central glides
 010 mute [ -STRESS +VOWEL ] [ +GLIDE ] > [ ]1 / [ -GLIDE ] _ [ +VOWEL ]		% ija > ja
 020 mute [ +STOP ] [ -STRESS  +VOWEL ] [ +GLIDE ] > [ +LONG ]0 [ ]2 / _ [ +VOWEL ]% kija > kːja
+050 mute [ -VOICE +SONOR ] > / [ +SPOKEN ] _								% get rid of voiceless sonorants
 005 mute [ -STRESS +DORSAL +STOP ] > / [ +VOCOID ] _ [ +PALATAL ]			% elision of k specifically
 005 mute [ -STRESS +CORON +STOP ] > / [ +VOCOID ] _ [ +STRESS ]				% elision of d specifically
 002 mute [ +VOCOID ] [ -STRESS +DORSAL +!NASAL ] > [ +LONG ]0 /				% loss of dorsal nasal
 002 mute [ +VOCOID ] [ -STRESS +!NASAL ] > [ +LONG ]0 / _ [ +CONT ]			% loss intervocalic nasal
 020 mute [ -STRESS +!NASAL ] > / [ +NASAL ] _								% loss of redundant nasal
 002 mute [ -STRESS +!NASAL ] > / [ -CONT ] _ [ +OBSTR ]						% loss of redundant nasal
-002 mute [ +SPOKEN ] [ -STRESS +VOICE +OBSTR ] > [ +LONG ]0 / _ #			% loss of final voiced obstruent
+002 mute [ +SPOKEN ] [ -STRESS +VOICE +OBSTR ] > [ +LONG ]0 / _ [ -SPOKEN ]	% loss of final voiced obstruent
 010 mute [ -SYLLAB +SONOR ] > / _ [ +RHOTIC ]								% loss of pre-rhotic sonorant
 002 mute [ +SONOR ] [ -STRESS +FRIC ] > [ +LONG ]0 / _ [ -SYLLAB -LIQ ]		% loss of final fricative
 010 mute [ -STRESS +VOICE +STOP ] > / [ +NASAL ] _ [ -SYLLAB -LIQ ]			% loss of final stop after nasal
-002 mute [ -STRESS +STOP ] > / _ [ -SYLLAB -LIQ ]							% loss of final stop
+002 mute [ -STRESS +STOP ] > / [ +SPOKEN ] _ [ -SYLLAB -LIQ ]				% loss of final stop
 002 mute [ -STRESS +NONSYLLAB ] > / [ +SPOKEN ] _ #							% loss of final consonant
 002 mute [ -STRESS +VOCOID ] > / [ +SPOKEN ] _ #							% loss of final vowel
 005 mute [ -STRESS +VOWEL ] > / _ [ +VOWEL ]								% loss of hiatus
-005 mute [ +UNSTRESS +LAX ] > /												% loss of lax vowel
-005 mute [ +UNSTRESS +HIGH ] > /											% loss of high vowel
-500 mute [ -STRESS +VOICE +GLOT ] > /										% delete voiced glottal sounds
-100 mute [ -SPOKEN ] > /													% elision of pauses
+005 mute [ +UNSTRESS +LAX ] > / [ +SPOKEN ] _								% loss of lax vowel
+005 mute [ +UNSTRESS +HIGH ] > / [ +SPOKEN ] _								% loss of high vowel
+500 mute [ -STRESS +VOICE +GLOT ] > / [ +SPOKEN ] _							% delete voiced glottal sounds
+100 mute [ -SPOKEN ] > / [ +SPOKEN ] _ [ +SPOKEN ]							% elision of pauses
 
 %%	PROSIDY CHANGES
 500 mute [ +GLIDE ] > [ +UNSTRESS ] / [ -VOWEL ] _ [ -VOWEL ]				% glides need vowel adjacency

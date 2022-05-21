@@ -944,7 +944,7 @@ export abstract class MapProjection {
 		else if (фMin === -π/2)
 			фStd = фMin;
 		else
-			фStd = Math.atan((Math.tan(фMax) + Math.tan(фMin))/2);
+			фStd = (фMax + фMin)/2;
 
 		return {фStd: фStd, фMin: фMin, фMax: фMax, λMin: -λMax, λMax: λMax};
 	}

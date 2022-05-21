@@ -62,9 +62,9 @@ export function legendreP6(y: number): number {
 }
 
 export function tanh(x: number): number {
-	if (!Number.isFinite(x) && x < 0) // tanh(-∞) = -1
+	if (x < -20) // tanh(-∞) = -1
 		return -1;
-	else if (!Number.isFinite(x) && x > 0) // tanh(+∞) = 1
+	else if (x > 20) // tanh(+∞) = 1
 		return 1;
 	else { // tanh(x) = (exp(x) - exp(-x))/(exp(x) + exp(-x))
 		const plus = Math.exp(x);
@@ -185,7 +185,7 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
 				const magnitude = Math.pow(10, Math.floor(Math.log10(<number>args[i])) - 3); // determine its order of magnitude
 				const value = Math.round(<number>args[i]/magnitude)*magnitude; // round to three decimal points below that
 				convertedArg = value.toString().split("").reverse().join(""); // reverse it
-				convertedArg = convertedArg.replace(/(\d\d\d)/g, '$1 ').replace(/,$/, ''); // add thousands separators
+				convertedArg = convertedArg.replace(/(\d\d\d)(\d)/g, '$1 $2').replace(/,$/, ''); // add thousands separators
 				convertedArg = convertedArg.split("").reverse().join(""); // reverse it back
 			}
 		}
@@ -277,7 +277,7 @@ export function noisyProfile(minScale: number, rng: Random, bounds: Point[] = []
 			const y = alpha*arctanh(rng.uniform(tanh(min/alpha), tanh(max/alpha))); // TODO: also prevent self-intersection TODO: is there a more efficient function I can use?
 
 			const nov = { x: r0.x + y*axis.x, y: r0.y + y*axis.y };
-			console.assert(Number.isFinite(nov.x), bounds, r0, axis, min, max, y, nov);
+			console.assert(Number.isFinite(nov.x), min, max, tanh(min/alpha), tanh(max/alpha), y, nov);
 			pending.push(nov); // and check it
 		}
 		else { // if it is short

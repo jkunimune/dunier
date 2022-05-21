@@ -48,7 +48,7 @@ const BIOME_COLORS = new Map([
 	[Biome.BARSAJANGAL, '#176D0D'],
 	[Biome.JANGAL,      '#647F45'],
 	[Biome.TAIGA,       '#4EA069'],
-	[Biome.HOGOTOPIA,   '#DD9C6F'],
+	[Biome.AGNITOPIA,   '#DD9C6F'],
 	[Biome.GAZOTOPIA,   '#BED042'],
 	[Biome.ARENATOPIA,  '#F5E292'],
 	[Biome.TUNDRA,      '#FFFFFF'],
@@ -864,7 +864,7 @@ export class Chart {
 			return true;
 		else if (layer === Layer.BIO)
 			return false;
-		else if (edge.node0.popDensity + edge.node1.popDensity < BORDER_SPECIFY_THRESHOLD)
+		else if (edge.node0.arability + edge.node1.arability < BORDER_SPECIFY_THRESHOLD)
 			return false;
 		else
 			return true;
