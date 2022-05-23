@@ -374,7 +374,7 @@ export abstract class MapProjection {
 
 		if (closePath) { // if it matters which side is inside and which side out, draw the outline of the map
 			for (let i = 0; i < edges.length; i ++) { // for each loop
-				if (MapProjection.isInsideOut(output, edges[i])) { // if it is
+				if (MapProjection.isInsideOut(output, edges[i])) { // if it is inside out
 					const start = edges[i][0].start;
 					output.push({type: 'M', args: [start.s, start.t]}); // draw the outline of the entire map to contain it
 					for (const edge of edges[i])
@@ -468,7 +468,9 @@ export abstract class MapProjection {
 				polygon.push({type: 'L', args: [edge.end.s, edge.end.t]});
 		}
 		for (let i = 0; i < points.length; i ++) { // the fastest way to judge this is to just look at the first point
-			const containd = MapProjection.contains(polygon, endpoint(points[i]));
+			const containd = MapProjection.contains(
+				polygon,
+				endpoint(points[i]));
 			if (containd !== null) // that is not ambiguous
 				return containd;
 		}
@@ -540,13 +542,12 @@ export abstract class MapProjection {
 				const start = assert_xy(endpoint(prev));
 				const [r, , , largeArc, sweep, end_s, end_t] = segment.args;
 				const end = { x: end_s, y: end_t };
+				const sign = 1 - 2*sweep;
 				const center = chordCenter(start, end, r, sweep !== largeArc); // find the center
-				let direction = { // draw a ray thru the arc (bias it toward the start to avoid roundoff issues)
-					x: (2*start.x + end.x)/3 - center.x,
-					y: (2*start.y + end.y)/3 - center.y
+				const direction = { // draw a ray thru the arc (bias it toward the start to avoid roundoff issues)
+					x: -sign*(end.y - start.y) + start.x - center.x,
+					y:  sign*(end.x - start.x) + start.y - center.y,
 				};
-				if (largeArc)
-					direction = { x: -direction.x, y: -direction.y };
 				const scale = Math.hypot(direction.x, direction.y);
 				return {
 					s: center.x + direction.x/scale*r, // and then construct the point
@@ -975,8 +976,11 @@ export abstract class MapProjection {
 				const b = endpoint(segments[i]);
 				if (a.t !== b.t) {
 					const wraps = periodic && Math.abs(b.t - a.t) > period/2.; // if the domain is periodic and this line is long enuff, ita ctually raps around
-					if (tTest === null)
+					if (tTest === null) {
 						tTest = (a.t + b.t)/2; // choose a y value
+						if (wraps)
+							tTest = localizeInRange(tTest + period/2, edge.start.t, edge.end.t);
+					}
 					let crossesTestLine = (a.t < tTest) !== (b.t < tTest); // look for segments that cross that y value
 					if (wraps) // account for rapping
 						crossesTestLine = !crossesTestLine;
