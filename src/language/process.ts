@@ -146,7 +146,7 @@ class Harmonia implements Proces {
 		let val: Sif = null;
 		for (let i = 0; i < old.length; i ++) { // iterate backwards through the word
 			nov[i] = old.segments[i]; // in most cases, we will just make this the same as it was in the old word
-			if (this.affectsConsonants || !old.segments[i].is(Silabia.NONSYLLABIC)) { // but if this segment isn't immune
+			if (this.affectsConsonants || !old.segments[i].is(PendaniSif.VOWEL)) { // but if this segment isn't immune
 				for (let sif of this.kutube) { // check its polarity
 					if (old.segments[i].is(sif)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before

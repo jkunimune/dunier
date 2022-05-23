@@ -235,7 +235,7 @@ export class Dialect extends Lect {
 			try {
 				lekse = change.apply(lekse);
 			} catch (e) {
-				console.error("could not apply", change, "to", lekse, "because");
+				console.error("could not apply", change, "to", lekse, `(${lekse.toString('ipa')})`, "because");
 				throw e;
 			}
 		}

@@ -54,13 +54,14 @@ const CONTINENT_VARIATION = .5; // km
 const OCEANIC_VARIATION = 1; // km
 const MOUNTAIN_HEIGHT = 4; // km
 const VOLCANO_HEIGHT = 3.3; // km
-const RIFT_HEIGHT = 2; // km
+const RIDGE_HEIGHT = 1.5; // km
 const TRENCH_DEPTH = 4; // km
 const MOUNTAIN_WIDTH = 400; // km
 const TRENCH_WIDTH = 100; // km
 const SLOPE_WIDTH = 200; // km
-const RIFT_WIDTH = 800; // km
+const RIDGE_WIDTH = 100; // km
 const OCEAN_SIZE = 0.2; // as a fraction of continental length scale
+const CONTINENTAL_CONVEXITY = 0.05; // between 0 and 1
 
 
 enum FaultType {
@@ -295,11 +296,11 @@ function movePlates(surf: Surface, rng: Random): void {
 			else {
 				if (node.gawe < 0) {
 					type = FaultType.FENTOPIA; // mid-oceanic rift
-					width = relSpeed*RIFT_WIDTH*2;
+					width = relSpeed*RIDGE_WIDTH*2;
 				}
 				else {
-					type = FaultType.PANDE; // mid-oceanic rift plus continental slope
-					width = relSpeed*oceanWidth;
+					type = FaultType.PANDE; // mid-oceanic rift plus continental slope (plus a little bit of convexity)
+					width = 2*relSpeed*oceanWidth;
 				}
 			}
 			const queueElement = {
@@ -309,7 +310,7 @@ function movePlates(surf: Surface, rng: Random): void {
 			else                    		lpQueue.push(queueElement); // which queue depends on priority
 			// node.relSpeed = relSpeed;
 		}
-		else
+		// else
 			// node.relSpeed = Number.NaN;
 
 		node.flag = false; // also set up these temporary flags
@@ -336,17 +337,19 @@ function movePlates(surf: Surface, rng: Random): void {
 					digibbalCurve(x) * wibbleCurve(x);
 			}
 			else if (type === FaultType.FENTOPIA) {
-				const dS = speed*oceanWidth;
-				const dR = Math.min(0, dS - 2*SLOPE_WIDTH - 2*RIFT_WIDTH);
-				const xR = (distance - dR) / RIFT_WIDTH;
-				node.gawe += RIFT_HEIGHT * Math.exp(-xR);
+				const width = speed*oceanWidth;
+				const x0 = Math.min(0, width - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
+				const xR = (distance - x0) / RIDGE_WIDTH;
+				node.gawe += RIDGE_HEIGHT * Math.exp(-xR);
 			}
 			else if (type === FaultType.PANDE) {
-				const dS = speed*oceanWidth; // passive margins are kind of complicated
-				const dR = Math.min(0, dS - 2*SLOPE_WIDTH - 2*RIFT_WIDTH);
-				const xS = (dS - distance) / SLOPE_WIDTH;
-				const xR = (distance - dR) / RIFT_WIDTH;
-				node.gawe += OCEAN_DEPTH * (Math.exp(-xS) - 1) + RIFT_HEIGHT * Math.exp(-xR);
+				const width = speed*oceanWidth; // passive margins are kind of complicated
+				const x0 = Math.min(0, width - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
+				const xS = (width - distance) / SLOPE_WIDTH;
+				const xR = (distance - x0) / RIDGE_WIDTH;
+				node.gawe += Math.min(
+					OCEAN_DEPTH * (Math.exp(-xS) - 1) + RIDGE_HEIGHT * Math.exp(-xR),
+					-OCEAN_DEPTH/2 / (1 + Math.exp(xS/2.)/CONTINENTAL_CONVEXITY));
 			}
 			else {
 				throw "Unrecognized fault type";

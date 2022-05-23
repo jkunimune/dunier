@@ -50,7 +50,7 @@ export class Word {
 	 */
 	toString(style: string = null): string {
 		if (this.language === null) // if language is null, this is just phonetick informacion and should be put in phonetick notacion regardless of the specified Style
-			return transcribe(this.segments, 'ipa')
+			return transcribe(this.segments, 'ipa');
 		else if (style !== null) // otherwise, use the specified style
 			return transcribe(this.segments, style);
 		else // otherwise, use the native style of this word's language
