@@ -32,6 +32,7 @@ import {LongLineType, PathSegment, Place, Point} from "../util/coordinates.js";
 export class Azimuthal extends MapProjection {
 	private readonly rMax: number;
 	private readonly rMin: number;
+	private readonly sign: number;
 
 	constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
 		const r0 = surface.dAds(Math.PI/2)/(2*Math.PI);
@@ -44,45 +45,52 @@ export class Azimuthal extends MapProjection {
 					type: LongLineType.VEI,
 					start: { s: surface.фMax, t:  Math.PI },
 					end:   { s: surface.фMax, t: -Math.PI },
-					loopIndex: 0,
-					twoWay: surface.фMax - surface.фMin >= 2*Math.PI,
 				}],
 				[{
 					type: LongLineType.VEI,
 					start: { s: surface.фMin, t: -Math.PI },
 					end:   { s: surface.фMin, t:  Math.PI },
-					loopIndex: 1,
-					twoWay: surface.фMax - surface.фMin >= 2*Math.PI,
 				}],
 			]);
 		this.rMax = rMax;
 		this.rMin = rMax - surface.height;
+		// decide whether to do the flip thing
+		if (MapProjection.standardParallels(locus, this).фStd < 0)
+			this.sign = -1;
+		else
+			this.sign = 1;
 	}
 
 	projectPoint(point: Place): Point {
-		const r = this.rMax - linterp(point.ф, this.surface.refLatitudes, this.surface.cumulDistances);
+		const r = this.r(point.ф);
 		if (Math.abs(point.λ) !== Math.PI)
-			return { x: r*Math.sin(point.λ), y: r*Math.cos(point.λ) };
+			return { x: r*Math.sin(point.λ), y: this.sign*r*Math.cos(point.λ) };
 		else
-			return { x: 0, y: -r };
+			return { x: 0, y: -this.sign*r };
 	}
 
 	projectParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
-		const r = this.rMax - linterp(ф, this.surface.refLatitudes, this.surface.cumulDistances);
+		const r = this.r(ф);
 		const sweepFlag = (λ1 > λ0) ? 0 : 1;
 		if (r > 0) {
 			const {x, y} = this.projectPoint({ф: ф, λ: λ1});
 			if (Math.abs(λ0 - λ1) <= Math.PI)
 				return [
 					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
-				]
+				];
 			else
 				return [
-					{type: 'A', args: [r, r, 0, 0, sweepFlag, 0, r]},
+					{type: 'A', args: [r, r, 0, 0, sweepFlag, 0, this.sign*r]},
 					{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
 				];
 		}
 		else
 			return [];
+	}
+
+	r(ф: number): number {
+		return this.rMax - linterp(this.sign*ф,
+		                           this.surface.refLatitudes,
+		                           this.surface.cumulDistances);
 	}
 }
