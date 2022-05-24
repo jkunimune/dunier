@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {Surface} from "../planet/surface.js";
-import {isBetween, localizeInRange} from "../util/util.js";
+import {isBetween, linterp, localizeInRange} from "../util/util.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 import {
 	assert_xy,
@@ -937,15 +937,21 @@ export abstract class MapProjection {
 				λMax = λ;
 		}
 
+		const minWeit = 1/Math.sqrt(projection.surface.dAds(фMin));
+		const maxWeit = 1/Math.sqrt(projection.surface.dAds(фMax));
 		let фStd;
-		if (фMax === π/2 && фMin === -π/2) // choose a standard parallel
-			фStd = 0;
-		else if (фMax === π/2)
-			фStd = фMax;
-		else if (фMin === -π/2)
-			фStd = фMin;
-		else
-			фStd = (фMax + фMin)/2;
+		if (Number.isFinite(minWeit)) { // choose a standard parallel
+			if (Number.isFinite(maxWeit))
+				фStd = (фMin*minWeit + фMax*maxWeit)/(minWeit + maxWeit);
+			else
+				фStd = фMax;
+		}
+		else {
+			if (Number.isFinite(maxWeit))
+				фStd = фMin;
+			else
+				фStd = (фMin + фMax)/2;
+		}
 
 		return {фStd: фStd, фMin: фMin, фMax: фMax, λMin: -λMax, λMax: λMax};
 	}
