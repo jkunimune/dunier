@@ -223,8 +223,8 @@ export class Chart {
 		}
 
 		if (nade) {
-			this.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD),
-				g, nadorang, 1.5, true);
+			this.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD), // TODO have this depend on map scale
+				g, nadorang, 1.5, Layer.GEO, false);
 		}
 
 		if (kenare && world !== null) {
@@ -266,7 +266,7 @@ export class Chart {
 	 * @param nodos Iterator of Node to be colored in.
 	 * @param svg object on which to put the Path.
 	 * @param color color of the interior.
-	 * @param greeble whether to greeble the edge
+	 * @param greeble what kind of edge it is for the purposes of greebling
 	 * @param stroke color of the outline.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
 	 * @return the newly created element encompassing these triangles.
@@ -290,12 +290,13 @@ export class Chart {
 	 * @param svg SVG object on which to put the Path.
 	 * @param color String that HTML can interpret as a color.
 	 * @param width the width of the stroke
+	 * @param greeble what kind of edge it is for the purposes of greebling
 	 * @param smooth whether to apply Bezier smoothing to the curve
 	 * @returns the newly created element comprising all these lines
 	 */
-	stroke(strokes: Iterable<Place[]>, svg: SVGGElement, color: string, width: number,
-		   smooth = false): SVGPathElement {
-		let segments = this.projection.project(Chart.aggregate(strokes), false);
+	stroke(strokes: Iterable<(Nodo | Triangle)[]>, svg: SVGGElement,
+	       color: string, width: number, greeble: Layer, smooth = false): SVGPathElement {
+		let segments = this.projection.project(Chart.aggregate(strokes, greeble), false);
 		if (smooth)
 			segments = Chart.smooth(segments);
 		const path = this.draw(segments, svg);
@@ -330,7 +331,7 @@ export class Chart {
 
 		const heightScale = -Math.tan(2*SUN_ELEVATION)/maxSlope; // use that to normalize
 
-		for (const t of triangles) { // for each triangle
+		for (const t of triangles) { // for each triangle TODO: use a newly generated triangulation
 			const path = [];
 			for (const node of t.vertices)
 				path.push({type: 'L', args: [node.ф, node.λ]}); // put its values in a plottable form
@@ -686,7 +687,7 @@ export class Chart {
 	static outline(nodos: Nodo[] | Set<Nodo>, greeble: Layer): PathSegment[] {
 		nodos = new Set(nodos);
 		const accountedFor = new Set(); // keep track of which Edge have been done
-		const output: PathSegment[] = []; // TODO: will this thro an error if I try to outline the entire surface?
+		const output: Place[][] = []; // TODO: will this thro an error if I try to outline the entire surface?
 		for (let inNodo of nodos) { // look at every included node
 			for (let esNodo of inNodo.neighbors.keys()) { // and every node adjacent to an included one
 				if (nodos.has(esNodo))
@@ -695,27 +696,17 @@ export class Chart {
 				if (accountedFor.has(startingEdge))
 					continue; // (and can ignore edges we've already hit)
 
-				const loopIdx = output.length;
+				const loop = []; // if we've found a new edge, start going around it
+
 				do {
 					const next = inNodo.leftOf(esNodo); // look for the next triangle, going widdershins
 
 					if (next !== null) { // assuming there is one,
-						const vertex = next.center; // pick out its circumcenter to plot
+						const vertex = next; // pick out its circumcenter to plot
 						const edge = inNodo.neighbors.get(esNodo); // and the edge between them
 
 						// add the edge to the complete Path
-						if (Chart.weShouldGreeble(edge, greeble)) {
-							let path;
-							if (edge.triangleR === next)
-								path = edge.path;
-							else
-								path = edge.path.slice().reverse();
-							for (const place of path.slice(1))
-								output.push({type: 'L', args: [place.ф, place.λ]});
-						}
-						else {
-							output.push({type: 'L', args: [vertex.ф, vertex.λ]}); // make the Path segment
-						}
+						loop.push(vertex); // make the Path segment
 
 						accountedFor.add(edge); // check this edge off
 						if (nodos.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
@@ -724,10 +715,11 @@ export class Chart {
 							esNodo = next.acrossFrom(edge);
 					}
 					else { // if there isn't a next triangle
-						if (output.length > loopIdx)
-							output.push({type: 'L', args: [Number.NEGATIVE_INFINITY, Number.NaN]}); // draw a line to infinity
+						if (loop.length > 0)
+							loop.push(
+								{ ф: Number.NEGATIVE_INFINITY, λ: inNodo.λ }); // draw a line to infinity
 						else
-							break; // unless you're trying to start a new seccion; the lines to infinity must be in the middle of seccions
+							break; // you're on the end in which case you should just ignore this
 
 						esNodo = inNodo;
 						let i = 0;
@@ -740,18 +732,14 @@ export class Chart {
 					}
 				} while (inNodo.neighbors.get(esNodo) !== startingEdge && output.length < 100000); // continue until you go all the esNodo around this loop
 
-				if (loopIdx < output.length) {
-					output[loopIdx].type = 'M'; // whenever a loop ends, set its beginning to a moveTo
-					output.push({type: 'L', args: [...output[loopIdx].args]}); // and add closure
-				}
-				if (!MapProjection.isClosed(output)) {
-					console.log(output);
-					throw "bad";
+				if (loop.length > 0) {
+					loop.push(loop[0]); // add closure
+					output.push(loop); // and save it to the output
 				}
 			}
 		}
 
-		return output;
+		return this.convertToPath(output, greeble);
 	}
 
 	/**
@@ -759,8 +747,9 @@ export class Chart {
 	 * applicable. aggregation may behave unexpectedly if some members of lines contain
 	 * nonendpoints that are endpoints of others.
 	 * @param lines Set of lists of points to be combined and pathified.
+	 * @param greeble what kind of edges these are, for the purpose of greebling
 	 */
-	static aggregate(lines: Iterable<Place[]>): PathSegment[] {
+	static aggregate(lines: Iterable<Place[]>, greeble: Layer): PathSegment[] {
 		const queue = [...lines];
 		const consolidated = new Set<Place[]>(); // first, consolidate
 		const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
@@ -833,13 +822,49 @@ export class Chart {
 			return a;
 		}
 
-		let output = [];
-		for (const line of consolidated) { // then do the conversion
-			output.push({type: 'M', args: [line[0].ф, line[0].λ]});
-			for (let i = 1; i < line.length; i ++)
-				output.push({type: 'L', args: [line[i].ф, line[i].λ]});
+		return this.convertToPath(consolidated, greeble);
+	}
+
+	/**
+	 * convert some paths expressd as Places into an array of PathSegments, using 'M'
+	 * segments to indicate gaps and 'L' segments to indicate connections.  also add
+	 * the greebling where relevant
+	 * @param points each Place[] is a polygonal path thru geographic space
+	 * @param greeble what kinds of connections these are for the purposes of
+	 */
+	static convertToPath(points: Iterable<Place[]>, greeble: Layer): PathSegment[] {
+		let path = [];
+		for (const line of points) { // then do the conversion
+			path.push({type: 'M', args: [line[0].ф, line[0].λ]});
+
+			for (let i = 1; i < line.length; i ++) {
+				const start = line[i - 1];
+				const end = line[i];
+				// do this long type-casting song and dance to see if there's an edge to greeble
+				let edge = null;
+				if (start.hasOwnProperty('neighbors')) {
+					const neighbors = (<{neighbors: any}><unknown>start).neighbors;
+					if (typeof neighbors.has === 'function' && typeof neighbors.get === 'function')
+						if (neighbors.has(end))
+							edge = neighbors.get(end);
+				}
+				let step: Place[];
+				if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
+					if (edge.triangleR === end)
+						step = edge.path.slice(1);
+					else
+						step = edge.path.slice(0, edge.path.length - 1).reverse();
+				}
+				else {
+					step = [end];
+				}
+				console.assert(step[step.length - 1].ф === end.ф && step[step.length - 1].λ === end.λ, step, "did not end at", end);
+
+				for (const place of step)
+					path.push({ type: 'L', args: [place.ф, place.λ] });
+			}
 		}
-		return output;
+		return path;
 	}
 
 	static smooth(input: PathSegment[]): PathSegment[] {

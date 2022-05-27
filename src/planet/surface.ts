@@ -190,7 +190,7 @@ export abstract class Surface {
 		for (const triangle of this.triangles) // TODO this probably belongs in terrain.ts, no?
 			for (const edge of triangle.edges)
 				if (edge.path === null)
-					edge.path = edge.generateGreebles(rng);
+					edge.greeblePath(rng);
 	}
 
 	/**
@@ -421,7 +421,7 @@ export class Triangle {
 	public edges: Edge[];
 	public neighbors: Map<Triangle, Edge>;
 	public surface: Surface;
-	public center: Place; // circumcenter (the locacion of the vertex on the Voronoi graph)
+	public center: Place; // circumcenter (the locacion of the vertex on the Voronoi graph (also present in ф and λ))
 	public centerPos: Vector; // circumcenter (in 3D this time)
 
 	public gawe: number;
@@ -542,7 +542,7 @@ export class Edge {
 	 * corresponds to triangleL, (0, 1) corresponds to triangleR, and (1, 1/2) corresponds
 	 * to node1.
 	 */
-	generateGreebles(rng: Random): Place[] {
+	greeblePath(rng: Random): void {
 		// define the inicial coordinate vectors
 		const origin = this.triangleL.centerPos; // compute its coordinate system
 		const i = this.triangleR.centerPos.minus(origin);
@@ -564,12 +564,14 @@ export class Edge {
 			rng, bounds, .35);
 
 		// then transform the result out of the plane
-		const output: Place[] = [];
+		this.path = [];
 		for (const {x, y} of points) {
 			const transformed = origin.plus(i.times(x).plus(j.times(y)));
-			output.push(this.node0.surface.фλ(transformed));
+			this.path.push(this.node0.surface.фλ(transformed));
 		}
-		return output;
+		// finally, adjust the endpoints to prevent roundoff issues
+		this.path[0] = this.triangleL.center;
+		this.path[this.path.length - 1] = this.triangleR.center;
 	}
 
 	toString(): string {
