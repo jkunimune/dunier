@@ -91,33 +91,43 @@ class Sif {
 	}
 }
 
-const HEADERS: string[] = []; // read in the array of attributes from static res
-const CHUZABLE: Sif[][][] = [];
-const LOGA_INDEX: number[] = [];
+// read in the array of attributes from static res
+const KULTUR_ASPECTS: { key: string, zar: number, chuzable: Sif[][], logaIndex: number }[] = [];
+let zai: { key: string, zar: number, chuzable: Sif[][], logaIndex: number } = null;
 let header = null, subheader = null;
-let index = null;
 for (const row of loadTSV('../../res/kultur.tsv')) {
 	row[0] = row[0].replace(/^ +/, ''); // start by ignoring my indentacion
 	if (row[0].startsWith('# ')) { // when you see a main header
-		index = HEADERS.length;
 		header = row[0].slice(2);
-		HEADERS.push(`data.${header}`); // get the header
-		CHUZABLE.push([]); // and set up the new section object
-		LOGA_INDEX.push(null);
+		zai = {
+			key: `data.${header}`,
+			zar: Number.parseFloat(row[1]),
+			chuzable: [],
+			logaIndex: null
+		}; // set up the new section object
+		KULTUR_ASPECTS.push(zai);
 	}
 	else if (row[0].startsWith('## ')) { // when you see a subheader
-		subheader = row[0].slice(3);
-		if (row.length >= 2 && row[1] === 'new_word')
-			LOGA_INDEX[index] = CHUZABLE[index].length; // look to see if it is a new word index
-		CHUZABLE[index].push([]); // and set up the subsection object
+		if (zai !== null) {
+			subheader = row[0].slice(3);
+			if (row.length >= 2 && row[1] === 'new_word')
+				zai.logaIndex = zai.chuzable.length; // look to see if it is a new word index
+			zai.chuzable.push([]); // and set up the subsection object
+		}
+		else {
+			console.error("kultur.tsv file has stuff out of order!");
+		}
 	}
 	else { // when you see anything else
-		const sif = new Sif(header, subheader, row); // make it an object
-		CHUZABLE[index][CHUZABLE[index].length - 1].push(sif); // add it to the list
+		if (zai !== null && zai.chuzable.length > 0) {
+			const sif = new Sif(header, subheader, row); // make it an object
+			zai.chuzable[zai.chuzable.length - 1].push(sif); // add it to the list
+		}
+		else {
+			console.error("kultur.tsv file has stuff out of order!");
+		}
 	}
 }
-for (let i = 0; i < HEADERS.length; i ++)
-	console.assert(LOGA_INDEX[i] < CHUZABLE[i].length, `how am I supposed to use index ${LOGA_INDEX[i]} as the length when there are only ${CHUZABLE[i].length} parts to ${HEADERS[i]}?`);
 
 
 const DRIFT_RATE = .05; // fraccion of minor attributes that change each century
@@ -127,7 +137,6 @@ const DRIFT_RATE = .05; // fraccion of minor attributes that change each century
  */
 export class Kultur {
 	private readonly sif: Sif[][];
-	// private emphasis: boolean[];
 	public readonly klas: Set<string>;
 	public readonly homeland: Nodo;
 	public readonly government: Civ;
@@ -144,43 +153,71 @@ export class Kultur {
 	constructor(parent: Kultur, homeland: Nodo, government: Civ, rng: Random) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
 		this.sif = [];
 		this.government = government;
-		if (parent !== null) {
-			this.klas = new Set<string>(parent.klas);
-			this.homeland = (homeland === null) ? parent.homeland : homeland;
-			this.lect = new Dialect(parent.lect, rng);
-			for (let i = 0; i < CHUZABLE.length; i ++) {
-				this.sif.push(parent.sif[i].slice()); // base this off of it
-				for (let j = 0; j < CHUZABLE[i].length; j ++) {
-					if (!this.sif[i][j].isCompatible(this) || rng.probability(DRIFT_RATE)) { // and occasionally
-						this.klas.delete(this.sif[i][j].klas);
-						this.sif[i][j] = this.randomCompatibleSif(i, j, rng); // make a modificacion
-						this.klas.add(this.sif[i][j].klas);
+		if (parent === null) {
+			this.klas = new Set<string>();
+			this.homeland = homeland;
+			this.lect = new ProtoLang(rng); // create a new language from scratch
+			for (const aspect of KULTUR_ASPECTS) { // make up a whole new culture
+				if (rng.probability(aspect.zar)) {
+					const sifList = [];
+					for (const chuzable of aspect.chuzable) {
+						const sif = this.randomCompatibleSif(chuzable, rng);
+						sifList.push(sif); // pick all these things freely
+						this.klas.add(sif.klas); // be sure to get note their classes to keep everything compatible
 					}
+					this.sif.push(sifList);
+				}
+				else {
+					this.sif.push(null); // unless it's not notable, in which case it's all null
 				}
 			}
 		}
 		else {
-			this.klas = new Set<string>();
-			this.homeland = homeland;
-			this.lect = new ProtoLang(rng); // create a new language from scratch
-			for (let i = 0; i < CHUZABLE.length; i ++) { // make up a whole new culture
-				this.sif.push([]);
-				for (let j = 0; j < CHUZABLE[i].length; j ++) {
-					this.sif[i].push(this.randomCompatibleSif(i, j, rng)); // pick all these things freely
-					this.klas.add(this.sif[i][j].klas); // be sure to get note their classes to keep everything compatible
+			this.klas = new Set<string>(parent.klas);
+			this.homeland = (homeland === null) ? parent.homeland : homeland;
+			this.lect = new Dialect(parent.lect, rng);
+			for (let i = 0; i < KULTUR_ASPECTS.length; i ++) {
+				let sifList;
+				if (parent.sif[i] === null) {
+					if (rng.probability(DRIFT_RATE*KULTUR_ASPECTS[i].zar)) {
+						sifList = [];
+						for (const chuzable of KULTUR_ASPECTS[i].chuzable) {
+							const sif = this.randomCompatibleSif(chuzable, rng);
+							sifList.push(sif); // pick all these things freely
+							this.klas.add(sif.klas); // be sure to get note their classes to keep everything compatible
+						}
+					}
+					else {
+						sifList = null;
+					}
 				}
+				else {
+					if (rng.probability(DRIFT_RATE*(1 - KULTUR_ASPECTS[i].zar))) {
+						sifList = null;
+					}
+					else {
+						sifList = parent.sif[i].slice();
+						for (let j = 0; j < KULTUR_ASPECTS[i].chuzable.length; j ++) {
+							if (sifList[j].isCompatible(this) || rng.probability(DRIFT_RATE)) { // and occasionally
+								this.klas.delete(sifList[j].klas);
+								sifList[j] = this.randomCompatibleSif(KULTUR_ASPECTS[i].chuzable[j], rng); // make a modificacion
+								this.klas.add(sifList[j].klas);
+							}
+						}
+					}
+				}
+				this.sif[i] = sifList; // base this off of it
 			}
 		}
 	}
 
 	/**
 	 * return one cultural feature from the given set
-	 * @param seccionIndex
-	 * @param subsectionIndex
+	 * @param chuzable the Sif from which to choose
 	 * @param rng
 	 */
-	randomCompatibleSif(seccionIndex: number, subsectionIndex: number, rng: Random): Sif {
-		const compatible = CHUZABLE[seccionIndex][subsectionIndex].filter(
+	randomCompatibleSif(chuzable: Sif[], rng: Random): Sif {
+		const compatible = chuzable.filter(
 			(sif: Sif) => sif.isCompatible(this));
 		return rng.choice(compatible);
 	}
@@ -197,9 +234,16 @@ export class Kultur {
 		let str = "";
 		for (let i = 0; i < this.sif.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
 			const attributes = this.sif[i];
-			const madeUpWord = (LOGA_INDEX[i] === null) ? null : this.lect.getName(attributes[LOGA_INDEX[i]].nam, LogaTipo.ALO);
-			str += format(HEADERS[i],
-				...attributes, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
+			const logaIndex = KULTUR_ASPECTS[i].logaIndex;
+			if (attributes !== null) {
+				let madeUpWord;
+				if (logaIndex !== null)
+					madeUpWord = this.lect.getName(attributes[logaIndex].nam, LogaTipo.ALO);
+				else
+					madeUpWord = null;
+				str += format(KULTUR_ASPECTS[i].key,
+				              ...attributes, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
+			}
 		}
 		return str.trim();
 	}
