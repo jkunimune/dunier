@@ -43,6 +43,8 @@ import {Conic} from "../map/conic.js";
 import {Selector} from "../util/selector.js";
 import {PortableDocument} from "./document.js";
 import {format} from "../util/util.js";
+import {MapProjection} from "../map/projection.js";
+import {Civ} from "../society/civ.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -90,6 +92,8 @@ let inProgress: boolean = false; // TODO; I can't remember why this is here; if 
 let surface: Surface = null;
 /** the human world on that planet */
 let world: World = null;
+/** the list of countries on the current map */
+let mappedCivs: Civ[] = null;
 
 
 /**
@@ -303,27 +307,28 @@ function applyMap(): void {
 		applyHistory();
 
 	console.log("grafa zemgrafe...");
-	const projection = dom.val('map-projection');
+	const projectionName = dom.val('map-projection');
 	const norde = (dom.val('map-dish') === 'norde');
 	const locus = Chart.border(world.getCiv(Number.parseInt(dom.val('map-jung'))));
 
-	let mapper: Chart;
-	if (projection === 'equirectangular')
-		mapper = new Chart(new Equirectangular(surface, norde, locus));
-	else if (projection === 'azimuthal-equidistant')
-		mapper = new Chart(new Azimuthal(surface, norde, locus));
-	else if (projection === 'mercator')
-		mapper = new Chart(new Mercator(surface, norde, locus));
-	else if (projection === 'eckert')
-		mapper = new Chart(new EqualArea(surface, norde, locus));
-	else if (projection === 'bonne')
-		mapper = new Chart(new Bonne(surface, norde, locus));
-	else if (projection === 'conic')
-		mapper = new Chart(new Conic(surface, norde, locus));
+	let projection: MapProjection;
+	if (projectionName === 'equirectangular')
+		projection = new Equirectangular(surface, norde, locus);
+	else if (projectionName === 'azimuthal-equidistant')
+		projection = new Azimuthal(surface, norde, locus);
+	else if (projectionName === 'mercator')
+		projection = new Mercator(surface, norde, locus);
+	else if (projectionName === 'eckert')
+		projection = new EqualArea(surface, norde, locus);
+	else if (projectionName === 'bonne')
+		projection = new Bonne(surface, norde, locus);
+	else if (projectionName === 'conic')
+		projection = new Conic(surface, norde, locus);
 	else
-		throw new Error(`no jana metode da graflance: '${projection}'.`);
+		throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
-	mapper.depict(
+	const chart = new Chart(projection);
+	mappedCivs = chart.depict(
 		surface,
 		world,
 		dom.elm('map-map') as SVGGElement,
@@ -355,7 +360,7 @@ function applyPdf(): void {
 
 	console.log("jena pdf..."); // TODO: refactor map so that I can get this in a form that I can rite directly to the PDF.  I should probably also allow export as png somehow?
 	const doc = new PortableDocument(format('param.data'));
-	for (const civ of world.getCivs(true)) // TODO: only civs on the map
+	for (const civ of mappedCivs) // TODO: only civs on the map
 		generateFactSheet(doc, civ);
 	dom.elm('pdf-embed').setAttribute('src', doc.getUrl());
 

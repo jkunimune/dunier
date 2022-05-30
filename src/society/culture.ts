@@ -95,26 +95,29 @@ const HEADERS: string[] = []; // read in the array of attributes from static res
 const CHUZABLE: Sif[][][] = [];
 const LOGA_INDEX: number[] = [];
 let header = null, subheader = null;
+let index = null;
 for (const row of loadTSV('../../res/kultur.tsv')) {
 	row[0] = row[0].replace(/^ +/, ''); // start by ignoring my indentacion
 	if (row[0].startsWith('# ')) { // when you see a main header
+		index = HEADERS.length;
 		header = row[0].slice(2);
-		if (LOGA_INDEX.length < HEADERS.length) // pad LOGA_INDEX with null if there was no new word index last seccion
-			LOGA_INDEX.push(null);
 		HEADERS.push(`data.${header}`); // get the header
 		CHUZABLE.push([]); // and set up the new section object
+		LOGA_INDEX.push(null);
 	}
 	else if (row[0].startsWith('## ')) { // when you see a subheader
 		subheader = row[0].slice(3);
 		if (row.length >= 2 && row[1] === 'new_word')
-			LOGA_INDEX.push(CHUZABLE[CHUZABLE.length-1].length); // look to see if it is a new word index
-		CHUZABLE[CHUZABLE.length-1].push([]); // and set up the subsection object
+			LOGA_INDEX[index] = CHUZABLE[index].length; // look to see if it is a new word index
+		CHUZABLE[index].push([]); // and set up the subsection object
 	}
 	else { // when you see anything else
 		const sif = new Sif(header, subheader, row); // make it an object
-		CHUZABLE[CHUZABLE.length-1][CHUZABLE[CHUZABLE.length-1].length-1].push(sif); // add it to the list
+		CHUZABLE[index][CHUZABLE[index].length - 1].push(sif); // add it to the list
 	}
 }
+for (let i = 0; i < HEADERS.length; i ++)
+	console.assert(LOGA_INDEX[i] < CHUZABLE[i].length, `how am I supposed to use index ${LOGA_INDEX[i]} as the length when there are only ${CHUZABLE[i].length} parts to ${HEADERS[i]}?`);
 
 
 const DRIFT_RATE = .05; // fraccion of minor attributes that change each century

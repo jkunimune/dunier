@@ -149,11 +149,13 @@ export class Chart {
 	 * @param geoLabels whether to label mountain ranges and seas
 	 * @param fontSize the size of city labels and minimum size of country and biome labels [pt]
 	 * @param style the transliteration convention to use for them
+	 * @return the list of Civs that are shown in this map
 	 */
-	depict(surface: Surface, world: World, svg: SVGGElement, zemrang: string, marorang: string, filter = 'nol',
+	depict(surface: Surface, world: World, svg: SVGGElement,
+	       zemrang: string, marorang: string, filter = 'nol',
 		   nade = true, kenare = true, shade = false,
 		   civLabels = false, geoLabels = false,
-		   fontSize = 2, style: string = null): void {
+		   fontSize = 2, style: string = null): Civ[] {
 		const bbox = this.projection.getDimensions();
 		svg.setAttribute('viewBox',
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
@@ -222,11 +224,13 @@ export class Chart {
 			}
 		}
 
+		// add rivers
 		if (nade) {
 			this.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD), // TODO have this depend on map scale
 				g, nadorang, 1.5, Layer.GEO, false);
 		}
 
+		// add borders with hovertext
 		if (kenare && world !== null) {
 			for (const civ of world.getCivs()) {
 				// if (civ.getPopulation() > 0) {
@@ -246,18 +250,36 @@ export class Chart {
 			}
 		}
 
-		if (shade) { // add relief shadows
+		// add relief shadows
+		if (shade) {
 			this.shade(surface.triangles, g);
 		}
 
+		// finally, label everything
 		if (civLabels && world !== null) {
 			for (const civ of world.getCivs()) // TODO: the hover text should go on this
 				if (civ.getPopulation() > 0)
 					this.label(
-						[...civ.nodos].filter(n => !n.isWater()),
+						[...civ.nodos].filter(n => !n.isWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
 						civ.getName().toString(style),
 						svg,
 						fontSize);
+		}
+
+		if (world !== null) {
+			// finally, check which Civs are on this map
+			// (this is somewhat innefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
+			const visible = [];
+			for (const civ of world.getCivs(true))
+				if (this.projection.project(
+					Chart.outline([...civ.nodos].filter(n => !n.isWater()),
+					              Layer.KULTUR),
+					true).length > 0)
+					visible.push(civ);
+			return visible;
+		}
+		else {
+			return null;
 		}
 	}
 
