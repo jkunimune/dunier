@@ -171,7 +171,10 @@ export class TreeMap<Type> implements Iterable<Type> {
 	}
 
 	[Symbol.iterator](): Iterator<Type> {
-		return this.getAllChildren(this.seed.item)[Symbol.iterator]();
+		if (this.seed === null)
+			return [][Symbol.iterator]();
+		else
+			return this.getAllChildren(this.seed.item)[Symbol.iterator]();
 	}
 }
 

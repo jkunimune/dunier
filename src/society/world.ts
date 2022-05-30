@@ -73,7 +73,7 @@ export class World {
 	public static readonly carryingCapacity = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
 	public static readonly valueOfKnowledge = .50; // [] value of a single technological advancement
 	public static readonly powerOfMemes = .02; // [1/year] probability that an idea spreads across a border in a year
-	public static readonly apocalypseSurvivalRate = .50; // [] the fraccion of the populacion a country gets to keep after a cataclysm
+	public static readonly apocalypseSurvivalRate = .80; // [] the fraccion of the populacion a country gets to keep after a cataclysm (not accounting for domino effects)
 
 	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
@@ -182,7 +182,7 @@ export class World {
 			}
 		}
 		for (const civ of this.civs)
-			if (civ.getArableArea() === 0)
+			if (civ.isDead())
 				this.civs.delete(civ); // clear out any Civs that no longer exist
 	}
 
@@ -220,12 +220,16 @@ export class World {
 	 */
 	haveCataclysm(rng: Random) {
 		for (const civ of this.civs) {
-			for (const nodo of civ.nodos)
-				if (!rng.probability(World.apocalypseSurvivalRate))
+			for (const nodo of [...civ.nodos])
+				if (civ.nodos.has(nodo) && !rng.probability(World.apocalypseSurvivalRate))
 					civ.lose(nodo);
 			civ.technology = World.valueOfKnowledge*rng.binomial(
 				civ.technology/World.valueOfKnowledge, World.apocalypseSurvivalRate);
 		}
+		for (const civ of this.civs)
+			if (civ.isDead())
+				this.civs.delete(civ); // clear out any Civs that no longer exist
+
 	}
 
 	/**

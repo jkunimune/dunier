@@ -127,6 +127,8 @@ export class Civ {
 	 * @param tile the land being taken
 	 */
 	lose(tile: Nodo) {
+		if (!this.nodos.has(tile))
+			throw "You tried to make a Civ lose a tile that it does not have.";
 		for (const lostLand of this.nodos.getAllChildren(tile)) { // start by going thru and updating the border map
 			if (this.world.politicalMap.get(lostLand) === this) // and update the global political map
 				this.world.politicalMap.delete(lostLand);
@@ -189,6 +191,18 @@ export class Civ {
 			return Infinity;
 	}
 
+	/**
+	 * return true if this Civ no longer exists and needs to be deleted
+	 */
+	isDead(): boolean {
+		return this.getArableArea() === 0;
+	}
+
+	/**
+	 * how strong the Civ's military is in this particular context
+	 * @param kontra the opponent
+	 * @param sa the location
+	 */
 	getStrength(kontra: Civ, sa: Nodo) : number {
 		let linguisticModifier = 1;
 		if (kontra !== null && sa.kultur.lect.isIntelligible(this.capital.kultur.lect))
@@ -197,7 +211,7 @@ export class Civ {
 	}
 
 	/**
-	 * get the total controlld area.
+	 * get the total controlld area.  careful; this is an O(n) operation.
 	 */
 	getArea(): number {
 		let area = 0;
