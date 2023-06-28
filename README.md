@@ -1,6 +1,6 @@
 # Dunia Hamar
 
-Dunia Hamar is a tool designed to help world builders build more and more realistic
+Dunia Hamar is a tool being designed to help world builders build more and more realistic
 worlds. Sometimes you need a world, but don't want to painstakingly build every
 aspect of it yourself. Maybe you're running an RPG campaign and just need a
 believable setting for your plot. Maybe you're a world builder who's more interested
