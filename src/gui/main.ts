@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 import "../lib/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
+import {DOM} from "../util/document.js";
 import {generateTerrain} from "../society/terrain.js";
 import {Surface} from "../planet/surface.js";
 import {World} from "../society/world.js";
@@ -38,7 +39,6 @@ import {Disc} from "../planet/disc.js";
 import {Toroid} from "../planet/toroid.js";
 import {LockedDisc} from "../planet/lockeddisc.js";
 import {generateFactSheet} from "../society/factsheet.js";
-import {loadJSON} from "../util/fileio.js";
 import {Conic} from "../map/conic.js";
 import {Selector} from "../util/selector.js";
 import {PortableDocument} from "./document.js";
@@ -69,10 +69,6 @@ const MIN_SIZE_TO_LIST = 6;
 const MIN_COUNTRIES_TO_LIST = 3;
 const MAX_COUNTRIES_TO_LIST = 20;
 
-const dom = new Selector(document);
-
-export const USER_STRINGS = loadJSON(`../../res/tarje/${dom.elm('bash').textContent}.json`);
-
 enum Layer {
 	NONE,
 	PLANET,
@@ -101,12 +97,12 @@ let mappedCivs: Civ[] = null;
  */
 function applyPlanet() {
 	console.log("jena planete...");
-	const planetType = dom.val('planet-type'); // read input
-	const tidallyLocked = dom.checked('planet-locked');
-	const radius = Number(dom.val('planet-size')) / (2*Math.PI);
-	const gravity = Number(dom.val('planet-gravity')) * 9.8;
-	const spinRate = 1 / Number(dom.val('planet-day')) * 2*Math.PI / 3600;
-	const obliquity = Number(dom.val('planet-tilt')) * Math.PI / 180;
+	const planetType = DOM.val('planet-type'); // read input
+	const tidallyLocked = DOM.checked('planet-locked');
+	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
+	const gravity = Number(DOM.val('planet-gravity')) * 9.8;
+	const spinRate = 1 / Number(DOM.val('planet-day')) * 2*Math.PI / 3600;
+	const obliquity = Number(DOM.val('planet-tilt')) * Math.PI / 180;
 
 	try { // create a surface
 		if (planetType === 'bol') { // spheroid
@@ -151,7 +147,7 @@ function applyPlanet() {
 				message = "The planet tore itself apart. Please choose a longer day length."; // TODO: translate this.  and/or automatically correct it.
 			else if (err.message.startsWith("Too slow"))
 				message = "The planet broke into pieces. Please choose a shorter day length."; // TODO: translate this.  and/or automatically correct it.
-			dom.elm('alert-box').append(
+			DOM.elm('alert-box').append(
 				"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
 				`  ${message}\n` +
 				"  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>\n" +
@@ -175,11 +171,11 @@ function renderPlanet() {
 		applyPlanet();
 
 	console.log("grafa planete...");
-	const radius = Number(dom.val('planet-size')) / (2*Math.PI);
+	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
 
 	const {x, y, z, I} = surface.parameterize(18);
 	Plotly.react(
-		dom.elm('planet-map'),
+		DOM.elm('planet-map'),
 		[{
 			type: 'surface',
 			x: x,
@@ -234,20 +230,20 @@ function applyTerrain(): void {
 		applyPlanet();
 
 	console.log("jena zemforme...");
-	let rng = new Random(Number(dom.val('terrain-sem'))); // use the random seed
+	let rng = new Random(Number(DOM.val('terrain-sem'))); // use the random seed
 	surface.populate(rng); // finish constructing the surface
 	rng = rng.reset();
 	generateTerrain(
-		Number(dom.val('terrain-continents')) * 2,
-		Number(dom.val('terrain-hay')),
-		Number(dom.val('terrain-terme')),
+		Number(DOM.val('terrain-continents')) * 2,
+		Number(DOM.val('terrain-hay')),
+		Number(DOM.val('terrain-terme')),
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
 	const mapper = new Chart(new EqualArea(surface, true, null));
 	mapper.depict(surface,
 	              null,
-	              dom.elm('terrain-map') as SVGGElement,
+	              DOM.elm('terrain-map') as SVGGElement,
 	              'jivi',
 	              'nili');
 
@@ -265,18 +261,18 @@ function applyHistory(): void {
 
 	console.log("jena histore...");
 	world = new World(
-		Number(dom.val('history-katastrof')),
+		Number(DOM.val('history-katastrof')),
 		surface);
-	let rng = new Random(Number(dom.val('history-sem'))); // use the random seed
+	let rng = new Random(Number(DOM.val('history-sem'))); // use the random seed
 	world.generateHistory(
-		Number(dom.val('history-nen')),
+		Number(DOM.val('history-nen')),
 		rng); // create the terrain!
 
 	console.log("grafa...");
 	const mapper = new Chart(new EqualArea(surface, true, null));
 	mapper.depict(surface,
 	              world,
-	              dom.elm('history-map') as SVGGElement,
+	              DOM.elm('history-map') as SVGGElement,
 	              'politiki',
 	              'nili');
 
@@ -307,9 +303,9 @@ function applyMap(): void {
 		applyHistory();
 
 	console.log("grafa zemgrafe...");
-	const projectionName = dom.val('map-projection');
-	const norde = (dom.val('map-dish') === 'norde');
-	const locus = Chart.border(world.getCiv(Number.parseInt(dom.val('map-jung'))));
+	const projectionName = DOM.val('map-projection');
+	const norde = (DOM.val('map-dish') === 'norde');
+	const locus = Chart.border(world.getCiv(Number.parseInt(DOM.val('map-jung'))));
 
 	let projection: MapProjection;
 	if (projectionName === 'equirectangular')
@@ -331,19 +327,19 @@ function applyMap(): void {
 	mappedCivs = chart.depict(
 		surface,
 		world,
-		dom.elm('map-map') as SVGGElement,
-		dom.val('map-zemrang'),
-		dom.val('map-hayrang'),
-		dom.val('map-filter'),
-		dom.checked('map-nade'),
-		dom.checked('map-kenar'),
-		dom.checked('map-say'),
-		dom.checked('map-deshnam'),
-		dom.checked('map-shannam'),
+		DOM.elm('map-map') as SVGGElement,
+		DOM.val('map-zemrang'),
+		DOM.val('map-hayrang'),
+		DOM.val('map-filter'),
+		DOM.checked('map-nade'),
+		DOM.checked('map-kenar'),
+		DOM.checked('map-say'),
+		DOM.checked('map-deshnam'),
+		DOM.checked('map-shannam'),
 		6,
-		(dom.val('map-bash') === 'null') ?
+		(DOM.val('map-bash') === 'null') ?
 			null :
-			dom.val('map-bash')
+			DOM.val('map-bash')
 	);
 
 	console.log("fina!");
@@ -362,7 +358,7 @@ function applyPdf(): void {
 	const doc = new PortableDocument(format('param.data'));
 	for (const civ of mappedCivs) // TODO: only civs on the map
 		generateFactSheet(doc, civ);
-	dom.elm('pdf-embed').setAttribute('src', doc.getUrl());
+	DOM.elm('pdf-embed').setAttribute('src', doc.getUrl());
 
 	console.log("fina!");
 	lastUpdated = Layer.PDF;
@@ -377,9 +373,9 @@ function applyPdf(): void {
 function disableButtonsAndDo(func: () => void): void {
 	inProgress = true;
 	for (const tab of ['planet', 'terrain', 'history', 'map']) {
-		dom.elm(`${tab}-apply`).setAttribute('disabled', '');
-		dom.elm(`${tab}-redi`).style.display = 'none';
-		dom.elm(`${tab}-lada`).style.display = null;
+		DOM.elm(`${tab}-apply`).setAttribute('disabled', '');
+		DOM.elm(`${tab}-redi`).style.display = 'none';
+		DOM.elm(`${tab}-lada`).style.display = null;
 	}
 
 	setTimeout(() => {
@@ -391,9 +387,9 @@ function disableButtonsAndDo(func: () => void): void {
 
 		inProgress = false;
 		for (const tab of ['planet', 'terrain', 'history', 'map']) {
-			dom.elm(`${tab}-apply`).removeAttribute('disabled');
-			dom.elm(`${tab}-redi`).style.display = null;
-			dom.elm(`${tab}-lada`).style.display = 'none';
+			DOM.elm(`${tab}-apply`).removeAttribute('disabled');
+			DOM.elm(`${tab}-redi`).style.display = null;
+			DOM.elm(`${tab}-lada`).style.display = 'none';
 		}
 	}, 10);
 }
@@ -405,7 +401,7 @@ for (const suffix of ['apply', 'tab']) {
 	 * Note that this does not check if the planet is out of sync; it
 	 * must update every time the tab is opened because of Plotly.
 	 */
-	dom.elm(`planet-${suffix}`).addEventListener('click', () => {
+	DOM.elm(`planet-${suffix}`).addEventListener('click', () => {
 		if (!planetRendered && !inProgress)
 			disableButtonsAndDo(renderPlanet);
 	});
@@ -413,7 +409,7 @@ for (const suffix of ['apply', 'tab']) {
 	/**
 	 * When the terrain button is clicked, do its thing
 	 */
-	dom.elm(`terrain-${suffix}`).addEventListener('click', () => {
+	DOM.elm(`terrain-${suffix}`).addEventListener('click', () => {
 		if (lastUpdated < Layer.TERRAIN && !inProgress)
 			disableButtonsAndDo(applyTerrain);
 	});
@@ -421,7 +417,7 @@ for (const suffix of ['apply', 'tab']) {
 	/**
 	 * When the history button is clicked, activate its purpose.
 	 */
-	dom.elm(`history-${suffix}`).addEventListener('click', () => {
+	DOM.elm(`history-${suffix}`).addEventListener('click', () => {
 		if (lastUpdated < Layer.HISTORY && !inProgress)
 			disableButtonsAndDo(applyHistory);
 	});
@@ -429,7 +425,7 @@ for (const suffix of ['apply', 'tab']) {
 	/**
 	 * When the map button is clicked, reveal its true form.
 	 */
-	dom.elm(`map-${suffix}`).addEventListener('click', () => {
+	DOM.elm(`map-${suffix}`).addEventListener('click', () => {
 		if (lastUpdated < Layer.MAP && !inProgress)
 			disableButtonsAndDo(applyMap);
 	});
@@ -438,7 +434,7 @@ for (const suffix of ['apply', 'tab']) {
 /**
  * When the pdf button is clicked, generate the PDF.
  */
-dom.elm('pdf-tab').addEventListener('click', () => {
+DOM.elm('pdf-tab').addEventListener('click', () => {
 	if (lastUpdated < Layer.PDF && !inProgress)
 		disableButtonsAndDo(applyPdf);
 });
@@ -455,7 +451,7 @@ const tabs = [
 	{ layer: Layer.PDF, name: 'pdf' },
 ];
 for (const { layer, name } of tabs) {
-	Selector.mapToAllChildren(dom.elm(`${name}-panel`), (element) => {
+	Selector.mapToAllChildren(DOM.elm(`${name}-panel`), (element) => {
 		const tagName = element.tagName.toLowerCase();
 		if (tagName === 'input' || tagName === 'select') {
 			element.addEventListener('change', () => {
@@ -473,5 +469,5 @@ for (const { layer, name } of tabs) {
  */
 document.addEventListener("DOMContentLoaded", () => {
 	console.log("ready!");
-	(dom.elm('map-tab') as HTMLElement).click();
+	(DOM.elm('map-tab') as HTMLElement).click();
 }); // TODO: warn before leaving page

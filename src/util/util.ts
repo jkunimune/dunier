@@ -23,7 +23,7 @@
  */
 // @ts-ignore
 import Queue from "../util/queue.js";
-import {USER_STRINGS} from "../gui/main.js";
+import {USER_STRINGS} from "./document.js";
 import {Word} from "../language/word.js";
 import {Point} from "./coordinates.js";
 import {Random} from "./random.js";

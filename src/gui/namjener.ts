@@ -24,19 +24,17 @@
 import "../lib/jquery.min.js";
 import {Random} from "../util/random.js";
 import {Dialect, Lect, ProtoLang, LogaTipo} from "../language/lect.js";
-import {Selector} from "../util/selector.js";
+import {DOM} from "../util/document.js";
 
 
 const NUM_ROWS = 12;
-
-const dom = new Selector(document);
 
 let seed = 0; // TODO the actual version should use the current time.
 
 /**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
  */
-dom.elm('nam-apply').addEventListener('click', () => { // TODO: back button
+DOM.elm('nam-apply').addEventListener('click', () => { // TODO: back button
 	console.log("jena nam...");
 
 	const rng = new Random(seed);
@@ -47,7 +45,7 @@ dom.elm('nam-apply').addEventListener('click', () => { // TODO: back button
 	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
 
 	let firstSeed = 0, lastSeed = 0;
-	for (const namliste of [dom.elm('nam-liste-1'), dom.elm('nam-liste-2')]) {
+	for (const namliste of [DOM.elm('nam-liste-1'), DOM.elm('nam-liste-2')]) {
 		namliste.textContent = '';
 		for (let i = 0; i < NUM_ROWS; i++) {
 			const jannam = bax.getName(`firstname${firstSeed}`, LogaTipo.ALO);
@@ -81,5 +79,5 @@ dom.elm('nam-apply').addEventListener('click', () => { // TODO: back button
  */
 document.addEventListener("DOMContentLoaded", () => {
 	console.log("ready!");
-	(dom.elm('nam-apply') as HTMLElement).click();
+	(DOM.elm('nam-apply') as HTMLElement).click();
 });
