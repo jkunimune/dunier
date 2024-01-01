@@ -2,6 +2,7 @@
 <project version="4">
   <component name="TypeScriptCompiler">
     <option name="enableServiceForProjectsWithoutConfig" value="false" />
+    <option name="nodeInterpreterTextField" value="$PROJECT_DIR$/../../../../Program Files/nodejs/node" />
     <option name="recompileOnChanges" value="true" />
   </component>
 </project>
