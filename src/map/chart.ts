@@ -707,12 +707,12 @@ export class Chart {
 	 * @return Array of PathSegments, ordered widdershins.
 	 */
 	static outline(nodos: Nodo[] | Set<Nodo>, greeble: Layer): PathSegment[] {
-		nodos = new Set(nodos);
+		const nodoSet = new Set(nodos);
 		const accountedFor = new Set(); // keep track of which Edge have been done
 		const output: Place[][] = []; // TODO: will this thro an error if I try to outline the entire surface?
-		for (let inNodo of nodos) { // look at every included node
+		for (let inNodo of nodoSet) { // look at every included node
 			for (let esNodo of inNodo.neighbors.keys()) { // and every node adjacent to an included one
-				if (nodos.has(esNodo))
+				if (nodoSet.has(esNodo))
 					continue; // (we only care if that adjacent node is excluded)
 				const startingEdge = inNodo.neighbors.get(esNodo); // the edge between them defines the start of the loop
 				if (accountedFor.has(startingEdge))
@@ -731,7 +731,7 @@ export class Chart {
 						loop.push(vertex); // make the Path segment
 
 						accountedFor.add(edge); // check this edge off
-						if (nodos.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
+						if (nodoSet.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
 							inNodo = next.acrossFrom(edge); // advance one of the state nodos
 						else
 							esNodo = next.acrossFrom(edge);
@@ -748,7 +748,7 @@ export class Chart {
 						do {
 							esNodo = esNodo.surface.edge.get(esNodo).next; // and shimmy esNodo around the internal portion of the edge
 							i ++;
-						} while (nodos.has(esNodo)); // until it becomes external again
+						} while (nodoSet.has(esNodo)); // until it becomes external again
 
 						inNodo = esNodo.surface.edge.get(esNodo).prev; // then, grab the new inNodo and continue
 					}

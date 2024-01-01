@@ -63,7 +63,7 @@ export class PortableDocument {
 	}
 
 	public addPage(size: string, orientation: string, margin: Margins): void {
-		this.pdf.addPage(size, orientation);
+		this.pdf.addPage(size, orientation, margin);
 		this.pageParameters = { size: size, orientation: orientation, margin: margin };
 
 		this.textTop = margin.top;

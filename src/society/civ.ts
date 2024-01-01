@@ -155,7 +155,7 @@ export class Civ {
 		const newKultur: Map<Lect, Kultur> = new Map();
 		newKultur.set(this.capital.kultur.lect.macrolanguage, new Kultur(this.capital.kultur, this.capital, this, rng)); // start by updating the capital, tying it to the new homeland
 		for (const nodo of this.nodos) { // update the culture of each node in the empire in turn
-			if (rng.probability(World.timeStep/CULTURAL_MEMORY)) { // if the province fails its heritage save
+			if (rng.probability(World.timeStep/CULTURAL_MEMORY)) { // if the province fails its heritage saving throw
 				nodo.kultur = this.capital.kultur; // its culture gets overritten
 			}
 			else { // otherwise update it normally

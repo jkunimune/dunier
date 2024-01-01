@@ -183,6 +183,7 @@ export class ProtoLang extends Lect {
 	/**
 	 * generate a new random word root
 	 * @param index the pseudorandom seed for this root
+	 * @param index the pseudorandom seed for this root as a lowercase base-36 string
 	 * @param syllables the number of syllables in this root
 	 */
 	noveMul(index: string, syllables: number): Fon[] {

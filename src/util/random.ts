@@ -73,7 +73,7 @@ export class Random {
 	 * @param std the scale of the distribution
 	 */
 	normal(mean: number, std: number): number {
-		if (this.boxMullerBacklog != null) {
+		if (this.boxMullerBacklog !== null) {
 			const z0 = this.boxMullerBacklog;
 			this.boxMullerBacklog = null;
 			return std*z0 + mean;

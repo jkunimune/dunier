@@ -393,7 +393,7 @@ export class Klas {
 	konformu(fon: Fon = Fon.BLANK, ref: Fon = null): Fon {
 		if (this.na.length > 0)
 			throw Error(`you can't use minus ${this.na[0]} in the final state of a process!`);
-		if (this.sa.length == 0) // if there are no properties, you don't have to do anything
+		if (this.sa.length === 0) // if there are no properties, you don't have to do anything
 			return fon; // (even if fon is a pause)
 
 		let mode = fon.mode, loke = fon.loke, voze = fon.voze;

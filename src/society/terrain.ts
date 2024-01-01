@@ -163,7 +163,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 		node.barxe += moisture;
 		for (const downwind of node.downwind) {
 			if (downwind.biome !== Biome.HAI && downwind.gawe <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
-				const distance = node.neighbors.get(downwind).length;
+				const distance: number = node.neighbors.get(downwind).length;
 				queue.push({
 					node: downwind,
 					moisture: moisture*Math.exp(-distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
@@ -185,7 +185,7 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random): void
 		if (node.index < numPlates) {
 			node.plate = node.index; // the first few are seeds
 			node.gawe = 0;
-			rng.discrete(0, 0); // but call rng anyway to keep things consistent
+			rng.next(); // but call rng anyway to keep things consistent
 		}
 		else { // and the rest with a method similar to that above
 			const prefParents: Nodo[] = [];
