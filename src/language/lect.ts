@@ -124,7 +124,8 @@ export class ProtoLang extends Lect {
 			+ Math.log10(1 + this.nMedial) + Math.log10(1 + this.nVowel);
 
 		this.fin = [];
-		for (let i = 0; i < rng.discrete(0, 6); i ++) // choose how much basic suffixing to do
+		const numGenders = rng.probability(.3) ? 0 : rng.discrete(2, 6);
+		for (let i = 0; i < numGenders; i ++) // choose how much basic suffixing to do
 			this.fin.push(this.noveMul('fmncrh'[i], 0.5));
 
 		this.diversity = rng.uniform(0, 1); // choose how much lexical suffixing to do
