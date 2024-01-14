@@ -1,0 +1,22 @@
+{
+  "name": "dunia-hamar",
+  "version": "1.0.0",
+  "description": "A webapp to generate realistic fictional maps, for fantasy and sci-fi settings.",
+  "main": "gui/main.ts",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/preset-env": "^7.23.8",
+    "@types/jest": "^29.5.11",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  }
+}

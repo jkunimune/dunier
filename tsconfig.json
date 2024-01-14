@@ -4,13 +4,13 @@
     "module": "ES6",
     "sourceMap": true,
     "lib": ["es2016", "DOM"],
-    "outDir": ".",
+    "outDir": "./",
     "downlevelIteration": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
-    "noImplicitThis": true
+    "noImplicitThis": true,
   },
   "exclude": [
-    "lib",
+    "src/lib"
   ]
 }

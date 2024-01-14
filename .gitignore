@@ -5,9 +5,14 @@
 src/*/*.js
 src/*/*.js.map
 src/lib/*
+test/*.js
+test/*.js.map
 
 ### bootstrap ###
 res/bootstrap-4.5.2-dist/*
+
+# I am pretty sure I don't need this it's not like my dependencies are complicated
+package-lock.json
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio and WebStorm

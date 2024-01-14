@@ -28,9 +28,11 @@ import {Random} from "./random.js";
 import {trajectoryIntersection, Vector} from "./geometry.js";
 
 /**
- * maximum index.
+ * index of the maximum.
  */
 export function argmax(arr: number[]): number {
+	if (arr.length === 0)
+		throw "I cannot find the maximum of an empty array";
 	let maxIdx = null;
 	for (let i = 0; i < arr.length; i ++)
 		if (maxIdx === null || arr[i] > arr[maxIdx])
@@ -76,10 +78,13 @@ export function arctanh(x: number): number {
 }
 
 /**
- * search a sorted array for the index of the last element less than or equal to a value
+ * search a sorted array for the index of the last element less than or equal to a value,
+ * or -1 if there is no such element.
  */
 export function binarySearch(value: number, array: number[]): number {
-	let min = 0, max = array.length;
+	if (array.length === 0)
+		throw "I cannot search an empty array.";
+	let min = -1, max = array.length;
 	while (max - min > 1) {
 		const mid = Math.trunc((min + max)/2);
 		if (array[mid] <= value)
@@ -96,9 +101,14 @@ export function binarySearch(value: number, array: number[]): number {
 export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
 	if (inRef.length !== exRef.length)
 		throw "array lengths must match";
-
-	const i = binarySearch(inVal, inRef);
-	return (inVal - inRef[i])/(inRef[i+1] - inRef[i])*(exRef[i+1] - exRef[i]) + exRef[i];
+	else if (inVal <= inRef[0])
+		return exRef[0];
+	else if (inVal >= inRef[inRef.length - 1])
+		return exRef[exRef.length - 1];
+	else {
+		const i = binarySearch(inVal, inRef);
+		return (inVal - inRef[i])/(inRef[i + 1] - inRef[i])*(exRef[i + 1] - exRef[i]) + exRef[i];
+	}
 }
 
 /**
@@ -109,7 +119,10 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
  * @param max
  */
 export function localizeInRange(value: number, min: number, max: number): number {
-	return value - Math.floor((value - min)/(max - min))*(max - min);
+	if (value > min && value < max)
+		return value;
+	else
+		return value - Math.floor((value - min)/(max - min))*(max - min);
 }
 
 /**
@@ -126,7 +139,7 @@ export function isBetween(value: number, a: number, b: number): boolean {
 }
 
 /**
- * combine the two arrays and remove duplicates.
+ * combine the two arrays and remove duplicates, assuming the inputs have no duplicates to begin with.
  */
 export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
 	const aa = [...a];
@@ -149,33 +162,41 @@ export function filterSet<T>(set: Iterable<T>, condition: (item: T) => boolean):
 }
 
 /**
- * perform a Dijkstra search on the given Euclidean graph from the given nodes. return the shortest path from the node
- * that is furthest from those endpoint nodes to the endpoint node that is closest to it, as a list of indices.
- * @param nodes the locations of all of the nodes in the plane, and their connections
- * @param endpoints the indices of the possible endpoints
+ * given a graph, find the longest path from some startpoint node to one of the given endpoint nodes that is shorter
+ * than any other path between the same startpoint and endpoint.  so it essentially finds the path from the node
+ * furthest from any valid endpoint to the nearest valid endpoint
+ * @param nodes the locations of all of the nodes in the plane, and their connections.  each node has a position in the
+ *              plane given as x and y and an array of edges.  the index in the array indicates which node the edge
+ *              leads to (if there is no edge between two nodes there will be a null in the corresponding index of
+ *              each's edges array), and each edge has properties indicating the distance along it and the amount of
+ *              "clearance" it has (this is used to filter edges; those with a low clearance will be ignored if
+ *              threshold is set high).
+ * @param validEndpoints the indices of the possible endpoints
  * @param threshold the minimum clearance of an edge
- * @return list of indices starting with the farthest connected point and stepping through the path, and the path length
+ * @return list of indices starting with the farthest connected point and stepping through the path to the chosen
+ *         endpoint, and the path's total length (the sum of the lengths of the traversed edges)
  */
 export function longestShortestPath(nodes: {x: number, y: number, edges: {length: number, clearance: number}[]}[],
-							 endpoints: Set<number>, threshold = 0): {points: number[], length: number} {
-	const graph = [];
+							        validEndpoints: Set<number>, threshold = 0): {points: number[], length: number} {
+	// start by preparing an array that stores, for each node, how we got to it and how long it took
+	const nodeInfo = [];
 	for (let i = 0; i < nodes.length; i ++)
-		graph.push({distance: Number.POSITIVE_INFINITY, cene: null, lewi: false});
+		nodeInfo.push({distance: Number.POSITIVE_INFINITY, cene: null, lewi: false});
 
 	const queue: Queue<{start: number, end: number, distance: number}> = new Queue(
 		[], (a, b) => a.distance - b.distance);
-	for (const i of endpoints)
-		queue.push({start: null, end: i, distance: 0}); // populate the queue with the endpoints
+	for (const end of validEndpoints)
+		queue.push({start: null, end: end, distance: 0}); // populate the queue with the endpoints
 
 	let furthest = null;
 	while (!queue.empty()) { // while there are places whither you can go
 		const {start, end, distance} = queue.pop(); // look for the closest one
-		if (!graph[end].lewi) { // only look at each one once
+		if (!nodeInfo[end].lewi) { // only look at each one once
 			for (let next = 0; next < nodes.length; next ++) { // add its neighbors to the queue
 				if (nodes[end].edges[next] !== null && nodes[end].edges[next].clearance >= threshold) // if they are connected with enough clearance
 					queue.push({start: end, end: next, distance: distance + nodes[end].edges[next].length});
 			}
-			graph[end] = {distance: distance, cene: start, lewi: true}; // mark this as visited
+			nodeInfo[end] = {distance: distance, cene: start, lewi: true}; // mark this as visited
 			furthest = end; // and as the furthest yet visited
 		}
 	}
@@ -183,9 +204,9 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 	const points = [furthest];
 	let length = 0;
 	let i = furthest; // starting at the furthest point you found,
-	while (graph[i].cene !== null) { // step backwards and record the path
-		length += nodes[i].edges[graph[i].cene].length;
-		i = graph[i].cene;
+	while (nodeInfo[i].cene !== null) { // step backwards and record the path
+		length += nodes[i].edges[nodeInfo[i].cene].length;
+		i = nodeInfo[i].cene;
 		points.push(i);
 	}
 	return {points: points, length: length};
