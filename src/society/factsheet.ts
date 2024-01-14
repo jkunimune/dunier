@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 import {Civ} from "./civ.js";
-import {format} from "../util/util.js";
 import {PortableDocument} from "../gui/document.js";
+import {format} from "../util/document.js";
 
 
 /**

@@ -22,13 +22,13 @@
  * SOFTWARE.
  */
 import {Random} from "../util/random.js";
-import {format} from "../util/util.js";
 import {Dialect, Lect, LogaTipo, ProtoLang} from "../language/lect.js";
 import {loadTSV} from "../util/fileio.js";
 import {Nodo} from "../planet/surface.js";
 import {Civ} from "./civ.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 import {Word} from "../language/word.js";
+import {format} from "../util/document.js";
 
 
 class Sif {
