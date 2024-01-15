@@ -62,20 +62,20 @@ export class LogaTipo extends Enumify {
  */
 export abstract class Lect {
 	public readonly defaultStyle: string; // this language's preferd romanization style
-	public readonly rightBranching: boolean; // whether this language prefers prefixen
+	public readonly prefixing: boolean; // whether this language prefers prefixen
 	public macrolanguage: Lect; // the proto-language for the set of lects intelligible to this one
 
 	protected constructor(defaultStyle: string, rightBranching: boolean) {
 		this.defaultStyle = defaultStyle;
-		this.rightBranching = rightBranching;
+		this.prefixing = rightBranching;
 	}
 
 	/**
 	 * get a name from this language. the style of name and valid indices depend on the WordType:
-	 * @param label the index of the name
+	 * @param index the pseudorandom seed of the name
 	 * @param tipo the type of name
 	 */
-	abstract getName(label: string, tipo: LogaTipo): Word;
+	abstract getName(index: string, tipo: LogaTipo): Word;
 
 	/**
 	 * get the language that this was n timesteps ago
@@ -141,28 +141,26 @@ export class ProtoLang extends Lect {
 		}
 	}
 
-	getName(label: string, tipo: LogaTipo): Word {
-		if (!this.name.get(tipo).has(label)) {
-			const base = this.noveLoga(
-				label,
-				4/this.complexity); // get the base
+	getName(index: string, tipo: LogaTipo): Word {
+		if (!this.name.get(tipo).has(index)) {
+			const base = this.noveLoga(index, 4/this.complexity); // get the base
 
 			let name;
 			if (this.classifiers.get(tipo).length === 0)
 				name = base;
 			else {
 				const classifierOptions = this.classifiers.get(tipo);
-				const classifier = classifierOptions[decodeBase36(label)%classifierOptions.length];
-				if (this.rightBranching)
+				const classifier = classifierOptions[decodeBase36(index)%classifierOptions.length];
+				if (this.prefixing)
 					name = classifier.concat([Fon.PAUSE], base);
 				else
 					name = base.concat([Fon.PAUSE], classifier);
 			}
 
-			this.name.get(tipo).set(label,
+			this.name.get(tipo).set(index,
 				DEFAULT_ACENTE.apply(new Word(name, this)));
 		}
-		return this.name.get(tipo).get(label);
+		return this.name.get(tipo).get(index);
 	}
 
 	/**
@@ -176,7 +174,7 @@ export class ProtoLang extends Lect {
 			return root;
 		else {
 			const affix = this.fin[decodeBase36(index)*97%this.fin.length];
-			if (this.rightBranching)
+			if (this.prefixing)
 				return affix.concat(root);
 			else
 				return root.concat(affix);
@@ -221,7 +219,7 @@ export class Dialect extends Lect {
 	private readonly changes: Proces[];
 
 	constructor(parent: Lect, rng: Random) {
-		super(parent.defaultStyle, parent.rightBranching);
+		super(parent.defaultStyle, parent.prefixing);
 		this.parent = parent;
 		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 
@@ -231,8 +229,8 @@ export class Dialect extends Lect {
 				this.changes.push(proces);
 	}
 
-	getName(label: string, tipo: LogaTipo) {
-		return this.applyChanges(this.parent.getName(label, tipo));
+	getName(index: string, tipo: LogaTipo) {
+		return this.applyChanges(this.parent.getName(index, tipo));
 	}
 
 	applyChanges(lekse: Word): Word {
