@@ -54,22 +54,23 @@ export class Civ {
 	 * @param capital the home tile, with which this empire starts
 	 * @param id a nonnegative integer unique to this civ
 	 * @param world the world in which this civ lives
-	 * @param rng a random number generator
+	 * @param seed a random number seed
 	 * @param technology
 	 */
-	constructor(capital: Nodo, id: number, world: World, rng: Random, technology: number = 1) {
-		this.world = world; // TODO if every Civ has its own rng, it would make things a bit more stable
+	constructor(capital: Nodo, id: number, world: World, seed: number, technology: number = 1) {
+		this.world = world;
 		this.id = id;
 		this.nodos = new TreeMap<Nodo>((nodo: Nodo) => nodo.arableArea);
 		this.kenare = new Map<Nodo, Set<Nodo>>();
+
+		const rng = new Random(seed);
+		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
+		this.technology = technology;
 
 		this.capital = capital;
 		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
 			capital.kultur = new Kultur(null, capital, this, rng); // make up a proto-kultur
 		this.conquer(capital, null);
-
-		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
-		this.technology = technology;
 	}
 
 	/**

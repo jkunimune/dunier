@@ -43,11 +43,17 @@ export class Random {
 	}
 
 	/**
-	 * return a pseudorandom number in [0, 1)
+	 * return the next pseudorandom integer, in some obscene non-useful range
 	 */
 	next(): number {
-		this.value = (this.value * 0x19660D + 0x3C6EF35F) % 0x100000000;
-		return this.value / 0x100000000;
+		return this.value = (this.value * 0x19660D + 0x3C6EF35F) % 0x100000000;
+	}
+
+	/**
+	 * return a pseudorandom number in [0, 1)
+	 */
+	random(): number {
+		return this.next() / 0x100000000;
 	}
 
 	/**
@@ -55,7 +61,7 @@ export class Random {
 	 * @param p the probability of returning true
 	 */
 	probability(p: number): boolean {
-		return this.next() < p;
+		return this.random() < p;
 	}
 
 	/**
@@ -64,7 +70,7 @@ export class Random {
 	 * @param max exclusive maximum value
 	 */
 	uniform(min: number, max: number): number {
-		return min + (max - min)*this.next();
+		return min + (max - min)*this.random();
 	}
 
 	/**
@@ -78,8 +84,8 @@ export class Random {
 			this.boxMullerBacklog = null;
 			return std*z0 + mean;
 		}
-		const u0 = this.next();
-		const u1 = this.next();
+		const u0 = this.random();
+		const u1 = this.random();
 		const z0 = Math.sqrt(-2*Math.log(u0))*Math.cos(2*Math.PI*u1);
 		const z1 = Math.sqrt(-2*Math.log(u0))*Math.sin(2*Math.PI*u1);
 		this.boxMullerBacklog = z0;
@@ -91,7 +97,7 @@ export class Random {
 	 * @param mean the scale of the distribution
 	 */
 	exponential(mean: number): number {
-		return -mean*Math.log(this.next());
+		return -mean*Math.log(this.random());
 	}
 
 	/**
@@ -112,6 +118,8 @@ export class Random {
 	 * @param max exclusive maximum value
 	 */
 	discrete(min: number, max: number): number {
+		if (max - min < 1)
+			throw new RangeError(`you want a random integer in [${min}, ${max})? there are none.`);
 		return Math.trunc(this.uniform(min, max));
 	}
 
@@ -124,7 +132,7 @@ export class Random {
 			return 0;
 		} else if (mean < 36) {
 			const expMean = Math.exp(-mean);
-			let u = this.next();
+			let u = this.random();
 			let k = 0;
 			let kFact = 1;
 			while (true) {
@@ -159,7 +167,7 @@ export class Random {
 			return num - this.binomial(num, 1 - prob);
 		}
 		else if (num*prob < 36 || num*prob > num - 36) {
-			let u = this.next();
+			let u = this.random();
 			let nCk = 1;
 			for (let k = 0; k <= num; k++) {
 				const pk = nCk * Math.pow(prob, k) * Math.pow(1 - prob, num - k);

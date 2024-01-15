@@ -24,7 +24,7 @@
 import {
     arctanh,
     argmax,
-    binarySearch, filterSet, isBetween,
+    binarySearch, decodeBase36, filterSet, isBetween,
     legendreP2,
     legendreP4,
     legendreP6,
@@ -187,6 +187,24 @@ describe("testing filterSet()", () => {
         ).toEqual(
             new Set([0, 4])
         );
+    });
+});
+
+describe("testing decodeBase36()", () => {
+    test("empty", () => {
+        expect(decodeBase36("")).toEqual(0);
+    });
+    test("numerals", () => {
+        expect(decodeBase36("12")).toEqual(38);
+    });
+    test("lowercase letters", () => {
+        expect(decodeBase36("ab")).toEqual(371);
+    });
+    test("uppercase letters", () => {
+        expect(() => decodeBase36("AB")).toThrowError();
+    });
+    test("long", () => {
+        expect(() => decodeBase36("yachahunkichik")).not.toThrowError();
     });
 });
 

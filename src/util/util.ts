@@ -162,6 +162,27 @@ export function filterSet<T>(set: Iterable<T>, condition: (item: T) => boolean):
 }
 
 /**
+ * there will be some overflow here, but I don't mind as I'm only using this for random seeds
+ * @param string
+ */
+export function decodeBase36(string: string): number {
+	let totalValue = 0;
+	for (let i = 0; i < string.length; i ++) {
+		const char = string.charCodeAt(i);
+		let digit;
+		if (char >= 48 && char < 58)
+			digit = char - 48;
+		else if (char >= 97 && char < 123)
+			digit = char - 97 + 10;
+		else
+			throw RangeError(`base-36 strings must only contain digits and lowercase letters, but '${string}' ` +
+			                 `contains '${string.charAt(i)}'`);
+		totalValue = totalValue*36 + digit;
+	}
+	return totalValue;
+}
+
+/**
  * given a graph, find the longest path from some startpoint node to one of the given endpoint nodes that is shorter
  * than any other path between the same startpoint and endpoint.  so it essentially finds the path from the node
  * furthest from any valid endpoint to the nearest valid endpoint

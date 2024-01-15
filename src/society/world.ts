@@ -132,7 +132,9 @@ export class World {
 			const ruler = this.currentRuler(tile);
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(World.authoritarianism*World.timeStep*demomultia))
-					this.civs.add(new Civ(tile, this.nextID, this, rng));
+					this.civs.add(new Civ(tile, this.nextID, this, rng.next()));
+				else
+					rng.next(); // if you don't start a new civ, advance the rng anyway to keep it consistent
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
 				let linguisticModifier;
@@ -141,7 +143,9 @@ export class World {
 				else
 					linguisticModifier = World.nationalism;
 				if (rng.probability(World.libertarianism*World.timeStep*demomultia*linguisticModifier)) // use the population without technology correction for balancing
-					this.civs.add(new Civ(tile, this.nextID, this, rng, ruler.technology));
+					this.civs.add(new Civ(tile, this.nextID, this, rng.next(), ruler.technology));
+				else
+					rng.next(); // if you don't start a new civ, advance the rng anyway to keep it consistent
 			}
 			this.nextID ++;
 		}

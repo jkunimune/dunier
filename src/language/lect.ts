@@ -27,6 +27,7 @@ import {DEFAULT_ACENTE, Proces, PROCES_CHUZABLE} from "./process.js";
 import {ipa} from "./script.js";
 import {Word} from "./word.js";
 import {Enumify} from "../lib/enumify.js";
+import {decodeBase36} from "../util/util.js";
 
 
 const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
@@ -38,19 +39,21 @@ const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
 export class LogaTipo extends Enumify {
 	public readonly index: number;
 	public readonly numClassifiers: number;
+	public readonly asString: string;
 
-	static NAS = new LogaTipo(0, 1);
-	static BASHA = new LogaTipo(1, 1);
-	static DESHA = new LogaTipo(2, 3);
-	static SITI = new LogaTipo(3, 6);
-	static FAMILI = new LogaTipo(4, 12);
-	static ALO = new LogaTipo(5, 0);
+	static NAS = new LogaTipo(0, 1, 'people');
+	static BASHA = new LogaTipo(1, 1, 'language');
+	static DESHA = new LogaTipo(2, 3, 'country');
+	static SITI = new LogaTipo(3, 6, 'city');
+	static FAMILI = new LogaTipo(4, 12, 'family');
+	static ALO = new LogaTipo(5, 0, 'other');
 	static _ = LogaTipo.closeEnum();
 
-	constructor(index: number, numClassifiers: number) {
+	constructor(index: number, numClassifiers: number, asString: string) {
 		super();
 		this.index = index;
 		this.numClassifiers = numClassifiers;
+		this.asString = asString;
 	}
 }
 
@@ -100,7 +103,6 @@ export class ProtoLang extends Lect {
 	private static P_NUCLEUS = 1.5;
 	private static P_CODA = 0.4;
 
-	private readonly rng: Random; // this language's personal rng generator
 	private readonly diversity: number; // the typical number of lexical suffixes used for one type of word
 	private readonly nConson: number; // the number of consonants in this language
 	private readonly nVowel: number; // the number of vowels in this langugage
@@ -116,7 +118,6 @@ export class ProtoLang extends Lect {
 			rng.probability(0.2));
 		this.macrolanguage = this;
 
-		this.rng = rng;
 		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
 		this.nVowel = 5 + rng.binomial(5, .1); // choose how many nuclei it will have
 		this.nMedial = (this.nConson > ProtoLang.R_INDEX) ? 4 : 0;
@@ -136,7 +137,7 @@ export class ProtoLang extends Lect {
 			this.classifiers.set(<LogaTipo>wordType, []);
 			for (let i = 0; i < Math.round(this.diversity*(<LogaTipo>wordType).numClassifiers); i ++) // TODO countries can be named after cities
 				this.classifiers.get(<LogaTipo>wordType).push(
-					this.noveLoga(`${wordType}${i}`, 1.5/this.complexity));
+					this.noveLoga(`${(<LogaTipo>wordType).asString}${i}`, 1.5/this.complexity));
 		}
 	}
 
@@ -150,7 +151,8 @@ export class ProtoLang extends Lect {
 			if (this.classifiers.get(tipo).length === 0)
 				name = base;
 			else {
-				const classifier = this.rng.choice(this.classifiers.get(tipo));
+				const classifierOptions = this.classifiers.get(tipo);
+				const classifier = classifierOptions[decodeBase36(label)%classifierOptions.length];
 				if (this.rightBranching)
 					name = classifier.concat([Fon.PAUSE], base);
 				else
@@ -169,37 +171,38 @@ export class ProtoLang extends Lect {
 	 * @param syllables the number of syllables in the root
 	 */
 	noveLoga(index: string, syllables: number): Fon[] {
-		const base = this.noveMul(index, syllables);
+		const root = this.noveMul(index, syllables);
 		if (this.fin.length === 0)
-			return base;
+			return root;
 		else {
-			const affix = this.rng.choice(this.fin); // TODO: use index to make this more pseudoly random
+			const affix = this.fin[decodeBase36(index)*97%this.fin.length];
 			if (this.rightBranching)
-				return affix.concat(base);
+				return affix.concat(root);
 			else
-				return base.concat(affix);
+				return root.concat(affix);
 		}
 	}
 
 	/**
 	 * generate a new random word root
-	 * @param index the pseudorandom seed for this root
 	 * @param index the pseudorandom seed for this root as a lowercase base-36 string
 	 * @param syllables the number of syllables in this root
 	 */
 	noveMul(index: string, syllables: number): Fon[] {
+		const seed = decodeBase36(index);
+		const rng = new Random(seed);
 		const syllableNumber = Math.ceil(syllables);
 		const syllableSize = syllables/syllableNumber;
 		let mul = [];
 		for (let i = 0; i < syllableNumber; i++) {
-			if (this.rng.probability(ProtoLang.P_ONSET*syllableSize)) // TODO use the index to make this more pseudoly random
-				mul.push(this.rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
-			if (this.nMedial > 0 && this.rng.probability(ProtoLang.P_MEDIAL*syllableSize))
-				mul.push(this.rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
-			if (this.rng.probability(ProtoLang.P_NUCLEUS*syllableSize))
-				mul.push(this.rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
-			if (this.rng.probability(ProtoLang.P_CODA*syllableSize))
-				mul.push(this.rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
+			if (rng.probability(ProtoLang.P_ONSET*syllableSize))
+				mul.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
+			if (this.nMedial > 0 && rng.probability(ProtoLang.P_MEDIAL*syllableSize))
+				mul.push(rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
+			if (rng.probability(ProtoLang.P_NUCLEUS*syllableSize))
+				mul.push(rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
+			if (rng.probability(ProtoLang.P_CODA*syllableSize))
+				mul.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
 		}
 		return mul;
 	}
