@@ -204,7 +204,10 @@ describe("testing decodeBase36()", () => {
         expect(() => decodeBase36("AB")).toThrowError();
     });
     test("long", () => {
-        expect(() => decodeBase36("yachahunkichik")).not.toThrowError();
+        expect(() => decodeBase36("yachanchihunkichik")).not.toThrowError();
+    });
+    test("comparison", () => {
+        expect(decodeBase36("firstname13") - decodeBase36("firstname12")).toEqual(1);
     });
 });
 

@@ -177,7 +177,7 @@ export function decodeBase36(string: string): number {
 		else
 			throw RangeError(`base-36 strings must only contain digits and lowercase letters, but '${string}' ` +
 			                 `contains '${string.charAt(i)}'`);
-		totalValue = totalValue*36 + digit;
+		totalValue = (totalValue*36 + digit)%0x10000000000;
 	}
 	return totalValue;
 }
@@ -444,5 +444,3 @@ export class Matrix {
 		return this.values[i][j];
 	}
 }
-
-
