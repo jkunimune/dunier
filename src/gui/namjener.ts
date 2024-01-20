@@ -44,12 +44,12 @@ DOM.elm('nam-apply').addEventListener('click', () => { // TODO: back button
 
 	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
 
-	let firstSeed = 0, lastSeed = 0;
+	let nameSeed = 0;
 	for (const namliste of [DOM.elm('nam-liste-1'), DOM.elm('nam-liste-2')]) {
 		namliste.textContent = '';
 		for (let i = 0; i < NUM_ROWS; i++) {
-			const jannam = bax.getName(`firstname${firstSeed}`, LogaTipo.ALO);
-			const familnam = bax.getName(`lastname${lastSeed}`, LogaTipo.FAMILI);
+			const jannam = bax.getName(`firstname${nameSeed}`, LogaTipo.ALO);
+			const familnam = bax.getName(`lastname${nameSeed}`, LogaTipo.FAMILI);
 			let holnam;
 			if (type === 1)
 				holnam = `${jannam} ${familnam}`;
@@ -63,8 +63,7 @@ DOM.elm('nam-apply').addEventListener('click', () => { // TODO: back button
 			listem.textContent = holnam;
 			namliste.append(listem);
 
-			firstSeed += 1;
-			if (rng.probability(0.5)) lastSeed += 1;
+			nameSeed += 1;
 		}
 	}
 
