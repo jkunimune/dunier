@@ -71,16 +71,16 @@ q	g	g	c	г	k	k	q	q	q	q		uv	p
 ʕ		h					g’	ʻ	ʕ	ʻ		eg	v
 ʔ		h					’	’	ʻ	’		gl	p
 h	h	j	ɦ	г	h	h	h	h	h	h		gl	f
-ᵏʘ	p	pop	pw	кп	pp	p	pq	pc	pc	ʘ		bl	k!
-ᶢʘ	b	bop	mw	кб	pp	b	bq	gpc	bc	gʘ		bl	g!
-ᵏǀ	t	tut	tut	кт	tt	t	c	c	tc	|		ar	k!
-ᶢǀ	d	dut	dut	кд	tt	d	dc	gc	dc	g|		ar	g!
-ᵏǂ	c	ket	cit	кк	kk	k	tc	qc	c	ǂ		c	k!
-ᶢǂ	c	get	git	кг	kk	g	dtc	gqc	gc	gǂ		c	g!
-ᵏǁ	cl	tec	tic	тк	kk	k	x	x	lc	ǁ	l	c	k!
-ᶢǁ	gl	dec	dic	тг	kk	g	dx	gx	glc	gǁ	l	c	g!
-ᵏǃ	t	tac	tac	тт	tt	t	q	q	c̣	!		rf	k!
-ᶢǃ	t	dac	dac	тд	tt	t	dq	gq	gc̣	g!		rf	g!
+ᵏʘ	p	pop	pw	кп	pp	p	cp	cp	ʘ	ʘ		bl	k!
+ᶢʘ	b	bop	mw	кб	pp	b	gp	gp	ʘg	gʘ		bl	g!
+ᵏǀ	t	tut	tut	кт	tt	t	c	c	|	|		ar	k!
+ᶢǀ	d	dut	dut	кд	tt	d	gc	gc	|g	g|		ar	g!
+ᵏǂ	c	ket	cit	кк	kk	k	ç	ç	ǂ	ǂ		c	k!
+ᶢǂ	c	get	git	кг	kk	g	gç	gç	ǂg	gǂ		c	g!
+ᵏǁ	cl	tec	tic	тк	kk	k	x	x	ǁ	ǁ	l	c	k!
+ᶢǁ	gl	dec	dic	тг	kk	g	gx	gx	ǁg	gǁ	l	c	g!
+ᵏǃ	t	tac	tac	тт	tt	t	q	q	!	!		rf	k!
+ᶢǃ	t	dac	dac	тд	tt	t	gq	gq	!g	g!		rf	g!
 j	j	y	y	й	y	y	y	y	j	y		c	a
 ɥ	j	yu	yu*	ю	yu	yu	yu	yu	y	w	w	c	a
 ɰ	v	u	w	у	w	w	w	w	w	w		v	a
@@ -130,7 +130,7 @@ Xʲ	Xj	Xi	Xy	Xь	Xy	Xw	Xy	Xy	X’	X’	^palataliz
 Xˠ	X	Xu	X	Xь	X	X	gX	Xw	X̴	X’	^velariz
 Xˤ	X	X	X	X	X	X	X̣	X̰	Xʻ	Xʻ	^pharyngealiz
 X̃	X	X	X	X	Xnn	Xn	X̃	X̨	X̃	Ẍ	^nasaliz
-x͡Y	xY	xY	xY	xY	nnY	xY	xY	xY	xY	xY	^prenasaliz
+x͡Y	xY	xY	xY	xY	nnY	xY	xY	xY	Yx	xY	^prenasaliz
 X́	X	X́	X	X́	X	X	X	X	X́	X	^primary
 X̀	X	X	X	X	X	X	X	X	X	X	^secondary
 X̯	X	X	X	X	X	X	X	X	X̆	X	^glide
