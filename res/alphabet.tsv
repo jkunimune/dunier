@@ -18,11 +18,11 @@ t	t	t	t	т	t	t	t	t	t	t		d	p
 d	d	d	d	д	d	d	d	d	d	d		d	b
 θ	th	z	th	ф	s	t	th	th	ṯ	θ		d	f
 ð	d	d	th	д	z	d	dh	dh	ḏ	ð		d	v
-t͡s	c	z	tz	ц	ts	c	c	tz	ts	z		ar	pf
+t͡s	c	z	tz	ц	ts	c	ts	tz	c	z		ar	pf
 d͡z	z	z	z	дз	z	z	dz	dz	dz	z		ar	bv
 s	s	s	s	с	s	s	s	s	s	s		ar	f
 z	z	z	z	з	z	z	z	z	z	z		ar	v
-t͡ʃ	s	ch	ch	ч	ty	c	ch	ch	tš	c		pa	pf
+t͡ʃ	s	ch	ch	ч	ty	c	tsh	ch	č	c		pa	pf
 d͡ʒ	j	y	j	дж	zy	j	dzh	j	dž	j		pa	bv
 ʃ	sc	ch	sh	ш	sy	x	sh	sh	š	x		pa	f
 ʒ	z	y	j	ж	zy	j	zh	zh	ž	j		pa	v
@@ -37,16 +37,16 @@ r	r	r	r	р	r	r	r	r	r	r		d	r
 r̝	r	rr	rz	рж	ruz	r	rz	ř	ř	ř	b	d	r
 ɾ	r	r	r	р	r	r	r	r	r	r		d	t
 ɺ	r	r	l	р	r	l	lr	r	ṛ	r	l	d	t
-ɳ	n	n	n	н	n	n	ṇ	nr	ṇ	ṇ		rf	n
+ɳ	n	n	n	н	n	n	ṇ	rn	ṇ	nh		rf	n
 ʈ	t	t	t	т	t	t	ṭ	tr	ṭ	ṭ		rf	p
 ɖ	d	d	d	д	d	d	ḍ	dr	ḍ	ḍ		rf	b
-ʈ͡ʂ	s	ch	ch	ч	ty	c	cz	ch	tṣ	ch		rf	pf
-ɖ͡ʐ	j	y	j	дж	zy	j	dz	j	dẓ	zh		rf	bv
-ʂ	sc	y	sh	ш	sy	x	sz	sh	ṣ	sh		rf	f
-ʐ	r	y	j	ж	zy	j	rz	zh	ẓ	zh		rf	v
-ꞎ	l	l	fl	л	r	l	ll	rl	ḷh	hḷ	l	rf	f
+ʈ͡ʂ	s	ch	ch	ч	ty	c	tṣ	ch	cz	ch		rf	pf
+ɖ͡ʐ	j	y	j	дж	zy	j	dẓ	j	drz	zh		rf	bv
+ʂ	sc	y	sh	ш	sy	x	ṣ	sh	sz	sh		rf	f
+ʐ	r	y	j	ж	zy	j	ẓ	zh	rz	zh		rf	v
+ꞎ	l	l	fl	л	r	l	ll	rl	ꞎ	hlh	l	rf	f
 ɻ	r	r	r	р	a	r	r	r	ṛ	rh		rf	a
-ɭ	l	l	l	л	r	l	l	rl	ḷ	ḷ	l	rf	a
+ɭ	l	l	l	л	r	l	ḷ	rl	ḷ	lh	l	rf	a
 ɽ	r	r	r	р	r	r	r	r	ṛ	rh		rf	t
 ɲ	gn	ñ	ny	нь	ny	ny	ny	nh	ñ	ny		c	n
 c	cj	cy	c	кь	ky	ky	ky	k	tj	k		c	p
