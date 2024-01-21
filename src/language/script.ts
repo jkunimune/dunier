@@ -27,8 +27,8 @@ import {loadTSV} from "../util/fileio.js";
 
 const MODIFIERS: {klas: Klas, baze: Sif[], kode: string}[] = [ // TODO: can I rearrange this to put the macron underneath the acute accent?
 	{klas: new Klas([], [PendaniSif.SPOKEN]), baze: [], kode: 'pause'},
-	{klas: new Klas([Longia.LONG, Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'geminate'},
-	{klas: new Klas([Longia.LONG], [Silabia.NONSYLLABIC]), baze: [Longia.SHORT], kode: 'long'},
+	{klas: new Klas([Longia.LONG], [PendaniSif.VOWEL]), baze: [Longia.SHORT], kode: 'geminate'},
+	{klas: new Klas([Longia.LONG, PendaniSif.VOWEL]), baze: [Longia.SHORT], kode: 'long'},
 	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'aspirate'},
 	{klas: new Klas([Voze.EJECTIVE]), baze: [Voze.TENUIS], kode: 'ejective'},
 	{klas: new Klas([Loke.LINGUOLABIAL, PendaniSif.LIQUID]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'linguolab'},
