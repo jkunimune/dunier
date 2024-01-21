@@ -100,11 +100,22 @@ for (const row of harfiaTable.slice(1)) { // each row of the orthographick table
 	const grafeme = row.slice(0, header.length);
 	const sif = row.slice(header.length);
 	if (sif.length === 3) { // first we read all the phonemes and their transcripcions
+		// s in element 0 means syllabic
 		const silabia = sif[0].includes('s') ? Silabia.UNSTRESSED : Silabia.NONSYLLABIC;
+		// l in element 0 means lateral
 		const latia = sif[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
+		// w and v in element 0 mean labialized or velarized
 		const aliSif = sif[0].includes('w') ? MinorLoke.LABIALIZED : sif[0].includes('v') ? MinorLoke.VELARIZED : MinorLoke.UNROUNDED;
+		// element 1 indicates the place of articulation
+		console.assert(LOKE_KODE.has(sif[1]));
 		const loke = LOKE_KODE.get(sif[1]);
-		const {mode, voze} = MODE_KODE.get(sif[2]);
+		// element 2 indicates the manner of articulation and voicing
+		console.assert(MODE_KODE.has(sif[2]));
+		let {mode, voze} = MODE_KODE.get(sif[2]);
+		// but b in element 0 overrides the voicing to breathy
+		if (sif[0].includes('b'))
+			voze = Voze.BREATHY;
+		// put it all together in one record and store it in our IPA lookup tables
 		const foneme = new Fon(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
 		for (let i = 0; i < header.length; i ++)
 			TO_TEXT.get(header[i]).set(foneme.hash(), grafeme[i]);

@@ -168,6 +168,9 @@
 020 mute [ +PALATALIZ ] > [ +PALATAL ] /
 020 mute [ +PALATALIZ ] > [ +UNROUND ] j / _ [ -PALATAL ]
 020 mute [ +PALATALIZ ] > j [ +UNROUND ] / [ -PALATAL ] _
+010 mute [ +PALATALIZ +TRILL ] > [ +BREATHY +UNROUND +TRILL ] /				% form Czech trill-fricative
+050 mute [ +BREATHY +TRILL ] > [ +VOICE +CLOSE ] [ +VOICE +FRIC ] /			% break up Czech trill-fricative
+050 mute [ +BREATHY +CORON +TRILL ] > [ +VOICE +POSTALV +FRIC ] /			% soften Czech trill-fricative
 050 mute [ +VELARIZ ] > [ +UNROUND ] /
 010 mute [ +VELARIZ ] > [ +VELAR ] /
 020 mute [ +VELARIZ +CLOSE ] > [ +MEDIAN +VELAR +UNROUND ] /				% dark l > w
