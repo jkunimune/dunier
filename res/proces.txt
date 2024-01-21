@@ -383,7 +383,6 @@
 005 mute [ -STRESS +VOWEL ] > / _ [ +VOWEL ]								% loss of hiatus
 005 mute [ +UNSTRESS +LAX ] > / [ +SPOKEN ] _								% loss of lax vowel
 005 mute [ +UNSTRESS +HIGH ] > / [ +SPOKEN ] _								% loss of high vowel
-500 mute [ -STRESS +VOICE +GLOT ] > / [ +SPOKEN ] _							% delete voiced glottal sounds
 100 mute [ -SPOKEN ] > / [ +SPOKEN ] _ [ +SPOKEN ]							% elision of pauses
 
 %%	PROSIDY CHANGES

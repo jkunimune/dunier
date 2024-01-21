@@ -555,7 +555,7 @@ export class Klas {
 		}
 
 		if (((mode === Mode.NASAL || nosia === Nosia.NASALIZED) && loke.foner === Foner.PHARYNX) ||
-			((voze === Voze.VOICED || voze === Voze.BREATHY) && loke === Loke.GLOTTAL && mode === Mode.STOP) ||
+			((voze === Voze.VOICED || voze === Voze.BREATHY || voze === Voze.EJECTIVE) && loke === Loke.GLOTTAL) ||
 			(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
 			(mode === Mode.TRILL && loke !== Loke.BILABIAL && loke !== Loke.DENTAL && loke !== Loke.UVULAR) ||
 			(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
