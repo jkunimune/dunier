@@ -402,3 +402,4 @@
 %%	OTHER
 1000 mute [ +EJECT +HIGH ] > [ +VOICE +SHORT ]0 [ +VOICE +SHORT +CLOSE +NONSYLLAB ]0 / % handle the ejective vowel workaround (see the code regarding +RAISED)
 1000 mute [ +NASALIZ -VOCOID +CLOSE ] > [ +NASAL ] / % disallow nasalized approximants
+1000 mute [ +LINGUOLAB +TRILL ] > [ +TAP ] / % disallow linguolabial trills
