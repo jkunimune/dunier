@@ -27,7 +27,7 @@ import {DEFAULT_ACENTE, Proces, PROCES_CHUZABLE} from "./process.js";
 import {ipa} from "./script.js";
 import {Word} from "./word.js";
 import {Enumify} from "../lib/enumify.js";
-import {decodeBase36} from "../util/util.js";
+import {decodeBase37} from "../util/util.js";
 
 
 const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
@@ -150,7 +150,7 @@ export class ProtoLang extends Lect {
 				name = base;
 			else {
 				const classifierOptions = this.classifiers.get(tipo);
-				const classifier = new Random(decodeBase36(index) + 100).choice(classifierOptions);
+				const classifier = new Random(decodeBase37(index) + 100).choice(classifierOptions);
 				if (this.prefixing)
 					name = classifier.concat([Fon.PAUSE], base);
 				else
@@ -173,7 +173,7 @@ export class ProtoLang extends Lect {
 		if (this.fin.length === 0)
 			return root;
 		else {
-			const affix = new Random(decodeBase36(index)).choice(this.fin);
+			const affix = new Random(decodeBase37(index)).choice(this.fin);
 			if (this.prefixing)
 				return affix.concat(root);
 			else
@@ -187,7 +187,7 @@ export class ProtoLang extends Lect {
 	 * @param syllables the number of syllables in this root
 	 */
 	noveMul(index: string, syllables: number): Fon[] {
-		const seed = decodeBase36(index);
+		const seed = decodeBase37(index);
 		const rng = new Random(seed);
 		const syllableNumber = Math.ceil(syllables);
 		const syllableSize = syllables/syllableNumber;

@@ -165,7 +165,7 @@ export function filterSet<T>(set: Iterable<T>, condition: (item: T) => boolean):
  * there will be some overflow here, but I don't mind as I'm only using this for random seeds
  * @param string
  */
-export function decodeBase36(string: string): number {
+export function decodeBase37(string: string): number {
 	let totalValue = 0;
 	for (let i = 0; i < string.length; i ++) {
 		const char = string.charCodeAt(i);

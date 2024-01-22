@@ -24,7 +24,7 @@
 import {
     arctanh,
     argmax,
-    binarySearch, decodeBase36, filterSet, isBetween,
+    binarySearch, decodeBase37, filterSet, isBetween,
     legendreP2,
     legendreP4,
     legendreP6,
@@ -192,22 +192,22 @@ describe("testing filterSet()", () => {
 
 describe("testing decodeBase36()", () => {
     test("empty", () => {
-        expect(decodeBase36("")).toEqual(0);
+        expect(decodeBase37("")).toEqual(0);
     });
     test("numerals", () => {
-        expect(decodeBase36("12")).toEqual(38);
+        expect(decodeBase37("12")).toEqual(39);
     });
     test("lowercase letters", () => {
-        expect(decodeBase36("ab")).toEqual(371);
+        expect(decodeBase37("ab")).toEqual(381);
     });
     test("uppercase letters", () => {
-        expect(() => decodeBase36("AB")).toThrowError();
+        expect(() => decodeBase37("AB")).toThrowError();
     });
     test("long", () => {
-        expect(() => decodeBase36("yachanchihunkichik")).not.toThrowError();
+        expect(() => decodeBase37("yachanchihunkichik")).not.toThrowError();
     });
     test("comparison", () => {
-        expect(decodeBase36("firstname13") - decodeBase36("firstname12")).toEqual(1);
+        expect(decodeBase37("firstname13") - decodeBase37("firstname12")).toEqual(1);
     });
 });
 
