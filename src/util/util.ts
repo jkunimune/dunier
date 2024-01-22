@@ -174,10 +174,12 @@ export function decodeBase36(string: string): number {
 			digit = char - 48;
 		else if (char >= 97 && char < 123)
 			digit = char - 97 + 10;
+		else if (char === 95)
+			digit = 36;
 		else
-			throw RangeError(`base-36 strings must only contain digits and lowercase letters, but '${string}' ` +
+			throw RangeError(`base-36 strings must only contain digits, lowercase letters, and underscore, but '${string}' ` +
 			                 `contains '${string.charAt(i)}'`);
-		totalValue = (totalValue*36 + digit)%0x10000000000;
+		totalValue = (totalValue*37 + digit)%0x10000000000;
 	}
 	return totalValue;
 }
