@@ -173,7 +173,7 @@ export class Kultur {
 			}
 		}
 		else {
-			this.klas = new Set<string>(parent.klas);
+			this.klas = new Set<string>();
 			this.homeland = (homeland === null) ? parent.homeland : homeland;
 			this.lect = new Dialect(parent.lect, rng);
 			for (let i = 0; i < KULTUR_ASPECTS.length; i ++) {
@@ -198,9 +198,11 @@ export class Kultur {
 					else {
 						sifList = parent.sif[i].slice();
 						for (let j = 0; j < KULTUR_ASPECTS[i].chuzable.length; j ++) {
-							if (sifList[j].isCompatible(this) || rng.probability(DRIFT_RATE)) { // and occasionally
-								this.klas.delete(sifList[j].klas);
+							if (!sifList[j].isCompatible(this) || rng.probability(DRIFT_RATE)) { // and occasionally
 								sifList[j] = this.randomCompatibleSif(KULTUR_ASPECTS[i].chuzable[j], rng); // make a modificacion
+								this.klas.add(sifList[j].klas);
+							}
+							else {
 								this.klas.add(sifList[j].klas);
 							}
 						}
