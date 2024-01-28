@@ -202,6 +202,26 @@
     insect
     dessert
     group
+# droge	0.2
+  ## mar
+    often
+    usually
+    always
+  ## karma
+    drink
+    chew
+    smoke
+  ## tipe
+    caffeine
+    sedative
+    alcoholic
+    sweet
+    bitter
+  ## asal	new_word
+    leaf			forbid=barren
+    seed
+    sap
+    fruit
 # dom	0.2
   ## mur
     pelt			forbid=sedentary
