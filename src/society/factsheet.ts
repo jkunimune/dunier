@@ -60,7 +60,7 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 
 	for (const {kultur, abundance} of topick.getCultures())
 		doc.addParagraph(
-			format((abundance < 1) ?
+			format((abundance < 2/3) ?
 				       'data.demografi.minority' :
 				       'data.demografi.majority',
 			       kultur.getName(),
