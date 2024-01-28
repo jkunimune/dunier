@@ -107,6 +107,7 @@
 010 mute [ +RHOTIC ] > [ +UVULAR +TRILL ] /
 010 mute [ +RHOTIC ] > [ +RETRO +CLOSE ] /
 010 mute [ +RHOTIC ] > [ +STOP ] / _ [ -CONT ]								% r-fortition
+010 mute [ +RHOTIC ] > [ +LATERAL +CLOSE ] / [ +SPOKEN -VOCOID ] _          % pr > pl
 010 mute [ +UVULAR +TRILL ] > [ +FRIC ] /									% trills are hard
 005 mute [ +ALVEO +TRILL ] > [ +CLOSE ] /									% trills are hard
 005 mute [ +ALVEO +TRILL ] > [ +RETRO +CLOSE ] /							% trills are hard

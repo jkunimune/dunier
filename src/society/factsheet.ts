@@ -47,6 +47,10 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 		12);
 
 	doc.addParagraph(
+		format('data.histori'), // TODO: bold this
+		18);
+
+	doc.addParagraph(
 		format('data.geografi'), // TODO: bold this
 		18);
 
@@ -57,8 +61,8 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 	for (const {kultur, abundance} of topick.getCultures())
 		doc.addParagraph(
 			format((abundance < 1) ?
-				       'data.demografi.percentage' :
-				       'data.demografi.predominantGroup',
+				       'data.demografi.minority' :
+				       'data.demografi.majority',
 			       kultur.getName(),
 			       0,
 			       Math.round(abundance*100),

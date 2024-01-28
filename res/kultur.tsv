@@ -1,3 +1,56 @@
+# shutu	1.0
+  ## shutu	new_word
+    painting
+    sandpainting		require=coastal
+    sculpture
+    carving
+    printing		tech=200
+    mosaic
+    geoglyph
+    storytelling
+    monuments
+    conservative
+    liberal
+    metric_system
+    roads
+    mustache
+    piercings
+    jewelry
+    body_paint
+    makeup
+    tatoos
+    scarring
+    irrigation
+    spear
+    archery
+    sword			tech=-1600
+    rifle			tech=1740
+    fistery
+    pottery
+    metalworking
+    woodworking
+    glassworking	tech=-2500
+    fireworks		tech=1110
+    horseback
+    elephant		biome=barxojangal	biome=grasistan
+    seafaring		tech=-2100	require=coastal
+    flying			tech=1903
+    cinema			tech=1888
+    theatre
+    weaving
+    alcohol
+    massages
+    puppetry
+    wirecraft		tech=1850
+    terraces		require=mountainous
+    navigation
+    hospitals
+    dams
+    knots
+    fabric
+    fishing
+    bluntness
+    sacrifice
 # fuku	0.2
   ## jan
     people
@@ -9,6 +62,9 @@
     clerics
     aristocrats
     rich			tech=-700
+    dancers
+    grooms
+    brides
   ## tipe	new_word
     turban			class=fabric
     hairpin			class=fabric		class=hairpin
@@ -21,14 +77,18 @@
     cape			class=fabric
     tunic			class=fabric
     belt			class=fabric
-    pants			class=fabric	biome!=barxojangal	biome!=piristan
-    sleve			class=fabric	biome!=barxojangal	biome!=piristan
-    scarf			class=fabric	biome!=barxojangal	biome!=piristan
-    headscarf		class=fabric	biome!=barxojangal	biome!=piristan
-    shawl			class=fabric	biome!=barxojangal	biome!=piristan
-    coat			class=fabric	biome!=barxojangal	biome!=piristan
-    robe			class=fabric	biome!=barxojangal	biome!=piristan
-    dress			class=fabric	biome!=barxojangal	biome!=piristan
+    neckerchief		class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    pants			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    sleve			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    scarf			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    headscarf		class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    shawl			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    coat			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    robe			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    dress			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
+    chestwrap		class=fabric	biome!=tundre	biome!=taige
+    waistwrap		class=fabric	biome!=tundre	biome!=taige
+    wings
     hat
     big_hat
     small_hat
@@ -40,6 +100,7 @@
     wig
     earring
     bracelet
+    anklet			biome!=tundre	biome!=taige
     cord
     eyeware			tech=1100
   ## sif
@@ -52,28 +113,33 @@
     silver
     white
     black
+    shiny			tech=698
+    fluorescent		tech=1852
+    iridescent		tech=698
+    glowing			require=coastal
     intricate
     feathered
     sequined
-    shiny
     extravagant
     jeweled
+    shelled			require=coastal	biome!=tundre	biome!=taige
+    pearled			require=coastal	biome!=tundre	biome!=taige
     decorated
     ceremonial
     calligraphic
     ribboned
     flowered
-    fluorescent		tech=1852
-    glowing
+    belled			tech=-600
     pointy
-    fur
-    barkcloth		require=fabric	biome!=arenatopia
+    fur				biome!=barxojangal	biome!=registan	biome!=piristan	biome!=wetland
+    grass			biome!=registan	biome!=tundre
+    barkcloth		require=fabric		biome!=registan	biome!=tundre
     thick			require=fabric
     leather			require=fabric
     tiedyed			require=fabric
     flowing			require=fabric
     loose			require=fabric
-    tight			require=fabric
+    tight			require=fabric		forbid=registan
     pleated			require=fabric
     layered			require=fabric
     voluminous		require=fabric
@@ -86,6 +152,7 @@
     long			forbid=hairpin
     bushy			forbid=hairpin		require=kinky
     bun
+    loop
     tail			forbid=kinky
     braid
     tails			forbid=kinky
@@ -119,7 +186,7 @@
     chewy
     dry
     liquid
-    hot				biome!=barxojangal	biome!=registan	biome!=piristan
+    hot				biome!=barxojangal	biome!=registan	biome!=piristan	biome!=wetland
     cold			tech=1911	biome!=tundre	biome!=taige
   ## baze	new_word
     cereal
@@ -138,25 +205,25 @@
     group
 # dom	0.2
   ## mur
-    pelt
-    cloth
-    thatching		biome!=registan	biome!=tundre
-    wood			require=sedentary	biome!=registan	biome!=tundre
+    pelt			forbid=sedentary
+    cloth			forbid=sedentary
+    wood			require=sedentary	forbid=barren
     mud				require=sedentary
     mudbrick		require=sedentary
     cob				require=sedentary
     adobe			require=sedentary
     clay			require=sedentary
-    marble			require=sedentary
     snowbrick		require=sedentary	biome=tundre
+    marble			require=sedentary
     concrete		require=sedentary	tech=-800
     steel			require=sedentary	tech=1000
-    floating		biome=barxojangal
+    floating		require=coastal		biome!=tundre	biome!=taige
   ## chate
-    thatching		biome!=registan
-    claytile
-    terracottatile
-    slatetile
+    none			forbid=sedentary
+    thatching		require=sedentary	forbid=barren
+    claytile		require=sedentary	forbid=tundre
+    terracottatile	require=sedentary
+    slatetile		require=sedentary
     metal			require=sedentary	tech=1840
     metaltile		require=sedentary	tech=-300
 # bina	0.2
@@ -190,6 +257,7 @@
     stucco			tech=200
     glass
     utilitarianism
+    stilts			require=coastal		forbid=floating
   ## grafi_she
     color			forbid=color		forbid=utilitarianism
     bridge			forbid=bridge
@@ -224,16 +292,18 @@
     cats
     dragons
     flowers
-    trees			biome!=registan
+    trees			forbid=barren
     fossils
     rivers
     stars			require=days
     sun
+    moon
     maps
     events
     celebrities
     politicians
     commoners
+    aliens
     monsters
     shapes
 # sundar_shutu	0.2
@@ -241,21 +311,21 @@
     squares
     circles
     stars
-    swirls
     hexagons
+    swirls
+    labyrinths
     lines
     tesselation
-    bright_colors
-    weird_colors
     parallels
     segments
-    outlines
+    bright_colors
+    weird_colors
     weird_sun
     weird_clouds
     weird_ocean		require=coastal
     people_no_arms
     people_no_legs
-    people_no_nose
+    people_triangular
     people_big_heads
   ## she	new_word
     ma
@@ -308,7 +378,7 @@
   ## tul	new_word
     pitched_perc	forbid=percussion
     drums			forbid=percussion
-    bell			forbid=percussion
+    bell			forbid=percussion	tech=-600
     cymbals			forbid=percussion
     rattle			forbid=percussion
     gourd			forbid=percussion
@@ -321,7 +391,8 @@
     short_horn		forbid=wind
     long_horn		forbid=wind
     panpipe			forbid=wind
-    reed			forbid=wind
+    reed			forbid=wind	biome!=registan	biome!=tundre
+    seashell_horn	forbid=wind	require=coastal	biome!=tundre	biome!=taige
     flute			forbid=wind
     plucked			forbid=string
     strummed		forbid=string
@@ -370,13 +441,14 @@
     bat				require=hit
     racket			require=hit
     lacrosse		forbid=push
+    hip				require=hit
     salmon
     judge
     telekinesis
     broomstick
     spoon
-    skating			biome!=barxojangal	biome!=registan	biome!=piristan
-    swimming		biome!=tundre	biome!=taige	forbid=roll
+    skating			biome!=barxojangal	biome!=registan	biome!=piristan	biome!=wetland	biome!=grasistan	biome!=jangal
+    swimming		require=coastal	biome!=tundre	biome!=taige	biome!=registan	forbid=roll
     phone			tech=2000
 # suna	0.2
   ## kas
@@ -412,7 +484,7 @@
     screaming
     tournament		forbid=sports
     fireworks		tech=1110
-    bells
+    bells			tech=-2000
     drums
     gifts
     party
@@ -452,53 +524,3 @@
     geophagy		biome!=desert
     eatsand			biome=desert
     weekday			forbid=sapphire	forbid=ruby	forbid=emerald	forbid=amber
-# shutu	0.5
-  ## shutu	new_word
-    painting
-    sculpture
-    carving
-    printing		tech=200
-    mosaic
-    geoglyph
-    storytelling
-    monuments
-    conservative
-    liberal
-    metric_system
-    roads
-    mustache
-    piercings
-    jewelry
-    body_paint
-    makeup
-    tatoos
-    scarring
-    irrigation
-    spear
-    archery
-    sword			tech=-1600
-    rifle			tech=1740
-    fistery
-    pottery
-    metalworking
-    woodworking
-    glassworking	tech=-2500
-    fireworks		tech=1110
-    horseback
-    elephant		biome=barxojangal	biome=grasistan
-    seafaring		tech=-2100
-    flying			tech=1903
-    cinema			tech=1888
-    theatre
-    weaving
-    alcohol
-    massages
-    puppetry
-    wirecraft		tech=1850
-    terraces		require=mountainous
-    navigation
-    hospitals
-    dams
-    knots
-    fishing
-    pyramids
