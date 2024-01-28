@@ -65,7 +65,7 @@ const PASABLIA = new Map([ // terrain modifiers for invasion speed
 export class World {
 	public static readonly startOfHumanHistory = -3200; // [BCE]
 	public static readonly timeStep = 100; // [year]
-	public static readonly authoritarianism = 5e-8; // [1/year/km^2] rate at which people coalesce into kingdoms
+	public static readonly authoritarianism = 2e-8; // [1/year/km^2] rate at which people coalesce into kingdoms
 	public static readonly libertarianism = 2e-7; // [1/year/km^2] rate at which peeple start revolucions
 	public static readonly nationalism = 3.0; // [] factor by which oppressed minorities are more likely to rebel
 	public static readonly imperialism = 1e-1; // [km/y] the rate at which denizens conquer
