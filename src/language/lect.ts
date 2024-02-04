@@ -149,8 +149,10 @@ export class ProtoLang extends Lect {
 			if (this.classifiers.get(tipo).length === 0)
 				name = base;
 			else {
+				const seed = decodeBase37(index) + 100;
+				const rng = new Random(seed);
 				const classifierOptions = this.classifiers.get(tipo);
-				const classifier = new Random(decodeBase37(index) + 100).choice(classifierOptions);
+				const classifier = rng.choice(classifierOptions);
 				if (this.prefixing)
 					name = classifier.concat([Fon.PAUSE], base);
 				else
@@ -173,7 +175,9 @@ export class ProtoLang extends Lect {
 		if (this.fin.length === 0)
 			return root;
 		else {
-			const affix = new Random(decodeBase37(index)).choice(this.fin);
+			const seed = decodeBase37(index);
+			const rng = new Random(seed);
+			const affix = rng.choice(this.fin);
 			if (this.prefixing)
 				return affix.concat(root);
 			else

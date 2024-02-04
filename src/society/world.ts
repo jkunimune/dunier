@@ -132,9 +132,7 @@ export class World {
 			const ruler = this.currentRuler(tile);
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(World.authoritarianism*World.timeStep*demomultia))
-					this.civs.add(new Civ(tile, this.nextID, this, rng.next()));
-				else
-					rng.next(); // if you don't start a new civ, advance the rng anyway to keep it consistent
+					this.civs.add(new Civ(tile, this.nextID, this, rng));
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
 				let linguisticModifier;
@@ -143,9 +141,7 @@ export class World {
 				else
 					linguisticModifier = World.nationalism;
 				if (rng.probability(World.libertarianism*World.timeStep*demomultia*linguisticModifier)) // use the population without technology correction for balancing
-					this.civs.add(new Civ(tile, this.nextID, this, rng.next(), ruler.technology));
-				else
-					rng.next(); // if you don't start a new civ, advance the rng anyway to keep it consistent
+					this.civs.add(new Civ(tile, this.nextID, this, rng, ruler.technology));
 			}
 			this.nextID ++;
 		}
@@ -161,7 +157,7 @@ export class World {
 		for (const invader of this.civs) {
 			for (const ourTile of invader.kenare.keys()) { // each civ initiates all its invasions
 				for (const theirTile of invader.kenare.get(ourTile)) {
-					const time = invader.estimateInvasionTime(ourTile, theirTile, rng); // figure out when they will be done
+					const time = rng.exponential(invader.estimateInvasionTime(ourTile, theirTile)); // figure out when they will be done
 					if (time <= World.timeStep) // if that goal is within reach
 						invasions.push({time: time, invader: invader, start: ourTile, end: theirTile}); // start on it
 				}
@@ -178,13 +174,13 @@ export class World {
 				for (const conquerdLand of invader.nodos.getAllChildren(end)) { // and set up new invasions that bild off of it
 					for (const neighbor of conquerdLand.neighbors.keys()) {
 						if (!invader.nodos.has(neighbor)) {
-							time = time + invader.estimateInvasionTime(conquerdLand, neighbor, rng);
+							time = time + rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
 							if (time <= World.timeStep) {
 								invasions.push({time: time, invader: invader, start: end, end: neighbor});
 							}
 						}
 					}
-				} // note that I don't allow for counterinvasions, because I think it would be unnecessary
+				}
 			}
 		}
 		for (const civ of this.civs)

@@ -148,9 +148,10 @@ export class Kultur {
 	 * @param homeland the place that will serve as the new cultural capital, or null if
 	 *                 it will keep using the old one
 	 * @param government the Civ that rules this Nodo
-	 * @param rng
+	 * @param seed a random number seed
 	 */
-	constructor(parent: Kultur, homeland: Nodo, government: Civ, rng: Random) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
+	constructor(parent: Kultur, homeland: Nodo, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
+		const rng = new Random(seed);
 		this.sif = [];
 		this.government = government;
 		if (parent === null) {
@@ -218,13 +219,13 @@ export class Kultur {
 	 * @param chuzable the Sif from which to choose
 	 * @param rng
 	 */
-	randomCompatibleSif(chuzable: Sif[], rng: Random): Sif {
+	private randomCompatibleSif(chuzable: Sif[], rng: Random): Sif {
 		const compatible = chuzable.filter(
 			(sif: Sif) => sif.isCompatible(this));
 		return rng.choice(compatible);
 	}
 
-	getName(): Word {
+	public getName(): Word {
 		return this.lect.getName(
 			this.homeland.index.toString(), LogaTipo.NAS);
 	}
@@ -232,7 +233,7 @@ export class Kultur {
 	/**
 	 * format this Kultur as a nice short paragraff
 	 */
-	toString(): string {
+	public toString(): string {
 		let str = "";
 		for (let i = 0; i < this.sif.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
 			const attributes = this.sif[i];

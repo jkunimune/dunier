@@ -54,22 +54,21 @@ export class Civ {
 	 * @param capital the home tile, with which this empire starts
 	 * @param id a nonnegative integer unique to this civ
 	 * @param world the world in which this civ lives
-	 * @param seed a random number seed
+	 * @param rng th random number generator to use to set Civ properties
 	 * @param technology
 	 */
-	constructor(capital: Nodo, id: number, world: World, seed: number, technology: number = 1) {
+	constructor(capital: Nodo, id: number, world: World, rng: Random, technology: number = 1) {
 		this.world = world;
 		this.id = id;
 		this.nodos = new TreeMap<Nodo>((nodo: Nodo) => nodo.arableArea);
 		this.kenare = new Map<Nodo, Set<Nodo>>();
 
-		const rng = new Random(seed);
 		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
 		this.technology = technology;
 
 		this.capital = capital;
 		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
-			capital.kultur = new Kultur(null, capital, this, rng); // make up a proto-kultur
+			capital.kultur = new Kultur(null, capital, this, rng.next() + 1); // make up a proto-kultur (offset the seed to increase variability)
 		this.conquer(capital, null);
 	}
 
@@ -150,18 +149,18 @@ export class Civ {
 
 	/**
 	 * change with the passing of the centuries
-	 * @param rng
+	 * @param rng the random number generator to use for the update
 	 */
 	update(rng: Random) {
 		const newKultur: Map<Lect, Kultur> = new Map();
-		newKultur.set(this.capital.kultur.lect.macrolanguage, new Kultur(this.capital.kultur, this.capital, this, rng)); // start by updating the capital, tying it to the new homeland
+		newKultur.set(this.capital.kultur.lect.macrolanguage, new Kultur(this.capital.kultur, this.capital, this, rng.next())); // start by updating the capital, tying it to the new homeland
 		for (const nodo of this.nodos) { // update the culture of each node in the empire in turn
 			if (rng.probability(World.timeStep/CULTURAL_MEMORY)) { // if the province fails its heritage saving throw
 				nodo.kultur = this.capital.kultur; // its culture gets overritten
 			}
 			else { // otherwise update it normally
 				if (!newKultur.has(nodo.kultur.lect.macrolanguage)) // if anyone isn't already in the thing
-					newKultur.set(nodo.kultur.lect.macrolanguage, new Kultur(nodo.kultur, null, this, rng)); // update that culture, treating it as a diaspora
+					newKultur.set(nodo.kultur.lect.macrolanguage, new Kultur(nodo.kultur, null, this, rng.next() + 1)); // update that culture, treating it as a diaspora
 				nodo.kultur = newKultur.get(nodo.kultur.lect.macrolanguage); // then make the assinement
 			}
 		}
@@ -174,12 +173,11 @@ export class Civ {
 	}
 
 	/**
-	 * how many years will it take this Civ to invade this Node?
+	 * how many years will it take this Civ to invade this Node on average?
 	 * @param start the source of the invaders
 	 * @param end the place being invaded
-	 * @param rng the random number generator to use to determine the battle outcome
 	 */
-	estimateInvasionTime(start: Nodo, end: Nodo, rng: Random) {
+	estimateInvasionTime(start: Nodo, end: Nodo) {
 		const invadee = this.world.currentRuler(end);
 		const momentum = this.getStrength(invadee, end);
 		const resistance = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
@@ -187,7 +185,7 @@ export class Civ {
 		const elevation = start.gawe - end.gawe;
 		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation)/end.pasablia;
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
-			return rng.exponential(distanceEff/World.imperialism/(momentum - resistance));
+			return distanceEff/World.imperialism/(momentum - resistance);
 		else
 			return Infinity;
 	}
