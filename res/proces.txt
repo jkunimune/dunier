@@ -128,7 +128,7 @@
 100 mute [ +!NASAL ] > [ +STOP ] / _ [ +LIQ ]
 200 mute [ +PHARYNG +STOP ] > [ +FRIC ] /
 200 mute [ +VOICE +PHARYNG +FRIC ] > [ +CLOSE ] /
-050 mute [ +GLOT ] > [ +FRIC ] /                                            % make h the only glottal consonant
+050 mute [ +GLOT ] > [ +FRIC ] /											% make h the only glottal consonant
 010 mute [ -LIQ +CORON +OCCL ] > [ +TAP ] / [ +SPOKEN -VOCOID -CORON ]		% mn > mr
 002 mute [ +NONSYLLAB ] [ +NONSYLLAB -GUTTURAL ] > [ +CLICK ]1 /			% click genesis
 002 mute [ +OCCL ] [ +CORON ] > [ +CLICK ]1 /								% click genesis
