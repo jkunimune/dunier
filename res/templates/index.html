@@ -28,19 +28,19 @@
 
   <ul class="nav nav-tabs" id="myTab" role="tablist">
     <li class="nav-item">
-      <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">{param.planete}</a>
+      <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">{parameter.planet}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">{param.geoforme}</a>
+      <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">{parameter.terrain}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">{param.histori}</a>
+      <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">{parameter.history}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">{param.geograf}</a>
+      <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">{parameter.map}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">{param.data}</a>
+      <a class="nav-link" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">{parameter.factbook}</a>
     </li>
   </ul>
 
@@ -51,42 +51,42 @@
         <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
           <form>
             <div class="form-group">
-              <label for="planet-type">{param.planete.forme}</label>
+              <label for="planet-type">{parameter.planet.shape}</label>
               <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value);">
-                <option selected value="bol">{param.planete.bol}</option>
-                <option value="wen">{param.planete.wen}</option>
-                <option value="plate">{param.planete.plate}</option>
+                <option selected value="bol">{parameter.planet.shape.spheroid}</option>
+                <option value="wen">{parameter.planet.shape.toroid}</option>
+                <option value="plate">{parameter.planet.shape.plane}</option>
               </select>
             </div>
             <div class="form-group">
               <div class="custom-control custom-checkbox">
                 <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked);">
-                <label class="custom-control-label" for="planet-locked">{param.planete.sori}</label>
+                <label class="custom-control-label" for="planet-locked">{parameter.planet.tidal_lock}</label>
               </div>
             </div>
             <div class="form-group">
-              <label for="planet-size">{param.planete.cirkometre}</label>
+              <label for="planet-size">{parameter.planet.circumference}</label>
               <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
             </div>
             <div class="form-group">
-              <label for="planet-gravity">{param.planete.baria}</label>
+              <label for="planet-gravity">{parameter.planet.gravity}</label>
               <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
             </div>
             <div class="form-group">
-              <label for="planet-day">{param.planete.den}</label>
-              <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="{unmetre.hor}" id="planet-day"/>
+              <label for="planet-day">{parameter.planet.day}</label>
+              <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="{unit.hour}" id="planet-day"/>
             </div>
             <div class="form-group">
-              <label for="planet-tilt">{param.planete.terchia}</label>
+              <label for="planet-tilt">{parameter.planet.tilt}</label>
               <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
             </div>
             <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
               <span id="planet-redi" style="display: none">
-                {menu.kara}
+                {menu.update}
               </span>
               <span id="planet-lada" role="status">
                 <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
-                {menu.denga}
+                {menu.loading}
               </span>
             </button>
           </form>
@@ -102,40 +102,40 @@
         <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
           <form>
             <div class="form-group">
-              <label for="terrain-sem">{param.sem}</label>
+              <label for="terrain-sem">{parameter.seed}</label>
               <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-sem"/>
             </div>
             <div class="form-group">
-              <label for="terrain-continents">{param.geoforme.daynes}</label>
+              <label for="terrain-continents">{parameter.terrain.continents}</label>
               <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
             </div>
             <div class="form-group">
-              <label for="terrain-hay">{param.geoforme.haygawia}</label>
+              <label for="terrain-hay">{parameter.terrain.sea_level}</label>
               <select class="custom-select" id="terrain-hay">
-                <option value="4">{param.geoforme.gawi-3}</option>
-                <option value="3">{param.geoforme.gawi-2}</option>
-                <option value="2">{param.geoforme.gawi-1}</option>
-                <option selected value="1.5">{param.geoforme.medi}</option>
-                <option value="1.0">{param.geoforme.tali-1}</option>
-                <option value="0.0">{param.geoforme.tali-2}</option>
-                <option value="-1.5">{param.geoforme.tali-3}</option>
+                <option value="4">{parameter.terrain.sea_level.3}</option>
+                <option value="3">{parameter.terrain.sea_level.2}</option>
+                <option value="2">{parameter.terrain.sea_level.1}</option>
+                <option selected value="1.5">{parameter.terrain.sea_level.0}</option>
+                <option value="1.0">{parameter.terrain.sea_level.-1}</option>
+                <option value="0.0">{parameter.terrain.sea_level.-2}</option>
+                <option value="-1.5">{parameter.terrain.sea_level.-3}</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="terrain-terme">{param.geoforme.terme}</label>
+              <label for="terrain-terme">{parameter.terrain.temperature}</label>
               <select class="custom-select" id="terrain-terme">
-                <option value="308">{param.geoforme.garmi}</option>
-                <option selected value="288">{param.geoforme.medi}</option>
-                <option value="268">{param.geoforme.lengi}</option>
+                <option value="308">{parameter.terrain.temperature.1}</option>
+                <option selected value="288">{parameter.terrain.temperature.0}</option>
+                <option value="268">{parameter.terrain.temperature.-1}</option>
               </select>
             </div>
             <button type="button" class="btn btn-block btn-primary" id="terrain-apply" disabled>
               <span id="terrain-redi" style="display: none">
-                {menu.kara}
+                {menu.update}
               </span>
               <span id="terrain-lada" role="status">
                 <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
-                {menu.denga}
+                {menu.loading}
               </span>
             </button>
           </form>
@@ -154,29 +154,29 @@
         <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
           <form>
             <div class="form-group">
-              <label for="history-sem">{param.sem}</label>
+              <label for="history-sem">{parameter.seed}</label>
               <input type="number" value="0" min="0" max="99999999" step="1" id="history-sem"/>
             </div>
             <div class="form-group">
-              <label for="history-nen">{param.histori.nenmesden}</label>
-              <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="{unmetre.nen}" id="history-nen"/>
+              <label for="history-nen">{parameter.history.year}</label>
+              <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="{unit.year}" id="history-nen"/>
             </div>
             <div class="form-group">
-              <label for="history-katastrof">{param.histori.katastrof}</label>
+              <label for="history-katastrof">{parameter.history.meteors}</label>
               <select class="custom-select" id="history-katastrof">
-                <option selected value="0">{param.histori.nol}</option>
-                <option value="1e-4">{param.histori.un}</option>
-                <option value="1e-3">{param.histori.mey-kilonen}</option>
-                <option value="1e-2">{param.histori.mey-honnen}</option>
+                <option selected value="0">{parameter.history.meteors.none}</option>
+                <option value="1e-4">{parameter.history.meteors.once}</option>
+                <option value="1e-3">{parameter.history.meteors.millennial}</option>
+                <option value="1e-2">{parameter.history.meteors.centennial}</option>
               </select>
             </div>
             <button type="button" class="btn btn-block btn-primary" id="history-apply" disabled>
               <span id="history-redi" style="display: none">
-                {menu.kara}
+                {menu.update}
               </span>
               <span id="history-lada" role="status">
                 <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
-                {menu.denga}
+                {menu.loading}
               </span>
             </button>
           </form>
@@ -198,32 +198,32 @@
               <div class="card-header" id="headingOne">
                 <h5 class="mb-0">
                   <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                    {param.geograf.lancograf}
+                    {parameter.map.projection}
                   </button>
                 </h5>
               </div>
               <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-projection">{param.geograf.tipe}</label>
+                    <label for="map-projection">{parameter.map.type}</label>
                     <select class="custom-select" id="map-projection">
-                      <option value="equirectangular">{param.geograf.chargon}</option>
-                      <option value="mercator">{param.geograf.merkator}</option>
-                      <option value="azimuthal-equidistant">{param.geograf.asimuti}</option>
-                      <option value="eckert">{param.geograf.ekerte}</option>
-                      <option selected value="bonne">{param.geograf.bone}</option>
-                      <option value="conic">{param.geograf.konusi}</option>
+                      <option value="equirectangular">{parameter.map.type.basic}</option>
+                      <option value="mercator">{parameter.map.type.navigational}</option>
+                      <option value="azimuthal-equidistant">{parameter.map.type.polar}</option>
+                      <option value="eckert">{parameter.map.type.equal_area}</option>
+                      <option selected value="bonne">{parameter.map.type.classical}</option>
+                      <option value="conic">{parameter.map.type.modern}</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-dish">{param.geograf.dish}</label>
+                    <label for="map-dish">{parameter.map.orientation}</label>
                     <select class="custom-select" id="map-dish">
-                      <option selected value="norde">{param.geograf.norde}</option>
-                      <option value="sude">{param.geograf.sude}</option>
+                      <option selected value="norde">{parameter.map.orientation.north}</option>
+                      <option value="sude">{parameter.map.orientation.south}</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-jung">{param.geograf.jung}</label>
+                    <label for="map-jung">{parameter.map.center}</label>
                     <select class="custom-select" id="map-jung">
                       <option selected value="0">United States of America</option>
                       <option value="1">China</option>
@@ -236,76 +236,76 @@
               <div class="card-header" id="headingTwo">
                 <h5 class="mb-0">
                   <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-                    {param.geograf.rang}
+                    {parameter.map.colors}
                   </button>
                 </h5>
               </div>
               <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-zemrang">{param.geograf.zemrang}</label>
+                    <label for="map-zemrang">{parameter.map.land_color}</label>
                     <select class="custom-select" id="map-zemrang">
-                      <option value="baki">{param.geograf.baki}</option>
-                      <option value="huyi">{param.geograf.huyi}</option>
-                      <option selected value="jivi">{param.geograf.jivi}</option>
-                      <option value="politiki">{param.geograf.politiki}</option>
-                      <option value="gawia">{param.geograf.gawia}</option>
+                      <option value="baki">{parameter.map.color.white}</option>
+                      <option value="huyi">{parameter.map.color.gray}</option>
+                      <option selected value="jivi">{parameter.map.color.physical}</option>
+                      <option value="politiki">{parameter.map.color.political}</option>
+                      <option value="gawia">{parameter.map.color.heightmap}</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-hayrang">{param.geograf.hayrang}</label>
+                    <label for="map-hayrang">{parameter.map.sea_color}</label>
                     <select class="custom-select" id="map-hayrang">
-                      <option value="baki">{param.geograf.baki}</option>
-                      <option value="huyi">{param.geograf.huyi}</option>
-                      <option selected value="nili">{param.geograf.nili}</option>
-                      <option value="cerni">{param.geograf.cerni}</option>
-                      <option value="gawia">{param.geograf.gawia}</option>
+                      <option value="baki">{parameter.map.color.white}</option>
+                      <option value="huyi">{parameter.map.color.gray}</option>
+                      <option selected value="nili">{parameter.map.color.blue}</option>
+                      <option value="cerni">{parameter.map.color.black}</option>
+                      <option value="gawia">{parameter.map.color.heightmap}</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-filter">{param.geograf.filter}</label>
+                    <label for="map-filter">{parameter.map.filter}</label>
                     <select class="custom-select" id="map-filter">
-                      <option selected value="nol">{param.geograf.nol}</option>
-                      <option value="pili">{param.geograf.pili}</option>
-                      <option value="bakocerni">{param.geograf.bakocerni}</option>
-                      <option value="mirdi">{param.geograf.mirdi}</option>
+                      <option selected value="nol">{parameter.map.filter.none}</option>
+                      <option value="pili">{parameter.map.filter.sepia}</option>
+                      <option value="bakocerni">{parameter.map.filter.grayscale}</option>
+                      <option value="mirdi">{parameter.map.filter.pastel}</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <h6>{param.geograf.geoforme}</h6>
+                    <h6>{parameter.map.land_style}</h6>
                     <div class="form-check">
                       <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kal" value="kal" checked>
-                      <label class="form-check-label" for="map-zemforme-kal">{param.geograf.kal}</label>
+                      <label class="form-check-label" for="map-zemforme-kal">{parameter.map.style.plain}</label>
                     </div>
                     <div class="form-check">
                       <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desen" value="desen">
-                      <label class="form-check-label" for="map-zemforme-desen">{param.geograf.desen}</label>
+                      <label class="form-check-label" for="map-zemforme-desen">{parameter.map.style.textured}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <h6>{param.geograf.hay}</h6>
+                    <h6>{parameter.map.sea_style}</h6>
                     <div class="form-check">
                       <input class="form-check-input" type="radio" name="hay" id="map-hay-kal" value="kal" checked>
-                      <label class="form-check-label" for="map-hay-kal">{param.geograf.kal}</label>
+                      <label class="form-check-label" for="map-hay-kal">{parameter.map.style.plain}</label>
                     </div>
                     <div class="form-check">
                       <input class="form-check-input" type="radio" name="hay" id="map-hay-linye" value="linye">
-                      <label class="form-check-label" for="map-hay-linye">{param.geograf.desen}</label>
+                      <label class="form-check-label" for="map-hay-linye">{parameter.map.style.textured}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <h6>{param.geograf.site}</h6>
+                    <h6>{parameter.map.city_style}</h6>
                     <div class="form-check">
                       <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kal" checked>
-                      <label class="form-check-label" for="map-site-nol">{param.geograf.kal}</label>
+                      <label class="form-check-label" for="map-site-nol">{parameter.map.style.plain}</label>
                     </div>
                     <div class="form-check">
                       <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                      <label class="form-check-label" for="map-site-binde">{param.geograf.binde}</label>
+                      <label class="form-check-label" for="map-site-binde">{parameter.map.style.dots}</label>
                     </div>
                     <div class="form-check">
                       <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desen">
-                      <label class="form-check-label" for="map-site-grafe">{param.geograf.desen}</label>
+                      <label class="form-check-label" for="map-site-grafe">{parameter.map.style.textured}</label>
                     </div>
                   </div>
                 </div>
@@ -315,7 +315,7 @@
               <div class="card-header" id="headingThree">
                 <h5 class="mb-0">
                   <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-                    {param.geograf.sif}
+                    {parameter.map.features}
                   </button>
                 </h5>
               </div>
@@ -324,49 +324,49 @@
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-nade">
-                      <label class="custom-control-label" for="map-nade">{param.geograf.nade}</label>
+                      <label class="custom-control-label" for="map-nade">{parameter.map.features.rivers}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-kenar" checked>
-                      <label class="custom-control-label" for="map-kenar">{param.geograf.kenar}</label>
+                      <label class="custom-control-label" for="map-kenar">{parameter.map.features.borders}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-say">
-                      <label class="custom-control-label" for="map-say">{param.geograf.say}</label>
+                      <label class="custom-control-label" for="map-say">{parameter.map.features.shading}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                      <label class="custom-control-label" for="map-zemnete">{param.geograf.zemnete}</label>
+                      <label class="custom-control-label" for="map-zemnete">{parameter.map.features.graticule}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                      <label class="custom-control-label" for="map-dawnete">{param.geograf.dawnete}</label>
+                      <label class="custom-control-label" for="map-dawnete">{parameter.map.features.rhumb_net}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                      <label class="custom-control-label" for="map-pontopine">{param.geograf.pontopine}</label>
+                      <label class="custom-control-label" for="map-pontopine">{parameter.map.features.windrose}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
-                      <label class="custom-control-label" for="map-deshnam">{param.geograf.deshnam}</label>
+                      <label class="custom-control-label" for="map-deshnam">{parameter.map.features.political_labels}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-shannam">
-                      <label class="custom-control-label" for="map-shannam">{param.geograf.shannam}</label>
+                      <label class="custom-control-label" for="map-shannam">{parameter.map.features.physical_labels}</label>
                     </div>
                   </div>
                 </div>
@@ -376,34 +376,34 @@
               <div class="card-header" id="headingFour">
                 <h5 class="mb-0">
                   <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-                    {param.geograf.basha-e-daita}
+                    {parameter.map.formatting}
                   </button>
                 </h5>
               </div>
               <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-bash">{param.geograf.kitabe}</label>
+                    <label for="map-bash">{parameter.map.spelling}</label>
                     <select class="custom-select" id="map-bash">
-                      <option selected value="null">{param.geograf.novyangi}</option>
-                      <option value="en">{param.geograf.en}</option>
-                      <option value="es">{param.geograf.es}</option>
-                      <option value="la">{param.geograf.la}</option>
+                      <option selected value="null">{parameter.map.spelling.modern}</option>
+                      <option value="en">{parameter.map.spelling.en}</option>
+                      <option value="es">{parameter.map.spelling.es}</option>
+                      <option value="la">{parameter.map.spelling.la}</option>
                       <!--TODO it would be nice if it could automatically select the system that goes with the language-->
-                      <option value="jp">{param.geograf.jp}</option>
-                      <option value="pd">{param.geograf.pd}</option>
+                      <option value="jp">{parameter.map.spelling.jp}</option>
+                      <option value="pd">{parameter.map.spelling.pd}</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-grosta">{param.geograf.grosta}</label>
+                    <label for="map-grosta">{parameter.map.width}</label>
                     <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-grosta"/>
                   </div>
                   <div class="form-group">
-                    <label for="map-gauta">{param.geograf.gauta}</label>
+                    <label for="map-gauta">{parameter.map.height}</label>
                     <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-gauta"/>
                   </div>
                   <div class="form-group">
-                    <label for="map-dpi">{param.geograf.dpi}</label>
+                    <label for="map-dpi">{parameter.map.resolution}</label>
                     <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-dpi"/>
                   </div>
                 </div>
@@ -411,15 +411,15 @@
             </div>
             <button type="button" class="btn btn-block btn-primary mt-2" id="map-apply" disabled>
               <span id="map-redi" style="display: none">
-                {menu.kara}
+                {menu.update}
               </span>
               <span id="map-lada" role="status">
                 <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
-                {menu.denga}
+                {menu.loading}
               </span>
             </button>
             <button type="button" class="btn btn-block btn-primary" id="map-sekura" disabled>
-              {menu.sekura}
+              {menu.download}
             </button>
           </form>
         </div>

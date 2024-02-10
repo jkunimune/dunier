@@ -41,7 +41,7 @@ class Sif {
 	private readonly technology: number; // the tech level needed for this
 
 	constructor(header: string, subheader: string, args: string[]) {
-		this.kode = `data.${header}.${subheader}.${args[0]}`;
+		this.kode = `factbook.${header}.${subheader}.${args[0]}`;
 		this.nam = args[0];
 		this.klas = this.nam;
 		this.requiredKlas = new Set<string>();
@@ -100,7 +100,7 @@ for (const row of loadTSV('../../res/kultur.tsv')) {
 	if (row[0].startsWith('# ')) { // when you see a main header
 		header = row[0].slice(2);
 		zai = {
-			key: `data.${header}`,
+			key: `factbook.${header}`,
 			zar: Number.parseFloat(row[1]),
 			chuzable: [],
 			logaIndex: null

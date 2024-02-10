@@ -1,5 +1,5 @@
-# shutu	1.0
-  ## shutu	new_word
+# skill	1.0
+  ## skill	new_word
     painting
     sandpainting		require=coastal
     sculpture
@@ -18,7 +18,7 @@
     jewelry
     body_paint
     makeup
-    tatoos
+    tattoos
     scarring
     irrigation
     spear
@@ -32,7 +32,7 @@
     glassworking	tech=-2500
     fireworks		tech=1110
     horseback
-    elephant		biome=barxojangal	biome=grasistan
+    elephant		biome=jungle	biome=plains
     seafaring		tech=-2100	require=coastal
     flying			tech=1903
     cinema			tech=1888
@@ -42,7 +42,7 @@
     massages
     puppetry
     wirecraft		tech=1850
-    terraces		require=mountainous
+    terraces		require=mountain
     navigation
     hospitals
     dams
@@ -50,8 +50,8 @@
     fabric
     fishing
     bluntness
-# fuku	0.2
-  ## jan
+# clothes	0.2
+  ## person
     people
     men
     women
@@ -64,7 +64,7 @@
     dancers
     grooms
     brides
-  ## tipe	new_word
+  ## type	new_word
     turban			class=fabric
     hairpin			class=fabric		class=hairpin
     vest			class=fabric
@@ -76,17 +76,17 @@
     cape			class=fabric
     tunic			class=fabric
     belt			class=fabric
-    neckerchief		class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    pants			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    sleve			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    scarf			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    headscarf		class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    shawl			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    coat			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    robe			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    dress			class=fabric	biome!=barxojangal	biome!=piristan	biome!=wetland
-    chestwrap		class=fabric	biome!=tundre	biome!=taige
-    waistwrap		class=fabric	biome!=tundre	biome!=taige
+    neckerchief		class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    pants			class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    sleve			class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    scarf			class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    headscarf		class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    shawl			class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    coat			class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    robe			class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    dress			class=fabric	biome!=jungle	biome!=steamland	biome!=swamp
+    chestwrap		class=fabric	biome!=tundra	biome!=taiga
+    waistwrap		class=fabric	biome!=tundra	biome!=taiga
     wings
     hat
     big_hat
@@ -99,10 +99,10 @@
     wig
     earring
     bracelet
-    anklet			biome!=tundre	biome!=taige
+    anklet			biome!=tundra	biome!=taiga
     cord
     eyeware			tech=1100
-  ## sif
+  ## attribute
     colorful
     sapphire
     ruby
@@ -121,8 +121,8 @@
     sequined
     extravagant
     jeweled
-    shelled			require=coastal	biome!=tundre	biome!=taige
-    pearled			require=coastal	biome!=tundre	biome!=taige
+    shelled			require=coastal	biome!=tundra	biome!=taiga
+    pearled			require=coastal	biome!=tundra	biome!=taiga
     decorated
     ceremonial
     calligraphic
@@ -130,22 +130,22 @@
     flowered
     belled			tech=-600
     pointy
-    fur				biome!=barxojangal	biome!=registan	biome!=piristan	biome!=wetland
-    grass			biome!=registan	biome!=tundre
-    barkcloth		require=fabric		biome!=registan	biome!=tundre
+    fur				biome!=jungle	biome!=desert	biome!=steamland	biome!=swamp
+    grass			biome!=desert	biome!=tundra
+    barkcloth		require=fabric		biome!=desert	biome!=tundra
     thick			require=fabric
     leather			require=fabric
     tiedyed			require=fabric
     flowing			require=fabric
     loose			require=fabric
-    tight			require=fabric		forbid=registan
+    tight			require=fabric		forbid=desert
     pleated			require=fabric
     layered			require=fabric
     voluminous		require=fabric
     embroidered		require=fabric
     patterned		require=fabric
     aloha			require=fabric
-  ## kesh
+  ## hair
     short			forbid=hairpin
     medium			forbid=hairpin		forbid=kinky
     long			forbid=hairpin
@@ -167,8 +167,8 @@
     buzzed			forbid=hairpin		tech=1900
     greased			tech=1000
     colorful		tech=1850
-# yam	0.2
-  ## sif
+# food	0.2
+  ## attribute
     bland
     sweet
     bitter
@@ -185,13 +185,13 @@
     chewy
     dry
     liquid
-    hot				biome!=barxojangal	biome!=registan	biome!=piristan	biome!=wetland
-    cold			tech=1911	biome!=tundre	biome!=taige
-  ## baze	new_word
+    hot				biome!=jungle	biome!=desert	biome!=steamland	biome!=swamp
+    cold			tech=1911	biome!=tundra	biome!=taiga
+  ## base	new_word
     cereal
-    rice			biome!=tundre
+    rice			biome!=tundra
     tuber
-    corn			biome!=tundre
+    corn			biome!=tundra
     meat
     fish
     fruit
@@ -202,28 +202,28 @@
     insect
     dessert
     group
-# droge	0.2
-  ## mar
+# drug	0.2
+  ## time
     often
     usually
     always
-  ## karma
+  ## act
     drink
     chew
     smoke
-  ## tipe
+  ## attribute
     caffeine
     sedative
     alcoholic
     sweet
     bitter
-  ## asal	new_word
+  ## effect	new_word
     leaf			forbid=barren
     seed
     sap
     fruit
-# dom	0.2
-  ## mur
+# house	0.2
+  ## wall
     pelt			forbid=sedentary
     cloth			forbid=sedentary
     wood			require=sedentary	forbid=barren
@@ -232,21 +232,21 @@
     cob				require=sedentary
     adobe			require=sedentary
     clay			require=sedentary
-    snowbrick		require=sedentary	biome=tundre
+    snowbrick		require=sedentary	biome=tundra
     marble			require=sedentary
     concrete		require=sedentary	tech=-800
     steel			require=sedentary	tech=1000
-    floating		require=coastal		biome!=tundre	biome!=taige
-  ## chate
+    floating		require=coastal		biome!=tundra	biome!=taiga
+  ## roof
     none			forbid=sedentary
     thatching		require=sedentary	forbid=barren
-    claytile		require=sedentary	forbid=tundre
+    claytile		require=sedentary	forbid=tundra
     terracottatile	require=sedentary
     slatetile		require=sedentary
     metal			require=sedentary	tech=1840
     metaltile		require=sedentary	tech=-300
-# bina	0.2
-  ## kul_she
+# building	0.2
+  ## feature
     color
     bridge
     gate
@@ -277,7 +277,7 @@
     glass
     utilitarianism
     stilts			require=coastal		forbid=floating
-  ## grafi_she
+  ## depictor
     color			forbid=color		forbid=utilitarianism
     bridge			forbid=bridge
     gate			forbid=gate
@@ -300,13 +300,13 @@
     bell			forbid=bell
     porch			forbid=porch
     fountain		forbid=fountain		forbid=utilitarianism
-  ## grafi	new_word
+  ## depiction	new_word
     gods
     spirits
     plants
     animals
     birds
-    fish			biome!=registan
+    fish			biome!=desert
     serpents
     cats
     dragons
@@ -325,8 +325,8 @@
     aliens
     monsters
     shapes
-# sundar_shutu	0.2
-  ## yang
+# art	0.2
+  ## style
     squares
     circles
     stars
@@ -346,7 +346,7 @@
     people_no_legs
     people_triangular
     people_big_heads
-  ## she	new_word
+  ## subject	new_word
     ma
     realism
     scale
@@ -368,8 +368,8 @@
     technology
     sex
     romance
-# muzika	0.2
-  ## sif
+# music	0.2
+  ## feature
     tetratonic
     pentatonic
     hexatonic
@@ -389,12 +389,12 @@
     costumed
     narrative
     repetition
-  ## klas
+  ## type
     percussion
     vocals
     wind
     string
-  ## tul	new_word
+  ## instrument	new_word
     pitched_perc	forbid=percussion
     drums			forbid=percussion
     bell			forbid=percussion	tech=-600
@@ -410,8 +410,8 @@
     short_horn		forbid=wind
     long_horn		forbid=wind
     panpipe			forbid=wind
-    reed			forbid=wind	biome!=registan	biome!=tundre
-    seashell_horn	forbid=wind	require=coastal	biome!=tundre	biome!=taige
+    reed			forbid=wind	biome!=desert	biome!=tundra
+    seashell_horn	forbid=wind	require=coastal	biome!=tundra	biome!=taiga
     flute			forbid=wind
     plucked			forbid=string
     strummed		forbid=string
@@ -421,15 +421,15 @@
     electronic		forbid=synth		tech=1910
     synthesizer		forbid=synth		tech=1970
     vocaloids		forbid=synth		tech=2005
-# esporte	0.2
-  ## ate
+# sport	0.2
+  ## act
     push
     throw
     roll
     carry
     hit
     kick
-  ## she
+  ## object
     ball			forbid=push
     rock			forbid=hit	forbid=kick
     sack			forbid=push	forbid=roll
@@ -438,7 +438,7 @@
     pole			forbid=hit	forbid=kick	forbid=bat
     stick			forbid=push	forbid=roll	forbid=hit	forbid=kick	forbid=bat
     others			forbid=roll	forbid=kick	forbid=bat
-  ## gol
+  ## goal
     far
     posts
     net
@@ -449,10 +449,10 @@
     line
     target			forbid=push	forbid=carry
     players			forbid=push	forbid=carry	forbid=others
-  ## sharti	new_word
+  ## condition	new_word
     ground			forbid=roll	forbid=push	forbid=others
     horse
-    elephant		biome=barxojangal	biome=grasistan
+    elephant		biome=jungle	biome=plains
     fire
     race
     time			tech=-1500
@@ -466,11 +466,11 @@
     telekinesis
     broomstick
     spoon
-    skating			biome!=barxojangal	biome!=registan	biome!=piristan	biome!=wetland	biome!=grasistan	biome!=jangal
-    swimming		require=coastal	biome!=tundre	biome!=taige	biome!=registan	forbid=roll
+    skating			biome!=jungle	biome!=desert	biome!=steamland	biome!=swamp	biome!=plains	biome!=forest
+    swimming		require=coastal	biome!=tundra	biome!=taiga	biome!=desert	forbid=roll
     phone			tech=2000
-# suna	0.2
-  ## kas
+# custom	0.2
+  ## event
     coronation
     spring			require=seasons
     summer			require=seasons
@@ -490,7 +490,7 @@
     new_moon
     marriage
     independence	require=state
-  ## festa
+  ## act
     drinking
     feast
     animals
@@ -509,10 +509,10 @@
     party
     acid
     clothes
-    grass			biome=grasistan
+    grass			biome=plains
     prayer
-  ## suna
-    dddduel
+  ## custom
+    duel
     age
     dating
     shoes
@@ -529,7 +529,6 @@
     meals
     omiyage
     guest
-    salute
     bow
     handshake
     hug
@@ -541,5 +540,5 @@
     adults
     language
     geophagy		biome!=desert
-    eatsand			biome=desert
+    eat_sand			biome=desert
     weekday			forbid=sapphire	forbid=ruby	forbid=emerald	forbid=amber

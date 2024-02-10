@@ -354,7 +354,7 @@ function applyPdf(): void {
 		applyMap();
 
 	console.log("jena pdf..."); // TODO: refactor map so that I can get this in a form that I can rite directly to the PDF.  I should probably also allow export as png somehow?
-	const doc = new PortableDocument(format('param.data'));
+	const doc = new PortableDocument(format('parameter.factbook'));
 	for (const civ of mappedCivs) // TODO: only civs on the map
 		generateFactSheet(doc, civ);
 	DOM.elm('pdf-embed').setAttribute('src', doc.getUrl());

@@ -35,34 +35,34 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 
 	doc.addPage("a4", "portrait", { left: 30, rite: 30, top: 30, bottom: 30});
 	doc.addParagraph(
-		format('data.temnam',
+		format('factbook.title',
 			topick.getName(),
 			topick.getName().pronunciation()),
 		24);
 
 	doc.addParagraph(
-		format('data.num',
+		format('factbook.stats',
 			topick.getArea(),
 			topick.getPopulation()),
 		12);
 
 	doc.addParagraph(
-		format('data.histori'), // TODO: bold this
+		format('factbook.history'), // TODO: bold this
 		18);
 
 	doc.addParagraph(
-		format('data.geografi'), // TODO: bold this
+		format('factbook.geography'), // TODO: bold this
 		18);
 
 	doc.addParagraph(
-		format('data.demografi'), // TODO: bold this
+		format('factbook.demography'), // TODO: bold this
 		18);
 
 	for (const {kultur, abundance} of topick.getCultures())
 		doc.addParagraph(
 			format((abundance < 2/3) ?
-				       'data.demografi.minority' :
-				       'data.demografi.majority',
+				       'factbook.demography.minority' :
+				       'factbook.demography.majority',
 			       kultur.getName(),
 			       0,
 			       Math.round(abundance*100),

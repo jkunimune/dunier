@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{bash.kode}">
+<html lang="{.language.code}">
   <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -10,7 +10,7 @@
 
     <link rel="stylesheet" href="/res/style.css">
 
-    <title>{temnam.{.name}}</title>
+    <title>{title.{.name}}</title>
 
     <link rel="icon" type="image/svg" href="/res/logo.svg" />
   </head>
@@ -25,21 +25,21 @@
             dunia hamar
           </a>
 
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="{menu.muta-fash}">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="{menu.toggle_navbar}">
             <span class="navbar-toggler-icon"></span>
           </button>
 
           <div class="collapse navbar-collapse" id="siri-daweurekia">
             <div class="navbar-nav">
-              <a class="nav-item nav-link" href="./index.html">{menu.dom}{If"index" <span class="sr-only">{menu.zay}</span>}</a>
-              <a class="nav-item nav-link" href="./nam.html">{menu.nam}{If"nam" <span class="sr-only">{menu.zay}</span>}</a>
-              <a class="nav-item nav-link" href="./tema.html">{menu.tema}{If"tema" <span class="sr-only">{menu.zay}</span>}</a>
-              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">{menu.poste}</a>
+              <a class="nav-item nav-link" href="./index.html">{menu.index}{If"index" <span class="sr-only">{menu.current}</span>}</a>
+              <a class="nav-item nav-link" href="./nam.html">{menu.nam}{If"nam" <span class="sr-only">{menu.current}</span>}</a>
+              <a class="nav-item nav-link" href="./tema.html">{menu.tema}{If"tema" <span class="sr-only">{menu.current}</span>}</a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">{menu.contact}</a>
             </div>
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="{menu.bash}">
+                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="{menu.language}">
                   <svg class="bi" width="20" viewBox="-38 -38 76 86" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
                     <path fill="none" stroke-width="4" d="M0,-36 A36,36,0,0,0,0,36 A18,36,0,0,0,0,-36 A18,36,0,0,0,0,36 A36,36,0,0,0,0,-36 L0,36 M-36,0 L36,0 M-25.5,25.5 A36,36,0,0,1,25.5,25.5 M-25.5,-25.5 A36,36,0,0,0,25.5,-25.5"/>
                   </svg>
@@ -100,17 +100,17 @@
             </div>
 
             <div class="col-6 col-sm-5 col-md-3">
-              <h5>{menu.loka}</h5>
+              <h5>{menu.pages}</h5>
               <ul class="list-unstyled text-small">
-                <li><a class="text-muted" href="./index.html">{menu.dom}</a></li>
+                <li><a class="text-muted" href="./index.html">{menu.index}</a></li>
                 <li><a class="text-muted" href="./nam.html">{menu.nam}</a></li>
                 <li><a class="text-muted" href="./tema.html">{menu.tema}</a></li>
-                <li><a class="text-muted" href="https://kunimune.home.blog/contact/">{menu.poste}</a></li>
+                <li><a class="text-muted" href="https://kunimune.home.blog/contact/">{menu.contact}</a></li>
               </ul>
             </div>
 
             <div class="col-6 col-sm-5 col-md-3">
-              <h5>{menu.basa}</h5>
+              <h5>{menu.languages}</h5>
               <ul class="list-unstyled text-small">
                 <li><a class="text-muted" href="/en/{.name}.html">English</a></li>
                 <li><a class="text-muted" href="/es/{.name}.html">español</a></li>
@@ -125,7 +125,7 @@
 
     </div>
 
-    <div id="bash" style="display: none;">{bash.kode}</div>
+    <div id="bash" style="display: none;">{.language.code}</div>
 
     <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="/src/lib/jquery.min.js" crossorigin="anonymous"></script>

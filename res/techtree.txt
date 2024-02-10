@@ -29,7 +29,7 @@
  1740	fighting	rifle
  1769	movement	car
  1813	lighting	gas
- 1861	fighting	gattle
+ 1861	fighting	machine_gun
  1879	lighting	electricity
  1902	pasttime	radio
  1903	movement	airplane
@@ -39,4 +39,4 @@
  1989	pasttime	internet
  2050	movement	space
  2100	pasttime	vr
- 2800	fighting	deathstar
+ 2800	fighting	death_star
