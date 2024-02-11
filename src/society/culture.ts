@@ -162,7 +162,7 @@ export class Culture {
 				if (rng.probability(aspect.chance)) {
 					const featureList = [];
 					for (const options of aspect.options) {
-						const feature = this.randomCompatibleFeature(options, rng);
+						const feature = rng.choice(this.compatibleFeatures(options));
 						featureList.push(feature); // pick all these things freely
 						this.klas.add(feature.klas); // be sure to get note their classes to keep everything compatible
 					}
@@ -183,7 +183,7 @@ export class Culture {
 					if (rng.probability(DRIFT_RATE*KULTUR_ASPECTS[i].chance)) {
 						featureList = [];
 						for (const options of KULTUR_ASPECTS[i].options) {
-							const feature = this.randomCompatibleFeature(options, rng);
+							const feature = rng.choice(this.compatibleFeatures(options));
 							featureList.push(feature); // pick all these things freely
 							this.klas.add(feature.klas); // be sure to get note their classes to keep everything compatible
 						}
@@ -200,7 +200,7 @@ export class Culture {
 						featureList = parent.features[i].slice();
 						for (let j = 0; j < KULTUR_ASPECTS[i].options.length; j ++) {
 							if (!featureList[j].isCompatible(this) || rng.probability(DRIFT_RATE)) { // and occasionally
-								featureList[j] = this.randomCompatibleFeature(KULTUR_ASPECTS[i].options[j], rng); // make a modificacion
+								featureList[j] = rng.choice(this.compatibleFeatures(KULTUR_ASPECTS[i].options[j])); // make a modificacion
 								this.klas.add(featureList[j].klas);
 							}
 							else {
@@ -217,12 +217,10 @@ export class Culture {
 	/**
 	 * return one cultural feature from the given set
 	 * @param options the Features from which to choose
-	 * @param rng
 	 */
-	private randomCompatibleFeature(options: Feature[], rng: Random): Feature {
-		const compatible = options.filter(
+	private compatibleFeatures(options: Feature[]): Feature[] {
+		return options.filter(
 			(feature: Feature) => feature.isCompatible(this));
-		return rng.choice(compatible);
 	}
 
 	public getName(): Word {
