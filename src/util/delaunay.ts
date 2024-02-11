@@ -236,7 +236,7 @@ export function flipEdges(queue: DelaunayEdge[], triangles: DelaunayTriangle[],
 		const c = edge.b;
 		let abc = null, cda = null;
 		try { // be careful when getting the hypothetical cross edge
-			abc = triangleOf(c, a)
+			abc = triangleOf(c, a);
 			cda = triangleOf(a, c);
 		} catch { // if you can't find a triangle on one side or the other
 			continue; // it might mean you've hit the end of the partition (I'm sure it's fine)

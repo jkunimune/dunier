@@ -233,7 +233,7 @@ export class StressPlacement implements Process {
 		this.headSize = headSize;
 		this.attractors = attractors;
 		this.tailMode = tailMode;
-		this.lengthen = lengthen
+		this.lengthen = lengthen;
 	}
 
 	apply(old: Word): Word {

@@ -50,7 +50,7 @@ const MODIFIERS: {klas: Klas, baze: Feature[], kode: string}[] = [ // TODO: can 
 	{klas: new Klas([Quality.SYLLABIC], [Quality.VOCOID]), baze: [Silabia.NONSYLLABIC], kode: 'syllabic'},
 	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'affricate'},
 	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'approx'},
-]
+];
 
 const FROM_IPA: Map<string, Sound> = new Map(); // load the IPA table from static res
 const TO_TEXT: Map<string, Map<string, string>> = new Map();
@@ -134,7 +134,7 @@ for (const row of harfiaTable.slice(1)) { // each row of the orthographick table
 	}
 }
 
-const ENGLISH_REPLACEMENTS = loadTSV('rules_english.tsv')
+const ENGLISH_REPLACEMENTS = loadTSV('rules_english.tsv');
 
 
 /**

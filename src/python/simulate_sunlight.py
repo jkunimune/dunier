@@ -16,23 +16,30 @@ def vector(λ, θ):
 		np.cos(λ)*np.sin(θ),
 		np.sin(λ)], axis=0)
 
+
 def powcos(x, a, δ, γ):
 	return δ + a*np.cos(x)**γ
+
 
 def gencos(x, a, δ):
 	return δ + a*np.cos(x)
 
+
 def line(x, a, b):
 	return a*x + b
+
 
 def prop(x, a):
 	return a*x
 
+
 def p2(x):
 	return (3*x**2 - 1)/2
 
+
 def p4(x):
 	return (35*x**4 - 30*x**2 + 3)/8
+
 
 def p6(x):
 	return (231*x**6 - 315*x**4 + 105*x**2 - 5)/16
@@ -51,7 +58,8 @@ if __name__ == '__main__':
 	PARAMS = np.empty((3, len(AXIAL_TILTS)))
 	FIT_TEMPERATURES = np.empty(TEMPERATURES.shape)
 	for j in range(len(AXIAL_TILTS)):
-		params, pcov = optimize.curve_fit(powcos, LATITUDES, TEMPERATURES[:,j],
+		params, pcov = optimize.curve_fit(
+			powcos, LATITUDES, TEMPERATURES[:,j],
 			p0=(TEMPERATURES[0,j]-TEMPERATURES[-1,j], TEMPERATURES[-1,j], 1))
 		PARAMS[:,j] = params
 		FIT_TEMPERATURES[:,j] = powcos(LATITUDES, *params)

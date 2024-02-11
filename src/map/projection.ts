@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {Surface} from "../planet/surface.js";
-import {isBetween, linterp, localizeInRange} from "../util/util.js";
+import {isBetween, localizeInRange} from "../util/util.js";
 import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
 import {
 	assert_xy,
@@ -149,14 +149,14 @@ export abstract class MapProjection {
 			ogi.push(i);
 		let i = 0; // and the index in jinPoints that corresponds to the end of cutPoints
 		while (i < jinPoints.length) {
-			if (jinPoints[i].type === LongLineType.GING) { // do the projection
+			if (jinPoints[i].type === LongLineType.MERIDIAN) { // do the projection
 				const [ф0, λ] = jinPoints[i-1].args;
 				const [ф1, _] = jinPoints[i].args;
 				console.assert(λ === _);
 				cutPoints.push(...this.projectMeridian(ф0, ф1, λ));
 				i ++;
 			}
-			else if (jinPoints[i].type === LongLineType.VEI) {
+			else if (jinPoints[i].type === LongLineType.PARALLEL) {
 				const [ф, λ0] = jinPoints[i-1].args;
 				const [_, λ1] = jinPoints[i].args;
 				console.assert(ф === _);
@@ -564,7 +564,7 @@ export abstract class MapProjection {
 				                                     assert_фλ(endpoint(segment)));
 				return { s: midpoint.ф, t: midpoint.λ };
 			}
-			else if (segment.type === LongLineType.GING || segment.type === LongLineType.VEI) {
+			else if (segment.type === LongLineType.MERIDIAN || segment.type === LongLineType.PARALLEL) {
 				const start = endpoint(prev);
 				const end = endpoint(segment);
 				return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
@@ -595,7 +595,7 @@ export abstract class MapProjection {
 	getEdgeCrossing(
 		coords0: PathSegment, coords1: PathSegment, edges: MapEdge[][]
 	): { intersect0: Location, intersect1: Location, loopIndex: number } | null {
-		if (edges[0][0].type === LongLineType.GING || edges[0][0].type === LongLineType.VEI) {
+		if (edges[0][0].type === LongLineType.MERIDIAN || edges[0][0].type === LongLineType.PARALLEL) {
 			const crossing = this.getGeoEdgeCrossing(coords0, coords1, edges);
 			if (crossing === null)
 				return null;
@@ -699,7 +699,7 @@ export abstract class MapProjection {
 			for (const edge of edges[i]) { // and at each edge
 				const start = assert_фλ(edge.start);
 				const end = assert_фλ(edge.end);
-				if (edge.type === LongLineType.GING) { // if it is a meridian
+				if (edge.type === LongLineType.MERIDIAN) { // if it is a meridian
 					const λX = start.λ;
 					const λ̄0 = localizeInRange(λ0, λX, λX + 2*π);
 					const λ̄1 = localizeInRange(λ1, λX, λX + 2*π);
@@ -711,7 +711,7 @@ export abstract class MapProjection {
 								place0: place0, place1: place1, loopIndex: i };
 					}
 				}
-				else if (edge.type === LongLineType.VEI) { // do the same thing for parallels
+				else if (edge.type === LongLineType.PARALLEL) { // do the same thing for parallels
 					const фX = start.ф;
 					const ф̄0 = localizeInRange(ф0, фX, фX + 2*π);
 					const ф̄1 = localizeInRange(ф1, фX, фX + 2*π);
@@ -861,10 +861,10 @@ export abstract class MapProjection {
 	 */
 	static buildGeoEdges(фMin: number, фMax: number, λMin: number, λMax: number): MapEdge[][] {
 		return this.validateEdges([[
-			{ type: LongLineType.VEI, start: {s: фMax, t: λMax} },
-			{ type: LongLineType.GING, start: {s: фMax, t: λMin} },
-			{ type: LongLineType.VEI, start: {s: фMin, t: λMin} },
-			{ type: LongLineType.GING, start: {s: фMin, t: λMax} },
+			{ type: LongLineType.PARALLEL, start: {s: фMax, t: λMax} },
+			{ type: LongLineType.MERIDIAN, start: {s: фMax, t: λMin} },
+			{ type: LongLineType.PARALLEL, start: {s: фMin, t: λMin} },
+			{ type: LongLineType.MERIDIAN, start: {s: фMin, t: λMax} },
 		]]);
 
 	}

@@ -106,23 +106,6 @@ export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean): 
 		y: (a.y + b.y)/2 + l*cosθ,
 	};
 }
-
-
-/**
- * calculate the distance between a point and a line segment in the plane
- * @param p
- * @param a
- * @param b
- */
-export function calculateDistance(p: Point, a: Point, b: Point): number {
-	const r = {x: p.x - a.x, y: p.y - a.y};
-	const l = {x: b.x - a.x, y: b.y - a.y};
-	const length = Math.hypot(l.x, l.y);
-	const area = r.y*l.x - r.x*l.y;
-	return area/length;
-}
-
-
 /**
  * find the intersection between two line segments, or determine that there isn't one.
  * for the purposes of this function, when one endpoint is coincident with the other

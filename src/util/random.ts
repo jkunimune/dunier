@@ -152,7 +152,7 @@ export class Random {
 
 	/**
 	 * return a pseudorandom number drawn from a Binomial distribution (approximates with normal for expectations/
-	 * antiexpectatians over 36).
+	 * antiexpectations over 36).
 	 * @param num
 	 * @param prob
 	 */
@@ -195,7 +195,7 @@ export class Random {
 
 	/**
 	 * return a new Random based on this one. it will be seeded by a random number
-	 * dependent on this.seed, but the values it produces will be pseudoindependent of
+	 * dependent on this.seed, but the values it produces will be pseudo-independent of
 	 * the values of this one. this may be useful if one wants to produce multiple static
 	 * series of pseudorandom numbers where the lengths of the series are variable.
 	 */

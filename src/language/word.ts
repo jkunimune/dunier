@@ -33,7 +33,7 @@ export class Word {
 	constructor(segments: Sound[], language: Lect) {
 		this.segments = segments;
 		this.language = language;
-		this.length = this.segments.length
+		this.length = this.segments.length;
 	}
 
 	/**

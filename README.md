@@ -45,6 +45,6 @@ python src/python/build_html.py
 ## Credits
 
 This project drew heavy inspiration from
-[Azgaar's similar fantasy map generator](azgaar.github.io/fantasy-map-generator/). The slick aesthetic comes courtesy of
+[Azgaar's similar fantasy map generator](https://azgaar.github.io/fantasy-map-generator/). The slick aesthetic comes courtesy of
 [the Bootstrap library](https://getbootstrap.com/) and
 [HatScripts' circular flag collection](https://github.com/HatScripts/circle-flags).

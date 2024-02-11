@@ -89,17 +89,6 @@ export class TreeMap<Type> implements Iterable<Type> {
 			childLink = childLink.parent;
 		} while (childLink !== null);
 	}
-
-	/**
-	 * get the parent of this item in the tree
-	 * @param item
-	 */
-	getParent(item: Type): Type {
-		if (!this.has(item))
-			throw "the given child is not in the tree";
-		return this.map.get(item).parent.item;
-	}
-
 	/**
 	 * get a list of the children of this item in the tree
 	 * @param item

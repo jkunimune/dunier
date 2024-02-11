@@ -60,8 +60,8 @@ export interface Place {
  * the direccion and shape of a long "strait" line
  */
 export enum LongLineType {
-	GING, // along a meridian
-	VEI, // along a parallel
+	MERIDIAN, // along a constant longitude
+	PARALLEL, // around a constant latitude
 }
 
 /**

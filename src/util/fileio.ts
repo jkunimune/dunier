@@ -38,8 +38,8 @@ export function loadTSV(filename: string, delimiter: RegExp = /\t/, comment: Reg
 		if (matchObject !== null && matchObject.index === 0) continue; // skip the line if it is all one comment
 		line = line.split(comment)[0]; // remove the comment
 		if (comment !== null) {
-			line = line.replace(/\s+$/, '') // remove trailing whitespace
-			line = line.replace(/^\s+/, '') // remove leading whitespace
+			line = line.replace(/\s+$/, ''); // remove trailing whitespace
+			line = line.replace(/^\s+/, ''); // remove leading whitespace
 		}
 		if (line.length !== 0) arr.push(line.split(delimiter)); // if the line is nonempty, record it
 	}

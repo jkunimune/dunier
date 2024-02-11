@@ -268,7 +268,7 @@ export class Chart {
 
 		if (world !== null) {
 			// finally, check which Civs are on this map
-			// (this is somewhat innefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
+			// (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
 			const visible = [];
 			for (const civ of world.getCivs(true))
 				if (this.projection.project(

@@ -112,7 +112,7 @@ export class Conic extends MapProjection {
 			return [{
 				type: 'L',
 				args: [x, y],
-			}]
+			}];
 		}
 	}
 }
