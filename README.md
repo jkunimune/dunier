@@ -1,17 +1,17 @@
-# Dunia Hamar
+# Dunier – fantasy map generator
 
-Dunia Hamar is a tool being designed to help world builders build more and more realistic
+Dunier is a tool being designed to help world builders build more and more realistic
 worlds. Sometimes you need a world, but don't want to painstakingly build every
 aspect of it yourself. Maybe you're running an RPG campaign and just need a
 believable setting for your plot. Maybe you're a world builder who's more interested
-in culture and magic than in locations and names. Then Dunia Hamar is the tool for
+in culture and magic than in locations and names. Then Dunier is the tool for
 you.
 
-Not just a map generator, Dunia Hamar also gives you an info sheet on each country,
+Not just a map generator, Dunier also gives you an info sheet on each country,
 a list of names in each language, and a 3&thinsp;000 year history of conquest,
 division, and advancement across the world.
 
-Dunia Hamar is inspired by previous fantasy map generators like
+Dunier is inspired by previous fantasy map generators like
 [Azgaar's one](https://azgaar.github.io/Fastasy-Map-Generator), but has more of an emphasis
 on realism. It is not as interactive as some generators, and it does not generate as
 many fine details like mine locations and diplomatic relations. It does, however,

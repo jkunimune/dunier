@@ -46,7 +46,7 @@ export class PortableDocument {
 
 		this.pdf.setProperties({
 			                  title: title,
-			                  creator: 'dunia hamar',
+			                  creator: 'dunier',
 		                  });
 
 		this.pdf.addFont("../../res/fonts/NotoSans-Regular.ttf", "NotoSans", "normal");
