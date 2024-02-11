@@ -144,9 +144,9 @@ function applyPlanet() {
 		if (err instanceof RangeError) {
 			let message: string;
 			if (err.message.startsWith("Too fast"))
-				message = "The planet tore itself apart. Please choose a longer day length."; // TODO: translate this.  and/or automatically correct it.
+				message = format("error.planet_too_fast"); // TODO: it should automaticly bound the day-length at stable values
 			else if (err.message.startsWith("Too slow"))
-				message = "The planet broke into pieces. Please choose a shorter day length."; // TODO: translate this.  and/or automatically correct it.
+				message = format("error.planet_too_slow");
 			DOM.elm('alert-box').append(
 				"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
 				`  ${message}\n` +
