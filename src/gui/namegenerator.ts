@@ -24,7 +24,7 @@
 import "../lib/jquery.min.js";
 import {Random} from "../util/random.js";
 import {Dialect, Lect, ProtoLang, WordType} from "../language/lect.js";
-import {DOM} from "../util/document.js";
+import {DOM} from "../util/dom.js";
 
 
 const NUM_ROWS = 12;

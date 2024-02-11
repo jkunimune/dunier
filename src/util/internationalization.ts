@@ -1,9 +1,8 @@
-import {Selector} from "./selector.js";
 import {loadJSON} from "./fileio.js";
 import {Word} from "../language/word.js";
+import {DOM} from "./dom.js";
 
-export const DOM = new Selector(document);
-export const USER_STRINGS = loadJSON(`../../res/translations/${DOM.elm('bash').textContent}.json`);
+const USER_STRINGS = loadJSON(`../../res/translations/${DOM.elm('bash').textContent}.json`);
 
 /**
  * cast the given args to user strings (with a fixd format specificacion) and add them to

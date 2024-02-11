@@ -26,6 +26,9 @@ import "../lib/jspdf.umd.min.js";
 // @ts-ignore
 const jsPDF = window.jspdf;
 
+/**
+ * an editable representation of a PDF
+ */
 export class PortableDocument {
 	private readonly pdf: Exclude<any, PortableDocument>;
 	private pageParameters: { size: string, orientation: string, margin: Margins };

@@ -22,7 +22,8 @@
  * SOFTWARE.
  */
 import "../lib/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
-import {DOM, format} from "../util/document.js";
+import {DOM} from "../util/dom.js";
+import {format} from "../util/internationalization.js";
 import {generateTerrain} from "../society/terrain.js";
 import {Surface} from "../planet/surface.js";
 import {World} from "../society/world.js";
@@ -41,7 +42,7 @@ import {LockedDisc} from "../planet/lockeddisc.js";
 import {generateFactSheet} from "../society/factsheet.js";
 import {Conic} from "../map/conic.js";
 import {Selector} from "../util/selector.js";
-import {PortableDocument} from "./document.js";
+import {PortableDocument} from "../util/portabledocument.js";
 import {MapProjection} from "../map/projection.js";
 import {Civ} from "../society/civ.js";
 // @ts-ignore

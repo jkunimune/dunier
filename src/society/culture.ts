@@ -28,7 +28,7 @@ import {Nodo} from "../planet/surface.js";
 import {Civ} from "./civ.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 import {Word} from "../language/word.js";
-import {format} from "../util/document.js";
+import {format} from "../util/internationalization.js";
 
 
 class Feature {
