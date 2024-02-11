@@ -21,17 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Klas, Loke, Longia, MinorLoke, Mode, Nosia, PendaniSif, Silabia, Voze, Sif, Fon, Latia} from "./sound.js";
+import {Klas, Loke, Longia, MinorLoke, Mode, Nosia, Quality, Silabia, Voze, Feature, Sound, Latia} from "./sound.js";
 import {loadTSV} from "../util/fileio.js";
 
 
-const MODIFIERS: {klas: Klas, baze: Sif[], kode: string}[] = [ // TODO: can I rearrange this to put the macron underneath the acute accent?
-	{klas: new Klas([], [PendaniSif.SPOKEN]), baze: [], kode: 'pause'},
-	{klas: new Klas([Longia.LONG], [PendaniSif.VOWEL]), baze: [Longia.SHORT], kode: 'geminate'},
-	{klas: new Klas([Longia.LONG, PendaniSif.VOWEL]), baze: [Longia.SHORT], kode: 'long'},
+const MODIFIERS: {klas: Klas, baze: Feature[], kode: string}[] = [ // TODO: can I rearrange this to put the macron underneath the acute accent?
+	{klas: new Klas([], [Quality.SPOKEN]), baze: [], kode: 'pause'},
+	{klas: new Klas([Longia.LONG], [Quality.VOWEL]), baze: [Longia.SHORT], kode: 'geminate'},
+	{klas: new Klas([Longia.LONG, Quality.VOWEL]), baze: [Longia.SHORT], kode: 'long'},
 	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'aspirate'},
 	{klas: new Klas([Voze.EJECTIVE]), baze: [Voze.TENUIS], kode: 'ejective'},
-	{klas: new Klas([Loke.LINGUOLABIAL, PendaniSif.LIQUID]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'linguolab'},
+	{klas: new Klas([Loke.LINGUOLABIAL, Quality.LIQUID]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'linguolab'},
 	{klas: new Klas([Loke.LINGUOLABIAL, Latia.LATERAL]), baze: [Loke.DENTAL, Loke.DENTAL], kode: 'linguolab'},
 	{klas: new Klas([Loke.LINGUOLABIAL]), baze: [Loke.BILABIAL, Loke.DENTAL], kode: 'linguolab'},
 	{klas: new Klas([Loke.LABIOCORONAL]), baze: [Loke.ALVEOLAR, Loke.BILABIAL], kode: 'double'},
@@ -41,18 +41,18 @@ const MODIFIERS: {klas: Klas, baze: Sif[], kode: string}[] = [ // TODO: can I re
 	{klas: new Klas([MinorLoke.VELARIZED]), baze: [MinorLoke.UNROUNDED], kode: 'velariz'},
 	{klas: new Klas([Silabia.PRIMARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'primary'},
 	{klas: new Klas([Silabia.SECONDARY_STRESSED]), baze: [Silabia.UNSTRESSED], kode: 'secondary'},
-	{klas: new Klas([Nosia.NASALIZED, PendaniSif.VOCOID]), baze: [Nosia.ORAL], kode: 'nasaliz'},
-	{klas: new Klas([Nosia.NASALIZED], [PendaniSif.VOCOID]), baze: [Mode.NASAL, Nosia.ORAL], kode: 'prenasaliz'},
+	{klas: new Klas([Nosia.NASALIZED, Quality.VOCOID]), baze: [Nosia.ORAL], kode: 'nasaliz'},
+	{klas: new Klas([Nosia.NASALIZED], [Quality.VOCOID]), baze: [Mode.NASAL, Nosia.ORAL], kode: 'prenasaliz'},
 	{klas: new Klas([Voze.BREATHY]), baze: [Voze.VOICED], kode: 'breathy'},
-	{klas: new Klas([Voze.TENUIS, PendaniSif.SONORANT]), baze: [Voze.VOICED], kode: 'devoice'},
-	{klas: new Klas([PendaniSif.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'glide'},
+	{klas: new Klas([Voze.TENUIS, Quality.SONORANT]), baze: [Voze.VOICED], kode: 'devoice'},
+	{klas: new Klas([Quality.GLIDE]), baze: [Silabia.UNSTRESSED], kode: 'glide'},
 	{klas: new Klas([MinorLoke.LABIALIZED]), baze: [MinorLoke.UNROUNDED], kode: 'labializ'},
-	{klas: new Klas([PendaniSif.SYLLABIC], [PendaniSif.VOCOID]), baze: [Silabia.NONSYLLABIC], kode: 'syllabic'},
+	{klas: new Klas([Quality.SYLLABIC], [Quality.VOCOID]), baze: [Silabia.NONSYLLABIC], kode: 'syllabic'},
 	{klas: new Klas([Mode.AFFRICATE]), baze: [Mode.STOP, Mode.FRICATE], kode: 'affricate'},
 	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'approx'},
 ]
 
-const FROM_IPA: Map<string, Fon> = new Map(); // load the IPA table from static res
+const FROM_IPA: Map<string, Sound> = new Map(); // load the IPA table from static res
 const TO_TEXT: Map<string, Map<string, string>> = new Map();
 const TO_DIACRITICS: Map<string, Map<string, string>> = new Map();
 const ORTHOGRAPHIC_FLAGS: Map<string, Map<string, boolean>> = new Map();
@@ -98,50 +98,50 @@ for (const style of header) {
 }
 for (const row of harfiaTable.slice(1)) { // each row of the orthographick table tells us about the different available styles
 	const grafeme = row.slice(0, header.length);
-	const sif = row.slice(header.length);
-	if (sif.length === 3) { // first we read all the phonemes and their transcripcions
+	const features = row.slice(header.length);
+	if (features.length === 3) { // first we read all the phonemes and their transcripcions
 		// s in element 0 means syllabic
-		const silabia = sif[0].includes('s') ? Silabia.UNSTRESSED : Silabia.NONSYLLABIC;
+		const silabia = features[0].includes('s') ? Silabia.UNSTRESSED : Silabia.NONSYLLABIC;
 		// l in element 0 means lateral
-		const latia = sif[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
+		const latia = features[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
 		// w and v in element 0 mean labialized or velarized
-		const aliSif = sif[0].includes('w') ? MinorLoke.LABIALIZED : sif[0].includes('v') ? MinorLoke.VELARIZED : MinorLoke.UNROUNDED;
+		const aliSif = features[0].includes('w') ? MinorLoke.LABIALIZED : features[0].includes('v') ? MinorLoke.VELARIZED : MinorLoke.UNROUNDED;
 		// element 1 indicates the place of articulation
-		console.assert(LOKE_KODE.has(sif[1]));
-		const loke = LOKE_KODE.get(sif[1]);
+		console.assert(LOKE_KODE.has(features[1]));
+		const loke = LOKE_KODE.get(features[1]);
 		// element 2 indicates the manner of articulation and voicing
-		console.assert(MODE_KODE.has(sif[2]));
-		let {mode, voze} = MODE_KODE.get(sif[2]);
+		console.assert(MODE_KODE.has(features[2]));
+		let {mode, voze} = MODE_KODE.get(features[2]);
 		// but b in element 0 overrides the voicing to breathy
-		if (sif[0].includes('b'))
+		if (features[0].includes('b'))
 			voze = Voze.BREATHY;
 		// put it all together in one record and store it in our IPA lookup tables
-		const foneme = new Fon(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
+		const foneme = new Sound(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
 		for (let i = 0; i < header.length; i ++)
 			TO_TEXT.get(header[i]).set(foneme.hash(), grafeme[i]);
 		FROM_IPA.set(grafeme[header.indexOf('ipa')], foneme);
 	}
-	else if (sif[0].match(/^\^/)) { // then we read the modifying features and their transcripcions
+	else if (features[0].match(/^\^/)) { // then we read the modifying features and their transcripcions
 		for (let i = 0; i < header.length; i ++)
-			TO_DIACRITICS.get(header[i]).set(sif[0].slice(1), grafeme[i]);
+			TO_DIACRITICS.get(header[i]).set(features[0].slice(1), grafeme[i]);
 	}
-	else if (sif[0].match(/^\?/)) { // then we read the special rules
+	else if (features[0].match(/^\?/)) { // then we read the special rules
 		for (let i = 0; i < header.length; i ++)
-			ORTHOGRAPHIC_FLAGS.get(header[i]).set(sif[0].slice(1), grafeme[i] === 'y');
+			ORTHOGRAPHIC_FLAGS.get(header[i]).set(features[0].slice(1), grafeme[i] === 'y');
 	}
 	else {
-		throw `incomprehensible orthographickal feature: ${sif}`;
+		throw `incomprehensible orthographickal feature: ${features}`;
 	}
 }
 
-const ENGLI_VISE = loadTSV('kanune-engli.tsv')
+const ENGLISH_REPLACEMENTS = loadTSV('rules_english.tsv')
 
 
 /**
  * get a phoneme from its IPA representation, or return null if it is not found.
  * @param ipa the symbol to put in the lookup table
  */
-export function ipaSymbol(ipa: string): Fon {
+export function ipaSymbol(ipa: string): Sound {
 	if (FROM_IPA.has(ipa))
 		return FROM_IPA.get(ipa);
 	else
@@ -152,8 +152,8 @@ export function ipaSymbol(ipa: string): Fon {
  * get a phoneme array from its IPA representation
  * @param ipa the characters to put in the lookup table
  */
-export function ipa(ipa: string): Fon[] {
-	const output: Fon[] = [];
+export function ipa(ipa: string): Sound[] {
+	const output: Sound[] = [];
 	for (let i = 0; i < ipa.length; i ++) {
 		if (FROM_IPA.has(ipa.charAt(i)))
 			output.push(FROM_IPA.get(ipa.charAt(i)));
@@ -165,22 +165,22 @@ export function ipa(ipa: string): Fon[] {
 
 /**
  * get an orthographical representation from a phoneme
- * @param fon the sound to look up
+ * @param sound the sound to look up
  * @param style the romanization convention in which to look this up
  * @param level the number of diacritics we have already checkd (don't check them again)
  */
-function lookUp(fon: Fon, style: string, level: number = 0): string {
+function lookUp(sound: Sound, style: string, level: number = 0): string {
 	if (!TO_TEXT.has(style))
 		throw `there is no such transcripcion style as ${style}`;
-	if (TO_TEXT.get(style).has(fon.hash())) // if it's in the table
-		return TO_TEXT.get(style).get(fon.hash()); // just return that
+	if (TO_TEXT.get(style).has(sound.hash())) // if it's in the table
+		return TO_TEXT.get(style).get(sound.hash()); // just return that
 
 	for (let i = level; i < MODIFIERS.length; i ++) { // if not, look through the diacritics
 		const {klas, baze, kode} = MODIFIERS[i];
-		if (klas.macha(fon)) { // to see if there's one that will help
+		if (klas.matches(sound)) { // to see if there's one that will help
 			const baziFon = [];
-			for (const sif of baze)
-				baziFon.push(fon.with(sif)); // if so, simplify the foneme
+			for (const feature of baze)
+				baziFon.push(sound.with(feature)); // if so, simplify the foneme
 
 			console.assert(TO_DIACRITICS.get(style).has(kode), kode); // (do JavaScript's job for it)
 			const diacritic = TO_DIACRITICS.get(style).get(kode); // and apply the diacritic
@@ -203,7 +203,7 @@ function lookUp(fon: Fon, style: string, level: number = 0): string {
 		}
 	}
 
-	throw `I don't know how to write ${fon}`;
+	throw `I don't know how to write ${sound}`;
 }
 
 /**
@@ -211,19 +211,19 @@ function lookUp(fon: Fon, style: string, level: number = 0): string {
  * @param lekse
  * @param style
  */
-export function transcribe(lekse: Fon[], style: string): string {
+export function transcribe(lekse: Sound[], style: string): string {
 	lekse = lekse.slice(); // first, handle some common orthographickal rules
 	if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
 		for (let i = 0; i < lekse.length; i ++) // for this flag, go thru the original phonemick representacion
-			if (lekse[i].is(PendaniSif.HIGH)
+			if (lekse[i].is(Quality.HIGH)
 				&& (i+1 >= lekse.length || lekse[i+1].is(Silabia.NONSYLLABIC))) // find glides in codas
-				lekse[i] = new Klas([Silabia.UNSTRESSED]).konformu(lekse[i]); // and change them to vowels
+				lekse[i] = new Klas([Silabia.UNSTRESSED]).apply(lekse[i]); // and change them to vowels
 	}
 	if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
 		for (let i = 0; i < lekse.length; i ++)
 			if (lekse[i].is(Loke.VELAR) && lekse[i].is(Mode.NASAL) && i+1 < lekse.length
-				&& lekse[i+1].is(Loke.VELAR) && lekse[i+1].is(PendaniSif.OCCLUSIVE)) // find velar nasals followd by velar stops
-				lekse[i] = new Klas([Loke.ALVEOLAR]).konformu(lekse[i]); // and change them to be coronal
+				&& lekse[i+1].is(Loke.VELAR) && lekse[i+1].is(Quality.OCCLUSIVE)) // find velar nasals followd by velar stops
+				lekse[i] = new Klas([Loke.ALVEOLAR]).apply(lekse[i]); // and change them to be coronal
 	}
 
 	let asli = "";
@@ -232,7 +232,7 @@ export function transcribe(lekse: Fon[], style: string): string {
 
 	if (style === 'en') {
 		let muti = "#"+asli+"#";
-		for (const vise of ENGLI_VISE) {
+		for (const vise of ENGLISH_REPLACEMENTS) {
 			for (let j = 1; j < vise.length; j ++) { // look through the replacements in ENGLI_VISE
 				for (let i = muti.length; i >= 1; i --) { // ang go through the string
 					if (i-vise[j].length >= 0 && muti.substring(i-vise[j].length, i) === vise[j])

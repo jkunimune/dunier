@@ -42,17 +42,17 @@ const N_DEGREES = 6; // number of line segments into which to break one radian o
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 
 const BIOME_COLORS = new Map([
-	[Biome.HAI,         '#06267f'],
-	[Biome.LAK,         '#06267f'],
-	[Biome.FANTOPIA,    '#444921'],
-	[Biome.BARSAJANGAL, '#176D0D'],
-	[Biome.JANGAL,      '#647F45'],
+	[Biome.OCEAN,         '#06267f'],
+	[Biome.LAKE,         '#06267f'],
+	[Biome.SWAMP,    '#444921'],
+	[Biome.JUNGLE, '#176D0D'],
+	[Biome.FOREST,      '#647F45'],
 	[Biome.TAIGA,       '#4EA069'],
-	[Biome.AGNITOPIA,   '#DD9C6F'],
-	[Biome.GAZOTOPIA,   '#BED042'],
-	[Biome.ARENATOPIA,  '#F5E292'],
+	[Biome.STEAMLAND,   '#DD9C6F'],
+	[Biome.PLAINS,   '#BED042'],
+	[Biome.DESERT,  '#F5E292'],
 	[Biome.TUNDRA,      '#FFFFFF'],
-	[Biome.AIS,         '#FFFFFF'],
+	[Biome.ICE,         '#FFFFFF'],
 	[null,              '#FAF2E4'],
 ]);
 
@@ -139,12 +139,12 @@ export class Chart {
 	 * @param surface the surface that we're mapping
 	 * @param world the world on that surface, if we're mapping human features
 	 * @param svg the SVG element on which to draw everything
-	 * @param zemrang the color scheme for the land areas
-	 * @param marorang the color scheme for the ocean areas
+	 * @param landColor the color scheme for the land areas
+	 * @param seaColor the color scheme for the ocean areas
 	 * @param filter the color filter to apply
-	 * @param nade whether to add rivers
-	 * @param kenare whether to add state borders
-	 * @param shade whether to add shaded relief
+	 * @param rivers whether to add rivers
+	 * @param borders whether to add state borders
+	 * @param shading whether to add shaded relief
 	 * @param civLabels whether to label countries
 	 * @param geoLabels whether to label mountain ranges and seas
 	 * @param fontSize the size of city labels and minimum size of country and biome labels [pt]
@@ -152,8 +152,8 @@ export class Chart {
 	 * @return the list of Civs that are shown in this map
 	 */
 	depict(surface: Surface, world: World, svg: SVGGElement,
-	       zemrang: string, marorang: string, filter = 'nol',
-		   nade = true, kenare = true, shade = false,
+	       landColor: string, seaColor: string, filter = 'none',
+		   rivers = true, borders = true, shading = false,
 		   civLabels = false, geoLabels = false,
 		   fontSize = 2, style: string = null): Civ[] {
 		const bbox = this.projection.getDimensions();
@@ -161,14 +161,14 @@ export class Chart {
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
 		svg.textContent = ''; // clear the layer
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-		g.setAttribute('id', 'jeni-zemgrafe');
+		g.setAttribute('id', 'generated-map');
 		svg.appendChild(g);
 
 		this.testTextSize = Math.min(
 			(bbox.width)/18,
 			bbox.height);
 		this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-		this.testText.setAttribute('class', 'zemgrafe-label');
+		this.testText.setAttribute('class', 'map-label');
 		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`);
 		svg.appendChild(this.testText);
 
@@ -179,59 +179,59 @@ export class Chart {
 		// rectangle.setAttribute('height', `${this.projection.getDimensions().height}`);
 		// g.appendChild(rectangle);
 
-		let nadorang = 'none';
-		if (marorang === 'nili') { // color the sea deep blue
+		let riverColor = 'none';
+		if (seaColor === 'blue') { // color the sea deep blue
 			this.fill(
-				filterSet(surface.nodos, n => n.biome === Biome.HAI),
-				g, BIOME_COLORS.get(Biome.HAI), Layer.GEO);
-			nadorang = BIOME_COLORS.get(Biome.HAI);
+				filterSet(surface.nodos, n => n.biome === Biome.OCEAN),
+				g, BIOME_COLORS.get(Biome.OCEAN), Layer.GEO);
+			riverColor = BIOME_COLORS.get(Biome.OCEAN);
 		}
-		else if (marorang === 'gawia') { // color the sea by altitude
+		else if (seaColor === 'heightmap') { // color the sea by altitude
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
 				const min = (i !== 0) ? i * DEPTH_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Number.POSITIVE_INFINITY;
 				this.fill(
-					filterSet(surface.nodos, n => n.biome === Biome.HAI && -n.gawe >= min && -n.gawe < max),
+					filterSet(surface.nodos, n => n.biome === Biome.OCEAN && -n.height >= min && -n.height < max),
 					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
 			}
-			nadorang = DEPTH_COLORS[0]; // TODO: outline ocean + cerni nade?
+			riverColor = DEPTH_COLORS[0]; // TODO: outline ocean + black rivers?
 		}
 
-		if (zemrang === 'jivi') { // draw the biomes
+		if (landColor === 'physical') { // draw the biomes
 			for (const biome of BIOME_COLORS.keys())
-				if (biome !== Biome.HAI)
+				if (biome !== Biome.OCEAN)
 					this.fill(
 						filterSet(surface.nodos, n => n.biome === biome),
 						g, BIOME_COLORS.get(biome), Layer.BIO);
 		}
-		else if (zemrang === 'politiki' && world !== null) { // draw the countries
+		else if (landColor === 'political' && world !== null) { // draw the countries
 			this.fill(
-				filterSet(surface.nodos, n => n.biome !== Biome.HAI),
+				filterSet(surface.nodos, n => n.biome !== Biome.OCEAN),
 				g, BIOME_COLORS.get(null), Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
 			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i++)
 				this.fill(
-					filterSet(biggestCivs.pop().nodos, n => n.biome !== Biome.HAI),
+					filterSet(biggestCivs.pop().nodos, n => n.biome !== Biome.OCEAN),
 					g, COUNTRY_COLORS[i], Layer.KULTUR);
 		}
-		else if (zemrang === 'gawia') { // color the sea by altitude
+		else if (landColor === 'heightmap') { // color the sea by altitude
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Number.POSITIVE_INFINITY;
 				this.fill(
-					filterSet(surface.nodos, n => n.biome !== Biome.HAI && n.gawe >= min && n.gawe < max),
+					filterSet(surface.nodos, n => n.biome !== Biome.OCEAN && n.height >= min && n.height < max),
 					g, ALTITUDE_COLORS[i], Layer.GEO);
 			}
 		}
 
 		// add rivers
-		if (nade) {
-			this.stroke([...surface.rivers].filter(ud => ud[0].liwe >= RIVER_DISPLAY_THRESHOLD), // TODO have this depend on map scale
-				g, nadorang, 1.5, Layer.GEO, false);
+		if (rivers) {
+			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= RIVER_DISPLAY_THRESHOLD), // TODO have this depend on map scale
+				g, riverColor, 1.5, Layer.GEO, false);
 		}
 
 		// add borders with hovertext
-		if (kenare && world !== null) {
+		if (borders && world !== null) {
 			for (const civ of world.getCivs()) {
 				// if (civ.getPopulation() > 0) {
 					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -243,7 +243,7 @@ export class Chart {
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
 					this.fill(
-						filterSet(civ.nodos, n => n.biome !== Biome.HAI),
+						filterSet(civ.nodos, n => n.biome !== Biome.OCEAN),
 						titledG,
 						'none', Layer.KULTUR, '#111', 0.7).setAttribute('pointer-events', 'all');
 				// }
@@ -251,7 +251,7 @@ export class Chart {
 		}
 
 		// add relief shadows
-		if (shade) {
+		if (shading) {
 			this.shade(surface.triangles, g);
 		}
 
@@ -342,7 +342,7 @@ export class Chart {
 			const p = [];
 			for (const node of t.vertices) {
 				const {x, y} = this.projection.projectPoint(node);
-				const z = Math.max(0, node.gawe);
+				const z = Math.max(0, node.height);
 				p.push(new Vector(x, -y, z));
 			}
 			let n = p[1].minus(p[0]).cross(p[2].minus(p[0])).norm();
@@ -633,7 +633,7 @@ export class Chart {
 		textGroup.setAttribute('style', `font-size: ${axisH}px`);
 		svg.appendChild(textGroup);
 		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
-		textPath.setAttribute('class', 'zemgrafe-label');
+		textPath.setAttribute('class', 'map-label');
 		textPath.setAttribute('startOffset', '50%');
 		textPath.setAttribute('href', `#labelArc${this.labelIndex}`);
 		textGroup.appendChild(textPath);
@@ -696,7 +696,7 @@ export class Chart {
 	 * @param civ the Civ whose outline is desired
 	 */
 	static border(civ: Civ): PathSegment[] {
-		const landNodos = filterSet(civ.nodos, (n) => n.biome !== Biome.HAI);
+		const landNodos = filterSet(civ.nodos, (n) => n.biome !== Biome.OCEAN);
 		return Chart.outline(landNodos, Layer.KULTUR);
 	}
 
@@ -711,21 +711,21 @@ export class Chart {
 		const accountedFor = new Set(); // keep track of which Edge have been done
 		const output: Place[][] = []; // TODO: will this thro an error if I try to outline the entire surface?
 		for (let inNodo of nodoSet) { // look at every included node
-			for (let esNodo of inNodo.neighbors.keys()) { // and every node adjacent to an included one
-				if (nodoSet.has(esNodo))
+			for (let outNodo of inNodo.neighbors.keys()) { // and every node adjacent to an included one
+				if (nodoSet.has(outNodo))
 					continue; // (we only care if that adjacent node is excluded)
-				const startingEdge = inNodo.neighbors.get(esNodo); // the edge between them defines the start of the loop
+				const startingEdge = inNodo.neighbors.get(outNodo); // the edge between them defines the start of the loop
 				if (accountedFor.has(startingEdge))
 					continue; // (and can ignore edges we've already hit)
 
 				const loop = []; // if we've found a new edge, start going around it
 
 				do {
-					const next = inNodo.leftOf(esNodo); // look for the next triangle, going widdershins
+					const next = inNodo.leftOf(outNodo); // look for the next triangle, going widdershins
 
 					if (next !== null) { // assuming there is one,
 						const vertex = next; // pick out its circumcenter to plot
-						const edge = inNodo.neighbors.get(esNodo); // and the edge between them
+						const edge = inNodo.neighbors.get(outNodo); // and the edge between them
 
 						// add the edge to the complete Path
 						loop.push(vertex); // make the Path segment
@@ -734,7 +734,7 @@ export class Chart {
 						if (nodoSet.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
 							inNodo = next.acrossFrom(edge); // advance one of the state nodos
 						else
-							esNodo = next.acrossFrom(edge);
+							outNodo = next.acrossFrom(edge);
 					}
 					else { // if there isn't a next triangle
 						if (loop.length > 0)
@@ -743,16 +743,16 @@ export class Chart {
 						else
 							break; // you're on the end in which case you should just ignore this
 
-						esNodo = inNodo;
+						outNodo = inNodo;
 						let i = 0;
 						do {
-							esNodo = esNodo.surface.edge.get(esNodo).next; // and shimmy esNodo around the internal portion of the edge
+							outNodo = outNodo.surface.edge.get(outNodo).next; // and shimmy outNodo around the internal portion of the edge
 							i ++;
-						} while (nodoSet.has(esNodo)); // until it becomes external again
+						} while (nodoSet.has(outNodo)); // until it becomes external again
 
-						inNodo = esNodo.surface.edge.get(esNodo).prev; // then, grab the new inNodo and continue
+						inNodo = outNodo.surface.edge.get(outNodo).prev; // then, grab the new inNodo and continue
 					}
-				} while (inNodo.neighbors.get(esNodo) !== startingEdge && output.length < 100000); // continue until you go all the esNodo around this loop
+				} while (inNodo.neighbors.get(outNodo) !== startingEdge && output.length < 100000); // continue until you go all the outNodo around this loop
 
 				if (loop.length > 0) {
 					loop.push(loop[0]); // add closure

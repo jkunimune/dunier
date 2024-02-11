@@ -24,7 +24,7 @@
 import {Random} from "../util/random.js";
 import {linterp, noisyProfile} from "../util/util.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
-import {Kultur} from "../society/culture.js";
+import {Culture} from "../society/culture.js";
 import {Biome} from "../society/terrain.js";
 import {Place, Point} from "../util/coordinates.js";
 import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
@@ -162,8 +162,8 @@ export abstract class Surface {
 			const vertices: Point[] = [];
 			for (const {vertex} of nodo.getPolygon()) {
 				vertices.push({
-					x: vertex.minus(nodo.pos).dot(nodo.dong), // project the voronoi polygon into 2D
-					y: vertex.minus(nodo.pos).dot(nodo.nord),
+					x: vertex.minus(nodo.pos).dot(nodo.east), // project the voronoi polygon into 2D
+					y: vertex.minus(nodo.pos).dot(nodo.north),
 				});
 			}
 			checkVoronoiPolygon(vertices); // validate it
@@ -175,8 +175,8 @@ export abstract class Surface {
 					const {x, y} = joint.value;
 					projectedArc.push( // project it back
 						nodo.pos.plus(
-							nodo.dong.times(x).plus(
-							nodo.nord.times(y))));
+							nodo.east.times(x).plus(
+							nodo.north.times(y))));
 				}
 				if (edge.node0 === nodo) // then save it to the edge
 					edge.backBorder = projectedArc;
@@ -267,7 +267,7 @@ export abstract class Surface {
 	/**
 	 * for the purposes of the orographic effect, return a dimensionless tangent velocity.
 	 */
-	abstract windVelocity(ф: number): {nord: number, dong: number};
+	abstract windVelocity(ф: number): {north: number, east: number};
 
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
@@ -303,24 +303,24 @@ export class Nodo {
 	public readonly λ: number;
 	public readonly pos: Vector;
 	public readonly normal: Vector;
-	public readonly dong: Vector;
-	public readonly nord: Vector;
+	public readonly east: Vector;
+	public readonly north: Vector;
 	public readonly neighbors: Map<Nodo, Edge>;
 	public readonly between: Nodo[][];
 	public parents: Nodo[];
 
-	public gawe: number;
-	public terme: number;
-	public barxe: number;
+	public height: number;
+	public temperature: number;
+	public rainfall: number;
 	public biome: Biome;
 	public arability: number;
 	public arableArea: number;
-	public pasablia: number;
-	public kultur: Kultur;
-	public plate: number;
+	public passability: number;
+	public culture: Culture;
+	public plateIndex: number;
 	public windVelocity: Vector;
 	public downwind: Nodo[];
-	public liwe: number;
+	public flow: number;
 	public flag: boolean;
 	private area: number;
 
@@ -332,16 +332,16 @@ export class Nodo {
 		this.pos = surface.xyz(this);
 		const basis = orthogonalBasis(surface.normal(this), true, surface.axis, this.pos.times(-1));
 		this.normal = basis.n;
-		this.nord = basis.v;
-		this.dong = basis.u;
+		this.north = basis.v;
+		this.east = basis.u;
 
 		this.neighbors = new Map();
 		this.parents = [];
 		this.between = [];
 
-		this.terme = 0;
-		this.barxe = 0;
-		this.gawe = 0;
+		this.temperature = 0;
+		this.rainfall = 0;
+		this.height = 0;
 		this.biome = null;
 		this.area = null;
 	}
@@ -367,7 +367,7 @@ export class Nodo {
 	}
 
 	isWater(): boolean {
-		return this.biome === Biome.HAI || this.biome === Biome.LAK;
+		return this.biome === Biome.OCEAN || this.biome === Biome.LAKE;
 	}
 
 	getArea(): number {
@@ -424,9 +424,9 @@ export class Triangle {
 	public center: Place; // circumcenter (the locacion of the vertex on the Voronoi graph (also present in ф and λ))
 	public centerPos: Vector; // circumcenter (in 3D this time)
 
-	public gawe: number;
-	public liwe: number;
-	public liwonice: Triangle | Nodo;
+	public height: number;
+	public flow: number;
+	public downstream: Triangle | Nodo;
 
 	constructor(a: Nodo, b: Nodo, c: Nodo) {
 		const nodeDix = a.normal.plus(b.normal).plus(c.normal);
@@ -516,7 +516,7 @@ export class Edge {
 	public triangleL: Triangle;
 	public triangleR: Triangle;
 	public length: number;
-	public liwe: number;
+	public flow: number;
 	public path: Place[];
 	public foreBorder: Vector[]; // these borders are the limits of the greebling
 	public backBorder: Vector[];

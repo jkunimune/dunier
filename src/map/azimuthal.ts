@@ -34,11 +34,11 @@ export class Azimuthal extends MapProjection {
 	private readonly rMin: number;
 	private readonly sign: number;
 
-	constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
+	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
 		const r0 = surface.dAds(Math.PI/2)/(2*Math.PI);
 		const rMax = r0 + linterp(Math.PI/2, surface.refLatitudes, surface.cumulDistances);
 		super(
-			surface, norde, locus,
+			surface, northUp, locus,
 			-rMax, rMax, -rMax, rMax,
 			[
 				[{

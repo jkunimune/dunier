@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {Random} from "../util/random.js";
-import {Dialect, Lect, LogaTipo, ProtoLang} from "../language/lect.js";
+import {Dialect, Lect, WordType, ProtoLang} from "../language/lect.js";
 import {loadTSV} from "../util/fileio.js";
 import {Nodo} from "../planet/surface.js";
 import {Civ} from "./civ.js";
@@ -31,7 +31,7 @@ import {Word} from "../language/word.js";
 import {format} from "../util/document.js";
 
 
-class Sif {
+class Feature {
 	public readonly kode: string;
 	public readonly nam: string;
 	public readonly klas: string; // describing classes
@@ -71,7 +71,7 @@ class Sif {
 	 * check if this cultural feature is compatible with this Kultur
 	 * @param host
 	 */
-	isCompatible(host: Kultur): boolean {
+	isCompatible(host: Culture): boolean {
 		for (const klas of this.requiredKlas)
 			if (!host.klas.has(klas))
 				return false;
@@ -92,17 +92,17 @@ class Sif {
 }
 
 // read in the array of attributes from static res
-const KULTUR_ASPECTS: { key: string, zar: number, chuzable: Sif[][], logaIndex: number }[] = [];
-let zai: { key: string, zar: number, chuzable: Sif[][], logaIndex: number } = null;
+const KULTUR_ASPECTS: { key: string, chance: number, options: Feature[][], logaIndex: number }[] = [];
+let zai: { key: string, chance: number, options: Feature[][], logaIndex: number } = null;
 let header = null, subheader = null;
-for (const row of loadTSV('../../res/kultur.tsv')) {
+for (const row of loadTSV('../../res/culture.tsv')) {
 	row[0] = row[0].replace(/^ +/, ''); // start by ignoring my indentacion
 	if (row[0].startsWith('# ')) { // when you see a main header
 		header = row[0].slice(2);
 		zai = {
 			key: `factbook.${header}`,
-			zar: Number.parseFloat(row[1]),
-			chuzable: [],
+			chance: Number.parseFloat(row[1]),
+			options: [],
 			logaIndex: null
 		}; // set up the new section object
 		KULTUR_ASPECTS.push(zai);
@@ -111,20 +111,20 @@ for (const row of loadTSV('../../res/kultur.tsv')) {
 		if (zai !== null) {
 			subheader = row[0].slice(3);
 			if (row.length >= 2 && row[1] === 'new_word')
-				zai.logaIndex = zai.chuzable.length; // look to see if it is a new word index
-			zai.chuzable.push([]); // and set up the subsection object
+				zai.logaIndex = zai.options.length; // look to see if it is a new word index
+			zai.options.push([]); // and set up the subsection object
 		}
 		else {
-			console.error("kultur.tsv file has stuff out of order!");
+			console.error("culture.tsv file has stuff out of order!");
 		}
 	}
 	else { // when you see anything else
-		if (zai !== null && zai.chuzable.length > 0) {
-			const sif = new Sif(header, subheader, row); // make it an object
-			zai.chuzable[zai.chuzable.length - 1].push(sif); // add it to the list
+		if (zai !== null && zai.options.length > 0) {
+			const feature = new Feature(header, subheader, row); // make it an object
+			zai.options[zai.options.length - 1].push(feature); // add it to the list
 		}
 		else {
-			console.error("kultur.tsv file has stuff out of order!");
+			console.error("culture.tsv file has stuff out of order!");
 		}
 	}
 }
@@ -135,41 +135,41 @@ const DRIFT_RATE = .05; // fraccion of minor attributes that change each century
 /**
  * a class that contains factoids about a peeple groop.
  */
-export class Kultur {
-	private readonly sif: Sif[][];
+export class Culture {
+	private readonly features: Feature[][];
 	public readonly klas: Set<string>;
 	public readonly homeland: Nodo;
 	public readonly government: Civ;
 	public readonly lect: Lect;
 
 	/**
-	 * base a kultur off of some ancestor kultur, with some changes
-	 * @param parent the protoculture off of which this one is based
+	 * base a culture off of some ancestor culture, with some changes
+	 * @param parent the proto-culture off of which this one is based
 	 * @param homeland the place that will serve as the new cultural capital, or null if
 	 *                 it will keep using the old one
 	 * @param government the Civ that rules this Nodo
 	 * @param seed a random number seed
 	 */
-	constructor(parent: Kultur, homeland: Nodo, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
+	constructor(parent: Culture, homeland: Nodo, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
 		const rng = new Random(seed);
-		this.sif = [];
+		this.features = [];
 		this.government = government;
 		if (parent === null) {
 			this.klas = new Set<string>();
 			this.homeland = homeland;
 			this.lect = new ProtoLang(rng); // create a new language from scratch
 			for (const aspect of KULTUR_ASPECTS) { // make up a whole new culture
-				if (rng.probability(aspect.zar)) {
-					const sifList = [];
-					for (const chuzable of aspect.chuzable) {
-						const sif = this.randomCompatibleSif(chuzable, rng);
-						sifList.push(sif); // pick all these things freely
-						this.klas.add(sif.klas); // be sure to get note their classes to keep everything compatible
+				if (rng.probability(aspect.chance)) {
+					const featureList = [];
+					for (const options of aspect.options) {
+						const feature = this.randomCompatibleFeature(options, rng);
+						featureList.push(feature); // pick all these things freely
+						this.klas.add(feature.klas); // be sure to get note their classes to keep everything compatible
 					}
-					this.sif.push(sifList);
+					this.features.push(featureList);
 				}
 				else {
-					this.sif.push(null); // unless it's not notable, in which case it's all null
+					this.features.push(null); // unless it's not notable, in which case it's all null
 				}
 			}
 		}
@@ -178,56 +178,56 @@ export class Kultur {
 			this.homeland = (homeland === null) ? parent.homeland : homeland;
 			this.lect = new Dialect(parent.lect, rng);
 			for (let i = 0; i < KULTUR_ASPECTS.length; i ++) {
-				let sifList;
-				if (parent.sif[i] === null) {
-					if (rng.probability(DRIFT_RATE*KULTUR_ASPECTS[i].zar)) {
-						sifList = [];
-						for (const chuzable of KULTUR_ASPECTS[i].chuzable) {
-							const sif = this.randomCompatibleSif(chuzable, rng);
-							sifList.push(sif); // pick all these things freely
-							this.klas.add(sif.klas); // be sure to get note their classes to keep everything compatible
+				let featureList;
+				if (parent.features[i] === null) {
+					if (rng.probability(DRIFT_RATE*KULTUR_ASPECTS[i].chance)) {
+						featureList = [];
+						for (const options of KULTUR_ASPECTS[i].options) {
+							const feature = this.randomCompatibleFeature(options, rng);
+							featureList.push(feature); // pick all these things freely
+							this.klas.add(feature.klas); // be sure to get note their classes to keep everything compatible
 						}
 					}
 					else {
-						sifList = null;
+						featureList = null;
 					}
 				}
 				else {
-					if (rng.probability(DRIFT_RATE*(1 - KULTUR_ASPECTS[i].zar))) {
-						sifList = null;
+					if (rng.probability(DRIFT_RATE*(1 - KULTUR_ASPECTS[i].chance))) {
+						featureList = null;
 					}
 					else {
-						sifList = parent.sif[i].slice();
-						for (let j = 0; j < KULTUR_ASPECTS[i].chuzable.length; j ++) {
-							if (!sifList[j].isCompatible(this) || rng.probability(DRIFT_RATE)) { // and occasionally
-								sifList[j] = this.randomCompatibleSif(KULTUR_ASPECTS[i].chuzable[j], rng); // make a modificacion
-								this.klas.add(sifList[j].klas);
+						featureList = parent.features[i].slice();
+						for (let j = 0; j < KULTUR_ASPECTS[i].options.length; j ++) {
+							if (!featureList[j].isCompatible(this) || rng.probability(DRIFT_RATE)) { // and occasionally
+								featureList[j] = this.randomCompatibleFeature(KULTUR_ASPECTS[i].options[j], rng); // make a modificacion
+								this.klas.add(featureList[j].klas);
 							}
 							else {
-								this.klas.add(sifList[j].klas);
+								this.klas.add(featureList[j].klas);
 							}
 						}
 					}
 				}
-				this.sif[i] = sifList; // base this off of it
+				this.features[i] = featureList; // base this off of it
 			}
 		}
 	}
 
 	/**
 	 * return one cultural feature from the given set
-	 * @param chuzable the Sif from which to choose
+	 * @param options the Features from which to choose
 	 * @param rng
 	 */
-	private randomCompatibleSif(chuzable: Sif[], rng: Random): Sif {
-		const compatible = chuzable.filter(
-			(sif: Sif) => sif.isCompatible(this));
+	private randomCompatibleFeature(options: Feature[], rng: Random): Feature {
+		const compatible = options.filter(
+			(feature: Feature) => feature.isCompatible(this));
 		return rng.choice(compatible);
 	}
 
 	public getName(): Word {
 		return this.lect.getName(
-			this.homeland.index.toString(), LogaTipo.NAS);
+			this.homeland.index.toString(), WordType.PEOPLE);
 	}
 
 	/**
@@ -235,13 +235,13 @@ export class Kultur {
 	 */
 	public toString(): string {
 		let str = "";
-		for (let i = 0; i < this.sif.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
-			const attributes = this.sif[i];
+		for (let i = 0; i < this.features.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
+			const attributes = this.features[i];
 			const logaIndex = KULTUR_ASPECTS[i].logaIndex;
 			if (attributes !== null) {
 				let madeUpWord;
 				if (logaIndex !== null)
-					madeUpWord = this.lect.getName(attributes[logaIndex].nam, LogaTipo.ALO);
+					madeUpWord = this.lect.getName(attributes[logaIndex].nam, WordType.OTHER);
 				else
 					madeUpWord = null;
 				str += format(KULTUR_ASPECTS[i].key,

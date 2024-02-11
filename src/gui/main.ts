@@ -104,7 +104,7 @@ function applyPlanet() {
 	const obliquity = Number(DOM.val('planet-tilt')) * Math.PI / 180;
 
 	try { // create a surface
-		if (planetType === 'bol') { // spheroid
+		if (planetType === 'spheroid') { // spheroid
 			if (tidallyLocked) { // spherical
 				surface = new Sphere(
 					radius);
@@ -117,14 +117,14 @@ function applyPlanet() {
 					obliquity);
 			}
 		}
-		else if (planetType === 'wen') { // toroid
+		else if (planetType === 'toroid') { // toroid
 			surface = new Toroid(
 				radius,
 				gravity,
 				spinRate,
 				obliquity);
 		}
-		else if (planetType === 'plate') { // plane
+		else if (planetType === 'plane') { // plane
 			if (tidallyLocked) { // with static sun
 				surface = new LockedDisc(
 					radius);
@@ -229,13 +229,13 @@ function applyTerrain(): void {
 		applyPlanet();
 
 	console.log("jena zemforme...");
-	let rng = new Random(Number(DOM.val('terrain-sem'))); // use the random seed
+	let rng = new Random(Number(DOM.val('terrain-seed'))); // use the random seed
 	surface.populate(rng); // finish constructing the surface
 	rng = rng.reset();
 	generateTerrain(
 		Number(DOM.val('terrain-continents')) * 2,
-		Number(DOM.val('terrain-hay')),
-		Number(DOM.val('terrain-terme')),
+		Number(DOM.val('terrain-sea-level')),
+		Number(DOM.val('terrain-temperature')),
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
@@ -243,8 +243,8 @@ function applyTerrain(): void {
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
-	              'jivi',
-	              'nili');
+	              'physical',
+	              'blue');
 
 	console.log("fina!");
 	lastUpdated = Layer.TERRAIN;
@@ -260,11 +260,11 @@ function applyHistory(): void {
 
 	console.log("jena histore...");
 	world = new World(
-		Number(DOM.val('history-katastrof')),
+		Number(DOM.val('history-meteors')),
 		surface);
-	let rng = new Random(Number(DOM.val('history-sem'))); // use the random seed
+	let rng = new Random(Number(DOM.val('history-seed'))); // use the random seed
 	world.generateHistory(
-		Number(DOM.val('history-nen')),
+		Number(DOM.val('history-year')),
 		rng); // create the terrain!
 
 	console.log("grafa...");
@@ -272,8 +272,8 @@ function applyHistory(): void {
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
-	              'politiki',
-	              'nili');
+	              'political',
+	              'blue');
 
 	console.log("mute ba chuze bil...");
 	const countries = world.getCivs(true, MIN_SIZE_TO_LIST, MIN_COUNTRIES_TO_LIST) // list the biggest countries for the centering selection
@@ -303,22 +303,22 @@ function applyMap(): void {
 
 	console.log("grafa zemgrafe...");
 	const projectionName = DOM.val('map-projection');
-	const norde = (DOM.val('map-dish') === 'norde');
+	const northUp = (DOM.val('map-orientation') === 'north');
 	const locus = Chart.border(world.getCiv(Number.parseInt(DOM.val('map-jung'))));
 
 	let projection: MapProjection;
-	if (projectionName === 'equirectangular')
-		projection = new Equirectangular(surface, norde, locus);
-	else if (projectionName === 'azimuthal-equidistant')
-		projection = new Azimuthal(surface, norde, locus);
-	else if (projectionName === 'mercator')
-		projection = new Mercator(surface, norde, locus);
-	else if (projectionName === 'eckert')
-		projection = new EqualArea(surface, norde, locus);
-	else if (projectionName === 'bonne')
-		projection = new Bonne(surface, norde, locus);
-	else if (projectionName === 'conic')
-		projection = new Conic(surface, norde, locus);
+	if (projectionName === 'basic')
+		projection = new Equirectangular(surface, northUp, locus);
+	else if (projectionName === 'polar')
+		projection = new Azimuthal(surface, northUp, locus);
+	else if (projectionName === 'navigational')
+		projection = new Mercator(surface, northUp, locus);
+	else if (projectionName === 'equal_area')
+		projection = new EqualArea(surface, northUp, locus);
+	else if (projectionName === 'classical')
+		projection = new Bonne(surface, northUp, locus);
+	else if (projectionName === 'modern')
+		projection = new Conic(surface, northUp, locus);
 	else
 		throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
@@ -327,18 +327,18 @@ function applyMap(): void {
 		surface,
 		world,
 		DOM.elm('map-map') as SVGGElement,
-		DOM.val('map-zemrang'),
-		DOM.val('map-hayrang'),
+		DOM.val('map-land-color'),
+		DOM.val('map-sea-color'),
 		DOM.val('map-filter'),
-		DOM.checked('map-nade'),
-		DOM.checked('map-kenar'),
-		DOM.checked('map-say'),
-		DOM.checked('map-deshnam'),
-		DOM.checked('map-shannam'),
+		DOM.checked('map-rivers'),
+		DOM.checked('map-borders'),
+		DOM.checked('map-shading'),
+		DOM.checked('map-political-labels'),
+		DOM.checked('map-physical-labels'),
 		6,
-		(DOM.val('map-bash') === 'null') ?
+		(DOM.val('map-spelling') === 'null') ?
 			null :
-			DOM.val('map-bash')
+			DOM.val('map-spelling')
 	);
 
 	console.log("fina!");
@@ -373,8 +373,8 @@ function disableButtonsAndDo(func: () => void): void {
 	inProgress = true;
 	for (const tab of ['planet', 'terrain', 'history', 'map']) {
 		DOM.elm(`${tab}-apply`).setAttribute('disabled', '');
-		DOM.elm(`${tab}-redi`).style.display = 'none';
-		DOM.elm(`${tab}-lada`).style.display = null;
+		DOM.elm(`${tab}-ready`).style.display = 'none';
+		DOM.elm(`${tab}-loading`).style.display = null;
 	}
 
 	setTimeout(() => {
@@ -387,8 +387,8 @@ function disableButtonsAndDo(func: () => void): void {
 		inProgress = false;
 		for (const tab of ['planet', 'terrain', 'history', 'map']) {
 			DOM.elm(`${tab}-apply`).removeAttribute('disabled');
-			DOM.elm(`${tab}-redi`).style.display = null;
-			DOM.elm(`${tab}-lada`).style.display = 'none';
+			DOM.elm(`${tab}-ready`).style.display = null;
+			DOM.elm(`${tab}-loading`).style.display = 'none';
 		}
 	}, 10);
 }

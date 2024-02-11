@@ -131,50 +131,51 @@ export class Nosia extends Enumify {
 	static ORAL = new Nosia();
 	static _ = Nosia.closeEnum();
 }
-/** dependent segment features */
-export class PendaniSif extends Enumify {
-	static LABIAL = new PendaniSif();
-	static CORONAL = new PendaniSif();
-	static DORSAL = new PendaniSif();
-	static GUTTURAL = new PendaniSif();
-	static ALVEOLAR = new PendaniSif();
-	static NASAL = new PendaniSif();
-	static CONTINUANT = new PendaniSif();
-	static OCCLUSIVE = new PendaniSif();
-	static SONORANT = new PendaniSif();
-	static OBSTRUENT = new PendaniSif();
-	static VIBRANT = new PendaniSif();
-	static HIGH = new PendaniSif();
-	static MID = new PendaniSif();
-	static LOW = new PendaniSif();
-	static RAISED = new PendaniSif();
-	static LOWERED = new PendaniSif();
-	static TENSE = new PendaniSif();
-	static LAX = new PendaniSif();
-	static PALATAL = new PendaniSif();
-	static VELAR = new PendaniSif();
-	static PHARANGEAL = new PendaniSif();
-	static SIBILANT = new PendaniSif();
-	static RHOTIC = new PendaniSif();
-	static LIQUID = new PendaniSif();
-	static WIBBLY = new PendaniSif();
-	static VOCOID = new PendaniSif();
-	static GLIDE = new PendaniSif();
-	static VOWEL = new PendaniSif();
-	static SORDID = new PendaniSif();
-	static STRESSED = new PendaniSif();
-	static SYLLABIC = new PendaniSif();
-	static SPOKEN = new PendaniSif();
-	static _ = PendaniSif.closeEnum();
+/** more complicated segment features that are determined by
+ * things like place and manner of articulation */
+export class Quality extends Enumify {
+	static LABIAL = new Quality();
+	static CORONAL = new Quality();
+	static DORSAL = new Quality();
+	static GUTTURAL = new Quality();
+	static ALVEOLAR = new Quality();
+	static NASAL = new Quality();
+	static CONTINUANT = new Quality();
+	static OCCLUSIVE = new Quality();
+	static SONORANT = new Quality();
+	static OBSTRUENT = new Quality();
+	static VIBRANT = new Quality();
+	static HIGH = new Quality();
+	static MID = new Quality();
+	static LOW = new Quality();
+	static RAISED = new Quality();
+	static LOWERED = new Quality();
+	static TENSE = new Quality();
+	static LAX = new Quality();
+	static PALATAL = new Quality();
+	static VELAR = new Quality();
+	static PHARANGEAL = new Quality();
+	static SIBILANT = new Quality();
+	static RHOTIC = new Quality();
+	static LIQUID = new Quality();
+	static WIBBLY = new Quality();
+	static VOCOID = new Quality();
+	static GLIDE = new Quality();
+	static VOWEL = new Quality();
+	static SORDID = new Quality();
+	static STRESSED = new Quality();
+	static SYLLABIC = new Quality();
+	static SPOKEN = new Quality();
+	static _ = Quality.closeEnum();
 }
 
-export type Sif = Mode | Loke | Voze | Silabia | Longia | Latia | MinorLoke | Nosia | PendaniSif;
-export const SIF_TIPE = [PendaniSif, Loke, Mode, Voze, Silabia, Longia, Latia, Nosia, MinorLoke];
+export type Feature = Mode | Loke | Voze | Silabia | Longia | Latia | MinorLoke | Nosia | Quality;
+export const FEATURE_TYPES = [Quality, Loke, Mode, Voze, Silabia, Longia, Latia, Nosia, MinorLoke];
 
 /** phonological segment */
-export class Fon {
+export class Sound {
 	/** the default phone, to be used for insertion rules */
-	public static BLANK = new Fon(
+	public static BLANK = new Sound(
 		null,
 		null,
 		Voze.VOICED,
@@ -184,7 +185,7 @@ export class Fon {
 		MinorLoke.UNROUNDED,
 		Nosia.ORAL);
 	/** the representation of a pause */
-	public static PAUSE = new Fon(
+	public static PAUSE = new Sound(
 		null,
 		null,
 		null,
@@ -218,107 +219,109 @@ export class Fon {
 
 	/**
 	 * does this fone have the given feature?
-	 * @param sif
+	 * @param feature
 	 */
-	is(sif: Sif): boolean {
+	is(feature: Feature): boolean {
 		if (this.voze === null)
 			return false;
-		else if (sif instanceof Loke)
-			return this.loke === sif;
-		else if (sif instanceof Mode)
-			return this.mode === sif;
-		else if (sif instanceof Voze)
-			return this.voze === sif;
-		else if (sif instanceof Silabia)
-			return this.silabia === sif;
-		else if (sif instanceof Longia)
-			return this.longia === sif;
-		else if (sif instanceof Latia)
-			return this.latia === sif;
-		else if (sif instanceof MinorLoke)
-			return this.minorLoke === sif;
-		else if (sif instanceof Nosia)
-			return this.nosia === sif;
+		else if (feature instanceof Loke)
+			return this.loke === feature;
+		else if (feature instanceof Mode)
+			return this.mode === feature;
+		else if (feature instanceof Voze)
+			return this.voze === feature;
+		else if (feature instanceof Silabia)
+			return this.silabia === feature;
+		else if (feature instanceof Longia)
+			return this.longia === feature;
+		else if (feature instanceof Latia)
+			return this.latia === feature;
+		else if (feature instanceof MinorLoke)
+			return this.minorLoke === feature;
+		else if (feature instanceof Nosia)
+			return this.nosia === feature;
 		else {
-			switch (sif) {
-				case PendaniSif.LABIAL:
+			switch (feature) {
+				case Quality.LABIAL:
 					return this.loke.foner === Foner.LABIA || this.minorLoke === MinorLoke.LABIALIZED;
-				case PendaniSif.CORONAL:
+				case Quality.CORONAL:
 					return this.loke.foner === Foner.CORONA;
-				case PendaniSif.DORSAL:
+				case Quality.DORSAL:
 					return this.loke.foner === Foner.DORSUM;
-				case PendaniSif.GUTTURAL:
+				case Quality.GUTTURAL:
 					return this.loke.foner === Foner.PHARYNX || this.minorLoke === MinorLoke.PHARYNGEALIZED;
-				case PendaniSif.NASAL:
+				case Quality.NASAL:
 					return this.mode === Mode.NASAL || this.nosia === Nosia.NASALIZED;
-				case PendaniSif.ALVEOLAR:
+				case Quality.ALVEOLAR:
 					return this.is(Loke.ALVEOLAR) || (this.is(Loke.DENTAL) && this.mode !== Mode.FRICATE && this.mode !== Mode.AFFRICATE);
-				case PendaniSif.CONTINUANT:
+				case Quality.CONTINUANT:
 					return this.mode === Mode.FRICATE || this.mode === Mode.TRILL || this.mode.sonority >= Mode.CLOSE.sonority;
-				case PendaniSif.OCCLUSIVE:
-					return !this.is(PendaniSif.CONTINUANT);
-				case PendaniSif.SONORANT:
+				case Quality.OCCLUSIVE:
+					return !this.is(Quality.CONTINUANT);
+				case Quality.SONORANT:
 					return this.mode.sonority >= Mode.NASAL.sonority;
-				case PendaniSif.OBSTRUENT:
-					return !this.is(PendaniSif.SONORANT);
-				case PendaniSif.VIBRANT:
+				case Quality.OBSTRUENT:
+					return !this.is(Quality.SONORANT);
+				case Quality.VIBRANT:
 					return this.mode === Mode.TAP || this.mode === Mode.TRILL;
-				case PendaniSif.HIGH:
-					return this.is(PendaniSif.VOCOID) && (this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE);
-				case PendaniSif.MID:
-					return this.is(PendaniSif.VOCOID) && (this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN_MID);
-				case PendaniSif.LOW:
-					return this.is(PendaniSif.VOCOID) && (this.mode === Mode.NEAR_OPEN || this.mode === Mode.OPEN);
-				case PendaniSif.TENSE:
+				case Quality.HIGH:
+					return this.is(Quality.VOCOID) && (this.mode === Mode.CLOSE || this.mode === Mode.NEAR_CLOSE);
+				case Quality.MID:
+					return this.is(Quality.VOCOID) && (this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN_MID);
+				case Quality.LOW:
+					return this.is(Quality.VOCOID) && (this.mode === Mode.NEAR_OPEN || this.mode === Mode.OPEN);
+				case Quality.TENSE:
 					return this.mode === Mode.CLOSE || this.mode === Mode.CLOSE_MID || this.mode === Mode.OPEN;
-				case PendaniSif.LAX:
+				case Quality.LAX:
 					return this.mode === Mode.NEAR_CLOSE || this.mode === Mode.OPEN_MID || this.mode === Mode.NEAR_OPEN;
-				case PendaniSif.PALATAL:
-					return !this.is(PendaniSif.LOW) && (this.loke === Loke.PALATAL || this.loke === Loke.POSTALVEOLAR || this.minorLoke === MinorLoke.PALATALIZED);
-				case PendaniSif.VELAR:
-					return !this.is(PendaniSif.LOW) && (this.loke === Loke.VELAR || this.minorLoke === MinorLoke.VELARIZED);
-				case PendaniSif.PHARANGEAL:
+				case Quality.PALATAL:
+					return !this.is(Quality.LOW) && (this.loke === Loke.PALATAL || this.loke === Loke.POSTALVEOLAR || this.minorLoke === MinorLoke.PALATALIZED);
+				case Quality.VELAR:
+					return !this.is(Quality.LOW) && (this.loke === Loke.VELAR || this.minorLoke === MinorLoke.VELARIZED);
+				case Quality.PHARANGEAL:
 					return this.loke === Loke.EPIGLOTTAL || this.minorLoke === MinorLoke.PHARYNGEALIZED;
-				case PendaniSif.SIBILANT:
+				case Quality.SIBILANT:
 					return (this.mode === Mode.AFFRICATE || this.mode === Mode.FRICATE) &&
 						(this.loke === Loke.ALVEOLAR || this.loke === Loke.POSTALVEOLAR);
-				case PendaniSif.LIQUID:
+				case Quality.LIQUID:
 					return this.voze === Voze.VOICED && (
-						(this.is(PendaniSif.SONORANT) && !this.is(Mode.NASAL) && (this.is(PendaniSif.CORONAL) || this.loke === Loke.UVULAR)) ||
+						(this.is(Quality.SONORANT) && !this.is(Mode.NASAL) && (this.is(Quality.CORONAL) || this.loke === Loke.UVULAR)) ||
 						(this.mode === Mode.FRICATE && this.loke === Loke.UVULAR));
-				case PendaniSif.RHOTIC:
-					return this.is(PendaniSif.LIQUID) && !this.is(Latia.LATERAL);
-				case PendaniSif.WIBBLY:
-					return this.is(PendaniSif.LABIAL) && (this.is(PendaniSif.SONORANT) || (this.is(Voze.VOICED) &&
+				case Quality.RHOTIC:
+					return this.is(Quality.LIQUID) && !this.is(Latia.LATERAL);
+				case Quality.WIBBLY:
+					return this.is(Quality.LABIAL) && (this.is(Quality.SONORANT) || (this.is(Voze.VOICED) &&
 						this.is(Mode.FRICATE))) && this.is(Silabia.NONSYLLABIC);
-				case PendaniSif.VOCOID:
+				case Quality.VOCOID:
 					return this.mode.sonority >= Mode.CLOSE.sonority && this.latia === Latia.MEDIAN &&
 						this.loke.foner === Foner.DORSUM;
-				case PendaniSif.GLIDE:
-					return this.silabia === Silabia.NONSYLLABIC && this.is(PendaniSif.VOCOID);
-				case PendaniSif.VOWEL:
-					return this.silabia !== Silabia.NONSYLLABIC && this.is(PendaniSif.VOCOID);
-				case PendaniSif.SORDID:
+				case Quality.GLIDE:
+					return this.silabia === Silabia.NONSYLLABIC && this.is(Quality.VOCOID);
+				case Quality.VOWEL:
+					return this.silabia !== Silabia.NONSYLLABIC && this.is(Quality.VOCOID);
+				case Quality.SORDID:
 					return this.voze !== Voze.VOICED && this.voze !== Voze.BREATHY;
-				case PendaniSif.STRESSED:
+				case Quality.STRESSED:
 					return this.silabia === Silabia.PRIMARY_STRESSED || this.silabia === Silabia.SECONDARY_STRESSED;
-				case PendaniSif.SYLLABIC:
+				case Quality.SYLLABIC:
 					return this.silabia !== Silabia.NONSYLLABIC;
-				case PendaniSif.SPOKEN:
+				case Quality.SPOKEN:
 					return true;
 				default:
-					throw `can't check for ${sif}ness`;
+					throw `can't check for ${feature}ness`;
 			}
 		}
 	}
 
 	/**
 	 * return a fone that is identical to this, except that it has the given feature
-	 * @param sif
+	 * @param feature
 	 */
-	with(sif: Sif): Fon {
-		if (!this.is(sif)) return new Klas([sif]).konformu(this);
-		else               return this;
+	with(feature: Feature): Sound {
+		if (!this.is(feature))
+			return new Klas([feature]).apply(this);
+		else
+			return this;
 	}
 
 	/**
@@ -355,112 +358,112 @@ export class Fon {
 			return this.mode.sonority
 				- ((this.latia === Latia.LATERAL) ? 1.5 : 0)
 				+ ((this.voze === Voze.VOICED) ? 0.75 : 0)
-				+ (this.is(PendaniSif.VOCOID) ? 1 : 0);
+				+ (this.is(Quality.VOCOID) ? 1 : 0);
 	}
 }
 
 /** collection of phonological features */
 export class Klas {
-	private readonly sa: Sif[]; // qualities this class explicitly has
-	readonly na: Sif[]; // qualities this class explicitly does not have
-	private readonly ka: string[]; // qualities this class might have
+	private readonly required: Feature[]; // qualities this class explicitly has
+	readonly forbidden: Feature[]; // qualities this class explicitly does not have
+	private readonly tracked: string[]; // qualities this class might have
 
-	constructor(sa: Sif[], na: Sif[] = [], ka: string[] = []) {
-		this.sa = sa;
-		this.na = na;
-		this.ka = ka;
+	constructor(plus: Feature[], minus: Feature[] = [], alpha: string[] = []) {
+		this.required = plus;
+		this.forbidden = minus;
+		this.tracked = alpha;
 	}
 
 	/**
-	 * does fon have all of the properties of this class?
-	 * @param fon
+	 * does sound have all of the properties of this class?
+	 * @param sound
 	 */
-	macha(fon: Fon): boolean {
-		for (const sif of this.sa)
-			if (!fon.is(sif))
+	matches(sound: Sound): boolean {
+		for (const feature of this.required)
+			if (!sound.is(feature))
 				return false;
-		for (const sif of this.na)
-			if (fon.is(sif))
+		for (const feature of this.forbidden)
+			if (sound.is(feature))
 				return false;
 		return true;
 	}
 
 	/**
-	 * create a Fon with all of the properties of this, and similar to fon in every other respect.
-	 * @param fon the foneme that is being made to conform here
+	 * create a Sound with all of the properties of this, and similar to sound in every other respect.
+	 * @param sound the foneme that is being made to conform here
 	 * @param ref if this.ka has stuff in it, draw those features from ref.
 	 */
-	konformu(fon: Fon = Fon.BLANK, ref: Fon = null): Fon {
-		if (this.na.length > 0)
-			throw Error(`you can't use minus ${this.na[0]} in the final state of a process!`);
-		if (this.sa.length === 0) // if there are no properties, you don't have to do anything
-			return fon; // (even if fon is a pause)
+	apply(sound: Sound = Sound.BLANK, ref: Sound = null): Sound {
+		if (this.forbidden.length > 0)
+			throw Error(`you can't use minus ${this.forbidden[0]} in the final state of a process!`);
+		if (this.required.length === 0) // if there are no properties, you don't have to do anything
+			return sound; // (even if sound is a pause)
 
-		let mode = fon.mode, loke = fon.loke, voze = fon.voze;
-		let silabia = fon.silabia, longia = fon.longia, latia = fon.latia, minorLoke = fon.minorLoke, nosia = fon.nosia;
-		for (let sif of this.sa) {
-			if (sif === PendaniSif.RAISED) { // there are two special PendaniSif that depend on the current quality of the fone
-				if (fon.is(PendaniSif.LOW))       sif = PendaniSif.MID;
-				else if (fon.is(PendaniSif.MID))  sif = PendaniSif.HIGH;
-				else if (fon.is(PendaniSif.HIGH)) sif = Voze.EJECTIVE; // ejective vowels aren't possible; this indicates that it should be diphthongized
-				else throw `can't apply +RAISED to ${fon}`;
+		let mode = sound.mode, loke = sound.loke, voze = sound.voze;
+		let silabia = sound.silabia, longia = sound.longia, latia = sound.latia, minorLoke = sound.minorLoke, nosia = sound.nosia;
+		for (let feature of this.required) {
+			if (feature === Quality.RAISED) { // there are two special PendaniSif that depend on the current quality of the fone
+				if (sound.is(Quality.LOW))       feature = Quality.MID;
+				else if (sound.is(Quality.MID))  feature = Quality.HIGH;
+				else if (sound.is(Quality.HIGH)) feature = Voze.EJECTIVE; // ejective vowels aren't possible; this indicates that it should be diphthongized
+				else throw `can't apply +RAISED to ${sound}`;
 			}
-			if (sif === PendaniSif.LOWERED) { // so interpret those first
-				if (fon.is(PendaniSif.HIGH))       sif = PendaniSif.MID;
-				else if (fon.is(PendaniSif.VOCOID)) sif = PendaniSif.LOW;
-				else throw `can't apply +LOWERED to ${fon}`;
+			if (feature === Quality.LOWERED) { // so interpret those first
+				if (sound.is(Quality.HIGH))       feature = Quality.MID;
+				else if (sound.is(Quality.VOCOID)) feature = Quality.LOW;
+				else throw `can't apply +LOWERED to ${sound}`;
 			}
 
-			if (sif instanceof Mode) // then actually apply the feature
-				mode = sif;
-			else if (sif instanceof Loke)
-				loke = sif;
-			else if (sif instanceof Voze)
-				voze = sif;
-			else if (sif instanceof Silabia)
-				silabia = sif;
-			else if (sif instanceof Longia)
-				longia = sif;
-			else if (sif instanceof Latia)
-				latia = sif;
-			else if (sif instanceof MinorLoke)
-				minorLoke = sif;
-			else if (sif instanceof Nosia)
-				nosia = sif;
+			if (feature instanceof Mode) // then actually apply the feature
+				mode = feature;
+			else if (feature instanceof Loke)
+				loke = feature;
+			else if (feature instanceof Voze)
+				voze = feature;
+			else if (feature instanceof Silabia)
+				silabia = feature;
+			else if (feature instanceof Longia)
+				longia = feature;
+			else if (feature instanceof Latia)
+				latia = feature;
+			else if (feature instanceof MinorLoke)
+				minorLoke = feature;
+			else if (feature instanceof Nosia)
+				nosia = feature;
 			else {
-				switch (sif) {
-					case PendaniSif.PALATAL:
+				switch (feature) {
+					case Quality.PALATAL:
 						loke = Loke.PALATAL;
 						break;
-					case PendaniSif.VELAR:
+					case Quality.VELAR:
 						loke = Loke.VELAR;
 						break;
-					case PendaniSif.ALVEOLAR:
+					case Quality.ALVEOLAR:
 						loke = Loke.ALVEOLAR;
 						break;
-					case PendaniSif.NASAL:
+					case Quality.NASAL:
 						mode = Mode.NASAL;
 						break;
-					case PendaniSif.HIGH:
-						if (fon.is(PendaniSif.LAX))
+					case Quality.HIGH:
+						if (sound.is(Quality.LAX))
 							mode = Mode.NEAR_CLOSE;
 						else
 							mode = Mode.CLOSE;
 						break;
-					case PendaniSif.MID:
-						if (fon.is(PendaniSif.LAX))
+					case Quality.MID:
+						if (sound.is(Quality.LAX))
 							mode = Mode.OPEN_MID;
 						else
 							mode = Mode.CLOSE_MID;
 						break;
-					case PendaniSif.LOW:
-						if (fon.is(PendaniSif.LAX))
+					case Quality.LOW:
+						if (sound.is(Quality.LAX))
 							mode = Mode.NEAR_OPEN;
 						else
 							mode = Mode.OPEN;
 						break;
-					case PendaniSif.TENSE:
-						if (!fon.is(PendaniSif.VOCOID))
+					case Quality.TENSE:
+						if (!sound.is(Quality.VOCOID))
 							throw RangeError("can't tense a nonvocoid");
 						else if (mode === Mode.NEAR_CLOSE)
 							mode = Mode.CLOSE;
@@ -469,8 +472,8 @@ export class Klas {
 						else if (mode === Mode.NEAR_OPEN)
 							mode = Mode.OPEN;
 						break;
-					case PendaniSif.LAX:
-						if (!fon.is(PendaniSif.VOCOID))
+					case Quality.LAX:
+						if (!sound.is(Quality.VOCOID))
 							throw RangeError("can't lax a nonvocoid");
 						else if (mode === Mode.CLOSE)
 							mode = Mode.NEAR_CLOSE;
@@ -479,25 +482,25 @@ export class Klas {
 						else if (mode === Mode.OPEN)
 							mode = Mode.NEAR_OPEN;
 						break;
-					case PendaniSif.SYLLABIC:
+					case Quality.SYLLABIC:
 						if (silabia === Silabia.NONSYLLABIC)
 							silabia = Silabia.UNSTRESSED;
 						break;
 					default:
-						throw Error(`I can't use ${sif} in the final state of a process.`);
+						throw Error(`I can't use ${feature} in the final state of a process.`);
 				}
 			}
 		}
 
-		for (const akse of this.ka) { // match features from ka
-			if (akse === 'loke')
+		for (const axis of this.tracked) { // match features from ka
+			if (axis === 'loke')
 				loke = ref.loke;
-			else if (akse === 'voze')
+			else if (axis === 'voze')
 				voze = ref.voze;
-			else if (akse === 'minorLoke')
+			else if (axis === 'minorLoke')
 				minorLoke = ref.minorLoke;
 			else
-				throw Error(`I can't understand ${akse}`);
+				throw Error(`I can't understand ${axis}`);
 		}
 
 		if (mode === null || loke === null)
@@ -560,13 +563,13 @@ export class Klas {
 			(mode === Mode.TRILL && loke !== Loke.BILABIAL && loke !== Loke.DENTAL && loke !== Loke.UVULAR) ||
 			(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
 			(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is impossible for whatever reason
-			return fon; // cancel it
+			return sound; // cancel it
 		else // otherwise
-			return new Fon(mode, loke, voze, silabia, longia, latia, minorLoke, nosia); // bring it all together!
+			return new Sound(mode, loke, voze, silabia, longia, latia, minorLoke, nosia); // bring it all together!
 	}
 
 	toString(): string {
-		return `Klas(+[${this.sa}], -[${this.na}])`;
+		return `Klas(+[${this.required}], -[${this.forbidden}])`;
 	}
 }
 

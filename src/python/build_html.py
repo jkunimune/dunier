@@ -27,7 +27,7 @@ for filename in os.listdir('../../res/templates/'):
 		page = page.replace(f'{{.name}}', filename)
 
 		# replace the basic keys
-		with open(f'../../res/tarje/{lang_code}.json', 'r', encoding='utf8') as lang_file:
+		with open(f'../../res/translations/{lang_code}.json', 'r', encoding='utf8') as lang_file:
 			lang = json.load(lang_file)
 		for key, value in lang.items():
 			page = page.replace(f'{{{key}}}', value)

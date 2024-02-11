@@ -123,8 +123,8 @@ export class Toroid extends Surface {
 		return Math.pow(Math.cos(ф), 2) + Math.pow(Math.cos(3*ф), 2);
 	}
 
-	windVelocity(ф: number): {nord: number, dong: number} {
-		return {nord: 0, dong: Math.cos(ф)};
+	windVelocity(ф: number): {north: number, east: number} {
+		return {north: 0, east: Math.cos(ф)};
 	}
 
 	xyz(place: Place): Vector {

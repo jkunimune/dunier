@@ -34,8 +34,8 @@ export class Mercator extends MapProjection {
 	private readonly фRef: number[];
 	private readonly yRef: number[];
 
-	constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
-		super(surface, norde, locus, null, null, null, null);
+	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
+		super(surface, northUp, locus, null, null, null, null);
 
 		this.фRef = surface.refLatitudes;
 		this.yRef = [0];

@@ -22,11 +22,11 @@ header, footer {
     padding-bottom: 1em;
 }
 
-.zemgrafe {
+.map {
     width: 100%;
 }
 
-.zemgrafe-label {
+.map-label {
     font-family: "Noto Serif", "Times New Roman", "Times", serif;
     text-anchor: middle;
     alignment-baseline: middle;
@@ -38,7 +38,7 @@ header, footer {
         height: 75vh;
     }
 
-    .zemgrafe {
+    .map {
         height: 75vh;
     }
 }

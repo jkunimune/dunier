@@ -21,16 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Fon} from "./sound.js";
+import {Sound} from "./sound.js";
 import {Lect} from "./lect.js";
 import {transcribe} from "./script.js";
 
 export class Word {
-	public readonly segments: Fon[];
+	public readonly segments: Sound[];
 	public readonly language: Lect;
 	public readonly length: number;
 
-	constructor(segments: Fon[], language: Lect) {
+	constructor(segments: Sound[], language: Lect) {
 		this.segments = segments;
 		this.language = language;
 		this.length = this.segments.length

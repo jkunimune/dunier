@@ -58,16 +58,16 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 		format('factbook.demography'), // TODO: bold this
 		18);
 
-	for (const {kultur, abundance} of topick.getCultures())
+	for (const {culture, abundance} of topick.getCultures())
 		doc.addParagraph(
 			format((abundance < 2/3) ?
 				       'factbook.demography.minority' :
 				       'factbook.demography.majority',
-			       kultur.getName(),
+			       culture.getName(),
 			       0,
 			       Math.round(abundance*100),
 			       topick.getName()) +
-			kultur.toString(),
+			culture.toString(),
 			12, true);
 }
 

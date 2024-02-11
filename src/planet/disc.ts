@@ -79,8 +79,8 @@ export class Disc extends Surface {
 		return 1.5*(Math.sin(2*ф)**2 + Math.sin(3*ф)**2 - 0.5);
 	}
 
-	windVelocity(ф: number): {nord: number, dong: number} {
-		return {nord: Math.sin(2*ф), dong: 0};
+	windVelocity(ф: number): {north: number, east: number} {
+		return {north: Math.sin(2*ф), east: 0};
 	}
 
 	xyz(place: Place): Vector {

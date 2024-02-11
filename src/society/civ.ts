@@ -22,10 +22,10 @@
  * SOFTWARE.
  */
 import {Nodo} from "../planet/surface.js";
-import {Lect, LogaTipo} from "../language/lect.js";
+import {Lect, WordType} from "../language/lect.js";
 import {Random} from "../util/random.js";
 import {World} from "./world.js";
-import {Kultur} from "./culture.js";
+import {Culture} from "./culture.js";
 import {Word} from "../language/word.js";
 import {TreeMap} from "../util/treemap.js";
 import {Biome} from "./terrain.js";
@@ -68,7 +68,7 @@ export class Civ {
 
 		this.capital = capital;
 		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
-			capital.kultur = new Kultur(null, capital, this, rng.next() + 1); // make up a proto-kultur (offset the seed to increase variability)
+			capital.culture = new Culture(null, capital, this, rng.next() + 1); // make up a proto-culture (offset the seed to increase variability)
 		this.conquer(capital, null);
 	}
 
@@ -118,7 +118,7 @@ export class Civ {
 					this._conquer(child, tile, loser);
 		}
 		else {
-				tile.kultur = this.capital.kultur; // perpetuate the ruling culture
+				tile.culture = this.capital.culture; // perpetuate the ruling culture
 		}
 	}
 
@@ -152,16 +152,16 @@ export class Civ {
 	 * @param rng the random number generator to use for the update
 	 */
 	update(rng: Random) {
-		const newKultur: Map<Lect, Kultur> = new Map();
-		newKultur.set(this.capital.kultur.lect.macrolanguage, new Kultur(this.capital.kultur, this.capital, this, rng.next())); // start by updating the capital, tying it to the new homeland
+		const newKultur: Map<Lect, Culture> = new Map();
+		newKultur.set(this.capital.culture.lect.macrolanguage, new Culture(this.capital.culture, this.capital, this, rng.next())); // start by updating the capital, tying it to the new homeland
 		for (const nodo of this.nodos) { // update the culture of each node in the empire in turn
 			if (rng.probability(World.timeStep/CULTURAL_MEMORY)) { // if the province fails its heritage saving throw
-				nodo.kultur = this.capital.kultur; // its culture gets overritten
+				nodo.culture = this.capital.culture; // its culture gets overritten
 			}
 			else { // otherwise update it normally
-				if (!newKultur.has(nodo.kultur.lect.macrolanguage)) // if anyone isn't already in the thing
-					newKultur.set(nodo.kultur.lect.macrolanguage, new Kultur(nodo.kultur, null, this, rng.next() + 1)); // update that culture, treating it as a diaspora
-				nodo.kultur = newKultur.get(nodo.kultur.lect.macrolanguage); // then make the assinement
+				if (!newKultur.has(nodo.culture.lect.macrolanguage)) // if anyone isn't already in the thing
+					newKultur.set(nodo.culture.lect.macrolanguage, new Culture(nodo.culture, null, this, rng.next() + 1)); // update that culture, treating it as a diaspora
+				nodo.culture = newKultur.get(nodo.culture.lect.macrolanguage); // then make the assinement
 			}
 		}
 
@@ -182,8 +182,8 @@ export class Civ {
 		const momentum = this.getStrength(invadee, end);
 		const resistance = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
 		const distance = start.neighbors.get(end).length;
-		const elevation = start.gawe - end.gawe;
-		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation)/end.pasablia;
+		const elevation = start.height - end.height;
+		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation)/end.passability;
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
 			return distanceEff/World.imperialism/(momentum - resistance);
 		else
@@ -204,7 +204,7 @@ export class Civ {
 	 */
 	getStrength(kontra: Civ, sa: Nodo) : number {
 		let linguisticModifier = 1;
-		if (kontra !== null && sa.kultur.lect.isIntelligible(this.capital.kultur.lect))
+		if (kontra !== null && sa.culture.lect.isIntelligible(this.capital.culture.lect))
 			linguisticModifier = World.nationalism;
 		return this.militarism*this.technology*linguisticModifier;
 	}
@@ -215,7 +215,7 @@ export class Civ {
 	getArea(): number {
 		let area = 0;
 		for (const nodo of this.nodos)
-			if (nodo.biome !== Biome.HAI) // TODO: save this in a dynamically updating variable like the arable area
+			if (nodo.biome !== Biome.OCEAN) // TODO: save this in a dynamically updating variable like the arable area
 				area += nodo.getArea();
 		return area;
 	}
@@ -224,24 +224,24 @@ export class Civ {
 	 * list the cultures present in this country, along with each's share of the
 	 * population, starting with the ruling class and then in descending order by pop.
 	 */
-	getCultures(): { kultur: Kultur, abundance: number }[] {
+	getCultures(): { culture: Culture, abundance: number }[] {
 		// count up the population fraccion of each culture
-		const kulturMap = new Map<Kultur, number>();
+		const cultureMap = new Map<Culture, number>();
 		for (const nodo of this.nodos) {
-			const kulturPopula = kulturMap.has(nodo.kultur) ?
-				kulturMap.get(nodo.kultur) : 0;
-			kulturMap.set(nodo.kultur, kulturPopula + nodo.arableArea/this.getArableArea());
+			const cultureSize = cultureMap.has(nodo.culture) ?
+				cultureMap.get(nodo.culture) : 0;
+			cultureMap.set(nodo.culture, cultureSize + nodo.arableArea/this.getArableArea());
 		}
 		// convert to list and sort
-		const kulturList = [...kulturMap.keys()];
-		kulturList.sort((a, b) => kulturMap.get(b) - kulturMap.get(a));
+		const cultureList = [...cultureMap.keys()];
+		cultureList.sort((a, b) => cultureMap.get(b) - cultureMap.get(a));
 		// then move the capital culture to the top
-		kulturList.splice(kulturList.indexOf(this.capital.kultur), 1);
-		kulturList.splice(0, 0, this.capital.kultur);
+		cultureList.splice(cultureList.indexOf(this.capital.culture), 1);
+		cultureList.splice(0, 0, this.capital.culture);
 		// finally, bild the output object
 		const output = [];
-		for (const kultur of kulturList)
-			output.push({ kultur: kultur, abundance: kulturMap.get(kultur) });
+		for (const culture of cultureList)
+			output.push({ culture: culture, abundance: cultureMap.get(culture) });
 		return output;
 	}
 
@@ -258,8 +258,8 @@ export class Civ {
 	}
 
 	getName(): Word {
-		return this.capital.kultur.lect.getName(
-			this.capital.index.toString(), LogaTipo.DESHA);
+		return this.capital.culture.lect.getName(
+			this.capital.index.toString(), WordType.COUNTRY);
 	}
 
 }

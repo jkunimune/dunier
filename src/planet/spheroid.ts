@@ -121,8 +121,8 @@ export class Spheroid extends Surface {
 		return Math.pow(Math.cos(ф), 2) + Math.pow(Math.cos(3*ф), 2);
 	}
 
-	windVelocity(ф: number): {nord: number, dong: number} {
-		return {nord: 0, dong: Math.cos(ф)}; // realistically this should change direccion, but this formula makes orographs more apparent
+	windVelocity(ф: number): {north: number, east: number} {
+		return {north: 0, east: Math.cos(ф)}; // realistically this should change direccion, but this formula makes orographs more apparent
 	}
 
 	xyz(place: Place): Vector {

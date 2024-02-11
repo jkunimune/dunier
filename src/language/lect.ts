@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 import {Random} from "../util/random.js";
-import {Fon} from "./sound.js";
-import {DEFAULT_ACENTE, Proces, PROCES_CHUZABLE} from "./process.js";
+import {Sound} from "./sound.js";
+import {DEFAULT_STRESS, Process, PROCESS_OPTIONS} from "./process.js";
 import {ipa} from "./script.js";
 import {Word} from "./word.js";
 import {Enumify} from "../lib/enumify.js";
@@ -36,18 +36,18 @@ const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes
 /**
  * different types of nym
  */
-export class LogaTipo extends Enumify {
+export class WordType extends Enumify {
 	public readonly index: number;
 	public readonly numClassifiers: number;
 	public readonly asString: string;
 
-	static NAS = new LogaTipo(0, 1, 'people');
-	static BASHA = new LogaTipo(1, 1, 'language');
-	static DESHA = new LogaTipo(2, 3, 'country');
-	static SITI = new LogaTipo(3, 6, 'city');
-	static FAMILI = new LogaTipo(4, 12, 'family');
-	static ALO = new LogaTipo(5, 0, 'other');
-	static _ = LogaTipo.closeEnum();
+	static PEOPLE = new WordType(0, 1, 'people');
+	static LANGUAGE = new WordType(1, 1, 'language');
+	static COUNTRY = new WordType(2, 3, 'country');
+	static CITY = new WordType(3, 6, 'city');
+	static FAMILY = new WordType(4, 12, 'family');
+	static OTHER = new WordType(5, 0, 'other');
+	static _ = WordType.closeEnum();
 
 	constructor(index: number, numClassifiers: number, asString: string) {
 		super();
@@ -75,7 +75,7 @@ export abstract class Lect {
 	 * @param index the pseudorandom seed of the name
 	 * @param tipo the type of name
 	 */
-	abstract getName(index: string, tipo: LogaTipo): Word;
+	abstract getName(index: string, tipo: WordType): Word;
 
 	/**
 	 * get the language that this was n timesteps ago
@@ -108,9 +108,9 @@ export class ProtoLang extends Lect {
 	private readonly nVowel: number; // the number of vowels in this langugage
 	private readonly nMedial: number; // the numer of medials in this language
 	private readonly complexity: number; // the approximate amount of information in one syllable
-	private readonly name: Map<LogaTipo, Map<string, Word>>; // the word references of each type
-	private readonly classifiers: Map<LogaTipo, Fon[][]>; // the noun classifiers
-	private readonly fin: Fon[][]; // the noun endings
+	private readonly name: Map<WordType, Map<string, Word>>; // the word references of each type
+	private readonly classifiers: Map<WordType, Sound[][]>; // the noun classifiers
+	private readonly fin: Sound[][]; // the noun endings
 
 	constructor(rng: Random) {
 		super(
@@ -130,18 +130,18 @@ export class ProtoLang extends Lect {
 			this.fin.push(this.noveMul('fmncrh'[i], 0.5));
 
 		this.diversity = rng.uniform(0, 1); // choose how much lexical suffixing to do
-		this.name = new Map<LogaTipo, Map<string, Word>>();
-		this.classifiers = new Map<LogaTipo, Fon[][]>();
-		for (const wordType of LogaTipo) {
-			this.name.set(<LogaTipo>wordType, new Map<string, Word>());
-			this.classifiers.set(<LogaTipo>wordType, []);
-			for (let i = 0; i < Math.round(this.diversity*(<LogaTipo>wordType).numClassifiers); i ++) // TODO countries can be named after cities
-				this.classifiers.get(<LogaTipo>wordType).push(
-					this.noveLoga(`${(<LogaTipo>wordType).asString}${i}`, 1.5/this.complexity));
+		this.name = new Map<WordType, Map<string, Word>>();
+		this.classifiers = new Map<WordType, Sound[][]>();
+		for (const wordType of WordType) {
+			this.name.set(<WordType>wordType, new Map<string, Word>());
+			this.classifiers.set(<WordType>wordType, []);
+			for (let i = 0; i < Math.round(this.diversity*(<WordType>wordType).numClassifiers); i ++) // TODO countries can be named after cities
+				this.classifiers.get(<WordType>wordType).push(
+					this.noveLoga(`${(<WordType>wordType).asString}${i}`, 1.5/this.complexity));
 		}
 	}
 
-	getName(index: string, tipo: LogaTipo): Word {
+	getName(index: string, tipo: WordType): Word {
 		if (!this.name.get(tipo).has(index)) {
 			const base = this.noveLoga(index, 4/this.complexity); // get the base
 
@@ -154,13 +154,13 @@ export class ProtoLang extends Lect {
 				const classifierOptions = this.classifiers.get(tipo);
 				const classifier = rng.choice(classifierOptions);
 				if (this.prefixing)
-					name = classifier.concat([Fon.PAUSE], base);
+					name = classifier.concat([Sound.PAUSE], base);
 				else
-					name = base.concat([Fon.PAUSE], classifier);
+					name = base.concat([Sound.PAUSE], classifier);
 			}
 
 			this.name.get(tipo).set(index,
-				DEFAULT_ACENTE.apply(new Word(name, this)));
+				DEFAULT_STRESS.apply(new Word(name, this)));
 		}
 		return this.name.get(tipo).get(index);
 	}
@@ -170,7 +170,7 @@ export class ProtoLang extends Lect {
 	 * @param index the pseudorandom seed for this root
 	 * @param syllables the number of syllables in the root
 	 */
-	noveLoga(index: string, syllables: number): Fon[] {
+	noveLoga(index: string, syllables: number): Sound[] {
 		const root = this.noveMul(index, syllables);
 		if (this.fin.length === 0)
 			return root;
@@ -190,7 +190,7 @@ export class ProtoLang extends Lect {
 	 * @param index the pseudorandom seed for this root as a lowercase base-36 string
 	 * @param syllables the number of syllables in this root
 	 */
-	noveMul(index: string, syllables: number): Fon[] {
+	noveMul(index: string, syllables: number): Sound[] {
 		const seed = decodeBase37(index);
 		const rng = new Random(seed);
 		const syllableNumber = Math.ceil(syllables);
@@ -220,7 +220,7 @@ export class ProtoLang extends Lect {
 
 export class Dialect extends Lect {
 	private readonly parent: Lect;
-	private readonly changes: Proces[];
+	private readonly changes: Process[];
 
 	constructor(parent: Lect, rng: Random) {
 		super(parent.defaultStyle, parent.prefixing);
@@ -228,12 +228,12 @@ export class Dialect extends Lect {
 		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 
 		this.changes = [];
-		for (const {chanse, proces} of PROCES_CHUZABLE)
+		for (const {chanse, proces} of PROCESS_OPTIONS)
 			if (rng.probability(chanse))
 				this.changes.push(proces);
 	}
 
-	getName(index: string, tipo: LogaTipo) {
+	getName(index: string, tipo: WordType) {
 		return this.applyChanges(this.parent.getName(index, tipo));
 	}
 

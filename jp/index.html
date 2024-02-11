@@ -25,11 +25,11 @@
             dunia hamar
           </a>
 
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#siri-daweurekia" aria-controls="siri-daweurekia" aria-expanded="false" aria-label="ナビゲーションのトグル">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="ナビゲーションのトグル">
             <span class="navbar-toggler-icon"></span>
           </button>
 
-          <div class="collapse navbar-collapse" id="siri-daweurekia">
+          <div class="collapse navbar-collapse" id="toggle-navbar">
             <div class="navbar-nav">
               <a class="nav-item nav-link" href="./index.html">地図生成 <span class="sr-only">（現行）</span></a>
               <a class="nav-item nav-link" href="./nam.html">名生成</a>
@@ -125,9 +125,9 @@
             <div class="form-group">
               <label for="planet-type">形態</label>
               <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value);">
-                <option selected value="bol">扁球</option>
-                <option value="wen">環状</option>
-                <option value="plate">平面</option>
+                <option selected value="spheroid">扁球</option>
+                <option value="toroid">環状</option>
+                <option value="plane">平面</option>
               </select>
             </div>
             <div class="form-group">
@@ -153,10 +153,10 @@
               <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
             </div>
             <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
-              <span id="planet-redi" style="display: none">
+              <span id="planet-ready" style="display: none">
                 適用
               </span>
-              <span id="planet-lada" role="status">
+              <span id="planet-loading" role="status">
                 <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
                 お待ちください…
               </span>
@@ -164,7 +164,7 @@
           </form>
         </div>
 
-        <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9" id="planet-map">
+        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9" id="planet-map">
         </div>
       </div>
     </div>
@@ -174,16 +174,16 @@
         <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
           <form>
             <div class="form-group">
-              <label for="terrain-sem">擬似乱数列の初期値</label>
-              <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-sem"/>
+              <label for="terrain-seed">擬似乱数列の初期値</label>
+              <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-seed"/>
             </div>
             <div class="form-group">
               <label for="terrain-continents">大陸の数</label>
               <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
             </div>
             <div class="form-group">
-              <label for="terrain-hay">海面</label>
-              <select class="custom-select" id="terrain-hay">
+              <label for="terrain-sea-level">海面</label>
+              <select class="custom-select" id="terrain-sea-level">
                 <option value="4">超高</option>
                 <option value="3">特高</option>
                 <option value="2">高</option>
@@ -194,18 +194,18 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="terrain-terme">表面温度</label>
-              <select class="custom-select" id="terrain-terme">
+              <label for="terrain-temperature">表面温度</label>
+              <select class="custom-select" id="terrain-temperature">
                 <option value="308">高</option>
                 <option selected value="288">中</option>
                 <option value="268">低</option>
               </select>
             </div>
             <button type="button" class="btn btn-block btn-primary" id="terrain-apply" disabled>
-              <span id="terrain-redi" style="display: none">
+              <span id="terrain-ready" style="display: none">
                 適用
               </span>
-              <span id="terrain-lada" role="status">
+              <span id="terrain-loading" role="status">
                 <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
                 お待ちください…
               </span>
@@ -213,7 +213,7 @@
           </form>
         </div>
 
-        <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
+        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
           <svg xmlns="http://www.w3.org/2000/svg"
                viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
           </svg>
@@ -226,16 +226,16 @@
         <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
           <form>
             <div class="form-group">
-              <label for="history-sem">擬似乱数列の初期値</label>
-              <input type="number" value="0" min="0" max="99999999" step="1" id="history-sem"/>
+              <label for="history-seed">擬似乱数列の初期値</label>
+              <input type="number" value="0" min="0" max="99999999" step="1" id="history-seed"/>
             </div>
             <div class="form-group">
-              <label for="history-nen">時代</label>
-              <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="年" id="history-nen"/>
+              <label for="history-year">時代</label>
+              <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="年" id="history-year"/>
             </div>
             <div class="form-group">
-              <label for="history-katastrof">大変革</label>
-              <select class="custom-select" id="history-katastrof">
+              <label for="history-meteors">大変革</label>
+              <select class="custom-select" id="history-meteors">
                 <option selected value="0">無</option>
                 <option value="1e-4">一つ</option>
                 <option value="1e-3">一つ毎年</option>
@@ -243,10 +243,10 @@
               </select>
             </div>
             <button type="button" class="btn btn-block btn-primary" id="history-apply" disabled>
-              <span id="history-redi" style="display: none">
+              <span id="history-ready" style="display: none">
                 適用
               </span>
-              <span id="history-lada" role="status">
+              <span id="history-loading" role="status">
                 <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
                 お待ちください…
               </span>
@@ -254,7 +254,7 @@
           </form>
         </div>
 
-        <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
+        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
           <svg xmlns="http://www.w3.org/2000/svg"
                viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
           </svg>
@@ -279,19 +279,19 @@
                   <div class="form-group">
                     <label for="map-projection">図法</label>
                     <select class="custom-select" id="map-projection">
-                      <option value="equirectangular">円筒</option>
-                      <option value="mercator">航海</option>
-                      <option value="azimuthal-equidistant">丸い</option>
-                      <option value="eckert">正積</option>
-                      <option selected value="bonne">地域的　（中世）</option>
-                      <option value="conic">地域的　（現代）</option>
+                      <option value="basic">円筒</option>
+                      <option value="navigational">航海</option>
+                      <option value="polar">丸い</option>
+                      <option value="equal_area">正積</option>
+                      <option selected value="classical">地域的　（中世）</option>
+                      <option value="modern">地域的　（現代）</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-dish">方向</label>
-                    <select class="custom-select" id="map-dish">
-                      <option selected value="norde">北は上</option>
-                      <option value="sude">南は上</option>
+                    <label for="map-orientation">方向</label>
+                    <select class="custom-select" id="map-orientation">
+                      <option selected value="north">北は上</option>
+                      <option value="south">南は上</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -315,69 +315,69 @@
               <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-zemrang">地の色</label>
-                    <select class="custom-select" id="map-zemrang">
-                      <option value="baki">白色</option>
-                      <option value="huyi">灰色</option>
-                      <option selected value="jivi">生物群系</option>
-                      <option value="politiki">政治</option>
-                      <option value="gawia">高度</option>
+                    <label for="map-land-color">地の色</label>
+                    <select class="custom-select" id="map-land-color">
+                      <option value="white">白色</option>
+                      <option value="gray">灰色</option>
+                      <option selected value="physical">生物群系</option>
+                      <option value="political">政治</option>
+                      <option value="heightmap">高度</option>
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-hayrang">海の色</label>
-                    <select class="custom-select" id="map-hayrang">
-                      <option value="baki">白色</option>
-                      <option value="huyi">灰色</option>
-                      <option selected value="nili">青色</option>
-                      <option value="cerni">黒色</option>
-                      <option value="gawia">高度</option>
+                    <label for="map-sea-color">海の色</label>
+                    <select class="custom-select" id="map-sea-color">
+                      <option value="white">白色</option>
+                      <option value="gray">灰色</option>
+                      <option selected value="blue">青色</option>
+                      <option value="black">黒色</option>
+                      <option value="heightmap">高度</option>
                     </select>
                   </div>
                   <div class="form-group">
                     <label for="map-filter">フィルター</label>
                     <select class="custom-select" id="map-filter">
-                      <option selected value="nol">皆無</option>
-                      <option value="pili">セピア</option>
-                      <option value="bakocerni">白黒</option>
-                      <option value="mirdi">鈍</option>
+                      <option selected value="none">皆無</option>
+                      <option value="sepia">セピア</option>
+                      <option value="grayscale">白黒</option>
+                      <option value="pastel">鈍</option>
                     </select>
                   </div>
                   <div class="form-group">
                     <h6>地の様式</h6>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="jive" id="map-zemforme-kal" value="kal" checked>
-                      <label class="form-check-label" for="map-zemforme-kal">空</label>
+                      <input class="form-check-input" type="radio" name="land-style" id="map-land-plain" value="plain" checked>
+                      <label class="form-check-label" for="map-land-plain">空</label>
                     </div>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="jive" id="map-zemforme-desen" value="desen">
-                      <label class="form-check-label" for="map-zemforme-desen">模様</label>
+                      <input class="form-check-input" type="radio" name="land-style" id="map-land-textured" value="textured">
+                      <label class="form-check-label" for="map-land-textured">模様</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <h6>海の様式</h6>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="hay" id="map-hay-kal" value="kal" checked>
-                      <label class="form-check-label" for="map-hay-kal">空</label>
+                      <input class="form-check-input" type="radio" name="sea-style" id="map-sea-plain" value="plain" checked>
+                      <label class="form-check-label" for="map-sea-plain">空</label>
                     </div>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="hay" id="map-hay-linye" value="linye">
-                      <label class="form-check-label" for="map-hay-linye">模様</label>
+                      <input class="form-check-input" type="radio" name="sea-style" id="map-sea-textured" value="textured">
+                      <label class="form-check-label" for="map-sea-textured">模様</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <h6>市の様式</h6>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="site" id="map-site-nol" value="kal" checked>
-                      <label class="form-check-label" for="map-site-nol">空</label>
+                      <input class="form-check-input" type="radio" name="city-style" id="map-city-none" value="none" checked>
+                      <label class="form-check-label" for="map-city-none">空</label>
                     </div>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="site" id="map-site-binde" value="binde">
-                      <label class="form-check-label" for="map-site-binde">点</label>
+                      <input class="form-check-input" type="radio" name="city-style" id="map-city-dots" value="dots">
+                      <label class="form-check-label" for="map-city-dots">点</label>
                     </div>
                     <div class="form-check">
-                      <input class="form-check-input" type="radio" name="site" id="map-site-grafe" value="desen">
-                      <label class="form-check-label" for="map-site-grafe">模様</label>
+                      <input class="form-check-input" type="radio" name="city-style" id="map-city-textured" value="textured">
+                      <label class="form-check-label" for="map-city-textured">模様</label>
                     </div>
                   </div>
                 </div>
@@ -395,50 +395,50 @@
                 <div class="card-body">
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-nade">
-                      <label class="custom-control-label" for="map-nade">川</label>
+                      <input type="checkbox" class="custom-control-input" id="map-rivers">
+                      <label class="custom-control-label" for="map-rivers">川</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-kenar" checked>
-                      <label class="custom-control-label" for="map-kenar">国境</label>
+                      <input type="checkbox" class="custom-control-input" id="map-borders" checked>
+                      <label class="custom-control-label" for="map-borders">国境</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-say">
-                      <label class="custom-control-label" for="map-say">地形の影</label>
+                      <input type="checkbox" class="custom-control-input" id="map-shading">
+                      <label class="custom-control-label" for="map-shading">地形の影</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-zemnete">
-                      <label class="custom-control-label" for="map-zemnete">経緯線網</label>
+                      <input type="checkbox" class="custom-control-input" id="map-graticule">
+                      <label class="custom-control-label" for="map-graticule">経緯線網</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-dawnete">
-                      <label class="custom-control-label" for="map-dawnete">航路網</label>
+                      <input type="checkbox" class="custom-control-input" id="map-rhumb-net">
+                      <label class="custom-control-label" for="map-rhumb-net">航路網</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-pontopine">
-                      <label class="custom-control-label" for="map-pontopine">羅針図</label>
+                      <input type="checkbox" class="custom-control-input" id="map-windrose">
+                      <label class="custom-control-label" for="map-windrose">羅針図</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-deshnam" checked>
-                      <label class="custom-control-label" for="map-deshnam">国名札</label>
+                      <input type="checkbox" class="custom-control-input" id="map-political-labels" checked>
+                      <label class="custom-control-label" for="map-political-labels">国名札</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-shannam">
-                      <label class="custom-control-label" for="map-shannam">地相名札</label>
+                      <input type="checkbox" class="custom-control-input" id="map-physical-labels">
+                      <label class="custom-control-label" for="map-physical-labels">地相名札</label>
                     </div>
                   </div>
                 </div>
@@ -455,8 +455,8 @@
               <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-bash">翻字</label>
-                    <select class="custom-select" id="map-bash">
+                    <label for="map-spelling">翻字</label>
+                    <select class="custom-select" id="map-spelling">
                       <option selected value="null">現代</option>
                       <option value="en">英語</option>
                       <option value="es">スペイン語</option>
@@ -467,36 +467,36 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-grosta">幅</label>
-                    <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-grosta"/>
+                    <label for="map-width">幅</label>
+                    <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-width"/>
                   </div>
                   <div class="form-group">
-                    <label for="map-gauta">高さ</label>
-                    <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-gauta"/>
+                    <label for="map-height">高さ</label>
+                    <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-height"/>
                   </div>
                   <div class="form-group">
-                    <label for="map-dpi">解像度</label>
-                    <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-dpi"/>
+                    <label for="map-resolution">解像度</label>
+                    <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-resolution"/>
                   </div>
                 </div>
               </div>
             </div>
             <button type="button" class="btn btn-block btn-primary mt-2" id="map-apply" disabled>
-              <span id="map-redi" style="display: none">
+              <span id="map-ready" style="display: none">
                 適用
               </span>
-              <span id="map-lada" role="status">
+              <span id="map-loading" role="status">
                 <img src="/res/lada.gif" height="20" aria-hidden="true" alt="">
                 お待ちください…
               </span>
             </button>
-            <button type="button" class="btn btn-block btn-primary" id="map-sekura" disabled>
+            <button type="button" class="btn btn-block btn-primary" id="map-download" disabled>
               ダウンロード
             </button>
           </form>
         </div>
 
-        <div class="zemgrafe col-xs-12 col-md-7 col-lg-8 col-xl-9">
+        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
           <svg xmlns="http://www.w3.org/2000/svg"
                viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
           </svg>
@@ -513,6 +513,7 @@
     </div>
   </div>
 </div>
+
     </main>
 
       <footer>

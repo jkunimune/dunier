@@ -30,8 +30,8 @@ export class Conic extends MapProjection {
 	private readonly yJong: number;
 	private readonly n: number;
 
-	public constructor(surface: Surface, norde: boolean, locus: PathSegment[]) {
-		super(surface, norde, locus,
+	public constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
+		super(surface, northUp, locus,
 			null, null, null, null);
 
 		const focus = MapProjection.standardParallels(locus, this);

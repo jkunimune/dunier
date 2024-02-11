@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import {
-	Fon,
+	Sound,
 	Klas,
 	Latia,
 	Loke,
@@ -30,9 +30,9 @@ import {
 	MinorLoke,
 	Mode,
 	Nosia,
-	PendaniSif,
-	Sif,
-	SIF_TIPE,
+	Quality,
+	Feature,
+	FEATURE_TYPES,
 	Silabia,
 	Voze
 } from "./sound.js";
@@ -43,30 +43,30 @@ import {Word} from "./word.js";
 /**
  * a process by which words change over time
  */
-export interface Proces {
+export interface Process {
 	apply(old: Word): Word;
 }
 
 /**
  * a process that causes segments to change according to a rule
  */
-class FonMute implements Proces {
-	private readonly ca: Klas[]; // original value
-	private readonly pa: Klas[]; // target value
+class SoundChange implements Process {
+	private readonly pattern: Klas[]; // original value
+	private readonly result: Klas[]; // target value
 	private readonly idx: number[]; // reference indices for target phones
-	private readonly chen: Klas[]; // requisite predecessor
-	private readonly bade: Klas[]; // requisite follow-up
+	private readonly pre: Klas[]; // requisite predecessor
+	private readonly post: Klas[]; // requisite follow-up
 
-	constructor(ca: Klas[], pa: Klas[], idx: number[], bada: Klas[], chena: Klas[]) {
-		if (idx.length !== pa.length)
-			throw RangeError(`The pa array must be properly indexed: ${ca} > ${pa} / ${bada} _ ${chena}`);
-		if (pa.length === 0 && bada.every((klas) => klas.macha(Fon.PAUSE)) && chena.every((klas) => klas.macha(Fon.PAUSE)))
-			throw RangeError(`this deletion event is unchecked: ${ca} > ${pa} / ${bada} _ ${chena}`);
-		this.ca = ca;
-		this.pa = pa;
+	constructor(from: Klas[], to: Klas[], idx: number[], after: Klas[], before: Klas[]) {
+		if (idx.length !== to.length)
+			throw RangeError(`The pa array must be properly indexed: ${from} > ${to} / ${after} _ ${before}`);
+		if (to.length === 0 && after.every((klas) => klas.matches(Sound.PAUSE)) && before.every((klas) => klas.matches(Sound.PAUSE)))
+			throw RangeError(`this deletion event is unchecked: ${from} > ${to} / ${after} _ ${before}`);
+		this.pattern = from;
+		this.result = to;
 		this.idx = idx;
-		this.chen = bada;
-		this.bade = chena;
+		this.pre = after;
+		this.post = before;
 	}
 
 	/**
@@ -74,19 +74,19 @@ class FonMute implements Proces {
 	 * @param old
 	 */
 	apply(old: Word): Word {
-		const drowWen: Fon[] = []; // build the neWword in reverse
+		const drowWen: Sound[] = []; // build the neWword in reverse
 		let i = old.length;
 		while (i >= 0) {
-			if (this.applies([Fon.PAUSE].concat(old.segments.slice(0, i)), [Fon.PAUSE].concat(drowWen))) { // if it applies here,
-				for (let j = this.pa.length - 1; j >= 0; j --) { // fill in the replacement
-					if (this.idx[j] < this.ca.length)
-						drowWen.push(this.pa[j].konformu(
-							old.segments[i + this.idx[j] - this.ca.length], // mapping to the relevant old segments
-							this.bade.length > 0 ? old.segments[i] : old.segments[i-1]));
+			if (this.applies([Sound.PAUSE].concat(old.segments.slice(0, i)), [Sound.PAUSE].concat(drowWen))) { // if it applies here,
+				for (let j = this.result.length - 1; j >= 0; j --) { // fill in the replacement
+					if (this.idx[j] < this.pattern.length)
+						drowWen.push(this.result[j].apply(
+							old.segments[i + this.idx[j] - this.pattern.length], // mapping to the relevant old segments
+							this.post.length > 0 ? old.segments[i] : old.segments[i-1]));
 					else
-						drowWen.push(this.pa[j].konformu()); // or drawing new segments from thin air
+						drowWen.push(this.result[j].apply()); // or drawing new segments from thin air
 				}
-				i -= this.ca.length; // and jump to the next set of consonants
+				i -= this.pattern.length; // and jump to the next set of consonants
 			}
 			else { // if not
 				i -= 1;
@@ -101,20 +101,20 @@ class FonMute implements Proces {
 	 * @param oldWord the unchanged word where we are considering making the change
 	 * @param novWord the changed following section of the word, reversed
 	 */
-	applies(oldWord: Fon[], novWord: Fon[]) {
-		if (this.chen.length + this.ca.length > oldWord.length || this.bade.length > novWord.length)
+	applies(oldWord: Sound[], novWord: Sound[]) {
+		if (this.pre.length + this.pattern.length > oldWord.length || this.post.length > novWord.length)
 			return false;
-		if (this.ca.length === 1 && this.chen.length > 0 && this.bade.length > 0 &&
+		if (this.pattern.length === 1 && this.pre.length > 0 && this.post.length > 0 &&
 			(oldWord[oldWord.length-1].longia === Longia.LONG || oldWord[oldWord.length-1].minorLoke === MinorLoke.PHARYNGEALIZED)) // geminates and emphatics are immune to /X_X processes
 			return false;
-		for (let j = 0; j < this.chen.length; j ++) // start with the left half of the context
-			if (!this.chen[j].macha(oldWord[j - this.ca.length - this.chen.length + oldWord.length])) // check if it matches
+		for (let j = 0; j < this.pre.length; j ++) // start with the left half of the context
+			if (!this.pre[j].matches(oldWord[j - this.pattern.length - this.pre.length + oldWord.length])) // check if it matches
 				return false;
-		for (let j = 0; j < this.ca.length; j ++) // then check the text that will be replaced
-			if (!this.ca[j].macha(oldWord[j - this.ca.length + oldWord.length]))
+		for (let j = 0; j < this.pattern.length; j ++) // then check the text that will be replaced
+			if (!this.pattern[j].matches(oldWord[j - this.pattern.length + oldWord.length]))
 				return false;
-		for (let j = 0; j < this.bade.length; j ++) // then check the right half of the context
-			if (!this.bade[j].macha(novWord[novWord.length - 1 - j]))
+		for (let j = 0; j < this.post.length; j ++) // then check the right half of the context
+			if (!this.post[j].matches(novWord[novWord.length - 1 - j]))
 				return false;
 		return true;
 	}
@@ -123,36 +123,36 @@ class FonMute implements Proces {
 /**
  * a process that causes sounds in the same word to share a feature
  */
-class Harmonia implements Proces {
-	private readonly kutube: Sif[];
+class Harmony implements Process {
+	private readonly kutube: Feature[];
 	private readonly affectsConsonants: boolean;
 
-	constructor(sif: string, affectsConsonants: boolean) {
+	constructor(feature: string, affectsConsonants: boolean) {
 		this.affectsConsonants = affectsConsonants;
-		if (sif === 'front') // then construct the list of "polar" attributes
+		if (feature === 'front') // then construct the list of "polar" attributes
 			this.kutube = [Loke.VELAR, Loke.PALATAL];
-		else if (sif === 'hight')
-			this.kutube = [PendaniSif.LOW, PendaniSif.HIGH];
-		else if (sif === 'round')
+		else if (feature === 'hight')
+			this.kutube = [Quality.LOW, Quality.HIGH];
+		else if (feature === 'round')
 			this.kutube = [MinorLoke.UNROUNDED, MinorLoke.LABIALIZED];
-		else if (sif === 'tense')
-			this.kutube = [PendaniSif.LAX, PendaniSif.TENSE];
+		else if (feature === 'tense')
+			this.kutube = [Quality.LAX, Quality.TENSE];
 		else
-			throw `unrecognized harmony type: ${sif}`;
+			throw `unrecognized harmony type: ${feature}`;
 	}
 
 	apply(old: Word): Word {
-		const nov: Fon[] = new Array<Fon>(old.length);
-		let val: Sif = null;
+		const nov: Sound[] = new Array<Sound>(old.length);
+		let val: Feature = null;
 		for (let i = 0; i < old.length; i ++) { // iterate backwards through the word
 			nov[i] = old.segments[i]; // in most cases, we will just make this the same as it was in the old word
-			if (this.affectsConsonants || !old.segments[i].is(PendaniSif.VOWEL)) { // but if this segment isn't immune
-				for (let sif of this.kutube) { // check its polarity
-					if (old.segments[i].is(sif)) { // if it's polar,
+			if (this.affectsConsonants || !old.segments[i].is(Quality.VOWEL)) { // but if this segment isn't immune
+				for (let feature of this.kutube) { // check its polarity
+					if (old.segments[i].is(feature)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before
 							nov[i] = old.segments[i].with(val); // and add it to the new word
 						else // or read the property to match if we haven't seen this yet
-							val = sif;
+							val = feature;
 						break;
 					} // if it's neutral, just ignore it without resetting val or changing anything
 				}
@@ -165,7 +165,7 @@ class Harmonia implements Proces {
 /**
  * a process that places syllables according to the sonority sequencing constraint
  */
-class SilaboPoze implements Proces {
+class Syllabicization implements Process {
 	private readonly bias: number; // amount to prefer earlier or later syllables
 	private readonly minSonority: number; // minimum allowable sonority of a nucleus
 
@@ -183,8 +183,8 @@ class SilaboPoze implements Proces {
 
 	apply(old: Word): Word {
 		const sonority = [];
-		for (const fon of old.segments) // first calculate the sonorities
-			sonority.push(fon.getSonority());
+		for (const sound of old.segments) // first calculate the sonorities
+			sonority.push(sound.getSonority());
 		const nov = []; // then copy the old word
 		for (let i = 0; i < old.length; i ++) { // and assign syllables accordingly
 			const c = sonority[i];
@@ -192,15 +192,15 @@ class SilaboPoze implements Proces {
 			const r = (i+1 < old.length) ? sonority[i+1] : Number.NEGATIVE_INFINITY;
 			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) { // if it is a peak
 				if (old.segments[i].getSonority() < this.minSonority) {
-					nov.push(new Fon(Mode.OPEN_MID, Loke.CENTRAL, Voze.VOICED,
+					nov.push(new Sound(Mode.OPEN_MID, Loke.CENTRAL, Voze.VOICED,
 						old.segments[i].silabia, Longia.SHORT, Latia.MEDIAN,
-						MinorLoke.UNROUNDED, Nosia.ORAL).with(PendaniSif.SYLLABIC));
+						MinorLoke.UNROUNDED, Nosia.ORAL).with(Quality.SYLLABIC));
 					nov.push(old.segments[i].with(Silabia.NONSYLLABIC)); // insert an epenthetic schwa or
 				}
 				else
-					nov.push(old.segments[i].with(PendaniSif.SYLLABIC)); // make it syllabic
+					nov.push(old.segments[i].with(Quality.SYLLABIC)); // make it syllabic
 			}
-			else if (old.segments[i].is(PendaniSif.SPOKEN)) // otherwise if it is a sound
+			else if (old.segments[i].is(Quality.SPOKEN)) // otherwise if it is a sound
 				nov.push(old.segments[i].with(Silabia.NONSYLLABIC)); // make it nonsyllabic
 			else
 				nov.push(old.segments[i]); // ignore pauses
@@ -213,7 +213,7 @@ class SilaboPoze implements Proces {
 /**
  * a process that places stress according to certain rules
  */
-export class AcentoPoze implements Proces {
+export class StressPlacement implements Process {
 	private readonly reverse: boolean; // whether the primary stress is on the right
 	private readonly headSize: number; // the number of unstressed syllables to put between the word edge and the initial stress
 	private readonly attractors: number; // the minimum weight that attracts stress
@@ -240,10 +240,10 @@ export class AcentoPoze implements Proces {
 		let nuclei: {i: number, weight: number}[] = [];
 		let numC = 1;
 		for (let i = old.length - 1; i >= 0; i --) { // first, tally up the syllables
-			if (!old.segments[i].is(PendaniSif.SPOKEN)) { // skip past any pauses
+			if (!old.segments[i].is(Quality.SPOKEN)) { // skip past any pauses
 				numC = 1;
 			}
-			else if (old.segments[i].is(PendaniSif.SYLLABIC)) { // using syllabicity to identify nuclei
+			else if (old.segments[i].is(Quality.SYLLABIC)) { // using syllabicity to identify nuclei
 				if (old.segments[i].is(Longia.LONG))
 					nuclei.push({i: i, weight: 2}); // long vowels have weight 2
 				else if (numC > 1)
@@ -280,7 +280,7 @@ export class AcentoPoze implements Proces {
 			else            lapse = 0;
 		}
 
-		const nov: Fon[] = old.segments.slice(); // then edit the word
+		const nov: Sound[] = old.segments.slice(); // then edit the word
 		let firstStress = true;
 		for (let i = 0; i < nuclei.length; i ++) {
 			if (!stress[i]) {
@@ -301,112 +301,112 @@ export class AcentoPoze implements Proces {
 }
 
 
-export const DEFAULT_ACENTE = new AcentoPoze(true, 1, 1, 'lapse', false);
+export const DEFAULT_STRESS = new StressPlacement(true, 1, 1, 'lapse', false);
 
-export const PROCES_CHUZABLE: {chanse: number, proces: Proces}[] = [];
-for (const procesKitabe of loadTSV('proces.txt', /\s+/, /%/)) { // load the phonological processes
-	const chanse = Number.parseInt(procesKitabe[0])/1000;
-	if (procesKitabe[1] === 'mute') {
+export const PROCESS_OPTIONS: {chanse: number, proces: Process}[] = [];
+for (const processString of loadTSV('processes.txt', /\s+/, /%/)) { // load the phonological processes
+	const chance = Number.parseInt(processString[0])/1000;
+	if (processString[1] === 'mute') {
 		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
 		let idx: number[] = [];
 		let fen = ca;
-		let sa: Sif[] = null, na: Sif[] = null, ka: string[] = null;
-		for (let sinye of procesKitabe.slice(2)) { // and parse them
-			if (sinye === '>') // > transitions from ca to pa
+		let sa: Feature[] = null, na: Feature[] = null, ka: string[] = null;
+		for (let token of processString.slice(2)) { // and parse them
+			if (token === '>') // > transitions from ca to pa
 				fen = pa;
-			else if (sinye === '_') // _ transitions from badu to chenu
+			else if (token === '_') // _ transitions from badu to chenu
 				fen = chena;
-			else if (sinye === '#') // indicates a word boundary
-				fen.push(new Klas([], [PendaniSif.SPOKEN]));
-			else if (sinye === '/') { // / transitions from pa to badu
+			else if (token === '#') // indicates a word boundary
+				fen.push(new Klas([], [Quality.SPOKEN]));
+			else if (token === '/') { // / transitions from pa to badu
 				if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
-					if (ca.length > 1 && ca.length !== pa.length) throw `please specify indices for ${procesKitabe}`;
+					if (ca.length > 1 && ca.length !== pa.length) throw `please specify indices for ${processString}`;
 					idx = [];
 					for (let i = idx.length; i < pa.length; i++)
 						idx.push(Math.min(i, ca.length - 1));
 				}
 				fen = bada;
 			}
-			else if (sinye === '[') { // [ stars a new phone
+			else if (token === '[') { // [ stars a new phone
 				sa = [];
 				na = [];
 				ka = [];
 			}
-			else if (sinye === ']') { // ] ends the current phone
+			else if (token === ']') { // ] ends the current phone
 				fen.push(new Klas(sa, na, ka));
 				sa = na = ka = null;
 			}
-			else if (sinye.length === 2 && sinye[0] === ']') { // ends the current phone and assigns it a specific reference index
+			else if (token.length === 2 && token[0] === ']') { // ends the current phone and assigns it a specific reference index
 				fen.push(new Klas(sa, na, ka));
-				idx.push(Number.parseInt(sinye[1]));
+				idx.push(Number.parseInt(token[1]));
 				sa = na = ka = null;
 			}
-			else if (sinye.length >= 4) { // features are incorporated into the current phone
-				if (!'+-±'.includes(sinye.charAt(0)))
-					throw RangeError(`unreadable feature descripcion: ${sinye}`);
-				else if (sinye.startsWith('±')) { // either their name goes into ka
+			else if (token.length >= 4) { // features are incorporated into the current phone
+				if (!'+-±'.includes(token.charAt(0)))
+					throw RangeError(`unreadable feature descripcion: ${token}`);
+				else if (token.startsWith('±')) { // either their name goes into ka
 					if (ka === null)
-						throw RangeError(`this ${sinye} doesn't seem to be in brackets.`);
-					ka.push(sinye.slice(1));
+						throw RangeError(`this ${token} doesn't seem to be in brackets.`);
+					ka.push(token.slice(1));
 				}
 				else {
-					const kutube = sinye.startsWith('+') ? sa : na;
+					const kutube = token.startsWith('+') ? sa : na;
 					if (kutube === null)
-						throw RangeError(`this ${sinye} doesn't seem to be in brackets.`);
-					sinye = sinye.slice(1);
-					const starred = sinye.startsWith('!');
-					if (starred) sinye = sinye.slice(1);
-					let val: Sif = null;
-					sifSow:
-						for (const sifKlas of starred ? SIF_TIPE.slice(1) : SIF_TIPE) { // or their value is read
-							for (const sif of sifKlas) {
-								if ((sif.enumKey + typeof (sif)).startsWith(sinye)) {
-									val = sif;
-									break sifSow;
+						throw RangeError(`this ${token} doesn't seem to be in brackets.`);
+					token = token.slice(1);
+					const starred = token.startsWith('!');
+					if (starred) token = token.slice(1);
+					let val: Feature = null;
+					featureSearch:
+						for (const featureType of starred ? FEATURE_TYPES.slice(1) : FEATURE_TYPES) { // or their value is read
+							for (const feature of featureType) {
+								if ((feature.enumKey + typeof (feature)).startsWith(token)) {
+									val = feature;
+									break featureSearch;
 								}
 							}
 						}
 					if (val === null)
-						throw RangeError(`unrecognized feature: ${sinye}`);
+						throw RangeError(`unrecognized feature: ${token}`);
 					kutube.push(val); // and added to sa or na
 				}
 			}
-			else if (ipaSymbol(sinye) !== null) { // IPA symbols are read for their specified features
-				const fon = ipaSymbol(sinye);
+			else if (ipaSymbol(token) !== null) { // IPA symbols are read for their specified features
+				const sound = ipaSymbol(token);
 				fen.push(new Klas([
-					fon.mode, fon.loke, fon.voze, fon.latia, fon.silabia, fon.minorLoke
+					sound.mode, sound.loke, sound.voze, sound.latia, sound.silabia, sound.minorLoke
 				]));
 				idx.push(ca.length); // they index to len(ca), to indicate they don't need any reference foneme
 			}
 			else {
-				throw RangeError(`unintelligible symbol near line ${PROCES_CHUZABLE.length}: ${sinye}`);
+				throw RangeError(`unintelligible symbol near line ${PROCESS_OPTIONS.length}: ${token}`);
 			}
 		}
-		PROCES_CHUZABLE.push({chanse: chanse, proces:
-				new FonMute(ca, pa, idx, bada, chena)});
+		PROCESS_OPTIONS.push({chanse: chance, proces:
+				new SoundChange(ca, pa, idx, bada, chena)});
 	}
-	else if (procesKitabe[1] === 'harmonia') {
-		const sif = procesKitabe[2];
-		const affectsConsonants = procesKitabe[3] === 'all';
-		PROCES_CHUZABLE.push({chanse: chanse, proces:
-				new Harmonia(sif, affectsConsonants)});
+	else if (processString[1] === 'harmonia') {
+		const feature = processString[2];
+		const affectsConsonants = processString[3] === 'all';
+		PROCESS_OPTIONS.push({chanse: chance, proces:
+				new Harmony(feature, affectsConsonants)});
 	}
-	else if (procesKitabe[1] === 'acente') {
-		const reverse = procesKitabe[2] === 'right';
-		const headSize = Number.parseInt(procesKitabe[3]);
+	else if (processString[1] === 'acente') {
+		const reverse = processString[2] === 'right';
+		const headSize = Number.parseInt(processString[3]);
 		for (let attractors = 1; attractors <= 3; attractors ++)
 			for (const tailMode of ['clash', 'lapse', 'none'])
 				for (const lengthen of [true, false])
-					PROCES_CHUZABLE.push({chanse: chanse/18., proces:
-							new AcentoPoze(reverse, headSize, attractors, tailMode, lengthen)});
+					PROCESS_OPTIONS.push({chanse: chance/18., proces:
+							new StressPlacement(reverse, headSize, attractors, tailMode, lengthen)});
 	}
-	else if (procesKitabe[1] === 'silabe') {
-		const minSilabia = Number.parseInt(procesKitabe[2]);
+	else if (processString[1] === 'silabe') {
+		const minSilabia = Number.parseInt(processString[2]);
 		for (let bias = -1; bias <= 1; bias ++)
-			PROCES_CHUZABLE.push({chanse: chanse/3, proces:
-					new SilaboPoze(bias, minSilabia)});
+			PROCESS_OPTIONS.push({chanse: chance/3, proces:
+					new Syllabicization(bias, minSilabia)});
 	}
 	else {
-		throw `unrecognized process classification: ${procesKitabe[1]}`;
+		throw `unrecognized process classification: ${processString[1]}`;
 	}
 }

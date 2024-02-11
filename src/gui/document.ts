@@ -46,7 +46,7 @@ export class PortableDocument {
 			                  creator: 'dunia hamar',
 		                  });
 
-		this.pdf.addFont("../../res/kitabuforme/NotoSans-Regular.ttf", "NotoSans", "normal");
+		this.pdf.addFont("../../res/fonts/NotoSans-Regular.ttf", "NotoSans", "normal");
 		this.pdf.setFont("NotoSans"); // set font
 
 		this.pdf.text("I have to add something to this page or delete it.", 20, 20, {baseline: 'top'});

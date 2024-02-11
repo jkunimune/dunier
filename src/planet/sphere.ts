@@ -43,8 +43,8 @@ export class Sphere extends Spheroid {
 		return Math.cos(ф);
 	}
 
-	windVelocity(ф: number): {nord: number, dong: number} {
-		return {nord: -Math.cos(ф), dong: 0};
+	windVelocity(ф: number): {north: number, east: number} {
+		return {north: -Math.cos(ф), east: 0};
 	}
 
 	xyz(place: Place): Vector {
