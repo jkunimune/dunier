@@ -12,9 +12,13 @@
       <sourceFolder url="file://$MODULE_DIR$/res" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
-      <excludeFolder url="file://$MODULE_DIR$/bootstrap-4.5.2-dist" />
+      <excludeFolder url="file://$MODULE_DIR$/res/bootstrap-dist" />
       <excludeFolder url="file://$MODULE_DIR$/src/lib" />
       <excludeFolder url="file://$MODULE_DIR$/.idea" />
+      <excludeFolder url="file://$MODULE_DIR$/en" />
+      <excludeFolder url="file://$MODULE_DIR$/es" />
+      <excludeFolder url="file://$MODULE_DIR$/jp" />
+      <excludeFolder url="file://$MODULE_DIR$/pd" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="feather-icons" level="application" />

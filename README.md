@@ -42,6 +42,13 @@ If you edit either of those, you can update the HTML by installing Python 3 and 
 python src/python/build_html.py
 ~~~
 
+The JavaScript has some dependencies, but I just put them all in the Git repository
+(I had to manually modify some of them to work so it seemed the safest option)
+so you shouldn't have to think about them.
+You will need to install Bootstrap.
+Download the [compiled Bootstrap CSS and JavaScript](https://getbootstrap.com/docs/4.0/getting-started/download/),
+put the whole folder in `res/`, and rename it to `bootstrap-dist`.
+
 ## Credits
 
 This project drew heavy inspiration from
