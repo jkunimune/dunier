@@ -14,18 +14,18 @@ for filename in os.listdir('../../res/templates/'):
 	if filename == "base.html" or not filename.endswith(".html"):
 		continue
 	filename = filename[:-5]
-
 	print(f"{filename}")
+
+	# load the template and insert it into the base
+	with open(f'../../res/templates/{filename}.html', 'r', encoding='utf8') as page_file:
+		page = base.replace('{Content}', page_file.read())
+
+	# replace the special key
+	page = page.replace(f'{{.name}}', filename)
+
 	# iterate thru the languages
 	for lang_code in LANGUAGES:
-		# load the template and insert it into the base
 		print(f"  {lang_code}")
-		with open(f'../../res/templates/{filename}.html', 'r', encoding='utf8') as page_file:
-			page = base.replace('{Content}', page_file.read())
-
-		# replace the special key
-		page = page.replace(f'{{.name}}', filename)
-
 		# replace the basic keys
 		with open(f'../../res/translations/{lang_code}.json', 'r', encoding='utf8') as lang_file:
 			lang = json.load(lang_file)
@@ -40,6 +40,7 @@ for filename in os.listdir('../../res/templates/'):
 		page = re.sub(fr'{{If"[^"]*"[^}}]*}}', '', page)
 
 		# save the result
+		os.makedirs(f"../../{lang_code}/", exist_ok=True)
 		with open(f'../../{lang_code}/{filename}.html', 'w', encoding='utf8') as page_file:
 			page_file.write(page)
 		if lang_code == DEFAULT_LANGUAGE:
