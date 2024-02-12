@@ -12,7 +12,7 @@ a list of names in each language, and a 3&thinsp;000 year history of conquest,
 division, and advancement across the world.
 
 Dunier is inspired by previous fantasy map generators like
-[Azgaar's one](https://azgaar.github.io/Fastasy-Map-Generator), but has more of an emphasis
+[Azgaar's one](https://azgaar.github.io/Fantasy-Map-Generator), but has more of an emphasis
 on realism. It is not as interactive as some generators, and it does not generate as
 many fine details like mine locations and diplomatic relations. It does, however,
 account for several features missing in other generators that are noticeable on the
