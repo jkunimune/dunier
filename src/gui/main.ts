@@ -147,13 +147,13 @@ function applyPlanet() {
 				message = format("error.planet_too_fast"); // TODO: it should automaticly bound the day-length at stable values
 			else if (err.message.startsWith("Too slow"))
 				message = format("error.planet_too_slow");
-			DOM.elm('alert-box').append(
+			DOM.elm('alert-box').innerHTML +=
 				"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
 				`  ${message}\n` +
 				"  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>\n" +
 				"    <span aria-hidden='true'>&times;</span>\n" +
 				"  </button>\n" +
-				"</div>");
+				"</div>";
 			return;
 		} else
 			throw err;
