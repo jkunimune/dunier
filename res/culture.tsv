@@ -50,7 +50,7 @@
     fabric
     fishing
     bluntness
-# clothes	0.2
+# clothes	0.3
   ## person
     people
     men
@@ -167,7 +167,7 @@
     buzzed			forbid=hairpin		tech=1900
     greased			tech=1000
     colorful		tech=1850
-# food	0.2
+# food	0.3
   ## attribute
     bland
     sweet
@@ -202,7 +202,7 @@
     insect
     dessert
     group
-# drug	0.2
+# drug	0.3
   ## time
     often
     usually
@@ -222,7 +222,7 @@
     seed
     sap
     fruit
-# house	0.2
+# house	0.3
   ## wall
     pelt			forbid=sedentary
     cloth			forbid=sedentary
@@ -245,7 +245,7 @@
     slatetile		require=sedentary
     metal			require=sedentary	tech=1840
     metaltile		require=sedentary	tech=-300
-# building	0.2
+# building	0.3
   ## feature
     color
     bridge
@@ -325,7 +325,7 @@
     aliens
     monsters
     shapes
-# art	0.2
+# art	0.3
   ## style
     squares
     circles
@@ -368,7 +368,7 @@
     technology
     sex
     romance
-# music	0.2
+# music	0.3
   ## feature
     tetratonic
     pentatonic
@@ -421,7 +421,7 @@
     electronic		forbid=synth		tech=1910
     synthesizer		forbid=synth		tech=1970
     vocaloids		forbid=synth		tech=2005
-# sport	0.2
+# sport	0.3
   ## act
     push
     throw
@@ -469,7 +469,7 @@
     skating			biome!=jungle	biome!=desert	biome!=steamland	biome!=swamp	biome!=plains	biome!=forest
     swimming		require=coastal	biome!=tundra	biome!=taiga	biome!=desert	forbid=roll
     phone			tech=2000
-# custom	0.2
+# custom	0.3
   ## event
     coronation
     spring			require=seasons
