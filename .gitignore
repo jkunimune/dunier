@@ -18,7 +18,7 @@ jp/*.html
 pd/*.html
 
 ### bootstrap ###
-res/bootstrap-dist/*
+res/bootstrap-4.6.2-dist/*
 
 # I am pretty sure I don't need this it's not like my dependencies are complicated
 package-lock.json

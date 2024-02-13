@@ -46,8 +46,9 @@ The JavaScript has some dependencies, but I just put them all in the Git reposit
 (I had to manually modify some of them to work so it seemed the safest option)
 so you shouldn't have to think about them.
 You will need to install Bootstrap.
-Download the [compiled Bootstrap CSS and JavaScript](https://getbootstrap.com/docs/4.0/getting-started/download/),
-put the whole folder in `res/`, and rename it to `bootstrap-dist`.
+Download the [compiled Bootstrap CSS and JavaScript](https://getbootstrap.com/docs/4.6/getting-started/download/)
+(version 4.5 or 4.6 or so), and put the whole folder in `res/`,
+and rename it to `bootstrap-4.6.2-dist` if it's not already named that.
 
 ## Credits
 
