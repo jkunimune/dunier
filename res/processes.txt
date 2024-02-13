@@ -383,6 +383,7 @@
 002 mute > w / [ +LABIAL -GLIDE ] _ [ +VOWEL ]
 010 mute > j / [ -GLIDE ] _ [ +LONG -PALATAL +HIGH +VOWEL ]					% uː > juː
 005 mute > a / [ +MID +VOWEL ] _ [ -VOCOID ] [ +LOW ]
+010 mute [ +GLIDE ] > [ +MID +UNSTRESS ] / [ -VOWEL +SPOKEN ] _                       % kw > kow
 005 mute [ +VOCOID ] [ +OBSTR ] > [ ]0 [ ]1 [ +SHORT +UNSTRESS ]0 / _ [ -CONT ]
 050 mute [ +!NASAL ] > [ ] [ +SHORT +STOP ] / _ [ +LIQ ]					% mr > mbr
 050 mute [ -CORON +!NASAL ] > [ ] [ ±voze +SHORT +STOP ] / _ [ +CORON +STOP ]% md > mbd
