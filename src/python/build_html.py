@@ -18,10 +18,10 @@ for filename in os.listdir('../../res/templates/'):
 
 	# load the template and insert it into the base
 	with open(f'../../res/templates/{filename}.html', 'r', encoding='utf8') as page_file:
-		page = base.replace('{Content}', page_file.read())
+		template = base.replace('{Content}', page_file.read())
 
 	# replace the special key
-	page = page.replace(f'{{.name}}', filename)
+	template = template.replace(f'{{.name}}', filename)
 
 	# iterate thru the languages
 	for lang_code in LANGUAGES:
@@ -29,6 +29,7 @@ for filename in os.listdir('../../res/templates/'):
 		# replace the basic keys
 		with open(f'../../res/translations/{lang_code}.json', 'r', encoding='utf8') as lang_file:
 			lang = json.load(lang_file)
+		page = template
 		for key, value in lang.items():
 			page = page.replace(f'{{{key}}}', value)
 		remaining_keys = re.search(r'{([a-zA-Z0-9-.]+)}', page)
