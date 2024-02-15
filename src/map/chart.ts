@@ -33,6 +33,9 @@ import {assert_xy, endpoint, PathSegment, Place} from "../util/coordinates.js";
 import {chordCenter, Vector} from "../util/geometry.js";
 import {Biome} from "../society/terrain.js";
 
+const DISABLE_GREEBLING = false; // make all lines as simple as possible, for debug purposes
+const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
+
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2
@@ -227,7 +230,7 @@ export class Chart {
 		// add rivers
 		if (rivers) {
 			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= RIVER_DISPLAY_THRESHOLD), // TODO have this depend on map scale
-				g, riverColor, 1.5, Layer.GEO, false);
+				g, riverColor, 1.5, Layer.GEO);
 		}
 
 		// add borders with hovertext
@@ -313,13 +316,12 @@ export class Chart {
 	 * @param color String that HTML can interpret as a color.
 	 * @param width the width of the stroke
 	 * @param greeble what kind of edge it is for the purposes of greebling
-	 * @param smooth whether to apply Bezier smoothing to the curve
 	 * @returns the newly created element comprising all these lines
 	 */
 	stroke(strokes: Iterable<(Nodo | Triangle)[]>, svg: SVGGElement,
-	       color: string, width: number, greeble: Layer, smooth = false): SVGPathElement {
-		let segments = this.projection.project(Chart.aggregate(strokes, greeble), false);
-		if (smooth)
+	       color: string, width: number, greeble: Layer): SVGPathElement {
+		let segments = this.projection.project(Chart.convertToPath(Chart.aggregate(strokes), greeble), false);
+		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
@@ -769,9 +771,8 @@ export class Chart {
 	 * applicable. aggregation may behave unexpectedly if some members of lines contain
 	 * nonendpoints that are endpoints of others.
 	 * @param lines Set of lists of points to be combined and pathified.
-	 * @param greeble what kind of edges these are, for the purpose of greebling
 	 */
-	static aggregate(lines: Iterable<Place[]>, greeble: Layer): PathSegment[] {
+	static aggregate(lines: Iterable<Place[]>): Iterable<Place[]> {
 		const queue = [...lines];
 		const consolidated = new Set<Place[]>(); // first, consolidate
 		const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
@@ -844,7 +845,7 @@ export class Chart {
 			return a;
 		}
 
-		return this.convertToPath(consolidated, greeble);
+		return consolidated;
 	}
 
 	/**
@@ -852,7 +853,7 @@ export class Chart {
 	 * segments to indicate gaps and 'L' segments to indicate connections.  also add
 	 * the greebling where relevant
 	 * @param points each Place[] is a polygonal path thru geographic space
-	 * @param greeble what kinds of connections these are for the purposes of
+	 * @param greeble what kinds of connections these are for the purposes of greebling
 	 */
 	static convertToPath(points: Iterable<Place[]>, greeble: Layer): PathSegment[] {
 		let path = [];
@@ -905,7 +906,9 @@ export class Chart {
 	}
 
 	static weShouldGreeble(edge: Edge, layer: Layer): boolean {
-		if (layer === Layer.GEO)
+		if (DISABLE_GREEBLING)
+			return false;
+		else if (layer === Layer.GEO)
 			return true;
 		else if (edge.node0.isWater() !== edge.node1.isWater())
 			return true;
