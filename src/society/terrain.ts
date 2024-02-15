@@ -47,7 +47,7 @@ const FOREST_INTERCEPT = -40; // °C
 const FOREST_SLOPE = 37; // °C/u
 const MARSH_THRESH = 3.5; // u
 const RIVER_THRESH = -25; // °C
-const LAKE_THRESH = -0.1; // km
+const LAKE_THRESH = 0.05; // km
 
 const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
@@ -441,10 +441,11 @@ function addRivers(surf: Surface): void {
 			for (const beyond of above.neighbors.keys()) { // then look for what comes next
 				if (beyond !== null) {
 					if (beyond.downstream === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
-						let slope = beyond.height - above.height;
-						if (slope > 0)
-							slope = surf.distance(beyond, above); // only normalize slope by run if it is downhill
-						riverQueue.push({below: above, above: beyond, slope: slope});
+						if (beyond.height >= above.height)
+							riverQueue.push({
+								below: above, above: beyond,
+								slope: (beyond.height - above.height) / surf.distance(beyond, above)
+							});
 					}
 				}
 			}
@@ -510,7 +511,8 @@ function addRivers(surf: Surface): void {
 		if (!seenRightEdge) // if there wasn't _any_ adjacent water
 			continue; // then there's nothing to feed the lake
 
-		if (outflow !== null && outflow.height - outflow.downstream.height < LAKE_THRESH) { // if we made it through all that, make an altitude check
+		if (outflow !== null && outflow.downstream !== undefined &&
+			outflow.height - outflow.downstream.height < LAKE_THRESH) { // if we made it through all that, make an altitude check
 			tile.biome = Biome.LAKE; // and assign lake status. you've earned it, tile.
 			for (const neighbor of tile.neighbors.keys())
 				lageQueue.push(); // tell your friends.
