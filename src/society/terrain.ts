@@ -47,7 +47,6 @@ const FOREST_INTERCEPT = -40; // °C
 const FOREST_SLOPE = 37; // °C/u
 const MARSH_THRESH = 3.5; // u
 const RIVER_THRESH = -25; // °C
-const LAKE_THRESH = -0.1; // km
 
 const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
@@ -415,106 +414,68 @@ function fillOcean(level: number, surf: Surface): void {
 function addRivers(surf: Surface): void {
 	for (const vertex of surf.triangles) {
 		vertex.height = 0; // first define altitudes for vertices, which only matters for this one purpose
-		for (const tile of vertex.vertices)
-			vertex.height += tile.height/vertex.vertices.length;
-	}
-
-	const riverDistance: Map<Nodo | Triangle, number> = new Map();
-
-	const riverQueue: Queue<{below: Nodo | Triangle, above: Triangle, slope: number}> = new Queue(
-		[], (a, b) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
-	for (const vertex of surf.triangles) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
+		let anySea = false;
+		let anyLand = false;
 		for (const tile of vertex.vertices) {
-			if (tile.biome === Biome.OCEAN) {
-				riverDistance.set(tile, 0);
-				riverQueue.push({below: tile, above: vertex, slope: Number.POSITIVE_INFINITY});
+			vertex.height += tile.height / vertex.vertices.length;
+			if (tile.biome === Biome.OCEAN)
+				anySea = true;
+			else
+				anyLand = true;
+			if (anySea && anyLand) {
+				tile.height = 0;
 				break;
 			}
 		}
-	}
 
-	while (!riverQueue.empty()) { // then iteratively extend them
-		const {below, above} = riverQueue.pop(); // pick out the steepest potential river
-		if (above.downstream === undefined) { // if it's available
-			above.downstream = below; // take it
-			riverDistance.set(above, riverDistance.get(below) + 1); // number of steps to delta
-			for (const beyond of above.neighbors.keys()) { // then look for what comes next
-				if (beyond !== null) {
-					if (beyond.downstream === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
-						let slope = beyond.height - above.height;
-						if (slope > 0)
-							slope = surf.distance(beyond, above); // only normalize slope by run if it is downhill
-						riverQueue.push({below: above, above: beyond, slope: slope});
-					}
-				}
-			}
-		}
-	}
-
-	for (const vertex of surf.triangles) {
 		vertex.flow = 0; // define this temporary variable real quick...
 		for (const edge of vertex.neighbors.values())
 			edge.flow = 0;
 	}
 
-	surf.rivers = new Set();
-
-	const flowQueue = new Queue([...surf.triangles],
-		(a: Triangle, b: Triangle) => riverDistance.get(b) - riverDistance.get(a)); // now we need to flow the water downhill
 	const unitArea = surf.area/surf.nodos.size;
-	while (!flowQueue.empty()) {
-		const vertex = flowQueue.pop(); // at each river vertex
-		if (vertex.downstream instanceof Triangle) {
-			for (const tile of vertex.vertices) { // compute the sum of rainfall and inflow (with some adjustments)
-				let nadasle = 1; // base river yield is 1 per tile
-				nadasle += tile.rainfall - (tile.temperature - DESERT_INTERCEPT) / DESERT_SLOPE; // add in biome factor
-				nadasle += tile.height / CLOUD_HEIGHT; // add in mountain sources
-				if (nadasle > 0 && tile.temperature >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
-					vertex.flow += nadasle * unitArea/tile.neighbors.size;
-			}
-			vertex.downstream.flow += vertex.flow; // and pass that flow onto the downstream tile
-			vertex.neighbors.get(vertex.downstream).flow = vertex.flow;
-		}
-		surf.rivers.add([vertex, vertex.downstream]);
+	// now drop rain on the plain and flow it to the nearest river
+	for (const tile of surf.nodos) {
+		let nadasle = 1; // base river yield is 1 per tile
+		nadasle += tile.rainfall - (tile.temperature - DESERT_INTERCEPT) / DESERT_SLOPE; // add in biome factor
+		nadasle += tile.height / CLOUD_HEIGHT; // add in mountain sources
+		if (nadasle > 0 && tile.temperature >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
+			for (const edge of tile.neighbors.keys())
+				tile.leftOf(edge).flow += nadasle*unitArea/tile.neighbors.size;
 	}
 
-	const lageQueue = [...surf.nodos].filter((n: Nodo) => !surf.edge.has(n));
-	queue:
-	while (lageQueue.length > 0) { // now look at the tiles
-		const tile = lageQueue.pop(); // TODO: make lakes more likely to appear on large rivers
-		if (tile.isWater() || tile.temperature < RIVER_THRESH)
-			continue; // ignoring things that are already water or too cold for this
+	// go thru all the vertices from highest to lowest
+	const riverQueue: Queue<Triangle> = new Queue([...surf.triangles],
+		(a, b) => b.height - a.height);
 
-		let seenRightEdge = false; // check that there is up to 1 continuous body of water at its border
-		let outflow = null; // and while you're at it, locate the downstreamest river flowing away
-		const start = <Nodo>tile.neighbors.keys()[Symbol.iterator]().next().value; // pick an arbitrary neighbor
-		let last = start;
-		do {
-			const vertex = tile.leftOf(last); // look at the vertex next to it
-			const next = vertex.widershinsOf(last);
-			if (next.biome === Biome.OCEAN) // ocean adjacent tiles have a slight possibility of become lakes.
-				continue queue; // don't let it happen
-			const lastIsWater = tile.neighbors.get(last).flow > 0 || last.biome === Biome.LAKE;
-			const nextIsWater = tile.neighbors.get(next).flow > 0 || next.biome === Biome.LAKE;
-			const betweenIsWater = last.neighbors.get(next).flow > 0;
-			if ((!lastIsWater && nextIsWater) || (!lastIsWater && !nextIsWater && betweenIsWater)) { // if this has the right edge of a body of water
-				if (seenRightEdge) // if there's already been a right edge
-					continue queue; // then it's not contiguous and this tile is not eligible
-				else
-					seenRightEdge = true;
-			}
-			if (outflow === null || riverDistance.get(vertex) <= riverDistance.get(outflow)) // find the vertex with the most ultimate flow
-				outflow = vertex;
-			last = next;
-		} while (last !== start);
-		if (!seenRightEdge) // if there wasn't _any_ adjacent water
-			continue; // then there's nothing to feed the lake
+	surf.rivers = new Set();
 
-		if (outflow !== null && outflow.height - outflow.downstream.height < LAKE_THRESH) { // if we made it through all that, make an altitude check
-			tile.biome = Biome.LAKE; // and assign lake status. you've earned it, tile.
-			for (const neighbor of tile.neighbors.keys())
-				lageQueue.push(); // tell your friends.
+	while (!riverQueue.empty()) { // then iteratively extend them
+		const vertex = riverQueue.pop(); // pick out the highest unflowed point
+		// decide whither it flows
+		let downstream = null;
+		// first see if can flow into another river
+		for (const neibor of vertex.neighbors.keys())
+			if (neibor.height <= vertex.height && (downstream === null || neibor.height < downstream.height))
+				downstream = neibor;
+		// then see if it can flow into an ocean nodo instead
+		let lowestNeibor = null;
+		for (const neibor of vertex.vertices)
+			if (lowestNeibor === null || neibor.height < lowestNeibor.height)
+				lowestNeibor = neibor;
+		if (lowestNeibor.biome === Biome.OCEAN || downstream === null)
+			downstream = lowestNeibor;
+
+		// finally, propagate the water downstream
+		if (downstream instanceof Triangle) {
+			downstream.flow += vertex.flow;
+			vertex.neighbors.get(downstream).flow = vertex.flow;
 		}
+		// form a lake at the end of every endorheic river
+		else if (downstream instanceof Nodo)
+			if (downstream.biome !== Biome.OCEAN)
+				downstream.biome = Biome.LAKE;
+		surf.rivers.add([vertex, downstream]);
 	}
 }
 
