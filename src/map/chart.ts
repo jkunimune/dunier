@@ -38,7 +38,7 @@ const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no s
 
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
-const RIVER_DISPLAY_THRESHOLD = 3e6; // km^2
+const RIVER_DISPLAY_THRESHOLD = 1e6; // km^2
 const BORDER_SPECIFY_THRESHOLD = 0.51;
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const N_DEGREES = 6; // number of line segments into which to break one radian of arc
