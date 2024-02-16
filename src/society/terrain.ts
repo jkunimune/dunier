@@ -460,7 +460,8 @@ function addRivers(surf: Surface): void {
 
 	surf.rivers = new Set();
 
-	const flowQueue = new Queue([...surf.triangles],
+	const verticesWithRivers = [...surf.triangles].filter((vertex) => riverDistance.has(vertex));
+	const flowQueue = new Queue(verticesWithRivers,
 		(a: Triangle, b: Triangle) => riverDistance.get(b) - riverDistance.get(a)); // now we need to flow the water downhill
 	const unitArea = surf.area/surf.nodos.size;
 	while (!flowQueue.empty()) {
