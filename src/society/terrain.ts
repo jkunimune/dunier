@@ -47,7 +47,8 @@ const FOREST_INTERCEPT = -40; // °C
 const FOREST_SLOPE = 37; // °C/u
 const MARSH_THRESH = 3.5; // u
 const RIVER_THRESH = -25; // °C
-const LAKE_THRESH = 0.05; // km
+const CANYON_DEPTH = 0.1; // km
+const LAKE_THRESH = -0.07; // km
 
 const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
@@ -421,29 +422,30 @@ function addRivers(surf: Surface): void {
 
 	const riverDistance: Map<Nodo | Triangle, number> = new Map();
 
-	const riverQueue: Queue<{below: Nodo | Triangle, above: Triangle, slope: number}> = new Queue(
+	const riverQueue: Queue<{below: Nodo | Triangle, above: Triangle, maxHeight: number, slope: number}> = new Queue(
 		[], (a, b) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
 	for (const vertex of surf.triangles) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
 		for (const tile of vertex.vertices) {
 			if (tile.biome === Biome.OCEAN) {
 				riverDistance.set(tile, 0);
-				riverQueue.push({below: tile, above: vertex, slope: Number.POSITIVE_INFINITY});
+				riverQueue.push({below: tile, above: vertex, maxHeight: 0, slope: Number.POSITIVE_INFINITY});
 				break;
 			}
 		}
 	}
 
 	while (!riverQueue.empty()) { // then iteratively extend them
-		const {below, above} = riverQueue.pop(); // pick out the steepest potential river
+		const {below, above, maxHeight} = riverQueue.pop(); // pick out the steepest potential river
 		if (above.downstream === undefined) { // if it's available
 			above.downstream = below; // take it
 			riverDistance.set(above, riverDistance.get(below) + 1); // number of steps to delta
 			for (const beyond of above.neighbors.keys()) { // then look for what comes next
 				if (beyond !== null) {
 					if (beyond.downstream === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
-						if (beyond.height >= above.height)
+						if (beyond.height >= maxHeight - CANYON_DEPTH)
 							riverQueue.push({
 								below: above, above: beyond,
+								maxHeight: Math.max(maxHeight, beyond.height),
 								slope: (beyond.height - above.height) / surf.distance(beyond, above)
 							});
 					}
