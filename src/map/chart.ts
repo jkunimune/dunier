@@ -45,18 +45,18 @@ const N_DEGREES = 6; // number of line segments into which to break one radian o
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 
 const BIOME_COLORS = new Map([
-	[Biome.OCEAN,         '#06267f'],
-	[Biome.LAKE,         '#06267f'],
-	[Biome.SWAMP,    '#444921'],
-	[Biome.JUNGLE, '#176D0D'],
-	[Biome.FOREST,      '#647F45'],
-	[Biome.TAIGA,       '#4EA069'],
-	[Biome.STEAMLAND,   '#DD9C6F'],
-	[Biome.PLAINS,   '#BED042'],
-	[Biome.DESERT,  '#F5E292'],
-	[Biome.TUNDRA,      '#FFFFFF'],
-	[Biome.ICE,         '#FFFFFF'],
-	[null,              '#FAF2E4'],
+	[Biome.OCEAN,     '#06267f'],
+	[Biome.LAKE,      '#06267f'],
+	[Biome.SWAMP,     '#444921'],
+	[Biome.JUNGLE,    '#176D0D'],
+	[Biome.FOREST,    '#647F45'],
+	[Biome.TAIGA,     '#4EA069'],
+	[Biome.STEAMLAND, '#DD9C6F'],
+	[Biome.PLAINS,    '#BED042'],
+	[Biome.DESERT,    '#F5E292'],
+	[Biome.TUNDRA,    '#FFFFFF'],
+	[Biome.ICE,       '#FFFFFF'],
+	[null,            '#FAF2E4'],
 ]);
 
 const COUNTRY_COLORS = [
