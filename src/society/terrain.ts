@@ -418,16 +418,17 @@ function addRivers(surf: Surface): void {
 		vertex.height = 0; // first define altitudes for vertices, which only matters for this one purpose
 		for (const tile of vertex.vertices)
 			vertex.height += tile.height/vertex.vertices.length;
+		vertex.downstream = null; // also initialize this
 	}
 
-	const riverDistance: Map<Nodo | Triangle, number> = new Map();
-
+	const riverOrder: Map<Triangle, number> = new Map();
+	const riverStack: Array<Triangle> = [];
 	const riverQueue: Queue<{below: Nodo | Triangle, above: Triangle, maxHeight: number, slope: number}> = new Queue(
 		[], (a, b) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
+
 	for (const vertex of surf.triangles) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
 		for (const tile of vertex.vertices) {
 			if (tile.biome === Biome.OCEAN) {
-				riverDistance.set(tile, 0);
 				riverQueue.push({below: tile, above: vertex, maxHeight: 0, slope: Number.POSITIVE_INFINITY});
 				break;
 			}
@@ -436,12 +437,13 @@ function addRivers(surf: Surface): void {
 
 	while (!riverQueue.empty()) { // then iteratively extend them
 		const {below, above, maxHeight} = riverQueue.pop(); // pick out the steepest potential river
-		if (above.downstream === undefined) { // if it's available
+		if (above.downstream === null) { // if it's available
 			above.downstream = below; // take it
-			riverDistance.set(above, riverDistance.get(below) + 1); // number of steps to delta
+			riverOrder.set(above, riverStack.length); // track the number of steps from the delta
+			riverStack.push(above); // cue it up for the flow calculation later
 			for (const beyond of above.neighbors.keys()) { // then look for what comes next
 				if (beyond !== null) {
-					if (beyond.downstream === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
+					if (beyond.downstream === null) { // (it's a little redundant, but checking availability here, as well, saves some time)
 						if (beyond.height >= maxHeight - CANYON_DEPTH) {
 							let effectiveSlope; // calculate the proposed slope
 							if (beyond.height >= above.height) // (for downhill rivers, slope is normal)
@@ -468,12 +470,10 @@ function addRivers(surf: Surface): void {
 
 	surf.rivers = new Set();
 
-	const verticesWithRivers = [...surf.triangles].filter((vertex) => riverDistance.has(vertex));
-	const flowQueue = new Queue(verticesWithRivers,
-		(a: Triangle, b: Triangle) => riverDistance.get(b) - riverDistance.get(a)); // now we need to flow the water downhill
+	// now we need to propagate water downhill to calculate flow rates
 	const unitArea = surf.area/surf.nodos.size;
-	while (!flowQueue.empty()) {
-		const vertex = flowQueue.pop(); // at each river vertex
+	while (riverStack.length > 0) {
+		const vertex = riverStack.pop(); // at each river vertex
 		if (vertex.downstream instanceof Triangle) {
 			for (const tile of vertex.vertices) { // compute the sum of rainfall and inflow (with some adjustments)
 				let nadasle = 1; // base river yield is 1 per tile
@@ -513,14 +513,14 @@ function addRivers(surf: Surface): void {
 				else
 					seenRightEdge = true;
 			}
-			if (outflow === null || riverDistance.get(vertex) <= riverDistance.get(outflow)) // find the vertex with the most ultimate flow
+			if (outflow === null || riverOrder.get(vertex) <= riverOrder.get(outflow)) // find the vertex with the most ultimate flow
 				outflow = vertex;
 			last = next;
 		} while (last !== start);
 		if (!seenRightEdge) // if there wasn't _any_ adjacent water
 			continue; // then there's nothing to feed the lake
 
-		if (outflow !== null && outflow.downstream !== undefined &&
+		if (outflow !== null && outflow.downstream !== null &&
 			outflow.height - outflow.downstream.height < LAKE_THRESH) { // if we made it through all that, make an altitude check
 			tile.biome = Biome.LAKE; // and assign lake status. you've earned it, tile.
 			for (const neighbor of tile.neighbors.keys())
