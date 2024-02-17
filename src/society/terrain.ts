@@ -424,20 +424,24 @@ function addRivers(surf: Surface): void {
 
 	const riverOrder: Map<Vertex, number> = new Map();
 	const riverStack: Array<Vertex> = [];
-	const riverQueue: Queue<{below: Tile | Vertex, above: Vertex, maxHeight: number, slope: number}> = new Queue(
-		[], (a, b) => b.slope - a.slope); // start with a queue of rivers forming from their deltas
+	const riverQueue: Queue<{below: Tile | Vertex, above: Vertex, maxHeight: number, uphillLength: number, quality: number}> = new Queue(
+		[], (a, b) => b.quality - a.quality); // start with a queue of rivers forming from their deltas
 
 	for (const vertex of surf.vertices) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
 		for (const tile of vertex.tiles) {
 			if (tile.biome === Biome.OCEAN) {
-				riverQueue.push({below: tile, above: vertex, maxHeight: 0, slope: Number.POSITIVE_INFINITY});
+				riverQueue.push({
+					below: tile, above: vertex,
+					maxHeight: 0, uphillLength: 0,
+					quality: Number.POSITIVE_INFINITY,
+				});
 				break;
 			}
 		}
 	}
 
 	while (!riverQueue.empty()) { // then iteratively extend them
-		const {below, above, maxHeight} = riverQueue.pop(); // pick out the steepest potential river
+		const {below, above, maxHeight, uphillLength} = riverQueue.pop(); // pick out the steepest potential river
 		if (above.downstream === null) { // if it's available
 			above.downstream = below; // take it
 			riverOrder.set(above, riverStack.length); // track the number of steps from the delta
@@ -446,15 +450,17 @@ function addRivers(surf: Surface): void {
 				if (beyond !== null) {
 					if (beyond.downstream === null) { // (it's a little redundant, but checking availability here, as well, saves some time)
 						if (beyond.height >= maxHeight - CANYON_DEPTH) {
-							let effectiveSlope; // calculate the proposed slope
-							if (beyond.height >= above.height) // (for downhill rivers, slope is normal)
-								effectiveSlope = (beyond.height - above.height) / surf.distance(beyond, above);
-							else // (for uphill rivers, it's inverted so that steeper ascents are preferred)
-								effectiveSlope = surf.distance(beyond, above) / (beyond.height - above.height);
+							const length = surf.distance(beyond, above);
+							let quality; // decide how good a river this would be
+							if (beyond.height >= above.height) // calculate the slope for downhill rivers
+								quality = (beyond.height - above.height)/length;
+							else // calculate the amount of canyon you would need for an uphill river
+								quality = -(uphillLength + length);
 							riverQueue.push({
 								below: above, above: beyond,
 								maxHeight: Math.max(maxHeight, beyond.height),
-								slope: effectiveSlope,
+								uphillLength: uphillLength + ((beyond.height < above.height) ? length : 0),
+								quality: quality,
 							});
 						}
 					}
