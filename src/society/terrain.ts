@@ -378,33 +378,34 @@ function movePlates(surf: Surface, rng: Random): void {
  */
 function fillOcean(level: number, surf: Surface): void {
 	let bestStart = null; // the size of the ocean depends heavily on where we start
+	let remainingUnchecked = surf.tiles.size;
 	let bestSize = 0;
-	while (true) { // we want to find the start point that maximizes that size
-		let start = null;
-		for (const tile of surf.tiles) {
-			if (tile.biome !== Biome.OCEAN && tile.height <= level &&
-				(start === null || tile.height < start.height)) // the lowest point that we haven't already tried is a good way to test
-				start = tile;
+	for (const start of surf.tiles) { // we want to find the start point that maximizes that size
+		if (start.biome === Biome.OCEAN) // use biome = OCEAN to mark tiles we've checked
+			continue; // and don't check them twice
+		if (start.height > level) { // skip past points above sea level
+			remainingUnchecked -= 1;
 		}
-		if (start === null) // stop when we can't find any suitable starts
-			break;
-		let size = floodFrom(start, level);
-		if (size > bestSize) {
-			bestStart = start;
-			bestSize = size;
+		else { // for unchecked points below sea level
+			let size = floodFrom(start, level); // try putting an ocean here
+			remainingUnchecked -= size;
+			if (size > bestSize) { // see if it's bigger than any oceans we've found thus far
+				bestStart = start;
+				bestSize = size;
+			}
+			if (remainingUnchecked <= bestSize) // stop when it's no longer possible to find a bigger ocean
+				break;
 		}
-		if (size > surf.tiles.size/2) // or if we find one that fills over half the tiles
-			break;
 	}
 
 	if (bestStart === null)
-		return; // it's theoretically possible there wasn't any suitable start point. shikata wa nai yo.
+		return; // it's theoretically possible that *everything* was above sea level.  in which case eh.
 
-	for (const tile of surf.tiles) // finally, clear all attempts
+	for (const tile of surf.tiles) // clear out all the ocean you put down
 		tile.biome = null;
-	floodFrom(bestStart, level); // and set it so that just the best start point is filled in
+	floodFrom(bestStart, level); // and re-flood the best one you found
 
-	for (const tile of surf.tiles) // and set sea level to 0
+	for (const tile of surf.tiles) // and redefine altitude so sea level is 0
 		tile.height -= level;
 }
 
