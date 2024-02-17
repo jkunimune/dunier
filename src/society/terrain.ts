@@ -442,12 +442,18 @@ function addRivers(surf: Surface): void {
 			for (const beyond of above.neighbors.keys()) { // then look for what comes next
 				if (beyond !== null) {
 					if (beyond.downstream === undefined) { // (it's a little redundant, but checking availability here, as well, saves some time)
-						if (beyond.height >= maxHeight - CANYON_DEPTH)
+						if (beyond.height >= maxHeight - CANYON_DEPTH) {
+							let effectiveSlope; // calculate the proposed slope
+							if (beyond.height >= above.height) // (for downhill rivers, slope is normal)
+								effectiveSlope = (beyond.height - above.height) / surf.distance(beyond, above);
+							else // (for uphill rivers, it's inverted so that steeper ascents are preferred)
+								effectiveSlope = surf.distance(beyond, above) / (beyond.height - above.height);
 							riverQueue.push({
 								below: above, above: beyond,
 								maxHeight: Math.max(maxHeight, beyond.height),
-								slope: (beyond.height - above.height) / surf.distance(beyond, above)
+								slope: effectiveSlope,
 							});
+						}
 					}
 				}
 			}
