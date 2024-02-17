@@ -95,7 +95,7 @@ export abstract class Surface {
 		// generate the tiles
 		const tiles: Tile[] = []; // remember to clear the old tiles, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
-			tiles.push(new Tile(i, this.randomPoint(rng), this)); // push a bunch of new ones
+			tiles.push(new Tile(i, this.drawRandomPoint(rng), this)); // push a bunch of new ones
 		this.tiles = new Set(tiles); // keep that list, but save it as a set as well
 
 		// seed the surface
@@ -185,19 +185,13 @@ export abstract class Surface {
 				skeletonLeaf = arc[arc.length - 1]; // move onto the next one
 			}
 		}
-
-		// finally, add the greebles
-		for (const vertex of this.vertices) // TODO this probably belongs in terrain.ts, no?
-			for (const edge of vertex.edges)
-				if (edge.path === null)
-					edge.greeblePath(rng);
 	}
 
 	/**
 	 * return the coordinates of a point uniformly sampled from the Surface using the
 	 * given random number generator.
 	 */
-	randomPoint(rng: Random): Place {
+	drawRandomPoint(rng: Random): Place {
 		const λ = rng.uniform(-Math.PI, Math.PI);
 		const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
 		const ф = linterp(A, this.cumulAreas, this.refLatitudes);
@@ -522,6 +516,7 @@ export class Edge {
 	public path: Place[];
 	public rightBorder: Vector[]; // these borders are the limits of the greebling
 	public leftBorder: Vector[];
+	private readonly rng: Random; // this Random number generator is used exclusively for greebling
 
 	constructor(tileL: Tile, vertex0: Vertex, tileR: Tile, vertex1: Vertex, length: number) {
 		this.tileL = tileL; // save these new values for the edge
@@ -534,8 +529,12 @@ export class Edge {
 		tileL.neighbors.set(tileR, this);
 		tileR.neighbors.set(tileL, this);
 
-		this.rightBorder = [];
-		this.leftBorder = [];
+		this.rightBorder = null;
+		this.leftBorder = null;
+
+		// make a random number generator with a garanteed-uneke seed
+		const index = tileL.index*tileL.surface.tiles.size + tileR.index;
+		this.rng = new Random(index);
 	}
 
 	/**
@@ -544,7 +543,7 @@ export class Edge {
 	 * corresponds to vertex1, (0, 1) corresponds to vertex0, and (1, 1/2) corresponds
 	 * to vertexR.
 	 */
-	greeblePath(rng: Random): void {
+	greeblePath(): void {
 		// define the inicial coordinate vectors
 		const origin = this.vertex1.pos; // compute its coordinate system
 		const i = this.vertex0.pos.minus(origin);
@@ -563,7 +562,7 @@ export class Edge {
 		// generate the random curve
 		const points = noisyProfile(
 			FINEST_SCALE/Math.sqrt(i.sqr()),
-			rng, bounds, .35);
+			this.rng, bounds, .35);
 
 		// then transform the result out of the plane
 		this.path = [];

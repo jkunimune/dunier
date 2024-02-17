@@ -874,6 +874,8 @@ export class Chart {
 				let step: Place[];
 				// if there is an edge and it should be greebled, greeble it
 				if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
+					if (edge.path === null)
+						edge.greeblePath();
 					if (edge.vertex0 === end)
 						step = edge.path.slice(1);
 					else
