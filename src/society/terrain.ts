@@ -25,9 +25,13 @@ import Queue from '../util/queue.js';
 import {Surface, Vertex, Tile} from "../planet/surface.js";
 import {Random} from "../util/random.js";
 import {argmax, union} from "../util/util.js";
-import {Vector} from "../util/geometry.js";
+import {checkVoronoiPolygon, Vector} from "../util/geometry.js";
+import { delaunayTriangulate } from '../util/delaunay.js';
+import {straightSkeleton} from "../util/straightskeleton.js";
+import {Point} from "../util/coordinates.js";
 
 
+const TILE_AREA = 30000; // target area of a tile in km^2
 const TERME_NOISE_LEVEL = 12;
 const BARXE_NOISE_LEVEL = 1;
 const MAX_NOISE_SCALE = 1/8;
@@ -103,6 +107,106 @@ export const BIOME_NAMES: Map<string, Biome> = new Map([
 
 
 /**
+ * fill this.tiles with random tiles.
+ */
+export function populateSurface(surf: Surface, rng: Random): void {
+	// generate the tiles
+	const tiles: Tile[] = []; // remember to clear the old tiles, if necessary
+	for (let i = 0; i < Math.max(100, surf.area/TILE_AREA); i ++)
+		tiles.push(new Tile(i, surf.drawRandomPoint(rng), surf)); // push a bunch of new ones
+	surf.tiles = new Set(tiles); // keep that list, but save it as a set as well
+
+	// seed the surface
+	const partition = surf.partition();
+
+	// call the delaunay triangulation subroutine
+	const triangulation = delaunayTriangulate(
+		tiles.map((n: Tile) => n.pos),
+		tiles.map((n: Tile) => n.normal),
+		partition.nodos.map((n: Tile) => n.pos),
+		partition.nodos.map((n: Tile) => n.normal),
+		partition.triangles.map((t: Vertex) => t.tiles.map((n: Tile) => partition.nodos.indexOf(n)))
+	);
+	surf.vertices = new Set(); // unpack the resulting Voronoi vertices
+	for (const [ia, ib, ic] of triangulation.triangles) {
+		surf.vertices.add(new Vertex(tiles[ia], tiles[ib], tiles[ic])); // this will automatically generate the Edges
+	}
+	for (let i = 0; i < tiles.length; i ++) {
+		for (const j of triangulation.parentage[i]) // as well as the parentage
+			tiles[i].parents.push(tiles[j]);
+		for (const [j, k] of triangulation.between[i]) // and separation information
+			tiles[i].between.push([tiles[j], tiles[k]]);
+	}
+
+	// after all that's through, some tiles won't have any parents
+	for (let i = 1; i < tiles.length; i ++) {
+		if (tiles[i].parents.length === 0) { // if that's so,
+			const orphan = tiles[i];
+			let closest = null; // the easiest thing to do is to just assign it the closest tile that came before it using the list
+			let minDistance = Number.POSITIVE_INFINITY;
+			for (let j = 0; j < orphan.index; j ++) {
+				const distance = surf.distance(tiles[j], orphan);
+				if (distance < minDistance) {
+					minDistance = distance;
+					closest = tiles[j];
+				}
+			}
+			orphan.parents = [closest];
+		}
+	}
+
+	// finally, complete the remaining vertices' network graphs
+	for (const vertex of surf.vertices) {
+		for (let i = 0; i < 3; i ++) {
+			const edge = vertex.edges[i];
+			if (vertex === edge.vertex1)
+				vertex.neighbors.set(edge.vertex0, edge);
+			else
+				vertex.neighbors.set(edge.vertex1, edge);
+		}
+		vertex.computePosition();
+	}
+
+	// and find the edge, if there is one
+	for (const tile of surf.tiles)
+		for (const neibor of tile.neighbors.keys())
+			if (tile.rightOf(neibor) === null)
+				surf.edge.set(tile, {next: neibor, prev: null});
+	for (const tile of surf.edge.keys()) // and make it back-searchable
+		surf.edge.get(surf.edge.get(tile).next).prev = tile;
+
+	// now we can save each tile's strait skeleton to the edges (to bound the greebling)
+	for (const tile of surf.tiles) {
+		const vertices: Point[] = [];
+		for (const {vertex} of tile.getPolygon()) {
+			vertices.push({
+				x: vertex.minus(tile.pos).dot(tile.east), // project the voronoi polygon into 2D
+				y: vertex.minus(tile.pos).dot(tile.north),
+			});
+		}
+		checkVoronoiPolygon(vertices); // validate it
+		let skeletonLeaf = straightSkeleton(vertices); // get the strait skeleton
+		for (const {edge} of tile.getPolygon()) {
+			const arc = skeletonLeaf.pathToNextLeaf();
+			const projectedArc: Vector[] = [];
+			for (const joint of arc) {
+				const {x, y} = joint.value;
+				projectedArc.push( // project it back
+					tile.pos.plus(
+						tile.east.times(x).plus(
+							tile.north.times(y))));
+			}
+			if (edge.tileL === tile) // then save each part of the skeleton it to an edge
+				edge.leftBorder = projectedArc;
+			else
+				edge.rightBorder = projectedArc;
+			skeletonLeaf = arc[arc.length - 1]; // move onto the next one
+		}
+	}
+}
+
+
+/**
  * create all of the continents and biomes and rivers that go into the physical geography
  * of a good fictional world.
  * @param numContinents number of continents, equal to half the number of plates
@@ -120,57 +224,6 @@ export function generateTerrain(numContinents: number, seaLevel: number, meanTem
 	generateClimate(meanTemperature, surf, rng); // TODO: I reely think I should have an avgRain parameter
 	addRivers(surf);
 	setBiomes(surf);
-}
-
-function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
-	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
-	for (const tile of surf.tiles) { // assign each tile random values
-		tile.temperature = getNoiseFunction(tile, tile.parents, 'temperature', surf, rng,
-			maxScale, TERME_NOISE_LEVEL, 2);
-		tile.rainfall = getNoiseFunction(tile, tile.parents, 'rainfall', surf, rng,
-			maxScale, BARXE_NOISE_LEVEL, 2);
-	}
-
-	for (const tile of surf.tiles) { // and then throw in the baseline
-		tile.temperature += Math.pow(
-			surf.insolation(tile.ф)*Math.exp(-tile.height/ATMOSPHERE_THICKNESS),
-			1/4.)*avgTerme - 273;
-		tile.rainfall += surf.windConvergence(tile.ф);
-		const {north, east} = surf.windVelocity(tile.ф);
-		tile.windVelocity = tile.north.times(north).plus(tile.east.times(east));
-	}
-
-	for (const tile of surf.tiles)
-		tile.downwind = [];
-	const queue = [];
-	for (const tile of surf.tiles) {
-		let bestTile = null, bestDixe = null; // define tile.upwind as the neighbor that is in the upwindest direction of each tile
-		for (const neighbor of tile.neighbors.keys()) {
-			const dix = neighbor.pos.minus(tile.pos).norm();
-			if (bestDixe === null ||
-				dix.dot(tile.windVelocity) < bestDixe.dot(tile.windVelocity)) {
-				bestTile = neighbor;
-				bestDixe = dix;
-			}
-		}
-		bestTile.downwind.push(tile); // and make sure that all tiles know who is downwind of them
-		if (tile.biome === Biome.OCEAN) // also seed the orographic effect in the oceans
-			queue.push({tile: tile, moisture: OROGRAPHIC_MAGNITUDE});
-		if (tile.height > CLOUD_HEIGHT) // and also remove some moisture from mountains
-			tile.rainfall -= OROGRAPHIC_MAGNITUDE;
-	}
-	while (queue.length > 0) {
-		const {tile: tile, moisture} = queue.pop(); // each tile looks downwind
-		tile.rainfall += moisture;
-		for (const downwind of tile.downwind) {
-			if (downwind.biome !== Biome.OCEAN && downwind.height <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
-				const distance: number = tile.neighbors.get(downwind).length;
-				queue.push({
-					tile: downwind,
-					moisture: moisture*Math.exp(-distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
-			}
-		}
-	}
 }
 
 
@@ -407,6 +460,58 @@ function fillOcean(level: number, surf: Surface): void {
 
 	for (const tile of surf.tiles) // and redefine altitude so sea level is 0
 		tile.height -= level;
+}
+
+
+function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
+	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
+	for (const tile of surf.tiles) { // assign each tile random values
+		tile.temperature = getNoiseFunction(tile, tile.parents, 'temperature', surf, rng,
+			maxScale, TERME_NOISE_LEVEL, 2);
+		tile.rainfall = getNoiseFunction(tile, tile.parents, 'rainfall', surf, rng,
+			maxScale, BARXE_NOISE_LEVEL, 2);
+	}
+
+	for (const tile of surf.tiles) { // and then throw in the baseline
+		tile.temperature += Math.pow(
+			surf.insolation(tile.ф)*Math.exp(-tile.height/ATMOSPHERE_THICKNESS),
+			1/4.)*avgTerme - 273;
+		tile.rainfall += surf.windConvergence(tile.ф);
+		const {north, east} = surf.windVelocity(tile.ф);
+		tile.windVelocity = tile.north.times(north).plus(tile.east.times(east));
+	}
+
+	for (const tile of surf.tiles)
+		tile.downwind = [];
+	const queue = [];
+	for (const tile of surf.tiles) {
+		let bestTile = null, bestDixe = null; // define tile.upwind as the neighbor that is in the upwindest direction of each tile
+		for (const neighbor of tile.neighbors.keys()) {
+			const dix = neighbor.pos.minus(tile.pos).norm();
+			if (bestDixe === null ||
+				dix.dot(tile.windVelocity) < bestDixe.dot(tile.windVelocity)) {
+				bestTile = neighbor;
+				bestDixe = dix;
+			}
+		}
+		bestTile.downwind.push(tile); // and make sure that all tiles know who is downwind of them
+		if (tile.biome === Biome.OCEAN) // also seed the orographic effect in the oceans
+			queue.push({tile: tile, moisture: OROGRAPHIC_MAGNITUDE});
+		if (tile.height > CLOUD_HEIGHT) // and also remove some moisture from mountains
+			tile.rainfall -= OROGRAPHIC_MAGNITUDE;
+	}
+	while (queue.length > 0) {
+		const {tile: tile, moisture} = queue.pop(); // each tile looks downwind
+		tile.rainfall += moisture;
+		for (const downwind of tile.downwind) {
+			if (downwind.biome !== Biome.OCEAN && downwind.height <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
+				const distance: number = tile.neighbors.get(downwind).length;
+				queue.push({
+					tile: downwind,
+					moisture: moisture*Math.exp(-distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
+			}
+		}
+	}
 }
 
 

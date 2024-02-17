@@ -24,7 +24,7 @@
 import "../lib/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import {DOM} from "../util/dom.js";
 import {format} from "../util/internationalization.js";
-import {generateTerrain} from "../society/terrain.js";
+import {generateTerrain, populateSurface} from "../society/terrain.js";
 import {Surface} from "../planet/surface.js";
 import {World} from "../society/world.js";
 import {Random} from "../util/random.js";
@@ -229,9 +229,11 @@ function applyTerrain(): void {
 	if (lastUpdated < Layer.PLANET)
 		applyPlanet();
 
-	console.log("jena zemforme...");
+	console.log("Delone tingonfa...");
 	let rng = new Random(Number(DOM.val('terrain-seed'))); // use the random seed
-	surface.populate(rng); // finish constructing the surface
+	populateSurface(surface, rng); // finish constructing the surface
+
+	console.log("jena zemforme...");
 	rng = rng.reset();
 	generateTerrain(
 		Number(DOM.val('terrain-continents')) * 2,

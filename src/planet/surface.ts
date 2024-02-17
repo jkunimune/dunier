@@ -23,16 +23,13 @@
  */
 import {Random} from "../util/random.js";
 import {linterp, noisyProfile} from "../util/util.js";
-import {delaunayTriangulate} from "../util/delaunay.js";
 import {Culture} from "../society/culture.js";
 import {Biome} from "../society/terrain.js";
-import {Place, Point} from "../util/coordinates.js";
-import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
-import {straightSkeleton} from "../util/straightskeleton.js";
+import {Place} from "../util/coordinates.js";
+import {circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
 
 
 const INTEGRATION_RESOLUTION = 32;
-const TILE_AREA = 30000; // target area of a tile in km^2
 const FINEST_SCALE = 10; // the smallest edge lengths that it will generate
 
 
@@ -86,105 +83,6 @@ export abstract class Surface {
 
 		this.axis = this.xyz({ф: 1, λ: Math.PI/2}).minus(this.xyz({ф: 1, λ: 0})).cross(
 			this.xyz({ф: 1, λ: Math.PI}).minus(this.xyz({ф: 1, λ: Math.PI/2}))).norm(); // figure out which way the coordinate system points
-	}
-
-	/**
-	 * fill this.tiles with random tiles.
-	 */
-	populate(rng: Random): void {
-		// generate the tiles
-		const tiles: Tile[] = []; // remember to clear the old tiles, if necessary
-		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
-			tiles.push(new Tile(i, this.drawRandomPoint(rng), this)); // push a bunch of new ones
-		this.tiles = new Set(tiles); // keep that list, but save it as a set as well
-
-		// seed the surface
-		const partition = this.partition();
-
-		// call the delaunay triangulation subroutine
-		const triangulation = delaunayTriangulate(
-			tiles.map((n: Tile) => n.pos),
-			tiles.map((n: Tile) => n.normal),
-			partition.nodos.map((n: Tile) => n.pos),
-			partition.nodos.map((n: Tile) => n.normal),
-			partition.triangles.map((t: Vertex) => t.tiles.map((n: Tile) => partition.nodos.indexOf(n)))
-		);
-		this.vertices = new Set(); // unpack the resulting Voronoi vertices
-		for (const [ia, ib, ic] of triangulation.triangles) {
-			this.vertices.add(new Vertex(tiles[ia], tiles[ib], tiles[ic])); // this will automatically generate the Edges
-		}
-		for (let i = 0; i < tiles.length; i ++) {
-			for (const j of triangulation.parentage[i]) // as well as the parentage
-				tiles[i].parents.push(tiles[j]);
-			for (const [j, k] of triangulation.between[i]) // and separation information
-				tiles[i].between.push([tiles[j], tiles[k]]);
-		}
-
-		// after all that's through, some tiles won't have any parents
-		for (let i = 1; i < tiles.length; i ++) {
-			if (tiles[i].parents.length === 0) { // if that's so,
-				const orphan = tiles[i];
-				let closest = null; // the easiest thing to do is to just assign it the closest tile that came before it using the list
-				let minDistance = Number.POSITIVE_INFINITY;
-				for (let j = 0; j < orphan.index; j ++) {
-					const distance = this.distance(tiles[j], orphan);
-					if (distance < minDistance) {
-						minDistance = distance;
-						closest = tiles[j];
-					}
-				}
-				orphan.parents = [closest];
-			}
-		}
-
-		// finally, complete the remaining vertices' network graphs
-		for (const vertex of this.vertices) {
-			for (let i = 0; i < 3; i ++) {
-				const edge = vertex.edges[i];
-				if (vertex === edge.vertex1)
-					vertex.neighbors.set(edge.vertex0, edge);
-				else
-					vertex.neighbors.set(edge.vertex1, edge);
-			}
-			vertex.computePosition();
-		}
-
-		// and find the edge, if there is one
-		for (const tile of this.tiles)
-			for (const neibor of tile.neighbors.keys())
-				if (tile.rightOf(neibor) === null)
-					this.edge.set(tile, {next: neibor, prev: null});
-		for (const tile of this.edge.keys()) // and make it back-searchable
-			this.edge.get(this.edge.get(tile).next).prev = tile;
-
-		// now we can save each tile's strait skeleton to the edges (to bound the greebling)
-		for (const tile of this.tiles) {
-			const vertices: Point[] = [];
-			for (const {vertex} of tile.getPolygon()) {
-				vertices.push({
-					x: vertex.minus(tile.pos).dot(tile.east), // project the voronoi polygon into 2D
-					y: vertex.minus(tile.pos).dot(tile.north),
-				});
-			}
-			checkVoronoiPolygon(vertices); // validate it
-			let skeletonLeaf = straightSkeleton(vertices); // get the strait skeleton
-			for (const {edge} of tile.getPolygon()) {
-				const arc = skeletonLeaf.pathToNextLeaf();
-				const projectedArc: Vector[] = [];
-				for (const joint of arc) {
-					const {x, y} = joint.value;
-					projectedArc.push( // project it back
-						tile.pos.plus(
-							tile.east.times(x).plus(
-							tile.north.times(y))));
-				}
-				if (edge.tileL === tile) // then save each part of the skeleton it to an edge
-					edge.leftBorder = projectedArc;
-				else
-					edge.rightBorder = projectedArc;
-				skeletonLeaf = arc[arc.length - 1]; // move onto the next one
-			}
-		}
 	}
 
 	/**
