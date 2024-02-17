@@ -23,7 +23,7 @@
  */
 import {Spheroid} from "./spheroid.js";
 import {Vector} from "../util/geometry.js";
-import {Nodo} from "./surface.js";
+import {Tile} from "./surface.js";
 import {Place} from "../util/coordinates.js";
 
 /**
@@ -56,7 +56,7 @@ export class Sphere extends Spheroid {
 		return super.фλ(new Vector(point.x, -point.z, point.y));
 	}
 
-	normal(node: Nodo): Vector {
-		return node.pos.norm();
+	normal(tile: Tile): Vector {
+		return tile.pos.norm();
 	}
 }

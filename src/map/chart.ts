@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Edge, Nodo, Surface, Triangle} from "../planet/surface.js";
+import {Edge, Tile, Surface, Vertex} from "../planet/surface.js";
 import {filterSet, longestShortestPath} from "../util/util.js";
 import {World} from "../society/world.js";
 import {MapProjection} from "./projection.js";
@@ -185,7 +185,7 @@ export class Chart {
 		let riverColor = 'none';
 		if (seaColor === 'blue') { // color the sea deep blue
 			this.fill(
-				filterSet(surface.nodos, n => n.biome === Biome.OCEAN),
+				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
 				g, BIOME_COLORS.get(Biome.OCEAN), Layer.GEO);
 			riverColor = BIOME_COLORS.get(Biome.OCEAN);
 		}
@@ -194,7 +194,7 @@ export class Chart {
 				const min = (i !== 0) ? i * DEPTH_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Number.POSITIVE_INFINITY;
 				this.fill(
-					filterSet(surface.nodos, n => n.biome === Biome.OCEAN && -n.height >= min && -n.height < max),
+					filterSet(surface.tiles, n => n.biome === Biome.OCEAN && -n.height >= min && -n.height < max),
 					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
 			}
 			riverColor = DEPTH_COLORS[0]; // TODO: outline ocean + black rivers?
@@ -204,17 +204,17 @@ export class Chart {
 			for (const biome of BIOME_COLORS.keys())
 				if (biome !== Biome.OCEAN)
 					this.fill(
-						filterSet(surface.nodos, n => n.biome === biome),
+						filterSet(surface.tiles, n => n.biome === biome),
 						g, BIOME_COLORS.get(biome), Layer.BIO);
 		}
 		else if (landColor === 'political' && world !== null) { // draw the countries
 			this.fill(
-				filterSet(surface.nodos, n => n.biome !== Biome.OCEAN),
+				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
 				g, BIOME_COLORS.get(null), Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
 			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i++)
 				this.fill(
-					filterSet(biggestCivs.pop().nodos, n => n.biome !== Biome.OCEAN),
+					filterSet(biggestCivs.pop().tiles, n => n.biome !== Biome.OCEAN),
 					g, COUNTRY_COLORS[i], Layer.KULTUR);
 		}
 		else if (landColor === 'heightmap') { // color the sea by altitude
@@ -222,7 +222,7 @@ export class Chart {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Number.POSITIVE_INFINITY;
 				this.fill(
-					filterSet(surface.nodos, n => n.biome !== Biome.OCEAN && n.height >= min && n.height < max),
+					filterSet(surface.tiles, n => n.biome !== Biome.OCEAN && n.height >= min && n.height < max),
 					g, ALTITUDE_COLORS[i], Layer.GEO);
 			}
 		}
@@ -246,7 +246,7 @@ export class Chart {
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
 					this.fill(
-						filterSet(civ.nodos, n => n.biome !== Biome.OCEAN),
+						filterSet(civ.tiles, n => n.biome !== Biome.OCEAN),
 						titledG,
 						'none', Layer.KULTUR, '#111', 0.7).setAttribute('pointer-events', 'all');
 				// }
@@ -255,7 +255,7 @@ export class Chart {
 
 		// add relief shadows
 		if (shading) {
-			this.shade(surface.triangles, g);
+			this.shade(surface.vertices, g);
 		}
 
 		// finally, label everything
@@ -263,7 +263,7 @@ export class Chart {
 			for (const civ of world.getCivs()) // TODO: the hover text should go on this
 				if (civ.getPopulation() > 0)
 					this.label(
-						[...civ.nodos].filter(n => !n.isWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
+						[...civ.tiles].filter(n => !n.isWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
 						civ.getName().toString(style),
 						svg,
 						fontSize);
@@ -275,7 +275,7 @@ export class Chart {
 			const visible = [];
 			for (const civ of world.getCivs(true))
 				if (this.projection.project(
-					Chart.outline([...civ.nodos].filter(n => !n.isWater()),
+					Chart.outline([...civ.tiles].filter(n => !n.isWater()),
 					              Layer.KULTUR),
 					true).length > 0)
 					visible.push(civ);
@@ -288,21 +288,21 @@ export class Chart {
 
 	/**
 	 * draw a region of the world on the map with the given color.
-	 * @param nodos Iterator of Node to be colored in.
+	 * @param tiles Iterator of Tiles to be colored in.
 	 * @param svg object on which to put the Path.
 	 * @param color color of the interior.
 	 * @param greeble what kind of edge it is for the purposes of greebling
 	 * @param stroke color of the outline.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
-	 * @return the newly created element encompassing these triangles.
+	 * @return the newly created element encompassing these tiles.
 	 */
-	fill(nodos: Set<Nodo>, svg: SVGGElement, color: string, greeble: Layer,
+	fill(tiles: Set<Tile>, svg: SVGGElement, color: string, greeble: Layer,
 		 stroke = 'none', strokeWidth = 0): SVGPathElement {
-		if (nodos.size <= 0)
+		if (tiles.size <= 0)
 			return this.draw([], svg);
 		const closePath = color !== 'none'; // leave the polygons open if we're not coloring them in
 		const segments = this.projection.project(
-			Chart.outline(nodos, greeble), closePath);
+			Chart.outline(tiles, greeble), closePath);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
@@ -318,8 +318,8 @@ export class Chart {
 	 * @param greeble what kind of edge it is for the purposes of greebling
 	 * @returns the newly created element comprising all these lines
 	 */
-	stroke(strokes: Iterable<(Nodo | Triangle)[]>, svg: SVGGElement,
-	       color: string, width: number, greeble: Layer): SVGPathElement {
+	stroke(strokes: Iterable<(Tile | Vertex)[]>, svg: SVGGElement,
+		   color: string, width: number, greeble: Layer): SVGPathElement {
 		let segments = this.projection.project(Chart.convertToPath(Chart.aggregate(strokes), greeble), false);
 		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
@@ -331,18 +331,18 @@ export class Chart {
 
 	/**
 	 * create a relief layer for the given set of triangles.
-	 * @param triangles Array of Triangle to shade.
+	 * @param triangles Array of Vertexes to shade as triangles.
 	 * @param svg SVG object on which to shade.
 	 */
-	shade(triangles: Set<Triangle>, svg: SVGGElement): void { // TODO use separate delaunay triangulation
+	shade(triangles: Set<Vertex>, svg: SVGGElement): void { // TODO use separate delaunay triangulation
 		if (!triangles)
 			return;
 
-		const slopes: Map<Triangle, number> = new Map();
+		const slopes: Map<Vertex, number> = new Map();
 		let maxSlope = 0;
 		for (const t of triangles) { // start by computing slopes of all of the things
 			const p = [];
-			for (const node of t.vertices) {
+			for (const node of t.tiles) {
 				const {x, y} = this.projection.projectPoint(node);
 				const z = Math.max(0, node.height);
 				p.push(new Vector(x, -y, z));
@@ -357,7 +357,7 @@ export class Chart {
 
 		for (const t of triangles) { // for each triangle TODO: use a newly generated triangulation
 			const path = [];
-			for (const node of t.vertices)
+			for (const node of t.tiles)
 				path.push({type: 'L', args: [node.ф, node.λ]}); // put its values in a plottable form
 			path.push({type: 'L', args: [...path[0].args]});
 			path[0].type = 'M';
@@ -374,16 +374,16 @@ export class Chart {
 	 *     Krumpe, F. and Mendel, T. (2020) "Computing Curved Area Labels in Near-Real Time"
 	 *     (Doctoral dissertation). University of Stuttgart, Stuttgart, Germany.
 	 *     https://arxiv.org/abs/2001.02938 TODO: try horizontal labels: https://github.com/mapbox/polylabel
-	 * @param nodos the Nodos that comprise the region to be labelled.
+	 * @param tiles the Nodos that comprise the region to be labelled.
 	 * @param label the text to place.
 	 * @param svg the SVG object on which to write the label.
 	 * @param minFontSize the smallest the label can be. if the label cannot fit inside
 	 *                    the region with this font size, no label will be placed and it
 	 *                    will return null.
 	 */
-	label(nodos: Nodo[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
-		if (nodos.length === 0)
-			throw "nodos to label must be at least length 2";
+	label(tiles: Tile[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
+		if (tiles.length === 0)
+			throw "tiles to label must be at least length 2";
 		this.testText.textContent = '..'+label+'..';
 		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
 		this.testText.textContent = '';
@@ -391,7 +391,7 @@ export class Chart {
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.projection.project(Chart.outline(new Set(nodos), Layer.KULTUR), true); // do the projection
+		const path = this.projection.project(Chart.outline(new Set(tiles), Layer.KULTUR), true); // do the projection
 		if (path.length === 0)
 			return null;
 
@@ -479,7 +479,7 @@ export class Chart {
 				for (let j = 0; j < i; j ++) {
 					if (centers[j].isContained) {
 						const def = triangulation.triangles[j]; // and recording adjacency
-						triangleFit:
+						triangleFit: // TODO: what is this code doing? add better comments, and see if it can be made more efficient.
 							for (let k = 0; k < 3; k++) {
 								for (let l = 0; l < 3; l++) {
 									if (abc[k] === def[(l + 1) % 3] && abc[(k + 1) % 3] === def[l]) {
@@ -698,63 +698,63 @@ export class Chart {
 	 * @param civ the Civ whose outline is desired
 	 */
 	static border(civ: Civ): PathSegment[] {
-		const landNodos = filterSet(civ.nodos, (n) => n.biome !== Biome.OCEAN);
+		const landNodos = filterSet(civ.tiles, (n) => n.biome !== Biome.OCEAN);
 		return Chart.outline(landNodos, Layer.KULTUR);
 	}
 
 	/**
 	 * create an ordered Iterator of segments that form the boundary of these nodos.
-	 * @param nodos Set of Node that are part of this group.
+	 * @param tiles Set of Tiles that are part of this group.
 	 * @param greeble how to greeble
 	 * @return Array of PathSegments, ordered widdershins.
 	 */
-	static outline(nodos: Nodo[] | Set<Nodo>, greeble: Layer): PathSegment[] {
-		const nodoSet = new Set(nodos);
+	static outline(tiles: Tile[] | Set<Tile>, greeble: Layer): PathSegment[] {
+		const tileSet = new Set(tiles);
 		const accountedFor = new Set(); // keep track of which Edge have been done
 		const output: Place[][] = []; // TODO: will this thro an error if I try to outline the entire surface?
-		for (let inNodo of nodoSet) { // look at every included node
-			for (let outNodo of inNodo.neighbors.keys()) { // and every node adjacent to an included one
-				if (nodoSet.has(outNodo))
-					continue; // (we only care if that adjacent node is excluded)
-				const startingEdge = inNodo.neighbors.get(outNodo); // the edge between them defines the start of the loop
+		for (let inTile of tileSet) { // look at every included tile
+			for (let outTile of inTile.neighbors.keys()) { // and every tile adjacent to an included one
+				if (tileSet.has(outTile))
+					continue; // (we only care if that adjacent tile is excluded)
+				const startingEdge = inTile.neighbors.get(outTile); // the edge between them defines the start of the loop
 				if (accountedFor.has(startingEdge))
 					continue; // (and can ignore edges we've already hit)
 
 				const loop = []; // if we've found a new edge, start going around it
 
 				do {
-					const next = inNodo.leftOf(outNodo); // look for the next triangle, going widdershins
+					const next = inTile.leftOf(outTile); // look for the next vertex, going widdershins
 
 					if (next !== null) { // assuming there is one,
-						const vertex = next; // pick out its circumcenter to plot
-						const edge = inNodo.neighbors.get(outNodo); // and the edge between them
+						const vertex = next; // pick it out to plot
+						const edge = inTile.neighbors.get(outTile); // and the edge between them
 
 						// add the edge to the complete Path
 						loop.push(vertex); // make the Path segment
 
 						accountedFor.add(edge); // check this edge off
-						if (nodoSet.has(next.acrossFrom(edge))) // then, depending on the state of the Node after that Triangle
-							inNodo = next.acrossFrom(edge); // advance one of the state nodos
+						if (tileSet.has(next.acrossFrom(edge))) // then, depending on the state of the Tile after that Vertex
+							inTile = next.acrossFrom(edge); // advance one of the state tiles
 						else
-							outNodo = next.acrossFrom(edge);
+							outTile = next.acrossFrom(edge);
 					}
-					else { // if there isn't a next triangle
+					else { // if there isn't a next Vertex
 						if (loop.length > 0)
 							loop.push(
-								{ ф: Number.NEGATIVE_INFINITY, λ: inNodo.λ }); // draw a line to infinity
+								{ ф: Number.NEGATIVE_INFINITY, λ: inTile.λ }); // draw a line to infinity
 						else
 							break; // you're on the end in which case you should just ignore this
 
-						outNodo = inNodo;
+						outTile = inTile;
 						let i = 0;
 						do {
-							outNodo = outNodo.surface.edge.get(outNodo).next; // and shimmy outNodo around the internal portion of the edge
+							outTile = outTile.surface.edge.get(outTile).next; // and shimmy outTile around the internal portion of the edge
 							i ++;
-						} while (nodoSet.has(outNodo)); // until it becomes external again
+						} while (tileSet.has(outTile)); // until it becomes external again
 
-						inNodo = outNodo.surface.edge.get(outNodo).prev; // then, grab the new inNodo and continue
+						inTile = outTile.surface.edge.get(outTile).prev; // then, grab the new inTile and continue
 					}
-				} while (inNodo.neighbors.get(outNodo) !== startingEdge && output.length < 100000); // continue until you go all the outNodo around this loop
+				} while (inTile.neighbors.get(outTile) !== startingEdge && output.length < 100000); // continue until you go all the outTile around this loop
 
 				if (loop.length > 0) {
 					loop.push(loop[0]); // add closure
@@ -866,18 +866,20 @@ export class Chart {
 				// do this long type-casting song and dance to see if there's an edge to greeble
 				let edge = null;
 				if (start.hasOwnProperty('neighbors')) {
-					const neighbors = (<{neighbors: any}><unknown>start).neighbors;
+					const neighbors = (<{neighbors: Map<Place, Edge>}><unknown>start).neighbors;
 					if (typeof neighbors.has === 'function' && typeof neighbors.get === 'function')
 						if (neighbors.has(end))
 							edge = neighbors.get(end);
 				}
 				let step: Place[];
+				// if there is an edge and it should be greebled, greeble it
 				if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
-					if (edge.triangleR === end)
+					if (edge.vertex0 === end)
 						step = edge.path.slice(1);
 					else
 						step = edge.path.slice(0, edge.path.length - 1).reverse();
 				}
+				// otherwise, draw a strait line
 				else {
 					step = [end];
 				}
@@ -910,11 +912,11 @@ export class Chart {
 			return false;
 		else if (layer === Layer.GEO)
 			return true;
-		else if (edge.node0.isWater() !== edge.node1.isWater())
+		else if (edge.tileL.isWater() !== edge.tileR.isWater())
 			return true;
 		else if (layer === Layer.BIO)
 			return false;
-		else if (edge.node0.arability + edge.node1.arability < BORDER_SPECIFY_THRESHOLD)
+		else if (edge.tileL.arability + edge.tileR.arability < BORDER_SPECIFY_THRESHOLD)
 			return false;
 		else
 			return true;

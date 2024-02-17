@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Nodo, Surface, Triangle} from "./surface.js";
+import {Tile, Surface, Vertex} from "./surface.js";
 import {Spheroid} from "./spheroid.js";
 import {Place} from "../util/coordinates.js";
 import {Vector} from "../util/geometry.js";
@@ -50,14 +50,14 @@ export class Toroid extends Surface {
 		this.obliquity = obliquity;
 	}
 
-	partition(): {triangles: Triangle[], nodos: Nodo[]} {
+	partition(): {triangles: Vertex[], nodos: Tile[]} {
 		const m = 3;
 		const n = 4*Math.trunc(m*this.majorRadius/(this.minorRadius*this.elongation));
 		const nodos = [];
 		for (let i = 0; i < n; i ++) { // construct a chain of points,
 			const ф0 = (i%2 === 0) ? 0 : Math.PI/m;
 			for (let j = 0; j < m; j ++)
-				nodos.push(new Nodo(null, {
+				nodos.push(new Tile(null, {
 					ф: ф0 + 2*Math.PI/m * j,
 					λ: 2*Math.PI/n * i,
 				}, this));
@@ -77,7 +77,7 @@ export class Toroid extends Surface {
 					for (let k = 0; k < 3; k ++)
 						indices.push((i + coords[k][0])%n*m + (j + coords[k][1] + (i%2)*(coords[k][0])%2)%m);
 					// console.log(`[${indices}],`);
-					triangles.push(new Triangle(
+					triangles.push(new Vertex(
 						nodos[indices[0]], nodos[indices[1]], nodos[indices[2]]));
 				}
 			}
@@ -143,11 +143,11 @@ export class Toroid extends Surface {
 			λ: Math.atan2(point.x, -point.y)};
 	}
 
-	normal(node: Place): Vector {
+	normal(place: Place): Vector {
 		return new Vector(
-			Math.cos(node.ф)*Math.sin(node.λ),
-			-Math.cos(node.ф)*Math.cos(node.λ),
-			Math.sin(node.ф));
+			Math.cos(place.ф)*Math.sin(place.λ),
+			-Math.cos(place.ф)*Math.cos(place.λ),
+			Math.sin(place.ф));
 	}
 
 	distance(a: Place, b: Place): number {

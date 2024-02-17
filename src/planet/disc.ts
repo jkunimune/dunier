@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Nodo, Surface, Triangle} from "./surface.js";
+import {Tile, Surface, Vertex} from "./surface.js";
 import {Vector} from "../util/geometry.js";
 import {Place} from "../util/coordinates.js";
 
@@ -41,17 +41,17 @@ export class Disc extends Surface {
 		this.effectiveObliquity = obliquity;
 	}
 
-	partition(): {triangles: Triangle[], nodos: Nodo[]} {
+	partition(): {triangles: Vertex[], nodos: Tile[]} {
 		const nodos = [
-			new Nodo(null, {ф: Math.atan(1/8), λ: 0}, this),
-			new Nodo(null, {ф: Math.atan(1/8), λ: Math.PI/2}, this),
-			new Nodo(null, {ф: Math.atan(1/8), λ: Math.PI}, this),
-			new Nodo(null, {ф: Math.atan(1/8), λ: 3*Math.PI/2}, this),
+			new Tile(null, {ф: Math.atan(1/8), λ: 0}, this),
+			new Tile(null, {ф: Math.atan(1/8), λ: Math.PI/2}, this),
+			new Tile(null, {ф: Math.atan(1/8), λ: Math.PI}, this),
+			new Tile(null, {ф: Math.atan(1/8), λ: 3*Math.PI/2}, this),
 		];
 
 		const triangles = [
-			new Triangle(nodos[0], nodos[1], nodos[2]),
-			new Triangle(nodos[2], nodos[3], nodos[0]),
+			new Vertex(nodos[0], nodos[1], nodos[2]),
+			new Vertex(nodos[2], nodos[3], nodos[0]),
 		];
 
 		return {triangles: triangles, nodos: nodos};
@@ -94,7 +94,7 @@ export class Disc extends Surface {
 			λ: Math.atan2(point.x, -point.y)};
 	}
 
-	normal(node: Place): Vector {
+	normal(place: Place): Vector {
 		return new Vector(0, 0, 1);
 	}
 

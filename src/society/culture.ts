@@ -24,7 +24,7 @@
 import {Random} from "../util/random.js";
 import {Dialect, Lect, WordType, ProtoLang} from "../language/lect.js";
 import {loadTSV} from "../util/fileio.js";
-import {Nodo} from "../planet/surface.js";
+import {Tile} from "../planet/surface.js";
 import {Civ} from "./civ.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 import {Word} from "../language/word.js";
@@ -138,7 +138,7 @@ const DRIFT_RATE = .05; // fraccion of minor attributes that change each century
 export class Culture {
 	private readonly features: Feature[][];
 	public readonly klas: Set<string>;
-	public readonly homeland: Nodo;
+	public readonly homeland: Tile;
 	public readonly government: Civ;
 	public readonly lect: Lect;
 
@@ -150,7 +150,7 @@ export class Culture {
 	 * @param government the Civ that rules this Nodo
 	 * @param seed a random number seed
 	 */
-	constructor(parent: Culture, homeland: Nodo, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
+	constructor(parent: Culture, homeland: Tile, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
 		const rng = new Random(seed);
 		this.features = [];
 		this.government = government;

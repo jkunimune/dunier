@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 import Queue from '../util/queue.js';
-import {Nodo, Surface} from "../planet/surface.js";
+import {Tile, Surface} from "../planet/surface.js";
 import {Random} from "../util/random.js";
 import {Civ} from "./civ.js";
 import {Biome} from "./terrain.js";
@@ -77,7 +77,7 @@ export class World {
 
 	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
-	public readonly politicalMap: Map<Nodo, Civ>;
+	public readonly politicalMap: Map<Tile, Civ>;
 	private readonly civs: Set<Civ>;
 	private nextID: number;
 
@@ -89,19 +89,19 @@ export class World {
 		this.nextID = 0;
 		this.politicalMap = new Map();
 
-		for (const nodo of planet.nodos) { // assine the society-relevant values to the Nodos
-			nodo.arability = ARABILITY.get(nodo.biome); // start with the biome-defined habitability
-			if (nodo.arability > 0 || nodo.biome === Biome.DESERT) { // if it is habitable at all or is a desert
-				for (const neighbor of nodo.neighbors.keys()) { // increase habitability based on adjacent water
-					if (neighbor.biome === Biome.LAKE || nodo.neighbors.get(neighbor).flow > RIVER_UTILITY_THRESHOLD)
-						nodo.arability += FRESHWATER_UTILITY;
+		for (const tiles of planet.tiles) { // assine the society-relevant values to the Tiles
+			tiles.arability = ARABILITY.get(tiles.biome); // start with the biome-defined habitability
+			if (tiles.arability > 0 || tiles.biome === Biome.DESERT) { // if it is habitable at all or is a desert
+				for (const neighbor of tiles.neighbors.keys()) { // increase habitability based on adjacent water
+					if (neighbor.biome === Biome.LAKE || tiles.neighbors.get(neighbor).flow > RIVER_UTILITY_THRESHOLD)
+						tiles.arability += FRESHWATER_UTILITY;
 					if (neighbor.biome === Biome.OCEAN)
-						nodo.arability += SALTWATER_UTILITY;
+						tiles.arability += SALTWATER_UTILITY;
 				}
 			}
-			nodo.arableArea = nodo.arability*nodo.getArea();
+			tiles.arableArea = tiles.arability*tiles.getArea();
 
-			nodo.passability = PASSABILITY.get(nodo.biome);
+			tiles.passability = PASSABILITY.get(tiles.biome);
 		}
 	}
 
@@ -127,7 +127,7 @@ export class World {
 	 * @param rng the random number generator to use
 	 */
 	spawnCivs(rng: Random) {
-		for (const tile of this.planet.nodos) {
+		for (const tile of this.planet.tiles) {
 			const demomultia = World.carryingCapacity*tile.arableArea; // TODO: implement nomads, city state leagues, and federal states.
 			const ruler = this.currentRuler(tile);
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
@@ -152,11 +152,11 @@ export class World {
 	 * @param rng the random number generator to use
 	 */
 	spreadCivs(rng: Random) {
-		const invasions: Queue<{time: number, invader: Civ, start: Nodo, end: Nodo}> = new Queue(
+		const invasions: Queue<{time: number, invader: Civ, start: Tile, end: Tile}> = new Queue(
 			[], (a, b) => a.time - b.time); // keep track of all current invasions
 		for (const invader of this.civs) {
-			for (const ourTile of invader.kenare.keys()) { // each civ initiates all its invasions
-				for (const theirTile of invader.kenare.get(ourTile)) {
+			for (const ourTile of invader.border.keys()) { // each civ initiates all its invasions
+				for (const theirTile of invader.border.get(ourTile)) {
 					const time = rng.exponential(invader.estimateInvasionTime(ourTile, theirTile)); // figure out when they will be done
 					if (time <= World.timeStep) // if that goal is within reach
 						invasions.push({time: time, invader: invader, start: ourTile, end: theirTile}); // start on it
@@ -168,12 +168,12 @@ export class World {
 			const invadee = this.currentRuler(end);
 			const invaderStrength = invader.getStrength(invadee, end);
 			const invadeeStrength = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
-			if (invader.nodos.has(start) && !invader.nodos.has(end) &&
+			if (invader.tiles.has(start) && !invader.tiles.has(end) &&
 					invaderStrength > invadeeStrength) { // check that they're still doable
 				invader.conquer(end, start); // update the game state
-				for (const conquerdLand of invader.nodos.getAllChildren(end)) { // and set up new invasions that bild off of it
+				for (const conquerdLand of invader.tiles.getAllChildren(end)) { // and set up new invasions that bild off of it
 					for (const neighbor of conquerdLand.neighbors.keys()) {
-						if (!invader.nodos.has(neighbor)) {
+						if (!invader.tiles.has(neighbor)) {
 							time = time + rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
 							if (time <= World.timeStep) {
 								invasions.push({time: time, invader: invader, start: end, end: neighbor});
@@ -197,7 +197,7 @@ export class World {
 		const visibleTechnology: Map<Civ, number> = new Map(); // how much advanced technology can they access?
 		for (const civ of this.civs) {
 			visibleTechnology.set(civ, civ.technology); // well, any technology they _have_, for one
-			for (const tiles of civ.kenare.values()) { // check our borders
+			for (const tiles of civ.border.values()) { // check our borders
 				for (const tile of tiles) {
 					const other = this.currentRuler(tile);
 					if (other !== null && other.technology > visibleTechnology.get(civ)) { // if they have something we don't
@@ -222,9 +222,9 @@ export class World {
 	 */
 	haveCataclysm(rng: Random) {
 		for (const civ of this.civs) {
-			for (const nodo of [...civ.nodos])
-				if (civ.nodos.has(nodo) && !rng.probability(World.apocalypseSurvivalRate))
-					civ.lose(nodo);
+			for (const tile of [...civ.tiles])
+				if (civ.tiles.has(tile) && !rng.probability(World.apocalypseSurvivalRate))
+					civ.lose(tile);
 			civ.technology = World.valueOfKnowledge*rng.binomial(
 				civ.technology/World.valueOfKnowledge, World.apocalypseSurvivalRate);
 		}
@@ -237,7 +237,7 @@ export class World {
 	/**
 	 * determine the current Civ of this tile
 	 */
-	currentRuler(tile: Nodo): Civ {
+	currentRuler(tile: Tile): Civ {
 		if (this.politicalMap.has(tile))
 			return this.politicalMap.get(tile);
 		else
@@ -262,10 +262,10 @@ export class World {
 			minNumber = Math.min(minNumber, output.length);
 			if (minNumber === 0)
 				throw "There are no countries in the world";
-			minSize = Math.min(minSize, output[minNumber - 1].nodos.size());
+			minSize = Math.min(minSize, output[minNumber - 1].tiles.size());
 		}
 		if (minSize > 0)
-			output = output.filter((c) => c.nodos.size() >= minSize);
+			output = output.filter((c) => c.tiles.size() >= minSize);
 		return output;
 	}
 

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Nodo, Surface, Triangle} from "./surface.js";
+import {Tile, Surface, Vertex} from "./surface.js";
 import {legendreP2, legendreP4, legendreP6} from "../util/util.js";
 import {Place} from "../util/coordinates.js";
 import {Vector} from "../util/geometry.js";
@@ -48,44 +48,44 @@ export class Spheroid extends Surface {
 		this.obliquity = obliquity;
 	}
 
-	partition(): {triangles: Triangle[]; nodos: Nodo[]} {
+	partition(): {triangles: Vertex[]; nodos: Tile[]} {
 		const b = Math.atan(1/this.aspectRatio);
 		const m = Math.trunc(2*Math.PI/Math.hypot(Math.sin(b)/this.aspectRatio, 1 - Math.cos(b)));
 		const n = 4;
 		const nodos = [];
 		for (let i = 1; i < n; i ++) // construct a grid of points,
 			for (let j = 0; j < m; j ++)
-				nodos.push(new Nodo(null, {
+				nodos.push(new Tile(null, {
 					ф: Math.PI*(i/n - .5),
 					λ: 2*Math.PI*(j + .5*(i%2))/m,
 				}, this));
 		const kS = nodos.length; // assign Nodes to the poles,
-		nodos.push(new Nodo(null, { ф: -Math.PI/2, λ: 0 }, this));
+		nodos.push(new Tile(null, { ф: -Math.PI/2, λ: 0 }, this));
 		const kN = nodos.length;
-		nodos.push(new Nodo(null, { ф: Math.PI/2, λ: 0 }, this));
+		nodos.push(new Tile(null, { ф: Math.PI/2, λ: 0 }, this));
 
 		const triangles = []; // and strew it all with triangles
 		for (let j = 0; j < m; j ++)
 			triangles.push(
-				new Triangle(nodos[kS], nodos[(j+1)%m], nodos[j]));
+				new Vertex(nodos[kS], nodos[(j+1)%m], nodos[j]));
 		for (let i = 1; i < n-1; i ++) {
 			for (let j = 0; j < m; j ++) {
 				if (i%2 === 1) {
-					triangles.push(new Triangle(
+					triangles.push(new Vertex(
 						nodos[(i-1)*m + j],
 						nodos[i*m + (j+1)%m],
 						nodos[i*m + j]));
-					triangles.push(new Triangle(
+					triangles.push(new Vertex(
 						nodos[(i-1)*m + j],
 						nodos[(i-1)*m + (j+1)%m],
 						nodos[i*m + (j+1)%m]));
 				}
 				else {
-					triangles.push(new Triangle(
+					triangles.push(new Vertex(
 						nodos[(i-1)*m + j],
 						nodos[(i-1)*m + (j+1)%m],
 						nodos[i*m + j]));
-					triangles.push(new Triangle(
+					triangles.push(new Vertex(
 						nodos[(i-1)*m + (j+1)%m],
 						nodos[i*m + (j+1)%m],
 						nodos[i*m + j]));
@@ -94,7 +94,7 @@ export class Spheroid extends Surface {
 		}
 		for (let j = 0; j < m; j ++)
 			triangles.push(
-				new Triangle(nodos[kN], nodos[(n-2)*m + j], nodos[(n-2)*m + (j+1)%m]));
+				new Vertex(nodos[kN], nodos[(n-2)*m + j], nodos[(n-2)*m + (j+1)%m]));
 		return {nodos: nodos, triangles: triangles};
 	}
 
@@ -139,11 +139,11 @@ export class Spheroid extends Surface {
 		return {ф: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
 	}
 
-	normal(node: Place): Vector {
+	normal(place: Place): Vector {
 		return new Vector(
-			Math.cos(node.ф)*Math.sin(node.λ),
-			-Math.cos(node.ф)*Math.cos(node.λ),
-			Math.sin(node.ф));
+			Math.cos(place.ф)*Math.sin(place.λ),
+			-Math.cos(place.ф)*Math.cos(place.λ),
+			Math.sin(place.ф));
 	}
 
 	distance(a: Place, b: Place): number { // TODO: check

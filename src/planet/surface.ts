@@ -37,16 +37,16 @@ const FINEST_SCALE = 10; // the smallest edge lengths that it will generate
 
 
 /**
- * Generic 3D collection of nodes and edges
+ * Generic 3D collection of Voronoi polygons
  */
 export abstract class Surface {
-	public nodos: Set<Nodo>;
-	public triangles: Set<Triangle>;
-	public rivers: Set<(Nodo | Triangle)[]>;
+	public tiles: Set<Tile>;
+	public vertices: Set<Vertex>;
+	public rivers: Set<(Tile | Vertex)[]>;
 	public area: number;
 	public height: number;
 	public axis: Vector; // orientation of geodetic coordinate system
-	public edge: Map<Nodo, {prev: Nodo, next: Nodo}>;
+	public edge: Map<Tile, {prev: Tile, next: Tile}>;
 	readonly фMin: number;
 	readonly фMax: number;
 	refLatitudes: number[];
@@ -55,7 +55,7 @@ export abstract class Surface {
 
 
 	protected constructor(фMin: number, фMax: number) {
-		this.nodos = null;
+		this.tiles = null;
 		this.фMin = фMin;
 		this.фMax = фMax;
 		this.axis = null;
@@ -89,106 +89,106 @@ export abstract class Surface {
 	}
 
 	/**
-	 * fill this.nodes with random nodes.
+	 * fill this.tiles with random tiles.
 	 */
 	populate(rng: Random): void {
-		// generate the nodes
-		const nodos: Nodo[] = []; // remember to clear the old nodes, if necessary
+		// generate the tiles
+		const tiles: Tile[] = []; // remember to clear the old tiles, if necessary
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++)
-			nodos.push(new Nodo(i, this.randomPoint(rng), this)); // push a bunch of new ones
-		this.nodos = new Set(nodos); // keep that list, but save it as a set as well
+			tiles.push(new Tile(i, this.randomPoint(rng), this)); // push a bunch of new ones
+		this.tiles = new Set(tiles); // keep that list, but save it as a set as well
 
 		// seed the surface
 		const partition = this.partition();
 
 		// call the delaunay triangulation subroutine
 		const triangulation = delaunayTriangulate(
-			nodos.map((n: Nodo) => n.pos),
-			nodos.map((n: Nodo) => n.normal),
-			partition.nodos.map((n: Nodo) => n.pos),
-			partition.nodos.map((n: Nodo) => n.normal),
-			partition.triangles.map((t: Triangle) => t.vertices.map((n: Nodo) => partition.nodos.indexOf(n)))
+			tiles.map((n: Tile) => n.pos),
+			tiles.map((n: Tile) => n.normal),
+			partition.nodos.map((n: Tile) => n.pos),
+			partition.nodos.map((n: Tile) => n.normal),
+			partition.triangles.map((t: Vertex) => t.tiles.map((n: Tile) => partition.nodos.indexOf(n)))
 		);
-		this.triangles = new Set(); // unpack the resulting triangles
+		this.vertices = new Set(); // unpack the resulting Voronoi vertices
 		for (const [ia, ib, ic] of triangulation.triangles) {
-			this.triangles.add(new Triangle(nodos[ia], nodos[ib], nodos[ic])); // this will automatically generate the Edges
+			this.vertices.add(new Vertex(tiles[ia], tiles[ib], tiles[ic])); // this will automatically generate the Edges
 		}
-		for (let i = 0; i < nodos.length; i ++) {
+		for (let i = 0; i < tiles.length; i ++) {
 			for (const j of triangulation.parentage[i]) // as well as the parentage
-				nodos[i].parents.push(nodos[j]);
+				tiles[i].parents.push(tiles[j]);
 			for (const [j, k] of triangulation.between[i]) // and separation information
-				nodos[i].between.push([nodos[j], nodos[k]]);
+				tiles[i].between.push([tiles[j], tiles[k]]);
 		}
 
-		// after all that's through, some nodes won't have any parents
-		for (let i = 1; i < nodos.length; i ++) {
-			if (nodos[i].parents.length === 0) { // if that's so,
-				const orphan = nodos[i];
-				let closest = null; // the easiest thing to do is to just assign it the closest node that came before it using the list
+		// after all that's through, some tiles won't have any parents
+		for (let i = 1; i < tiles.length; i ++) {
+			if (tiles[i].parents.length === 0) { // if that's so,
+				const orphan = tiles[i];
+				let closest = null; // the easiest thing to do is to just assign it the closest tile that came before it using the list
 				let minDistance = Number.POSITIVE_INFINITY;
 				for (let j = 0; j < orphan.index; j ++) {
-					const distance = this.distance(nodos[j], orphan);
+					const distance = this.distance(tiles[j], orphan);
 					if (distance < minDistance) {
 						minDistance = distance;
-						closest = nodos[j];
+						closest = tiles[j];
 					}
 				}
 				orphan.parents = [closest];
 			}
 		}
 
-		// finally, complete the remaining triangles' network graphs
-		for (const triangle of this.triangles) {
+		// finally, complete the remaining vertices' network graphs
+		for (const vertex of this.vertices) {
 			for (let i = 0; i < 3; i ++) {
-				const edge = triangle.edges[i];
-				if (triangle === edge.triangleL)
-					triangle.neighbors.set(edge.triangleR, edge);
+				const edge = vertex.edges[i];
+				if (vertex === edge.vertex1)
+					vertex.neighbors.set(edge.vertex0, edge);
 				else
-					triangle.neighbors.set(edge.triangleL, edge);
+					vertex.neighbors.set(edge.vertex1, edge);
 			}
-			triangle.computeCircumcenter();
+			vertex.computePosition();
 		}
 
 		// and find the edge, if there is one
-		for (const nodo of this.nodos)
-			for (const neibor of nodo.neighbors.keys())
-				if (nodo.rightOf(neibor) === null)
-					this.edge.set(nodo, {next: neibor, prev: null});
-		for (const nodo of this.edge.keys()) // and make it back-searchable
-			this.edge.get(this.edge.get(nodo).next).prev = nodo;
+		for (const tile of this.tiles)
+			for (const neibor of tile.neighbors.keys())
+				if (tile.rightOf(neibor) === null)
+					this.edge.set(tile, {next: neibor, prev: null});
+		for (const tile of this.edge.keys()) // and make it back-searchable
+			this.edge.get(this.edge.get(tile).next).prev = tile;
 
-		// now we can save each node's strait skeleton
-		for (const nodo of this.nodos) {
+		// now we can save each tile's strait skeleton to the edges (to bound the greebling)
+		for (const tile of this.tiles) {
 			const vertices: Point[] = [];
-			for (const {vertex} of nodo.getPolygon()) {
+			for (const {vertex} of tile.getPolygon()) {
 				vertices.push({
-					x: vertex.minus(nodo.pos).dot(nodo.east), // project the voronoi polygon into 2D
-					y: vertex.minus(nodo.pos).dot(nodo.north),
+					x: vertex.minus(tile.pos).dot(tile.east), // project the voronoi polygon into 2D
+					y: vertex.minus(tile.pos).dot(tile.north),
 				});
 			}
 			checkVoronoiPolygon(vertices); // validate it
 			let skeletonLeaf = straightSkeleton(vertices); // get the strait skeleton
-			for (const {edge} of nodo.getPolygon()) {
+			for (const {edge} of tile.getPolygon()) {
 				const arc = skeletonLeaf.pathToNextLeaf();
 				const projectedArc: Vector[] = [];
 				for (const joint of arc) {
 					const {x, y} = joint.value;
 					projectedArc.push( // project it back
-						nodo.pos.plus(
-							nodo.east.times(x).plus(
-							nodo.north.times(y))));
+						tile.pos.plus(
+							tile.east.times(x).plus(
+							tile.north.times(y))));
 				}
-				if (edge.node0 === nodo) // then save it to the edge
-					edge.backBorder = projectedArc;
+				if (edge.tileL === tile) // then save each part of the skeleton it to an edge
+					edge.leftBorder = projectedArc;
 				else
-					edge.foreBorder = projectedArc;
+					edge.rightBorder = projectedArc;
 				skeletonLeaf = arc[arc.length - 1]; // move onto the next one
 			}
 		}
 
 		// finally, add the greebles
-		for (const triangle of this.triangles) // TODO this probably belongs in terrain.ts, no?
-			for (const edge of triangle.edges)
+		for (const vertex of this.vertices) // TODO this probably belongs in terrain.ts, no?
+			for (const edge of vertex.edges)
 				if (edge.path === null)
 					edge.greeblePath(rng);
 	}
@@ -238,11 +238,11 @@ export abstract class Surface {
 	}
 
 	/**
-	 * return a list of nodes along with an associated list of triangles that
+	 * return a list of Delaunay nodes along with an associated list of triangles that
 	 * completely cover this Surface. The mesh must never diverge from the surface farther
 	 * than the radius of curvature.
 	 */
-	abstract partition(): {nodos: Nodo[], triangles: Triangle[]};
+	abstract partition(): {nodos: Tile[], triangles: Vertex[]};
 
 	/**
 	 * return the local length-to-latitude rate [km]
@@ -280,10 +280,10 @@ export abstract class Surface {
 	abstract фλ(point: {x: number, y: number, z: number}): Place;
 
 	/**
-	 * return the normalized vector pointing outward at this node. the node may be assumed
+	 * return the normalized vector pointing outward at this location. the location may be assumed
 	 * to be on this Surface.
 	 */
-	abstract normal(node: Place): Vector;
+	abstract normal(tile: Tile): Vector;
 
 	/**
 	 * orthodromic distance from A to B on the surface (it's okay if it's just
@@ -294,9 +294,10 @@ export abstract class Surface {
 
 
 /**
- * A single Voronoi polygon, which contains geographical information
+ * a Voronoi polygon, which contains geographical information.
+ * equivalent to a Delaunay node.
  */
-export class Nodo {
+export class Tile {
 	public readonly surface: Surface;
 	public readonly index: number;
 	public readonly ф: number;
@@ -305,9 +306,9 @@ export class Nodo {
 	public readonly normal: Vector;
 	public readonly east: Vector;
 	public readonly north: Vector;
-	public readonly neighbors: Map<Nodo, Edge>;
-	public readonly between: Nodo[][];
-	public parents: Nodo[];
+	public readonly neighbors: Map<Tile, Edge>;
+	public readonly between: Tile[][];
+	public parents: Tile[];
 
 	public height: number;
 	public temperature: number;
@@ -319,7 +320,7 @@ export class Nodo {
 	public culture: Culture;
 	public plateIndex: number;
 	public windVelocity: Vector;
-	public downwind: Nodo[];
+	public downwind: Tile[];
 	public flow: number;
 	public flag: boolean;
 	private area: number;
@@ -347,23 +348,23 @@ export class Nodo {
 	}
 
 	/**
-	 * return the triangle which appears left of that from the point of view of this.
+	 * return the Vertex which appears left of that from the point of view of this.
 	 */
-	leftOf(that: Nodo): Triangle {
-		if (this.neighbors.get(that).node0 === this)
-			return this.neighbors.get(that).triangleL;
+	leftOf(that: Tile): Vertex {
+		if (this.neighbors.get(that).tileL === this)
+			return this.neighbors.get(that).vertex1;
 		else
-			return this.neighbors.get(that).triangleR;
+			return this.neighbors.get(that).vertex0;
 	}
 
 	/**
-	 * return the triangle which appears right of that from the point of view of this.
+	 * return the Vertex which appears right of that from the point of view of this.
 	 */
-	rightOf(that: Nodo): Triangle {
-		if (this.neighbors.get(that).node0 === this)
-			return this.neighbors.get(that).triangleR;
+	rightOf(that: Tile): Vertex {
+		if (this.neighbors.get(that).tileL === this)
+			return this.neighbors.get(that).vertex0;
 		else
-			return this.neighbors.get(that).triangleL;
+			return this.neighbors.get(that).vertex1;
 	}
 
 	isWater(): boolean {
@@ -382,8 +383,7 @@ export class Nodo {
 
 	/**
 	 * return an orderd list that goes around the edge (widdershins, ofc).  each element
-	 * of the list is the circumcenter of a triangle and the edge that leads from it to
-	 * the next one.
+	 * of the list is a Voronoi Vertex and the edge that leads from it to the next one.
 	 */
 	getPolygon(): { vertex: Vector, edge: Edge }[] {
 		const output = [];
@@ -393,18 +393,18 @@ export class Nodo {
 		else
 			start = this.neighbors.keys().next().value;
 
-		let nodo = start;
+		let tile = start;
 		do {
-			const triangle = this.leftOf(nodo);
-			if (triangle === null)
+			const vertex = this.leftOf(tile);
+			if (vertex === null)
 				break;
-			nodo = triangle.widershinsOf(nodo);
+			tile = vertex.widershinsOf(tile);
 
 			output.push({
-				vertex: triangle.centerPos,
-				edge: this.neighbors.get(nodo)
+				vertex: vertex.pos,
+				edge: this.neighbors.get(tile)
 			});
-		} while (nodo !== start);
+		} while (tile !== start);
 
 		return output;
 	}
@@ -412,147 +412,149 @@ export class Nodo {
 
 
 /**
- * A voronoi vertex, which exists at the confluence of three Nodos
+ * a Voronoi vertex, which exists at the intersection of three Tiles.
+ * equivalent to a Delaunay triangle.
  */
-export class Triangle {
+export class Vertex {
 	public ф: number;
 	public λ: number;
-	public vertices: Nodo[];
+	public tiles: Tile[];
 	public edges: Edge[];
-	public neighbors: Map<Triangle, Edge>;
+	public neighbors: Map<Vertex, Edge>;
 	public surface: Surface;
-	public center: Place; // circumcenter (the locacion of the vertex on the Voronoi graph (also present in ф and λ))
-	public centerPos: Vector; // circumcenter (in 3D this time)
+	public pos: Vector; // location in 3D Cartesian
 
 	public height: number;
 	public flow: number;
-	public downstream: Triangle | Nodo;
+	public downstream: Vertex | Tile;
 
-	constructor(a: Nodo, b: Nodo, c: Nodo) {
-		const nodeDix = a.normal.plus(b.normal).plus(c.normal);
-		const faceDix = b.pos.minus(a.pos).cross(c.pos.minus(a.pos));
-		if (nodeDix.dot(faceDix) <= 0)
-			throw "triangles must be instantiated facing outward, but this one was not.";
-		this.vertices = [a, b, c]; // nodes, ordered widdershins
+	constructor(a: Tile, b: Tile, c: Tile) {
+		const tileNormal = a.normal.plus(b.normal).plus(c.normal);
+		const vertexNormal = b.pos.minus(a.pos).cross(c.pos.minus(a.pos));
+		if (tileNormal.dot(vertexNormal) <= 0)
+			throw "Vertices must be instantiated facing outward, but this one was not.";
+		this.tiles = [a, b, c]; // adjacent tiles, ordered widdershins
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
-		this.neighbors = new Map(); // adjacent triangles
+		this.neighbors = new Map(); // connected vertices
 		this.surface = a.surface;
 
 		for (let i = 0; i < 3; i ++) { // check each pair to see if they are already connected
-			const node0 = this.vertices[i], node1 = this.vertices[(i+1)%3];
-			if (node0.neighbors.has(node1)) { // if so,
-				this.edges[i] = node0.neighbors.get(node1); // take that edge
-				if (this.edges[i].node0 === node0) // and depending on its direction,
-					this.edges[i].triangleL = this; // replace one of the triangles on it with this
+			const tileL = this.tiles[i], tileR = this.tiles[(i+1)%3];
+			if (tileL.neighbors.has(tileR)) { // if so,
+				this.edges[i] = tileL.neighbors.get(tileR); // take that edge
+				if (this.edges[i].tileL === tileL) // and depending on its direction,
+					this.edges[i].vertex1 = this; // replace one of the Vertexes on it with this
 				else
-					this.edges[i].triangleR = this;
+					this.edges[i].vertex0 = this;
 			}
 			else { // if not,
 				this.edges[i] = new Edge(
-					node0, null, node1, this, this.surface.distance(node0, node1)); // create an edge with the new triangle adjacent to it
+					tileL, null, tileR, this, this.surface.distance(tileL, tileR)); // create an edge with the new Vertex connected to it
 			}
 		}
 	}
 
 	/**
-	 * compute the ф-λ parameterization of the circumcenter in the plane normal to the sum
-	 * of the vertices' normal vectors.
+	 * compute the ф-λ parameterization of this Vertex in the plane normal to the sum
+	 * of the adjacent tiles' normal vectors.  this works out to finding the circumcenter
+	 * of the Delaunay triangle.
 	 */
-	computeCircumcenter(): void {
+	computePosition(): void {
 		let nAvg = new Vector(0, 0, 0);
-		for (const vertex of this.vertices)
-			nAvg = nAvg.plus(vertex.normal);
+		for (const tile of this.tiles)
+			nAvg = nAvg.plus(tile.normal);
 		const {u, v, n} = orthogonalBasis(nAvg, true);
-		const projected: {x: number, y: number, z: number}[] = [];
-		for (const vertex of this.vertices) // project all of the vertices into the tangent plane
-			projected.push({
+		const projectedVertices: {x: number, y: number, z: number}[] = [];
+		// project all of the Delaunay vertices into the tangent plane
+		for (const vertex of this.tiles)
+			projectedVertices.push({
 				x: u.dot(vertex.pos),
 				y: v.dot(vertex.pos),
 				z: n.dot(vertex.pos)});
 
-		const {x, y} = circumcenter(projected);
+		const {x, y} = circumcenter(projectedVertices);
 		let z = 0;
-		for (const nodo of projected)
-			z += nodo.z/3;
-		this.centerPos = u.times(x).plus(v.times(y)).plus(n.times(z));
-		this.center = this.surface.фλ(this.centerPos); // finally, put it back in ф-λ space
-
-		this.ф = this.center.ф; // and make these values a bit easier to access
-		this.λ = this.center.λ;
+		for (const projectedVertex of projectedVertices)
+			z += projectedVertex.z/3;
+		// put the resulting vector back in the global coordinate system
+		this.pos = u.times(x).plus(v.times(y)).plus(n.times(z));
+		const {ф, λ} = this.surface.фλ(this.pos); // finally, put it back in ф-λ space
+		this.ф = ф;
+		this.λ = λ;
 	}
 
 	/**
 	 * Find and return the vertex across from the given edge.
 	 */
-	acrossFrom(edge: Edge): Nodo {
-		for (const vertex of this.vertices)
-			if (vertex !== edge.node0 && vertex !== edge.node1)
-				return vertex;
+	acrossFrom(edge: Edge): Tile {
+		for (const tile of this.tiles)
+			if (tile !== edge.tileL && tile !== edge.tileR)
+				return tile;
 		throw "Could not find a nonadjacent vertex.";
 	}
 
 	/**
-	 * Find and return the vertex widershins of the given edge.
+	 * Find and return the tile widershins of the given edge.
 	 */
-	widershinsOf(node: Nodo): Nodo {
+	widershinsOf(tile: Tile): Tile {
 		for (let i = 0; i < 3; i ++)
-			if (this.vertices[i] === node)
-				return this.vertices[(i+1)%3];
-		throw "This node isn't even in this triangle.";
+			if (this.tiles[i] === tile)
+				return this.tiles[(i+1)%3];
+		throw "This Vertex isn't even on this Tile.";
 	}
 
 	toString(): string {
-		return `${this.vertices[0].pos}--${this.vertices[1].pos}--${this.vertices[2].pos}`;
+		return `${this.tiles[0].pos}--${this.tiles[1].pos}--${this.tiles[2].pos}`;
 	}
 }
 
 
 /**
- * A line between two connected Nodos, and separating two triangles
+ * A line between two connected Vertexes, separating two adjacent Tiles
  */
 export class Edge {
-	public node0: Nodo;
-	public node1: Nodo;
-	public triangleL: Triangle;
-	public triangleR: Triangle;
+	public tileL: Tile;
+	public tileR: Tile;
+	public vertex1: Vertex;
+	public vertex0: Vertex;
 	public length: number;
 	public flow: number;
 	public path: Place[];
-	public foreBorder: Vector[]; // these borders are the limits of the greebling
-	public backBorder: Vector[];
+	public rightBorder: Vector[]; // these borders are the limits of the greebling
+	public leftBorder: Vector[];
 
-	constructor(node0: Nodo, triangleR: Triangle, node1: Nodo, triangleL: Triangle, length: number) {
-		this.node0 = node0; // save these new values for the edge
-		this.triangleR = triangleR;
-		this.node1 = node1;
-		this.triangleL = triangleL;
+	constructor(tileL: Tile, vertex0: Vertex, tileR: Tile, vertex1: Vertex, length: number) {
+		this.tileL = tileL; // save these new values for the edge
+		this.vertex0 = vertex0;
+		this.tileR = tileR;
+		this.vertex1 = vertex1;
 		this.length = length;
 		this.path = null;
 
-		node0.neighbors.set(node1, this);
-		node1.neighbors.set(node0, this);
+		tileL.neighbors.set(tileR, this);
+		tileR.neighbors.set(tileL, this);
 
-		this.foreBorder = [];
-		this.backBorder = [];
+		this.rightBorder = [];
+		this.leftBorder = [];
 	}
 
 	/**
-	 * transform these points onto the surface so that t maps to the direction along the
-	 * voronoi edge, and s maps to the perpendicular direction.  specifically (0,0)
-	 * corresponds to triangleL, (0, 1) corresponds to triangleR, and (1, 1/2) corresponds
-	 * to node1.
+	 * transform these points onto the surface so that s maps to the direction along the
+	 * voronoi edge but negative, and t maps to the perpendicular direction.  specifically (0,0)
+	 * corresponds to vertex1, (0, 1) corresponds to vertex0, and (1, 1/2) corresponds
+	 * to vertexR.
 	 */
 	greeblePath(rng: Random): void {
 		// define the inicial coordinate vectors
-		const origin = this.triangleL.centerPos; // compute its coordinate system
-		const i = this.triangleR.centerPos.minus(origin);
-		const k = this.node0.normal.plus(this.node1.normal);
+		const origin = this.vertex1.pos; // compute its coordinate system
+		const i = this.vertex0.pos.minus(origin);
+		const k = this.tileL.normal.plus(this.tileR.normal);
 		let j = k.cross(i);
 		j = j.times(Math.sqrt(i.sqr()/j.sqr())); // make sure |i| == |j|
 
 		// transform the border into the plane
 		const bounds = [];
-		for (const vector of this.foreBorder.concat(this.backBorder))
+		for (const vector of this.rightBorder.concat(this.leftBorder))
 			bounds.push({
 				x: vector.minus(origin).dot(i)/i.sqr(),
 				y: vector.minus(origin).dot(j)/j.sqr(),
@@ -567,14 +569,14 @@ export class Edge {
 		this.path = [];
 		for (const {x, y} of points) {
 			const transformed = origin.plus(i.times(x).plus(j.times(y)));
-			this.path.push(this.node0.surface.фλ(transformed));
+			this.path.push(this.tileL.surface.фλ(transformed));
 		}
 		// finally, adjust the endpoints to prevent roundoff issues
-		this.path[0] = this.triangleL.center;
-		this.path[this.path.length - 1] = this.triangleR.center;
+		this.path[0] = this.vertex1;
+		this.path[this.path.length - 1] = this.vertex0;
 	}
 
 	toString(): string {
-		return `${this.node0.pos}--${this.node1.pos}`;
+		return `${this.tileL.pos}--${this.tileR.pos}`;
 	}
 }
