@@ -33,7 +33,7 @@ import {
     tanh, union
 } from "../src/util/util.js";
 
-describe("testing argmax()", () => {
+describe("argmax()", () => {
     test("empty", () => {
         expect(() => argmax([])).toThrowError();
     });
@@ -48,7 +48,7 @@ describe("testing argmax()", () => {
     });
 });
 
-describe("testing legendreP2()", () => {
+describe("legendreP2()", () => {
     test("0", () => {
         expect(legendreP2(0)).toBeCloseTo(-1/2.);
     });
@@ -57,7 +57,7 @@ describe("testing legendreP2()", () => {
     });
 });
 
-describe("testing legendreP4()", () => {
+describe("legendreP4()", () => {
     test("0", () => {
         expect(legendreP4(0)).toBeCloseTo(3/8.);
     });
@@ -66,7 +66,7 @@ describe("testing legendreP4()", () => {
     });
 });
 
-describe("testing legendreP6()", () => {
+describe("legendreP6()", () => {
     test("0", () => {
         expect(legendreP6(0)).toBeCloseTo(-5/16.);
     });
@@ -75,7 +75,7 @@ describe("testing legendreP6()", () => {
     });
 });
 
-describe("testing tanh()", () => {
+describe("tanh()", () => {
     test("small", () => {
         expect(tanh(-137)).toBeCloseTo(-1);
     });
@@ -90,7 +90,7 @@ describe("testing tanh()", () => {
     });
 });
 
-describe("testing arctanh()", () => {
+describe("arctanh()", () => {
     test("0", () => {
         expect(arctanh(0)).toBeCloseTo(0);
     });
@@ -102,7 +102,7 @@ describe("testing arctanh()", () => {
     });
 });
 
-describe("testing binarySearch()", () => {
+describe("binarySearch()", () => {
     test("empty", () => {
         expect(() => binarySearch([], x => x >= 0)).toThrowError();
     });
@@ -120,7 +120,7 @@ describe("testing binarySearch()", () => {
     });
 });
 
-describe("testing linterp()", () => {
+describe("linterp()", () => {
     test("empty", () => {
         expect(() => linterp(0, [], [])).toThrowError();
     });
@@ -138,7 +138,7 @@ describe("testing linterp()", () => {
     });
 });
 
-describe("testing localizeInRange()", () => {
+describe("localizeInRange()", () => {
     test("infinite", () => {
         expect(localizeInRange(1, -Infinity, Infinity)).toEqual(1);
     });
@@ -153,7 +153,7 @@ describe("testing localizeInRange()", () => {
     });
 });
 
-describe("testing isBetween()", () => {
+describe("isBetween()", () => {
     test("in", () => {
         expect(isBetween(1, 0, 1)).toEqual(true);
     });
@@ -168,7 +168,7 @@ describe("testing isBetween()", () => {
     });
 });
 
-describe("testing union()", () => {
+describe("union()", () => {
     test("empty", () => {
         expect(union([], [])).toEqual([]);
     });
@@ -180,7 +180,7 @@ describe("testing union()", () => {
     });
 });
 
-describe("testing filterSet()", () => {
+describe("filterSet()", () => {
     test("generic", () => {
         expect(
             filterSet(new Set([0, 7, 3, 4]), (x) => x%2 === 0)
@@ -190,7 +190,7 @@ describe("testing filterSet()", () => {
     });
 });
 
-describe("testing decodeBase36()", () => {
+describe("decodeBase36()", () => {
     test("empty", () => {
         expect(decodeBase37("")).toEqual(0);
     });
@@ -211,7 +211,7 @@ describe("testing decodeBase36()", () => {
     });
 });
 
-describe("testing longestShortestPath()", () => {
+describe("longestShortestPath()", () => {
     const graph = [
         {
             x: -Math.sqrt(3)/2., y: 0, edges: [
@@ -244,7 +244,7 @@ describe("testing longestShortestPath()", () => {
         },
     ];
 
-    test("from centeral endpoint", () => {
+    test("from central endpoint", () => {
         expect(
             longestShortestPath(graph, new Set([2]))
         ).toEqual({points: [4, 2], length: Math.sqrt(3)/2.});
@@ -261,7 +261,7 @@ describe("testing longestShortestPath()", () => {
     });
 });
 
-describe("testing Matrix", () => {
+describe("Matrix", () => {
     const A = new Matrix([[1, -2], [3, -4]]);
     const B = new Matrix([[0, 1], [-1, 0]]);
     test("get()", () => {
