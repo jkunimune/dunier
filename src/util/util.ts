@@ -78,21 +78,25 @@ export function arctanh(x: number): number {
 }
 
 /**
- * search a sorted array for the index of the last element less than or equal to a value,
- * or -1 if there is no such element.
+ * search a sorted array for the first element that meets some condition
+ * @param array the set of values to search, ordered such that all elements that don't
+ *              meet the condition come before all elements that do meet the condition
+ * @param condition the criterion that will determine which indices are acceptable
+ * @return the index of the first element that meets the condition, or the length of
+ *         the array if there is no such element.
  */
-export function binarySearch(value: number, array: number[]): number {
+export function binarySearch<T>(array: T[], condition: (item: T) => boolean): number {
 	if (array.length === 0)
 		throw "I cannot search an empty array.";
 	let min = -1, max = array.length;
 	while (max - min > 1) {
 		const mid = Math.trunc((min + max)/2);
-		if (array[mid] <= value)
-			min = mid;
-		else
+		if (condition(array[mid]))
 			max = mid;
+		else
+			min = mid;
 	}
-	return min;
+	return max;
 }
 
 /**
@@ -106,8 +110,8 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 	else if (inVal >= inRef[inRef.length - 1])
 		return exRef[exRef.length - 1];
 	else {
-		const i = binarySearch(inVal, inRef);
-		return (inVal - inRef[i])/(inRef[i + 1] - inRef[i])*(exRef[i + 1] - exRef[i]) + exRef[i];
+		const i = binarySearch(inRef, (ref) => ref >= inVal);
+		return (inVal - inRef[i - 1])/(inRef[i] - inRef[i - 1])*(exRef[i] - exRef[i - 1]) + exRef[i - 1];
 	}
 }
 

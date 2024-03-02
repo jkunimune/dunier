@@ -104,19 +104,19 @@ describe("testing arctanh()", () => {
 
 describe("testing binarySearch()", () => {
     test("empty", () => {
-        expect(() => binarySearch(0, [])).toThrowError();
+        expect(() => binarySearch([], x => x >= 0)).toThrowError();
     });
     test("less than all", () => {
-        expect(binarySearch(0, [1])).toEqual(-1);
+        expect(binarySearch([0, 1, 2], x => x >= -1)).toEqual(0);
     });
     test("equal to one", () => {
-        expect(binarySearch(1, [0, 1, 2])).toEqual(1);
+        expect(binarySearch([0, 1, 2], x => x >= 1)).toEqual(1);
     });
     test("in the middle", () => {
-        expect(binarySearch(1.5, [0, 1, 2])).toEqual(1);
+        expect(binarySearch([0, 1, 2], x => x >= 1.5)).toEqual(2);
     });
     test("greater than all", () => {
-        expect(binarySearch(2, [1])).toEqual(0);
+        expect(binarySearch([0, 1, 2], x => x >= 3)).toEqual(3);
     });
 });
 
