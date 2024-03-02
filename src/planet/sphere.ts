@@ -57,6 +57,6 @@ export class Sphere extends Spheroid {
 	}
 
 	normal(tile: Tile): Vector {
-		return tile.pos.norm();
+		return tile.pos.over(this.radius);
 	}
 }

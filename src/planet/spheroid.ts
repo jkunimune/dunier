@@ -30,7 +30,7 @@ import {Vector} from "../util/geometry.js";
  * an oblate spheroid
  */
 export class Spheroid extends Surface {
-	private readonly radius: number;
+	protected readonly radius: number;
 	private readonly aspectRatio: number;
 	private readonly flattening: number;
 	private readonly eccentricity: number;
