@@ -37,6 +37,7 @@
  1958	fighting	nuke
  1972	lighting	led
  1989	pasttime	internet
- 2050	movement	space
+ 2018	movement	scooter
+ 2070	movement	space
  2100	pasttime	vr
  2800	fighting	death_star
