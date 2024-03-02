@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import Queue from '../datastructures/queue';
+import Queue from '../datastructures/queue.js';
 import {Surface, Vertex, Tile} from "../planet/surface.js";
 import {Random} from "../util/random.js";
 import {argmax, union} from "../util/util.js";
