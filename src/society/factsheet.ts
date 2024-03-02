@@ -23,7 +23,7 @@
  */
 import {Civ} from "./civ.js";
 import {PortableDocument} from "../util/portabledocument.js";
-import {format} from "../util/internationalization.js";
+import {format} from "../gui/internationalization.js";
 
 
 /**

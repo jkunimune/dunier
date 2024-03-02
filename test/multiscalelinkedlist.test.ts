@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {MultiScaleLinkedList} from "../src/util/multiscalelinkedlist.js";
+import {MultiScaleLinkedList} from "../src/datastructures/multiscalelinkedlist.js";
 
 // build a test list that is numbers 0 thru 12
 const list = new MultiScaleLinkedList<number>(0, 12, 12);

@@ -27,7 +27,7 @@ import {Culture} from "../society/culture.js";
 import {Biome} from "../society/terrain.js";
 import {Place, Point} from "../util/coordinates.js";
 import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
-import {MultiScaleLinkedList} from "../util/multiscalelinkedlist.js";
+import {MultiScaleLinkedList} from "../datastructures/multiscalelinkedlist.js";
 import {straightSkeleton} from "../util/straightskeleton.js";
 
 

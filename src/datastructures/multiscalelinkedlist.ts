@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {binarySearch} from "./util.js";
+import {binarySearch} from "../util/util.js";
 
 /**
  * an ordered list of values that can be resolved at multiple scales.  the idea is that

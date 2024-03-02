@@ -1,4 +1,4 @@
-import {loadJSON} from "./fileio.js";
+import {loadJSON} from "../util/fileio.js";
 import {Word} from "../language/word.js";
 import {DOM} from "./dom.js";
 

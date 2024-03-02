@@ -27,7 +27,7 @@ import {Random} from "../util/random.js";
 import {World} from "./world.js";
 import {Culture} from "./culture.js";
 import {Word} from "../language/word.js";
-import {TreeMap} from "../util/treemap.js";
+import {TreeMap} from "../datastructures/treemap.js";
 import {Biome} from "./terrain.js";
 
 

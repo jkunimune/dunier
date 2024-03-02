@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {straightSkeleton} from "../src/util/straightskeleton";
+import {straightSkeleton} from "../src/util/straightskeleton.js";
 
 test("empty", () => {
    expect(() => straightSkeleton([])).toThrowError();

@@ -23,7 +23,7 @@
  */
 import {Surface} from "../planet/surface.js";
 import {isBetween, localizeInRange} from "../util/util.js";
-import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
+import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 import {
 	assert_xy,
 	assert_фλ,

@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 import "../lib/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
-import {DOM} from "../util/dom.js";
-import {format} from "../util/internationalization.js";
+import {DOM} from "./dom.js";
+import {format} from "./internationalization.js";
 import {generateTerrain, populateSurface} from "../society/terrain.js";
 import {Surface} from "../planet/surface.js";
 import {World} from "../society/world.js";

@@ -28,7 +28,7 @@ import {MapProjection} from "./projection.js";
 import {Civ} from "../society/civ.js";
 import {delaunayTriangulate} from "../util/delaunay.js";
 import {circularRegression} from "../util/fitting.js";
-import {ErodingSegmentTree} from "../util/erodingsegmenttree.js";
+import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 import {assert_xy, endpoint, PathSegment, Place} from "../util/coordinates.js";
 import {chordCenter, Vector} from "../util/geometry.js";
 import {Biome} from "../society/terrain.js";

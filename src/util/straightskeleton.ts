@@ -23,8 +23,8 @@
  */
 
 import {Point} from "./coordinates.js";
-import {Tree} from "./tree.js";
-import Queue from "./queue.js";
+import {Tree} from "../datastructures/tree.js";
+import Queue from "../datastructures/queue.js";
 import {trajectoryIntersection} from "./geometry.js";
 
 /**

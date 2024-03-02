@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 // @ts-ignore
-import Queue from "../util/queue.js";
+import Queue from "../datastructures/queue.js";
 import {Point} from "./coordinates.js";
 import {Random} from "./random.js";
 import {trajectoryIntersection, Vector} from "./geometry.js";
