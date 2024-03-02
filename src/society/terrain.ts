@@ -25,10 +25,8 @@ import Queue from '../util/queue.js';
 import {Surface, Vertex, Tile} from "../planet/surface.js";
 import {Random} from "../util/random.js";
 import {argmax, union} from "../util/util.js";
-import {checkVoronoiPolygon, Vector} from "../util/geometry.js";
+import {Vector} from "../util/geometry.js";
 import { delaunayTriangulate } from '../util/delaunay.js';
-import {straightSkeleton} from "../util/straightskeleton.js";
-import {Point} from "../util/coordinates.js";
 
 
 const TILE_AREA = 30000; // target area of a tile in km^2
@@ -50,7 +48,9 @@ const TROPIC_TEMP = +22; // °C
 const FOREST_INTERCEPT = -40; // °C
 const FOREST_SLOPE = 37; // °C/u
 const MARSH_THRESH = 3.5; // u
+
 const RIVER_THRESH = -25; // °C
+const RIVER_WIDTH = 10; // km
 const CANYON_DEPTH = 0.1; // km
 const LAKE_THRESH = -0.07; // km
 
@@ -155,54 +155,8 @@ export function populateSurface(surf: Surface, rng: Random): void {
 		}
 	}
 
-	// finally, complete the remaining vertices' network graphs
-	for (const vertex of surf.vertices) {
-		for (let i = 0; i < 3; i ++) {
-			const edge = vertex.edges[i];
-			if (vertex === edge.vertex1)
-				vertex.neighbors.set(edge.vertex0, edge);
-			else
-				vertex.neighbors.set(edge.vertex1, edge);
-		}
-		vertex.computePosition();
-	}
-
-	// and find the edge, if there is one
-	for (const tile of surf.tiles)
-		for (const neibor of tile.neighbors.keys())
-			if (tile.rightOf(neibor) === null)
-				surf.edge.set(tile, {next: neibor, prev: null});
-	for (const tile of surf.edge.keys()) // and make it back-searchable
-		surf.edge.get(surf.edge.get(tile).next).prev = tile;
-
-	// now we can save each tile's strait skeleton to the edges (to bound the greebling)
-	for (const tile of surf.tiles) {
-		const vertices: Point[] = [];
-		for (const {vertex} of tile.getPolygon()) {
-			vertices.push({
-				x: vertex.minus(tile.pos).dot(tile.east), // project the voronoi polygon into 2D
-				y: vertex.minus(tile.pos).dot(tile.north),
-			});
-		}
-		checkVoronoiPolygon(vertices); // validate it
-		let skeletonLeaf = straightSkeleton(vertices); // get the strait skeleton
-		for (const {edge} of tile.getPolygon()) {
-			const arc = skeletonLeaf.pathToNextLeaf();
-			const projectedArc: Vector[] = [];
-			for (const joint of arc) {
-				const {x, y} = joint.value;
-				projectedArc.push( // project it back
-					tile.pos.plus(
-						tile.east.times(x).plus(
-							tile.north.times(y))));
-			}
-			if (edge.tileL === tile) // then save each part of the skeleton it to an edge
-				edge.leftBorder = projectedArc;
-			else
-				edge.rightBorder = projectedArc;
-			skeletonLeaf = arc[arc.length - 1]; // move onto the next one
-		}
-	}
+	// do any geometric upkeep to make all the Tiles and Vertexes consistent
+	surf.computeGraph();
 }
 
 
@@ -307,7 +261,7 @@ function movePlates(surf: Surface, rng: Random): void {
 		let minDistance = Number.POSITIVE_INFINITY;
 		for (const neighbor of tile.neighbors.keys()) { // look for adjacent tiles
 			if (neighbor.plateIndex !== tile.plateIndex) { // that are on different plates
-				const distance = tile.neighbors.get(neighbor).length;
+				const distance = tile.neighbors.get(neighbor).distance;
 				if (fault === null || distance < minDistance) {
 					fault = neighbor;
 					minDistance = distance;
@@ -331,7 +285,7 @@ function movePlates(surf: Surface, rng: Random): void {
 			}
 			const relPosition = tilePos.over(tileMass).minus(faultPos.over(faultMass));
 			const relVelocity = velocities[tile.plateIndex].minus(velocities[fault.plateIndex]);
-			const relSpeed = relPosition.norm().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
+			const relSpeed = relPosition.normalized().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
 			let type, width; // and whether these are both continents or if this is a top or a bottom or what
 			if (relSpeed < 0) { // TODO: make relspeed also depend on adjacent tiles to smooth out the fault lines and make better oceans
 				if (tile.height > 0 && fault.height > 0) {
@@ -416,7 +370,7 @@ function movePlates(surf: Surface, rng: Random): void {
 				if (neighbor.plateIndex === tile.plateIndex)
 					queue.push({
 						tile: neighbor,
-						distance: distance + tile.neighbors.get(neighbor).length,
+						distance: distance + tile.neighbors.get(neighbor).distance,
 						width: width, speed: speed, type: type
 					});
 		}
@@ -487,7 +441,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 	for (const tile of surf.tiles) {
 		let bestTile = null, bestDixe = null; // define tile.upwind as the neighbor that is in the upwindest direction of each tile
 		for (const neighbor of tile.neighbors.keys()) {
-			const dix = neighbor.pos.minus(tile.pos).norm();
+			const dix = neighbor.pos.minus(tile.pos).normalized();
 			if (bestDixe === null ||
 				dix.dot(tile.windVelocity) < bestDixe.dot(tile.windVelocity)) {
 				bestTile = neighbor;
@@ -557,7 +511,9 @@ function addRivers(surf: Surface): void {
 						if (beyond.height >= maxHeight - CANYON_DEPTH) {
 							const length = surf.distance(beyond, above);
 							let quality; // decide how good a river this would be
-							if (beyond.height >= above.height) // calculate the slope for downhill rivers
+							if (length < RIVER_WIDTH)
+								quality = Number.POSITIVE_INFINITY;
+							else if (beyond.height >= above.height) // calculate the slope for downhill rivers
 								quality = (beyond.height - above.height)/length;
 							else // calculate the amount of canyon you would need for an uphill river
 								quality = -(uphillLength + length);

@@ -25,12 +25,14 @@ import {Random} from "../util/random.js";
 import {linterp, noisyProfile} from "../util/util.js";
 import {Culture} from "../society/culture.js";
 import {Biome} from "../society/terrain.js";
-import {Place} from "../util/coordinates.js";
-import {circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
+import {Place, Point} from "../util/coordinates.js";
+import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
+import {MultiScaleLinkedList} from "../util/multiscalelinkedlist.js";
+import {straightSkeleton} from "../util/straightskeleton.js";
 
 
+const GREEBLE_FACTOR = .35;
 const INTEGRATION_RESOLUTION = 32;
-const FINEST_SCALE = 10; // the smallest edge lengths that it will generate
 
 
 /**
@@ -82,7 +84,65 @@ export abstract class Surface {
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
 		this.axis = this.xyz({ф: 1, λ: Math.PI/2}).minus(this.xyz({ф: 1, λ: 0})).cross(
-			this.xyz({ф: 1, λ: Math.PI}).minus(this.xyz({ф: 1, λ: Math.PI/2}))).norm(); // figure out which way the coordinate system points
+			this.xyz({ф: 1, λ: Math.PI}).minus(this.xyz({ф: 1, λ: Math.PI/2}))).normalized(); // figure out which way the coordinate system points
+	}
+
+	/**
+	 * set the positions of all the vertices and the edge map in a way that is
+	 * consistent with the current values of this.tiles and this.vertices
+	 */
+	computeGraph(): void {
+		// finally, complete the remaining vertices' network graphs
+		for (const vertex of this.vertices) {
+			for (let i = 0; i < 3; i ++) {
+				const edge = vertex.edges[i];
+				if (vertex === edge.vertex1)
+					vertex.neighbors.set(edge.vertex0, edge);
+				else
+					vertex.neighbors.set(edge.vertex1, edge);
+			}
+			vertex.computePosition();
+		}
+
+		// and find the edge, if there is one
+		for (const tile of this.tiles)
+			for (const neibor of tile.neighbors.keys())
+				if (tile.rightOf(neibor) === null)
+					this.edge.set(tile, {next: neibor, prev: null});
+		for (const tile of this.edge.keys()) // and make it back-searchable
+			this.edge.get(this.edge.get(tile).next).prev = tile;
+
+
+		// now we can save each tile's strait skeleton to the edges (to bound the greebling)
+		for (const tile of this.tiles) {
+			const vertices: Point[] = [];
+			for (const {vertex} of tile.getPolygon()) {
+				vertices.push({
+					x: vertex.minus(tile.pos).dot(tile.east), // project the voronoi polygon into 2D
+					y: vertex.minus(tile.pos).dot(tile.north),
+				});
+			}
+			checkVoronoiPolygon(vertices); // validate it
+			let skeletonLeaf = straightSkeleton(vertices); // get the strait skeleton
+			for (const {edge} of tile.getPolygon()) {
+				const arc = skeletonLeaf.pathToNextLeaf();
+				const projectedArc: Vector[] = [];
+				for (const joint of arc) {
+					const {x, y} = joint.value;
+					projectedArc.push( // project it back
+						tile.pos.plus(
+							tile.east.times(x).plus(
+								tile.north.times(y))));
+				}
+				if (edge !== null) {
+					if (edge.tileL === tile) // then save each part of the skeleton it to an edge
+						edge.leftBound = projectedArc;
+					else
+						edge.rightBound = projectedArc;
+				}
+				skeletonLeaf = arc[arc.length - 1]; // move onto the next one
+			}
+		}
 	}
 
 	/**
@@ -274,17 +334,18 @@ export class Tile {
 	}
 
 	/**
-	 * return an orderd list that goes around the edge (widdershins, ofc).  each element
+	 * return an orderd list that goes around the Tile (widdershins, ofc).  each element
 	 * of the list is a Voronoi Vertex and the edge that leads from it to the next one.
 	 */
 	getPolygon(): { vertex: Vector, edge: Edge }[] {
 		const output = [];
 		let start;
-		if (this.surface.edge.has(this))
-			start = this.surface.edge.get(this).prev;
-		else
+		if (this.surface.edge.has(this)) // for Tiles on the edge, there is a natural starting point
+			start = this.surface.edge.get(this).next;
+		else // for internal Tiles start wherever
 			start = this.neighbors.keys().next().value;
 
+		// step around the Tile until you find either another edge or get back to where you started
 		let tile = start;
 		do {
 			const vertex = this.leftOf(tile);
@@ -297,6 +358,19 @@ export class Tile {
 				edge: this.neighbors.get(tile)
 			});
 		} while (tile !== start);
+
+		// if the Tile is on the edge, we need to manually complete the polygon
+		if (this.surface.edge.has(this)) {
+			// this tecneke is kind of janky but it works as long as Disc is the only Surface with an edge
+			output.push({
+				vertex: output[output.length - 1].vertex.times(3),
+				edge: null,
+			});
+			output.push({
+				vertex: output[0].vertex.times(3),
+				edge: null,
+			});
+		}
 
 		return output;
 	}
@@ -331,17 +405,17 @@ export class Vertex {
 		this.surface = a.surface;
 
 		for (let i = 0; i < 3; i ++) { // check each pair to see if they are already connected
-			const tileL = this.tiles[i], tileR = this.tiles[(i+1)%3];
-			if (tileL.neighbors.has(tileR)) { // if so,
-				this.edges[i] = tileL.neighbors.get(tileR); // take that edge
+			const tileR = this.tiles[i], tileL = this.tiles[(i+1)%3];
+			if (tileR.neighbors.has(tileL)) { // if so,
+				this.edges[i] = tileR.neighbors.get(tileL); // take that edge
 				if (this.edges[i].tileL === tileL) // and depending on its direction,
-					this.edges[i].vertex1 = this; // replace one of the Vertexes on it with this
+					this.edges[i].vertex0 = this; // replace one of the Vertexes on it with this
 				else
-					this.edges[i].vertex0 = this;
+					this.edges[i].vertex1 = this;
 			}
 			else { // if not,
 				this.edges[i] = new Edge(
-					tileL, null, tileR, this, this.surface.distance(tileL, tileR)); // create an edge with the new Vertex connected to it
+					tileL, this, tileR, null, this.surface.distance(tileL, tileR)); // create an edge with the new Vertex connected to it
 			}
 		}
 	}
@@ -376,7 +450,7 @@ export class Vertex {
 	}
 
 	/**
-	 * Find and return the vertex across from the given edge.
+	 * Find and return the Tile across this Vertex from the given Edge.
 	 */
 	acrossFrom(edge: Edge): Tile {
 		for (const tile of this.tiles)
@@ -409,26 +483,41 @@ export class Edge {
 	public tileR: Tile;
 	public vertex1: Vertex;
 	public vertex0: Vertex;
-	public length: number;
+	public distance: number; // distance between the centers of the Tiles this separates
+	public length: number; // distance between the Vertices this connects
 	public flow: number;
-	public path: Place[];
-	public rightBorder: Vector[]; // these borders are the limits of the greebling
-	public leftBorder: Vector[];
-	private readonly rng: Random; // this Random number generator is used exclusively for greebling
+	public rightBound: Vector[]; // these borders are the limits of the greebling
+	public leftBound: Vector[];
 
-	constructor(tileL: Tile, vertex0: Vertex, tileR: Tile, vertex1: Vertex, length: number) {
+	private bounds: Point[];
+	private readonly rng: Random; // this Random number generator is used exclusively for greebling
+	private currentResolution: number; // this number keeps of track of how much greebling we have resolved so far
+	private path: MultiScaleLinkedList<{edgeCoords: Point, geoCoords: Place}>; // this path can be resolved at a variety of scales
+
+	private origin: Vector; // the (0, 0) point of this edge's coordinate system
+	private i: Vector; // the s unit-vector of this edge's coordinate system
+	private j: Vector; // the t unit-vector of this edge's coordinate system
+
+	constructor(tileL: Tile, vertex0: Vertex, tileR: Tile, vertex1: Vertex, distance: number) {
 		this.tileL = tileL; // save these new values for the edge
 		this.vertex0 = vertex0;
 		this.tileR = tileR;
 		this.vertex1 = vertex1;
-		this.length = length;
-		this.path = null;
+		this.distance = distance;
 
 		tileL.neighbors.set(tileR, this);
 		tileR.neighbors.set(tileL, this);
 
-		this.rightBorder = null;
-		this.leftBorder = null;
+		// instantiate the path (to be greebled later)
+		this.currentResolution = distance;
+		this.path = null;
+		this.rightBound = null;
+		this.leftBound = null;
+		this.bounds = null;
+		this.length = null;
+		this.origin = null;
+		this.i = null;
+		this.j = null;
 
 		// make a random number generator with a garanteed-uneke seed
 		const index = tileL.index*tileL.surface.tiles.size + tileR.index;
@@ -436,41 +525,98 @@ export class Edge {
 	}
 
 	/**
-	 * transform these points onto the surface so that s maps to the direction along the
-	 * voronoi edge but negative, and t maps to the perpendicular direction.  specifically (0,0)
-	 * corresponds to vertex1, (0, 1) corresponds to vertex0, and (1, 1/2) corresponds
-	 * to vertexR.
+	 * calculate the path this edge takes from vertex0 to vertex1.  the exact path will be generated
+	 * randomly to produce a fractylic squiggly line at a certain spacial resolution.  the finer the
+	 * scale, the more vertices will be generated.  the result will be cashed to ensure consistent
+	 * and fast execution of later mappings.  in addition, if this edge ever needs to be rendered at
+	 * an even finer scale, it will bild off of what it has generated here today.
 	 */
-	greeblePath(): void {
-		// define the inicial coordinate vectors
-		const origin = this.vertex1.pos; // compute its coordinate system
-		const i = this.vertex0.pos.minus(origin);
+	getPath(resolution: number): Place[] {
+		// make sure the edge's coordinate system and boundary polygon (for the greebling) are set
+		if (this.bounds === null)
+			this.setCoordinatesAndBounds();
+
+		if (this.path === null) {
+			if (this.vertex0 === null || this.vertex1 === null)
+				throw `I cannot currently greeble paths that are on the edge of the map.`;
+			this.path = new MultiScaleLinkedList(
+				{edgeCoords: {x: 0, y: 0}, geoCoords: this.vertex0},
+				this.length,
+				{edgeCoords: {x: this.length, y: 0}, geoCoords: this.vertex1});
+		}
+
+		// resolve the edge if you haven't already
+		while (this.currentResolution > resolution) {
+			// this has to be done once at each scale
+			this.currentResolution /= 2;
+			let last = this.path.start;
+			while (last !== this.path.end) { // for each segment in the path at the finest available scale
+				const next = last.getNextClosest();
+				const subpath = noisyProfile( // generate a new squiggly line at the new scale
+					last.value.edgeCoords, next.value.edgeCoords,
+					this.currentResolution, this.rng, this.bounds, GREEBLE_FACTOR);
+				for (const edgeCoords of subpath.slice(1)) { // attach the new squiggly line to the path object
+					const distance = Math.hypot(
+						edgeCoords.x - last.value.edgeCoords.x,
+						edgeCoords.y - last.value.edgeCoords.y);
+					if (edgeCoords !== next.value.edgeCoords) {
+						const geoCoords = this.tileL.surface.фλ(this.fromEdgeCoords(edgeCoords));
+						last.addNext(distance, {edgeCoords: edgeCoords, geoCoords: geoCoords});
+					}
+					else {
+						last.linkNext(distance, next);
+					}
+					last = last.getNextClosest(); // advancing thru the new points to the start of the next segment
+				}
+				last = next;
+			}
+		}
+
+		return this.path.resolve(resolution, (item) => item.geoCoords);
+	}
+
+	/**
+	 * do some setup stuff that only has to be done once, but has to be done after rightBound and leftBound have been set.
+	 * after this function executes, this.origin, this.i, this.j, and this.bounds will all be established, and you may
+	 * use toEdgeCoords and fromEdgeCoords.
+	 */
+	setCoordinatesAndBounds(): void {
+		this.length = Math.sqrt(this.vertex0.pos.minus(this.vertex1.pos).sqr());
+		this.origin = this.vertex0.pos; // compute its coordinate system
+		const i = this.vertex1.pos.minus(this.origin).over(this.length);
 		const k = this.tileL.normal.plus(this.tileR.normal);
 		let j = k.cross(i);
-		j = j.times(Math.sqrt(i.sqr()/j.sqr())); // make sure |i| == |j|
+		j = j.over(Math.sqrt(j.sqr())); // make sure |i| == |j| == 1
+		this.i = i;
+		this.j = j;
 
-		// transform the border into the plane
-		const bounds = [];
-		for (const vector of this.rightBorder.concat(this.leftBorder))
-			bounds.push({
-				x: vector.minus(origin).dot(i)/i.sqr(),
-				y: vector.minus(origin).dot(j)/j.sqr(),
-			});
+		if (this.rightBound === null || this.leftBound === null)
+			throw "you can't get the greebled path until after the adjacent tiles' strait skeletons are set.";
+		this.bounds = [];
+		for (const vector of this.rightBound.concat(this.leftBound))
+			this.bounds.push(this.toEdgeCoords(vector));
+	}
 
-		// generate the random curve
-		const points = noisyProfile(
-			FINEST_SCALE/Math.sqrt(i.sqr()),
-			this.rng, bounds, .35);
+	/**
+	 * transform a point from the global 3D coordinates into this edge's 2D coordinates, where
+	 * x increases [0, this.length] from vertex0 to vertex1, and y points perpendicularly across from right to left
+	 */
+	toEdgeCoords(point: Vector): Point {
+		if (this.origin === null)
+			throw `the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`;
+		return {
+			x: point.minus(this.origin).dot(this.i) / this.i.sqr(),
+			y: point.minus(this.origin).dot(this.j) / this.j.sqr(),
+		};
+	}
 
-		// then transform the result out of the plane
-		this.path = [];
-		for (const {x, y} of points) {
-			const transformed = origin.plus(i.times(x).plus(j.times(y)));
-			this.path.push(this.tileL.surface.фλ(transformed));
-		}
-		// finally, adjust the endpoints to prevent roundoff issues
-		this.path[0] = this.vertex1;
-		this.path[this.path.length - 1] = this.vertex0;
+	/**
+	 * transform a point from this edge's 2D coordinates to the global 3D coordinates.
+	 */
+	fromEdgeCoords(point: Point): Vector {
+		if (this.origin === null)
+			throw `the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`;
+		return this.origin.plus(this.i.times(point.x).plus(this.j.times(point.y)));
 	}
 
 	toString(): string {

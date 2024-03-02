@@ -254,9 +254,9 @@ export function orthogonalBasis(n: Vector, normalize = false, axis = new Vector(
 	let v = n.cross(u);
 
 	if (normalize) {
-		u = u.norm();
-		v = v.norm();
-		n = n.norm();
+		u = u.normalized();
+		v = v.normalized();
+		n = n.normalized();
 	}
 
 	return {u: u, v: v, n: n};
@@ -319,11 +319,17 @@ export class Vector {
 			this.x*that.y - this.y*that.x);
 	}
 
+	/**
+	 * calculate the dot product of this with itself
+	 */
 	sqr(): number {
 		return this.dot(this);
 	}
 
-	norm(): Vector {
+	/**
+	 * return a version of this normalized to have a length of 1
+	 */
+	normalized(): Vector {
 		return this.over(Math.sqrt(this.sqr()));
 	}
 

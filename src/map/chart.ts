@@ -36,6 +36,7 @@ import {Biome} from "../society/terrain.js";
 const DISABLE_GREEBLING = false; // make all lines as simple as possible, for debug purposes
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 
+const FINEST_SCALE = 10; // the smallest edge lengths that it will generate
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_THRESHOLD = 1e6; // km^2
@@ -347,7 +348,7 @@ export class Chart {
 				const z = Math.max(0, node.height);
 				p.push(new Vector(x, -y, z));
 			}
-			let n = p[1].minus(p[0]).cross(p[2].minus(p[0])).norm();
+			let n = p[1].minus(p[0]).cross(p[2].minus(p[0])).normalized();
 			slopes.set(t, n.y/n.z);
 			if (n.z > 0 && slopes.get(t) > maxSlope)
 				maxSlope = slopes.get(t);
@@ -874,12 +875,11 @@ export class Chart {
 				let step: Place[];
 				// if there is an edge and it should be greebled, greeble it
 				if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
-					if (edge.path === null)
-						edge.greeblePath();
-					if (edge.vertex0 === end)
-						step = edge.path.slice(1);
+					const path = edge.getPath(FINEST_SCALE);
+					if (edge.vertex0 === start)
+						step = path.slice(1);
 					else
-						step = edge.path.slice(0, edge.path.length - 1).reverse();
+						step = path.slice(0, path.length - 1).reverse();
 				}
 				// otherwise, draw a strait line
 				else {

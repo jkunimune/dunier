@@ -36,6 +36,8 @@ import {trajectoryIntersection} from "./geometry.js";
  *         the other's parent
  */
 export function straightSkeleton(polygon: Point[]): Tree<Point> {
+	if (polygon.length < 3)
+		throw `this polygon only has ${polygon.length} vertices; how can it have any geometric properties at all?`;
 	// start by laying a foundation which is just the polygon
 	const initialNodes: Nodo[] = [];
 	for (let i = 0; i < polygon.length; i ++) {
@@ -142,7 +144,7 @@ class Nodo extends Tree<Point> {
 		this.riteEdge = riteEdge;
 		this.time = time;
 
-		// to compute the direction this node propogates
+		// to compute the direction this node propagates
 		this.direction = {
 			x: (leftEdge.vx + riteEdge.vx)/2.,
 			y: (leftEdge.vy + riteEdge.vy)/2. }; // average the two edge velocities

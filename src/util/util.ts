@@ -242,21 +242,23 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 
 /**
  * randomly generate a series of points that form a fractyllic squiggly line.  it will
- * start at (0, 0), and at (0, 1), and will all fall within the envelope formed by the
- * provided bounds polygon.
- * @param minScale all segments will be at most this long
+ * start at the given start point, end at the given end point, and will all fall within
+ * the envelope formed by the provided bounds polygon.
+ * @param start the initial point
+ * @param end the final point
+ * @param scale all segments will be at most this long
  * @param rng the random number generator
- * @param bounds a closed polygon that the profile will try not to cross
+ * @param bounds a closed convex polygon that the profile will try not to cross
  * @param alpha a dimensionless parameter that alters how noisy it is (limit is 1 or so)
  */
-export function noisyProfile(minScale: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
-	const confirmd = [{x: 0, y: 0}]; // the profile, which we will build gradually
-	const pending = [{x: 1, y: 0}]; // the points that will go in the profile after something else (reversed)
+export function noisyProfile(start: Point, end: Point, scale: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
+	const confirmd = [start]; // the profile, which we will build gradually
+	const pending = [end]; // the points that will go in the profile after something else (reversed)
 	while (pending.length > 0) {
 		const last = confirmd[confirmd.length - 1]; // look at the upcoming segment
 		const next = pending[pending.length - 1];
 		const distance = Math.hypot(next.x - last.x, next.y - last.y);
-		if (distance > minScale) { // if it is too long
+		if (distance > scale) { // if it is too long
 			const r0 = new Vector((last.x + next.x)/2, (last.y + next.y)/2, 0); // find the point between them
 			const axis = new Vector((last.y - next.y)/2, (next.x - last.x)/2, 0); // find the axis perpendicular to them
 
