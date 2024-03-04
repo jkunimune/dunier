@@ -22,12 +22,11 @@
  * SOFTWARE.
  */
 import {Random} from "../util/random.js";
-import {linterp, noisyProfile} from "../util/util.js";
+import {binarySearch, linterp, noisyProfile} from "../util/util.js";
 import {Culture} from "../society/culture.js";
 import {Biome} from "../society/terrain.js";
 import {Place, Point} from "../util/coordinates.js";
 import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
-import {MultiScaleLinkedList} from "../datastructures/multiscalelinkedlist.js";
 import {straightSkeleton} from "../util/straightskeleton.js";
 
 
@@ -492,7 +491,8 @@ export class Edge {
 	private bounds: Point[];
 	private readonly rng: Random; // this Random number generator is used exclusively for greebling
 	private currentResolution: number; // this number keeps of track of how much greebling we have resolved so far
-	private path: MultiScaleLinkedList<{edgeCoords: Point, geoCoords: Place}>; // this path can be resolved at a variety of scales
+	private readonly paths: {resolution: number, points: Place[]}[]; // this path can be resolved at a variety of scales
+	private finestPathPointsInEdgeCoords: Point[];
 
 	private origin: Vector; // the (0, 0) point of this edge's coordinate system
 	private i: Vector; // the s unit-vector of this edge's coordinate system
@@ -509,8 +509,7 @@ export class Edge {
 		tileR.neighbors.set(tileL, this);
 
 		// instantiate the path (to be greebled later)
-		this.currentResolution = distance;
-		this.path = null;
+		this.paths = [];
 		this.rightBound = null;
 		this.leftBound = null;
 		this.bounds = null;
@@ -536,43 +535,40 @@ export class Edge {
 		if (this.bounds === null)
 			this.setCoordinatesAndBounds();
 
-		if (this.path === null) {
+		// instantiate it with the coarsest path possible
+		if (this.paths.length === 0) {
 			if (this.vertex0 === null || this.vertex1 === null)
 				throw `I cannot currently greeble paths that are on the edge of the map.`;
-			this.path = new MultiScaleLinkedList(
-				{edgeCoords: {x: 0, y: 0}, geoCoords: this.vertex0},
-				this.length,
-				{edgeCoords: {x: this.length, y: 0}, geoCoords: this.vertex1});
+			this.paths.push({resolution: this.length, points: [this.vertex0, this.vertex1]});
+			this.finestPathPointsInEdgeCoords = [{x: 0, y: 0}, {x: this.length, y: 0}];
+			this.currentResolution = this.length;
 		}
 
 		// resolve the edge if you haven't already
 		while (this.currentResolution > resolution) {
 			// this has to be done once at each scale
 			this.currentResolution /= 2;
-			let last = this.path.start;
-			while (last !== this.path.end) { // for each segment in the path at the finest available scale
-				const next = last.getNextClosest();
-				const subpath = noisyProfile( // generate a new squiggly line at the new scale
-					last.value.edgeCoords, next.value.edgeCoords,
-					this.currentResolution, this.rng, this.bounds, GREEBLE_FACTOR);
-				for (const edgeCoords of subpath.slice(1)) { // attach the new squiggly line to the path object
-					const distance = Math.hypot(
-						edgeCoords.x - last.value.edgeCoords.x,
-						edgeCoords.y - last.value.edgeCoords.y);
-					if (edgeCoords !== next.value.edgeCoords) {
-						const geoCoords = this.tileL.surface.фλ(this.fromEdgeCoords(edgeCoords));
-						last.addNext(distance, {edgeCoords: edgeCoords, geoCoords: geoCoords});
-					}
-					else {
-						last.linkNext(distance, next);
-					}
-					last = last.getNextClosest(); // advancing thru the new points to the start of the next segment
-				}
-				last = next;
-			}
+			const newPathPointsInEdgeCoords = noisyProfile( // generate a new squiggly line at the new scale
+				this.finestPathPointsInEdgeCoords,
+				this.currentResolution, this.rng, this.bounds, GREEBLE_FACTOR);
+			const newPathPointsInGeoCoords = [];
+			// put it in the correct coordinate system
+			newPathPointsInGeoCoords.push(this.vertex0);
+			for (let i = 1; i < newPathPointsInEdgeCoords.length - 1; i ++)
+				newPathPointsInGeoCoords.push(this.tileL.surface.фλ(this.fromEdgeCoords(newPathPointsInEdgeCoords[i])));
+			newPathPointsInGeoCoords.push(this.vertex1);
+			// save it to this.paths
+			this.paths.push({resolution: this.currentResolution, points: newPathPointsInGeoCoords});
+			this.finestPathPointsInEdgeCoords = newPathPointsInEdgeCoords;
 		}
 
-		return this.path.resolve(resolution, (item) => item.geoCoords);
+		// select the relevant path from the list and return
+		const pathIndex = binarySearch(
+			this.paths, (item) => item.resolution <= resolution);
+		if (pathIndex === this.paths.length)
+			throw "for some reason there was no suitably greebled path even after we greebled the paths.";
+		else
+			return this.paths[pathIndex].points;
 	}
 
 	/**

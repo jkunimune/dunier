@@ -241,19 +241,22 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 
 
 /**
- * randomly generate a series of points that form a fractyllic squiggly line.  it will
- * start at the given start point, end at the given end point, and will all fall within
- * the envelope formed by the provided bounds polygon.
- * @param start the initial point
- * @param end the final point
+ * randomly generate a series of points by fleshing out a given seed path, to form a fractyllic squiggly line.
+ * it will start at the given start point, end at the given end point, and will all fall within the envelope
+ * formed by the provided bounds polygon.
+ * @param initialProfile some points that must be included in the profile.  there must be at least two – the first and
+ *                       last ones will form the endpoints of the returned profile
  * @param scale all segments will be at most this long
  * @param rng the random number generator
  * @param bounds a closed convex polygon that the profile will try not to cross
  * @param alpha a dimensionless parameter that alters how noisy it is (limit is 1 or so)
  */
-export function noisyProfile(start: Point, end: Point, scale: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
-	const confirmd = [start]; // the profile, which we will build gradually
-	const pending = [end]; // the points that will go in the profile after something else (reversed)
+export function noisyProfile(initialProfile: Point[], scale: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
+	if (initialProfile.length < 2)
+		throw `this function must be called on an initial path with at least two points (you only gave ${initialProfile.length}).`;
+	const confirmd = [initialProfile[0]]; // the profile, which we will build gradually
+	const pending = initialProfile.slice(1).reverse(); // the points that will go in the profile after something else (reversed)
+
 	while (pending.length > 0) {
 		const last = confirmd[confirmd.length - 1]; // look at the upcoming segment
 		const next = pending[pending.length - 1];
@@ -282,7 +285,7 @@ export function noisyProfile(start: Point, end: Point, scale: number, rng: Rando
 			console.assert(Number.isFinite(nov.x), min, max, tanh(min/alpha), tanh(max/alpha), y, nov);
 			pending.push(nov); // and check it
 		}
-		else { // if it is short
+		else { // if it is short enuff
 			confirmd.push(pending.pop()); // confirm it
 		}
 
