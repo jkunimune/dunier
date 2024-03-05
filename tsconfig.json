@@ -5,6 +5,7 @@
     "sourceMap": true,
     "lib": ["es2016", "DOM"],
     "outDir": "./",
+    "skipLibCheck": true,
     "downlevelIteration": true,
     "esModuleInterop": true,
     "noImplicitAny": true,
