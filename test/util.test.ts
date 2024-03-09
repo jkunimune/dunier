@@ -35,7 +35,7 @@ import {
 
 describe("argmax()", () => {
     test("empty", () => {
-        expect(() => argmax([])).toThrowError();
+        expect(() => argmax([])).toThrow();
     });
     test("singleton", () => {
         expect(argmax([-Infinity])).toEqual(0);
@@ -104,7 +104,7 @@ describe("arctanh()", () => {
 
 describe("binarySearch()", () => {
     test("empty", () => {
-        expect(() => binarySearch([], x => x >= 0)).toThrowError();
+        expect(() => binarySearch([], x => x >= 0)).toThrow();
     });
     test("less than all", () => {
         expect(binarySearch([0, 1, 2], x => x >= -1)).toEqual(0);
@@ -122,10 +122,10 @@ describe("binarySearch()", () => {
 
 describe("linterp()", () => {
     test("empty", () => {
-        expect(() => linterp(0, [], [])).toThrowError();
+        expect(() => linterp(0, [], [])).toThrow();
     });
     test("mismatched lengths", () => {
-        expect(() => linterp(0, [0, 1], [0, 1, 2])).toThrowError();
+        expect(() => linterp(0, [0, 1], [0, 1, 2])).toThrow();
     });
     test("generic", () => {
         expect(linterp(1.5, [0, 1, 2], [8, 5, 6])).toBeCloseTo(5.5);
@@ -201,10 +201,10 @@ describe("decodeBase36()", () => {
         expect(decodeBase37("ab")).toEqual(381);
     });
     test("uppercase letters", () => {
-        expect(() => decodeBase37("AB")).toThrowError();
+        expect(() => decodeBase37("AB")).toThrow();
     });
     test("long", () => {
-        expect(() => decodeBase37("yachanchihunkichik")).not.toThrowError();
+        expect(() => decodeBase37("yachanchihunkichik")).not.toThrow();
     });
     test("comparison", () => {
         expect(decodeBase37("firstname13") - decodeBase37("firstname12")).toEqual(1);

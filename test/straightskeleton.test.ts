@@ -24,7 +24,7 @@
 import {straightSkeleton} from "../src/util/straightskeleton.js";
 
 test("empty", () => {
-   expect(() => straightSkeleton([])).toThrowError();
+   expect(() => straightSkeleton([])).toThrow();
 });
 const rectangle = [{x: -2, y: -1}, {x: 2, y: -1}, {x: 2, y: 1}, {x: -2, y: 1}];
 test("rectangle", () => {
