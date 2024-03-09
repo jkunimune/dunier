@@ -31,7 +31,7 @@ import {Biome} from "./terrain.js";
 const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
 	[Biome.OCEAN,     0.0],
 	[Biome.SWAMP,     0.1],
-	[Biome.JUNGLE,    0.3],
+	[Biome.JUNGLE,    1.0],
 	[Biome.FOREST,    3.0],
 	[Biome.LAKE,      0.0],
 	[Biome.TAIGA,     0.3],
