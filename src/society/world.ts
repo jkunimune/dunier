@@ -29,33 +29,33 @@ import {Biome} from "./terrain.js";
 
 
 const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
-	[Biome.OCEAN,         0.0],
-	[Biome.SWAMP,    0.1],
-	[Biome.JUNGLE, 0.3],
-	[Biome.FOREST,      3.0],
-	[Biome.LAKE,         0.0],
-	[Biome.TAIGA,       0.3],
-	[Biome.STEAMLAND,   0.1],
-	[Biome.PLAINS,   1.0],
-	[Biome.DESERT,  0.0],
-	[Biome.TUNDRA,      0.1],
-	[Biome.ICE,         0.0],
+	[Biome.OCEAN,     0.0],
+	[Biome.SWAMP,     0.1],
+	[Biome.JUNGLE,    0.3],
+	[Biome.FOREST,    3.0],
+	[Biome.LAKE,      0.0],
+	[Biome.TAIGA,     0.3],
+	[Biome.STEAMLAND, 0.1],
+	[Biome.PLAINS,    1.0],
+	[Biome.DESERT,    0.0],
+	[Biome.TUNDRA,    0.1],
+	[Biome.ICE,       0.0],
 ]);
 const RIVER_UTILITY_THRESHOLD = 1e6;
 const FRESHWATER_UTILITY = 0.1;
 const SALTWATER_UTILITY = 1.0;
 const PASSABILITY = new Map([ // terrain modifiers for invasion speed
-	[Biome.OCEAN,         0.1],
-	[Biome.SWAMP,    0.1],
-	[Biome.JUNGLE, 0.1],
-	[Biome.FOREST,      1.0],
-	[Biome.LAKE,         3.0],
-	[Biome.TAIGA,       1.0],
-	[Biome.STEAMLAND,   0.3],
-	[Biome.PLAINS,   3.0],
-	[Biome.DESERT,  0.1],
-	[Biome.TUNDRA,      0.3],
-	[Biome.ICE,         0.1],
+	[Biome.OCEAN,     0.1],
+	[Biome.SWAMP,     0.1],
+	[Biome.JUNGLE,    0.1],
+	[Biome.FOREST,    1.0],
+	[Biome.LAKE,      3.0],
+	[Biome.TAIGA,     1.0],
+	[Biome.STEAMLAND, 0.3],
+	[Biome.PLAINS,    3.0],
+	[Biome.DESERT,    0.1],
+	[Biome.TUNDRA,    0.3],
+	[Biome.ICE,       0.1],
 ]);
 
 
