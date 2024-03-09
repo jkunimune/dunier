@@ -32,7 +32,7 @@ import {trajectoryIntersection, Vector} from "./geometry.js";
  */
 export function argmax(arr: number[]): number {
 	if (arr.length === 0)
-		throw "I cannot find the maximum of an empty array";
+		throw new Error("I cannot find the maximum of an empty array");
 	let maxIdx = null;
 	for (let i = 0; i < arr.length; i ++)
 		if (maxIdx === null || arr[i] > arr[maxIdx])
@@ -87,7 +87,7 @@ export function arctanh(x: number): number {
  */
 export function binarySearch<T>(array: T[], condition: (item: T) => boolean): number {
 	if (array.length === 0)
-		throw "I cannot search an empty array.";
+		throw new Error("I cannot search an empty array.");
 	let min = -1, max = array.length;
 	while (max - min > 1) {
 		const mid = Math.trunc((min + max)/2);
@@ -104,7 +104,7 @@ export function binarySearch<T>(array: T[], condition: (item: T) => boolean): nu
  */
 export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
 	if (inRef.length !== exRef.length)
-		throw "array lengths must match";
+		throw new Error("array lengths must match");
 	else if (inVal <= inRef[0])
 		return exRef[0];
 	else if (inVal >= inRef[inRef.length - 1])
@@ -253,7 +253,7 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
  */
 export function noisyProfile(initialProfile: Point[], scale: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
 	if (initialProfile.length < 2)
-		throw `this function must be called on an initial path with at least two points (you only gave ${initialProfile.length}).`;
+		throw new Error(`this function must be called on an initial path with at least two points (you only gave ${initialProfile.length}).`);
 	const confirmd = [initialProfile[0]]; // the profile, which we will build gradually
 	const pending = initialProfile.slice(1).reverse(); // the points that will go in the profile after something else (reversed)
 
@@ -346,7 +346,7 @@ export class Matrix {
 	 */
 	public inverse(): Matrix {
 		if (this.n !== this.m)
-			throw "the matrix has to be square";
+			throw new Error("the matrix has to be square");
 		const n = this.n;
 
 		const a: number[][] = [];

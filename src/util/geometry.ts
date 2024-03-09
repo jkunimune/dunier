@@ -71,7 +71,7 @@ export function isAcute(a: Point, b: Point, c: Point): boolean {
  */
 export function circumcenter(points: Point[]): Point {
 	if (points.length !== 3)
-		throw "it has to be 3.";
+		throw new Error("it has to be 3.");
 	let xNumerator = 0, yNumerator = 0;
 	let denominator = 0;
 	for (let i = 0; i < 3; i++) { // do the 2D circumcenter calculation
@@ -128,7 +128,7 @@ export function lineLineIntersection(
 			transpose(p1), transpose(p2), transpose(q1), transpose(q2)));
 	}
 	else {
-		throw "I haven't implemented obleke intersections, but if you want, try https://blogs.sas.com/content/iml/2018/07/09/intersection-line-segments.html";
+		throw new Error("I haven't implemented obleke intersections, but if you want, try https://blogs.sas.com/content/iml/2018/07/09/intersection-line-segments.html");
 	}
 }
 
@@ -142,7 +142,7 @@ export function trajectoryIntersection(
 	a: Point, va: { x: number, y: number },
 	b: Point, vb: { x: number, y: number }): { x: number, y: number, ta: number, tb: number} {
 	if (va.x*vb.y - va.y*vb.x === 0)
-		throw `the given trajectories do not ever intersect.`;
+		throw new Error(`the given trajectories do not ever intersect.`);
 	const ta = (vb.x*(a.y - b.y) - vb.y*(a.x - b.x))/
 		(va.x*vb.y - va.y*vb.x);
 	const x = a.x + va.x*ta;

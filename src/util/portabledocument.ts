@@ -79,7 +79,7 @@ export class PortableDocument {
 
 	public addParagraph(text: string, fontSize: number = null, indent: boolean = false) {
 		if (this.textTop === null)
-			throw "you haff to add a page before you add a paragraph.";
+			throw new Error("you haff to add a page before you add a paragraph.");
 		// set font size
 		if (fontSize !== null) {
 			this.pdf.setFontSize(fontSize);
@@ -87,7 +87,7 @@ export class PortableDocument {
 			this.lineSpacing = this.lineHeight*1.15;
 		}
 		if (fontSize === null)
-			throw "you haff to specify a font size the first time you add a paragraph.";
+			throw new Error("you haff to specify a font size the first time you add a paragraph.");
 
 		// add before-paragraph space
 		if (this.position !== null)

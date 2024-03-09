@@ -362,7 +362,7 @@ function movePlates(surf: Surface, rng: Random): void {
 					-OCEAN_DEPTH/2 / (1 + Math.exp(xS/2.)/CONTINENTAL_CONVEXITY));
 			}
 			else {
-				throw "Unrecognized fault type";
+				throw new Error("Unrecognized fault type");
 			}
 
 			tile.flag = true; // mark this tile
@@ -679,7 +679,7 @@ function getNoiseFunction(tile: Tile, parents: Tile[], attr: string, surf: Surfa
 		if (attr === 'height')       parentValue = parent.height;
 		else if (attr === 'temperature') parentValue = parent.temperature;
 		else if (attr === 'rainfall') parentValue = parent.rainfall;
-		else throw `no funcubli sife - parent.${attr}`;
+		else throw new Error(`no funcubli sife - parent.${attr}`);
 		scale += dist/parents.length; // compute the mean scale // TODO might save some time if I save these distances
 		weightSum += 1/dist;
 		value += parentValue/dist; // compute the weighted average of them

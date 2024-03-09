@@ -308,7 +308,7 @@ export class Sound {
 				case Quality.SPOKEN:
 					return true;
 				default:
-					throw `can't check for ${feature}ness`;
+					throw new Error(`can't check for ${feature}ness`);
 			}
 		}
 	}
@@ -406,12 +406,12 @@ export class Klas {
 				if (sound.is(Quality.LOW))       feature = Quality.MID;
 				else if (sound.is(Quality.MID))  feature = Quality.HIGH;
 				else if (sound.is(Quality.HIGH)) feature = Voze.EJECTIVE; // ejective vowels aren't possible; this indicates that it should be diphthongized
-				else throw `can't apply +RAISED to ${sound}`;
+				else throw new Error(`can't apply +RAISED to ${sound}`);
 			}
 			if (feature === Quality.LOWERED) { // so interpret those first
 				if (sound.is(Quality.HIGH))       feature = Quality.MID;
 				else if (sound.is(Quality.VOCOID)) feature = Quality.LOW;
-				else throw `can't apply +LOWERED to ${sound}`;
+				else throw new Error(`can't apply +LOWERED to ${sound}`);
 			}
 
 			if (feature instanceof Mode) // then actually apply the feature
@@ -504,7 +504,7 @@ export class Klas {
 		}
 
 		if (mode === null || loke === null)
-			throw `You tried to assign properties to silence in your overzealous attempt to mutate all of something into ${this}.`;
+			throw new Error(`You tried to assign properties to silence in your overzealous attempt to mutate all of something into ${this}.`);
 
 		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
 			loke = Loke.VELAR;

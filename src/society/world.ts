@@ -258,10 +258,10 @@ export class World {
 			output.sort((a, b) => b.getArea() - a.getArea());
 		if (minNumber > 0) {
 			if (!sorted)
-				throw "I have only implemented the minNumber constraint when the countries are sorted by size";
+				throw new Error("I have only implemented the minNumber constraint when the countries are sorted by size");
 			minNumber = Math.min(minNumber, output.length);
 			if (minNumber === 0)
-				throw "There are no countries in the world";
+				throw new Error("There are no countries in the world");
 			minSize = Math.min(minSize, output[minNumber - 1].tiles.size());
 		}
 		if (minSize > 0)

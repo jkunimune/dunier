@@ -134,7 +134,7 @@ export abstract class MapProjection {
 		if (segments.length === 0) // what're you trying to pull here?
 			return [];
 		else if (closePath && !MapProjection.isClosed(segments))
-			throw "you can't pass open paths and expect me to close them for you.";
+			throw new Error("you can't pass open paths and expect me to close them for you.");
 
 		segments = this.transform(segments);
 
@@ -175,7 +175,7 @@ export abstract class MapProjection {
 				pendingPoints.push({type: 'L', args: [x, y]}); // put a pin in it; we mite haff to split it in haff
 			}
 			else {
-				throw `I don't think you can use ${inPoints[i].type} here`;
+				throw new Error(`I don't think you can use ${inPoints[i].type} here`);
 			}
 
 			while (pendingPoints.length > 0) { // now, if there are points in the pending cue
@@ -197,7 +197,7 @@ export abstract class MapProjection {
 
 			repeatCount ++;
 			if (repeatCount > 100000)
-				throw `why can't I find a point between ${inPoints[i - 1].args}=>${outPoints[outPoints.length - 1].args} and ${inPoints[i].args}=>${pendingPoints[pendingPoints.length - 1].args}`;
+				throw new Error(`why can't I find a point between ${inPoints[i - 1].args}=>${outPoints[outPoints.length - 1].args} and ${inPoints[i].args}=>${pendingPoints[pendingPoints.length - 1].args}`);
 		}
 
 		for (const segment of outPoints)
@@ -217,9 +217,9 @@ export abstract class MapProjection {
 	cutToSize(segments: PathSegment[], edges: MapEdge[][], closePath: boolean): PathSegment[] {
 		for (const segment of segments)
 			if (typeof segment.type !== 'string')
-				throw `you can't pass ${segment.type}-type segments to this funccion.`;
+				throw new Error(`you can't pass ${segment.type}-type segments to this funccion.`);
 		if (closePath && !MapProjection.isClosed(segments))
-			throw `ew, it's open.  go make sure your projections are 1:1!`;
+			throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
 
 		const segmentCue = segments.slice().reverse();
 		const sections: PathSegment[][] = [];
@@ -241,7 +241,7 @@ export abstract class MapProjection {
 
 			else {
 				if (currentSection === null)
-					throw "it didn't start with 'M', I gess?";
+					throw new Error("it didn't start with 'M', I gess?");
 
 				const lastSegment = currentSection[currentSection.length - 1];
 				const crossing = this.getEdgeCrossing(
@@ -262,7 +262,7 @@ export abstract class MapProjection {
 			}
 			iterations ++;
 			if (iterations > 100000)
-				throw `*Someone* (not pointing any fingers) messd up an interruption between ${currentSection.pop()} and ${thisSegment}.`;
+				throw new Error(`*Someone* (not pointing any fingers) messd up an interruption between ${currentSection.pop()} and ${thisSegment}.`);
 		}
 
 		if (sections.length === 0) // if it's all off the map
@@ -327,7 +327,7 @@ export abstract class MapProjection {
 						}
 					}
 					if (bestSection === null)
-						throw `couldn't find a new start position on loop ${endPosition.loop}`;
+						throw new Error(`couldn't find a new start position on loop ${endPosition.loop}`);
 
 					const endEdge = Math.trunc(endPosition.index);
 					const restartEdge = Math.trunc(bestPositionIndex);
@@ -343,7 +343,7 @@ export abstract class MapProjection {
 					else if (!weHaveDrawn[bestSection]) // otherwise, if you found a fresh place to restart
 						sectionIndex = bestSection; // go to it
 					else
-						throw "I don't think it should be possible to rap around to a drawn section that's not this one";
+						throw new Error("I don't think it should be possible to rap around to a drawn section that's not this one");
 				}
 				else { // if we ended in the middle someplace
 					sectionIndex = null;
@@ -357,7 +357,7 @@ export abstract class MapProjection {
 					if (sectionIndex === null) {
 						console.error(edges);
 						console.error(sections);
-						throw `I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`;
+						throw new Error(`I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`);
 					}
 					if (weHaveDrawn[sectionIndex]) // if that one has already been drawn
 						startingANewSupersection = true; // move on randomly
@@ -447,7 +447,7 @@ export abstract class MapProjection {
 		}
 
 		else {
-			throw `can't use '${segment.type}' here`;
+			throw new Error(`can't use '${segment.type}' here`);
 		}
 	}
 
@@ -518,7 +518,7 @@ export abstract class MapProjection {
 			}
 			else {
 				if (polygon[i].type !== 'M')
-					throw "nonononononnooooooooooooooo";
+					throw new Error("nonononononnooooooooooooooo");
 			}
 		}
 		return contained;
@@ -555,7 +555,7 @@ export abstract class MapProjection {
 				};
 			}
 			else {
-				throw `don't know how to take the midpoint of ${segment.type} segments`;
+				throw new Error(`don't know how to take the midpoint of ${segment.type} segments`);
 			}
 		}
 		else {
@@ -570,7 +570,7 @@ export abstract class MapProjection {
 				return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
 			}
 			else {
-				throw `don't know how to take the midpoint of ${segment.type} segments`;
+				throw new Error(`don't know how to take the midpoint of ${segment.type} segments`);
 			}
 		}
 	}
@@ -614,7 +614,7 @@ export abstract class MapProjection {
 			         loopIndex: loopIndex }; // even if the getCrossing function thaut it was only entering
 		}
 		else {
-			throw "no.";
+			throw new Error("no.");
 		}
 	}
 
@@ -676,7 +676,7 @@ export abstract class MapProjection {
 			return null;
 		}
 		else {
-			throw `I don't think you're allowd to use '${coords1.type}' segments here`;
+			throw new Error(`I don't think you're allowd to use '${coords1.type}' segments here`);
 		}
 	}
 
@@ -724,7 +724,7 @@ export abstract class MapProjection {
 					}
 				}
 				else {
-					throw `I don't think you're allowd to use ${edge.type} here`;
+					throw new Error(`I don't think you're allowd to use ${edge.type} here`);
 				}
 			}
 		}
@@ -842,7 +842,7 @@ export abstract class MapProjection {
 		console.assert(left === null || left < right, left, right);
 		console.assert(top === null || top < bottom, top, bottom);
 		if (left !== null && (left >= right || top >= bottom))
-			throw `the axis bounds ${left}, ${right}, ${top}, ${bottom} are invalid.`;
+			throw new Error(`the axis bounds ${left}, ${right}, ${top}, ${bottom} are invalid.`);
 		this.left = left;
 		this.right = right;
 		this.top = top;
@@ -1021,7 +1021,7 @@ export abstract class MapProjection {
 				start = endpoint(segments[i]);
 			if (i + 1 === segments.length || segments[i+1].type === 'M') {
 				if (start === null)
-					throw `path must begin with a moveto, not ${segments[0].type}`;
+					throw new Error(`path must begin with a moveto, not ${segments[0].type}`);
 				const end = endpoint(segments[i]);
 				if (start.s !== end.s || start.t !== end.t)
 					return false;

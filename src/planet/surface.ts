@@ -397,7 +397,7 @@ export class Vertex {
 		const tileNormal = a.normal.plus(b.normal).plus(c.normal);
 		const vertexNormal = b.pos.minus(a.pos).cross(c.pos.minus(a.pos));
 		if (tileNormal.dot(vertexNormal) <= 0)
-			throw "Vertices must be instantiated facing outward, but this one was not.";
+			throw new Error("Vertices must be instantiated facing outward, but this one was not.");
 		this.tiles = [a, b, c]; // adjacent tiles, ordered widdershins
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
 		this.neighbors = new Map(); // connected vertices
@@ -455,7 +455,7 @@ export class Vertex {
 		for (const tile of this.tiles)
 			if (tile !== edge.tileL && tile !== edge.tileR)
 				return tile;
-		throw "Could not find a nonadjacent vertex.";
+		throw new Error("Could not find a nonadjacent vertex.");
 	}
 
 	/**
@@ -465,7 +465,7 @@ export class Vertex {
 		for (let i = 0; i < 3; i ++)
 			if (this.tiles[i] === tile)
 				return this.tiles[(i+1)%3];
-		throw "This Vertex isn't even on this Tile.";
+		throw new Error("This Vertex isn't even on this Tile.");
 	}
 
 	toString(): string {
@@ -538,7 +538,7 @@ export class Edge {
 		// instantiate it with the coarsest path possible
 		if (this.paths.length === 0) {
 			if (this.vertex0 === null || this.vertex1 === null)
-				throw `I cannot currently greeble paths that are on the edge of the map.`;
+				throw new Error(`I cannot currently greeble paths that are on the edge of the map.`);
 			this.paths.push({resolution: this.length, points: [this.vertex0, this.vertex1]});
 			this.finestPathPointsInEdgeCoords = [{x: 0, y: 0}, {x: this.length, y: 0}];
 			this.currentResolution = this.length;
@@ -566,7 +566,7 @@ export class Edge {
 		const pathIndex = binarySearch(
 			this.paths, (item) => item.resolution <= resolution);
 		if (pathIndex === this.paths.length)
-			throw "for some reason there was no suitably greebled path even after we greebled the paths.";
+			throw new Error("for some reason there was no suitably greebled path even after we greebled the paths.");
 		else
 			return this.paths[pathIndex].points;
 	}
@@ -590,7 +590,7 @@ export class Edge {
 
 		// convert the left and right bounding arcs to edge coordinates
 		if (this.rightBoundCartesian === null || this.leftBoundCartesian === null)
-			throw "you can't get the greebled path until after the adjacent tiles' strait skeletons are set.";
+			throw new Error("you can't get the greebled path until after the adjacent tiles' strait skeletons are set.");
 		const leftBound = this.leftBoundCartesian.map(this.toEdgeCoords, this);
 		const rightBound = this.rightBoundCartesian.map(this.toEdgeCoords, this);
 		// concatenate them to form a complete bounding polygon
@@ -603,7 +603,7 @@ export class Edge {
 	 */
 	toEdgeCoords(point: Vector): Point {
 		if (this.origin === null)
-			throw `the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`;
+			throw new Error(`the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`);
 		return {
 			x: point.minus(this.origin).dot(this.i) / this.i.sqr(),
 			y: point.minus(this.origin).dot(this.j) / this.j.sqr(),
@@ -615,7 +615,7 @@ export class Edge {
 	 */
 	fromEdgeCoords(point: Point): Vector {
 		if (this.origin === null)
-			throw `the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`;
+			throw new Error(`the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`);
 		return this.origin.plus(this.i.times(point.x).plus(this.j.times(point.y)));
 	}
 

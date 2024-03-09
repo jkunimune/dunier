@@ -35,9 +35,9 @@ import {circumcenter} from "./geometry.js";
 export function circularRegression(
 	points: {x: number, y: number}[]): {cx: number, cy: number, R: number} {
 	if (points.length <= 1)
-		throw "you need more than one point to fit a circle, dingus.";
+		throw new Error("you need more than one point to fit a circle, dingus.");
 	else if (points.length === 2)
-		throw "I suppose I could fit a line thru these two points, but with the way you've parameterized it, that's not really doable.";
+		throw new Error("I suppose I could fit a line thru these two points, but with the way you've parameterized it, that's not really doable.");
 	else if (points.length === 3) {
 		const c = circumcenter(points);
 		return {
@@ -180,14 +180,14 @@ export function fitLevenbergMarquardt(
 			}
 			λ *= 10; // increment line search parameter
 			if (λ > 1e64) // check iterations
-				throw "the line search did not converge";
+				throw new Error("the line search did not converge");
 		}
 
 		λ *= 4e-4; // decrement line search parameter
 
 		iter += 1; // check iterations
 		if (iter > 10000)
-			throw "the maximum number of iteracions has been reachd";
+			throw new Error("the maximum number of iteracions has been reachd");
 	}
 }
 
@@ -206,11 +206,11 @@ export function isConverged(lastValue: number, nextValue: number,
 							dists: number[][], grads: number[][],
 							funcTolerance: number, gradTolerance: number): boolean {
 	if (dists.length !== grads.length)
-		throw "these matrix shapes do not match.";
+		throw new Error("these matrix shapes do not match.");
 
 	for (let i = 0; i < dists.length; i ++)
 		if (dists[i].length !== 1)
-			throw "This residual vector has not the rite shape.";
+			throw new Error("This residual vector has not the rite shape.");
 
 	if ((lastValue - nextValue)/lastValue < funcTolerance) // if the last relative change was smol
 		return true; // call it dun

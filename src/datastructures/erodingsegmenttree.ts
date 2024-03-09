@@ -349,7 +349,7 @@ class Link {
 			else if (jener === bad)
 				jener.leftPute = this;
 			else
-				throw "you can't insert a new leaf under neither of its neighbors; that makes no sense.";
+				throw new Error("you can't insert a new leaf under neither of its neighbors; that makes no sense.");
 		}
 
 		this.cen = cen;

@@ -67,6 +67,6 @@ function loadFile(filename: string): string {
 	xmlHttp.open("GET", `/res/${filename}`, false); // get the file TODO: use a thread for this stuff
 	xmlHttp.send();
 	if (xmlHttp.status !== 200)
-		throw `${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`;
+		throw new Error(`${xmlHttp.status} error while loading '${filename}': ${xmlHttp.statusText}`);
 	return xmlHttp.responseText;
 }

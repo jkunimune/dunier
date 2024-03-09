@@ -65,18 +65,18 @@ export class TreeMap<Type> implements Iterable<Type> {
 	 */
 	add(item: Type, parent: Type): void {
 		if (this.has(item))
-			throw "duplicates are not allowd.";
+			throw new Error("duplicates are not allowd.");
 
 		let childLink;
 		if (parent === null) {
 			if (this.seed !== null)
-				throw "you tried to set the seed of a tree that already has one.";
+				throw new Error("you tried to set the seed of a tree that already has one.");
 			childLink = new Link<Type>(item, null);
 			this.seed = childLink;
 		}
 		else {
 			if (!this.map.has(parent))
-				throw "the given item is not in the tree";
+				throw new Error("the given item is not in the tree");
 			const parentLink = this.map.get(parent);
 			childLink = new Link<Type>(item, this.map.get(parent));
 			parentLink.children.push(childLink);
@@ -95,7 +95,7 @@ export class TreeMap<Type> implements Iterable<Type> {
 	 */
 	getChildren(item: Type): Type[] {
 		if (!this.has(item))
-			throw "the given parent is not in the tree";
+			throw new Error("the given parent is not in the tree");
 		return this.map.get(item).children.map((link: Link<Type>) => link.item);
 	}
 
@@ -106,7 +106,7 @@ export class TreeMap<Type> implements Iterable<Type> {
 	 */
 	delete(item: Type): void {
 		if (!this.has(item))
-			throw "the given item to delete is not in the tree";
+			throw new Error("the given item to delete is not in the tree");
 		const head = this.map.get(item);
 
 		if (head === this.seed) { // if you are deleting the source of the entire map

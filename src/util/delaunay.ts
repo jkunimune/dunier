@@ -46,7 +46,7 @@ export function delaunayTriangulate(points: Vector[],
 		let yMax = Number.NEGATIVE_INFINITY, yMin = Number.POSITIVE_INFINITY;
 		for (let i = 0; i < points.length; i ++) {
 			if (points[i].z !== 0) // assert that it is in fact a plane (remove this if I ever need to implement for not a plane)
-				throw "me yexo no bina autonomi fene da no plate.";
+				throw new Error("me yexo no bina autonomi fene da no plate.");
 			if (points[i].x > xMax) xMax = points[i].x; // and get the bounding box in the x-y plane
 			if (points[i].x < xMin) xMin = points[i].x;
 			if (points[i].y > yMax) yMax = points[i].y;
@@ -409,7 +409,7 @@ function widershinsOf(node: DelaunayNodo, triangle: DelaunayTriangle) {
 	for (let i = 0; i < 3; i ++)
 		if (triangle.nodos[i] === node)
 			return triangle.nodos[(i+1)%3];
-	throw "This node isn't even in this triangle.";
+	throw new Error("This node isn't even in this triangle.");
 }
 
 /**
@@ -421,7 +421,7 @@ function clockwiseOf(node: DelaunayNodo, triangle: DelaunayTriangle) {
 	for (let i = 0; i < 3; i ++)
 		if (triangle.nodos[i] === node)
 			return triangle.nodos[(i+2)%3];
-	throw "This node isn't even in this triangle.";
+	throw new Error("This node isn't even in this triangle.");
 }
 
 /**
@@ -431,7 +431,7 @@ function triangleOf(a: DelaunayNodo, b: DelaunayNodo) {
 	for (const triangle of a.triangles)
 		if (triangle.children === null && widershinsOf(a, triangle) === b)
 			return triangle;
-	throw "these nodes don't appear to have a triangle";
+	throw new Error("these nodes don't appear to have a triangle");
 }
 
 /**

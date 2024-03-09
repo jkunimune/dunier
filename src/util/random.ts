@@ -177,7 +177,7 @@ export class Random {
 					u -= pk;
 				nCk *= (num - k) / (k + 1);
 			}
-			throw `Math is borken: ${num}, ${prob} left ${u}`;
+			throw new Error(`Math is borken: ${num}, ${prob} left ${u}`);
 		}
 		else {
 			return Math.max(0, Math.min(num, Math.round(

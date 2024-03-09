@@ -130,7 +130,7 @@ for (const row of harfiaTable.slice(1)) { // each row of the orthographick table
 			ORTHOGRAPHIC_FLAGS.get(header[i]).set(features[0].slice(1), grafeme[i] === 'y');
 	}
 	else {
-		throw `incomprehensible orthographickal feature: ${features}`;
+		throw new Error(`incomprehensible orthographickal feature: ${features}`);
 	}
 }
 
@@ -158,7 +158,7 @@ export function ipa(ipa: string): Sound[] {
 		if (FROM_IPA.has(ipa.charAt(i)))
 			output.push(FROM_IPA.get(ipa.charAt(i)));
 		else
-			throw `could not interpret '${ipa.charAt(i)}' as an IPA symbol`;
+			throw new Error(`could not interpret '${ipa.charAt(i)}' as an IPA symbol`);
 	}
 	return output;
 }
@@ -171,7 +171,7 @@ export function ipa(ipa: string): Sound[] {
  */
 function lookUp(sound: Sound, style: string, level: number = 0): string {
 	if (!TO_TEXT.has(style))
-		throw `there is no such transcripcion style as ${style}`;
+		throw new Error(`there is no such transcripcion style as ${style}`);
 	if (TO_TEXT.get(style).has(sound.hash())) // if it's in the table
 		return TO_TEXT.get(style).get(sound.hash()); // just return that
 
@@ -203,7 +203,7 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
 		}
 	}
 
-	throw `I don't know how to write ${sound}`;
+	throw new Error(`I don't know how to write ${sound}`);
 }
 
 /**

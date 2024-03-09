@@ -128,7 +128,7 @@ export class Civ {
 	 */
 	lose(tile: Tile) {
 		if (!this.tiles.has(tile))
-			throw "You tried to make a Civ lose a tile that it does not have.";
+			throw new Error("You tried to make a Civ lose a tile that it does not have.");
 		for (const lostLand of this.tiles.getAllChildren(tile)) { // start by going thru and updating the border map
 			if (this.world.politicalMap.get(lostLand) === this) // and update the global political map
 				this.world.politicalMap.delete(lostLand);

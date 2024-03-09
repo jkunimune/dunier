@@ -13,13 +13,13 @@ const USER_STRINGS = loadJSON(`../../res/translations/${DOM.elm('bash').textCont
  */
 export function format(sentence: string, ...args: (string|number|object)[]): string {
     if (!USER_STRINGS.has(sentence))
-        throw `Could not find user string in resource file for ${sentence}`;
+        throw new Error(`Could not find user string in resource file for ${sentence}`);
     let format = USER_STRINGS.get(sentence);
     for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
         let convertedArg: string;
         if (args[i] === null || args[i] === undefined) {
             if (sentence.includes(`{${i}}`))
-                throw `${args[i]} was passd as the ${i}° argument.  this is only allowd when the argument is absent from the format string, which was not the case here.`;
+                throw new Error(`${args[i]} was passd as the ${i}° argument.  this is only allowd when the argument is absent from the format string, which was not the case here.`);
             continue;
         }
         if (args[i] instanceof Word) {
@@ -44,7 +44,7 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
             }
         }
         if (convertedArg === undefined) // do Javascript's job for it
-            throw `Could not find user string in resource file for ${args[i]}`;
+            throw new Error(`Could not find user string in resource file for ${args[i]}`);
         format = format.replace(`{${i}}`, convertedArg); // then slot it in
     }
     return format;

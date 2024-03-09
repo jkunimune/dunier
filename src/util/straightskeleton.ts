@@ -37,7 +37,7 @@ import {trajectoryIntersection} from "./geometry.js";
  */
 export function straightSkeleton(polygon: Point[]): Tree<Point> {
 	if (polygon.length < 3)
-		throw `this polygon only has ${polygon.length} vertices; how can it have any geometric properties at all?`;
+		throw new Error(`this polygon only has ${polygon.length} vertices; how can it have any geometric properties at all?`);
 	// start by laying a foundation which is just the polygon
 	const initialNodes: Nodo[] = [];
 	for (let i = 0; i < polygon.length; i ++) {
@@ -83,7 +83,7 @@ export function straightSkeleton(polygon: Point[]): Tree<Point> {
 	}
 
 	console.error(polygon);
-	throw "I don't remember when I got here";
+	throw new Error("I don't remember when I got here");
 }
 
 

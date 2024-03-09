@@ -138,7 +138,7 @@ class Harmony implements Process {
 		else if (feature === 'tense')
 			this.kutube = [Quality.LAX, Quality.TENSE];
 		else
-			throw `unrecognized harmony type: ${feature}`;
+			throw new Error(`unrecognized harmony type: ${feature}`);
 	}
 
 	apply(old: Word): Word {
@@ -320,7 +320,7 @@ for (const processString of loadTSV('processes.txt', /\s+/, /%/)) { // load the 
 				fen.push(new Klas([], [Quality.SPOKEN]));
 			else if (token === '/') { // / transitions from pa to badu
 				if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
-					if (ca.length > 1 && ca.length !== pa.length) throw `please specify indices for ${processString}`;
+					if (ca.length > 1 && ca.length !== pa.length) throw new Error(`please specify indices for ${processString}`);
 					idx = [];
 					for (let i = idx.length; i < pa.length; i++)
 						idx.push(Math.min(i, ca.length - 1));
@@ -407,6 +407,6 @@ for (const processString of loadTSV('processes.txt', /\s+/, /%/)) { // load the 
 					new Syllabicization(bias, minSilabia)});
 	}
 	else {
-		throw `unrecognized process classification: ${processString[1]}`;
+		throw new Error(`unrecognized process classification: ${processString[1]}`);
 	}
 }

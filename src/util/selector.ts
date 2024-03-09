@@ -47,7 +47,7 @@ export class Selector {
 		else if (element.hasAttribute('value'))
 			return element.getAttribute('value');
 		else
-			throw `This element has no value:\n${element}`;
+			throw new Error(`This element has no value:\n${element}`);
 	}
 
 	checked(id: string): boolean {
@@ -55,7 +55,7 @@ export class Selector {
 		if (element.tagName.toLowerCase() === 'input')
 			return (<HTMLInputElement> element).checked;
 		else
-			throw `this element has no checked property:\n${element}`;
+			throw new Error(`this element has no checked property:\n${element}`);
 	}
 
 	/**
