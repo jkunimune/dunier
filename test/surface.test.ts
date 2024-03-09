@@ -92,54 +92,87 @@ describe("Vertex", () => {
 });
 
 describe("Edge", () => {
-    const edge = vertices[0].neighbors.get(vertices[1]);
-    edge.setCoordinatesAndBounds();
-    test("distance", () => {
-        expect(edge.distance).toBeCloseTo(Math.sqrt(3)/2);
-    });
-    test("length", () => {
-        expect(edge.length).toBeCloseTo(1/2);
-    });
-    test("leftBound", () => {
-        expect(edge.leftBoundCartesian).toEqual([
-            expect.objectContaining({x: expect.closeTo(-Math.sqrt(3)/2), y: expect.closeTo(0)}),
-        ]);
-    });
-    test("rightBound", () => {
-        expect(edge.rightBoundCartesian).toEqual([
-            expect.objectContaining({x: expect.closeTo(-Math.sqrt(3)/4 + 1/4), y: expect.closeTo(0)}),
-        ]);
-    });
-    test("bounds", () => {
-        expect(edge.bounds).toEqual([
-            {x: expect.closeTo(0.), y: expect.closeTo(0.)},
-            {x: expect.closeTo(1/4), y: expect.closeTo(Math.sqrt(3)/4)},
-            {x: expect.closeTo(1/2), y: expect.closeTo(0.)},
-            {x: expect.closeTo(1/4), y: expect.closeTo(-1/4)},
-        ]);
-    });
-    test("toEdgeCoords()", () => {
-        expect(edge.toEdgeCoords(new Vector(-Math.sqrt(3)/4, 0, 0))).toEqual({
-            x: expect.closeTo(1/4),
-            y: expect.closeTo(0)
+    describe("short", () => {
+        const edge = vertices[0].neighbors.get(vertices[1]);
+        edge.setCoordinatesAndBounds();
+        test("distance", () => {
+            expect(edge.distance).toBeCloseTo(Math.sqrt(3) / 2);
         });
-    });
-    test("fromEdgeCoords()", () => {
-        expect(edge.fromEdgeCoords({x: 1/4, y: 0})).toEqual(expect.objectContaining({
-            x: expect.closeTo(-Math.sqrt(3)/4),
-            y: expect.closeTo(0),
-            z: expect.closeTo(0),
-        }));
-    });
-    describe("getPath()", () => {
-        test ("finer scale", () => {
-            expect(() => edge.getPath(0.1)).not.toThrow();
+        test("length", () => {
+            expect(edge.length).toBeCloseTo(1 / 2);
         });
-        test ("coarsest scale", () => {
-            expect(edge.getPath(Number.POSITIVE_INFINITY)).toEqual([
-                expect.objectContaining({ф: vertices[0].ф, λ: vertices[0].λ}),
-                expect.objectContaining({ф: vertices[1].ф, λ: vertices[1].λ}),
+        test("leftBound", () => {
+            expect(edge.leftBoundCartesian).toEqual([
+                expect.objectContaining({x: expect.closeTo(-Math.sqrt(3) / 2), y: expect.closeTo(0)}),
             ]);
+        });
+        test("rightBound", () => {
+            expect(edge.rightBoundCartesian).toEqual([
+                expect.objectContaining({x: expect.closeTo(-Math.sqrt(3) / 4 + 1 / 4), y: expect.closeTo(0)}),
+            ]);
+        });
+        test("bounds", () => {
+            expect(edge.bounds).toEqual([
+                {x: expect.closeTo(0.), y: expect.closeTo(0.)},
+                {x: expect.closeTo(1 / 4), y: expect.closeTo(Math.sqrt(3) / 4)},
+                {x: expect.closeTo(1 / 2), y: expect.closeTo(0.)},
+                {x: expect.closeTo(1 / 4), y: expect.closeTo(-1 / 4)},
+            ]);
+        });
+        test("toEdgeCoords()", () => {
+            expect(edge.toEdgeCoords(new Vector(-Math.sqrt(3) / 4, 0, 0))).toEqual({
+                x: expect.closeTo(1 / 4),
+                y: expect.closeTo(0)
+            });
+        });
+        test("fromEdgeCoords()", () => {
+            expect(edge.fromEdgeCoords({x: 1 / 4, y: 0})).toEqual(expect.objectContaining({
+                x: expect.closeTo(-Math.sqrt(3) / 4),
+                y: expect.closeTo(0),
+                z: expect.closeTo(0),
+            }));
+        });
+        describe("getPath()", () => {
+            test("finer scale", () => {
+                expect(() => edge.getPath(0.1)).not.toThrow();
+            });
+            test("coarsest scale", () => {
+                expect(edge.getPath(Number.POSITIVE_INFINITY)).toEqual([
+                    expect.objectContaining({ф: vertices[0].ф, λ: vertices[0].λ}),
+                    expect.objectContaining({ф: vertices[1].ф, λ: vertices[1].λ}),
+                ]);
+            });
+        });
+    });
+    describe("long", () => {
+        const edge = vertices[0].neighbors.get(vertices[2]);
+        edge.setCoordinatesAndBounds();
+        test("distance", () => {
+            expect(edge.distance).toBeCloseTo(1/2);
+        });
+        test("length", () => {
+            expect(edge.length).toBeCloseTo(Math.sqrt(3)/2);
+        });
+        test("bounds", () => {
+            expect(edge.bounds).toEqual([
+                {x: expect.closeTo(0.), y: expect.closeTo(0.)},
+                {x: expect.closeTo(1/4), y: expect.closeTo(1/4)},
+                {x: expect.closeTo(Math.sqrt(3)/2 - 1/4), y: expect.closeTo(1/4)},
+                {x: expect.closeTo(Math.sqrt(3)/2), y: expect.closeTo(0)},
+                {x: expect.closeTo(Math.sqrt(3)/2 - 3/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(-3/8)},
+                {x: expect.closeTo(3/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(-3/8)},
+            ]);
+        });
+        describe("getPath()", () => {
+            test("finer scale", () => {
+                expect(() => edge.getPath(0.1)).not.toThrow();
+            });
+            test("coarsest scale", () => {
+                expect(edge.getPath(Number.POSITIVE_INFINITY)).toEqual([
+                    expect.objectContaining({ф: vertices[0].ф, λ: vertices[0].λ}),
+                    expect.objectContaining({ф: vertices[2].ф, λ: vertices[2].λ}),
+                ]);
+            });
         });
     });
 });
