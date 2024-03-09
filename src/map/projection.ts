@@ -138,58 +138,58 @@ export abstract class MapProjection {
 
 		segments = this.transform(segments);
 
-		const jinPoints = this.cutToSize(segments, this.geoEdges, closePath);
+		const inPoints = this.cutToSize(segments, this.geoEdges, closePath);
 
 		const precision = MAP_PRECISION*this.getDimensions().diagonal;
 		let repeatCount = 0; // now do the math
-		const cutPoints: PathSegment[] = []; // start a list of the projected points that are done
+		const outPoints: PathSegment[] = []; // start a list of the projected points that are done
 		const pendingPoints: PathSegment[] = []; // and a list of projected points that mite come later (in reverse order)
 		const ogi: number[] = [];
-		for (let i = 0; i < jinPoints.length; i ++)
+		for (let i = 0; i < inPoints.length; i ++)
 			ogi.push(i);
-		let i = 0; // and the index in jinPoints that corresponds to the end of cutPoints
-		while (i < jinPoints.length) {
-			if (jinPoints[i].type === LongLineType.MERIDIAN) { // do the projection
-				const [ф0, λ] = jinPoints[i-1].args;
-				const [ф1, _] = jinPoints[i].args;
+		let i = 0; // and the index in inPoints that corresponds to the end of outPoints
+		while (i < inPoints.length) {
+			if (inPoints[i].type === LongLineType.MERIDIAN) { // do the projection
+				const [ф0, λ] = inPoints[i-1].args;
+				const [ф1, _] = inPoints[i].args;
 				console.assert(λ === _);
-				cutPoints.push(...this.projectMeridian(ф0, ф1, λ));
+				outPoints.push(...this.projectMeridian(ф0, ф1, λ));
 				i ++;
 			}
-			else if (jinPoints[i].type === LongLineType.PARALLEL) {
-				const [ф, λ0] = jinPoints[i-1].args;
-				const [_, λ1] = jinPoints[i].args;
+			else if (inPoints[i].type === LongLineType.PARALLEL) {
+				const [ф, λ0] = inPoints[i-1].args;
+				const [_, λ1] = inPoints[i].args;
 				console.assert(ф === _);
-				cutPoints.push(...this.projectParallel(λ0, λ1, ф));
+				outPoints.push(...this.projectParallel(λ0, λ1, ф));
 				i ++;
 			}
-			else if (jinPoints[i].type === 'M') {
-				const point = assert_фλ(endpoint(jinPoints[i]));
+			else if (inPoints[i].type === 'M') {
+				const point = assert_фλ(endpoint(inPoints[i]));
 				const {x, y} = this.projectPoint(point);
-				cutPoints.push({type: 'M', args: [x, y]});
+				outPoints.push({type: 'M', args: [x, y]});
 				i ++;
 			}
-			else if (jinPoints[i].type === 'L') {
-				const point = assert_фλ(endpoint(jinPoints[i]));
+			else if (inPoints[i].type === 'L') {
+				const point = assert_фλ(endpoint(inPoints[i]));
 				let {x, y} = this.projectPoint(point);
 				pendingPoints.push({type: 'L', args: [x, y]}); // put a pin in it; we mite haff to split it in haff
 			}
 			else {
-				throw `I don't think you can use ${jinPoints[i].type} here`;
+				throw `I don't think you can use ${inPoints[i].type} here`;
 			}
 
 			while (pendingPoints.length > 0) { // now, if there are points in the pending cue
-				const a = assert_xy(endpoint(cutPoints[cutPoints.length - 1])); // check the map distance
-				const b = assert_xy(endpoint(pendingPoints[pendingPoints.length - 1])); // between the end of cutPoints and the start of pendingPoints
+				const a = assert_xy(endpoint(outPoints[outPoints.length - 1])); // check the map distance
+				const b = assert_xy(endpoint(pendingPoints[pendingPoints.length - 1])); // between the end of outPoints and the start of pendingPoints
 				if (Math.hypot(b.x - a.x, b.y - a.y) < precision) { // if it's short enuff
-					cutPoints.push(pendingPoints.pop()); // unpend it
+					outPoints.push(pendingPoints.pop()); // unpend it
 					i ++;
 				}
 				else { // if it's too long
-					const aGeo = assert_фλ(endpoint(jinPoints[i-1]));
-					const bGeo = assert_фλ(endpoint(jinPoints[i]));
+					const aGeo = assert_фλ(endpoint(inPoints[i-1]));
+					const bGeo = assert_фλ(endpoint(inPoints[i]));
 					const {ф, λ} = this.getGeoMidpoint(aGeo, bGeo); // that means we need to plot a midpoint
-					jinPoints.splice(i, 0, {type: 'L', args: [ф, λ]});
+					inPoints.splice(i, 0, {type: 'L', args: [ф, λ]});
 					ogi.splice(i, 0, ogi[i]);
 					break; // break out of this so we can go project it
 				}
@@ -197,14 +197,14 @@ export abstract class MapProjection {
 
 			repeatCount ++;
 			if (repeatCount > 100000)
-				throw `why can't I find a point between ${jinPoints[i - 1].args}=>${cutPoints[cutPoints.length - 1].args} and ${jinPoints[i].args}=>${pendingPoints[pendingPoints.length - 1].args}`;
+				throw `why can't I find a point between ${inPoints[i - 1].args}=>${outPoints[outPoints.length - 1].args} and ${inPoints[i].args}=>${pendingPoints[pendingPoints.length - 1].args}`;
 		}
 
-		for (const segment of cutPoints)
+		for (const segment of outPoints)
 			for (const arg of segment.args)
 				console.assert(!Number.isNaN(arg), cutPoints);
 
-		return this.cutToSize(cutPoints, this.mapEdges, closePath);
+		return this.cutToSize(outPoints, this.mapEdges, closePath);
 	}
 
 	/**
@@ -283,24 +283,24 @@ export abstract class MapProjection {
 		let startingANewSupersection = true;
 		while (true) {
 
-			let jinSection = sections[sectionIndex]; // take a section
+			let section = sections[sectionIndex]; // take a section
 			if (!startingANewSupersection) {
-				jinSection = jinSection.slice(1); // remove its moveto
+				section = section.slice(1); // remove its moveto
 			}
 			else {
 				supersectionIndex = sectionIndex;
-				supersectionStart = endpoint(jinSection[0]);
+				supersectionStart = endpoint(section[0]);
 			}
 			startingANewSupersection = false; // turn off this notification flag until we need it agen
 
-			output.push(...jinSection); // add its points to the thing
+			output.push(...section); // add its points to the thing
 			weHaveDrawn[sectionIndex] = true; // mark it as drawn
 
 			if (!closePath) { // if we're not worrying about closing it off
 				startingANewSupersection = true; // forget it and move onto a random section
 			}
 			else {
-				const sectionEnd = endpoint(jinSection[jinSection.length-1]); // otherwise, look at where on Earth we are
+				const sectionEnd = endpoint(section[section.length-1]); // otherwise, look at where on Earth we are
 				const endPosition = MapProjection.getPositionOnEdge(
 					sectionEnd, edges);
 
