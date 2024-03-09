@@ -28,8 +28,8 @@ import {Point} from "./coordinates.js";
  * calculate the sign of this triangle
  * @return a positive number if a car going from a to b would haff to yield to the car
  * going from c to d were they to arrive at the all-stop simultaneously in the US; a
- * negative number if the car going from c to d would haff to yield in Japan; zero if
- * ab and cd are parallel.
+ * negative number if it would haff to yield in Japan; zero if ab and cd are parallel
+ * or either have length zero.
  */
 export function signCrossing(a: Point, b: Point, c: Point, d: Point): number {
 	const abx = b.x - a.x, aby = b.y - a.y;
@@ -141,12 +141,14 @@ export function lineLineIntersection(
 export function trajectoryIntersection(
 	a: Point, va: { x: number, y: number },
 	b: Point, vb: { x: number, y: number }): { x: number, y: number, ta: number, tb: number} {
+	if (va.x*vb.y - va.y*vb.x === 0)
+		throw `the given trajectories do not ever intersect.`;
 	const ta = (vb.x*(a.y - b.y) - vb.y*(a.x - b.x))/
 		(va.x*vb.y - va.y*vb.x);
 	const x = a.x + va.x*ta;
 	const y = a.y + va.y*ta;
 	const tb = (vb.y === 0) ? (x - b.x)/vb.x:
-	                           (y - b.y)/vb.y;
+	                          (y - b.y)/vb.y;
 	return { x: x, y: y, ta: ta, tb: tb };
 }
 

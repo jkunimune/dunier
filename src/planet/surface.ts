@@ -126,18 +126,18 @@ export abstract class Surface {
 			for (const {edge} of tile.getPolygon()) {
 				const arc = skeletonLeaf.pathToNextLeaf();
 				const projectedArc: Vector[] = [];
-				for (const joint of arc) {
+				for (const joint of arc.slice(1, arc.length - 1)) {
 					const {x, y} = joint.value;
-					projectedArc.push( // project it back
+					projectedArc.push( // drop the endpoints and project it back
 						tile.pos.plus(
 							tile.east.times(x).plus(
 								tile.north.times(y))));
 				}
 				if (edge !== null) {
 					if (edge.tileL === tile) // then save each part of the skeleton it to an edge
-						edge.leftBound = projectedArc;
+						edge.leftBoundCartesian = projectedArc;
 					else
-						edge.rightBound = projectedArc;
+						edge.rightBoundCartesian = projectedArc;
 				}
 				skeletonLeaf = arc[arc.length - 1]; // move onto the next one
 			}
@@ -362,11 +362,11 @@ export class Tile {
 		if (this.surface.edge.has(this)) {
 			// this tecneke is kind of janky but it works as long as Disc is the only Surface with an edge
 			output.push({
-				vertex: output[output.length - 1].vertex.times(3),
+				vertex: output[output.length - 1].vertex.times(4),
 				edge: null,
 			});
 			output.push({
-				vertex: output[0].vertex.times(3),
+				vertex: output[0].vertex.times(4),
 				edge: null,
 			});
 		}
@@ -485,10 +485,10 @@ export class Edge {
 	public distance: number; // distance between the centers of the Tiles this separates
 	public length: number; // distance between the Vertices this connects
 	public flow: number;
-	public rightBound: Vector[]; // these borders are the limits of the greebling
-	public leftBound: Vector[];
+	public rightBoundCartesian: Vector[]; // these borders are the limits of the greebling
+	public leftBoundCartesian: Vector[];
 
-	private bounds: Point[];
+	public bounds: Point[];
 	private readonly rng: Random; // this Random number generator is used exclusively for greebling
 	private currentResolution: number; // this number keeps of track of how much greebling we have resolved so far
 	private readonly paths: {resolution: number, points: Place[]}[]; // this path can be resolved at a variety of scales
@@ -510,8 +510,8 @@ export class Edge {
 
 		// instantiate the path (to be greebled later)
 		this.paths = [];
-		this.rightBound = null;
-		this.leftBound = null;
+		this.rightBoundCartesian = null;
+		this.leftBoundCartesian = null;
 		this.bounds = null;
 		this.length = null;
 		this.origin = null;
@@ -577,8 +577,10 @@ export class Edge {
 	 * use toEdgeCoords and fromEdgeCoords.
 	 */
 	setCoordinatesAndBounds(): void {
+		// compute its length
 		this.length = Math.sqrt(this.vertex0.pos.minus(this.vertex1.pos).sqr());
-		this.origin = this.vertex0.pos; // compute its coordinate system
+		// compute its coordinate system
+		this.origin = this.vertex0.pos;
 		const i = this.vertex1.pos.minus(this.origin).over(this.length);
 		const k = this.tileL.normal.plus(this.tileR.normal);
 		let j = k.cross(i);
@@ -586,11 +588,13 @@ export class Edge {
 		this.i = i;
 		this.j = j;
 
-		if (this.rightBound === null || this.leftBound === null)
+		// convert the left and right bounding arcs to edge coordinates
+		if (this.rightBoundCartesian === null || this.leftBoundCartesian === null)
 			throw "you can't get the greebled path until after the adjacent tiles' strait skeletons are set.";
-		this.bounds = [];
-		for (const vector of this.rightBound.concat(this.leftBound))
-			this.bounds.push(this.toEdgeCoords(vector));
+		const leftBound = this.leftBoundCartesian.map(this.toEdgeCoords, this);
+		const rightBound = this.rightBoundCartesian.map(this.toEdgeCoords, this);
+		// concatenate them to form a complete bounding polygon
+		this.bounds = [{x: 0., y: 0.}].concat(leftBound, [{x: this.length, y: 0.}], rightBound);
 	}
 
 	/**
