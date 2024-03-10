@@ -53,8 +53,8 @@ export class Bonne extends MapProjection {
 			this.sRef.push(surface.dAds(this.фRef[i])/(2*Math.PI)); // TODO: try this with something that spans both poles.  I feel like it probably won't work
 		}
 
-		this.maxф = Math.min(Math.PI/2, 1.4*focus.фMax - 0.4*focus.фMin); // spread the limits out a bit to give a contextual view
-		this.minф = Math.max(-Math.PI/2, 1.4*focus.фMin - 0.4*focus.фMax);
+		this.maxф = Math.min(surface.фMax, 1.4*focus.фMax - 0.4*focus.фMin); // spread the limits out a bit to give a contextual view
+		this.minф = Math.max(surface.фMin, 1.4*focus.фMin - 0.4*focus.фMax);
 		this.maxλ = Math.min(Math.PI, 1.8*focus.λMax);
 		this.minλ = -this.maxλ;
 
