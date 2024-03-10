@@ -49,10 +49,7 @@ export abstract class MapProjection {
 	public readonly center: number;
 	public geoEdges: MapEdge[][];
 	public mapEdges: MapEdge[][];
-	private left: number;
-	private right: number;
-	private top: number;
-	private bottom: number;
+	private dimensions: Dimensions;
 
 	protected constructor(surface: Surface,
 						  northUp: boolean, locus: PathSegment[],
@@ -828,12 +825,8 @@ export abstract class MapProjection {
 		return { loop: null, index: null };
 	}
 
-	getDimensions(): { left: number, right: number, top: number, bottom: number, width: number, height: number, diagonal: number } {
-		return {
-			left: this.left, right: this.right, width: this.right - this.left,
-			top: this.top, bottom: this.bottom, height: this.bottom - this.top,
-			diagonal: Math.hypot(this.left - this.right, this.bottom - this.top)
-		};
+	getDimensions(): Dimensions {
+		return this.dimensions;
 	}
 
 	/**
@@ -848,10 +841,7 @@ export abstract class MapProjection {
 		console.assert(top === null || top < bottom, top, bottom);
 		if (left !== null && (left >= right || top >= bottom))
 			throw new Error(`the axis bounds ${left}, ${right}, ${top}, ${bottom} are invalid.`);
-		this.left = left;
-		this.right = right;
-		this.top = top;
-		this.bottom = bottom;
+		this.dimensions = new Dimensions(left, right, top, bottom);
 		this.mapEdges = MapProjection.validateEdges([[
 			{ type: 'L', start: {s: left, t: top}, },
 			{ type: 'L', start: {s: left, t: bottom}, },
@@ -1040,6 +1030,32 @@ export abstract class MapProjection {
 			}
 		}
 		return true;
+	}
+}
+
+
+/**
+ * a simple record to efficiently represent the size and shape of a rectangle
+ */
+class Dimensions {
+	public readonly left: number;
+	public readonly right: number;
+	public readonly top: number;
+	public readonly bottom: number;
+	public readonly width: number;
+	public readonly height: number;
+	public readonly diagonal: number;
+	public readonly area: number;
+
+	constructor(left: number, right: number, top: number, bottom: number) {
+		this.left = left;
+		this.right = right;
+		this.top = top;
+		this.bottom = bottom;
+		this.width = this.right - this.left;
+		this.height = this.bottom - this.top;
+		this.diagonal = Math.hypot(this.width, this.height);
+		this.area = this.width*this.height;
 	}
 }
 

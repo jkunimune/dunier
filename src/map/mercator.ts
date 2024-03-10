@@ -31,11 +31,17 @@ import {PathSegment, Place, Point} from "../util/coordinates.js";
  */
 export class Mercator extends MapProjection {
 	private static readonly ASPECT: number = Math.sqrt(2);
+	private readonly dxdλ: number;
 	private readonly фRef: number[];
 	private readonly yRef: number[];
 
 	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
 		super(surface, northUp, locus, null, null, null, null);
+
+		// find the surface's widest point to set the scale
+		const width = Math.max(
+			surface.dAds(surface.фMin), surface.dAds(surface.фMax),
+			surface.dAds((surface.фMin + surface.фMax)/2));
 
 		this.фRef = surface.refLatitudes;
 		this.yRef = [0];
@@ -43,24 +49,26 @@ export class Mercator extends MapProjection {
 			const dф = this.фRef[i] - this.фRef[i-1];
 			const dsdф = surface.dsdф((this.фRef[i-1] + this.фRef[i])/2);
 			const dAds = surface.dAds((this.фRef[i-1] + this.фRef[i])/2);
-			this.yRef.push(this.yRef[i-1] - 2*Math.PI*dsdф*dф/dAds);
+			this.yRef.push(this.yRef[i-1] - width*dsdф*dф/dAds);
 		}
 
 		let bottom = this.yRef[0];
 		let top = this.yRef[this.yRef.length-1];
 		if (surface.dAds(surface.фMin) > surface.dAds(surface.фMax)) // if the South Pole is thicker than the North
-			top = Math.max(top, bottom - Mercator.ASPECT*Math.PI); // crop the top to get the correct aspect ratio
+			top = Math.max(top, bottom - width/Mercator.ASPECT); // crop the top to get the correct aspect ratio
 		else if (surface.dAds(surface.фMin) < surface.dAds(surface.фMax)) // if the North Pole is thicker
-			 bottom = Math.min(bottom, top + Mercator.ASPECT*Math.PI); // crop the bottom to make correct
+			 bottom = Math.min(bottom, top + width/Mercator.ASPECT); // crop the bottom to make correct
 		else { // if they are equally important
-			const excess = Math.max(0, bottom - top - Mercator.ASPECT*Math.PI);
+			const excess = Math.max(0, bottom - top - width/Mercator.ASPECT);
 			top = top + excess/2; // crop both
 			bottom = bottom - excess/2;
 		}
-		this.setDimensions(-Math.PI, Math.PI, top, bottom);
+		this.setDimensions(-width/2, width/2, top, bottom);
+
+		this.dxdλ = width/(2*Math.PI);
 	}
 
 	projectPoint(point: Place): Point {
-		return {x: point.λ, y: linterp(point.ф, this.фRef, this.yRef)};
+		return {x: this.dxdλ*point.λ, y: linterp(point.ф, this.фRef, this.yRef)};
 	}
 }

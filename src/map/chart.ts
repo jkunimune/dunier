@@ -39,7 +39,7 @@ const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no s
 const FINEST_SCALE = 10; // the smallest edge lengths that it will generate
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
-const RIVER_DISPLAY_THRESHOLD = 1e6; // km^2
+const RIVER_DISPLAY_FACTOR = 5e-2; // the watershed area relative to the map area needed to display a river
 const BORDER_SPECIFY_THRESHOLD = 0.51;
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const N_DEGREES = 6; // number of line segments into which to break one radian of arc
@@ -230,7 +230,8 @@ export class Chart {
 
 		// add rivers
 		if (rivers) {
-			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= RIVER_DISPLAY_THRESHOLD), // TODO have this depend on map scale
+			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR*this.projection.getDimensions().area;
+			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
 				g, riverColor, 1.5, Layer.GEO);
 		}
 

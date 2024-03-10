@@ -29,11 +29,18 @@ import {PathSegment, Place, Point} from "../util/coordinates.js";
  * a Plate-Caree projection, primarily for interfacing with other mapping software.
  */
 export class Equirectangular extends MapProjection {
+	private readonly scale: number;
+
 	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
-		super(surface, northUp, locus, -Math.PI, Math.PI, -surface.фMax, -surface.фMin);
+		const scale = Math.sqrt(surface.area/(2*Math.PI*(surface.фMax - surface.фMin)));
+		super(
+			surface, northUp, locus,
+			-Math.PI*scale, Math.PI*scale,
+			-surface.фMax*scale, -surface.фMin*scale);
+		this.scale = scale;
 	}
 
 	projectPoint(point: Place): Point {
-		return {x: point.λ, y: -point.ф};
+		return {x: this.scale*point.λ, y: -this.scale*point.ф};
 	}
 }
