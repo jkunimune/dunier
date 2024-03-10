@@ -246,12 +246,12 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
  * formed by the provided bounds polygon.
  * @param initialProfile some points that must be included in the profile.  there must be at least two – the first and
  *                       last ones will form the endpoints of the returned profile
- * @param scale all segments will be at most this long
+ * @param resolution all segments will be at most this long
  * @param rng the random number generator
  * @param bounds a closed convex polygon that the profile will try not to cross
  * @param alpha a dimensionless parameter that alters how noisy it is (limit is 1 or so)
  */
-export function noisyProfile(initialProfile: Point[], scale: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
+export function noisyProfile(initialProfile: Point[], resolution: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
 	if (initialProfile.length < 2)
 		throw new Error(`this function must be called on an initial path with at least two points (you only gave ${initialProfile.length}).`);
 	const confirmd = [initialProfile[0]]; // the profile, which we will build gradually
@@ -261,7 +261,7 @@ export function noisyProfile(initialProfile: Point[], scale: number, rng: Random
 		const last = confirmd[confirmd.length - 1]; // look at the upcoming segment
 		const next = pending[pending.length - 1];
 		const distance = Math.hypot(next.x - last.x, next.y - last.y);
-		if (distance > scale) { // if it is too long
+		if (distance > resolution) { // if it is too long
 			const r0 = new Vector((last.x + next.x)/2, (last.y + next.y)/2, 0); // find the point between them
 			const axis = new Vector((last.y - next.y)/2, (next.x - last.x)/2, 0); // find the axis perpendicular to them
 
@@ -282,7 +282,7 @@ export function noisyProfile(initialProfile: Point[], scale: number, rng: Random
 			const y = alpha*arctanh(rng.uniform(tanh(min/alpha), tanh(max/alpha))); // TODO: also prevent self-intersection TODO: is there a more efficient function I can use?
 
 			const nov = { x: r0.x + y*axis.x, y: r0.y + y*axis.y };
-			console.assert(Number.isFinite(nov.x), min, max, tanh(min/alpha), tanh(max/alpha), y, nov);
+			console.assert(Number.isFinite(nov.x), resolution, min, max, tanh(min/alpha), tanh(max/alpha), y, nov);
 			pending.push(nov); // and check it
 		}
 		else { // if it is short enuff

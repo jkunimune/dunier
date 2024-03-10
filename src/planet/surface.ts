@@ -31,6 +31,7 @@ import {straightSkeleton} from "../util/straightskeleton.js";
 
 
 const GREEBLE_FACTOR = .35;
+const FINEST_RESOLUTION = 1.0; // km
 const INTEGRATION_RESOLUTION = 32;
 
 
@@ -536,6 +537,9 @@ export class Edge {
 	 * an even finer scale, it will bild off of what it has generated here today.
 	 */
 	getPath(resolution: number): Place[] {
+		// you'll crash the browser if the resolution is too fine
+		if (resolution < FINEST_RESOLUTION)
+			throw new Error(`a resolution of ${resolution} is unacceptable`);
 		// make sure the edge's coordinate system and boundary polygon (for the greebling) are set
 		if (this.bounds === null)
 			this.setCoordinatesAndBounds();
@@ -571,7 +575,8 @@ export class Edge {
 		const pathIndex = binarySearch(
 			this.paths, (item) => item.resolution <= resolution);
 		if (pathIndex === this.paths.length)
-			throw new Error("for some reason there was no suitably greebled path even after we greebled the paths.");
+			throw new Error(`for some reason there was no suitably greebled path for ${resolution} even after we ` +
+			                `greebled the paths to ${this.currentResolution}.`);
 		else
 			return this.paths[pathIndex].points;
 	}

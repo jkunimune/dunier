@@ -46,10 +46,11 @@ const π = Math.PI;
 export abstract class MapProjection {
 	public readonly surface: Surface;
 	public readonly northUp: boolean;
-	public readonly center: number;
+	public readonly center: number; // central longitude
 	public geoEdges: MapEdge[][];
 	public mapEdges: MapEdge[][];
 	private dimensions: Dimensions;
+	public scale: number; // the map scale in map-widths per km
 
 	protected constructor(surface: Surface,
 						  northUp: boolean, locus: PathSegment[],
@@ -842,6 +843,7 @@ export abstract class MapProjection {
 		if (left !== null && (left >= right || top >= bottom))
 			throw new Error(`the axis bounds ${left}, ${right}, ${top}, ${bottom} are invalid.`);
 		this.dimensions = new Dimensions(left, right, top, bottom);
+		this.scale = 1/this.dimensions.diagonal;
 		this.mapEdges = MapProjection.validateEdges([[
 			{ type: 'L', start: {s: left, t: top}, },
 			{ type: 'L', start: {s: left, t: bottom}, },

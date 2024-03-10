@@ -36,7 +36,7 @@ import {Biome} from "../society/terrain.js";
 const DISABLE_GREEBLING = false; // make all lines as simple as possible, for debug purposes
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 
-const FINEST_SCALE = 10; // the smallest edge lengths that it will generate
+const GREEBLE_FACTOR = 1e-2; // the smallest edge lengths to show relative to the map size
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_FACTOR = 5e-2; // the watershed area relative to the map area needed to display a river
@@ -279,7 +279,7 @@ export class Chart {
 				if (this.projection.projectPath(
 					Chart.convertToGreebledPath(
 						Chart.outline([...civ.tiles].filter(n => !n.isWater())),
-						Layer.KULTUR),
+						Layer.KULTUR, this.projection.scale),
 					true).length > 0)
 					visible.push(civ);
 			return visible;
@@ -305,7 +305,8 @@ export class Chart {
 			return this.draw([], svg);
 		const closePath = color !== 'none'; // leave the polygons open if we're not coloring them in
 		const segments = this.projection.projectPath(
-			Chart.convertToGreebledPath(Chart.outline(tiles), greeble), closePath);
+			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.projection.scale),
+			closePath);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
@@ -324,7 +325,7 @@ export class Chart {
 	stroke(strokes: Iterable<(Tile | Vertex)[]>, svg: SVGGElement,
 		   color: string, width: number, greeble: Layer): SVGPathElement {
 		let segments = this.projection.projectPath(
-			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble), false);
+			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.projection.scale), false);
 		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
 		const path = this.draw(segments, svg);
@@ -396,7 +397,7 @@ export class Chart {
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
 		const path = this.projection.projectPath( // do the projection
-			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR),
+			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.projection.scale),
 			true
 		);
 		if (path.length === 0)
@@ -706,7 +707,7 @@ export class Chart {
 	 */
 	static border(civ: Civ): PathSegment[] {
 		const landNodos = filterSet(civ.tiles, (n) => n.biome !== Biome.OCEAN);
-		return this.convertToGreebledPath(Chart.outline(landNodos), Layer.KULTUR);
+		return this.convertToGreebledPath(Chart.outline(landNodos), Layer.KULTUR, 1e-6);
 	}
 
 	/**
@@ -869,8 +870,9 @@ export class Chart {
 	 * between them as appropriate.
 	 * @param points each Place[] is a polygonal path thru geographic space
 	 * @param greeble what kinds of connections these are for the purposes of greebling
+	 * @param scale the map scale at which to greeble in map-widths per km
 	 */
-	static convertToGreebledPath(points: Iterable<Place[]>, greeble: Layer): PathSegment[] {
+	static convertToGreebledPath(points: Iterable<Place[]>, greeble: Layer, scale: number): PathSegment[] {
 		let path = [];
 		for (const line of points) { // then do the conversion
 			path.push({type: 'M', args: [line[0].ф, line[0].λ]});
@@ -889,7 +891,7 @@ export class Chart {
 				let step: Place[];
 				// if there is an edge and it should be greebled, greeble it
 				if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
-					const path = edge.getPath(FINEST_SCALE);
+					const path = edge.getPath(GREEBLE_FACTOR/scale);
 					if (edge.vertex0 === start)
 						step = path.slice(1);
 					else
