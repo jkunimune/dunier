@@ -276,8 +276,9 @@ export class Chart {
 			const visible = [];
 			for (const civ of world.getCivs(true))
 				if (this.projection.project(
-					Chart.outline([...civ.tiles].filter(n => !n.isWater()),
-					              Layer.KULTUR),
+					Chart.convertToGreebledPath(
+						Chart.outline([...civ.tiles].filter(n => !n.isWater())),
+						Layer.KULTUR),
 					true).length > 0)
 					visible.push(civ);
 			return visible;
@@ -303,7 +304,7 @@ export class Chart {
 			return this.draw([], svg);
 		const closePath = color !== 'none'; // leave the polygons open if we're not coloring them in
 		const segments = this.projection.project(
-			Chart.outline(tiles, greeble), closePath);
+			Chart.convertToGreebledPath(Chart.outline(tiles), greeble), closePath);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
@@ -321,7 +322,8 @@ export class Chart {
 	 */
 	stroke(strokes: Iterable<(Tile | Vertex)[]>, svg: SVGGElement,
 		   color: string, width: number, greeble: Layer): SVGPathElement {
-		let segments = this.projection.project(Chart.convertToPath(Chart.aggregate(strokes), greeble), false);
+		let segments = this.projection.project(
+			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble), false);
 		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
 		const path = this.draw(segments, svg);
@@ -392,7 +394,10 @@ export class Chart {
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.projection.project(Chart.outline(new Set(tiles), Layer.KULTUR), true); // do the projection
+		const path = this.projection.project( // do the projection
+			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR),
+			true
+		);
 		if (path.length === 0)
 			return null;
 
@@ -700,16 +705,15 @@ export class Chart {
 	 */
 	static border(civ: Civ): PathSegment[] {
 		const landNodos = filterSet(civ.tiles, (n) => n.biome !== Biome.OCEAN);
-		return Chart.outline(landNodos, Layer.KULTUR);
+		return this.convertToGreebledPath(Chart.outline(landNodos), Layer.KULTUR);
 	}
 
 	/**
 	 * create an ordered Iterator of segments that form the boundary of these nodos.
 	 * @param tiles Set of Tiles that are part of this group.
-	 * @param greeble how to greeble
 	 * @return Array of PathSegments, ordered widdershins.
 	 */
-	static outline(tiles: Tile[] | Set<Tile>, greeble: Layer): PathSegment[] {
+	static outline(tiles: Tile[] | Set<Tile>): Place[][] {
 		const tileSet = new Set(tiles);
 		const accountedFor = new Set(); // keep track of which Edge have been done
 		const output: Place[][] = []; // TODO: will this thro an error if I try to outline the entire surface?
@@ -772,7 +776,7 @@ export class Chart {
 			}
 		}
 
-		return this.convertToPath(output, greeble);
+		return output;
 	}
 
 	/**
@@ -859,12 +863,13 @@ export class Chart {
 
 	/**
 	 * convert some paths expressd as Places into an array of PathSegments, using 'M'
-	 * segments to indicate gaps and 'L' segments to indicate connections.  also add
-	 * the greebling where relevant
+	 * segments to indicate gaps and 'L' segments to indicate connections.  if any of the
+	 * adjacent Places are actually adjacent Vertexes, go ahead and greeble some vertices
+	 * between them as appropriate.
 	 * @param points each Place[] is a polygonal path thru geographic space
 	 * @param greeble what kinds of connections these are for the purposes of greebling
 	 */
-	static convertToPath(points: Iterable<Place[]>, greeble: Layer): PathSegment[] {
+	static convertToGreebledPath(points: Iterable<Place[]>, greeble: Layer): PathSegment[] {
 		let path = [];
 		for (const line of points) { // then do the conversion
 			path.push({type: 'M', args: [line[0].ф, line[0].λ]});
