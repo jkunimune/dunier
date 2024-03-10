@@ -133,12 +133,16 @@ export abstract class MapProjection {
 	project(segments: PathSegment[], closePath: boolean): PathSegment[] {
 		if (segments.length === 0) // what're you trying to pull here?
 			return [];
-		else if (closePath && !MapProjection.isClosed(segments))
+		else if (closePath && !MapProjection.isClosed(segments, this.surface))
 			throw new Error("you can't pass open paths and expect me to close them for you.");
 
-		segments = this.transform(segments);
+		// check for NaNs because they can really mess things up
+		for (const segment of segments)
+			for (const arg of segment.args)
+				if (!isFinite(arg))
+					throw new Error(`you may not pass ${arg} to the mapping functions!`);
 
-		const inPoints = this.cutToSize(segments, this.geoEdges, closePath);
+		const inPoints = this.cutToSize(this.transform(segments), this.geoEdges, closePath);
 
 		const precision = MAP_PRECISION*this.getDimensions().diagonal;
 		let repeatCount = 0; // now do the math
@@ -200,9 +204,10 @@ export abstract class MapProjection {
 				throw new Error(`why can't I find a point between ${inPoints[i - 1].args}=>${outPoints[outPoints.length - 1].args} and ${inPoints[i].args}=>${pendingPoints[pendingPoints.length - 1].args}`);
 		}
 
+		// check for NaNs because they can really mess things up
 		for (const segment of outPoints)
 			for (const arg of segment.args)
-				console.assert(!Number.isNaN(arg), cutPoints);
+				console.assert(isFinite(arg), arg);
 
 		return this.cutToSize(outPoints, this.mapEdges, closePath);
 	}
@@ -218,7 +223,7 @@ export abstract class MapProjection {
 		for (const segment of segments)
 			if (typeof segment.type !== 'string')
 				throw new Error(`you can't pass ${segment.type}-type segments to this funccion.`);
-		if (closePath && !MapProjection.isClosed(segments))
+		if (closePath && !MapProjection.isClosed(segments, this.surface))
 			throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
 
 		const segmentCue = segments.slice().reverse();
@@ -1011,19 +1016,26 @@ export abstract class MapProjection {
 	}
 
 	/**
-	 * just make sure it eventually returns to each moveto.
-	 * @param segments
+	 * just make sure every contiguus section either ends where it started or starts and ends on an edge
+	 * @param segments the Path to test
+	 * @param surface the surface that contains the points (so we know when it goes off the edge)
 	 */
-	static isClosed(segments: PathSegment[]): boolean {
+	static isClosed(segments: PathSegment[], surface: Surface): boolean {
 		let start: Location = null;
 		for (let i = 0; i < segments.length; i ++) {
 			if (segments[i].type === 'M')
 				start = endpoint(segments[i]);
+			// loop from M to M to find each contiguus section
 			if (i + 1 === segments.length || segments[i+1].type === 'M') {
 				if (start === null)
 					throw new Error(`path must begin with a moveto, not ${segments[0].type}`);
 				const end = endpoint(segments[i]);
-				if (start.s !== end.s || start.t !== end.t)
+				// if it doesn't end where it started
+				const endsOnStart = start.s === end.s && start.t === end.t;
+				// and it doesn't start and end on edges
+				const endsOnEdge = surface.isOnEdge(assert_фλ(start)) && surface.isOnEdge(assert_фλ(end));
+				// then the Path isn't closed
+				if (!endsOnStart && !endsOnEdge)
 					return false;
 			}
 		}

@@ -27,7 +27,7 @@ import {Place} from "../util/coordinates.js";
 
 /**
  * a planar planet based on the modern flat earth model, where the sun circles in a horizontal plane above the world,
- * and the oscillating radius of its orbit effects the seasons.
+ * and the oscillating radius of its orbit causes the seasons.
  */
 export class Disc extends Surface {
 	protected readonly radius: number;
@@ -102,5 +102,9 @@ export class Disc extends Surface {
 		const ar = this.firmamentHite/Math.tan(a.ф);
 		const br = this.firmamentHite/Math.tan(b.ф);
 		return Math.sqrt(ar*ar + br*br - 2*ar*br*Math.cos(a.λ - b.λ));
+	}
+
+	isOnEdge(place: Place): boolean {
+		return place.ф === this.фMin;
 	}
 }

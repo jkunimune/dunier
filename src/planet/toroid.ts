@@ -159,4 +159,8 @@ export class Toroid extends Surface {
 		const sPol = aAvg * Math.abs((a.ф - b.ф) % (2*Math.PI));
 		return Math.hypot(sTor, sPol);
 	}
+
+	isOnEdge(place: Place): boolean {
+		return false;
+	}
 }

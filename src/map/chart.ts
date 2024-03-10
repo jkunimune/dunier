@@ -720,19 +720,20 @@ export class Chart {
 				const startingEdge = inTile.neighbors.get(outTile); // the edge between them defines the start of the loop
 				if (accountedFor.has(startingEdge))
 					continue; // (and can ignore edges we've already hit)
+				if(inTile.rightOf(outTile) === null || inTile.leftOf(outTile) === null)
+					continue; // this algorithm fails if we don't start with a wholly internal Edge
 
-				const loop = []; // if we've found a new edge, start going around it
+				const currentLoop: Place[][] = []; // if we've found a new edge, start going around it
+				let currentSection: Place[] = [inTile.rightOf(outTile)]; // keep track of each continuus section of this loop
 
 				do {
-					const next = inTile.leftOf(outTile); // look for the next vertex, going widdershins
+					const next = inTile.leftOf(outTile); // look for the next Vertex, going widdershins
 
 					if (next !== null) { // assuming there is one,
-						const vertex = next; // pick it out to plot
-						const edge = inTile.neighbors.get(outTile); // and the edge between them
+						// add the next Vertex to the complete Path
+						currentSection.push(next);
 
-						// add the edge to the complete Path
-						loop.push(vertex); // make the Path segment
-
+						const edge = inTile.neighbors.get(outTile); // pick out the edge between them
 						accountedFor.add(edge); // check this edge off
 						if (tileSet.has(next.acrossFrom(edge))) // then, depending on the state of the Tile after that Vertex
 							inTile = next.acrossFrom(edge); // advance one of the state tiles
@@ -740,26 +741,33 @@ export class Chart {
 							outTile = next.acrossFrom(edge);
 					}
 					else { // if there isn't a next Vertex
-						if (loop.length > 0)
-							loop.push(
-								{ ф: Number.NEGATIVE_INFINITY, λ: inTile.λ }); // draw a line to infinity
-						else
-							break; // you're on the end in which case you should just ignore this
+						currentSection.push({ф: inTile.surface.фMin, λ: (inTile.λ + outTile.λ)/2}); // add a dummy Vertex on the edge
+						currentLoop.push(currentSection); // break off this section
 
+						// shimmy outTile around the internal portion of the edge
 						outTile = inTile;
 						let i = 0;
 						do {
-							outTile = outTile.surface.edge.get(outTile).next; // and shimmy outTile around the internal portion of the edge
+							outTile = outTile.surface.edge.get(outTile).next;
 							i ++;
 						} while (tileSet.has(outTile)); // until it becomes external again
+						inTile = outTile.surface.edge.get(outTile).prev; // then, grab the new inTile
 
-						inTile = outTile.surface.edge.get(outTile).prev; // then, grab the new inTile and continue
+						currentSection = [{ф: inTile.surface.фMin, λ: (inTile.λ + outTile.λ)/2}]; // start a new section in the same loop on this side of the gap
 					}
-				} while (inTile.neighbors.get(outTile) !== startingEdge && output.length < 100000); // continue until you go all the outTile around this loop
 
-				if (loop.length > 0) {
-					loop.push(loop[0]); // add closure
-					output.push(loop); // and save it to the output
+					if (output.length >= 100000)
+						throw new Error(`something went wrong why does this polygon have ${output.length} vertices?`);
+
+				} while (inTile.neighbors.get(outTile) !== startingEdge); // continue until you go all the outTile around this loop
+
+				// concatenate the first and last sections
+				if (currentLoop.length > 0) {
+					currentLoop[0] = currentSection.concat(currentLoop[0].slice(1));
+					output.push(...currentLoop); // and save all sections to the output
+				}
+				else {
+					output.push(currentSection);
 				}
 			}
 		}

@@ -54,7 +54,7 @@ export class Bonne extends MapProjection {
 		}
 
 		this.maxф = Math.min(surface.фMax, 1.4*focus.фMax - 0.4*focus.фMin); // spread the limits out a bit to give a contextual view
-		this.minф = Math.max(surface.фMin, 1.4*focus.фMin - 0.4*focus.фMax);
+		this.minф = Math.max(surface.фMin, 1.4*focus.фMin - 0.4*focus.фMax); // TODO: this should be a constant distance, not a constant latitude difference
 		this.maxλ = Math.min(Math.PI, 1.8*focus.λMax);
 		this.minλ = -this.maxλ;
 

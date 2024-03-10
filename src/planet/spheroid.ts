@@ -167,6 +167,10 @@ export class Spheroid extends Surface {
 			9/64.*legendreP4(Math.cos(obliquity))*legendreP4(Math.sin(latitude)) -
 			65/1024.*legendreP6(Math.cos(obliquity))*legendreP6(Math.sin(latitude));
 	}
+
+	isOnEdge(place: Place): boolean {
+		return false;
+	}
 }
 
 

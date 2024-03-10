@@ -75,7 +75,7 @@ export class Conic extends MapProjection {
 			}
 		}
 
-		const top = Math.max(coneTop, 1.4*locusTop - 0.4*locusBottom);
+		const top = Math.max(coneTop, 1.4*locusTop - 0.4*locusBottom); // spread the limits out a bit to give a contextual view
 		const bottom = Math.min(coneBottom, 1.4*locusBottom - 0.4*locusTop);
 		const right = Math.min(coneRight, 0.9*(locusRight - locusLeft));
 		this.setDimensions(-right, right, top, bottom);
