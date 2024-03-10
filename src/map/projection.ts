@@ -127,7 +127,7 @@ export abstract class MapProjection {
 	 * @param closePath if this is set to true, the map will make adjustments to account for its complete nature
 	 * @returns SVG.Path object
 	 */
-	project(segments: PathSegment[], closePath: boolean): PathSegment[] {
+	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
 		if (segments.length === 0) // what're you trying to pull here?
 			return [];
 		else if (closePath && !MapProjection.isClosed(segments, this.surface))

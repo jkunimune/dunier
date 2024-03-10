@@ -276,7 +276,7 @@ export class Chart {
 			// (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
 			const visible = [];
 			for (const civ of world.getCivs(true))
-				if (this.projection.project(
+				if (this.projection.projectPath(
 					Chart.convertToGreebledPath(
 						Chart.outline([...civ.tiles].filter(n => !n.isWater())),
 						Layer.KULTUR),
@@ -304,7 +304,7 @@ export class Chart {
 		if (tiles.size <= 0)
 			return this.draw([], svg);
 		const closePath = color !== 'none'; // leave the polygons open if we're not coloring them in
-		const segments = this.projection.project(
+		const segments = this.projection.projectPath(
 			Chart.convertToGreebledPath(Chart.outline(tiles), greeble), closePath);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
@@ -323,7 +323,7 @@ export class Chart {
 	 */
 	stroke(strokes: Iterable<(Tile | Vertex)[]>, svg: SVGGElement,
 		   color: string, width: number, greeble: Layer): SVGPathElement {
-		let segments = this.projection.project(
+		let segments = this.projection.projectPath(
 			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble), false);
 		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
@@ -367,7 +367,7 @@ export class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
-			this.draw(this.projection.project(path, true), svg).setAttribute('style',
+			this.draw(this.projection.projectPath(path, true), svg).setAttribute('style',
 				`fill: '#000'; fill-opacity: ${1-brightness};`);
 		}
 	}
@@ -395,7 +395,7 @@ export class Chart {
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.projection.project( // do the projection
+		const path = this.projection.projectPath( // do the projection
 			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR),
 			true
 		);
