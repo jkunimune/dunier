@@ -121,11 +121,11 @@ export function populateSurface(surf: Surface, rng: Random): void {
 
 	// call the delaunay triangulation subroutine
 	const triangulation = delaunayTriangulate(
-		tiles.map((n: Tile) => n.pos),
-		tiles.map((n: Tile) => n.normal),
-		partition.nodos.map((n: Tile) => n.pos),
-		partition.nodos.map((n: Tile) => n.normal),
-		partition.triangles.map((t: Vertex) => t.tiles.map((n: Tile) => partition.nodos.indexOf(n)))
+		tiles.map((t: Tile) => t.pos),
+		tiles.map((t: Tile) => t.normal),
+		partition.nodos.map((t: Tile) => t.pos),
+		partition.nodos.map((t: Tile) => t.normal),
+		partition.triangles.map((v: Vertex) => v.tiles.map((t: Tile) => partition.nodos.indexOf(t)))
 	);
 	surf.vertices = new Set(); // unpack the resulting Voronoi vertices
 	for (const [ia, ib, ic] of triangulation.triangles) {
@@ -556,7 +556,7 @@ function addRivers(surf: Surface): void {
 		surf.rivers.add([vertex, vertex.downstream]);
 	}
 
-	const lageQueue = [...surf.tiles].filter((n: Tile) => !surf.edge.has(n));
+	const lageQueue = [...surf.tiles].filter((t: Tile) => !surf.edge.has(t));
 	queue:
 	while (lageQueue.length > 0) { // now look at the tiles
 		const tile = lageQueue.pop(); // TODO: make lakes more likely to appear on large rivers
