@@ -51,3 +51,20 @@ test("square", () => {
         }),
     );
 });
+const trapezoid = [{x: -1, y: -1/2}, {x: -1, y: -1}, {x: 1, y: -1}, {x: 1 + 2/Math.sqrt(3), y: 1}, {x: -1, y: 1}];
+test("trapezoid", () => {
+    expect(straightSkeleton(trapezoid)).toEqual(
+        expect.objectContaining({
+            value: expect.objectContaining({x: -1, y: -1/2}),
+            parent: expect.objectContaining({
+                value: expect.objectContaining({x: -1/2, y: -1/2}),
+                parent: expect.objectContaining({
+                    value: expect.objectContaining({x: 0, y: 0}),
+                    parent: expect.objectContaining({
+                        value: expect.objectContaining({x: 1 - 1/Math.sqrt(3), y: 0}),
+                    })
+                })
+            }),
+        }),
+    );
+});
