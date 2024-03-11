@@ -31,7 +31,7 @@ import {straightSkeleton} from "../util/straightskeleton.js";
 
 
 const GREEBLE_FACTOR = .35;
-const FINEST_RESOLUTION = 1.0; // km
+const FINEST_RESOLUTION = 0.1; // km
 const INTEGRATION_RESOLUTION = 32;
 
 

@@ -173,6 +173,9 @@ describe("Edge", () => {
                     expect.objectContaining({ф: vertices[2].ф, λ: vertices[2].λ}),
                 ]);
             });
+            test("illegal scale", () => {
+                expect(() => edge.getPath(0)).toThrow();
+            });
         });
     });
 });
