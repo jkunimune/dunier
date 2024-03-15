@@ -32,6 +32,10 @@ header, footer {
     alignment-baseline: middle;
 }
 
+.card-header {
+    padding: .2rem;
+}
+
 @media screen and (min-width: 768px) {
     .scrolling-sidebar {
         padding-right: 1em;
