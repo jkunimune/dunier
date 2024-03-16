@@ -403,7 +403,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 		tile.rainfall += moisture;
 		for (const downwind of tile.downwind) {
 			if (downwind.biome !== Biome.OCEAN && downwind.height <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
-				const distance: number = tile.neighbors.get(downwind).length;
+				const distance: number = tile.neighbors.get(downwind).distance;
 				queue.push({
 					tile: downwind,
 					moisture: moisture*Math.exp(-distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
