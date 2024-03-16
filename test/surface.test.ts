@@ -93,10 +93,10 @@ describe("Edge", () => {
         const edge = tiles[0].neighbors.get(tiles[2]);
         edge.setCoordinatesAndBounds();
         test("distance", () => {
-            expect(edge.distance).toBeCloseTo(Math.sqrt(3) / 2);
+            expect(edge.distance).toBeCloseTo(Math.sqrt(3)/2);
         });
         test("length", () => {
-            expect(edge.length).toBeCloseTo(1 / 2);
+            expect(edge.length).toBeCloseTo(1/2);
         });
         test("leftBound", () => {
             expect(edge.leftBoundCartesian).toEqual([
@@ -106,27 +106,27 @@ describe("Edge", () => {
         });
         test("rightBound", () => {
             expect(edge.rightBoundCartesian).toEqual([
-                expect.objectContaining({x: expect.closeTo(-Math.sqrt(3) / 4 + 1 / 4), y: expect.closeTo(0)}),
+                expect.objectContaining({x: expect.closeTo(-Math.sqrt(3)/4 + 1/4), y: expect.closeTo(0)}),
             ]);
         });
         test("bounds", () => {
             expect(edge.bounds).toEqual([
                 {x: expect.closeTo(0.), y: expect.closeTo(0.)},
-                {x: expect.closeTo(Math.sqrt(3)/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(Math.sqrt(3) / 8)},
-                {x: expect.closeTo(1/2 - Math.sqrt(3)/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(Math.sqrt(3) / 8)},
-                {x: expect.closeTo(1 / 2), y: expect.closeTo(0.)},
-                {x: expect.closeTo(1 / 4), y: expect.closeTo(-1 / 4)},
+                {x: expect.closeTo(Math.sqrt(3)/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(Math.sqrt(3)/8)},
+                {x: expect.closeTo(1/2 - Math.sqrt(3)/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(Math.sqrt(3)/8)},
+                {x: expect.closeTo(1/2), y: expect.closeTo(0.)},
+                {x: expect.closeTo(1/4), y: expect.closeTo(-1/4)},
             ]);
         });
         test("toEdgeCoords()", () => {
-            expect(edge.toEdgeCoords(new Vector(-Math.sqrt(3) / 4, 0, 0))).toEqual({
-                x: expect.closeTo(1 / 4),
+            expect(edge.toEdgeCoords(new Vector(-Math.sqrt(3)/4, 0, 0))).toEqual({
+                x: expect.closeTo(1/4),
                 y: expect.closeTo(0)
             });
         });
         test("fromEdgeCoords()", () => {
-            expect(edge.fromEdgeCoords({x: 1 / 4, y: 0})).toEqual(expect.objectContaining({
-                x: expect.closeTo(-Math.sqrt(3) / 4),
+            expect(edge.fromEdgeCoords({x: 1/4, y: 0})).toEqual(expect.objectContaining({
+                x: expect.closeTo(-Math.sqrt(3)/4),
                 y: expect.closeTo(0),
                 z: expect.closeTo(0),
             }));

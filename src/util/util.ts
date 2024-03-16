@@ -377,7 +377,7 @@ export class Matrix {
 
 		// Perform backward substitutions
 		for (let i = 0; i < n; i ++) {
-			x[n - 1][i] = b[index[n - 1]][i] / a[index[n - 1]][n - 1];
+			x[n - 1][i] = b[index[n - 1]][i]/a[index[n - 1]][n - 1];
 			for (let j = n - 2; j >= 0; j --) {
 				x[j][i] = b[index[j]][i];
 				for (let k = j + 1; k < n; k ++) {
@@ -432,7 +432,7 @@ export class Matrix {
 			index[j] = index[k];
 			index[k] = itmp;
 			for (let i = j + 1; i < n; i ++) {
-				const pj = a[index[i]][j] / a[index[j]][j];
+				const pj = a[index[i]][j]/a[index[j]][j];
 
 				// Record pivoting ratios below the diagonal
 				a[index[i]][j] = pj;

@@ -46,14 +46,14 @@ export class Random {
 	 * return the next pseudorandom integer, in some obscene non-useful range
 	 */
 	next(): number {
-		return this.value = (this.value * 0x19660D + 0x3C6EF35F) % 0x100000000;
+		return this.value = (this.value*0x19660D + 0x3C6EF35F) % 0x100000000;
 	}
 
 	/**
 	 * return a pseudorandom number in [0, 1)
 	 */
 	random(): number {
-		return this.next() / 0x100000000;
+		return this.next()/0x100000000;
 	}
 
 	/**

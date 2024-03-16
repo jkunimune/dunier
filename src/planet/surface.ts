@@ -636,8 +636,8 @@ export class Edge {
 		if (this.origin === null)
 			throw new Error(`the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`);
 		return {
-			x: point.minus(this.origin).dot(this.i) / this.i.sqr(),
-			y: point.minus(this.origin).dot(this.j) / this.j.sqr(),
+			x: point.minus(this.origin).dot(this.i)/this.i.sqr(),
+			y: point.minus(this.origin).dot(this.j)/this.j.sqr(),
 		};
 	}
 

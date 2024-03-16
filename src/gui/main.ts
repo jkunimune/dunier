@@ -101,8 +101,8 @@ function applyPlanet() {
 	const tidallyLocked = DOM.checked('planet-locked');
 	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
 	const gravity = Number(DOM.val('planet-gravity')) * 9.8;
-	const spinRate = 1 / Number(DOM.val('planet-day')) * 2*Math.PI / 3600;
-	const obliquity = Number(DOM.val('planet-tilt')) * Math.PI / 180;
+	const spinRate = 1 / Number(DOM.val('planet-day')) * 2*Math.PI/3600;
+	const obliquity = Number(DOM.val('planet-tilt')) * Math.PI/180;
 
 	try { // create a surface
 		if (planetType === 'spheroid') { // spheroid

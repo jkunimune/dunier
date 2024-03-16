@@ -75,8 +75,8 @@ export class ErodingSegmentTree {
 			let link = this.minim;
 			while (link !== null) {
 				if (link.bad.val - link.val > 2 * this.radius) {
-					this.radius = (link.bad.val - link.val) / 2;
-					this.pole = (link.bad.val + link.val) / 2;
+					this.radius = (link.bad.val - link.val)/2;
+					this.pole = (link.bad.val + link.val)/2;
 				}
 				link = link.bad.bad;
 			}
