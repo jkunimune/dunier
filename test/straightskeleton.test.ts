@@ -24,7 +24,24 @@
 import {straightSkeleton} from "../src/util/straightskeleton.js";
 
 test("empty", () => {
-   expect(() => straightSkeleton([])).toThrow();
+    expect(() => straightSkeleton([])).toThrow();
+});
+const triangle = [{x: 0, y: 0}, {x: 1/2, y: 0}, {x: 0, y: Math.sqrt(3)/2}];
+test("triangle", () => {
+    expect(straightSkeleton(triangle)).toEqual(
+        expect.objectContaining({
+            value: expect.objectContaining({x: 0, y: 0}),
+            parent: expect.objectContaining({
+                value: expect.objectContaining({
+                    x: expect.closeTo((Math.sqrt(3) - 1)/4),
+                    y: expect.closeTo((Math.sqrt(3) - 1)/4)
+                }),
+            }),
+        }),
+    );
+});
+test("reversed", () => {
+    expect(() => straightSkeleton(triangle.slice().reverse())).toThrow();
 });
 const rectangle = [{x: -2, y: -1}, {x: 2, y: -1}, {x: 2, y: 1}, {x: -2, y: 1}];
 test("rectangle", () => {
@@ -62,8 +79,8 @@ test("trapezoid", () => {
                     value: expect.objectContaining({x: 0, y: 0}),
                     parent: expect.objectContaining({
                         value: expect.objectContaining({x: 1 - 1/Math.sqrt(3), y: 0}),
-                    })
-                })
+                    }),
+                }),
             }),
         }),
     );

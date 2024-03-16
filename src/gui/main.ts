@@ -231,7 +231,7 @@ function applyTerrain(): void {
 
 	console.log("Delone tingonfa...");
 	let rng = new Random(Number(DOM.val('terrain-seed'))); // use the random seed
-	populateSurface(surface, rng); // finish constructing the surface
+	populateSurface(surface, surface.randomlySubdivide(rng)); // finish constructing the surface
 
 	console.log("jena zemforme...");
 	rng = rng.reset();

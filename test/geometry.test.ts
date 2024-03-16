@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {signCrossing, trajectoryIntersection} from "../src/util/geometry";
+import {checkVoronoiPolygon, signCrossing, trajectoryIntersection} from "../src/util/geometry";
 
 describe("signCrossing()", () => {
     test("positive", () => {
@@ -54,5 +54,32 @@ describe("trajectoryIntersection()", () => {
     test("stationary", () => {
         expect(() => trajectoryIntersection(
             {x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 0}, {x: 0, y: 0})).toThrow();
+    });
+});
+
+describe("checkVoronoiPolygon()", () => {
+    test("fine", () => {
+        const originalPolygon = [{x: 1, y: 0}, {x: 0, y: 2}, {x: -3, y: -4}];
+        expect(checkVoronoiPolygon(originalPolygon)).toEqual(originalPolygon);
+    });
+    test("incomplete", () => {
+        const originalPolygon = [{x: 1, y: 0}, {x: 3, y: 4}, {x: 0, y: 2}];
+        expect(checkVoronoiPolygon(originalPolygon)).toEqual(originalPolygon);
+    });
+    test("backwards", () => {
+        const originalPolygon = [{x: 1, y: 0}, {x: -3, y: -4}, {x: 0, y: 2}];
+        expect(checkVoronoiPolygon(originalPolygon)).toEqual([originalPolygon[1], originalPolygon[0], originalPolygon[2]]);
+    });
+    test.only("real life", () => {
+        const originalPolygon = [
+            {x: 13.8, y: -111.3},
+            {x: 173.2, y: -91.1},
+            {x: 180.10, y: -23.48},
+            {x: -97.201, y: 186.889},
+            {x: -97.168, y: 186.779},
+            {x: -135.0, y: 162.4},
+            {x: 0.4, y: -99.5},
+        ];
+        expect(checkVoronoiPolygon(originalPolygon)).toEqual(originalPolygon);
     });
 });

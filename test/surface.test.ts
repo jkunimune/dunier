@@ -24,8 +24,9 @@
 import {Tile, Vertex} from "../src/planet/surface.js";
 import {Disc} from "../src/planet/disc.js";
 import {Vector} from "../src/util/geometry.js";
+import {populateSurface} from "../src/society/terrain";
 
-const surface = new Disc(2, 0);
+const surface = new Disc(Math.sqrt(7)/2, 0);
 surface.initialize();
 const tiles = [
     new Tile(0, surface.фλ(new Vector(-Math.sqrt(3)/2, 0, 0)), surface),
@@ -34,37 +35,18 @@ const tiles = [
     new Tile(3, surface.фλ(new Vector(0, 1/2, 0)), surface),
     new Tile(4, surface.фλ(new Vector(Math.sqrt(3)/2, 0, 0)), surface),
 ];
-surface.tiles = new Set(tiles);
-const vertices = [
-    new Vertex(tiles[0], tiles[1], tiles[2]),
-    new Vertex(tiles[0], tiles[2], tiles[3]),
-    new Vertex(tiles[4], tiles[2], tiles[1]),
-    new Vertex(tiles[4], tiles[3], tiles[2]),
-];
-surface.vertices = new Set(vertices);
-surface.computeGraph();
+populateSurface(surface, tiles);
 
 describe("Tile", () => {
     describe("leftOf()", () => {
-        test("internal", () => {
-            expect(tiles[2].leftOf(tiles[0])).toBe(vertices[0]);
+        test("left", () => {
+            expect(tiles[2].leftOf(tiles[0])).toBe(tiles[1].leftOf(tiles[2]));
         });
-        test("external, exists", () => {
-            expect(tiles[0].leftOf(tiles[1])).toBe(vertices[0]);
+        test("right", () => {
+            expect(tiles[1].rightOf(tiles[0])).toBe(tiles[0].rightOf(tiles[2]));
         });
-        test("external, does not exist", () => {
-            expect(tiles[0].leftOf(tiles[3])).toBe(null);
-        });
-    });
-    describe("rightOf()", () => {
-        test("internal", () => {
-            expect(tiles[2].rightOf(tiles[0])).toBe(vertices[1]);
-        });
-        test("external, exists", () => {
-            expect(tiles[0].rightOf(tiles[3])).toBe(vertices[1]);
-        });
-        test("external, does not exist", () => {
-            expect(tiles[0].rightOf(tiles[1])).toBe(null);
+        test("external", () => {
+            expect(tiles[0].leftOf(tiles[3])).toBe(tiles[3].rightOf(tiles[0]));
         });
     });
     describe("getArea()", () => {
@@ -75,25 +57,40 @@ describe("Tile", () => {
 });
 
 describe("Vertex", () => {
-    test("computePosition()", () => {
-        expect(vertices[0].pos).toEqual(new Vector(
-            expect.closeTo(-Math.sqrt(3)/4),
-            expect.closeTo(-1/4),
-            expect.closeTo(0)));
+    const innerVertex = tiles[0].leftOf(tiles[1]);
+    const outerVertex = tiles[0].rightOf(tiles[1]);
+    const edge = innerVertex.neighbors.get(outerVertex);
+    describe("pos", () => {
+        test ("internal", () => {
+            expect(innerVertex.pos).toEqual(new Vector(
+                expect.closeTo(-Math.sqrt(3)/4),
+                expect.closeTo(-1/4),
+                expect.closeTo(0)));
+        });
+        test ("external", () => {
+            expect(outerVertex.pos).toEqual(expect.objectContaining({
+                x: expect.closeTo(-Math.sqrt(3)/2),
+                y: expect.closeTo(-1),
+                z: expect.closeTo(0),
+            }));
+        });
     });
     describe("acrossFrom()", () => {
         test("exists", () => {
-            expect(vertices[0].acrossFrom(vertices[0].neighbors.get(vertices[1]))).toBe(tiles[1]);
+            expect(innerVertex.acrossFrom(tiles[2])).toBe(edge);
+        });
+        test("does not exist", () => {
+            expect(outerVertex.acrossFrom(null)).toBe(edge);
         });
     });
     test("widershinsOf()", () => {
-        expect(vertices[0].widershinsOf(tiles[1])).toBe(tiles[2]);
+        expect(innerVertex.widershinsOf(tiles[1])).toBe(tiles[2]);
     });
 });
 
 describe("Edge", () => {
     describe("short", () => {
-        const edge = vertices[0].neighbors.get(vertices[1]);
+        const edge = tiles[0].neighbors.get(tiles[2]);
         edge.setCoordinatesAndBounds();
         test("distance", () => {
             expect(edge.distance).toBeCloseTo(Math.sqrt(3) / 2);
@@ -103,7 +100,8 @@ describe("Edge", () => {
         });
         test("leftBound", () => {
             expect(edge.leftBoundCartesian).toEqual([
-                expect.objectContaining({x: expect.closeTo(-Math.sqrt(3) / 2), y: expect.closeTo(0)}),
+                expect.objectContaining({x: expect.closeTo(-3*Math.sqrt(3)/8), y: expect.closeTo(-1/4 + Math.sqrt(3)/8*Math.tan(15/180*Math.PI))}),
+                expect.objectContaining({x: expect.closeTo(-3*Math.sqrt(3)/8), y: expect.closeTo(1/4 - Math.sqrt(3)/8*Math.tan(15/180*Math.PI))}),
             ]);
         });
         test("rightBound", () => {
@@ -114,7 +112,8 @@ describe("Edge", () => {
         test("bounds", () => {
             expect(edge.bounds).toEqual([
                 {x: expect.closeTo(0.), y: expect.closeTo(0.)},
-                {x: expect.closeTo(1 / 4), y: expect.closeTo(Math.sqrt(3) / 4)},
+                {x: expect.closeTo(Math.sqrt(3)/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(Math.sqrt(3) / 8)},
+                {x: expect.closeTo(1/2 - Math.sqrt(3)/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(Math.sqrt(3) / 8)},
                 {x: expect.closeTo(1 / 2), y: expect.closeTo(0.)},
                 {x: expect.closeTo(1 / 4), y: expect.closeTo(-1 / 4)},
             ]);
@@ -138,14 +137,14 @@ describe("Edge", () => {
             });
             test("coarsest scale", () => {
                 expect(edge.getPath(Number.POSITIVE_INFINITY)).toEqual([
-                    expect.objectContaining({ф: vertices[0].ф, λ: vertices[0].λ}),
-                    expect.objectContaining({ф: vertices[1].ф, λ: vertices[1].λ}),
+                    expect.objectContaining({ф: edge.vertex0.ф, λ: edge.vertex0.λ}),
+                    expect.objectContaining({ф: edge.vertex1.ф, λ: edge.vertex1.λ}),
                 ]);
             });
         });
     });
     describe("long", () => {
-        const edge = vertices[0].neighbors.get(vertices[2]);
+        const edge = tiles[1].neighbors.get(tiles[2]);
         edge.setCoordinatesAndBounds();
         test("distance", () => {
             expect(edge.distance).toBeCloseTo(1/2);
@@ -159,8 +158,8 @@ describe("Edge", () => {
                 {x: expect.closeTo(1/4), y: expect.closeTo(1/4)},
                 {x: expect.closeTo(Math.sqrt(3)/2 - 1/4), y: expect.closeTo(1/4)},
                 {x: expect.closeTo(Math.sqrt(3)/2), y: expect.closeTo(0)},
-                {x: expect.closeTo(Math.sqrt(3)/2 - 3/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(-3/8)},
-                {x: expect.closeTo(3/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(-3/8)},
+                {x: expect.closeTo(Math.sqrt(3)/2 - Math.sqrt(3)/8), y: expect.closeTo(-3/8)},
+                {x: expect.closeTo(Math.sqrt(3)/8), y: expect.closeTo(-3/8)},
             ]);
         });
         describe("getPath()", () => {
@@ -169,8 +168,8 @@ describe("Edge", () => {
             });
             test("coarsest scale", () => {
                 expect(edge.getPath(Number.POSITIVE_INFINITY)).toEqual([
-                    expect.objectContaining({ф: vertices[0].ф, λ: vertices[0].λ}),
-                    expect.objectContaining({ф: vertices[2].ф, λ: vertices[2].λ}),
+                    expect.objectContaining({ф: edge.vertex0.ф, λ: edge.vertex0.λ}),
+                    expect.objectContaining({ф: edge.vertex1.ф, λ: edge.vertex1.λ}),
                 ]);
             });
             test("illegal scale", () => {

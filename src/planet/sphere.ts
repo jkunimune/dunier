@@ -23,7 +23,7 @@
  */
 import {Spheroid} from "./spheroid.js";
 import {Vector} from "../util/geometry.js";
-import {Tile} from "./surface.js";
+import {Tile, Vertex} from "./surface.js";
 import {Place} from "../util/coordinates.js";
 
 /**
@@ -56,7 +56,7 @@ export class Sphere extends Spheroid {
 		return super.фλ(new Vector(point.x, -point.z, point.y));
 	}
 
-	normal(tile: Tile): Vector {
+	normal(tile: Tile | Vertex): Vector {
 		return tile.pos.over(this.radius);
 	}
 }

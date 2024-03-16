@@ -30,7 +30,7 @@ import {trajectoryIntersection} from "./geometry.js";
 /**
  * compute the strait skeleton of a convex polygon and return it, formatted as a tree of
  * nodes.  the polygon must go widdershins.
- * @param polygon must be convex
+ * @param polygon must be convex and oriented so it goes widershins
  * @return a reference to the tree node corresponding to polygon[0].  other nodes will
  *         be found by traversing the attached tree graph.  each of the top two nodes is
  *         the other's parent
@@ -82,7 +82,6 @@ export function straightSkeleton(polygon: Point[]): Tree<Point> {
 		}
 	}
 
-	console.error(polygon);
 	throw new Error("I don't remember when I got here");
 }
 

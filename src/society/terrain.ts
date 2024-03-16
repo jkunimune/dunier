@@ -29,7 +29,6 @@ import {Vector} from "../util/geometry.js";
 import { delaunayTriangulate } from '../util/delaunay.js';
 
 
-const TILE_AREA = 30000; // target area of a tile in km^2
 const TERME_NOISE_LEVEL = 12;
 const BARXE_NOISE_LEVEL = 1;
 const MAX_NOISE_SCALE = 1/8;
@@ -107,13 +106,9 @@ export const BIOME_NAMES: Map<string, Biome> = new Map([
 
 
 /**
- * fill this.tiles with random tiles.
+ * fill this.tiles with the given tiles.
  */
-export function populateSurface(surf: Surface, rng: Random): void {
-	// generate the tiles
-	const tiles: Tile[] = []; // remember to clear the old tiles, if necessary
-	for (let i = 0; i < Math.max(100, surf.area/TILE_AREA); i ++)
-		tiles.push(new Tile(i, surf.drawRandomPoint(rng), surf)); // push a bunch of new ones
+export function populateSurface(surf: Surface, tiles: Tile[]): void {
 	surf.tiles = new Set(tiles); // keep that list, but save it as a set as well
 
 	// seed the surface
@@ -129,7 +124,10 @@ export function populateSurface(surf: Surface, rng: Random): void {
 	);
 	surf.vertices = new Set(); // unpack the resulting Voronoi vertices
 	for (const [ia, ib, ic] of triangulation.triangles) {
-		surf.vertices.add(new Vertex(tiles[ia], tiles[ib], tiles[ic])); // this will automatically generate the Edges
+		const {pos, coordinates} = Vertex.computeLocation(tiles[ia], tiles[ib], tiles[ic]);
+		// only create Vertices inside the surface domain; discard any that fall outside
+		if (coordinates.ф <= surf.фMax && coordinates.ф >= surf.фMin)
+			surf.vertices.add(new Vertex(tiles[ia], tiles[ib], tiles[ic], pos, coordinates)); // this will automatically generate the Edges
 	}
 	for (let i = 0; i < tiles.length; i ++) {
 		for (const j of triangulation.parentage[i]) // as well as the parentage
@@ -152,6 +150,16 @@ export function populateSurface(surf: Surface, rng: Random): void {
 				}
 			}
 			orphan.parents = [closest];
+		}
+	}
+
+	// add Vertices along the edge, if there is one, to complete the graph
+	for (const vertex of new Set(surf.vertices)) {
+		for (const edge of vertex.edges) {
+			if (edge.vertex1 === null) { // you're looking for Edges that are missing a Vertex
+				const {pos, coordinates} = surf.computeEdgeVertexLocation(edge.tileL, edge.tileR, edge);
+				surf.vertices.add(new Vertex(edge.tileL, edge.tileR, null, pos, coordinates));
+			}
 		}
 	}
 
@@ -475,9 +483,15 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
  */
 function addRivers(surf: Surface): void {
 	for (const vertex of surf.vertices) {
-		vertex.height = 0; // first define altitudes for vertices, which only matters for this one purpose
-		for (const tile of vertex.tiles)
-			vertex.height += tile.height/vertex.tiles.length;
+		let numAdjacentTiles = 0;
+		let totalHeight = 0;
+		for (const tile of vertex.tiles) {
+			if (tile !== null) {
+				totalHeight += tile.height;
+				numAdjacentTiles += 1;
+			}
+		}
+		vertex.height = totalHeight/numAdjacentTiles; // first define altitudes for vertices, which only matters for this one purpose
 		vertex.downstream = null; // also initialize this
 	}
 
@@ -488,7 +502,7 @@ function addRivers(surf: Surface): void {
 
 	for (const vertex of surf.vertices) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
 		for (const tile of vertex.tiles) {
-			if (tile.biome === Biome.OCEAN) {
+			if (tile !== null && tile.biome === Biome.OCEAN) {
 				riverQueue.push({
 					below: tile, above: vertex,
 					maxHeight: 0, uphillLength: 0,
@@ -544,11 +558,13 @@ function addRivers(surf: Surface): void {
 		const vertex = riverStack.pop(); // at each river vertex
 		if (vertex.downstream instanceof Vertex) {
 			for (const tile of vertex.tiles) { // compute the sum of rainfall and inflow (with some adjustments)
-				let nadasle = 1; // base river yield is 1 per tile
-				nadasle += tile.rainfall - (tile.temperature - DESERT_INTERCEPT) / DESERT_SLOPE; // add in biome factor
-				nadasle += tile.height / CLOUD_HEIGHT; // add in mountain sources
-				if (nadasle > 0 && tile.temperature >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
-					vertex.flow += nadasle * unitArea/tile.neighbors.size;
+				if (tile !== null) {
+					let nadasle = 1; // base river yield is 1 per tile
+					nadasle += tile.rainfall - (tile.temperature - DESERT_INTERCEPT)/DESERT_SLOPE; // add in biome factor
+					nadasle += tile.height/CLOUD_HEIGHT; // add in mountain sources
+					if (nadasle > 0 && tile.temperature >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
+						vertex.flow += nadasle*unitArea/tile.neighbors.size;
+				}
 			}
 			vertex.downstream.flow += vertex.flow; // and pass that flow onto the downstream tile
 			vertex.neighbors.get(vertex.downstream).flow = vertex.flow;
@@ -563,30 +579,36 @@ function addRivers(surf: Surface): void {
 		if (tile.isWater() || tile.temperature < RIVER_THRESH)
 			continue; // ignoring things that are already water or too cold for this
 
-		let seenRightEdge = false; // check that there is up to 1 continuous body of water at its border
-		let outflow = null; // and while you're at it, locate the downstreamest river flowing away
-		const start = <Tile>tile.neighbors.keys()[Symbol.iterator]().next().value; // pick an arbitrary neighbor
-		let last = start;
-		do {
-			const vertex = tile.leftOf(last); // look at the vertex next to it
-			const next = vertex.widershinsOf(last);
-			if (next.biome === Biome.OCEAN) // ocean adjacent tiles have a slight possibility of become lakes.
-				continue queue; // don't let it happen
-			const lastIsWater = tile.neighbors.get(last).flow > 0 || last.biome === Biome.LAKE;
-			const nextIsWater = tile.neighbors.get(next).flow > 0 || next.biome === Biome.LAKE;
-			const betweenIsWater = last.neighbors.get(next).flow > 0;
-			if ((!lastIsWater && nextIsWater) || (!lastIsWater && !nextIsWater && betweenIsWater)) { // if this has the right edge of a body of water
+		// check whether there is up to 1 continuous body of water at its border
+		let seenAnyWater = false;
+		let seenRightEdge = false;
+		for (const {vertex} of tile.getPolygon()) {
+			const last = vertex.widershinsOf(tile);
+			const next = vertex.widershinsOf(last); // look at the Tiles next to it
+			if (next !== null && next.biome === Biome.OCEAN)
+				continue queue; // don't let ocean-adjacent tiles become lakes
+			const lastIsWater = (last !== null) && (tile.neighbors.get(last).flow > 0 || last.biome === Biome.LAKE);
+			const nextIsWater = (next !== null) && (tile.neighbors.get(next).flow > 0 || next.biome === Biome.LAKE);
+			const betweenIsWater = vertex.acrossFrom(tile).flow > 0;
+			const isWater = lastIsWater || nextIsWater || betweenIsWater;
+			if (isWater)
+				seenAnyWater = true;
+			const isRightEdge = (!lastIsWater && nextIsWater) || (!lastIsWater && !nextIsWater && betweenIsWater);
+			if (isRightEdge) { // if this has the right edge of a body of water
 				if (seenRightEdge) // if there's already been a right edge
 					continue queue; // then it's not contiguous and this tile is not eligible
-				else
-					seenRightEdge = true;
+				else // otherwise
+					seenRightEdge = true; // record that
 			}
-			if (outflow === null || riverOrder.get(vertex) <= riverOrder.get(outflow)) // find the vertex with the most ultimate flow
-				outflow = vertex;
-			last = next;
-		} while (last !== start);
-		if (!seenRightEdge) // if there wasn't _any_ adjacent water
+		}
+		if (!seenAnyWater) // if there wasn't _any_ adjacent water
 			continue; // then there's nothing to feed the lake
+
+		// locate the downstreamest river flowing away
+		let outflow = null;
+		for (const {vertex} of tile.getPolygon())
+			if (outflow === null || riverOrder.get(vertex) <= riverOrder.get(outflow)) // i.e. the vertex with the most ultimate flow
+				outflow = vertex;
 
 		if (outflow !== null && outflow.downstream !== null &&
 			outflow.height - outflow.downstream.height < LAKE_THRESH) { // if we made it through all that, make an altitude check

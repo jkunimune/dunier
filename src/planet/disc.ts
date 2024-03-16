@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-import {Tile, Surface, Vertex} from "./surface.js";
+import {Tile, Surface, Vertex, Edge} from "./surface.js";
 import {Vector} from "../util/geometry.js";
 import {Place} from "../util/coordinates.js";
 
@@ -90,11 +90,11 @@ export class Disc extends Surface {
 
 	фλ(point: Vector): Place {
 		return {
-			ф: Math.max(Math.atan(this.firmamentHite/Math.hypot(point.x, point.y)), this.фMin),
+			ф: Math.atan(this.firmamentHite/Math.hypot(point.x, point.y)),
 			λ: Math.atan2(point.x, -point.y)};
 	}
 
-	normal(place: Place): Vector {
+	normal(place: Place | Vertex): Vector {
 		return new Vector(0, 0, 1);
 	}
 
@@ -106,5 +106,20 @@ export class Disc extends Surface {
 
 	isOnEdge(place: Place): boolean {
 		return place.ф === this.фMin;
+	}
+
+	computeEdgeVertexLocation(tileL: Tile, tileR: Tile, edge: Edge): { pos: Vector; coordinates: Place } {
+		const x0 = (tileL.pos.x + tileR.pos.x)/2;
+		const y0 = (tileL.pos.y + tileR.pos.y)/2;
+		const vx = tileL.pos.y - tileR.pos.y;
+		const vy = tileR.pos.x - tileL.pos.x;
+		const v2 = vx*vx + vy*vy;
+		const vDotR = x0*vx + y0*vy;
+		const Δr2 = this.radius*this.radius - x0*x0 - y0*y0;
+		const t = (-vDotR + Math.sqrt(vDotR*vDotR + v2*Δr2))/v2;
+		const x = x0 + vx*t;
+		const y = y0 + vy*t;
+		const λ = Math.atan2(x, -y);
+		return {pos: new Vector(x, y, 0), coordinates: {ф: this.фMin, λ: λ}};
 	}
 }

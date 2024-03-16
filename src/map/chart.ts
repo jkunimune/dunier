@@ -345,9 +345,12 @@ export class Chart {
 
 		const slopes: Map<Vertex, number> = new Map();
 		let maxSlope = 0;
-		for (const t of triangles) { // start by computing slopes of all of the things
+		triangleSearch:
+		for (const t of triangles) { // start by computing slopes of all of the triangles
 			const p = [];
 			for (const node of t.tiles) {
+				if (node === null)
+					continue triangleSearch;
 				const {x, y} = this.projection.projectPoint(node);
 				const z = Math.max(0, node.height);
 				p.push(new Vector(x, -y, z));
@@ -361,6 +364,8 @@ export class Chart {
 		const heightScale = -Math.tan(2*SUN_ELEVATION)/maxSlope; // use that to normalize
 
 		for (const t of triangles) { // for each triangle TODO: use a newly generated triangulation
+			if (!slopes.has(t))
+				continue;
 			const path = [];
 			for (const node of t.tiles)
 				path.push({type: 'L', args: [node.ф, node.λ]}); // put its values in a plottable form
@@ -726,30 +731,24 @@ export class Chart {
 				const startingEdge = inTile.neighbors.get(outTile); // the edge between them defines the start of the loop
 				if (accountedFor.has(startingEdge))
 					continue; // (and can ignore edges we've already hit)
-				if(inTile.rightOf(outTile) === null || inTile.leftOf(outTile) === null)
-					continue; // this algorithm fails if we don't start with a wholly internal Edge
 
-				const currentLoop: Place[][] = []; // if we've found a new edge, start going around it
-				let currentSection: Place[] = [inTile.rightOf(outTile)]; // keep track of each continuus section of this loop
+				const currentLoop: Vertex[][] = []; // if we've found a new edge, start going around it
+				let currentSection: Vertex[] = [inTile.rightOf(outTile)]; // keep track of each continuus section of this loop
 
 				do {
-					const next = inTile.leftOf(outTile); // look for the next Vertex, going widdershins
+					const vertex = inTile.leftOf(outTile); // look for the next Vertex, going widdershins
 
-					if (next !== null) { // assuming there is one,
-						// add the next Vertex to the complete Path
-						currentSection.push(next);
+					// add the next Vertex to the complete Path
+					currentSection.push(vertex);
 
-						const edge = inTile.neighbors.get(outTile); // pick out the edge between them
-						accountedFor.add(edge); // check this edge off
-						if (tileSet.has(next.acrossFrom(edge))) // then, depending on the state of the Tile after that Vertex
-							inTile = next.acrossFrom(edge); // advance one of the state tiles
-						else
-							outTile = next.acrossFrom(edge);
-					}
-					else { // if there isn't a next Vertex
-						currentSection.push({ф: inTile.surface.фMin, λ: (inTile.λ + outTile.λ)/2}); // add a dummy Vertex on the edge
-						currentLoop.push(currentSection); // break off this section
+					const edge = inTile.neighbors.get(outTile); // pick out the edge between them
+					accountedFor.add(edge); // check this edge off
 
+					// now, advance to the next Tile(s)
+					const nextTile = vertex.widershinsOf(outTile);
+					if (nextTile === null) {
+						// if there isn't one after this Vertex, break off this section
+						currentLoop.push(currentSection);
 						// shimmy outTile around the internal portion of the edge
 						outTile = inTile;
 						let i = 0;
@@ -758,9 +757,13 @@ export class Chart {
 							i ++;
 						} while (tileSet.has(outTile)); // until it becomes external again
 						inTile = outTile.surface.edge.get(outTile).prev; // then, grab the new inTile
-
-						currentSection = [{ф: inTile.surface.фMin, λ: (inTile.λ + outTile.λ)/2}]; // start a new section in the same loop on this side of the gap
+						// start a new section in the same loop on this side of the gap
+						currentSection = [inTile.rightOf(outTile)];
 					}
+					else if (tileSet.has(nextTile)) // if there is and it's in, make it the new inTile
+						inTile = nextTile;
+					else // if there is and it's out, make it the new outTile
+						outTile = nextTile;
 
 					if (output.length >= 100000)
 						throw new Error(`something went wrong why does this polygon have ${output.length} vertices?`);

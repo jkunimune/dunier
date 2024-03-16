@@ -202,21 +202,31 @@ export function lineArcIntersections(
 
 
 /**
- * edit a polygon in place so that if its vertices are approximately orderd
- * counterclockwise from the POV of the origin, then they are made exactly orderd
- * widdershins from the POV of the origin
- * @param vertexen
+ * copy and edit a polygon so that if its vertices are approximately orderd
+ * counterclockwise from the POV of the origin, then they are rearranged to be
+ * exactly orderd widdershins from the POV of the origin
+ * @return the reorderd polygon
  */
-export function checkVoronoiPolygon(vertexen: Point[]): void {
+export function checkVoronoiPolygon(vertexen: Point[]): Point[] {
+	// start by copying the polygon (a deep copy would be better but I don't think the points will get modified)
+	vertexen = vertexen.slice();
 	const origen = { x: 0, y: 0 };
+	// for each vertex
 	for (let i = 0; i < vertexen.length; i ++) {
+		// if the next one seems to be clockwise from it
 		const j = (i + 1)%vertexen.length;
 		if (signAngle(vertexen[i], origen, vertexen[j]) > 0) {
-			const vertex = vertexen[i];
-			vertexen[i] = vertexen[j];
-			vertexen[j] = vertex;
+			// see if the following one would be widershins
+			const k = (i + 2)%vertexen.length;
+			// if so, reverse them
+			if (signAngle(vertexen[i], origen, vertexen[k]) <= 0) {
+				const vertex = vertexen[i];
+				vertexen[i] = vertexen[j];
+				vertexen[j] = vertex;
+			}
 		}
 	}
+	return vertexen;
 }
 
 

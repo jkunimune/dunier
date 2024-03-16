@@ -30,6 +30,7 @@ import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../uti
 import {straightSkeleton} from "../util/straightskeleton.js";
 
 
+const TILE_AREA = 30000; // target area of a tile in km^2
 const GREEBLE_FACTOR = .35;
 const FINEST_RESOLUTION = 0.1; // km
 const INTEGRATION_RESOLUTION = 32;
@@ -96,64 +97,72 @@ export abstract class Surface {
 		for (const vertex of this.vertices) {
 			for (let i = 0; i < 3; i ++) {
 				const edge = vertex.edges[i];
-				if (vertex === edge.vertex1)
-					vertex.neighbors.set(edge.vertex0, edge);
-				else
-					vertex.neighbors.set(edge.vertex1, edge);
+				if (edge !== null) {
+					if (vertex === edge.vertex1)
+						vertex.neighbors.set(edge.vertex0, edge);
+					else
+						vertex.neighbors.set(edge.vertex1, edge);
+				}
 			}
-			vertex.computePosition();
 		}
 
-		// and find the edge, if there is one
+		// and find the edge of the surface, if there is one
 		for (const tile of this.tiles)
 			for (const neibor of tile.neighbors.keys())
-				if (tile.rightOf(neibor) === null)
+				if (tile.rightOf(neibor).widershinsOf(tile) === null)
 					this.edge.set(tile, {next: neibor, prev: null});
 		for (const tile of this.edge.keys()) // and make it back-searchable
 			this.edge.get(this.edge.get(tile).next).prev = tile;
 
-
 		// now we can save each tile's strait skeleton to the edges (to bound the greebling)
 		for (const tile of this.tiles) {
-			const vertices: Point[] = [];
+			let vertices: Point[] = [];
 			for (const {vertex} of tile.getPolygon()) {
 				vertices.push({
-					x: vertex.minus(tile.pos).dot(tile.east), // project the voronoi polygon into 2D
-					y: vertex.minus(tile.pos).dot(tile.north),
+					x: vertex.pos.minus(tile.pos).dot(tile.east), // project the voronoi polygon into 2D
+					y: vertex.pos.minus(tile.pos).dot(tile.north),
 				});
 			}
-			checkVoronoiPolygon(vertices); // validate it
-			let skeletonLeaf = straightSkeleton(vertices); // get the strait skeleton
+			// sometimes errors arising from the surface curvature cause the polygon to be a little twisted.
+			// check for this and fudge it to make it to be non-intersecting if you must.
+			vertices = checkVoronoiPolygon(vertices);
+			// now get the strait skeleton
+			let skeletonLeaf = straightSkeleton(vertices);
 			for (const {edge} of tile.getPolygon()) {
-				const arc = skeletonLeaf.pathToNextLeaf();
-				const projectedArc: Vector[] = [];
-				for (const joint of arc.slice(1, arc.length - 1)) {
-					const {x, y} = joint.value;
-					projectedArc.push( // drop the endpoints and project it back
-						tile.pos.plus(
-							tile.east.times(x).plus(
-								tile.north.times(y))));
-				}
 				if (edge !== null) {
+					const arc = skeletonLeaf.pathToNextLeaf();
+					const projectedArc: Vector[] = [];
+					for (const joint of arc.slice(1, arc.length - 1)) {
+						const {x, y} = joint.value;
+						projectedArc.push( // drop the endpoints and project it back
+							tile.pos.plus(
+								tile.east.times(x).plus(
+									tile.north.times(y))));
+					}
 					if (edge.tileL === tile) // then save each part of the skeleton it to an edge
 						edge.leftBoundCartesian = projectedArc;
 					else
 						edge.rightBoundCartesian = projectedArc;
+					skeletonLeaf = arc[arc.length - 1]; // move onto the next one
 				}
-				skeletonLeaf = arc[arc.length - 1]; // move onto the next one
 			}
 		}
 	}
 
 	/**
-	 * return the coordinates of a point uniformly sampled from the Surface using the
-	 * given random number generator.
+	 * return a list of however many tiles are needed to populate this Surface, uniformly
+	 * sampled from the Surface using the given random number generator.
 	 */
-	drawRandomPoint(rng: Random): Place {
-		const λ = rng.uniform(-Math.PI, Math.PI);
-		const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
-		const ф = linterp(A, this.cumulAreas, this.refLatitudes);
-		return {ф: ф, λ: λ};
+	randomlySubdivide(rng: Random): Tile[] {
+		// generate the tiles
+		const tiles: Tile[] = []; // remember to clear the old tiles, if necessary
+		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++) {
+			const λ = rng.uniform(-Math.PI, Math.PI);
+			const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
+			const ф = linterp(A, this.cumulAreas, this.refLatitudes);
+			tiles.push(new Tile(i, {ф: ф, λ: λ}, this)); // push a bunch of new ones
+		}
+		return tiles;
 	}
 
 	/**
@@ -189,6 +198,12 @@ export abstract class Surface {
 			(this.dsdф(ф) * (фR - фL));
 	}
 
+	/**
+	 * find the place where the given Edge hits the edge of this surface
+	 */
+	computeEdgeVertexLocation(tileL: Tile, tileR: Tile, edge: Edge): {pos: Vector, coordinates: Place} {
+		throw new Error("this surface doesn't have an edge.");
+	}
 	/**
 	 * return a list of Delaunay nodes along with an associated list of triangles that
 	 * completely cover this Surface. The mesh must never diverge from the surface farther
@@ -308,6 +323,8 @@ export class Tile {
 	 * return the Vertex which appears left of that from the point of view of this.
 	 */
 	leftOf(that: Tile): Vertex {
+		if (!this.neighbors.has(that))
+			throw new Error("the given Tile isn't even adjacent to this Vertex.");
 		if (this.neighbors.get(that).tileL === this)
 			return this.neighbors.get(that).vertex1;
 		else
@@ -318,6 +335,8 @@ export class Tile {
 	 * return the Vertex which appears right of that from the point of view of this.
 	 */
 	rightOf(that: Tile): Vertex {
+		if (!this.neighbors.has(that))
+			throw new Error("the given Tile isn't even adjacent to this Vertex.");
 		if (this.neighbors.get(that).tileL === this)
 			return this.neighbors.get(that).vertex0;
 		else
@@ -341,8 +360,9 @@ export class Tile {
 	/**
 	 * return an orderd list that goes around the Tile (widdershins, ofc).  each element
 	 * of the list is a Voronoi Vertex and the edge that leads from it to the next one.
+	 * if this Tile is on the edge of the Surface, the last element will have a null edge.
 	 */
-	getPolygon(): { vertex: Vector, edge: Edge }[] {
+	getPolygon(): { vertex: Vertex, edge: Edge | null }[] {
 		const output = [];
 		let start;
 		if (this.surface.edge.has(this)) // for Tiles on the edge, there is a natural starting point
@@ -352,30 +372,17 @@ export class Tile {
 
 		// step around the Tile until you find either another edge or get back to where you started
 		let tile = start;
+		let vertex = this.rightOf(tile);
 		do {
-			const vertex = this.leftOf(tile);
-			if (vertex === null)
+			output.push({
+				vertex: vertex,
+				edge: (tile !== null) ? this.neighbors.get(tile) : null,
+			});
+			if (tile === null)
 				break;
+			vertex = this.leftOf(tile);
 			tile = vertex.widershinsOf(tile);
-
-			output.push({
-				vertex: vertex.pos,
-				edge: this.neighbors.get(tile)
-			});
 		} while (tile !== start);
-
-		// if the Tile is on the edge, we need to manually complete the polygon
-		if (this.surface.edge.has(this)) {
-			// this tecneke is kind of janky but it works as long as Disc is the only Surface with an edge
-			output.push({
-				vertex: output[output.length - 1].vertex.times(4),
-				edge: null,
-			});
-			output.push({
-				vertex: output[0].vertex.times(4),
-				edge: null,
-			});
-		}
 
 		return output;
 	}
@@ -389,8 +396,8 @@ export class Tile {
 export class Vertex {
 	public ф: number;
 	public λ: number;
-	public tiles: Tile[];
-	public edges: Edge[];
+	public tiles: (Tile | null)[];
+	public edges: (Edge | null)[];
 	public neighbors: Map<Vertex, Edge>;
 	public surface: Surface;
 	public pos: Vector; // location in 3D Cartesian
@@ -399,75 +406,86 @@ export class Vertex {
 	public flow: number;
 	public downstream: Vertex | Tile;
 
-	constructor(a: Tile, b: Tile, c: Tile) {
+	/**
+	 * locate the confluence of the three given adjacent Tiles,
+	 * such that we might put a Vertex there.
+	 */
+	static computeLocation(a: Tile, b: Tile, c: Tile): {pos: Vector, coordinates: Place} {
 		const tileNormal = a.normal.plus(b.normal).plus(c.normal);
 		const vertexNormal = b.pos.minus(a.pos).cross(c.pos.minus(a.pos));
 		if (tileNormal.dot(vertexNormal) <= 0)
 			throw new Error("Vertices must be instantiated facing outward, but this one was not.");
-		this.tiles = [a, b, c]; // adjacent tiles, ordered widdershins
-		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
-		this.neighbors = new Map(); // connected vertices
-		this.surface = a.surface;
 
-		for (let i = 0; i < 3; i ++) { // check each pair to see if they are already connected
-			const tileR = this.tiles[i], tileL = this.tiles[(i+1)%3];
-			if (tileR.neighbors.has(tileL)) { // if so,
-				this.edges[i] = tileR.neighbors.get(tileL); // take that edge
-				if (this.edges[i].tileL === tileL) // and depending on its direction,
-					this.edges[i].vertex0 = this; // replace one of the Vertexes on it with this
-				else
-					this.edges[i].vertex1 = this;
-			}
-			else { // if not,
-				this.edges[i] = new Edge(
-					tileL, this, tileR, null, this.surface.distance(tileL, tileR)); // create an edge with the new Vertex connected to it
-			}
-		}
-	}
-
-	/**
-	 * compute the ф-λ parameterization of this Vertex in the plane normal to the sum
-	 * of the adjacent tiles' normal vectors.  this works out to finding the circumcenter
-	 * of the Delaunay triangle.
-	 */
-	computePosition(): void {
-		let nAvg = new Vector(0, 0, 0);
-		for (const tile of this.tiles)
-			nAvg = nAvg.plus(tile.normal);
-		const {u, v, n} = orthogonalBasis(nAvg, true);
-		const projectedVertices: {x: number, y: number, z: number}[] = [];
 		// project all of the Delaunay vertices into the tangent plane
-		for (const vertex of this.tiles)
+		const {u, v, n} = orthogonalBasis(tileNormal, true);
+		const projectedVertices: {x: number, y: number, z: number}[] = [];
+		for (const vertex of [a, b, c])
 			projectedVertices.push({
 				x: u.dot(vertex.pos),
 				y: v.dot(vertex.pos),
 				z: n.dot(vertex.pos)});
-
+		// call the planar circumcenter function
 		const {x, y} = circumcenter(projectedVertices);
 		let z = 0;
 		for (const projectedVertex of projectedVertices)
 			z += projectedVertex.z/3;
 		// put the resulting vector back in the global coordinate system
-		this.pos = u.times(x).plus(v.times(y)).plus(n.times(z));
-		const {ф, λ} = this.surface.фλ(this.pos); // finally, put it back in ф-λ space
-		this.ф = ф;
-		this.λ = λ;
+		const pos = u.times(x).plus(v.times(y)).plus(n.times(z));
+		const coordinates = a.surface.фλ(pos); // finally, put it back in ф-λ space
+		return {pos: pos, coordinates: coordinates};
 	}
 
 	/**
-	 * Find and return the Tile across this Vertex from the given Edge.
+	 * build a new Vertex between three existing Tiles and automaticly construct the adjacent Edges
+	 * @param a one of the adjacent Tiles
+	 * @param b the adjacent Tile to the left of a (from the POV of this vertex)
+	 * @param c the adjacent Tile to the left of b (from the POV of this vertex)
+	 * @param pos the Cartesian coordinate vector (not needed if we're just using this for its network graph)
+	 * @param coordinates the geographical coordinates (not needed if we're just using this for its network graph)
 	 */
-	acrossFrom(edge: Edge): Tile {
-		for (const tile of this.tiles)
+	constructor(a: Tile, b: Tile, c: Tile | null, pos: Vector = null, coordinates: Place = null) {
+		this.pos = pos;
+		if (coordinates !== null) {
+			this.ф = coordinates.ф;
+			this.λ = coordinates.λ;
+		}
+
+		this.tiles = [a, b, c]; // adjacent tiles, ordered widdershins
+		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
+		this.neighbors = new Map(); // connected vertices
+		this.surface = a.surface;
+
+		for (let i = 0; i < 3; i ++) { // check each non-null pair to see if they are already connected
+			const tileR = this.tiles[i], tileL = this.tiles[(i+1)%3];
+			if (tileR !== null && tileL !== null) {
+				if (tileR.neighbors.has(tileL)) { // if so,
+					this.edges[i] = tileR.neighbors.get(tileL); // take that edge
+					if (this.edges[i].tileL === tileL) // and depending on its direction,
+						this.edges[i].vertex0 = this; // replace one of the Vertexes on it with this
+					else
+						this.edges[i].vertex1 = this;
+				} else { // if not,
+					this.edges[i] = new Edge(
+						tileL, this, tileR, null, this.surface.distance(tileL, tileR)); // create an edge with the new Vertex connected to it
+				}
+			}
+		}
+	}
+
+	/**
+	 * Find and return the Edge that points from this Vertex directly away from this Tile.
+	 */
+	acrossFrom(tile: Tile | null): Edge {
+		for (const edge of this.neighbors.values())
 			if (tile !== edge.tileL && tile !== edge.tileR)
-				return tile;
+				return edge;
 		throw new Error("Could not find a nonadjacent vertex.");
 	}
 
 	/**
-	 * Find and return the tile widershins of the given edge.
+	 * Find and return the tile widershins of the given tile.
 	 */
-	widershinsOf(tile: Tile): Tile {
+	widershinsOf(tile: Tile | null): Tile | null {
 		for (let i = 0; i < 3; i ++)
 			if (this.tiles[i] === tile)
 				return this.tiles[(i+1)%3];
@@ -475,7 +493,7 @@ export class Vertex {
 	}
 
 	toString(): string {
-		return `${this.tiles[0].pos}--${this.tiles[1].pos}--${this.tiles[2].pos}`;
+		return `${this.tiles[0].pos}--${this.tiles[1].pos}--${(this.tiles[2] !== null) ? this.tiles[2].pos : 'null'}`;
 	}
 }
 
@@ -504,7 +522,10 @@ export class Edge {
 	private i: Vector; // the s unit-vector of this edge's coordinate system
 	private j: Vector; // the t unit-vector of this edge's coordinate system
 
-	constructor(tileL: Tile, vertex0: Vertex, tileR: Tile, vertex1: Vertex, distance: number) {
+	constructor(tileL: Tile, vertex0: Vertex, tileR: Tile, vertex1: Vertex | null, distance: number) {
+		if (tileL === null || tileR === null)
+			throw new Error("every Edge must always separate two non-null Tiles.");
+
 		this.tileL = tileL; // save these new values for the edge
 		this.vertex0 = vertex0;
 		this.tileR = tileR;
