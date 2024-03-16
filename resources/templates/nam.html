@@ -1,0 +1,33 @@
+<!-- generation scripts -->
+<script src="/source/gui/namegenerator.js" type="module" defer></script>
+
+<div class="container-lg mt-3 mb-5">
+  <div id="alert-box">
+  </div>
+
+  <div class="row justify-content-center p-2">
+    <div id="xef-kolum" class="col-xs-12 col-md-12 col-lg-8 col-xl-6">
+      <form>
+        <button type="button" class="btn btn-block btn-primary" id="names-apply">
+          <span id="names-ready">
+            {menu.generate}
+          </span>
+          <span id="names-loading" style="display: none" role="status">
+            <img src="/resources/images/lada.gif" height="20" aria-hidden="true" alt="">
+            {menu.loading}
+          </span>
+        </button>
+      </form>
+    </div>
+  </div>
+  <div class="row justify-content-center p-2">
+    <div id="column-1" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
+      <ul id="name-list-1" class="list-group">
+      </ul>
+    </div>
+    <div id="column-2" class="col-xs-12 col-sm-12 col-md-6 col-lg-4 col-xl-3">
+      <ul id="name-list-2" class="list-group">
+      </ul>
+    </div>
+  </div>
+</div>

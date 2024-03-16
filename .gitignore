@@ -2,13 +2,13 @@
 # Edit at https://www.gitignore.io/?templates=node,intellij
 
 ### generated javascript ###
-src/*/*.js
-src/*/*.js.map
-test/*.js
-test/*.js.map
+source/*/*.js
+source/*/*.js.map
+tests/*.js
+tests/*.js.map
 # except libraries that don't have typescript counterparts
-!src/lib/*.js
-src/lib/enumify.js
+!source/libraries/*.js
+source/libraries/enumify.js
 
 ### internationalized HTML ###
 /*.html
@@ -18,7 +18,7 @@ jp/*.html
 pd/*.html
 
 ### bootstrap ###
-res/bootstrap-4.6.2-dist/*
+resources/bootstrap-4.6.2-dist/*
 
 # I am pretty sure I don't need this it's not like my dependencies are complicated
 package-lock.json

@@ -9,16 +9,16 @@
     <exclude-output />
     <content url="file://$USER_HOME$/AppData/Roaming/Microsoft/Windows/Start Menu/Programs/Python 3.9" />
     <content url="file://$MODULE_DIR$">
-      <sourceFolder url="file://$MODULE_DIR$/res" type="java-resource" />
-      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
-      <sourceFolder url="file://$MODULE_DIR$/test" isTestSource="true" />
-      <excludeFolder url="file://$MODULE_DIR$/res/bootstrap-4.6.2-dist" />
-      <excludeFolder url="file://$MODULE_DIR$/src/lib" />
+      <sourceFolder url="file://$MODULE_DIR$/resources" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/source" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/.idea" />
       <excludeFolder url="file://$MODULE_DIR$/en" />
       <excludeFolder url="file://$MODULE_DIR$/es" />
       <excludeFolder url="file://$MODULE_DIR$/jp" />
       <excludeFolder url="file://$MODULE_DIR$/pd" />
+      <excludeFolder url="file://$MODULE_DIR$/resources/bootstrap-4.6.2-dist" />
+      <excludeFolder url="file://$MODULE_DIR$/source/libraries" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="feather-icons" level="application" />

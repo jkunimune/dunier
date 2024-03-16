@@ -13,6 +13,6 @@
     "noImplicitThis": true,
   },
   "exclude": [
-    "src/lib"
+    "source/libraries"
   ]
 }

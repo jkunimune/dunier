@@ -1,0 +1,443 @@
+<!-- generation scripts -->
+<script src="/source/gui/main.js" type="module" defer></script>
+
+<!-- UI functions -->
+<script>
+  function disableTidalLocking(type) {
+    const checkbox = $('#planet-locked');
+    if (type === '1') { // if it's toroidal now
+      if (checkbox.prop('checked')) { // uncheck tidal locking if we need to
+        checkbox.click();
+        disableRotationParams(checkbox.prop('checked'));
+      }
+      checkbox.prop('disabled', true); // and disable it
+    } else { // if it's anything else
+      checkbox.prop('disabled', false); // enable it
+    }
+  }
+
+  function disableRotationParams(locked) {
+    $('#planet-day').prop('disabled', locked); // rotation period
+    $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
+  }
+</script>
+
+<div class="container-lg mt-3 mb-5">
+  <div id="alert-box">
+  </div>
+
+  <ul class="nav nav-tabs" id="myTab" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">{parameter.planet}</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">{parameter.terrain}</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">{parameter.history}</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">{parameter.map}</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">{parameter.factbook}</a>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <div class="tab-pane" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form>
+            <div class="form-group">
+              <label for="planet-type">{parameter.planet.shape}</label>
+              <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value);">
+                <option selected value="spheroid">{parameter.planet.shape.spheroid}</option>
+                <option value="toroid">{parameter.planet.shape.toroid}</option>
+                <option value="plane">{parameter.planet.shape.plane}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked);">
+                <label class="custom-control-label" for="planet-locked">{parameter.planet.tidal_lock}</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="planet-size">{parameter.planet.circumference}</label>
+              <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
+            </div>
+            <div class="form-group">
+              <label for="planet-gravity">{parameter.planet.gravity}</label>
+              <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
+            </div>
+            <div class="form-group">
+              <label for="planet-day">{parameter.planet.day}</label>
+              <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="{unit.hour}" id="planet-day"/>
+            </div>
+            <div class="form-group">
+              <label for="planet-tilt">{parameter.planet.tilt}</label>
+              <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
+              <span id="planet-ready" style="display: none">
+                {menu.update}
+              </span>
+              <span id="planet-loading" role="status">
+                <img src="/resources/images/lada.gif" height="20" aria-hidden="true" alt="">
+                {menu.loading}
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9" id="planet-map">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form>
+            <div class="form-group">
+              <label for="terrain-seed">{parameter.seed}</label>
+              <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-seed"/>
+            </div>
+            <div class="form-group">
+              <label for="terrain-continents">{parameter.terrain.continents}</label>
+              <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
+            </div>
+            <div class="form-group">
+              <label for="terrain-sea-level">{parameter.terrain.sea_level}</label>
+              <select class="custom-select" id="terrain-sea-level">
+                <option value="4">{parameter.terrain.sea_level.3}</option>
+                <option value="3">{parameter.terrain.sea_level.2}</option>
+                <option value="2">{parameter.terrain.sea_level.1}</option>
+                <option selected value="1.5">{parameter.terrain.sea_level.0}</option>
+                <option value="1.0">{parameter.terrain.sea_level.-1}</option>
+                <option value="0.0">{parameter.terrain.sea_level.-2}</option>
+                <option value="-1.5">{parameter.terrain.sea_level.-3}</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="terrain-temperature">{parameter.terrain.temperature}</label>
+              <select class="custom-select" id="terrain-temperature">
+                <option value="308">{parameter.terrain.temperature.1}</option>
+                <option selected value="288">{parameter.terrain.temperature.0}</option>
+                <option value="268">{parameter.terrain.temperature.-1}</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="terrain-apply" disabled>
+              <span id="terrain-ready" style="display: none">
+                {menu.update}
+              </span>
+              <span id="terrain-loading" role="status">
+                <img src="/resources/images/lada.gif" height="20" aria-hidden="true" alt="">
+                {menu.loading}
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form>
+            <div class="form-group">
+              <label for="history-seed">{parameter.seed}</label>
+              <input type="number" value="0" min="0" max="99999999" step="1" id="history-seed"/>
+            </div>
+            <div class="form-group">
+              <label for="history-year">{parameter.history.year}</label>
+              <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="{unit.year}" id="history-year"/>
+            </div>
+            <div class="form-group">
+              <label for="history-meteors">{parameter.history.meteors}</label>
+              <select class="custom-select" id="history-meteors">
+                <option selected value="0">{parameter.history.meteors.none}</option>
+                <option value="1e-4">{parameter.history.meteors.once}</option>
+                <option value="1e-3">{parameter.history.meteors.millennial}</option>
+                <option value="1e-2">{parameter.history.meteors.centennial}</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="history-apply" disabled>
+              <span id="history-ready" style="display: none">
+                {menu.update}
+              </span>
+              <span id="history-loading" role="status">
+                <img src="/resources/images/lada.gif" height="20" aria-hidden="true" alt="">
+                {menu.loading}
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane show active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form id="accordion">
+            <div class="card">
+              <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                    {parameter.map.projection}
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-projection">{parameter.map.type}</label>
+                    <select class="custom-select" id="map-projection">
+                      <option value="basic">{parameter.map.type.basic}</option>
+                      <option value="navigational">{parameter.map.type.navigational}</option>
+                      <option value="polar">{parameter.map.type.polar}</option>
+                      <option value="equal_area">{parameter.map.type.equal_area}</option>
+                      <option selected value="classical">{parameter.map.type.classical}</option>
+                      <option value="modern">{parameter.map.type.modern}</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-orientation">{parameter.map.orientation}</label>
+                    <select class="custom-select" id="map-orientation">
+                      <option selected value="north">{parameter.map.orientation.north}</option>
+                      <option value="south">{parameter.map.orientation.south}</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-jung">{parameter.map.center}</label>
+                    <select class="custom-select" id="map-jung">
+                      <option selected value="0">United States of America</option>
+                      <option value="1">China</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" id="headingTwo">
+                <h5 class="mb-0">
+                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                    {parameter.map.colors}
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-land-color">{parameter.map.land_color}</label>
+                    <select class="custom-select" id="map-land-color">
+                      <option value="white">{parameter.map.color.white}</option>
+                      <option value="gray">{parameter.map.color.gray}</option>
+                      <option selected value="physical">{parameter.map.color.physical}</option>
+                      <option value="political">{parameter.map.color.political}</option>
+                      <option value="heightmap">{parameter.map.color.heightmap}</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-sea-color">{parameter.map.sea_color}</label>
+                    <select class="custom-select" id="map-sea-color">
+                      <option value="white">{parameter.map.color.white}</option>
+                      <option value="gray">{parameter.map.color.gray}</option>
+                      <option selected value="blue">{parameter.map.color.blue}</option>
+                      <option value="black">{parameter.map.color.black}</option>
+                      <option value="heightmap">{parameter.map.color.heightmap}</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-filter">{parameter.map.filter}</label>
+                    <select class="custom-select" id="map-filter">
+                      <option selected value="none">{parameter.map.filter.none}</option>
+                      <option value="sepia">{parameter.map.filter.sepia}</option>
+                      <option value="grayscale">{parameter.map.filter.grayscale}</option>
+                      <option value="pastel">{parameter.map.filter.pastel}</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <h6>{parameter.map.land_style}</h6>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="land-style" id="map-land-plain" value="plain" checked>
+                      <label class="form-check-label" for="map-land-plain">{parameter.map.style.plain}</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="land-style" id="map-land-textured" value="textured">
+                      <label class="form-check-label" for="map-land-textured">{parameter.map.style.textured}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <h6>{parameter.map.sea_style}</h6>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="sea-style" id="map-sea-plain" value="plain" checked>
+                      <label class="form-check-label" for="map-sea-plain">{parameter.map.style.plain}</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="sea-style" id="map-sea-textured" value="textured">
+                      <label class="form-check-label" for="map-sea-textured">{parameter.map.style.textured}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <h6>{parameter.map.city_style}</h6>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="city-style" id="map-city-none" value="none" checked>
+                      <label class="form-check-label" for="map-city-none">{parameter.map.style.plain}</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="city-style" id="map-city-dots" value="dots">
+                      <label class="form-check-label" for="map-city-dots">{parameter.map.style.dots}</label>
+                    </div>
+                    <div class="form-check">
+                      <input class="form-check-input" type="radio" name="city-style" id="map-city-textured" value="textured">
+                      <label class="form-check-label" for="map-city-textured">{parameter.map.style.textured}</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" id="headingThree">
+                <h5 class="mb-0">
+                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                    {parameter.map.features}
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-rivers">
+                      <label class="custom-control-label" for="map-rivers">{parameter.map.features.rivers}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-borders" checked>
+                      <label class="custom-control-label" for="map-borders">{parameter.map.features.borders}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-shading">
+                      <label class="custom-control-label" for="map-shading">{parameter.map.features.shading}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-graticule">
+                      <label class="custom-control-label" for="map-graticule">{parameter.map.features.graticule}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-rhumb-net">
+                      <label class="custom-control-label" for="map-rhumb-net">{parameter.map.features.rhumb_net}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-windrose">
+                      <label class="custom-control-label" for="map-windrose">{parameter.map.features.windrose}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-political-labels" checked>
+                      <label class="custom-control-label" for="map-political-labels">{parameter.map.features.political_labels}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-physical-labels">
+                      <label class="custom-control-label" for="map-physical-labels">{parameter.map.features.physical_labels}</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header" id="headingFour">
+                <h5 class="mb-0">
+                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                    {parameter.map.formatting}
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-spelling">{parameter.map.spelling}</label>
+                    <select class="custom-select" id="map-spelling">
+                      <option selected value="null">{parameter.map.spelling.modern}</option>
+                      <option value="en">{parameter.map.spelling.en}</option>
+                      <option value="es">{parameter.map.spelling.es}</option>
+                      <option value="la">{parameter.map.spelling.la}</option>
+                      <!--TODO it would be nice if it could automatically select the system that goes with the language-->
+                      <option value="jp">{parameter.map.spelling.jp}</option>
+                      <option value="pd">{parameter.map.spelling.pd}</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-width">{parameter.map.width}</label>
+                    <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-width"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height">{parameter.map.height}</label>
+                    <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-height"/>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-resolution">{parameter.map.resolution}</label>
+                    <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-resolution"/>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-block btn-primary mt-2" id="map-apply" disabled>
+              <span id="map-ready" style="display: none">
+                {menu.update}
+              </span>
+              <span id="map-loading" role="status">
+                <img src="/resources/images/lada.gif" height="20" aria-hidden="true" alt="">
+                {menu.loading}
+              </span>
+            </button>
+            <button type="button" class="btn btn-block btn-primary" id="map-download" disabled>
+              {menu.download}
+            </button>
+          </form>
+        </div>
+
+        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="pdf-panel" role="tabpanel" aria-labelledby="pdf-tab">
+      <div class="row mt-2">
+        <div class="col-12">
+          <embed id="pdf-embed" type="application/pdf" width="100%" height="500px">
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
