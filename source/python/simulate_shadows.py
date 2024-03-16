@@ -1,5 +1,9 @@
-# simulate_shadows.py - search for a simple formula for the insolation on the inside of a toroid
+"""
+simulate_shadows.py - search for a simple formula for the insolation on the inside of a toroid
 
+This work by Justin Kunimune is marked with CC0 1.0 Universal.
+To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
+"""
 import numpy as np
 from scipy import integrate
 import matplotlib.pyplot as plt

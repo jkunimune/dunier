@@ -1,3 +1,7 @@
+"""
+This work by Justin Kunimune is marked with CC0 1.0 Universal.
+To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
+"""
 from colormath.color_objects import LabColor, sRGBColor
 from colormath.color_conversions import convert_color
 from colormath.color_diff import delta_e_cie2000

@@ -24,7 +24,7 @@ drift.
 This repository contains the following files and directories, among others.
 
 - `README.md` – this file!
-- `LICENSE` – reuse permission declaration
+- `LICENSE.txt` – legal details of the CC0 1.0 universal public domain dedication
 - `package.json` – instructions for Node to set up TypeScript and Jest
 - `tsconfig.json` – instructions for TypeScript to compile the code
 - `source/` – the TypeScript source code
@@ -87,7 +87,27 @@ and rename it to `bootstrap-4.6.2-dist` if it's not already named that.
 
 ## Credits
 
-This project drew heavy inspiration from
-[Azgaar's similar fantasy map generator](https://azgaar.github.io/fantasy-map-generator/). The slick aesthetic comes courtesy of
-[the Bootstrap library](https://getbootstrap.com/) and
-[HatScripts' circular flag collection](https://github.com/HatScripts/circle-flags).
+This project draws heavy inspiration from
+[Azgaar's similar fantasy map generator](https://azgaar.github.io/fantasy-map-generator/).
+
+The slick aesthetic comes courtesy of
+[Bootstrap](https://getbootstrap.com/) and [HatScripts' circular flag collection](https://github.com/HatScripts/circle-flags).
+
+External source libraries used by Dunier include
+Vladimir Agaforkin's [Tinyqueue](https://github.com/mourner/tinyqueue),
+Stefan Haack's [Bootstrap Input Spinner](https://github.com/shaack/bootstrap-input-spinner),
+Axel Rauschmayer's [Enumify](https://2ality.com/2020/01/enum-pattern.html),
+James Hall's and yWorks GmbH's [JSPDF](https://parall.ax/products/jspdf),
+[Popper](https://popper.js.org/docs/v2/),
+[Plotly](https://plotly.com/), and
+[JQuery](https://jquery.com/),
+all of which are released under the MIT license by their respective authors.
+
+## License
+
+Dunier by Justin Kunimune is marked as dedicated to the public domain via
+[CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0).
+You can copy, modify, and distribute it, even for commercial purposes, all without asking permission.
+I make no warranties about Dunier, and disclaim liability for all uses of it,
+to the fullest extent permitted by applicable law.
+When using or citing Dunier, you should not imply endorsement by me.

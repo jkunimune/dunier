@@ -1,5 +1,9 @@
-# simulate_sunlight.py - validate the insolation on an oblique sphere
+"""
+simulate_sunlight.py - validate the insolation on an oblique sphere
 
+This work by Justin Kunimune is marked with CC0 1.0 Universal.
+To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
+"""
 import numpy as np
 from scipy import integrate, optimize
 import matplotlib.pyplot as plt
