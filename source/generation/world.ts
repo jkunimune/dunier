@@ -43,7 +43,7 @@ const ARABILITY = new Map([ // terrain modifiers for civ spawning and population
 ]);
 const RIVER_UTILITY_THRESHOLD = 1e6;
 const FRESHWATER_UTILITY = 0.1;
-const SALTWATER_UTILITY = 1.0;
+const SALTWATER_UTILITY = 0.3;
 const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.OCEAN,     0.1],
 	[Biome.SWAMP,     0.1],
