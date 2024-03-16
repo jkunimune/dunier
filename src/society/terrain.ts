@@ -26,7 +26,6 @@ import {Surface, Vertex, Tile} from "../planet/surface.js";
 import {Random} from "../util/random.js";
 import {argmax, union} from "../util/util.js";
 import {Vector} from "../util/geometry.js";
-import { delaunayTriangulate } from '../util/delaunay.js';
 
 
 const TERME_NOISE_LEVEL = 12;
@@ -103,69 +102,6 @@ export const BIOME_NAMES: Map<string, Biome> = new Map([
 	["swamp", Biome.SWAMP],
 	["steamland", Biome.STEAMLAND],
 ]);
-
-
-/**
- * fill this.tiles with the given tiles.
- */
-export function populateSurface(surf: Surface, tiles: Tile[]): void {
-	surf.tiles = new Set(tiles); // keep that list, but save it as a set as well
-
-	// seed the surface
-	const partition = surf.partition();
-
-	// call the delaunay triangulation subroutine
-	const triangulation = delaunayTriangulate(
-		tiles.map((t: Tile) => t.pos),
-		tiles.map((t: Tile) => t.normal),
-		partition.nodos.map((t: Tile) => t.pos),
-		partition.nodos.map((t: Tile) => t.normal),
-		partition.triangles.map((v: Vertex) => v.tiles.map((t: Tile) => partition.nodos.indexOf(t)))
-	);
-	surf.vertices = new Set(); // unpack the resulting Voronoi vertices
-	for (const [ia, ib, ic] of triangulation.triangles) {
-		const {pos, coordinates} = Vertex.computeLocation(tiles[ia], tiles[ib], tiles[ic]);
-		// only create Vertices inside the surface domain; discard any that fall outside
-		if (coordinates.ф <= surf.фMax && coordinates.ф >= surf.фMin)
-			surf.vertices.add(new Vertex(tiles[ia], tiles[ib], tiles[ic], pos, coordinates)); // this will automatically generate the Edges
-	}
-	for (let i = 0; i < tiles.length; i ++) {
-		for (const j of triangulation.parentage[i]) // as well as the parentage
-			tiles[i].parents.push(tiles[j]);
-		for (const [j, k] of triangulation.between[i]) // and separation information
-			tiles[i].between.push([tiles[j], tiles[k]]);
-	}
-
-	// after all that's through, some tiles won't have any parents
-	for (let i = 1; i < tiles.length; i ++) {
-		if (tiles[i].parents.length === 0) { // if that's so,
-			const orphan = tiles[i];
-			let closest = null; // the easiest thing to do is to just assign it the closest tile that came before it using the list
-			let minDistance = Number.POSITIVE_INFINITY;
-			for (let j = 0; j < orphan.index; j ++) {
-				const distance = surf.distance(tiles[j], orphan);
-				if (distance < minDistance) {
-					minDistance = distance;
-					closest = tiles[j];
-				}
-			}
-			orphan.parents = [closest];
-		}
-	}
-
-	// add Vertices along the edge, if there is one, to complete the graph
-	for (const vertex of new Set(surf.vertices)) {
-		for (const edge of vertex.edges) {
-			if (edge.vertex1 === null) { // you're looking for Edges that are missing a Vertex
-				const {pos, coordinates} = surf.computeEdgeVertexLocation(edge.tileL, edge.tileR, edge);
-				surf.vertices.add(new Vertex(edge.tileL, edge.tileR, null, pos, coordinates));
-			}
-		}
-	}
-
-	// do any geometric upkeep to make all the Tiles and Vertexes consistent
-	surf.computeGraph();
-}
 
 
 /**

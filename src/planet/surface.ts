@@ -28,6 +28,7 @@ import {Biome} from "../society/terrain.js";
 import {Place, Point} from "../util/coordinates.js";
 import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../util/geometry.js";
 import {straightSkeleton} from "../util/straightskeleton.js";
+import {delaunayTriangulate} from "../util/delaunay.js";
 
 
 const TILE_AREA = 30000; // target area of a tile in km^2
@@ -89,10 +90,63 @@ export abstract class Surface {
 	}
 
 	/**
-	 * set the positions of all the vertices and the edge map in a way that is
-	 * consistent with the current values of this.tiles and this.vertices
+	 * fill this.tiles with the given tiles.
 	 */
-	computeGraph(): void {
+	populateWith(tiles: Tile[]): void {
+		this.tiles = new Set(tiles); // keep that list, but save it as a set as well
+
+		// seed the surface
+		const partition = this.partition();
+
+		// call the delaunay triangulation subroutine
+		const triangulation = delaunayTriangulate(
+			tiles.map((t: Tile) => t.pos),
+			tiles.map((t: Tile) => t.normal),
+			partition.nodos.map((t: Tile) => t.pos),
+			partition.nodos.map((t: Tile) => t.normal),
+			partition.triangles.map((v: Vertex) => v.tiles.map((t: Tile) => partition.nodos.indexOf(t)))
+		);
+		this.vertices = new Set(); // unpack the resulting Voronoi vertices
+		for (const [ia, ib, ic] of triangulation.triangles) {
+			const {pos, coordinates} = Vertex.computeLocation(tiles[ia], tiles[ib], tiles[ic]);
+			// only create Vertices inside the surface domain; discard any that fall outside
+			if (coordinates.ф <= this.фMax && coordinates.ф >= this.фMin)
+				this.vertices.add(new Vertex(tiles[ia], tiles[ib], tiles[ic], pos, coordinates)); // this will automatically generate the Edges
+		}
+		for (let i = 0; i < tiles.length; i ++) {
+			for (const j of triangulation.parentage[i]) // as well as the parentage
+				tiles[i].parents.push(tiles[j]);
+			for (const [j, k] of triangulation.between[i]) // and separation information
+				tiles[i].between.push([tiles[j], tiles[k]]);
+		}
+
+		// after all that's through, some tiles won't have any parents
+		for (let i = 1; i < tiles.length; i ++) {
+			if (tiles[i].parents.length === 0) { // if that's so,
+				const orphan = tiles[i];
+				let closest = null; // the easiest thing to do is to just assign it the closest tile that came before it using the list
+				let minDistance = Number.POSITIVE_INFINITY;
+				for (let j = 0; j < orphan.index; j ++) {
+					const distance = this.distance(tiles[j], orphan);
+					if (distance < minDistance) {
+						minDistance = distance;
+						closest = tiles[j];
+					}
+				}
+				orphan.parents = [closest];
+			}
+		}
+
+		// add Vertices along the edge, if there is one, to complete the graph
+		for (const vertex of new Set(this.vertices)) {
+			for (const edge of vertex.edges) {
+				if (edge.vertex1 === null) { // you're looking for Edges that are missing a Vertex
+					const {pos, coordinates} = this.computeEdgeVertexLocation(edge.tileL, edge.tileR, edge);
+					this.vertices.add(new Vertex(edge.tileL, edge.tileR, null, pos, coordinates));
+				}
+			}
+		}
+
 		// finally, complete the remaining vertices' network graphs
 		for (const vertex of this.vertices) {
 			for (let i = 0; i < 3; i ++) {

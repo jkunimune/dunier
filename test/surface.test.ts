@@ -24,7 +24,6 @@
 import {Tile, Vertex} from "../src/planet/surface.js";
 import {Disc} from "../src/planet/disc.js";
 import {Vector} from "../src/util/geometry.js";
-import {populateSurface} from "../src/society/terrain";
 
 const surface = new Disc(Math.sqrt(7)/2, 0);
 surface.initialize();
@@ -35,7 +34,7 @@ const tiles = [
     new Tile(3, surface.фλ(new Vector(0, 1/2, 0)), surface),
     new Tile(4, surface.фλ(new Vector(Math.sqrt(3)/2, 0, 0)), surface),
 ];
-populateSurface(surface, tiles);
+surface.populateWith(tiles);
 
 describe("Tile", () => {
     describe("leftOf()", () => {
