@@ -88,7 +88,7 @@ and rename it to `bootstrap-4.6.2-dist` if it's not already named that.
 ## Credits
 
 This project draws heavy inspiration from
-[Azgaar's similar fantasy map generator](https://azgaar.github.io/fantasy-map-generator/).
+Azgaar's [Fantasy Map Generator](https://azgaar.github.io/Fantasy-Map-Generator/).
 
 The slick aesthetic comes courtesy of
 [Bootstrap](https://getbootstrap.com/) and [HatScripts' circular flag collection](https://github.com/HatScripts/circle-flags).
@@ -96,8 +96,8 @@ The slick aesthetic comes courtesy of
 External source libraries used by Dunier include
 Vladimir Agaforkin's [Tinyqueue](https://github.com/mourner/tinyqueue),
 Stefan Haack's [Bootstrap Input Spinner](https://github.com/shaack/bootstrap-input-spinner),
-Axel Rauschmayer's [Enumify](https://2ality.com/2020/01/enum-pattern.html),
-James Hall's and yWorks GmbH's [JSPDF](https://parall.ax/products/jspdf),
+Axel Rauschmayer's [Enumify](https://2ality.com/2020/01/enum-pattern.html), and
+James Hall's and yWorks GmbH's [JSPDF](https://parall.ax/products/jspdf), as well as
 [Popper](https://popper.js.org/docs/v2/),
 [Plotly](https://plotly.com/), and
 [JQuery](https://jquery.com/),
@@ -107,7 +107,7 @@ all of which are released under the MIT license by their respective authors.
 
 Dunier by Justin Kunimune is marked as dedicated to the public domain via
 [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0).
-You can copy, modify, and distribute it, even for commercial purposes, all without asking permission.
+You may copy, modify, and distribute it, even for commercial purposes, all without asking permission.
 I make no warranties about Dunier, and disclaim liability for all uses of it,
 to the fullest extent permitted by applicable law.
 When using or citing Dunier, you should not imply endorsement by me.
