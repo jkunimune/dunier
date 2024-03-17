@@ -1,6 +1,6 @@
 {
-	".language.code": "pd",
-	".language.name": "pandunia",
+	".language": "pd",
+	".language.fallback": "en",
 	"about.body": "<p>dunier - tul da helpa kitaber, gemlider, e bashochaner bina veriki chansagi dunia da su zi chan abla bono rastu.  le jinu falsozari sem e balibali param, e chutu yangi zemgraf, histori zamantable, e informi warke da mey desh e bash.  no komputerprogram abla vica sukia e chanivia da holi proces da dunjang, a dunier abla handa fen da no mey insan abla o volu fata.  le no holi janger, a le si samsifi ko hamar.</p> <p>dunier kapa idey cha badi jener da fantazi zemgraf, ko <a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">le da azgar</a>, a dunier may fokusa samsifia da veria.  le min konativi ko ali jener, e le chana min lil detal, misalo loke da kuangia o politiki guanxe. a le si konsida multi detal, da nu ali jener e da abla vidu kandayo, misalo planeti kurvia, plati zemkaskia, e bashi mutia.</p><p>dunier su asle kode abil be vizi a <a href=\"https://github.com/jkunimune/dunier\">github.com/jkunimune/dunier</a>.</p>",
 	"about.head": "tema dunier",
 	"error.planet_too_fast": "The planet tore itself apart because it was spinning to fast.  Please choose a longer day length.",
@@ -716,7 +716,7 @@
 	"parameter.map.spelling": "transokitabe",
 	"parameter.map.spelling.en": "engli",
 	"parameter.map.spelling.es": "espani",
-	"parameter.map.spelling.jp": "niponi",
+	"parameter.map.spelling.ja": "niponi",
 	"parameter.map.spelling.la": "latini",
 	"parameter.map.spelling.modern": "novyangi",
 	"parameter.map.spelling.pd": "panduni",

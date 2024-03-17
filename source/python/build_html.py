@@ -6,7 +6,7 @@ import json
 import os
 import re
 
-LANGUAGES = ['en', 'es', 'jp', 'pd']
+LANGUAGES = ['en', 'es', 'ja', 'pd']
 DEFAULT_LANGUAGE = 'pd'
 
 # load the base

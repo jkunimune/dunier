@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="{.language.code}">
+<html lang="{.language.fallback}">
   <head>
     <!-- Required meta tags -->
     <meta charset="utf-8">
@@ -53,8 +53,8 @@
                     <img src="/resources/images/es.svg" width="20" height="20" alt="">&nbsp;
                     español
                   </a>
-                  <a class="dropdown-item" href="/jp/{.name}.html" role="menuitem">
-                    <img src="/resources/images/jp.svg" width="20" height="20" alt="">&nbsp;
+                  <a class="dropdown-item" href="/ja/{.name}.html" role="menuitem">
+                    <img src="/resources/images/ja.svg" width="20" height="20" alt="">&nbsp;
                     日本語
                   </a>
                   <a class="dropdown-item" href="/pd/{.name}.html" role="menuitem">
@@ -80,7 +80,7 @@
           <div class="col-12 col-sm-10 col-md-6">
             <p>
               <span property="dct:title">Dunier</span> by <span property="cc:attributionName">Justin Kunimune</span> is marked with
-              <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.{.language.code}" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
+              <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.{.language.fallback}" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
                 CC0 1.0
                 <img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="CC">
                 <img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="0">
@@ -101,9 +101,9 @@
           <div class="col-6 col-sm-5 col-md-3">
             <h5>{menu.languages}</h5>
             <ul class="list-unstyled text-small">
-              <li><a class="text-muted" href="/en/{.name}.html">English</a></li>
-              <li><a class="text-muted" href="/es/{.name}.html">español</a></li>
-              <li><a class="text-muted" href="/jp/{.name}.html">日本語</a></li>
+              <li lang="en"><a class="text-muted" href="/en/{.name}.html">English</a></li>
+              <li lang="es"><a class="text-muted" href="/es/{.name}.html">español</a></li>
+              <li lang="ja"><a class="text-muted" href="/ja/{.name}.html">日本語</a></li>
               <li><a class="text-muted" href="/pd/{.name}.html">pandunia</a></li>
             </ul>
           </div>
@@ -112,7 +112,7 @@
       </div>
     </footer>
 
-    <div id="bash" style="display: none;">{.language.code}</div>
+    <div id="bash" style="display: none;">{.language}</div>
 
     <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
     <script src="/source/libraries/jquery.min.js" crossorigin="anonymous"></script>

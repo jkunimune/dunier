@@ -1,6 +1,6 @@
 {
-	".language.code": "jp",
-	".language.name": "日本語",
+	".language": "ja",
+	".language.fallback": "ja",
 	"about.body": "<p>dunier（ドゥニアー）は作家やゲームマスターや言語を作る人の創作を振るれる迫真な世界を作り上げるのを手伝うツールだ。擬似乱数列の初期値と他の色々なパラメタを入って、それから世界地図と年表とすべての国と言語のインフォがあるページが出る。算譜はすべてのワールドビルジンぐの喜びの創造的な工程に取って代われないけど、dunierは何人か出来ないまたはしたくないことを営める。</p> <p>dunierは<a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">アズガアルさんの物</a>とか前のファンタジーの地図生成器がきっかけを与えたが、dunierは写実を強める。dunierは他のものほど対話的ではなくて鉱山の位置とか外交関係とか小さい詳細を作らないけど。でも、惑星曲率とかプレートテクトニクスとか言語変化とか巨視的な特徴を汲む。</p><p>dunierのソースコードは<a href=\"https://github.com/jkunimune/dunier\">github.com/jkunimune/dunier</a>で提供された。</p>",
 	"about.head": "dunierについて",
 	"error.planet_too_fast": "惑星は回転速度が過ぎて、破裂してしまった。日間を永くしてください。",
@@ -715,7 +715,7 @@
 	"parameter.map.spelling": "翻字",
 	"parameter.map.spelling.en": "英語",
 	"parameter.map.spelling.es": "スペイン語",
-	"parameter.map.spelling.jp": "日本語",
+	"parameter.map.spelling.ja": "日本語",
 	"parameter.map.spelling.la": "ラテン語",
 	"parameter.map.spelling.modern": "現代",
 	"parameter.map.spelling.pd": "パンドゥニア",
