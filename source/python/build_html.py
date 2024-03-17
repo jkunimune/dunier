@@ -10,18 +10,18 @@ LANGUAGES = ['en', 'es', 'ja', 'pd']
 DEFAULT_LANGUAGE = 'pd'
 
 # load the base
-with open(f'../../resources/templates/base.html', 'r', encoding='utf8') as base_file:
+with open(f'../../templates/base.html', 'r', encoding='utf8') as base_file:
 	base = base_file.read()
 
 # iterate thru all non-base templates in the folder
-for filename in os.listdir('../../resources/templates/'):
+for filename in os.listdir('../../templates/'):
 	if filename == "base.html" or not filename.endswith(".html"):
 		continue
 	filename = filename[:-5]
 	print(f"{filename}")
 
 	# load the template and insert it into the base
-	with open(f'../../resources/templates/{filename}.html', 'r', encoding='utf8') as page_file:
+	with open(f'../../templates/{filename}.html', 'r', encoding='utf8') as page_file:
 		template = base.replace('{Content}', page_file.read())
 
 	# replace the special key
