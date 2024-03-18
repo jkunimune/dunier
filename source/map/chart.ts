@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Edge, Tile, Surface, Vertex} from "../surface/surface.js";
+import {Edge, Tile, Surface, Vertex, EmptySpace} from "../surface/surface.js";
 import {filterSet, longestShortestPath} from "../utilities/miscellaneus.js";
 import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
@@ -136,10 +136,10 @@ export class Chart {
 	 * @param style the transliteration convention to use for them
 	 * @return the list of Civs that are shown in this map
 	 */
-	depict(surface: Surface, world: World, svg: SVGGElement,
-	       landColor: string, seaColor: string, filter = 'none',
-		   rivers = true, borders = true, shading = false,
-		   civLabels = false, geoLabels = false,
+	depict(surface: Surface, world: World | null, svg: SVGGElement,
+	       landColor: string, seaColor: string, filter: string,
+		   rivers: boolean, borders: boolean, shading: boolean,
+		   civLabels: boolean, geoLabels: boolean,
 		   fontSize = 2, style: string = null): Civ[] {
 		const bbox = this.projection.getDimensions();
 		svg.setAttribute('viewBox',
@@ -189,7 +189,9 @@ export class Chart {
 						filterSet(surface.tiles, n => n.biome === biome),
 						g, BIOME_COLORS.get(biome), Layer.BIO);
 		}
-		else if (landColor === 'political' && world !== null) { // draw the countries
+		else if (landColor === 'political') { // draw the countries
+			if (world === null)
+				throw new Error("this Chart was asked to color land politicly but the provided World was null");
 			this.fill(
 				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
 				g, BIOME_COLORS.get(null), Layer.KULTUR);
@@ -217,7 +219,9 @@ export class Chart {
 		}
 
 		// add borders with hovertext
-		if (borders && world !== null) {
+		if (borders) {
+			if (world === null)
+				throw new Error("this Chart was asked to draw political borders but the provided World was null");
 			for (const civ of world.getCivs()) {
 				// if (civ.getPopulation() > 0) {
 					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -242,7 +246,9 @@ export class Chart {
 		}
 
 		// finally, label everything
-		if (civLabels && world !== null) {
+		if (civLabels) {
+			if (world === null)
+				throw new Error("this Chart was asked to label countries but the provided World was null");
 			for (const civ of world.getCivs()) // TODO: the hover text should go on this
 				if (civ.getPopulation() > 0)
 					this.label(
@@ -303,7 +309,7 @@ export class Chart {
 	 * @param greeble what kind of edge it is for the purposes of greebling
 	 * @returns the newly created element comprising all these lines
 	 */
-	stroke(strokes: Iterable<(Tile | Vertex)[]>, svg: SVGGElement,
+	stroke(strokes: Iterable<Place[]>, svg: SVGGElement,
 		   color: string, width: number, greeble: Layer): SVGPathElement {
 		let segments = this.projection.projectPath(
 			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.projection.scale), false);
@@ -330,7 +336,7 @@ export class Chart {
 		for (const t of triangles) { // start by computing slopes of all of the triangles
 			const p = [];
 			for (const node of t.tiles) {
-				if (node === null)
+				if (node instanceof EmptySpace)
 					continue triangleSearch;
 				const {x, y} = this.projection.projectPoint(node);
 				const z = Math.max(0, node.height);
@@ -349,7 +355,7 @@ export class Chart {
 				continue;
 			const path = [];
 			for (const node of t.tiles)
-				path.push({type: 'L', args: [node.ф, node.λ]}); // put its values in a plottable form
+				path.push({type: 'L', args: [(node as Tile).ф, (node as Tile).λ]}); // put its values in a plottable form
 			path.push({type: 'L', args: [...path[0].args]});
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
@@ -727,7 +733,7 @@ export class Chart {
 
 					// now, advance to the next Tile(s)
 					const nextTile = vertex.widershinsOf(outTile);
-					if (nextTile === null) {
+					if (nextTile instanceof EmptySpace) {
 						// if there isn't one after this Vertex, break off this section
 						currentLoop.push(currentSection);
 						// shimmy outTile around the internal portion of the edge
@@ -834,7 +840,7 @@ export class Chart {
 
 		function combine(a: Place[], b: Place[]): Place[] {
 			consolidated.delete(b); // delete b
-			heads.delete(b[0]);
+			heads.delete(b[0]); // b[0] is no longer a startpoint or an endpoint
 			tails.delete(b[0]);
 			tails.get(b[b.length-1])[tails.get(b[b.length-1]).indexOf(b)] = a; // repoint the tail reference from b to a
 			for (let i = 1; i < b.length; i ++) { // add b's elements to a
@@ -865,7 +871,7 @@ export class Chart {
 				const start = line[i - 1];
 				const end = line[i];
 				// do this long type-casting song and dance to see if there's an edge to greeble
-				let edge = null;
+				let edge: Edge | null = null;
 				if (start.hasOwnProperty('neighbors')) {
 					const neighbors = (<{neighbors: Map<Place, Edge>}><unknown>start).neighbors;
 					if (typeof neighbors.has === 'function' && typeof neighbors.get === 'function')

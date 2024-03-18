@@ -228,7 +228,13 @@ function applyTerrain(): void {
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
 	              'physical',
-	              'blue');
+	              'blue',
+	              'none',
+	              true,
+	              false,
+	              false,
+	              false,
+	              false);
 
 	console.log("fina!");
 	lastUpdated = Layer.TERRAIN;
@@ -257,7 +263,13 @@ function applyHistory(): void {
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
 	              'political',
-	              'blue');
+	              'blue',
+	              'none',
+	              false,
+	              true,
+	              false,
+	              false,
+	              false);
 
 	console.log("mute ba chuze bil...");
 	const countries = world.getCivs(true, MIN_SIZE_TO_LIST, MIN_COUNTRIES_TO_LIST) // list the biggest countries for the centering selection

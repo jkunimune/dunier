@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Tile, Vertex} from "../source/surface/surface.js";
+import {EmptySpace, Tile, Vertex} from "../source/surface/surface.js";
 import {Disc} from "../source/surface/disc.js";
 import {Vector} from "../source/utilities/geometry.js";
 
@@ -60,11 +60,16 @@ describe("Vertex", () => {
             expect(innerVertex.acrossFrom(tiles[2])).toBe(edge);
         });
         test("does not exist", () => {
-            expect(outerVertex.acrossFrom(null)).toBe(edge);
+            expect(outerVertex.acrossFrom(new EmptySpace(surface))).toBe(edge);
         });
     });
-    test("widershinsOf()", () => {
-        expect(innerVertex.widershinsOf(tiles[1])).toBe(tiles[2]);
+    describe("widershinsOf()", () => {
+        test("exists", () => {
+            expect(innerVertex.widershinsOf(tiles[1])).toBe(tiles[2]);
+        });
+        test("does not exist", () => {
+            expect(outerVertex.widershinsOf(tiles[0])).toBeInstanceOf(EmptySpace);
+        });
     });
 });
 

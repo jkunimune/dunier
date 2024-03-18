@@ -123,7 +123,7 @@ export abstract class Surface {
 			for (const edge of vertex.edges) {
 				if (edge.vertex1 === null) { // you're looking for Edges that are missing a Vertex
 					const {pos, coordinates} = this.computeEdgeVertexLocation(edge.tileL, edge.tileR, edge);
-					this.vertices.add(new Vertex(edge.tileL, edge.tileR, null, pos, coordinates));
+					this.vertices.add(new Vertex(edge.tileL, edge.tileR, new EmptySpace(this), pos, coordinates));
 				}
 			}
 		}
@@ -144,7 +144,7 @@ export abstract class Surface {
 		// and find the edge of the surface, if there is one
 		for (const tile of this.tiles)
 			for (const neibor of tile.neighbors.keys())
-				if (tile.rightOf(neibor).widershinsOf(tile) === null)
+				if (tile.rightOf(neibor).widershinsOf(tile) instanceof EmptySpace)
 					this.edge.set(tile, {next: neibor, prev: null});
 		for (const tile of this.edge.keys()) // and make it back-searchable
 			this.edge.get(this.edge.get(tile).next).prev = tile;
@@ -399,27 +399,41 @@ export class Tile {
 	 */
 	getPolygon(): { vertex: Vertex, edge: Edge | null }[] {
 		const output = [];
-		let start;
+		let start: Tile;
 		if (this.surface.edge.has(this)) // for Tiles on the edge, there is a natural starting point
 			start = this.surface.edge.get(this).next;
 		else // for internal Tiles start wherever
 			start = this.neighbors.keys().next().value;
 
 		// step around the Tile until you find either another edge or get back to where you started
-		let tile = start;
-		let vertex = this.rightOf(tile);
+		let tile: Tile | EmptySpace = start;
+		let vertex = this.rightOf(tile as Tile);
 		do {
 			output.push({
 				vertex: vertex,
-				edge: (tile !== null) ? this.neighbors.get(tile) : null,
+				edge: (tile instanceof Tile) ? this.neighbors.get(tile) : null,
 			});
-			if (tile === null)
+			if (tile instanceof EmptySpace)
 				break;
-			vertex = this.leftOf(tile);
-			tile = vertex.widershinsOf(tile);
+			else {
+				vertex = this.leftOf(tile);
+				tile = vertex.widershinsOf(tile);
+			}
 		} while (tile !== start);
 
 		return output;
+	}
+}
+
+
+/**
+ * a dummy value for where there would normally be a Tile but instead it's the edge of the flat earth
+ */
+export class EmptySpace {
+	public readonly surface: Surface;
+
+	constructor(surface: Surface) {
+		this.surface = surface;
 	}
 }
 
@@ -431,7 +445,7 @@ export class Tile {
 export class Vertex {
 	public ф: number;
 	public λ: number;
-	public tiles: (Tile | null)[];
+	public tiles: (Tile | EmptySpace)[];
 	public edges: (Edge | null)[];
 	public neighbors: Map<Vertex, Edge>;
 	public surface: Surface;
@@ -439,7 +453,7 @@ export class Vertex {
 
 	public height: number;
 	public flow: number;
-	public downstream: Vertex | Tile;
+	public downstream: Vertex | Tile | EmptySpace | null;
 
 	/**
 	 * locate the confluence of the three given adjacent Tiles,
@@ -478,7 +492,7 @@ export class Vertex {
 	 * @param pos the Cartesian coordinate vector (not needed if we're just using this for its network graph)
 	 * @param coordinates the geographical coordinates (not needed if we're just using this for its network graph)
 	 */
-	constructor(a: Tile, b: Tile, c: Tile | null, pos: Vector = null, coordinates: Place = null) {
+	constructor(a: Tile, b: Tile, c: Tile | EmptySpace, pos: Vector = null, coordinates: Place = null) {
 		this.pos = pos;
 		if (coordinates !== null) {
 			this.ф = coordinates.ф;
@@ -490,9 +504,9 @@ export class Vertex {
 		this.neighbors = new Map(); // connected vertices
 		this.surface = a.surface;
 
-		for (let i = 0; i < 3; i ++) { // check each non-null pair to see if they are already connected
+		for (let i = 0; i < 3; i ++) { // check each non-empty pair to see if they are already connected
 			const tileR = this.tiles[i], tileL = this.tiles[(i+1)%3];
-			if (tileR !== null && tileL !== null) {
+			if (tileR instanceof Tile && tileL instanceof Tile) {
 				if (tileR.neighbors.has(tileL)) { // if so,
 					this.edges[i] = tileR.neighbors.get(tileL); // take that edge
 					if (this.edges[i].tileL === tileL) // and depending on its direction,
@@ -510,7 +524,7 @@ export class Vertex {
 	/**
 	 * Find and return the Edge that points from this Vertex directly away from this Tile.
 	 */
-	acrossFrom(tile: Tile | null): Edge {
+	acrossFrom(tile: Tile | EmptySpace): Edge {
 		for (const edge of this.neighbors.values())
 			if (tile !== edge.tileL && tile !== edge.tileR)
 				return edge;
@@ -520,7 +534,7 @@ export class Vertex {
 	/**
 	 * Find and return the tile widershins of the given tile.
 	 */
-	widershinsOf(tile: Tile | null): Tile | null {
+	widershinsOf(tile: Tile | EmptySpace): Tile | EmptySpace {
 		for (let i = 0; i < 3; i ++)
 			if (this.tiles[i] === tile)
 				return this.tiles[(i+1)%3];
@@ -528,7 +542,9 @@ export class Vertex {
 	}
 
 	toString(): string {
-		return `${this.tiles[0].pos}--${this.tiles[1].pos}--${(this.tiles[2] !== null) ? this.tiles[2].pos : 'null'}`;
+		return `${(this.tiles[0] instanceof Tile) ? this.tiles[0].pos : 'void'}--` +
+		       `${(this.tiles[1] instanceof Tile) ? this.tiles[1].pos : 'void'}--` +
+		       `${(this.tiles[2] instanceof Tile) ? this.tiles[2].pos : 'void'}`;
 	}
 }
 
@@ -558,9 +574,6 @@ export class Edge {
 	private j: Vector; // the t unit-vector of this edge's coordinate system
 
 	constructor(tileL: Tile, vertex0: Vertex, tileR: Tile, vertex1: Vertex | null, distance: number) {
-		if (tileL === null || tileR === null)
-			throw new Error("every Edge must always separate two non-null Tiles.");
-
 		this.tileL = tileL; // save these new values for the edge
 		this.vertex0 = vertex0;
 		this.tileR = tileR;
