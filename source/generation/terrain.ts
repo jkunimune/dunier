@@ -417,9 +417,9 @@ function addRivers(surf: Surface): void {
 	const riverQueue: Queue<{below: Vertex | Tile | EmptySpace, above: Vertex, maxHeight: number, uphillLength: number, quality: number}> = new Queue(
 		[], (a, b) => b.quality - a.quality); // start with a queue of rivers forming from their deltas
 
-	for (const vertex of surf.vertices) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean
+	for (const vertex of surf.vertices) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean or off the edge
 		for (const tile of vertex.tiles) {
-			if (tile instanceof Tile && tile.biome === Biome.OCEAN) {
+			if (tile instanceof EmptySpace || tile.biome === Biome.OCEAN) {
 				riverQueue.push({
 					below: tile, above: vertex,
 					maxHeight: 0, uphillLength: 0,
