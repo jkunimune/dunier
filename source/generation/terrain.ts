@@ -183,7 +183,7 @@ function movePlates(surf: Surface, rng: Random): void {
 	const lpQueue: Queue<{tile: Tile, distance: number, width: number, speed: number, type: FaultType}> = new Queue([], (a, b) => a.distance - b.distance);
 	for (const tile of surf.tiles) { // now for phase 2:
 		let fault = null;
-		let minDistance = Number.POSITIVE_INFINITY;
+		let minDistance = Infinity;
 		for (const neighbor of tile.neighbors.keys()) { // look for adjacent tiles
 			if (neighbor.plateIndex !== tile.plateIndex) { // that are on different plates
 				const distance = tile.neighbors.get(neighbor).distance;
@@ -246,7 +246,7 @@ function movePlates(surf: Surface, rng: Random): void {
 			// tile.relSpeed = relSpeed;
 		}
 		// else
-			// tile.relSpeed = Number.NaN;
+			// tile.relSpeed = NaN;
 
 		tile.flag = false; // also set up these temporary flags
 	}
@@ -423,7 +423,7 @@ function addRivers(surf: Surface): void {
 				riverQueue.push({
 					below: tile, above: vertex,
 					maxHeight: 0, uphillLength: 0,
-					quality: Number.POSITIVE_INFINITY,
+					quality: Infinity,
 				});
 				break;
 			}
@@ -443,7 +443,7 @@ function addRivers(surf: Surface): void {
 							const length = surf.distance(beyond, above);
 							let quality; // decide how good a river this would be
 							if (length < RIVER_WIDTH)
-								quality = Number.POSITIVE_INFINITY;
+								quality = Infinity;
 							else if (beyond.height >= above.height) // calculate the slope for downhill rivers
 								quality = (beyond.height - above.height)/length;
 							else // calculate the amount of canyon you would need for an uphill river

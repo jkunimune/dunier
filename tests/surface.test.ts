@@ -121,7 +121,7 @@ describe("Edge", () => {
                 expect(() => edge.getPath(0.1)).not.toThrow();
             });
             test("coarsest scale", () => {
-                expect(edge.getPath(Number.POSITIVE_INFINITY)).toEqual([
+                expect(edge.getPath(Infinity)).toEqual([
                     expect.objectContaining({ф: edge.vertex0.ф, λ: edge.vertex0.λ}),
                     expect.objectContaining({ф: edge.vertex1.ф, λ: edge.vertex1.λ}),
                 ]);
@@ -152,7 +152,7 @@ describe("Edge", () => {
                 expect(() => edge.getPath(0.1)).not.toThrow();
             });
             test("coarsest scale", () => {
-                expect(edge.getPath(Number.POSITIVE_INFINITY)).toEqual([
+                expect(edge.getPath(Infinity)).toEqual([
                     expect.objectContaining({ф: edge.vertex0.ф, λ: edge.vertex0.λ}),
                     expect.objectContaining({ф: edge.vertex1.ф, λ: edge.vertex1.λ}),
                 ]);

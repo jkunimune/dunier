@@ -23,8 +23,8 @@ export function delaunayTriangulate(points: Vector[],
 									partition: number[][] = []
 ): {triangles: number[][], parentage: number[][], between: number[][][]} {
 	if (partition.length === 0) { // start by creating a partition if we have none
-		let xMax = Number.NEGATIVE_INFINITY, xMin = Number.POSITIVE_INFINITY;
-		let yMax = Number.NEGATIVE_INFINITY, yMin = Number.POSITIVE_INFINITY;
+		let xMax = -Infinity, xMin = Infinity;
+		let yMax = -Infinity, yMin = Infinity;
 		for (let i = 0; i < points.length; i ++) {
 			if (points[i].z !== 0) // assert that it is in fact a plane (remove this if I ever need to implement for not a plane)
 				throw new Error("me yexo no bina autonomi fene da no plate.");
@@ -296,7 +296,7 @@ function isRightSideOut(a: {x: number, y: number}, b: {x: number, y: number}, c:
  */
 function findSmallestEncompassing(node: DelaunayNodo, triangles: Iterable<DelaunayTriangle>): DelaunayTriangle {
 	let bestTriangle: DelaunayTriangle = null;
-	let bestDistance: number = Number.POSITIVE_INFINITY;
+	let bestDistance: number = Infinity;
 	for (const triangle of triangles) {
 		if (contains(triangle, node)) {
 			const d2 = /*(triangle.basic) ?*/ distanceSqr(triangle, node);// : 0; // we need to check the distance in case there are multiple candies

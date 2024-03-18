@@ -173,8 +173,8 @@ export class Chart {
 		}
 		else if (seaColor === 'heightmap') { // color the sea by altitude
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
-				const min = (i !== 0) ? i * DEPTH_STEP : Number.NEGATIVE_INFINITY;
-				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Number.POSITIVE_INFINITY;
+				const min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
+				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
 				this.fill(
 					filterSet(surface.tiles, n => n.biome === Biome.OCEAN && -n.height >= min && -n.height < max),
 					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
@@ -203,8 +203,8 @@ export class Chart {
 		}
 		else if (landColor === 'heightmap') { // color the sea by altitude
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
-				const min = (i !== 0) ? i * ALTITUDE_STEP : Number.NEGATIVE_INFINITY;
-				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Number.POSITIVE_INFINITY;
+				const min = (i !== 0) ? i * ALTITUDE_STEP : -Infinity;
+				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Infinity;
 				this.fill(
 					filterSet(surface.tiles, n => n.biome !== Biome.OCEAN && n.height >= min && n.height < max),
 					g, ALTITUDE_COLORS[i], Layer.GEO);
@@ -416,7 +416,7 @@ export class Chart {
 		}
 
 		while (path.length > SIMPLE_PATH_LENGTH) { // simplify path
-			let shortI = -1, minL = Number.POSITIVE_INFINITY;
+			let shortI = -1, minL = Infinity;
 			for (let i = 1; i < path.length-1; i ++) {
 				if (path[i].type === 'L' && path[i+1].type === 'L') {
 					let l = Math.hypot(
@@ -430,7 +430,7 @@ export class Chart {
 			path.splice(shortI, 1); // and remove it
 		}
 		while (path.length < SIMPLE_PATH_LENGTH/2) { // complicate path
-			let longI = -1, maxL = Number.NEGATIVE_INFINITY;
+			let longI = -1, maxL = -Infinity;
 			for (let i = 1; i < path.length; i ++) {
 				if (path[i].type === 'L') {
 					let l = Math.hypot(
@@ -536,7 +536,7 @@ export class Chart {
 		if (candidates.length === 0)
 			return null;
 
-		let axisValue = Number.NEGATIVE_INFINITY;
+		let axisValue = -Infinity;
 		let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisH = null;
 		for (const candidate of candidates) { // for each candidate label axis
 			if (candidate.length < 3) continue; // with at least three points

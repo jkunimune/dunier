@@ -169,8 +169,8 @@ class Syllabicization implements Process {
 		const nov = []; // then copy the old word
 		for (let i = 0; i < old.length; i ++) { // and assign syllables accordingly
 			const c = sonority[i];
-			const l = (i-1 >= 0) ? sonority[i-1] : Number.NEGATIVE_INFINITY;
-			const r = (i+1 < old.length) ? sonority[i+1] : Number.NEGATIVE_INFINITY;
+			const l = (i-1 >= 0) ? sonority[i-1] : -Infinity;
+			const r = (i+1 < old.length) ? sonority[i+1] : -Infinity;
 			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) { // if it is a peak
 				if (old.segments[i].getSonority() < this.minSonority) {
 					nov.push(new Sound(Mode.OPEN_MID, Loke.CENTRAL, Voze.VOICED,

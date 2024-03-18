@@ -106,7 +106,7 @@ export abstract class Surface {
 			if (tiles[i].parents.length === 0) { // if that's so,
 				const orphan = tiles[i];
 				let closest = null; // the easiest thing to do is to just assign it the closest tile that came before it using the list
-				let minDistance = Number.POSITIVE_INFINITY;
+				let minDistance = Infinity;
 				for (let j = 0; j < orphan.index; j ++) {
 					const distance = this.distance(tiles[j], orphan);
 					if (distance < minDistance) {

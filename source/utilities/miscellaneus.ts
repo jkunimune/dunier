@@ -189,7 +189,7 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
 	// start by preparing an array that stores, for each node, how we got to it and how long it took
 	const nodeInfo = [];
 	for (let i = 0; i < nodes.length; i ++)
-		nodeInfo.push({distance: Number.POSITIVE_INFINITY, cene: null, lewi: false});
+		nodeInfo.push({distance: Infinity, cene: null, lewi: false});
 
 	const queue: Queue<{start: number, end: number, distance: number}> = new Queue(
 		[], (a, b) => a.distance - b.distance);
@@ -246,7 +246,7 @@ export function noisyProfile(initialProfile: Point[], resolution: number, rng: R
 			const r0 = new Vector((last.x + next.x)/2, (last.y + next.y)/2, 0); // find the point between them
 			const axis = new Vector((last.y - next.y)/2, (next.x - last.x)/2, 0); // find the axis perpendicular to them
 
-			let min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY; // now enforce the bounds
+			let min = -Infinity, max = Infinity; // now enforce the bounds
 			for (let i = 0; i < bounds.length; i ++) {
 				const a = bounds[i];
 				const b = bounds[(i + 1)%bounds.length];

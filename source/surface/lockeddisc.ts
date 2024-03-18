@@ -9,7 +9,7 @@ import {Disc} from "./disc.js";
  */
 export class LockedDisc extends Disc {
 	constructor(radius: number) {
-		super(radius, Number.NaN, 2);
+		super(radius, NaN, 2);
 	}
 
 	insolation(ф: number): number {

@@ -902,9 +902,9 @@ export abstract class MapProjection {
 	 */
 	static standardParallels(segments: PathSegment[], projection: MapProjection
 	): {фStd: number, фMin: number, фMax: number, λMin: number, λMax: number} {
-		let фMin = Number.POSITIVE_INFINITY; // get the bounds of the locus
-		let фMax = Number.NEGATIVE_INFINITY;
-		let λMax = Number.NEGATIVE_INFINITY; // you don't need λMin because the central meridian should be set to make it symmetrical
+		let фMin = Infinity; // get the bounds of the locus
+		let фMax = -Infinity;
+		let λMax = -Infinity; // you don't need λMin because the central meridian should be set to make it symmetrical
 		for (const segment of projection.transform(segments)) {
 			let [ф, λ] = segment.args;
 			if (ф < фMin)
@@ -947,7 +947,7 @@ export abstract class MapProjection {
 		const period = (periodic) ? Math.abs(edge.end.t - edge.start.t) : 0; // and measure the period
 		const sEdge = edge.start.s;
 		let tTest = null;
-		let dMin = Number.POSITIVE_INFINITY;
+		let dMin = Infinity;
 		let antiparallel = null;
 		for (let i = 1; i < segments.length; i ++) { // look through the path
 			if (segments[i].type === 'M') {  // ignore moves

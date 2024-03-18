@@ -22,8 +22,8 @@ export class Conic extends MapProjection {
 			surface.dAds(focus.фStd)/(2*Math.PI*(y0 - this.yJong)) :
 			surface.dAds(focus.фStd)/(2*Math.PI); // use that to calculate the angular scale
 
-		let locusTop = Number.POSITIVE_INFINITY; // then determine the dimensions of this map
-		let locusBottom = Number.NEGATIVE_INFINITY;
+		let locusTop = Infinity; // then determine the dimensions of this map
+		let locusBottom = -Infinity;
 		let locusLeft = 0;
 		let locusRight = 0;
 		for (const segment of this.transform(locus)) { // check the extent of the thing we're mapping
@@ -39,8 +39,8 @@ export class Conic extends MapProjection {
 				locusRight = x;
 		}
 
-		let coneTop = Number.POSITIVE_INFINITY;
-		let coneBottom = Number.NEGATIVE_INFINITY;
+		let coneTop = Infinity;
+		let coneBottom = -Infinity;
 		let coneRight = 0;
 		for (const ф of [surface.фMin, surface.фMax]) { // and check the extent of the whole world
 			for (const λ of [0, Math.PI/2/this.n, Math.PI]) {

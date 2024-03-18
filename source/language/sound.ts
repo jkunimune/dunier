@@ -334,7 +334,7 @@ export class Sound {
 
 	getSonority() {
 		if (this.mode === null)
-			return Number.NEGATIVE_INFINITY;
+			return -Infinity;
 		else
 			return this.mode.sonority
 				- ((this.latia === Latia.LATERAL) ? 1.5 : 0)

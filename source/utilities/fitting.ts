@@ -110,7 +110,7 @@ export function fitLevenbergMarquardt(
 	let λ = 4e-5;
 
 	let args: number[][] = []; // compute inicial distances
-	let lastValue = Number.POSITIVE_INFINITY, newValue = 0;
+	let lastValue = Infinity, newValue = 0;
 	for (let i = 0; i < points.length; i ++) {
 		args.push(dist(points[i], state)); // the dist funccion mite return other numbers besides the point distance
 		newValue += Math.pow(args[i][0], 2);
