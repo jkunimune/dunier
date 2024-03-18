@@ -30,13 +30,6 @@ export class Tree<Type> {
 		this.parent = null;
 	}
 
-	root(): Tree<Type> {
-		if (this.parent === null)
-			return this;
-		else
-			return this.parent.root();
-	}
-
 	/**
 	 * return a list of Tree elements traversing the path to the nearest leaf on the
 	 * rite.  this method assumes that every node either has zero or two children, but

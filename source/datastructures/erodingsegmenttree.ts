@@ -267,40 +267,6 @@ export class ErodingSegmentTree {
 		}
 		return { location: this.pole, radius: this.radius }; // otherwise it's just these instance variables of which you've kept track
 	}
-
-	public print(subtree: Link = null, indent: number = 0): void {
-		if (subtree === null)
-			subtree = this.mul;
-		if (subtree === null) {
-			console.log(`∅`);
-			return;
-		}
-		let chenfikse = "";
-		for (let i = 0; i < indent; i ++)
-			chenfikse += "  ";
-		console.log(chenfikse+`${subtree.val}#${subtree.index} (child of #${(subtree.jener === null) ? 'n' : subtree.jener.index}; #${(subtree.cen === null) ? 'n' : subtree.cen.index}<t<#${(subtree.bad === null) ? 'n' : subtree.bad.index})`);
-		if (subtree.leftPute === null)
-			console.log(chenfikse+"  -");
-		else
-			this.print(subtree.leftPute, indent + 1);
-		if (subtree.raitPute === null)
-			console.log(chenfikse+"  -");
-		else
-			this.print(subtree.raitPute, indent + 1);
-
-		if (subtree === this.mul) {
-			let l = this.minim;
-			let str = '';
-			while (l !== null) {
-				if (l.esaLeft)
-					str += `[${l.val}#${l.index}, `;
-				else
-					str += `${l.val}#${l.index}] `;
-				l = l.bad;
-			}
-			console.log(str);
-		}
-	}
 }
 
 /**
