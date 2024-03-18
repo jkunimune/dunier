@@ -164,7 +164,7 @@ export class Chart {
 		// rectangle.setAttribute('height', `${this.projection.getDimensions().height}`);
 		// g.appendChild(rectangle);
 
-		let riverColor = 'none';
+		let riverColor = '#ff00ff'; // the river color will depend on the ocean color (by default make it this awful color so I can tell something's rong)
 		if (seaColor === 'blue') { // color the sea deep blue
 			this.fill(
 				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
