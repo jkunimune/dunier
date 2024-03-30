@@ -212,24 +212,24 @@ export class Civ {
 	 * list the cultures present in this country, along with each's share of the
 	 * population, starting with the ruling class and then in descending order by pop.
 	 */
-	getCultures(): { culture: Culture, abundance: number }[] {
+	getCultures(): { culture: Culture, size: number }[] {
 		// count up the population fraccion of each culture
-		const cultureMap = new Map<Culture, number>();
+		const cultureSizes = new Map<Culture, number>();
 		for (const tile of this.tiles) {
-			const cultureSize = cultureMap.has(tile.culture) ?
-				cultureMap.get(tile.culture) : 0;
-			cultureMap.set(tile.culture, cultureSize + tile.arableArea/this.arableArea);
+			const cultureSize = cultureSizes.has(tile.culture) ?
+				cultureSizes.get(tile.culture) : 0;
+			cultureSizes.set(tile.culture, cultureSize + tile.arableArea/this.arableArea);
 		}
 		// convert to list and sort
-		const cultureList = [...cultureMap.keys()];
-		cultureList.sort((a, b) => cultureMap.get(b) - cultureMap.get(a));
+		const cultureList = [...cultureSizes.keys()];
+		cultureList.sort((a, b) => cultureSizes.get(b) - cultureSizes.get(a));
 		// then move the capital culture to the top
 		cultureList.splice(cultureList.indexOf(this.capital.culture), 1);
 		cultureList.splice(0, 0, this.capital.culture);
 		// finally, bild the output object
 		const output = [];
 		for (const culture of cultureList)
-			output.push({ culture: culture, abundance: cultureMap.get(culture) });
+			output.push({ culture: culture, size: cultureSizes.get(culture) });
 		return output;
 	}
 
