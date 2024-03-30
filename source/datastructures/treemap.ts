@@ -10,24 +10,15 @@ import {Dequeue} from "./dequeue.js";
  */
 export class TreeMap<Type> implements Iterable<Type> {
 	private readonly map: Map<Type, Link<Type>>;
-	private readonly valuation: (item: Type) => number;
 	private seed: Link<Type>;
 
-	constructor(valueFunction: (item: Type) => number) {
+	constructor() {
 		this.map = new Map<Type, Link<Type>>();
 		this.seed = null;
-		this.valuation = valueFunction;
 	}
 
 	size(): number {
 		return this.map.size;
-	}
-
-	total(): number {
-		if (this.seed === null)
-			return 0;
-		else
-			return this.seed.total;
 	}
 
 	/**
@@ -63,11 +54,6 @@ export class TreeMap<Type> implements Iterable<Type> {
 		}
 
 		this.map.set(item, childLink);
-		const value = this.valuation(item);
-		do {
-			childLink.total += value;
-			childLink = childLink.parent;
-		} while (childLink !== null);
 	}
 	/**
 	 * get a list of the children of this item in the tree
@@ -96,10 +82,6 @@ export class TreeMap<Type> implements Iterable<Type> {
 		else {
 			let parent = head.parent; // otherwise get its parent
 			parent.children.splice(parent.children.indexOf(head), 1); // erase it from it's parent's memory
-			do {
-				parent.total -= head.total; // reduce all preceding values
-				parent = parent.parent;
-			} while (parent !== null);
 			this._delete(this.map.get(item)); // then deal with the map recursively
 		}
 	}
@@ -151,12 +133,10 @@ class Link<Type> {
 	public readonly item: Type;
 	public readonly parent: Link<Type>;
 	public readonly children: Link<Type>[];
-	public total: number;
 
 	constructor(value: Type, parent: Link<Type>) {
 		this.item = value;
 		this.parent = parent;
 		this.children = [];
-		this.total = 0;
 	}
 }

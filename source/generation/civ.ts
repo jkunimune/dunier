@@ -29,6 +29,7 @@ export class Civ {
 
 	public militarism: number; // base military strength
 	public technology: number; // technological military modifier
+	private arableArea: number; // population multiplier (km^2)
 
 	/**
 	 * create a new civilization
@@ -41,11 +42,12 @@ export class Civ {
 	constructor(capital: Tile, id: number, world: World, rng: Random, technology: number = 1) {
 		this.world = world;
 		this.id = id;
-		this.tiles = new TreeMap<Tile>((tile: Tile) => tile.arableArea);
+		this.tiles = new TreeMap<Tile>();
 		this.border = new Map<Tile, Set<Tile>>();
 
 		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
 		this.technology = technology;
+		this.arableArea = 0;
 
 		this.capital = capital;
 		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
@@ -92,6 +94,7 @@ export class Civ {
 	_conquer(tile: Tile, from: Tile, loser: Civ) {
 		this.world.politicalMap.set(tile, this);
 		this.tiles.add(tile, from); // add it to this.tiles
+		this.arableArea += tile.arableArea;
 
 		if (loser !== null) {
 			for (const child of loser.tiles.getChildren(tile)) // then recurse
@@ -126,6 +129,10 @@ export class Civ {
 		}
 
 		this.tiles.delete(tile); // remove it and all its children from this.tiles
+		if (this.tiles.size() > 0)
+			this.arableArea -= tile.arableArea;
+		else
+			this.arableArea = 0;
 	}
 
 	/**
@@ -175,7 +182,7 @@ export class Civ {
 	 * return true if this Civ no longer exists and needs to be deleted
 	 */
 	isDead(): boolean {
-		return this.getArableArea() === 0;
+		return this.arableArea === 0;
 	}
 
 	/**
@@ -211,7 +218,7 @@ export class Civ {
 		for (const tile of this.tiles) {
 			const cultureSize = cultureMap.has(tile.culture) ?
 				cultureMap.get(tile.culture) : 0;
-			cultureMap.set(tile.culture, cultureSize + tile.arableArea/this.getArableArea());
+			cultureMap.set(tile.culture, cultureSize + tile.arableArea/this.arableArea);
 		}
 		// convert to list and sort
 		const cultureList = [...cultureMap.keys()];
@@ -226,16 +233,8 @@ export class Civ {
 		return output;
 	}
 
-	/**
-	 * get the controlld area scaled by how effectively it can support populacion.  this
-	 * number is more important and therefore faster to obtain than the land area.
-	 */
-	getArableArea(): number {
-		return this.tiles.total();
-	}
-
 	getPopulation(): number {
-		return Math.round(World.carryingCapacity*this.technology*this.getArableArea());
+		return Math.round(World.carryingCapacity*this.technology*this.arableArea);
 	}
 
 	getName(): Word {
