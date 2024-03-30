@@ -10,21 +10,21 @@ import {Biome} from "./terrain.js";
 
 
 export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
-	[Biome.OCEAN,     0.0],
-	[Biome.SWAMP,     0.1],
-	[Biome.JUNGLE,    1.0],
-	[Biome.FOREST,    3.0],
-	[Biome.LAKE,      0.0],
-	[Biome.TAIGA,     0.3],
-	[Biome.STEAMLAND, 0.1],
-	[Biome.PLAINS,    1.0],
-	[Biome.DESERT,    0.0],
-	[Biome.TUNDRA,    0.1],
-	[Biome.ICE,       0.0],
+	[Biome.OCEAN,     0.00],
+	[Biome.SWAMP,     0.03],
+	[Biome.JUNGLE,    0.30],
+	[Biome.FOREST,    1.00],
+	[Biome.LAKE,      0.00],
+	[Biome.TAIGA,     0.10],
+	[Biome.STEAMLAND, 0.03],
+	[Biome.PLAINS,    0.30],
+	[Biome.DESERT,    0.00],
+	[Biome.TUNDRA,    0.03],
+	[Biome.ICE,       0.00],
 ]);
 const RIVER_UTILITY_THRESHOLD = 1e6;
-const FRESHWATER_UTILITY = 30;
-const SALTWATER_UTILITY = 100;
+const FRESHWATER_UTILITY = 20;
+const SALTWATER_UTILITY = 50;
 const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.OCEAN,     0.1],
 	[Biome.SWAMP,     0.1],
@@ -51,7 +51,7 @@ export class World {
 	public static readonly nationalism = 3.0; // [] factor by which oppressed minorities are more likely to rebel
 	public static readonly imperialism = 1e-1; // [km/y] the rate at which denizens conquer
 	public static readonly intelligence = 5e-8; // [1/y] the rate at which denizens have good ideas
-	public static readonly carryingCapacity = .05; // [1/km^2] density of people that can live in a grassland with entry-level technology
+	public static readonly carryingCapacity = .20; // [1/km^2] density of people that can live in a grassland with entry-level technology
 	public static readonly valueOfKnowledge = .50; // [] value of a single technological advancement
 	public static readonly powerOfMemes = .02; // [1/year] probability that an idea spreads across a border in a year
 	public static readonly apocalypseSurvivalRate = .80; // [] the fraccion of the populacion a country gets to keep after a cataclysm (not accounting for domino effects)
