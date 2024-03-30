@@ -9,6 +9,19 @@ import {Civ} from "./civ.js";
 import {Biome} from "./terrain.js";
 
 
+export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
+	[Biome.OCEAN,     0.1],
+	[Biome.SWAMP,     0.1],
+	[Biome.JUNGLE,    0.1],
+	[Biome.FOREST,    1.0],
+	[Biome.LAKE,      3.0],
+	[Biome.TAIGA,     1.0],
+	[Biome.STEAMLAND, 0.3],
+	[Biome.PLAINS,    3.0],
+	[Biome.DESERT,    0.1],
+	[Biome.TUNDRA,    0.3],
+	[Biome.ICE,       0.1],
+]);
 export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
 	[Biome.OCEAN,     0.00],
 	[Biome.SWAMP,     0.03],
@@ -22,40 +35,29 @@ export const ARABILITY = new Map([ // terrain modifiers for civ spawning and pop
 	[Biome.TUNDRA,    0.03],
 	[Biome.ICE,       0.00],
 ]);
-const RIVER_UTILITY_THRESHOLD = 1e6;
-const FRESHWATER_UTILITY = 20;
-const SALTWATER_UTILITY = 50;
-const PASSABILITY = new Map([ // terrain modifiers for invasion speed
-	[Biome.OCEAN,     0.1],
-	[Biome.SWAMP,     0.1],
-	[Biome.JUNGLE,    0.1],
-	[Biome.FOREST,    1.0],
-	[Biome.LAKE,      3.0],
-	[Biome.TAIGA,     1.0],
-	[Biome.STEAMLAND, 0.3],
-	[Biome.PLAINS,    3.0],
-	[Biome.DESERT,    0.1],
-	[Biome.TUNDRA,    0.3],
-	[Biome.ICE,       0.1],
-]);
+export const RIVER_UTILITY_THRESHOLD = 1e6;
+export const FRESHWATER_UTILITY = 20;
+export const SALTWATER_UTILITY = 50;
+export const START_OF_HUMAN_HISTORY = -3200; // [BCE]
+export const TIME_STEP = 100; // [year]
+export const CIVILIZATION_RATE = 2e-8; // [1/year/km^2] rate at which people coalesce into kingdoms
+export const REBELLION_RATE = 2e-7; // [1/year/km^2] rate at which peeple start revolucions
+export const NATIONALISM_FACTOR = 3.0; // [] factor by which oppressed minorities are more likely to rebel
+export const CONQUEST_RATE = 1e-1; // [km/y] the rate at which denizens conquer
+export const ADVANCEMENT_RATE = 5e-8; // [1/y] the rate at which denizens have good ideas
+export const POPULATION_DENSITY = .20; // [1/km^2] density of people that can live in a grassland with entry-level technology
+export const TECH_VALUE = .50; // [] value of a single technological advancement
+export const TECH_SPREAD_RATE = .02; // [1/year] probability that an idea spreads across a border in a year
+export const APOCALYPSE_SURVIVAL_RATE = .80; // [] the fraccion of the populacion a country gets to keep after a cataclysm (not accounting for domino effects)
+export const MEAN_EMPIRE_LIFETIME = 1000; // [year] time it takes for an empire's might to decay by 2.7
+export const MEAN_ASSIMILATION_TIME = 160; // [year] time it takes to erase a people's language
+export const SLOPE_FACTOR = 100; // [] multiplier on vertical distances TODO: use the minimum slope that a military can traverse instead
 
 
 /**
  * collection of civilizations and languages that goes on a planet
  */
 export class World {
-	public static readonly startOfHumanHistory = -3200; // [BCE]
-	public static readonly timeStep = 100; // [year]
-	public static readonly authoritarianism = 2e-8; // [1/year/km^2] rate at which people coalesce into kingdoms
-	public static readonly libertarianism = 2e-7; // [1/year/km^2] rate at which peeple start revolucions
-	public static readonly nationalism = 3.0; // [] factor by which oppressed minorities are more likely to rebel
-	public static readonly imperialism = 1e-1; // [km/y] the rate at which denizens conquer
-	public static readonly intelligence = 5e-8; // [1/y] the rate at which denizens have good ideas
-	public static readonly carryingCapacity = .20; // [1/km^2] density of people that can live in a grassland with entry-level technology
-	public static readonly valueOfKnowledge = .50; // [] value of a single technological advancement
-	public static readonly powerOfMemes = .02; // [1/year] probability that an idea spreads across a border in a year
-	public static readonly apocalypseSurvivalRate = .80; // [] the fraccion of the populacion a country gets to keep after a cataclysm (not accounting for domino effects)
-
 	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
 	public planet: Surface;
 	public readonly politicalMap: Map<Tile, Civ>;
@@ -70,19 +72,19 @@ export class World {
 		this.nextID = 0;
 		this.politicalMap = new Map();
 
-		for (const tiles of planet.tiles) { // assine the society-relevant values to the Tiles
-			tiles.arableArea = ARABILITY.get(tiles.biome)*tiles.getArea(); // start with the biome-defined habitability
-			if (tiles.arableArea > 0 || tiles.biome === Biome.DESERT) { // if it is habitable at all or is a desert
-				for (const neighbor of tiles.neighbors.keys()) { // increase habitability based on adjacent water
-					const edge = tiles.neighbors.get(neighbor);
+		for (const tile of planet.tiles) { // assine the society-relevant values to the Tiles
+			tile.arableArea = ARABILITY.get(tile.biome)*tile.getArea(); // start with the biome-defined habitability
+			if (tile.arableArea > 0 || tile.biome === Biome.DESERT) { // if it is habitable at all or is a desert
+				for (const neighbor of tile.neighbors.keys()) { // increase habitability based on adjacent water
+					const edge = tile.neighbors.get(neighbor);
 					if (neighbor.biome === Biome.LAKE || edge.flow > RIVER_UTILITY_THRESHOLD)
-						tiles.arableArea += FRESHWATER_UTILITY*edge.length;
+						tile.arableArea += FRESHWATER_UTILITY*edge.length;
 					if (neighbor.biome === Biome.OCEAN)
-						tiles.arableArea += SALTWATER_UTILITY*edge.length;
+						tile.arableArea += SALTWATER_UTILITY*edge.length;
 				}
 			}
 
-			tiles.passability = PASSABILITY.get(tiles.biome);
+			tile.passability = PASSABILITY.get(tile.biome);
 		}
 	}
 
@@ -92,13 +94,13 @@ export class World {
 	 * @param rng the random number generator to use
 	 */
 	generateHistory(year: number, rng: Random) {
-		for (let t = World.startOfHumanHistory; t < year; t += World.timeStep) {
+		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
 			for (const civ of this.civs)
 				civ.update(rng);
 			this.spawnCivs(rng); // TODO: build cities
 			this.spreadCivs(rng);
 			this.spreadIdeas(rng);
-			if (Math.floor((t+World.timeStep)*this.cataclysms) > Math.floor((t)*this.cataclysms))
+			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
 				this.haveCataclysm(rng);
 		}
 	}
@@ -109,10 +111,10 @@ export class World {
 	 */
 	spawnCivs(rng: Random) {
 		for (const tile of this.planet.tiles) {
-			const demomultia = World.carryingCapacity*tile.arableArea; // TODO: implement nomads, city state leagues, and federal states.
+			const demomultia = POPULATION_DENSITY*tile.arableArea; // TODO: implement nomads, city state leagues, and federal states.
 			const ruler = this.currentRuler(tile);
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
-				if (rng.probability(World.authoritarianism*World.timeStep*demomultia))
+				if (rng.probability(CIVILIZATION_RATE*TIME_STEP*demomultia))
 					this.civs.add(new Civ(tile, this.nextID, this, rng));
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
@@ -120,8 +122,8 @@ export class World {
 				if (tile.culture.lect.isIntelligible(ruler.capital.culture.lect))
 					linguisticModifier = 1;
 				else
-					linguisticModifier = World.nationalism;
-				if (rng.probability(World.libertarianism*World.timeStep*demomultia*linguisticModifier)) // use the population without technology correction for balancing
+					linguisticModifier = NATIONALISM_FACTOR;
+				if (rng.probability(REBELLION_RATE*TIME_STEP*demomultia*linguisticModifier)) // use the population without technology correction for balancing
 					this.civs.add(new Civ(tile, this.nextID, this, rng, ruler.technology));
 			}
 			this.nextID ++;
@@ -139,7 +141,7 @@ export class World {
 			for (const ourTile of invader.border.keys()) { // each civ initiates all its invasions
 				for (const theirTile of invader.border.get(ourTile)) {
 					const time = rng.exponential(invader.estimateInvasionTime(ourTile, theirTile)); // figure out when they will be done
-					if (time <= World.timeStep) // if that goal is within reach
+					if (time <= TIME_STEP) // if that goal is within reach
 						invasions.push({time: time, invader: invader, start: ourTile, end: theirTile}); // start on it
 				}
 			}
@@ -156,7 +158,7 @@ export class World {
 					for (const neighbor of conquerdLand.neighbors.keys()) {
 						if (!invader.tiles.has(neighbor)) {
 							time = time + rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
-							if (time <= World.timeStep) {
+							if (time <= TIME_STEP) {
 								invasions.push({time: time, invader: invader, start: end, end: neighbor});
 							}
 						}
@@ -187,11 +189,11 @@ export class World {
 				}
 			}
 		}
-		const spreadChance = Math.exp(-World.timeStep*World.powerOfMemes);
+		const spreadChance = Math.exp(-TIME_STEP*TECH_SPREAD_RATE);
 		for (const civ of this.civs) {
 			if (visibleTechnology.get(civ) > civ.technology)
-				civ.technology += World.valueOfKnowledge*rng.binomial(
-					(visibleTechnology.get(civ) - civ.technology)/World.valueOfKnowledge,
+				civ.technology += TECH_VALUE*rng.binomial(
+					(visibleTechnology.get(civ) - civ.technology)/TECH_VALUE,
 					spreadChance);
 		}
 	}
@@ -204,10 +206,10 @@ export class World {
 	haveCataclysm(rng: Random) {
 		for (const civ of this.civs) {
 			for (const tile of [...civ.tiles])
-				if (civ.tiles.has(tile) && !rng.probability(World.apocalypseSurvivalRate))
+				if (civ.tiles.has(tile) && !rng.probability(APOCALYPSE_SURVIVAL_RATE))
 					civ.lose(tile);
-			civ.technology = World.valueOfKnowledge*rng.binomial(
-				civ.technology/World.valueOfKnowledge, World.apocalypseSurvivalRate);
+			civ.technology = TECH_VALUE*rng.binomial(
+				civ.technology/TECH_VALUE, APOCALYPSE_SURVIVAL_RATE);
 		}
 		for (const civ of this.civs)
 			if (civ.isDead())

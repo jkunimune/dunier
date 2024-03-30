@@ -5,16 +5,20 @@
 import {Tile} from "../surface/surface.js";
 import {Lect, WordType} from "../language/lect.js";
 import {Random} from "../utilities/random.js";
-import {World} from "./world.js";
+import {
+	POPULATION_DENSITY,
+	MEAN_ASSIMILATION_TIME,
+	SLOPE_FACTOR, CONQUEST_RATE,
+	ADVANCEMENT_RATE, NATIONALISM_FACTOR,
+	MEAN_EMPIRE_LIFETIME,
+	TIME_STEP,
+	TECH_VALUE,
+	World
+} from "./world.js";
 import {Culture} from "./culture.js";
 import {Word} from "../language/word.js";
 import {TreeMap} from "../datastructures/treemap.js";
 import {Biome} from "./terrain.js";
-
-
-const SOCIAL_DECAY_PERIOD = 1000; // [year] time it takes for an empire's might to decay by 2.7
-const CULTURAL_MEMORY = 160; // [year] time it takes to erase a people's language
-const HUMAN_WEIGHT = 100; // [] multiplier on vertical distances TODO: use the minimum slope that a military can traverse instead
 
 
 /**
@@ -143,7 +147,7 @@ export class Civ {
 		const newKultur: Map<Lect, Culture> = new Map();
 		newKultur.set(this.capital.culture.lect.macrolanguage, new Culture(this.capital.culture, this.capital, this, rng.next())); // start by updating the capital, tying it to the new homeland
 		for (const tile of this.tiles) { // update the culture of each tile in the empire in turn
-			if (rng.probability(World.timeStep/CULTURAL_MEMORY)) { // if the province fails its heritage saving throw
+			if (rng.probability(TIME_STEP/MEAN_ASSIMILATION_TIME)) { // if the province fails its heritage saving throw
 				tile.culture = this.capital.culture; // its culture gets overritten
 			}
 			else { // otherwise update it normally
@@ -154,9 +158,9 @@ export class Civ {
 		}
 
 		if (this.tiles.size() > 0) {
-			this.militarism *= Math.exp(-World.timeStep / SOCIAL_DECAY_PERIOD);
-			this.technology += World.valueOfKnowledge * rng.poisson(
-				World.intelligence*World.timeStep*this.getPopulation()); // TODO: subsequent technologies should be harder to reach, making this truly exponential
+			this.militarism *= Math.exp(-TIME_STEP / MEAN_EMPIRE_LIFETIME);
+			this.technology += TECH_VALUE * rng.poisson(
+				ADVANCEMENT_RATE*TIME_STEP*this.getPopulation()); // TODO: subsequent technologies should be harder to reach, making this truly exponential
 		}
 	}
 
@@ -171,9 +175,9 @@ export class Civ {
 		const resistance = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
 		const distance = start.neighbors.get(end).distance;
 		const elevation = start.height - end.height;
-		const distanceEff = Math.hypot(distance, HUMAN_WEIGHT*elevation)/end.passability;
+		const distanceEff = Math.hypot(distance, SLOPE_FACTOR*elevation)/end.passability;
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps
-			return distanceEff/World.imperialism/(momentum - resistance);
+			return distanceEff/CONQUEST_RATE/(momentum - resistance);
 		else
 			return Infinity;
 	}
@@ -193,7 +197,7 @@ export class Civ {
 	getStrength(kontra: Civ, sa: Tile) : number {
 		let linguisticModifier = 1;
 		if (kontra !== null && sa.culture.lect.isIntelligible(this.capital.culture.lect))
-			linguisticModifier = World.nationalism;
+			linguisticModifier = NATIONALISM_FACTOR;
 		return this.militarism*this.technology*linguisticModifier;
 	}
 
@@ -234,7 +238,7 @@ export class Civ {
 	}
 
 	getPopulation(): number {
-		return Math.round(World.carryingCapacity*this.technology*this.arableArea);
+		return Math.round(POPULATION_DENSITY*this.technology*this.arableArea);
 	}
 
 	getName(): Word {
