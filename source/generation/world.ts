@@ -9,7 +9,7 @@ import {Civ} from "./civ.js";
 import {Biome} from "./terrain.js";
 
 
-const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
+export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
 	[Biome.OCEAN,     0.0],
 	[Biome.SWAMP,     0.1],
 	[Biome.JUNGLE,    1.0],
@@ -23,8 +23,8 @@ const ARABILITY = new Map([ // terrain modifiers for civ spawning and population
 	[Biome.ICE,       0.0],
 ]);
 const RIVER_UTILITY_THRESHOLD = 1e6;
-const FRESHWATER_UTILITY = 0.1;
-const SALTWATER_UTILITY = 0.3;
+const FRESHWATER_UTILITY = 30;
+const SALTWATER_UTILITY = 100;
 const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.OCEAN,     0.1],
 	[Biome.SWAMP,     0.1],
@@ -71,16 +71,16 @@ export class World {
 		this.politicalMap = new Map();
 
 		for (const tiles of planet.tiles) { // assine the society-relevant values to the Tiles
-			tiles.arability = ARABILITY.get(tiles.biome); // start with the biome-defined habitability
-			if (tiles.arability > 0 || tiles.biome === Biome.DESERT) { // if it is habitable at all or is a desert
+			tiles.arableArea = ARABILITY.get(tiles.biome)*tiles.getArea(); // start with the biome-defined habitability
+			if (tiles.arableArea > 0 || tiles.biome === Biome.DESERT) { // if it is habitable at all or is a desert
 				for (const neighbor of tiles.neighbors.keys()) { // increase habitability based on adjacent water
-					if (neighbor.biome === Biome.LAKE || tiles.neighbors.get(neighbor).flow > RIVER_UTILITY_THRESHOLD)
-						tiles.arability += FRESHWATER_UTILITY;
+					const edge = tiles.neighbors.get(neighbor);
+					if (neighbor.biome === Biome.LAKE || edge.flow > RIVER_UTILITY_THRESHOLD)
+						tiles.arableArea += FRESHWATER_UTILITY*edge.length;
 					if (neighbor.biome === Biome.OCEAN)
-						tiles.arability += SALTWATER_UTILITY;
+						tiles.arableArea += SALTWATER_UTILITY*edge.length;
 				}
 			}
-			tiles.arableArea = tiles.arability*tiles.getArea();
 
 			tiles.passability = PASSABILITY.get(tiles.biome);
 		}

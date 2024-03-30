@@ -4,7 +4,7 @@
  */
 import {Edge, Tile, Surface, Vertex, EmptySpace} from "../surface/surface.js";
 import {filterSet, longestShortestPath} from "../utilities/miscellaneus.js";
-import {World} from "../generation/world.js";
+import {ARABILITY, World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
@@ -924,7 +924,7 @@ export class Chart {
 			return true;
 		else if (layer === Layer.BIO)
 			return false;
-		else if (edge.tileL.arability + edge.tileR.arability < BORDER_SPECIFY_THRESHOLD)
+		else if (ARABILITY.get(edge.tileL.biome) + ARABILITY.get(edge.tileR.biome) < BORDER_SPECIFY_THRESHOLD)
 			return false;
 		else
 			return true;

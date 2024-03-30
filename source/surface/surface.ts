@@ -321,7 +321,6 @@ export class Tile {
 	public temperature: number;
 	public rainfall: number;
 	public biome: Biome;
-	public arability: number;
 	public arableArea: number;
 	public passability: number;
 	public culture: Culture;
