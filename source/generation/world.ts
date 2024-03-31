@@ -35,19 +35,18 @@ export const ARABILITY = new Map([ // terrain modifiers for civ spawning and pop
 	[Biome.TUNDRA,    0.03],
 	[Biome.ICE,       0.00],
 ]);
-export const RIVER_UTILITY_THRESHOLD = 1e6;
-export const FRESHWATER_UTILITY = 20;
-export const SALTWATER_UTILITY = 50;
+export const RIVER_UTILITY_THRESHOLD = 1e6; // [km^2] size of watershed needed to produce a river that supports large cities
+export const FRESHWATER_UTILITY = 20; // [km] width of highly populated region near river
+export const SALTWATER_UTILITY = 50; // [km] width of highly populated region near coast
 export const START_OF_HUMAN_HISTORY = -3200; // [BCE]
 export const TIME_STEP = 100; // [year]
-export const CIVILIZATION_RATE = 2e-8; // [1/year/km^2] rate at which people coalesce into kingdoms
+export const CIVILIZATION_RATE = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
 export const REBELLION_RATE = 2e-7; // [1/year/km^2] rate at which peeple start revolucions
 export const NATIONALISM_FACTOR = 3.0; // [] factor by which oppressed minorities are more likely to rebel
 export const CONQUEST_RATE = 1e-1; // [km/y] the rate at which denizens conquer
-export const ADVANCEMENT_RATE = 5e-8; // [1/y] the rate at which denizens have good ideas
+export const TECH_ADVANCEMENT_RATE = 5e-8; // [1/y] the rate at which denizens have good ideas
 export const POPULATION_DENSITY = .20; // [1/km^2] density of people that can live in one unit of arable land with entry-level technology
-export const TECH_VALUE = .50; // [] value of a single technological advancement
-export const TECH_SPREAD_RATE = .02; // [1/year] probability that an idea spreads across a border in a year
+export const TECH_SPREAD_RATE = .01; // [1/year] rate at which ideas spread across borders
 export const APOCALYPSE_SURVIVAL_RATE = .80; // [] the fraccion of the populacion a country gets to keep after a cataclysm (not accounting for domino effects)
 export const MEAN_EMPIRE_LIFETIME = 1000; // [year] time it takes for an empire's might to decay by 2.7
 export const MEAN_ASSIMILATION_TIME = 160; // [year] time it takes to erase a people's language
@@ -96,7 +95,8 @@ export class World {
 	generateHistory(year: number, rng: Random) {
 		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
 			for (const civ of this.civs)
-				civ.update(rng);
+				if (civ.tiles.size() > 0)
+					civ.update(rng);
 			this.spawnCivs(rng); // TODO: build cities
 			this.spreadCivs(rng);
 			this.spreadIdeas(rng);
@@ -189,12 +189,10 @@ export class World {
 				}
 			}
 		}
-		const spreadChance = Math.exp(-TIME_STEP*TECH_SPREAD_RATE);
+		const spreadFraction = 1 - Math.exp(-TIME_STEP*TECH_SPREAD_RATE);
 		for (const civ of this.civs) {
 			if (visibleTechnology.get(civ) > civ.technology)
-				civ.technology += TECH_VALUE*rng.binomial(
-					(visibleTechnology.get(civ) - civ.technology)/TECH_VALUE,
-					spreadChance);
+				civ.technology += (visibleTechnology.get(civ) - civ.technology)*spreadFraction;
 		}
 	}
 
@@ -208,8 +206,7 @@ export class World {
 			for (const tile of [...civ.tiles])
 				if (civ.tiles.has(tile) && !rng.probability(APOCALYPSE_SURVIVAL_RATE))
 					civ.lose(tile);
-			civ.technology = TECH_VALUE*rng.binomial(
-				civ.technology/TECH_VALUE, APOCALYPSE_SURVIVAL_RATE);
+			civ.technology *= rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE)*2, 1);
 		}
 		for (const civ of this.civs)
 			if (civ.isDead())

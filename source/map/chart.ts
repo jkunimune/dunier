@@ -16,11 +16,12 @@ import {Biome} from "../generation/terrain.js";
 
 const DISABLE_GREEBLING = false; // make all lines as simple as possible, for debug purposes
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
+const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than
 
 const GREEBLE_FACTOR = 1e-2; // the smallest edge lengths to show relative to the map size
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
-const RIVER_DISPLAY_FACTOR = 5e-2; // the watershed area relative to the map area needed to display a river
+const RIVER_DISPLAY_FACTOR = 6e-2; // the watershed area relative to the map area needed to display a river
 const BORDER_SPECIFY_THRESHOLD = 0.51;
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const N_DEGREES = 6; // number of line segments into which to break one radian of arc
@@ -196,10 +197,24 @@ export class Chart {
 				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
 				g, BIOME_COLORS.get(null), Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
-			for (let i = 0; i < COUNTRY_COLORS.length && biggestCivs.length > 0; i++)
+			for (let i = 0; biggestCivs.length > 0; i++) {
+				const civ = biggestCivs.pop();
+				let color;
+				if (COLOR_BY_TECHNOLOGY) {
+					console.log(`${civ.getName().toString()} has advanced to ${civ.technology.toFixed(1)}`);
+					color = `rgb(${Math.max(0, Math.min(210, Math.log(civ.technology)*128 - 360))}, ` +
+					            `${Math.max(0, Math.min(210, Math.log(civ.technology)*128))}, ` +
+						        `${Math.max(0, Math.min(210, Math.log(civ.technology)*128 - 180))})`;
+				}
+				else {
+					if (i >= COUNTRY_COLORS.length)
+						break;
+					color = COUNTRY_COLORS[i];
+				}
 				this.fill(
-					filterSet(biggestCivs.pop().tiles, n => n.biome !== Biome.OCEAN),
-					g, COUNTRY_COLORS[i], Layer.KULTUR);
+					filterSet(civ.tiles, n => n.biome !== Biome.OCEAN),
+					g, color, Layer.KULTUR);
+			}
 		}
 		else if (landColor === 'heightmap') { // color the sea by altitude
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {

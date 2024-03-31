@@ -9,16 +9,16 @@ import {
 	POPULATION_DENSITY,
 	MEAN_ASSIMILATION_TIME,
 	SLOPE_FACTOR, CONQUEST_RATE,
-	ADVANCEMENT_RATE, NATIONALISM_FACTOR,
+	TECH_ADVANCEMENT_RATE, NATIONALISM_FACTOR,
 	MEAN_EMPIRE_LIFETIME,
 	TIME_STEP,
-	TECH_VALUE,
 	World
 } from "./world.js";
 import {Culture} from "./culture.js";
 import {Word} from "../language/word.js";
 import {TreeMap} from "../datastructures/treemap.js";
 import {Biome} from "./terrain.js";
+import Queue from "../datastructures/queue.js";
 
 
 /**
@@ -28,6 +28,7 @@ export class Civ {
 	public readonly id: number;
 	public readonly capital: Tile; // the capital city
 	public readonly tiles: TreeMap<Tile>; // the tiles it owns and the order in which it acquired them (also stores the normalized population)
+	public readonly sortedTiles: Queue<Tile>; // the tiles it owns (maybe some it doesn't) from least to most densely populated
 	public readonly border: Map<Tile, Set<Tile>>; // the set of tiles it owns that are adjacent to tiles it doesn't
 	private readonly world: World;
 
@@ -47,6 +48,8 @@ export class Civ {
 		this.world = world;
 		this.id = id;
 		this.tiles = new TreeMap<Tile>();
+		this.sortedTiles = new Queue<Tile>(
+			[], (a, b) => b.arableArea - a.arableArea);
 		this.border = new Map<Tile, Set<Tile>>();
 
 		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
@@ -98,6 +101,7 @@ export class Civ {
 	_conquer(tile: Tile, from: Tile, loser: Civ) {
 		this.world.politicalMap.set(tile, this);
 		this.tiles.add(tile, from); // add it to this.tiles
+		this.sortedTiles.push(tile);
 		this.arableArea += tile.arableArea;
 
 		if (loser !== null) {
@@ -106,7 +110,7 @@ export class Civ {
 					this._conquer(child, tile, loser);
 		}
 		else {
-				tile.culture = this.capital.culture; // perpetuate the ruling culture
+			tile.culture = this.capital.culture; // perpetuate the ruling culture
 		}
 	}
 
@@ -133,8 +137,10 @@ export class Civ {
 		}
 
 		this.tiles.delete(tile); // remove it and all its children from this.tiles
+		while (!this.sortedTiles.empty() && !this.tiles.has(this.sortedTiles.peek()))
+			this.sortedTiles.pop(); // remove it from this.sortedTiles as well if it happens to be on top
 		if (this.tiles.size() > 0)
-			this.arableArea -= tile.arableArea;
+			this.arableArea -= tile.arableArea; // TODO: make sure you delete area from child Tiles also
 		else
 			this.arableArea = 0;
 	}
@@ -157,11 +163,9 @@ export class Civ {
 			}
 		}
 
-		if (this.tiles.size() > 0) {
-			this.militarism *= Math.exp(-TIME_STEP / MEAN_EMPIRE_LIFETIME);
-			this.technology += TECH_VALUE * rng.poisson(
-				ADVANCEMENT_RATE*TIME_STEP*this.getPopulation()); // TODO: subsequent technologies should be harder to reach, making this truly exponential
-		}
+		this.militarism *= Math.exp(-TIME_STEP / MEAN_EMPIRE_LIFETIME);
+		const densestPopulation = POPULATION_DENSITY*this.sortedTiles.peek().arableArea;
+		this.technology += TECH_ADVANCEMENT_RATE*TIME_STEP*densestPopulation*this.technology;
 	}
 
 	/**
