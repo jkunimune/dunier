@@ -14,10 +14,13 @@ import {assert_xy, endpoint, PathSegment, Place} from "../utilities/coordinates.
 import {chordCenter, Vector} from "../utilities/geometry.js";
 import {Biome} from "../generation/terrain.js";
 
-const DISABLE_GREEBLING = false; // make all lines as simple as possible, for debug purposes
+// DEBUG OPTIONS
+const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than
+const SHOW_BACKGROUND = false; // have a big red rectangle under the map
 
+// OTHER FIXED DISPLAY OPTIONS
 const GREEBLE_FACTOR = 1e-2; // the smallest edge lengths to show relative to the map size
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
@@ -158,12 +161,15 @@ export class Chart {
 		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`);
 		svg.appendChild(this.testText);
 
-		// const rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-		// rectangle.setAttribute('x', `${this.projection.getDimensions().left}`);
-		// rectangle.setAttribute('y', `${this.projection.getDimensions().top}`);
-		// rectangle.setAttribute('width', `${this.projection.getDimensions().width}`);
-		// rectangle.setAttribute('height', `${this.projection.getDimensions().height}`);
-		// g.appendChild(rectangle);
+		if (SHOW_BACKGROUND) {
+			const rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+			rectangle.setAttribute('x', `${this.projection.getDimensions().left}`);
+			rectangle.setAttribute('y', `${this.projection.getDimensions().top}`);
+			rectangle.setAttribute('width', `${this.projection.getDimensions().width}`);
+			rectangle.setAttribute('height', `${this.projection.getDimensions().height}`);
+			rectangle.setAttribute('style', 'fill: red; stroke: black; stroke-width: 10px');
+			g.appendChild(rectangle);
+		}
 
 		let riverColor = '#ff00ff'; // the river color will depend on the ocean color (by default make it this awful color so I can tell something's rong)
 		if (seaColor === 'blue') { // color the sea deep blue
