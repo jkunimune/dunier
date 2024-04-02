@@ -35,12 +35,14 @@ export abstract class MapProjection {
 
 	protected constructor(surface: Surface,
 						  northUp: boolean, locus: PathSegment[],
-						  left: number, right:number,
-						  top: number, bottom: number,
-						  edges: MapEdge[][] = null) {
+						  left: number | null, right: number | null,
+						  top: number | null, bottom: number | null,
+						  edges: MapEdge[][] | null = null) {
 		this.surface = surface;
 		this.northUp = northUp;
-		this.setDimensions(left, right, top, bottom);
+
+		if (left !== null)
+			this.setDimensions(left, right, top, bottom);
 
 		if (locus !== null)
 			this.center = MapProjection.centralMeridian(locus); // choose a center based on the locus
@@ -54,24 +56,50 @@ export abstract class MapProjection {
 
 	/**
 	 * make any preliminary transformations that don't depend on the type of map
-	 * projection.  this method accounts for south-up maps and central meridians, and
+	 * projection.  this method accounts for central meridians, and
 	 * should almost always be calld before project or getCrossing.
 	 * @param segments the jeograffickal imputs in absolute coordinates
 	 * @returns the relative outputs in transformed coordinates
 	 */
-	transform(segments: PathSegment[]): PathSegment[] {
+	transformInput(segments: PathSegment[]): PathSegment[] {
 		const output: PathSegment[] = [];
 		for (const segment of segments) {
-			const [фi, λi] = segment.args;
-			let λo = localizeInRange(λi - this.center, -π, π); // shift to the central meridian and snap the longitude into the [-π, π] domain
-			let фo = фi;
-			if (!this.northUp) { // flip the map over if it should be south-up
-				фo *= -1;
-				λo *= -1;
-			}
-			output.push({ type: segment.type, args: [фo, λo] });
+			let [фi, λ] = segment.args;
+			λ = localizeInRange(λ - this.center, -π, π); // shift to the central meridian and snap the longitude into the [-π, π] domain
+			output.push({ type: segment.type, args: [фi, λ] });
 		}
 		return output;
+	}
+
+	/**
+	 * make any final transformations that don't depend on the type of map
+	 * projection.  this method accounts for south-up maps, and
+	 * should almost always be calld after project.
+	 * @param segments the Cartesian imputs in absolute coordinates
+	 * @returns the relative outputs in transformed coordinates
+	 */
+	transformOutput(segments: PathSegment[]): PathSegment[] {
+		if (this.northUp)
+			return segments;
+		else {
+			const output: PathSegment[] = [];
+			for (const segment of segments) {
+				let args;
+				switch (segment.type) {
+					case "A":
+						args = segment.args.slice(0, 5).concat([-segment.args[5], -segment.args[6]]);
+						break;
+					case "Z": case "H": case "V": case "M":
+					case "L": case "Q": case "C":
+						args = segment.args.map((arg) => -arg);
+						break;
+					default:
+						throw new Error(`I don't know how to rotate a ${segment.type} segment.`);
+				}
+				output.push({type: segment.type, args: args});
+			}
+			return output;
+		}
 	}
 
 	/**
@@ -121,7 +149,7 @@ export abstract class MapProjection {
 				if (!isFinite(arg))
 					throw new Error(`you may not pass ${arg} to the mapping functions!`);
 
-		const inPoints = this.cutToSize(this.transform(segments), this.geoEdges, closePath);
+		const inPoints = this.cutToSize(this.transformInput(segments), this.geoEdges, closePath);
 
 		const precision = MAP_PRECISION*this.getDimensions().diagonal;
 		let repeatCount = 0; // now do the math
@@ -188,7 +216,7 @@ export abstract class MapProjection {
 			for (const arg of segment.args)
 				console.assert(isFinite(arg), arg);
 
-		return this.cutToSize(outPoints, this.mapEdges, closePath);
+		return this.cutToSize(this.transformOutput(outPoints), this.mapEdges, closePath);
 	}
 
 	/**
@@ -812,7 +840,9 @@ export abstract class MapProjection {
 	}
 
 	/**
-	 * set the dimensions of this map, to which it will be cropd
+	 * set the dimensions of this map, to which it will be cropd.  this function is intended to
+	 * be called in the constructor of a map projection, so you pass the coordinates assuming
+	 * north-up, and then they'll get automaticly inverted if it's actually a south-up projection.
 	 * @param left
 	 * @param right
 	 * @param top
@@ -823,13 +853,16 @@ export abstract class MapProjection {
 		console.assert(top === null || top < bottom, top, bottom);
 		if (left !== null && (left >= right || top >= bottom))
 			throw new Error(`the axis bounds ${left}, ${right}, ${top}, ${bottom} are invalid.`);
-		this.dimensions = new Dimensions(left, right, top, bottom);
+		if (this.northUp)
+			this.dimensions = new Dimensions(left, right, top, bottom);
+		else
+			this.dimensions = new Dimensions(-right, -left, -bottom, -top);
 		this.scale = 1/this.dimensions.diagonal;
 		this.mapEdges = MapProjection.validateEdges([[
-			{ type: 'L', start: {s: left, t: top}, },
-			{ type: 'L', start: {s: left, t: bottom}, },
-			{ type: 'L', start: {s: right, t: bottom}, },
-			{ type: 'L', start: {s: right, t: top}, },
+			{ type: 'L', start: {s: this.dimensions.left, t: this.dimensions.top}, },
+			{ type: 'L', start: {s: this.dimensions.left, t: this.dimensions.bottom}, },
+			{ type: 'L', start: {s: this.dimensions.right, t: this.dimensions.bottom}, },
+			{ type: 'L', start: {s: this.dimensions.right, t: this.dimensions.top}, },
 		]]);
 	}
 
@@ -905,7 +938,7 @@ export abstract class MapProjection {
 		let фMin = Infinity; // get the bounds of the locus
 		let фMax = -Infinity;
 		let λMax = -Infinity; // you don't need λMin because the central meridian should be set to make it symmetrical
-		for (const segment of projection.transform(segments)) {
+		for (const segment of projection.transformInput(segments)) {
 			let [ф, λ] = segment.args;
 			if (ф < фMin)
 				фMin = ф;

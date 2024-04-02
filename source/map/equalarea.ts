@@ -16,7 +16,7 @@ export class EqualArea extends MapProjection {
 	private readonly yRef: number[];
 
 	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
-		super(surface, northUp, locus, null, null, null, 0);
+		super(surface, northUp, locus, null, null, null, null);
 
 		let avgWidth = 0;
 		for (let i = 1; i < surface.refLatitudes.length; i ++) // first measure the typical width of the surface

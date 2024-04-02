@@ -26,7 +26,7 @@ export class Conic extends MapProjection {
 		let locusBottom = -Infinity;
 		let locusLeft = 0;
 		let locusRight = 0;
-		for (const segment of this.transform(locus)) { // check the extent of the thing we're mapping
+		for (const segment of this.transformInput(locus)) { // check the extent of the thing we're mapping
 			const point = assert_фλ(endpoint(segment));
 			const {x, y} = this.projectPoint(point);
 			if (y < locusTop)
