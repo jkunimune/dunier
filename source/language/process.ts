@@ -19,19 +19,19 @@ import {
 } from "./sound.js";
 import {ipaSymbol} from "./script.js";
 import {loadTSV} from "../utilities/fileio.js";
-import {Word} from "./word.js";
+import {Name} from "./name.js";
 
 /**
  * a process by which words change over time
  */
 export interface Process {
-	apply(old: Word): Word;
+	apply(old: Sound[]): Sound[];
 }
 
 /**
  * a process that causes segments to change according to a rule
  */
-class SoundChange implements Process {
+export class SoundChange implements Process {
 	private readonly pattern: Klas[]; // original value
 	private readonly result: Klas[]; // target value
 	private readonly idx: number[]; // reference indices for target phones
@@ -41,8 +41,6 @@ class SoundChange implements Process {
 	constructor(from: Klas[], to: Klas[], idx: number[], after: Klas[], before: Klas[]) {
 		if (idx.length !== to.length)
 			throw RangeError(`The pa array must be properly indexed: ${from} > ${to} / ${after} _ ${before}`);
-		if (to.length === 0 && after.every((klas) => klas.matches(Sound.PAUSE)) && before.every((klas) => klas.matches(Sound.PAUSE)))
-			throw RangeError(`this deletion event is unchecked: ${from} > ${to} / ${after} _ ${before}`);
 		this.pattern = from;
 		this.result = to;
 		this.idx = idx;
@@ -52,18 +50,18 @@ class SoundChange implements Process {
 
 	/**
 	 * go through the word and apply this sound change.
-	 * @param old
+	 * @param oldWord
 	 */
-	apply(old: Word): Word {
+	apply(oldWord: Sound[]): Sound[] {
 		const drowWen: Sound[] = []; // build the neWword in reverse
-		let i = old.length;
+		let i = oldWord.length;
 		while (i >= 0) {
-			if (this.applies([Sound.PAUSE].concat(old.segments.slice(0, i)), [Sound.PAUSE].concat(drowWen))) { // if it applies here,
+			if (this.applies(oldWord.slice(0, i), drowWen)) { // if it applies here,
 				for (let j = this.result.length - 1; j >= 0; j --) { // fill in the replacement
 					if (this.idx[j] < this.pattern.length)
 						drowWen.push(this.result[j].apply(
-							old.segments[i + this.idx[j] - this.pattern.length], // mapping to the relevant old segments
-							this.post.length > 0 ? old.segments[i] : old.segments[i-1]));
+							oldWord[i + this.idx[j] - this.pattern.length], // mapping to the relevant old segments
+							this.post.length > 0 ? oldWord[i] : oldWord[i-1]));
 					else
 						drowWen.push(this.result[j].apply()); // or drawing new segments from thin air
 				}
@@ -71,32 +69,43 @@ class SoundChange implements Process {
 			}
 			else { // if not
 				i -= 1;
-				if (i >= 0) drowWen.push(old.segments[i]); // just add the next character of old
+				if (i >= 0) drowWen.push(oldWord[i]); // just add the next character of old
 			}
 		}
-		return new Word(drowWen.reverse(), old.language);
+		return drowWen.reverse();
 	}
 
 	/**
 	 * does the segment string at the end of oldWord qualify to be changed?
 	 * @param oldWord the unchanged word where we are considering making the change
-	 * @param novWord the changed following section of the word, reversed
+	 * @param novWord the already changed following section of the word, reversed
 	 */
 	applies(oldWord: Sound[], novWord: Sound[]) {
-		if (this.pre.length + this.pattern.length > oldWord.length || this.post.length > novWord.length)
+		if (this.pattern.length > oldWord.length) // make sure the word is long enuff to fit the whole pattern
 			return false;
-		if (this.pattern.length === 1 && this.pre.length > 0 && this.post.length > 0 &&
-			(oldWord[oldWord.length-1].longia === Longia.LONG || oldWord[oldWord.length-1].minorLoke === MinorLoke.PHARYNGEALIZED)) // geminates and emphatics are immune to /X_X processes
-			return false;
-		for (let j = 0; j < this.pre.length; j ++) // start with the left half of the context
-			if (!this.pre[j].matches(oldWord[j - this.pattern.length - this.pre.length + oldWord.length])) // check if it matches
-				return false;
+		for (let j = 0; j < this.pre.length; j ++) { // start with the left half of the context
+			if (j - this.pattern.length - this.pre.length + oldWord.length >= 0) {
+				if (!this.pre[j].matches(oldWord[j - this.pattern.length - this.pre.length + oldWord.length])) // check if it matches
+					return false;
+			}
+			else {
+				if (!this.pre[j].matchesSilence())
+					return false;
+			}
+		}
 		for (let j = 0; j < this.pattern.length; j ++) // then check the text that will be replaced
-			if (!this.pattern[j].matches(oldWord[j - this.pattern.length + oldWord.length]))
+			if (!this.pattern[j].matches(oldWord[oldWord.length - this.pattern.length + j]))
 				return false;
-		for (let j = 0; j < this.post.length; j ++) // then check the right half of the context
-			if (!this.post[j].matches(novWord[novWord.length - 1 - j]))
-				return false;
+		for (let j = 0; j < this.post.length; j ++) { // then check the right half of the context
+			if (novWord.length - 1 - j >= 0) {
+				if (!this.post[j].matches(novWord[novWord.length - 1 - j]))
+					return false;
+			}
+			else {
+				if (!this.post[j].matchesSilence())
+					return false;
+			}
+		}
 		return true;
 	}
 }
@@ -104,7 +113,7 @@ class SoundChange implements Process {
 /**
  * a process that causes sounds in the same word to share a feature
  */
-class Harmony implements Process {
+export class Harmony implements Process {
 	private readonly kutube: Feature[];
 	private readonly affectsConsonants: boolean;
 
@@ -122,16 +131,16 @@ class Harmony implements Process {
 			throw new Error(`unrecognized harmony type: ${feature}`);
 	}
 
-	apply(old: Word): Word {
-		const nov: Sound[] = new Array<Sound>(old.length);
+	apply(oldWord: Sound[]): Sound[] {
+		const newWord: Sound[] = new Array<Sound>(oldWord.length);
 		let val: Feature = null;
-		for (let i = 0; i < old.length; i ++) { // iterate backwards through the word
-			nov[i] = old.segments[i]; // in most cases, we will just make this the same as it was in the old word
-			if (this.affectsConsonants || !old.segments[i].is(Quality.VOWEL)) { // but if this segment isn't immune
+		for (let i = 0; i < oldWord.length; i ++) { // iterate backwards through the word
+			newWord[i] = oldWord[i]; // in most cases, we will just make this the same as it was in the old word
+			if (this.affectsConsonants || !oldWord[i].is(Quality.VOWEL)) { // but if this segment isn't immune
 				for (let feature of this.kutube) { // check its polarity
-					if (old.segments[i].is(feature)) { // if it's polar,
+					if (oldWord[i].is(feature)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before
-							nov[i] = old.segments[i].with(val); // and add it to the new word
+							newWord[i] = oldWord[i].with(val); // and add it to the new word
 						else // or read the property to match if we haven't seen this yet
 							val = feature;
 						break;
@@ -139,14 +148,14 @@ class Harmony implements Process {
 				}
 			}
 		}
-		return new Word (nov, old.language);
+		return newWord;
 	}
 }
 
 /**
  * a process that places syllables according to the sonority sequencing constraint
  */
-class Syllabicization implements Process {
+export class Syllabicization implements Process {
 	private readonly bias: number; // amount to prefer earlier or later syllables
 	private readonly minSonority: number; // minimum allowable sonority of a nucleus
 
@@ -162,31 +171,29 @@ class Syllabicization implements Process {
 		this.minSonority = minSonority;
 	}
 
-	apply(old: Word): Word {
+	apply(oldWord: Sound[]): Sound[] {
 		const sonority = [];
-		for (const sound of old.segments) // first calculate the sonorities
+		for (const sound of oldWord) // first calculate the sonorities
 			sonority.push(sound.getSonority());
-		const nov = []; // then copy the old word
-		for (let i = 0; i < old.length; i ++) { // and assign syllables accordingly
+		const newWord = []; // then copy the old word
+		for (let i = 0; i < oldWord.length; i ++) { // and assign syllables accordingly
 			const c = sonority[i];
 			const l = (i-1 >= 0) ? sonority[i-1] : -Infinity;
-			const r = (i+1 < old.length) ? sonority[i+1] : -Infinity;
+			const r = (i+1 < oldWord.length) ? sonority[i+1] : -Infinity;
 			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) { // if it is a peak
-				if (old.segments[i].getSonority() < this.minSonority) {
-					nov.push(new Sound(Mode.OPEN_MID, Loke.CENTRAL, Voze.VOICED,
-						old.segments[i].silabia, Longia.SHORT, Latia.MEDIAN,
+				if (oldWord[i].getSonority() < this.minSonority) {
+					newWord.push(new Sound(Mode.OPEN_MID, Loke.CENTRAL, Voze.VOICED,
+						oldWord[i].silabia, Longia.SHORT, Latia.MEDIAN,
 						MinorLoke.UNROUNDED, Nosia.ORAL).with(Quality.SYLLABIC));
-					nov.push(old.segments[i].with(Silabia.NONSYLLABIC)); // insert an epenthetic schwa or
+					newWord.push(oldWord[i].with(Silabia.NONSYLLABIC)); // insert an epenthetic schwa or
 				}
 				else
-					nov.push(old.segments[i].with(Quality.SYLLABIC)); // make it syllabic
+					newWord.push(oldWord[i].with(Quality.SYLLABIC)); // make it syllabic
 			}
-			else if (old.segments[i].is(Quality.SPOKEN)) // otherwise if it is a sound
-				nov.push(old.segments[i].with(Silabia.NONSYLLABIC)); // make it nonsyllabic
-			else
-				nov.push(old.segments[i]); // ignore pauses
+			else // otherwise if it is a sound
+				newWord.push(oldWord[i].with(Silabia.NONSYLLABIC)); // make it nonsyllabic
 		}
-		return new Word(nov, old.language);
+		return newWord;
 	}
 }
 
@@ -217,15 +224,12 @@ export class StressPlacement implements Process {
 		this.lengthen = lengthen;
 	}
 
-	apply(old: Word): Word {
+	apply(oldWord: Sound[]): Sound[] {
 		let nuclei: {i: number, weight: number}[] = [];
 		let numC = 1;
-		for (let i = old.length - 1; i >= 0; i --) { // first, tally up the syllables
-			if (!old.segments[i].is(Quality.SPOKEN)) { // skip past any pauses
-				numC = 1;
-			}
-			else if (old.segments[i].is(Quality.SYLLABIC)) { // using syllabicity to identify nuclei
-				if (old.segments[i].is(Longia.LONG))
+		for (let i = oldWord.length - 1; i >= 0; i --) { // first, tally up the syllables
+			if (oldWord[i].is(Quality.SYLLABIC)) { // using syllabicity to identify nuclei
+				if (oldWord[i].is(Longia.LONG))
 					nuclei.push({i: i, weight: 2}); // long vowels have weight 2
 				else if (numC > 1)
 					nuclei.push({i: i, weight: 1}); // codas have weight 1
@@ -234,7 +238,7 @@ export class StressPlacement implements Process {
 				numC = 0;
 			}
 			else {
-				numC += (old.segments[i].is(Longia.LONG)) ? 2 : 1; // long consonants count as two segments for this purpose
+				numC += (oldWord[i].is(Longia.LONG)) ? 2 : 1; // long consonants count as two segments for this purpose
 			}
 		}
 
@@ -261,30 +265,64 @@ export class StressPlacement implements Process {
 			else            lapse = 0;
 		}
 
-		const nov: Sound[] = old.segments.slice(); // then edit the word
+		const newWord: Sound[] = oldWord.slice(); // then edit the word
 		let firstStress = true;
 		for (let i = 0; i < nuclei.length; i ++) {
 			if (!stress[i]) {
-				nov[nuclei[i].i] = old.segments[nuclei[i].i].with(Silabia.UNSTRESSED); // stressless is stressless
+				newWord[nuclei[i].i] = oldWord[nuclei[i].i].with(Silabia.UNSTRESSED); // stressless is stressless
 				if (this.lengthen && nuclei[i].weight === 2)
-					nov[nuclei[i].i] = nov[nuclei[i].i].with(Longia.SHORT); // shorten unstressed heavy syllables if Ident long is outranked
+					newWord[nuclei[i].i] = newWord[nuclei[i].i].with(Longia.SHORT); // shorten unstressed heavy syllables if Ident long is outranked
 			}
 			else {
-				nov[nuclei[i].i] = old.segments[nuclei[i].i].with(
+				newWord[nuclei[i].i] = oldWord[nuclei[i].i].with(
 					firstStress ? Silabia.PRIMARY_STRESSED : Silabia.SECONDARY_STRESSED); // the first stress is primary
 				firstStress = false;
 				if (this.lengthen && nuclei[i].weight === 0)
-					nov[nuclei[i].i] = nov[nuclei[i].i].with(Longia.LONG); // lengthen stressed open syllables if Ident long is outranked
+					newWord[nuclei[i].i] = newWord[nuclei[i].i].with(Longia.LONG); // lengthen stressed open syllables if Ident long is outranked
 			}
 		}
-		return new Word(nov, old.language);
+		return newWord;
+	}
+}
+
+
+/**
+ * a process that applies to a whole phrase; not just a single word
+ */
+export class SpecialProcess {
+	private readonly name: string;
+
+	/**
+	 * create a new change; just specify the name and we'll know what to do.
+	 */
+	constructor(name: string) {
+		this.name = name;
+	}
+
+	apply(old: Name): Name {
+		if (this.name === "compounding") {
+			// string all of the parts together without pauses, and make sure there's only one primary stress
+			const compoundWord = [];
+			for (let i = 0; i < old.parts.length - 1; i ++) {
+				for (const segment of old.parts[i]) {
+					if (segment.silabia !== Silabia.PRIMARY_STRESSED)
+						compoundWord.push(segment);
+					else
+						compoundWord.push(segment.with(Silabia.SECONDARY_STRESSED));
+				}
+			}
+			compoundWord.push(...old.parts[old.parts.length - 1]);
+			return new Name([compoundWord], old.language);
+		}
+		else
+			throw new Error(`the special process ${this.name} is not implemented.`);
 	}
 }
 
 
 export const DEFAULT_STRESS = new StressPlacement(true, 1, 1, 'lapse', false);
 
-export const PROCESS_OPTIONS: {chanse: number, proces: Process}[] = [];
+export const PROCESS_OPTIONS: {chanse: number, proces: Process | SpecialProcess}[] = [];
 for (const processString of loadTSV('processes.txt', /\s+/, /%/)) { // load the phonological processes
 	const chance = Number.parseInt(processString[0])/1000;
 	if (processString[1] === 'mute') {
@@ -388,6 +426,7 @@ for (const processString of loadTSV('processes.txt', /\s+/, /%/)) { // load the 
 					new Syllabicization(bias, minSilabia)});
 	}
 	else {
-		throw new Error(`unrecognized process classification: ${processString[1]}`);
+		PROCESS_OPTIONS.push({chanse: chance, proces:
+			new SpecialProcess(processString[1])});
 	}
 }

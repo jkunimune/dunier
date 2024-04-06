@@ -4,9 +4,9 @@
  */
 import {Random} from "../utilities/random.js";
 import {Sound} from "./sound.js";
-import {DEFAULT_STRESS, Process, PROCESS_OPTIONS} from "./process.js";
+import {DEFAULT_STRESS, Process, PROCESS_OPTIONS, SpecialProcess} from "./process.js";
 import {ipa} from "./script.js";
-import {Word} from "./word.js";
+import {Name} from "./name.js";
 import {Enumify} from "../libraries/enumify.js";
 import {decodeBase37} from "../utilities/miscellaneus.js";
 
@@ -56,7 +56,7 @@ export abstract class Lect {
 	 * @param index the pseudorandom seed of the name
 	 * @param tipo the type of name
 	 */
-	abstract getName(index: string, tipo: WordType): Word;
+	abstract getName(index: string, tipo: WordType): Name;
 
 	/**
 	 * get the language that this was n timesteps ago
@@ -81,7 +81,7 @@ export class ProtoLang extends Lect {
 
 	private static P_ONSET = 0.8;
 	private static P_MEDIAL = 0.4;
-	private static P_NUCLEUS = 1.5;
+	private static P_NUCLEUS = 2.0;
 	private static P_CODA = 0.4;
 
 	private readonly diversity: number; // the typical number of lexical suffixes used for one type of word
@@ -89,7 +89,7 @@ export class ProtoLang extends Lect {
 	private readonly nVowel: number; // the number of vowels in this langugage
 	private readonly nMedial: number; // the numer of medials in this language
 	private readonly complexity: number; // the approximate amount of information in one syllable
-	private readonly name: Map<WordType, Map<string, Word>>; // the word references of each type
+	private readonly name: Map<WordType, Map<string, Name>>; // the word references of each type
 	private readonly classifiers: Map<WordType, Sound[][]>; // the noun classifiers
 	private readonly fin: Sound[][]; // the noun endings
 
@@ -111,37 +111,38 @@ export class ProtoLang extends Lect {
 			this.fin.push(this.noveMul('fmncrh'[i], 0.5));
 
 		this.diversity = rng.uniform(0, 1); // choose how much lexical suffixing to do
-		this.name = new Map<WordType, Map<string, Word>>();
+		this.name = new Map<WordType, Map<string, Name>>();
 		this.classifiers = new Map<WordType, Sound[][]>();
 		for (const wordType of WordType) {
-			this.name.set(<WordType>wordType, new Map<string, Word>());
+			this.name.set(<WordType>wordType, new Map<string, Name>());
 			this.classifiers.set(<WordType>wordType, []);
 			for (let i = 0; i < Math.round(this.diversity*(<WordType>wordType).numClassifiers); i ++) // TODO countries can be named after cities
 				this.classifiers.get(<WordType>wordType).push(
-					this.noveLoga(`${(<WordType>wordType).asString}${i}`, 1.5/this.complexity));
+					this.noveLoga(`${(<WordType>wordType).asString}${i}`, Math.max(1, 1.5/this.complexity)));
 		}
 	}
 
-	getName(index: string, tipo: WordType): Word {
+	getName(index: string, tipo: WordType): Name {
 		if (!this.name.get(tipo).has(index)) {
-			const base = this.noveLoga(index, 4/this.complexity); // get the base
+			const base = this.noveLoga(index, Math.max(1, 4/this.complexity)); // get the base
+			if (base.length === 0)
+				throw new Error(`this new word is empty; it was supposed to have ${4/this.complexity} syllables`);
 
-			let name;
+			let nameParts;
 			if (this.classifiers.get(tipo).length === 0)
-				name = base;
+				nameParts = [base];
 			else {
 				const seed = decodeBase37(index) + 100;
 				const rng = new Random(seed);
 				const classifierOptions = this.classifiers.get(tipo);
 				const classifier = rng.choice(classifierOptions);
 				if (this.prefixing)
-					name = classifier.concat([Sound.PAUSE], base);
+					nameParts = [classifier, base];
 				else
-					name = base.concat([Sound.PAUSE], classifier);
+					nameParts = [base, classifier];
 			}
 
-			this.name.get(tipo).set(index,
-				DEFAULT_STRESS.apply(new Word(name, this)));
+			this.name.get(tipo).set(index, new Name(nameParts, this));
 		}
 		return this.name.get(tipo).get(index);
 	}
@@ -154,15 +155,15 @@ export class ProtoLang extends Lect {
 	noveLoga(index: string, syllables: number): Sound[] {
 		const root = this.noveMul(index, syllables);
 		if (this.fin.length === 0)
-			return root;
+			return DEFAULT_STRESS.apply(root);
 		else {
 			const seed = decodeBase37(index);
 			const rng = new Random(seed);
 			const affix = rng.choice(this.fin);
 			if (this.prefixing)
-				return affix.concat(root);
+				return DEFAULT_STRESS.apply(affix.concat(root));
 			else
-				return root.concat(affix);
+				return DEFAULT_STRESS.apply(root.concat(affix));
 		}
 	}
 
@@ -202,6 +203,7 @@ export class ProtoLang extends Lect {
 export class Dialect extends Lect {
 	private readonly parent: Lect;
 	private readonly changes: Process[];
+	private readonly specialChanges: SpecialProcess[];
 
 	constructor(parent: Lect, rng: Random) {
 		super(parent.defaultStyle, parent.prefixing);
@@ -209,25 +211,32 @@ export class Dialect extends Lect {
 		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 
 		this.changes = [];
-		for (const {chanse, proces} of PROCESS_OPTIONS)
-			if (rng.probability(chanse))
-				this.changes.push(proces);
+		this.specialChanges = [];
+		for (const {chanse, proces} of PROCESS_OPTIONS) {
+			if (rng.probability(chanse)) {
+				if (proces instanceof SpecialProcess)
+					this.specialChanges.push(proces);
+				else
+					this.changes.push(proces);
+			}
+		}
 	}
 
 	getName(index: string, tipo: WordType) {
 		return this.applyChanges(this.parent.getName(index, tipo));
 	}
 
-	applyChanges(lekse: Word): Word {
-		for (const change of this.changes) {
-			try {
-				lekse = change.apply(lekse);
-			} catch (e) {
-				console.error("could not apply", change, "to", lekse, `(${lekse.toString('ipa')})`, "because");
-				throw e;
-			}
+	applyChanges(lekse: Name): Name {
+		const newParts = [];
+		for (let part of lekse.parts) {
+			for (const change of this.changes)
+				part = change.apply(part);
+			newParts.push(part);
 		}
-		return lekse;
+		let newLekse = new Name(newParts, lekse.language);
+		for (const change of this.specialChanges)
+			newLekse = change.apply(newLekse);
+		return newLekse;
 	}
 
 	getAncestor(n: number): Lect {

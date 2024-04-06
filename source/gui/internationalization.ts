@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {loadJSON} from "../utilities/fileio.js";
-import {Word} from "../language/word.js";
+import {Name} from "../language/name.js";
 import {DOM} from "./dom.js";
 
 const USER_STRINGS = loadJSON(`../../resources/translations/${DOM.elm('bash').textContent}.json`);
@@ -26,8 +26,8 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
                 throw new Error(`${args[i]} was passd as the ${i}° argument.  this is only allowd when the argument is absent from the format string, which was not the case here.`);
             continue;
         }
-        if (args[i] instanceof Word) {
-            convertedArg = (<Word>args[i]).toString(); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
+        if (args[i] instanceof Name) {
+            convertedArg = (<Name>args[i]).toString(); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
         }
         else if (typeof args[i] === 'string') {
             convertedArg = USER_STRINGS.get(<string>args[i]); // look up strings in the resource file

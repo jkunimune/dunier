@@ -7,7 +7,6 @@ import {loadTSV} from "../utilities/fileio.js";
 
 
 const MODIFIERS: {klas: Klas, baze: Feature[], kode: string}[] = [ // TODO: can I rearrange this to put the macron underneath the acute accent?
-	{klas: new Klas([], [Quality.SPOKEN]), baze: [], kode: 'pause'},
 	{klas: new Klas([Longia.LONG], [Quality.VOWEL]), baze: [Longia.SHORT], kode: 'geminate'},
 	{klas: new Klas([Longia.LONG, Quality.VOWEL]), baze: [Longia.SHORT], kode: 'long'},
 	{klas: new Klas([Voze.ASPIRATED]), baze: [Voze.TENUIS], kode: 'aspirate'},
@@ -102,6 +101,10 @@ for (const row of harfiaTable.slice(1)) { // each row of the orthographick table
 			TO_TEXT.get(header[i]).set(foneme.hash(), grafeme[i]);
 		FROM_IPA.set(grafeme[header.indexOf('ipa')], foneme);
 	}
+	else if (features[0].match(/^!/)) { // then we read any special non-phonemic symbols
+		for (let i = 0; i < header.length; i ++)
+			TO_TEXT.get(header[i]).set(features[0].slice(1), grafeme[i]);
+	}
 	else if (features[0].match(/^\^/)) { // then we read the modifying features and their transcripcions
 		for (let i = 0; i < header.length; i ++)
 			TO_DIACRITICS.get(header[i]).set(features[0].slice(1), grafeme[i]);
@@ -189,113 +192,110 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
 
 /**
  * convert a phonetic word to a unicode string somehow.
- * @param lekse
- * @param style
+ * @param allSounds the array of sound-strings
+ * @param style the transcription style to use
  */
-export function transcribe(lekse: Sound[], style: string): string {
-	lekse = lekse.slice(); // first, handle some common orthographickal rules
-	if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
-		for (let i = 0; i < lekse.length; i ++) // for this flag, go thru the original phonemick representacion
-			if (lekse[i].is(Quality.HIGH)
-				&& (i+1 >= lekse.length || lekse[i+1].is(Silabia.NONSYLLABIC))) // find glides in codas
-				lekse[i] = new Klas([Silabia.UNSTRESSED]).apply(lekse[i]); // and change them to vowels
-	}
-	if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
-		for (let i = 0; i < lekse.length; i ++)
-			if (lekse[i].is(Loke.VELAR) && lekse[i].is(Mode.NASAL) && i+1 < lekse.length
-				&& lekse[i+1].is(Loke.VELAR) && lekse[i+1].is(Quality.OCCLUSIVE)) // find velar nasals followd by velar stops
-				lekse[i] = new Klas([Loke.ALVEOLAR]).apply(lekse[i]); // and change them to be coronal
-	}
+export function transcribe(allSounds: Sound[][], style: string): string {
+	let allSymbols = [];
+	for (let sounds of allSounds) {
+		// start by making our own copy of each part
+		sounds = sounds.slice();
 
-	let asli = "";
-	for (let i = 0; i < lekse.length; i ++)
-		asli += lookUp(lekse[i], style); // form the inicial spelling by reading the transcripcion out of the table
-
-	if (style === 'en') {
-		let muti = "#"+asli+"#";
-		for (const vise of ENGLISH_REPLACEMENTS) {
-			for (let j = 1; j < vise.length; j ++) { // look through the replacements in ENGLI_VISE
-				for (let i = muti.length; i >= 1; i --) { // ang go through the string
-					if (i-vise[j].length >= 0 && muti.substring(i-vise[j].length, i) === vise[j])
-						muti = muti.substring(0, i-vise[j].length) + vise[0] + muti.substring(i);
-				}
-			}
+		// handle some common orthographickal rules
+		if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
+			for (let i = 0; i < sounds.length; i++) // for this flag, go thru the original phonemick representacion
+				if (sounds[i].is(Quality.HIGH)
+					&& (i + 1 >= sounds.length || sounds[i + 1].is(Silabia.NONSYLLABIC))) // find glides in codas
+					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]); // and change them to vowels
 		}
-		asli = muti.substring(1, muti.length-1);
+		if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
+			for (let i = 0; i < sounds.length; i++)
+				if (sounds[i].is(Loke.VELAR) && sounds[i].is(Mode.NASAL) && i + 1 < sounds.length
+					&& sounds[i + 1].is(Loke.VELAR) && sounds[i + 1].is(Quality.OCCLUSIVE)) // find velar nasals followd by velar stops
+					sounds[i] = new Klas([Loke.ALVEOLAR]).apply(sounds[i]); // and change them to be coronal
+		}
 
-		if (asli[asli.length-1] === 'ɦ' && '*–aeiouyw'.includes(asli[asli.length-2]))
-			asli = asli.substring(0, asli.length-1) + "gh"; // replace word-final <h> with <gh>
-		else if ('bcdfgjklmnpqrstvz'.includes(asli[asli.length-1]) && asli[asli.length-2] === '-')
-			asli += 'ia'; // add <ia> when the last vowel needs to be long
+		// form the inicial spelling by reading the transcripcion out of the table
+		let symbols = "";
+		for (const sound of sounds)
+			symbols += lookUp(sound, style);
 
-		if (asli.length >= 3 &&
-			'cfd'.includes(asli.charAt(asli.length-1)) &&
-			'*' === asli.charAt(asli.length-2) &&
-			(asli.length < 4 || !'aeiou'.includes(asli.charAt(asli.length-4)))) // double the final consonant if the word ends in a single short vowel followd by <c>, <f>, or <d>
-			asli += asli.charAt(asli.length-1);
-
-		muti = "";
-		for (let i = 0; i < asli.length; i ++) {
-			if (asli[i] === "c" &&
-				((i+1 < asli.length && 'eiy'.includes(asli[i+1])) || i+1 === asli.length)) // use <k> before front vowels and at the ends of words
-				muti += "k";
-			else if (i+1 < asli.length && asli[i] === "j" && 'eiy'.includes(asli[i+1])) { // use <g> before front vowels when it is the last consonant in the word
-				let harfe = "g";
-				for (let j = i+1; j < asli.length; j ++) {
-					if (!'aeiouy'.includes(asli[j])) {
-						harfe = "j";
-						break;
+		if (style === 'en') {
+			symbols = "#" + symbols + "#";
+			for (const vise of ENGLISH_REPLACEMENTS) {
+				for (let j = 1; j < vise.length; j++) { // look through the replacements in ENGLI_VISE
+					for (let i = symbols.length; i >= 1; i--) { // ang go through the string
+						if (i - vise[j].length >= 0 && symbols.substring(i - vise[j].length, i) === vise[j])
+							symbols = symbols.substring(0, i - vise[j].length) + vise[0] + symbols.substring(i);
 					}
 				}
-				muti += harfe;
 			}
-			else if (asli[i] === "ɦ" &&
-				((i+1 < asli.length && !'aeiouyw'.includes(asli[i+1])) || (i-1 >= 0 && !'*–aeiouyw'.includes(asli[i-1])))) // remove <h> in consonant clusters
-				muti += "";
-			else if (asli[i] === "y") {
-				if (i+1 === asli.length || (i+1 < asli.length && asli[i+1] === "i") || (i-1 >= 0 && asli[i-1] === "i")) // use <y> at the ends of words and adjacent to <i>
-					muti += "y";
-				else if ((i+1 < asli.length && !'aeiou'.includes(asli[i+1])) || (i-1 >= 0 && !'aeiou'.includes(asli[i-1]))) // use <i> adjacent to consonants
-					muti += "i";
-				else
-					muti += "y";
-			}
-			else if (i+1 < asli.length && asli[i] === "w" && !"aeiouy".includes(asli[i+1])) // use <u> after vowels before consonants
-				muti += "u";
-			else if (asli[i] === '–') {
-				if ((i+1 < asli.length && asli[i+1] === 'ɦ') ||
-					(i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && !'aeiouy'.includes(asli[i+2])) ||
-					(i+2 === asli.length && !'aeiouy'.includes(asli[i+1]))) // lengthen long vowels that look short
-					muti += (asli[i-1] === 'a') ? 'i' : (asli[i-1] === 'o') ? 'u' : (asli[i-1] === 'i') ? '' : 'e';
-			}
-			else if (asli[i] === '*') {
-				// if (i+2 < asli.length && !'aeiouy'.includes(asli[i+1]) && 'aeiouy'.includes(asli[i+2]))
-				// 	muti += (asli[i+1] === 'k') ? 'c' : (asli[i+1] === 'j') ? '' : (asli[i+1] === 'h') ? '' : asli[i+1];
-				// else if (i+1 < asli.length && asli[i] === 'i' && 'aeiouy'.includes(asli[i+1])) // double consonants when short vowels look long
-				// 	muti = muti.substring(0, muti.length-1) + 'e';
-			}
-			else
-				muti += asli[i];
-		}
-		asli = muti;
+			symbols = symbols.substring(1, symbols.length - 1);
 
-		for (const [ca, pa] of [[/cw/g, "qu"], [/[ck]s/g, "x"], [/yy/g, "y"], [/ww/g, "w"], [/sh[ck]/g, "sc"], [/ɦw/g, "wh"], [/ɦ/g, "h"]])
-			asli = asli.replace(ca, <string> pa);
+			if (symbols[symbols.length - 1] === 'ɦ' && '*–aeiouyw'.includes(symbols[symbols.length - 2]))
+				symbols = symbols.substring(0, symbols.length - 1) + "gh"; // replace word-final <h> with <gh>
+			else if ('bcdfgjklmnpqrstvz'.includes(symbols[symbols.length - 1]) && symbols[symbols.length - 2] === '-')
+				symbols += 'ia'; // add <ia> when the last vowel needs to be long
+
+			if (symbols.length >= 3 &&
+				'cfd'.includes(symbols.charAt(symbols.length - 1)) &&
+				'*' === symbols.charAt(symbols.length - 2) &&
+				(symbols.length < 4 || !'aeiou'.includes(symbols.charAt(symbols.length - 4)))) // double the final consonant if the word ends in a single short vowel followd by <c>, <f>, or <d>
+				symbols += symbols.charAt(symbols.length - 1);
+
+			let newSymbol = "";
+			for (let i = 0; i < symbols.length; i++) {
+				if (symbols[i] === "c" &&
+					((i + 1 < symbols.length && 'eiy'.includes(symbols[i + 1])) || i + 1 === symbols.length)) // use <k> before front vowels and at the ends of words
+					newSymbol += "k";
+				else if (i + 1 < symbols.length && symbols[i] === "j" && 'eiy'.includes(symbols[i + 1])) { // use <g> before front vowels when it is the last consonant in the word
+					let harfe = "g";
+					for (let j = i + 1; j < symbols.length; j++) {
+						if (!'aeiouy'.includes(symbols[j])) {
+							harfe = "j";
+							break;
+						}
+					}
+					newSymbol += harfe;
+				} else if (symbols[i] === "ɦ" &&
+					((i + 1 < symbols.length && !'aeiouyw'.includes(symbols[i + 1])) || (i - 1 >= 0 && !'*–aeiouyw'.includes(symbols[i - 1])))) // remove <h> in consonant clusters
+					newSymbol += "";
+				else if (symbols[i] === "y") {
+					if (i + 1 === symbols.length || (i + 1 < symbols.length && symbols[i + 1] === "i") || (i - 1 >= 0 && symbols[i - 1] === "i")) // use <y> at the ends of words and adjacent to <i>
+						newSymbol += "y";
+					else if ((i + 1 < symbols.length && !'aeiou'.includes(symbols[i + 1])) || (i - 1 >= 0 && !'aeiou'.includes(symbols[i - 1]))) // use <i> adjacent to consonants
+						newSymbol += "i";
+					else
+						newSymbol += "y";
+				} else if (i + 1 < symbols.length && symbols[i] === "w" && !"aeiouy".includes(symbols[i + 1])) // use <u> after vowels before consonants
+					newSymbol += "u";
+				else if (symbols[i] === '–') {
+					if ((i + 1 < symbols.length && symbols[i + 1] === 'ɦ') ||
+						(i + 2 < symbols.length && !'aeiouy'.includes(symbols[i + 1]) && !'aeiouy'.includes(symbols[i + 2])) ||
+						(i + 2 === symbols.length && !'aeiouy'.includes(symbols[i + 1]))) // lengthen long vowels that look short
+						newSymbol += (symbols[i - 1] === 'a') ? 'i' : (symbols[i - 1] === 'o') ? 'u' : (symbols[i - 1] === 'i') ? '' : 'e';
+				} else if (symbols[i] === '*') {
+					// if (i+2 < graphs.length && !'aeiouy'.includes(graphs[i+1]) && 'aeiouy'.includes(graphs[i+2]))
+					// 	muti += (graphs[i+1] === 'k') ? 'c' : (graphs[i+1] === 'j') ? '' : (graphs[i+1] === 'h') ? '' : graphs[i+1];
+					// else if (i+1 < graphs.length && graphs[i] === 'i' && 'aeiouy'.includes(graphs[i+1])) // double consonants when short vowels look long
+					// 	muti = muti.substring(0, muti.length-1) + 'e';
+				} else
+					newSymbol += symbols[i];
+			}
+			symbols = newSymbol;
+
+			for (const [ca, pa] of [[/cw/g, "qu"], [/[ck]s/g, "x"], [/yy/g, "y"], [/ww/g, "w"], [/sh[ck]/g, "sc"], [/ɦw/g, "wh"], [/ɦ/g, "h"]])
+				symbols = symbols.replace(ca, <string>pa);
+		}
+
+		// finally, capitalize
+		if (ORTHOGRAPHIC_FLAGS.get(style).get('capitalization')) {
+			symbols = symbols[0].toUpperCase() + symbols.slice(1);
+		}
+
+		// add it to the main output
+		allSymbols.push(symbols);
 	}
 
-	if (ORTHOGRAPHIC_FLAGS.get(style).get('capitalization')) { // finally, capitalize
-		let muti = "";
-		let startOfWord = true;
-		for (let i = 0; i < asli.length; i ++) {
-			muti += (startOfWord) ? asli[i].toUpperCase() : asli[i];
-
-			if (startOfWord && muti[i] !== asli[i])
-				startOfWord = false;
-			if (asli[i] === ' ' || asli[i] === '-')
-				startOfWord = true;
-		}
-		asli = muti;
-	}
-
-	return asli;
+	return allSymbols.join(TO_TEXT.get(style).get("pause"));
 }

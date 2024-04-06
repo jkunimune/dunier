@@ -8,7 +8,7 @@ import {loadTSV} from "../utilities/fileio.js";
 import {Tile} from "../surface/surface.js";
 import {Civ} from "./civ.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
-import {Word} from "../language/word.js";
+import {Name} from "../language/name.js";
 import {format} from "../gui/internationalization.js";
 
 
@@ -204,7 +204,7 @@ export class Culture {
 			(feature: Feature) => feature.isCompatible(this));
 	}
 
-	public getName(): Word {
+	public getName(): Name {
 		return this.lect.getName(
 			this.homeland.index.toString(), WordType.PEOPLE);
 	}

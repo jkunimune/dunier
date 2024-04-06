@@ -11,6 +11,7 @@ export enum Foner {
 	CORONA,
 	DORSUM,
 	PHARYNX,
+	MULTIPLE,
 }
 
 /** form of primary articulation or vowel height */
@@ -52,8 +53,8 @@ export class Loke extends Enumify {
 	static UVULAR = new Loke(Foner.DORSUM);
 	static EPIGLOTTAL = new Loke(Foner.PHARYNX);
 	static GLOTTAL = new Loke(Foner.PHARYNX);
-	static LABIOCORONAL = new Loke(null);
-	static LABIOVELAR = new Loke(null);
+	static LABIOCORONAL = new Loke(Foner.MULTIPLE);
+	static LABIOVELAR = new Loke(Foner.MULTIPLE);
 	static _ = Loke.closeEnum();
 
 	foner: number;
@@ -165,17 +166,6 @@ export class Sound {
 		Latia.MEDIAN,
 		MinorLoke.UNROUNDED,
 		Nosia.ORAL);
-	/** the representation of a pause */
-	public static PAUSE = new Sound(
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
-		null,
-		null
-	);
 
 	public readonly mode: Mode;
 	public readonly loke: Loke;
@@ -203,9 +193,9 @@ export class Sound {
 	 * @param feature
 	 */
 	is(feature: Feature): boolean {
-		if (this.voze === null)
-			return false;
-		else if (feature instanceof Loke)
+		if (this.loke === null || this.mode === null || this.voze === null)
+			throw new Error("we stopped supporting Sounds with null attributes.");
+		if (feature instanceof Loke)
 			return this.loke === feature;
 		else if (feature instanceof Mode)
 			return this.mode === feature;
@@ -309,7 +299,6 @@ export class Sound {
 	 * losslessly represent this as a string
 	 */
 	hash(): string {
-		if (this.mode === null) return '';
 		return this.silabia.enumKey.slice(0, 2) +
 			this.longia.enumKey.slice(0, 2) +
 			this.minorLoke.enumKey.slice(0, 2) +
@@ -321,7 +310,6 @@ export class Sound {
 	}
 
 	toString(): string {
-		if (this.mode === null) return 'pause';
 		return this.silabia.enumKey.toLowerCase() + " " +
 			this.longia.enumKey.toLowerCase() + " " +
 			this.minorLoke.enumKey.toLowerCase() + " " +
@@ -333,20 +321,17 @@ export class Sound {
 	}
 
 	getSonority() {
-		if (this.mode === null)
-			return -Infinity;
-		else
-			return this.mode.sonority
-				- ((this.latia === Latia.LATERAL) ? 1.5 : 0)
-				+ ((this.voze === Voze.VOICED) ? 0.75 : 0)
-				+ (this.is(Quality.VOCOID) ? 1 : 0);
+		return this.mode.sonority
+			- ((this.latia === Latia.LATERAL) ? 1.5 : 0)
+			+ ((this.voze === Voze.VOICED) ? 0.75 : 0)
+			+ (this.is(Quality.VOCOID) ? 1 : 0);
 	}
 }
 
 /** collection of phonological features */
 export class Klas {
 	private readonly required: Feature[]; // qualities this class explicitly has
-	readonly forbidden: Feature[]; // qualities this class explicitly does not have
+	private readonly forbidden: Feature[]; // qualities this class explicitly does not have
 	private readonly tracked: string[]; // qualities this class might have
 
 	constructor(plus: Feature[], minus: Feature[] = [], alpha: string[] = []) {
@@ -370,6 +355,13 @@ export class Klas {
 	}
 
 	/**
+	 * does this sound have only negative requirements, such that the absense of speech can match?
+	 */
+	matchesSilence(): boolean {
+		return this.required.length === 0;
+	}
+
+	/**
 	 * create a Sound with all of the properties of this, and similar to sound in every other respect.
 	 * @param sound the foneme that is being made to conform here
 	 * @param ref if this.ka has stuff in it, draw those features from ref.
@@ -378,7 +370,7 @@ export class Klas {
 		if (this.forbidden.length > 0)
 			throw Error(`you can't use minus ${this.forbidden[0]} in the final state of a process!`);
 		if (this.required.length === 0) // if there are no properties, you don't have to do anything
-			return sound; // (even if sound is a pause)
+			return sound;
 
 		let mode = sound.mode, loke = sound.loke, voze = sound.voze;
 		let silabia = sound.silabia, longia = sound.longia, latia = sound.latia, minorLoke = sound.minorLoke, nosia = sound.nosia;
@@ -485,7 +477,7 @@ export class Klas {
 		}
 
 		if (mode === null || loke === null)
-			throw new Error(`You tried to assign properties to silence in your overzealous attempt to mutate all of something into ${this}.`);
+			throw new Error(`there shouldn't be Sounds with null attributes anymore.`);
 
 		if (loke === Loke.UVULAR && mode.sonority >= Mode.CLOSE.sonority) // turn uvular vowels into regular back vowels so I don't have to worry about dorsal nonvowel approximants
 			loke = Loke.VELAR;

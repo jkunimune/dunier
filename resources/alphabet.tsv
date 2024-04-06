@@ -118,6 +118,7 @@ a	a	a	a*	а	a	a	a	a	a	a	s	c	5
 a	a	a	a*	а	a	a	a	a	a	a	s	m	5
 ɑ	a	a	a*	a	a	a	a	a	a	a	s	v	5
 ɒ	o	o	o*	о	o	o	å	a	ọ	a	sw	v	5
+ 	 	 	-	-	・	 	 	 	 	-	!pause
 Xː	X̄	X	X	X	X-	X	xX	Xh	X	X̄	^long
 Xː	xX	X	xX	xX	xX	X	xX	xX	xX	xX	^geminate
 X͡Y	Y	Y	X	XY	X	Y	XY	XY	XY	XY	^affricate
@@ -138,7 +139,6 @@ X̀	X	X	X	X	X	X	X	X	X	X	^secondary
 X̯	X	X	X	X	X	X	X	X	X̆	X	^glide
 X̩	X	eX	eX	X	X	oX	X	X'	X	X	^syllabic
 X̞	X	X	X	X	X	X	X	X	X	X	^approx
- 	 	 	-	-	・	 	 	 	 	-	^pause
 n	y	y	y	y	n	y	y	y	y	y	?capitalization
 n	y	n	y	n	y	y	y	y	y	n	?diphthong as hiatus
 n	y	y	y	y	y	y	y	n	y	n	?velar nasal as coronal
