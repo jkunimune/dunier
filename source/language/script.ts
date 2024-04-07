@@ -351,7 +351,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			}
 			// expand eligible small ャ, ュ, ョ, and ェ
 			for (let i = symbols.length - 1; i >= 2; i --) {
-				if (!"aiueotcfywvッンー".includes(symbols[i - 2]) && symbols[i - 1] === "y" && "aiueo".includes(symbols[i])) {
+				if (!"aiueotdcfywvッンー".includes(symbols[i - 2]) && symbols[i - 1] === "y" && "aiueo".includes(symbols[i])) {
 					const nucleus = KATAKANA.get("ʸ").get(symbols[i]);
 					symbols = symbols.slice(0, i - 1) + "i" + nucleus + symbols.slice(i + 1);
 				}
@@ -361,7 +361,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 				if (symbols[i - 1] === "y") {
 					if (i >= symbols.length || !"aiueo".includes(symbols[i]))
 						symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i);
-					else if (i - 2 >= 0 && "tcfwv".includes(symbols[i - 2]))
+					else if (i - 2 >= 0 && "tdcfwv".includes(symbols[i - 2]))
 						symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i - 1);
 				}
 			}
