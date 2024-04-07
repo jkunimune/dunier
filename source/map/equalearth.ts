@@ -10,7 +10,7 @@ import {PathSegment, Place, Point} from "../utilities/coordinates.js";
 /**
  * a pseudocylindrical equal-area projection similar to Eckert IV or Natural Earth
  */
-export class EqualArea extends MapProjection {
+export class EqualEarth extends MapProjection {
 	private readonly фRef: number[];
 	private readonly xRef: number[];
 	private readonly yRef: number[];
@@ -27,7 +27,7 @@ export class EqualArea extends MapProjection {
 		this.xRef = [];
 		this.yRef = [0];
 		for (let i = 0; i < this.фRef.length; i ++) {
-			this.xRef.push((surface.dsdλ(this.фRef[i]) + dsdλAvg)/2);
+			this.xRef.push(this.shapeFunction(surface.dsdλ(this.фRef[i])/dsdλAvg)*dsdλAvg);
 			if (i > 0) {
 				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
 				this.yRef.push(this.yRef[i-1] - verAre / (2*Math.PI*(this.xRef[i-1] + this.xRef[i])/2));
@@ -71,5 +71,16 @@ export class EqualArea extends MapProjection {
 		const {x, y} = this.projectPoint({ф: ф1, λ: λ});
 		edge.push({type: 'L', args: [x, y]});
 		return edge;
+	}
+
+	/**
+	 * a function on the domain 0 <= x <= 1 that determines the shape of this equal-area pseudocylindrical map.
+	 * f(x) = x would correspond to the sinusoidal projection.  f(0) > 0 corresponds to a pointed-polar projection.
+	 * f(1) should = 1 to ensure that the distortion goes down as the surface becomes more cylindrical, not that it
+	 * terribly matters since cylinder isn't a map option (maybe it should be... :thinking:)
+	 * @param x
+	 */
+	shapeFunction(x: number): number {
+		return 1 - Math.sqrt(.29) + Math.sqrt(.04 + .25*x*x);
 	}
 }

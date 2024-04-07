@@ -14,7 +14,7 @@ import {Azimuthal} from "../map/azimuthal.js";
 import {Bonne} from "../map/bonne.js";
 import {Equirectangular} from "../map/equirectangular.js";
 import {Mercator} from "../map/mercator.js";
-import {EqualArea} from "../map/equalarea.js";
+import {EqualEarth} from "../map/equalearth.js";
 import {Spheroid} from "../surface/spheroid.js";
 import {Sphere} from "../surface/sphere.js";
 import {Disc} from "../surface/disc.js";
@@ -223,7 +223,7 @@ function applyTerrain(): void {
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new EqualArea(surface, true, null));
+	const mapper = new Chart(new EqualEarth(surface, true, null));
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
@@ -258,7 +258,7 @@ function applyHistory(): void {
 		rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new EqualArea(surface, true, null));
+	const mapper = new Chart(new EqualEarth(surface, true, null));
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
@@ -310,7 +310,7 @@ function applyMap(): void {
 	else if (projectionName === 'navigational')
 		projection = new Mercator(surface, northUp, locus);
 	else if (projectionName === 'equal_area')
-		projection = new EqualArea(surface, northUp, locus);
+		projection = new EqualEarth(surface, northUp, locus);
 	else if (projectionName === 'classical')
 		projection = new Bonne(surface, northUp, locus);
 	else if (projectionName === 'modern')
