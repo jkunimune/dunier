@@ -3,14 +3,14 @@ m	m	m	m	м	m	m	m	m	m	m		bl	n
 p	p	p	p	п	p	p	p	p	p	p		bl	p
 b	b	b	b	б	b	b	b	b	b	b		bl	b
 ɸ	ph	f	f	ф	f	f	f	f	f	f		bl	f
-β	b	b	v	в	b	v	v	v	v	ƀ		bl	v
-ʙ	b	br	pbr	бв	bub	br	bb	br	bb	blr		bl	r
-ʙ̝	b	br	pbr	бв	bub	br	bbv	bř	b̌	blř	b	bl	r
+β	b	b	v	в	v	v	v	v	v	ƀ		bl	v
+ʙ	b	br	pbr	бв	bur	br	bb	br	bb	blr		bl	r
+ʙ̝	b	br	pbr	бв	bur	br	bbv	bř	b̌	blř	b	bl	r
 ɱ	m	m	m	м	m	m	m	m	m	m		ld	n
 p͆	p	p	p	п	p	p	p	p	p	p		ld	p
 b̪	b	b	b	б	b	b	b	b	b	b		ld	b
 f	f	f	f	ф	f	f	f	f	f	f		ld	f
-v	v	v	v	в	b	v	v	v	v	v		ld	v
+v	v	v	v	в	v	v	v	v	v	v		ld	v
 ʋ	v	u	w	в	w	w	v	w	v	w		ld	a
 ⱱ	v	u	v	в	w	v	vw	vw	vw	vw		ld	t
 n	n	n	n	н	n	n	n	n	n	n		d	n
@@ -18,19 +18,19 @@ t	t	t	t	т	t	t	t	t	t	t		d	p
 d	d	d	d	д	d	d	d	d	d	d		d	b
 θ	th	z	th	ф	s	t	th	th	ṯ	θ		d	f
 ð	d	d	th	д	z	d	dh	dh	ḏ	đ		d	v
-t͡s	c	z	tz	ц	ts	c	ts	tz	c	z		ar	pf
-d͡z	z	z	z	дз	z	z	dz	dz	dz	z		ar	bv
+t͡s	c	z	tz	ц	c	c	ts	tz	c	z		ar	pf
+d͡z	z	z	z	дз	ッz	z	dz	dz	dz	z		ar	bv
 s	s	s	s	с	s	s	s	s	s	s		ar	f
 z	z	z	z	з	z	z	z	z	z	z		ar	v
 t͡ʃ	s	ch	ch	ч	ty	c	tsh	ch	č	c		pa	pf
 d͡ʒ	j	y	j	дж	zy	j	dzh	j	dž	j		pa	bv
-ʃ	sc	ch	sh	ш	sy	x	sh	sh	š	x		pa	f
+ʃ	sc	s	sh	ш	sy	x	sh	sh	š	x		pa	f
 ʒ	z	y	j	ж	zy	j	zh	zh	ž	j		pa	v
 t͡ɬ	cl	cl	cl	тл	tor	tl	tl	tl	tl	kl	l	d	pf
 d͡ɮ	gl	gl	gl	дл	dor	dl	dl	dl	dl	gl	l	d	bv
 ɬ	l	l	fl	сл	r	l	ll	sl	lh	hl	l	d	f
-ɮ	l	l	ll	зл	r	l	dl	zl	dl	zl	l	d	v
-ɹ	r	r	r	р	a	r	r	r	r	r		d	a
+ɮ	l	l	ll	зл	r	l	dl	zl	zl	dl	l	d	v
+ɹ	r	r	r	р	r	r	r	r	r	r		d	a
 l	l	l	l	л	r	l	l	l	l	l	l	d	a
 ɫ	l	l	l	ль	r	l	gl	ll	l	ł	lv	d	a
 r	r	r	r	р	r	r	r	r	r	r		d	r
@@ -42,10 +42,10 @@ r̝	r	rr	rz	рж	ruz	r	rz	ř	ř	ř	b	d	r
 ɖ	d	d	d	д	d	d	ḍ	dr	ḍ	ḍ		rf	b
 ʈ͡ʂ	s	ch	ch	ч	ty	c	tṣ	ch	cz	ch		rf	pf
 ɖ͡ʐ	j	y	j	дж	zy	j	dẓ	j	drz	zh		rf	bv
-ʂ	sc	y	sh	ш	sy	x	ṣ	sh	sz	sh		rf	f
+ʂ	sc	s	sh	ш	sy	x	ṣ	sh	sz	sh		rf	f
 ʐ	r	y	j	ж	zy	j	ẓ	zh	rz	zh		rf	v
 ꞎ	l	l	fl	л	r	l	ll	rl	ꞎ	hlh	l	rf	f
-ɻ	r	r	r	р	a	r	r	r	ṛ	rh		rf	a
+ɻ	r	r	r	р	r	r	r	r	ṛ	rh		rf	a
 ɭ	l	l	l	л	r	l	ḷ	rl	ḷ	lh	l	rf	a
 ɽ	r	r	r	р	r	r	r	r	ṛ	rh		rf	t
 ɲ	gn	ñ	ny	нь	ny	ny	ny	nh	ñ	ny		c	n
@@ -56,13 +56,13 @@ c	cj	cy	c	кь	ky	ky	ky	k	tj	k		c	p
 ʎ̥	hj	ll	sh	щ	hy	hy	lly	shl	lhj	ł̣y	l	c	f
 ʎ̝	j	ll	j	ж	zy	j	dly	zhl	hlj	y	l	c	v
 ʎ	gl	ll	y	ль	ry	ly	ly	lh	lj	ly	l	c	a
-ŋ	n	n	ng	нг	nn	ng	ng	ñ	ng	ng		v	n
+ŋ	n	n	ng	нг	ⁿg	ng	ng	ñ	ng	ng		v	n
 k	c	c	c	к	k	k	k	k	k	k		v	p
 ɡ	g	g	g	г	g	g	g	g	g	g		v	b
 x	ch	j	gh	х	h	h	h	kh	x	kh		v	f
 ɣ	g	g	g	г	g	g	gh	gh	ğ	ɣ		v	v
 ʟ	l	ll	y	ль	ry	l	lw	lw	lw	lw	l	v	a
-ɴ	n	n	ng	н	nn	ng	ng	ñ	ng	ng		uv	n
+ɴ	n	n	ng	н	ン	ng	ng	ñ	ng	ng		uv	n
 q	g	g	c	г	k	k	q	q	q	q		uv	p
 ɢ	g	g	g	г	g	g	gh	q	q	q		uv	b
 χ	ch	j	ɦ	х	h	h	qh	h	x̌	qh		uv	f
@@ -73,16 +73,16 @@ q	g	g	c	г	k	k	q	q	q	q		uv	p
 ʕ		h					g’	ʻ	ʕ	ʻ		eg	v
 ʔ		h					’	’	ʻ	’		gl	p
 h	h	j	ɦ	г	h	h	h	h	h	h		gl	f
-ᵏʘ	p	pop	pw	кп	pp	p	cp	cp	ʘ	ʘ		bl	k!
-ᶢʘ	b	bop	mw	кб	pp	b	gp	gp	ʘg	gʘ		bl	g!
-ᵏǀ	t	tut	tut	кт	tt	t	c	c	|	|		ar	k!
-ᶢǀ	d	dut	dut	кд	tt	d	gc	gc	|g	g|		ar	g!
-ᵏǂ	c	ket	cit	кк	kk	k	ç	ç	ǂ	ǂ		c	k!
-ᶢǂ	c	get	git	кг	kk	g	gç	gç	ǂg	gǂ		c	g!
-ᵏǁ	cl	tec	tic	тк	kk	k	x	x	ǁ	ǁ	l	c	k!
-ᶢǁ	gl	dec	dic	тг	kk	g	gx	gx	ǁg	gǁ	l	c	g!
-ᵏǃ	t	tac	tac	тт	tt	t	q	q	!	!		rf	k!
-ᶢǃ	t	dac	dac	тд	tt	t	gq	gq	!g	g!		rf	g!
+ᵏʘ	p	pop	pw	кп	ッp	p	cp	cp	ʘ	ʘ		bl	k!
+ᶢʘ	b	bop	mw	кб	ッp	b	gp	gp	ʘg	gʘ		bl	g!
+ᵏǀ	t	tut	tut	кт	ッt	t	c	c	|	|		ar	k!
+ᶢǀ	d	dut	dut	кд	ッt	d	gc	gc	|g	g|		ar	g!
+ᵏǂ	c	ket	cit	кк	ッk	k	ç	ç	ǂ	ǂ		c	k!
+ᶢǂ	c	get	git	кг	ッk	g	gç	gç	ǂg	gǂ		c	g!
+ᵏǁ	cl	tec	tic	тк	ッk	k	x	x	ǁ	ǁ	l	c	k!
+ᶢǁ	gl	dec	dic	тг	ッk	g	gx	gx	ǁg	gǁ	l	c	g!
+ᵏǃ	t	tac	tac	тт	ッt	t	q	q	!	!		rf	k!
+ᶢǃ	t	dac	dac	тд	ッt	t	gq	gq	!g	g!		rf	g!
 j	j	y	y	й	y	y	y	y	j	y		c	a
 ɥ	j	yu	yu*	ю	yu	yu	yu	yu	y	w	w	c	a
 ɰ	v	u	w	у	w	w	w	w	w	w		v	a
@@ -118,27 +118,27 @@ a	a	a	a*	а	a	a	a	a	a	a	s	c	5
 a	a	a	a*	а	a	a	a	a	a	a	s	m	5
 ɑ	a	a	a*	a	a	a	a	a	a	a	s	v	5
 ɒ	o	o	o*	о	o	o	å	a	ọ	a	sw	v	5
- 	 	 	-	-	・	 	 	 	 	-	!pause
-Xː	X̄	X	X	X	X-	X	xX	Xh	X	X̄	^long
-Xː	xX	X	xX	xX	xX	X	xX	xX	xX	xX	^geminate
+ 	 	 	 	-	・	 	 	 	 	-	!pause
+Xː	X̄	X	X	X	Xー	X	xX	Xh	X	X̄	^long
+Xː	xX	X	xX	xX	ッX	X	xX	xX	xX	xX	^geminate
 X͡Y	Y	Y	X	XY	X	Y	XY	XY	XY	XY	^affricate
 Xʰ	Xh	X	X	Xх	X	X	Xh	Xh	Xh	Xh	^aspirate
-Xʼ	xX	X	xX	xX	xX	X	Xʼ	xX	Xʼ	Xʼ	^ejective
+Xʼ	xX	X	xX	xX	ッX	X	Xʼ	xX	Xʼ	Xʼ	^ejective
 X̥	Xh	X	X	X	X	X	Xh	Xh	Xh	Xh	^devoice
 X̤	X	X	X	Xх	X	X	Xh	Xh	Xh	Xh	^breathy
 X̼	Y	Xl	Xl	лX	Y	Y	Ẍ	Xl	Ÿ	Ẍ	^linguolab
 X͡Y	yX	Y	yX	yX	Y	Y	XY	xY	xY	xY	^double
-Xʷ	Xv	Xu	Xw	Xу	Xu	Xy	Xw	Xw	Xw	X’	^labializ
+Xʷ	Xv	Xu	Xw	Xу	Xw	Xy	Xw	Xw	Xw	X’	^labializ
 Xʲ	Xj	Xi	Xy	Xь	Xy	Xw	Xy	Xy	X’	X’	^palataliz
 Xˠ	X	Xu	X	Xь	X	X	gX	Xw	X̴	X’	^velariz
 Xˤ	X	X	X	X	X	X	X̣	X̰	Xʻ	Xʻ	^pharyngealiz
-X̃	X	X	X	X	Xnn	Xn	X̃	X̨	X̃	Ẍ	^nasaliz
-x͡Y	xY	xY	xY	xY	nnY	xY	xY	xY	Yx	xY	^prenasaliz
+X̃	X	X	X	X	Xン	Xn	X̃	X̨	X̃	Ẍ	^nasaliz
+x͡Y	xY	xY	xY	xY	ンY	xY	xY	xY	Yx	xY	^prenasaliz
 X́	X	X́	X	X́	X	X	X	X	X́	X	^primary
 X̀	X	X	X	X	X	X	X	X	X	X	^secondary
 X̯	X	X	X	X	X	X	X	X	X̆	X	^glide
 X̩	X	eX	eX	X	X	oX	X	X'	X	X	^syllabic
 X̞	X	X	X	X	X	X	X	X	X	X	^approx
 n	y	y	y	y	n	y	y	y	y	y	?capitalization
-n	y	n	y	n	y	y	y	y	y	n	?diphthong as hiatus
+n	y	n	y	n	n	y	y	y	y	n	?diphthong as hiatus
 n	y	y	y	y	y	y	y	n	y	n	?velar nasal as coronal

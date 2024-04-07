@@ -118,7 +118,14 @@ for (const row of harfiaTable.slice(1)) { // each row of the orthographick table
 	}
 }
 
-const ENGLISH_REPLACEMENTS = loadTSV('rules_english.tsv');
+const ENGLISH_REPLACEMENTS = loadTSV('rules_en.tsv');
+const KATAKANA_TABLE = loadTSV('rules_ja.tsv');
+const KATAKANA = new Map<string, Map<string, string>>();
+for (const row of KATAKANA_TABLE) {
+	KATAKANA.set(row[0], new Map<string, string>());
+	for (let i = 0; i < 5; i ++)
+		KATAKANA.get(row[0]).set("aiueo"[i], row[1 + i]);
+}
 
 
 /**
@@ -220,6 +227,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		for (const sound of sounds)
 			symbols += lookUp(sound, style);
 
+		// apply english spelling rules
 		if (style === 'en') {
 			symbols = "#" + symbols + "#";
 			for (const vise of ENGLISH_REPLACEMENTS) {
@@ -286,6 +294,107 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 
 			for (const [ca, pa] of [[/cw/g, "qu"], [/[ck]s/g, "x"], [/yy/g, "y"], [/ww/g, "w"], [/sh[ck]/g, "sc"], [/ɦw/g, "wh"], [/ɦ/g, "h"]])
 				symbols = symbols.replace(ca, <string>pa);
+		}
+		// apply japanese spelling rules
+		else if (style === "ja") {
+			// convert iy and uw to long vowels
+			for (let i = 2; i < symbols.length + 1; i ++) {
+				if (i >= symbols.length || !"aiueo".includes(symbols[i])) {
+					if (symbols[i - 2] === "i" && symbols[i - 1] === "y")
+						symbols = symbols.slice(0, i - 1) + "ー" + symbols.slice(i);
+					else if (symbols[i - 2] === "u" && symbols[i - 1] === "w")
+						symbols = symbols.slice(0, i - 1) + "ー" + symbols.slice(i);
+				}
+			}
+			// if there happen to be double consonants, replace them with ッ
+			for (let i = symbols.length - 1; i >= 1; i --) {
+				if (symbols[i - 1] === symbols[i])
+					if (!"aiueo".includes(symbols[i]))
+						symbols = symbols.slice(0, i - 1) + "ッ" + symbols.slice(i);
+			}
+			// ッ is only valid between a vowel and an obstruent
+			for (let i = symbols.length; i >= 1; i --) {
+				if (symbols[i - 1] === "ッ") {
+					if (i - 2 < 0 || !"aiueoy".includes(symbols[i - 2]) || i >= symbols.length)
+						symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+					else if ("yrwvッンー".includes(symbols[i]))
+						symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+					else if ("nm".includes(symbols[i]))
+						symbols = symbols.slice(0, i - 1) + "ン" + symbols.slice(i);
+				}
+			}
+			// superscript n means add an ン if it's after a vowel but omit it otherwise
+			for (let i = symbols.length - 1; i >= 0; i --) {
+				if (symbols[i] === "ⁿ") {
+					if (i - 1 >= 0 && "aiueoy".includes(symbols[i - 1]))
+						symbols = symbols.slice(0, i) + "ン" + symbols.slice(i + 1);
+					else
+						symbols = symbols.slice(0, i) + symbols.slice(i + 1);
+				}
+			}
+			// convert excess n to ン
+			for (let i = 1; i < symbols.length + 1; i ++)
+				if (symbols[i - 1] === "n" && (i >= symbols.length || !"aiueoy".includes(symbols[i])))
+					symbols = symbols.slice(0, i - 1) + "ン" + symbols.slice(i);
+			// insert vowels between adjacent consonants
+			for (let i = symbols.length; i >= 1; i --) {
+				if (!"aiueoyッンー".includes(symbols[i - 1]) && (i >= symbols.length || !"aiueoy".includes(symbols[i]))) {
+					let vowel;
+					if (i < symbols.length && symbols[i] === "w" && (i + 1 >= symbols.length || symbols[i + 1] !== "a"))
+						vowel = "u"; // u if we're going to need to use it as a stand-in for w
+					else if ("tdh".includes(symbols[i - 1]))
+						vowel = "o"; // o if it's after t
+					else
+						vowel = "u"; // u for everything else
+					symbols = symbols.slice(0, i) + vowel + symbols.slice(i);
+				}
+			}
+			// expand eligible small ャ, ュ, ョ, and ェ
+			for (let i = symbols.length - 1; i >= 2; i --) {
+				if (!"aiueotcfywvッンー".includes(symbols[i - 2]) && symbols[i - 1] === "y" && "aiueo".includes(symbols[i])) {
+					const nucleus = KATAKANA.get("ʸ").get(symbols[i]);
+					symbols = symbols.slice(0, i - 1) + "i" + nucleus + symbols.slice(i + 1);
+				}
+			}
+			// convert invalid y to i or remove it
+			for (let i = symbols.length; i >= 2; i --) {
+				if (symbols[i - 1] === "y") {
+					if (i >= symbols.length || !"aiueo".includes(symbols[i]))
+						symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i);
+					else if (i - 2 >= 0 && "tcfwv".includes(symbols[i - 2]))
+						symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i - 1);
+				}
+			}
+			// remove glides to prevent superfluus compound characters (e.g. iye -> ie)
+			for (let i = symbols.length - 1; i >= 2; i --) {
+				if (symbols[i - 2] === "u" && symbols[i - 1] === "w" && "ieo".includes(symbols[i]))
+					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+				else if (symbols[i - 2] === "i" && symbols[i - 1] === "y" && symbols[i] === "e")
+					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+			}
+			// convert the romaji to katakana
+			let i = symbols.length - 1;
+			let newSymbols = [];
+			while (i >= 0) {
+				if ("aiueo".includes(symbols[i])) {
+					const vowel = symbols[i];
+					let consonant = "";
+					if (KATAKANA.has(symbols[i - 1])) {
+						i--;
+						consonant = symbols[i];
+					}
+					newSymbols.push(KATAKANA.get(consonant).get(vowel));
+				}
+				else if ("ッンーャュェョ".includes(symbols[i])) {
+					newSymbols.push(symbols[i]);
+				}
+				else {
+					console.log(symbols.charCodeAt(i));
+					throw new Error(`invalid romaji input: ${symbols.slice(0, i)}[${symbols[i]}]${symbols.slice(i + 1)}`);
+				}
+				i --;
+			}
+			symbols = newSymbols.reverse().join("");
 		}
 
 		// finally, capitalize
