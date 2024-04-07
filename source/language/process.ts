@@ -17,7 +17,7 @@ import {
 	Silabia,
 	Voze
 } from "./sound.js";
-import {ipaSymbol} from "./script.js";
+import {ipaSymbol, transcribe} from "./script.js";
 import {loadTSV} from "../utilities/fileio.js";
 import {Name} from "./name.js";
 
@@ -175,25 +175,54 @@ export class Syllabicization implements Process {
 		const sonority = [];
 		for (const sound of oldWord) // first calculate the sonorities
 			sonority.push(sound.getSonority());
+		let weNeedANewStress = false;
 		const newWord = []; // then copy the old word
 		for (let i = 0; i < oldWord.length; i ++) { // and assign syllables accordingly
 			const c = sonority[i];
 			const l = (i-1 >= 0) ? sonority[i-1] : -Infinity;
 			const r = (i+1 < oldWord.length) ? sonority[i+1] : -Infinity;
+			// if it is a local maximum of sonority, make it syllabic
 			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) { // if it is a peak
+				let desiredLevelOfStress;
+				if (weNeedANewStress)
+					desiredLevelOfStress = Silabia.PRIMARY_STRESSED;
+				else if (oldWord[i].is(Quality.SYLLABIC))
+					desiredLevelOfStress = oldWord[i].silabia;
+				else
+					desiredLevelOfStress = Silabia.UNSTRESSED;
+				weNeedANewStress = false;
+				// if it's invalid as a syllable nucleus, insert an epenthetic schwa
 				if (oldWord[i].getSonority() < this.minSonority) {
 					newWord.push(new Sound(Mode.OPEN_MID, Loke.CENTRAL, Voze.VOICED,
 						oldWord[i].silabia, Longia.SHORT, Latia.MEDIAN,
-						MinorLoke.UNROUNDED, Nosia.ORAL).with(Quality.SYLLABIC));
-					newWord.push(oldWord[i].with(Silabia.NONSYLLABIC)); // insert an epenthetic schwa or
+						MinorLoke.UNROUNDED, Nosia.ORAL).with(desiredLevelOfStress));
+					newWord.push(oldWord[i].with(Silabia.NONSYLLABIC));
 				}
+				// otherwise, just make it syllabic
 				else
-					newWord.push(oldWord[i].with(Quality.SYLLABIC)); // make it syllabic
+					newWord.push(oldWord[i].with(desiredLevelOfStress));
 			}
-			else // otherwise if it is a sound
-				newWord.push(oldWord[i].with(Silabia.NONSYLLABIC)); // make it nonsyllabic
+			// otherwise make it nonsyllabic
+			else {
+				if (oldWord[i].silabia === Silabia.PRIMARY_STRESSED)
+					weNeedANewStress = true; // make a note if it carried the primary stress
+				newWord.push(oldWord[i].with(Silabia.NONSYLLABIC));
+			}
 		}
-		return newWord;
+		// if you didn't manage to replace the primary stress, put it on the last syllable
+		if (weNeedANewStress) {
+			for (let i = newWord.length - 1; i >= 0; i --) {
+				if (newWord[i].is(Quality.SYLLABIC)) {
+					newWord[i] = newWord[i].with(Silabia.PRIMARY_STRESSED);
+					return newWord;
+				}
+			}
+			throw new Error(
+				`if you got this far, it means there are no syllables in ` +
+				`[${transcribe([newWord], "ipa")}]`);
+		}
+		else
+			return newWord;
 	}
 }
 
