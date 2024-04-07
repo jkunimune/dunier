@@ -368,7 +368,7 @@ export class Klas {
 	 */
 	apply(sound: Sound = Sound.BLANK, ref: Sound = null): Sound {
 		if (this.forbidden.length > 0)
-			throw Error(`you can't use minus ${this.forbidden[0]} in the final state of a process!`);
+			throw Error(`you can't use -${this.forbidden[0]} in the final state of a process!`);
 		if (this.required.length === 0) // if there are no properties, you don't have to do anything
 			return sound;
 
@@ -542,7 +542,7 @@ export class Klas {
 	}
 
 	toString(): string {
-		return `Klas(+[${this.required}], -[${this.forbidden}])`;
+		return `Klas(+[${this.required.join(", ")}], -[${this.forbidden.join(", ")}])`;
 	}
 }
 

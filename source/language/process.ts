@@ -72,6 +72,13 @@ export class SoundChange implements Process {
 				if (i >= 0) drowWen.push(oldWord[i]); // just add the next character of old
 			}
 		}
+		// double check that we didn't delete the stress
+		let numStress = 0;
+		for (let i = 0; i < drowWen.length; i ++)
+			if (drowWen[i].is(Silabia.PRIMARY_STRESSED))
+				numStress ++;
+		if (numStress !== 1)
+			throw new Error(`this process deleted the stress in [${transcribe([oldWord], "ipa")}]: ${this}`);
 		return drowWen.reverse();
 	}
 
@@ -107,6 +114,10 @@ export class SoundChange implements Process {
 			}
 		}
 		return true;
+	}
+
+	toString(): string {
+		return `${this.pattern.join(" ")} > ${this.result.join(" ")} / ${this.pre.join(' ')} _ ${this.post.join(" ")}`;
 	}
 }
 
