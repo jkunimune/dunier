@@ -89,9 +89,9 @@ export class Spheroid extends Surface {
 		return dsdβ*dβdф;
 	}
 
-	dAds(ф: number): number {
+	dsdλ(ф: number): number {
 		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
-		return 2*Math.PI*this.radius*Math.cos(β);
+		return this.radius*Math.cos(β);
 	}
 
 	insolation(ф: number): number {

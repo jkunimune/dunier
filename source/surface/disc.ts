@@ -42,8 +42,8 @@ export class Disc extends Surface {
 		return this.firmamentHite*Math.pow(Math.sin(ф), -2);
 	}
 
-	dAds(ф: number): number {
-		return 2*Math.PI*this.firmamentHite/Math.tan(ф);
+	dsdλ(ф: number): number {
+		return this.firmamentHite/Math.tan(ф);
 	}
 
 	insolation(ф: number): number {

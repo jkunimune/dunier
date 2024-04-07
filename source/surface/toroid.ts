@@ -77,9 +77,9 @@ export class Toroid extends Surface {
 		return dsdβ*dβdф;
 	}
 
-	dAds(ф: number): number {
+	dsdλ(ф: number): number {
 		const β = Math.atan2(Math.sin(ф)*this.elongation, Math.cos(ф));
-		return 2*Math.PI*(this.majorRadius + this.minorRadius*Math.cos(β));
+		return this.majorRadius + this.minorRadius*Math.cos(β);
 	}
 
 	insolation(ф: number): number {

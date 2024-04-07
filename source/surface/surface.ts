@@ -53,14 +53,15 @@ export abstract class Surface {
 		this.cumulDistances = [];
 		let ф = this.фMin, A = 0, s = 0;
 		const dф = (this.фMax - this.фMin)/INTEGRATION_RESOLUTION;
+		const dλ = 2*Math.PI;
 		for (let i = 0; i <= INTEGRATION_RESOLUTION; i ++) {
 			this.refLatitudes.push(ф);
 			this.cumulAreas.push(A);
 			this.cumulDistances.push(s);
 			const dsdф = this.dsdф(ф + dф/2); // a simple middle Riemann sum will do
-			const dAds = this.dAds(ф + dф/2);
+			const dsdλ = this.dsdλ(ф + dф/2);
 			ф += dф;
-			A += dAds*dsdф*dф;
+			A += dsdλ*dλ*dsdф*dф;
 			s += dsdф*dф;
 		}
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
@@ -225,11 +226,15 @@ export abstract class Surface {
 		return {x: X, y: Y, z: Z, I: S};
 	}
 
-	d2Ads2(ф: number): number {
+	/**
+	 * the latitude derivative of dsdλ
+	 * @param ф
+	 */
+	ddsdλdф(ф: number): number {
 		let фL = ф - 1e-2, фR = ф + 1e-2;
 		if (фL < this.фMin) фL = this.фMin;
 		if (фR > this.фMax) фR = this.фMax;
-		return (this.dAds(фR) - this.dAds(фL))/
+		return (this.dsdλ(фR) - this.dsdλ(фL))/
 			(this.dsdф(ф) * (фR - фL));
 	}
 
@@ -247,14 +252,14 @@ export abstract class Surface {
 	abstract partition(): {nodos: Tile[], triangles: Vertex[]};
 
 	/**
-	 * return the local length-to-latitude rate [km]
+	 * return the local length-to-latitude rate [km/rad]
 	 */
 	abstract dsdф(ф: number): number;
 
 	/**
-	 * return the local effective width [km]
+	 * return the local length-to-longitude rate [km/rad]
 	 */
-	abstract dAds(ф: number): number;
+	abstract dsdλ(ф: number): number;
 
 	/**
 	 * return the amount of solar radiation at a latitude, normalized to average to 1.

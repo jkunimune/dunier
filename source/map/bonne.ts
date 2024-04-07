@@ -24,14 +24,14 @@ export class Bonne extends MapProjection {
 
 		const focus = MapProjection.standardParallels(locus, this);
 		const distance0 = linterp(focus.фStd, surface.refLatitudes, surface.cumulDistances);
-		this.yJong = surface.dAds(focus.фStd)/surface.d2Ads2(focus.фStd);
+		this.yJong = surface.dsdλ(focus.фStd)/surface.ddsdλdф(focus.фStd);
 
 		this.фRef = surface.refLatitudes; // do the necessary integrals
 		this.yRef = []; // to get the y positions of the prime meridian
 		this.sRef = []; // and the arc lengths corresponding to one radian
 		for (let i = 0; i < this.фRef.length; i ++) {
 			this.yRef.push(distance0 - surface.cumulDistances[i]);
-			this.sRef.push(surface.dAds(this.фRef[i])/(2*Math.PI)); // TODO: try this with something that spans both poles.  I feel like it probably won't work
+			this.sRef.push(surface.dsdλ(this.фRef[i])); // TODO: try this with something that spans both poles.  I feel like it probably won't work
 		}
 
 		this.maxф = Math.min(surface.фMax, 1.4*focus.фMax - 0.4*focus.фMin); // spread the limits out a bit to give a contextual view
