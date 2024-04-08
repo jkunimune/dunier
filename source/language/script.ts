@@ -344,6 +344,8 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 						vowel = "u"; // u if we're going to need to use it as a stand-in for w
 					else if ("tdh".includes(symbols[i - 1]))
 						vowel = "o"; // o if it's after t
+					else if ("qj".includes(symbols[i - 1]))
+						vowel = "i"; // i if it's after ch or j
 					else
 						vowel = "u"; // u for everything else
 					symbols = symbols.slice(0, i) + vowel + symbols.slice(i);
