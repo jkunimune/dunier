@@ -16,8 +16,8 @@
 200 mute [ +LOW ] > [ +UNROUND ] /											% unrounding of low vowels
 200 mute [ +VELAR +VOCOID ] > [ +LABIALIZ ] /								% rounding of back vowels
 %%		height
-200 mute [ +GLIDE ] > [ +CLOSE ] /											% correction of nonhigh semivowels
-200 mute [ +GLIDE -HIGH ] > [ +UNSTRESS ] /									% correction of nonhigh semivowels
+500 mute [ +GLIDE ] > [ +CLOSE ] /											% correction of nonhigh semivowels
+500 mute [ +GLIDE -HIGH ] > [ +UNSTRESS ] /									% correction of nonhigh semivowels
 100 mute [ +GLIDE ] > [ +UNSTRESS ] / [ +LIQ ] _
 010 mute [ +OPEN_MID ] > [ +NEAR_OPEN ] /									% ɛ > æ
 050 mute [ +NEAR_OPEN ] > [ +OPEN_MID ] /									% æ > ɛ
