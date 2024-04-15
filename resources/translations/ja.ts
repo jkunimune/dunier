@@ -1,4 +1,4 @@
-{
+export default {
 	".language": "ja",
 	".language.fallback": "ja",
 	"about.credits.body": "<p>dunierはウィキペディア編集者と言語学愛好者の国宗ジャスティンの作品だ。アズガールの<a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">Fantasy Map Generator</a>にたくさんのアイデアを捕った。そのうえ、アガフォルキン・ヴラディミルの<a href=\"https://github.com/mourner/tinyqueue\">Tinyqueue</a>、ハーク・ステファンの<a href=\"https://github.com/shaack/bootstrap-input-spinner\">Bootstrap Input Spinner</a>、ラウッハマイェル・アクセルの<a href=\"https://2ality.com/2020/01/enum-pattern.html\">Enumify</a>、ホール・ジェームズの<a href=\"https://parall.ax/products/jspdf\">JSPDF</a>、<a href=\"https://popper.js.org/docs/v2\">Popper</a>、<a href=\"https://plotly.com\">Plotly</a>、<a href=\"https://jquery.com\">JQuery</a>、<a href=\"https://getbootstrap.com\">Bootstrap</a>を使用する。</p>",
@@ -767,4 +767,4 @@
 	"unit.meter_per_year": "m/y",
 	"unit.per_gigayear": "/Gy",
 	"unit.year": "年"
-}
+};

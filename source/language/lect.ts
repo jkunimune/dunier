@@ -95,7 +95,7 @@ export class ProtoLang extends Lect {
 
 	constructor(rng: Random) {
 		super(
-			rng.discrete(0, 4).toString(),
+			`native${rng.discrete(0, 4)}`,
 			rng.probability(0.2));
 		this.macrolanguage = this;
 

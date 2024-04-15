@@ -1,0 +1,661 @@
+export default [
+  {
+    "key": "skill", "chance": 1.0, "features": [
+      {
+        "key": "skill", "newWord": true, "values": [
+          { "key": "painting", "klas": "none", "conditions": [] },
+          { "key": "sandpainting", "klas": "none", "conditions": ["+coastal"] },
+          { "key": "sculpture", "klas": "none", "conditions": [] },
+          { "key": "carving", "klas": "none", "conditions": [] },
+          { "key": "printing", "klas": "none", "conditions": ["tech>200"] },
+          { "key": "mosaic", "klas": "none", "conditions": [] },
+          { "key": "geoglyph", "klas": "none", "conditions": [] },
+          { "key": "storytelling", "klas": "none", "conditions": [] },
+          { "key": "monuments", "klas": "none", "conditions": [] },
+          { "key": "conservative", "klas": "none", "conditions": [] },
+          { "key": "liberal", "klas": "none", "conditions": [] },
+          { "key": "metric_system", "klas": "none", "conditions": [] },
+          { "key": "roads", "klas": "none", "conditions": [] },
+          { "key": "mustache", "klas": "none", "conditions": [] },
+          { "key": "piercings", "klas": "none", "conditions": [] },
+          { "key": "jewelry", "klas": "none", "conditions": [] },
+          { "key": "body_paint", "klas": "none", "conditions": [] },
+          { "key": "makeup", "klas": "none", "conditions": [] },
+          { "key": "tattoos", "klas": "none", "conditions": [] },
+          { "key": "scarring", "klas": "none", "conditions": [] },
+          { "key": "irrigation", "klas": "none", "conditions": [] },
+          { "key": "spear", "klas": "none", "conditions": [] },
+          { "key": "archery", "klas": "none", "conditions": [] },
+          { "key": "sword", "klas": "none", "conditions": ["tech>-1600"] },
+          { "key": "rifle", "klas": "none", "conditions": ["tech>1740"] },
+          { "key": "fistery", "klas": "none", "conditions": [] },
+          { "key": "pottery", "klas": "none", "conditions": [] },
+          { "key": "metalworking", "klas": "none", "conditions": [] },
+          { "key": "woodworking", "klas": "none", "conditions": [] },
+          { "key": "glassworking", "klas": "none", "conditions": ["tech>-2500"] },
+          { "key": "fireworks", "klas": "none", "conditions": ["tech>1110"] },
+          { "key": "horseback", "klas": "none", "conditions": [] },
+          { "key": "elephant", "klas": "none", "conditions": ["+jungle", "+plains"] },
+          { "key": "seafaring", "klas": "none", "conditions": ["tech>-2100", "+coastal"] },
+          { "key": "flying", "klas": "none", "conditions": ["tech>1903"] },
+          { "key": "cinema", "klas": "none", "conditions": ["tech>1888"] },
+          { "key": "theatre", "klas": "none", "conditions": [] },
+          { "key": "weaving", "klas": "none", "conditions": [] },
+          { "key": "alcohol", "klas": "none", "conditions": [] },
+          { "key": "massages", "klas": "none", "conditions": [] },
+          { "key": "puppetry", "klas": "none", "conditions": [] },
+          { "key": "wirecraft", "klas": "none", "conditions": ["tech>1850"] },
+          { "key": "terraces", "klas": "none", "conditions": ["+mountain"] },
+          { "key": "navigation", "klas": "none", "conditions": [] },
+          { "key": "hospitals", "klas": "none", "conditions": [] },
+          { "key": "dams", "klas": "none", "conditions": [] },
+          { "key": "knots", "klas": "none", "conditions": [] },
+          { "key": "fabric", "klas": "none", "conditions": [] },
+          { "key": "fishing", "klas": "none", "conditions": [] },
+          { "key": "bluntness", "klas": "none", "conditions": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "clothes", "chance": 0.3, "features": [
+      {
+        "key": "person", "newWord": false, "values": [
+          { "key": "people", "klas": "none", "conditions": [] },
+          { "key": "men", "klas": "none", "conditions": [] },
+          { "key": "women", "klas": "none", "conditions": [] },
+          { "key": "elders", "klas": "none", "conditions": [] },
+          { "key": "soldiers", "klas": "none", "conditions": [] },
+          { "key": "leaders", "klas": "none", "conditions": [] },
+          { "key": "clerics", "klas": "none", "conditions": [] },
+          { "key": "aristocrats", "klas": "none", "conditions": [] },
+          { "key": "rich", "klas": "none", "conditions": ["tech>-700"] },
+          { "key": "dancers", "klas": "none", "conditions": [] },
+          { "key": "grooms", "klas": "none", "conditions": [] },
+          { "key": "brides", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "type", "newWord": true, "values": [
+          { "key": "turban", "klas": "fabric", "conditions": [] },
+          { "key": "hairpin", "klas": "fabric", "conditions": [] },
+          { "key": "vest", "klas": "fabric", "conditions": [] },
+          { "key": "mask", "klas": "fabric", "conditions": [] },
+          { "key": "veil", "klas": "fabric", "conditions": [] },
+          { "key": "sash", "klas": "fabric", "conditions": [] },
+          { "key": "skirt", "klas": "fabric", "conditions": [] },
+          { "key": "drape", "klas": "fabric", "conditions": [] },
+          { "key": "cape", "klas": "fabric", "conditions": [] },
+          { "key": "tunic", "klas": "fabric", "conditions": [] },
+          { "key": "belt", "klas": "fabric", "conditions": [] },
+          { "key": "neckerchief", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "pants", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "sleve", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "scarf", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "headscarf", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "shawl", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "coat", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "robe", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "dress", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "chestwrap", "klas": "fabric", "conditions": ["-tundra", "-taiga"] },
+          { "key": "waistwrap", "klas": "fabric", "conditions": ["-tundra", "-taiga"] },
+          { "key": "wings", "klas": "none", "conditions": [] },
+          { "key": "hat", "klas": "none", "conditions": [] },
+          { "key": "big_hat", "klas": "none", "conditions": [] },
+          { "key": "small_hat", "klas": "none", "conditions": [] },
+          { "key": "amulet", "klas": "none", "conditions": [] },
+          { "key": "shoe", "klas": "none", "conditions": [] },
+          { "key": "pendant", "klas": "none", "conditions": [] },
+          { "key": "necklace", "klas": "none", "conditions": [] },
+          { "key": "tail", "klas": "none", "conditions": [] },
+          { "key": "wig", "klas": "none", "conditions": [] },
+          { "key": "earring", "klas": "none", "conditions": [] },
+          { "key": "bracelet", "klas": "none", "conditions": [] },
+          { "key": "anklet", "klas": "none", "conditions": ["-tundra", "-taiga"] },
+          { "key": "cord", "klas": "none", "conditions": [] },
+          { "key": "eyeware", "klas": "none", "conditions": ["tech>1100"] }
+        ]
+      },
+      {
+        "key": "attribute", "newWord": false, "values": [
+          { "key": "colorful", "klas": "none", "conditions": [] },
+          { "key": "sapphire", "klas": "none", "conditions": [] },
+          { "key": "ruby", "klas": "none", "conditions": [] },
+          { "key": "emerald", "klas": "none", "conditions": [] },
+          { "key": "amber", "klas": "none", "conditions": [] },
+          { "key": "golden", "klas": "none", "conditions": [] },
+          { "key": "silver", "klas": "none", "conditions": [] },
+          { "key": "white", "klas": "none", "conditions": [] },
+          { "key": "black", "klas": "none", "conditions": [] },
+          { "key": "shiny", "klas": "none", "conditions": ["tech>698"] },
+          { "key": "fluorescent", "klas": "none", "conditions": ["tech>1852"] },
+          { "key": "iridescent", "klas": "none", "conditions": ["tech>698"] },
+          { "key": "glowing", "klas": "none", "conditions": ["+coastal"] },
+          { "key": "intricate", "klas": "none", "conditions": [] },
+          { "key": "feathered", "klas": "none", "conditions": [] },
+          { "key": "sequined", "klas": "none", "conditions": [] },
+          { "key": "extravagant", "klas": "none", "conditions": [] },
+          { "key": "jeweled", "klas": "none", "conditions": [] },
+          { "key": "shelled", "klas": "none", "conditions": ["+coastal", "-tundra", "-taiga"] },
+          { "key": "pearled", "klas": "none", "conditions": ["+coastal", "-tundra", "-taiga"] },
+          { "key": "decorated", "klas": "none", "conditions": [] },
+          { "key": "ceremonial", "klas": "none", "conditions": [] },
+          { "key": "calligraphic", "klas": "none", "conditions": [] },
+          { "key": "ribboned", "klas": "none", "conditions": [] },
+          { "key": "flowered", "klas": "none", "conditions": [] },
+          { "key": "belled", "klas": "none", "conditions": ["tech>-600"] },
+          { "key": "pointy", "klas": "none", "conditions": [] },
+          { "key": "fur", "klas": "none", "conditions": ["-jungle", "-desert", "-steamland", "-swamp"] },
+          { "key": "grass", "klas": "none", "conditions": ["-desert", "-tundra"] },
+          { "key": "barkcloth", "klas": "none", "conditions": ["+fabric", "-desert", "-tundra"] },
+          { "key": "thick", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "leather", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "tiedyed", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "flowing", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "loose", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "tight", "klas": "none", "conditions": ["+fabric", "-desert"] },
+          { "key": "pleated", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "layered", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "voluminous", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "embroidered", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "patterned", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "aloha", "klas": "none", "conditions": ["+fabric"] }
+        ]
+      },
+      {
+        "key": "hair", "newWord": false, "values": [
+          { "key": "short", "klas": "none", "conditions": ["-hairpin"] },
+          { "key": "medium", "klas": "none", "conditions": ["-hairpin", "-kinky"] },
+          { "key": "long", "klas": "none", "conditions": ["-hairpin"] },
+          { "key": "bushy", "klas": "none", "conditions": ["-hairpin", "+kinky"] },
+          { "key": "bun", "klas": "none", "conditions": [] },
+          { "key": "loop", "klas": "none", "conditions": [] },
+          { "key": "tail", "klas": "none", "conditions": ["-kinky"] },
+          { "key": "braid", "klas": "none", "conditions": [] },
+          { "key": "tails", "klas": "none", "conditions": ["-kinky"] },
+          { "key": "knots", "klas": "none", "conditions": [] },
+          { "key": "braids", "klas": "none", "conditions": [] },
+          { "key": "elaborate", "klas": "none", "conditions": [] },
+          { "key": "shaved", "klas": "none", "conditions": ["-hairpin"] },
+          { "key": "partial", "klas": "none", "conditions": [] },
+          { "key": "lateral", "klas": "none", "conditions": [] },
+          { "key": "ornamented", "klas": "none", "conditions": [] },
+          { "key": "sculpted", "klas": "none", "conditions": [] },
+          { "key": "sideburns", "klas": "none", "conditions": ["-nofacehair"] },
+          { "key": "buzzed", "klas": "none", "conditions": ["-hairpin", "tech>1900"] },
+          { "key": "greased", "klas": "none", "conditions": ["tech>1000"] },
+          { "key": "colorful", "klas": "none", "conditions": ["tech>1850"] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "food", "chance": 0.3, "features": [
+      {
+        "key": "attribute", "newWord": false, "values": [
+          { "key": "bland", "klas": "none", "conditions": [] },
+          { "key": "sweet", "klas": "none", "conditions": [] },
+          { "key": "bitter", "klas": "none", "conditions": [] },
+          { "key": "sour", "klas": "none", "conditions": [] },
+          { "key": "salty", "klas": "none", "conditions": [] },
+          { "key": "savory", "klas": "none", "conditions": [] },
+          { "key": "spicy", "klas": "none", "conditions": [] },
+          { "key": "pickled", "klas": "none", "conditions": [] },
+          { "key": "smoked", "klas": "none", "conditions": [] },
+          { "key": "steamed", "klas": "none", "conditions": [] },
+          { "key": "fried", "klas": "none", "conditions": [] },
+          { "key": "baked", "klas": "none", "conditions": [] },
+          { "key": "saucy", "klas": "none", "conditions": [] },
+          { "key": "chewy", "klas": "none", "conditions": [] },
+          { "key": "dry", "klas": "none", "conditions": [] },
+          { "key": "liquid", "klas": "none", "conditions": [] },
+          { "key": "hot", "klas": "none", "conditions": ["-jungle", "-desert", "-steamland", "-swamp"] },
+          { "key": "cold", "klas": "none", "conditions": ["tech>1911", "-tundra", "-taiga"] }
+        ]
+      },
+      {
+        "key": "base", "newWord": true, "values": [
+          { "key": "cereal", "klas": "none", "conditions": [] },
+          { "key": "rice", "klas": "none", "conditions": ["-tundra"] },
+          { "key": "tuber", "klas": "none", "conditions": [] },
+          { "key": "corn", "klas": "none", "conditions": ["-tundra"] },
+          { "key": "meat", "klas": "none", "conditions": [] },
+          { "key": "fish", "klas": "none", "conditions": [] },
+          { "key": "fruit", "klas": "none", "conditions": [] },
+          { "key": "nuts", "klas": "none", "conditions": [] },
+          { "key": "beans", "klas": "none", "conditions": [] },
+          { "key": "cheese", "klas": "none", "conditions": ["+lactase"] },
+          { "key": "fermented", "klas": "none", "conditions": [] },
+          { "key": "insect", "klas": "none", "conditions": [] },
+          { "key": "dessert", "klas": "none", "conditions": [] },
+          { "key": "group", "klas": "none", "conditions": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "drug", "chance": 0.3, "features": [
+      {
+        "key": "time", "newWord": false, "values": [
+          { "key": "often", "klas": "none", "conditions": [] },
+          { "key": "usually", "klas": "none", "conditions": [] },
+          { "key": "always", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "act", "newWord": false, "values": [
+          { "key": "drink", "klas": "none", "conditions": [] },
+          { "key": "chew", "klas": "none", "conditions": [] },
+          { "key": "smoke", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "attribute", "newWord": false, "values": [
+          { "key": "caffeine", "klas": "none", "conditions": [] },
+          { "key": "sedative", "klas": "none", "conditions": [] },
+          { "key": "alcoholic", "klas": "none", "conditions": [] },
+          { "key": "sweet", "klas": "none", "conditions": [] },
+          { "key": "bitter", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "effect", "newWord": true, "values": [
+          { "key": "leaf", "klas": "none", "conditions": ["-barren"] },
+          { "key": "seed", "klas": "none", "conditions": [] },
+          { "key": "sap", "klas": "none", "conditions": [] },
+          { "key": "fruit", "klas": "none", "conditions": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "house", "chance": 0.3, "features": [
+      {
+        "key": "wall", "newWord": false, "values": [
+          { "key": "pelt", "klas": "none", "conditions": ["-sedentary"] },
+          { "key": "cloth", "klas": "none", "conditions": ["-sedentary"] },
+          { "key": "wood", "klas": "none", "conditions": ["+sedentary", "-barren"] },
+          { "key": "mud", "klas": "none", "conditions": ["+sedentary"] },
+          { "key": "mudbrick", "klas": "none", "conditions": ["+sedentary"] },
+          { "key": "cob", "klas": "none", "conditions": ["+sedentary"] },
+          { "key": "adobe", "klas": "none", "conditions": ["+sedentary"] },
+          { "key": "clay", "klas": "none", "conditions": ["+sedentary"] },
+          { "key": "snowbrick", "klas": "none", "conditions": ["+sedentary", "+tundra"] },
+          { "key": "marble", "klas": "none", "conditions": ["+sedentary"] },
+          { "key": "concrete", "klas": "none", "conditions": ["+sedentary", "tech>-800"] },
+          { "key": "steel", "klas": "none", "conditions": ["+sedentary", "tech>1000"] },
+          { "key": "floating", "klas": "none", "conditions": ["+coastal", "-tundra", "-taiga"] }
+        ]
+      },
+      {
+        "key": "roof", "newWord": false, "values": [
+          { "key": "none", "klas": "none", "conditions": ["-sedentary"] },
+          { "key": "thatching", "klas": "none", "conditions": ["+sedentary", "-barren"] },
+          { "key": "claytile", "klas": "none", "conditions": ["+sedentary", "-tundra"] },
+          { "key": "terracottatile", "klas": "none", "conditions": ["+sedentary"] },
+          { "key": "slatetile", "klas": "none", "conditions": ["+sedentary"] },
+          { "key": "metal", "klas": "none", "conditions": ["+sedentary", "tech>1840"] },
+          { "key": "metaltile", "klas": "none", "conditions": ["+sedentary", "tech>-300"] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "building", "chance": 0.3, "features": [
+      {
+        "key": "feature", "newWord": false, "values": [
+          { "key": "color", "klas": "none", "conditions": [] },
+          { "key": "gold", "klas": "none", "conditions": [] },
+          { "key": "bridge", "klas": "none", "conditions": [] },
+          { "key": "gate", "klas": "none", "conditions": [] },
+          { "key": "door", "klas": "none", "conditions": [] },
+          { "key": "wall", "klas": "none", "conditions": [] },
+          { "key": "ceiling", "klas": "none", "conditions": [] },
+          { "key": "roof", "klas": "none", "conditions": [] },
+          { "key": "window", "klas": "none", "conditions": [] },
+          { "key": "eave", "klas": "none", "conditions": [] },
+          { "key": "parapet", "klas": "none", "conditions": [] },
+          { "key": "keystone", "klas": "none", "conditions": [] },
+          { "key": "column", "klas": "none", "conditions": [] },
+          { "key": "pedestal", "klas": "none", "conditions": [] },
+          { "key": "turret", "klas": "none", "conditions": [] },
+          { "key": "dome", "klas": "none", "conditions": ["tech>-300"] },
+          { "key": "arch", "klas": "none", "conditions": [] },
+          { "key": "bracket", "klas": "none", "conditions": ["tech>1200"] },
+          { "key": "spire", "klas": "none", "conditions": [] },
+          { "key": "minaret", "klas": "none", "conditions": [] },
+          { "key": "aqueduct", "klas": "none", "conditions": [] },
+          { "key": "bell", "klas": "none", "conditions": [] },
+          { "key": "porch", "klas": "none", "conditions": [] },
+          { "key": "courtyard", "klas": "none", "conditions": [] },
+          { "key": "garden", "klas": "none", "conditions": [] },
+          { "key": "fountain", "klas": "none", "conditions": [] },
+          { "key": "sculpture", "klas": "none", "conditions": [] },
+          { "key": "stucco", "klas": "none", "conditions": ["tech>200"] },
+          { "key": "glass", "klas": "none", "conditions": [] },
+          { "key": "utilitarianism", "klas": "none", "conditions": [] },
+          { "key": "stilts", "klas": "none", "conditions": ["+coastal", "-floating"] }
+        ]
+      },
+      {
+        "key": "depictor", "newWord": false, "values": [
+          { "key": "color", "klas": "none", "conditions": ["-color", "-utilitarianism"] },
+          { "key": "bridge", "klas": "none", "conditions": ["-bridge"] },
+          { "key": "gate", "klas": "none", "conditions": ["-gate"] },
+          { "key": "door", "klas": "none", "conditions": ["-door"] },
+          { "key": "wall", "klas": "none", "conditions": ["-wall"] },
+          { "key": "ceiling", "klas": "none", "conditions": ["-ceiling"] },
+          { "key": "window", "klas": "none", "conditions": ["-window", "-utilitarianism"] },
+          { "key": "eave", "klas": "none", "conditions": ["-eave"] },
+          { "key": "parapet", "klas": "none", "conditions": ["-parapet"] },
+          { "key": "keystone", "klas": "none", "conditions": ["-keystone"] },
+          { "key": "column", "klas": "none", "conditions": ["-column"] },
+          { "key": "pedestal", "klas": "none", "conditions": ["-pedestal"] },
+          { "key": "turret", "klas": "none", "conditions": ["-turret"] },
+          { "key": "dome", "klas": "none", "conditions": ["-dome", "-utilitarianism", "tech>-300"] },
+          { "key": "arch", "klas": "none", "conditions": ["-arch", "-utilitarianism"] },
+          { "key": "bracket", "klas": "none", "conditions": ["-bracket", "-utilitarianism", "tech>1200"] },
+          { "key": "spire", "klas": "none", "conditions": ["-spire"] },
+          { "key": "minaret", "klas": "none", "conditions": ["-minaret"] },
+          { "key": "aqueduct", "klas": "none", "conditions": ["-aqueduct"] },
+          { "key": "bell", "klas": "none", "conditions": ["-bell"] },
+          { "key": "porch", "klas": "none", "conditions": ["-porch"] },
+          { "key": "fountain", "klas": "none", "conditions": ["-fountain", "-utilitarianism"] }
+        ]
+      },
+      {
+        "key": "depiction", "newWord": true, "values": [
+          { "key": "gods", "klas": "none", "conditions": [] },
+          { "key": "spirits", "klas": "none", "conditions": [] },
+          { "key": "plants", "klas": "none", "conditions": [] },
+          { "key": "animals", "klas": "none", "conditions": [] },
+          { "key": "birds", "klas": "none", "conditions": [] },
+          { "key": "fish", "klas": "none", "conditions": ["-desert"] },
+          { "key": "serpents", "klas": "none", "conditions": [] },
+          { "key": "cats", "klas": "none", "conditions": [] },
+          { "key": "dragons", "klas": "none", "conditions": [] },
+          { "key": "flowers", "klas": "none", "conditions": [] },
+          { "key": "trees", "klas": "none", "conditions": ["-barren"] },
+          { "key": "fossils", "klas": "none", "conditions": [] },
+          { "key": "rivers", "klas": "none", "conditions": [] },
+          { "key": "stars", "klas": "none", "conditions": ["+days"] },
+          { "key": "sun", "klas": "none", "conditions": [] },
+          { "key": "moon", "klas": "none", "conditions": [] },
+          { "key": "maps", "klas": "none", "conditions": [] },
+          { "key": "events", "klas": "none", "conditions": [] },
+          { "key": "celebrities", "klas": "none", "conditions": [] },
+          { "key": "politicians", "klas": "none", "conditions": [] },
+          { "key": "commoners", "klas": "none", "conditions": [] },
+          { "key": "aliens", "klas": "none", "conditions": [] },
+          { "key": "monsters", "klas": "none", "conditions": [] },
+          { "key": "shapes", "klas": "none", "conditions": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "art", "chance": 0.3, "features": [
+      {
+        "key": "style", "newWord": false, "values": [
+        { "key": "squares", "klas": "none", "conditions": [] },
+          { "key": "circles", "klas": "none", "conditions": [] },
+          { "key": "stars", "klas": "none", "conditions": [] },
+          { "key": "hexagons", "klas": "none", "conditions": [] },
+          { "key": "swirls", "klas": "none", "conditions": [] },
+          { "key": "labyrinths", "klas": "none", "conditions": [] },
+          { "key": "lines", "klas": "none", "conditions": [] },
+          { "key": "tesselation", "klas": "none", "conditions": [] },
+          { "key": "parallels", "klas": "none", "conditions": [] },
+          { "key": "segments", "klas": "none", "conditions": [] },
+          { "key": "bright_colors", "klas": "none", "conditions": [] },
+          { "key": "weird_colors", "klas": "none", "conditions": [] },
+          { "key": "weird_sun", "klas": "none", "conditions": [] },
+          { "key": "weird_clouds", "klas": "none", "conditions": [] },
+          { "key": "weird_ocean", "klas": "none", "conditions": ["+coastal"] },
+          { "key": "people_no_arms", "klas": "none", "conditions": [] },
+          { "key": "people_no_legs", "klas": "none", "conditions": [] },
+          { "key": "people_triangular", "klas": "none", "conditions": [] },
+          { "key": "people_big_heads", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "subject", "newWord": true, "values": [
+          { "key": "ma", "klas": "none", "conditions": [] },
+          { "key": "realism", "klas": "none", "conditions": [] },
+          { "key": "scale", "klas": "none", "conditions": [] },
+          { "key": "asymmetry", "klas": "none", "conditions": [] },
+          { "key": "miniature", "klas": "none", "conditions": [] },
+          { "key": "colossus", "klas": "none", "conditions": [] },
+          { "key": "calligraphy", "klas": "none", "conditions": [] },
+          { "key": "lighting", "klas": "none", "conditions": [] },
+          { "key": "fractal", "klas": "none", "conditions": [] },
+          { "key": "faces", "klas": "none", "conditions": [] },
+          { "key": "cats", "klas": "none", "conditions": [] },
+          { "key": "buddha", "klas": "none", "conditions": [] },
+          { "key": "fraternity", "klas": "none", "conditions": [] },
+          { "key": "mortality", "klas": "none", "conditions": [] },
+          { "key": "fertility", "klas": "none", "conditions": [] },
+          { "key": "piety", "klas": "none", "conditions": [] },
+          { "key": "jihad", "klas": "none", "conditions": [] },
+          { "key": "nature", "klas": "none", "conditions": ["-people_no_arms", "-people_no_legs", "-people_no_nose", "-people_big_heads"] },
+          { "key": "technology", "klas": "none", "conditions": [] },
+          { "key": "sex", "klas": "none", "conditions": [] },
+          { "key": "romance", "klas": "none", "conditions": [] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "music", "chance": 0.3, "features": [
+      {
+        "key": "feature", "newWord": false, "values": [
+          { "key": "tetratonic", "klas": "none", "conditions": [] },
+          { "key": "pentatonic", "klas": "none", "conditions": [] },
+          { "key": "hexatonic", "klas": "none", "conditions": [] },
+          { "key": "heptatonic", "klas": "none", "conditions": [] },
+          { "key": "chromatic", "klas": "none", "conditions": [] },
+          { "key": "quarter", "klas": "none", "conditions": [] },
+          { "key": "fifths", "klas": "none", "conditions": [] },
+          { "key": "harmony", "klas": "none", "conditions": [] },
+          { "key": "rapid", "klas": "none", "conditions": [] },
+          { "key": "slow", "klas": "none", "conditions": [] },
+          { "key": "asymmetric", "klas": "none", "conditions": [] },
+          { "key": "polyrhythm", "klas": "none", "conditions": [] },
+          { "key": "audience", "klas": "none", "conditions": [] },
+          { "key": "fluid", "klas": "none", "conditions": [] },
+          { "key": "aggressive", "klas": "none", "conditions": [] },
+          { "key": "energetic", "klas": "none", "conditions": [] },
+          { "key": "costumed", "klas": "none", "conditions": [] },
+          { "key": "narrative", "klas": "none", "conditions": [] },
+          { "key": "repetition", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "type", "newWord": false, "values": [
+          { "key": "percussion", "klas": "none", "conditions": [] },
+          { "key": "vocals", "klas": "none", "conditions": [] },
+          { "key": "wind", "klas": "none", "conditions": [] },
+          { "key": "string", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "instrument", "newWord": true, "values": [
+          { "key": "pitched_perc", "klas": "none", "conditions": ["-percussion"] },
+          { "key": "drums", "klas": "none", "conditions": ["-percussion"] },
+          { "key": "bell", "klas": "none", "conditions": ["-percussion", "tech>-600"] },
+          { "key": "cymbals", "klas": "none", "conditions": ["-percussion"] },
+          { "key": "rattle", "klas": "none", "conditions": ["-percussion"] },
+          { "key": "gourd", "klas": "none", "conditions": ["-percussion"] },
+          { "key": "choir", "klas": "none", "conditions": ["-vocals"] },
+          { "key": "overtone", "klas": "none", "conditions": ["-vocals"] },
+          { "key": "ululating", "klas": "none", "conditions": ["-vocals"] },
+          { "key": "falsetto", "klas": "none", "conditions": ["-vocals"] },
+          { "key": "chanting", "klas": "none", "conditions": ["-vocals"] },
+          { "key": "shouting", "klas": "none", "conditions": ["-vocals"] },
+          { "key": "short_horn", "klas": "none", "conditions": ["-wind"] },
+          { "key": "long_horn", "klas": "none", "conditions": ["-wind"] },
+          { "key": "panpipe", "klas": "none", "conditions": ["-wind"] },
+          { "key": "reed", "klas": "none", "conditions": ["-wind", "-desert", "-tundra"] },
+          { "key": "seashell_horn", "klas": "none", "conditions": ["-wind", "+coastal", "-tundra", "-taiga"] },
+          { "key": "flute", "klas": "none", "conditions": ["-wind"] },
+          { "key": "plucked", "klas": "none", "conditions": ["-string"] },
+          { "key": "strummed", "klas": "none", "conditions": ["-string"] },
+          { "key": "perc_string", "klas": "none", "conditions": ["-string", "tech>-700"] },
+          { "key": "bowed", "klas": "none", "conditions": ["-string", "tech>700"] },
+          { "key": "saxophones", "klas": "none", "conditions": ["-wind", "tech>1840"] },
+          { "key": "electronic", "klas": "none", "conditions": ["-synth", "tech>1910"] },
+          { "key": "synthesizer", "klas": "none", "conditions": ["-synth", "tech>1970"] },
+          { "key": "vocaloids", "klas": "none", "conditions": ["-synth", "tech>2005"] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "sport", "chance": 0.3, "features": [
+      {
+        "key": "act", "newWord": false, "values": [
+          { "key": "push", "klas": "none", "conditions": [] },
+          { "key": "throw", "klas": "none", "conditions": [] },
+          { "key": "roll", "klas": "none", "conditions": [] },
+          { "key": "carry", "klas": "none", "conditions": [] },
+          { "key": "hit", "klas": "none", "conditions": [] },
+          { "key": "kick", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "object", "newWord": false, "values": [
+          { "key": "ball", "klas": "none", "conditions": ["-push"] },
+          { "key": "rock", "klas": "none", "conditions": ["-hit", "-kick"] },
+          { "key": "sack", "klas": "none", "conditions": ["-push", "-roll"] },
+          { "key": "disc", "klas": "none", "conditions": ["-push", "-hit", "-kick", "-bat"] },
+          { "key": "javelin", "klas": "none", "conditions": ["-push", "-roll", "-hit", "-kick", "-bat"] },
+          { "key": "pole", "klas": "none", "conditions": ["-hit", "-kick", "-bat"] },
+          { "key": "stick", "klas": "none", "conditions": ["-push", "-roll", "-hit", "-kick", "-bat"] },
+          { "key": "others", "klas": "none", "conditions": ["-roll", "-kick", "-bat"] }
+        ]
+      },
+      {
+        "key": "goal", "newWord": false, "values": [
+          { "key": "far", "klas": "none", "conditions": [] },
+          { "key": "posts", "klas": "none", "conditions": [] },
+          { "key": "net", "klas": "none", "conditions": [] },
+          { "key": "hoop", "klas": "none", "conditions": ["-push", "-roll"] },
+          { "key": "hole", "klas": "none", "conditions": ["-carry"] },
+          { "key": "pole", "klas": "none", "conditions": ["-push", "-carry"] },
+          { "key": "barrier", "klas": "none", "conditions": ["-push", "-carry", "-roll"] },
+          { "key": "line", "klas": "none", "conditions": [] },
+          { "key": "target", "klas": "none", "conditions": ["-push", "-carry"] },
+          { "key": "players", "klas": "none", "conditions": ["-push", "-carry", "-others"] }
+        ]
+      },
+      {
+        "key": "condition", "newWord": true, "values": [
+          { "key": "ground", "klas": "none", "conditions": ["-roll", "-push", "-others"] },
+          { "key": "horse", "klas": "none", "conditions": [] },
+          { "key": "elephant", "klas": "none", "conditions": ["+jungle", "+plains"] },
+          { "key": "fire", "klas": "none", "conditions": [] },
+          { "key": "race", "klas": "none", "conditions": [] },
+          { "key": "time", "klas": "none", "conditions": ["tech>-1500"] },
+          { "key": "rhythm", "klas": "none", "conditions": [] },
+          { "key": "bat", "klas": "none", "conditions": ["+hit"] },
+          { "key": "racket", "klas": "none", "conditions": ["+hit"] },
+          { "key": "lacrosse", "klas": "none", "conditions": ["-push"] },
+          { "key": "hip", "klas": "none", "conditions": ["+hit"] },
+          { "key": "salmon", "klas": "none", "conditions": [] },
+          { "key": "judge", "klas": "none", "conditions": [] },
+          { "key": "telekinesis", "klas": "none", "conditions": [] },
+          { "key": "broomstick", "klas": "none", "conditions": [] },
+          { "key": "spoon", "klas": "none", "conditions": [] },
+          { "key": "skating", "klas": "none", "conditions": ["-jungle", "-desert", "-steamland", "-swamp", "-plains", "-forest"] },
+          { "key": "swimming", "klas": "none", "conditions": ["+coastal", "-tundra", "-taiga", "-desert", "-roll"] },
+          { "key": "phone", "klas": "none", "conditions": ["tech>2000"] }
+        ]
+      }
+    ]
+  },
+  {
+    "key": "custom", "chance": 0.3, "features": [
+      {
+        "key": "event", "newWord": false, "values": [
+          { "key": "coronation", "klas": "none", "conditions": [] },
+          { "key": "spring", "klas": "none", "conditions": ["+seasons"] },
+          { "key": "summer", "klas": "none", "conditions": ["+seasons"] },
+          { "key": "autumn", "klas": "none", "conditions": ["+seasons"] },
+          { "key": "winter", "klas": "none", "conditions": ["+seasons"] },
+          { "key": "year", "klas": "none", "conditions": ["+seasons"] },
+          { "key": "bounty", "klas": "none", "conditions": [] },
+          { "key": "eclipse", "klas": "none", "conditions": [] },
+          { "key": "birthday", "klas": "none", "conditions": [] },
+          { "key": "politician", "klas": "none", "conditions": [] },
+          { "key": "victory", "klas": "none", "conditions": [] },
+          { "key": "sports", "klas": "none", "conditions": [] },
+          { "key": "guests", "klas": "none", "conditions": [] },
+          { "key": "gods", "klas": "none", "conditions": [] },
+          { "key": "dead", "klas": "none", "conditions": [] },
+          { "key": "full_moon", "klas": "none", "conditions": [] },
+          { "key": "new_moon", "klas": "none", "conditions": [] },
+          { "key": "marriage", "klas": "none", "conditions": [] },
+          { "key": "independence", "klas": "none", "conditions": ["+state"] }
+        ]
+      },
+      {
+        "key": "act", "newWord": false, "values": [
+          { "key": "drinking", "klas": "none", "conditions": [] },
+          { "key": "feast", "klas": "none", "conditions": [] },
+          { "key": "animals", "klas": "none", "conditions": [] },
+          { "key": "humans", "klas": "none", "conditions": [] },
+          { "key": "sweets", "klas": "none", "conditions": [] },
+          { "key": "bitters", "klas": "none", "conditions": [] },
+          { "key": "pastries", "klas": "none", "conditions": [] },
+          { "key": "rocks", "klas": "none", "conditions": [] },
+          { "key": "dances", "klas": "none", "conditions": [] },
+          { "key": "screaming", "klas": "none", "conditions": [] },
+          { "key": "tournament", "klas": "none", "conditions": ["-sports"] },
+          { "key": "fireworks", "klas": "none", "conditions": ["tech>1110"] },
+          { "key": "bells", "klas": "none", "conditions": ["tech>-2000"] },
+          { "key": "drums", "klas": "none", "conditions": [] },
+          { "key": "gifts", "klas": "none", "conditions": [] },
+          { "key": "party", "klas": "none", "conditions": [] },
+          { "key": "acid", "klas": "none", "conditions": [] },
+          { "key": "clothes", "klas": "none", "conditions": [] },
+          { "key": "grass", "klas": "none", "conditions": ["+plains"] },
+          { "key": "prayer", "klas": "none", "conditions": [] }
+        ]
+      },
+      {
+        "key": "custom", "newWord": false, "values": [
+          { "key": "duel", "klas": "none", "conditions": [] },
+          { "key": "age", "klas": "none", "conditions": [] },
+          { "key": "dating", "klas": "none", "conditions": [] },
+          { "key": "shoes", "klas": "none", "conditions": [] },
+          { "key": "funeral", "klas": "none", "conditions": [] },
+          { "key": "military", "klas": "none", "conditions": [] },
+          { "key": "dowry", "klas": "none", "conditions": [] },
+          { "key": "bride_price", "klas": "none", "conditions": [] },
+          { "key": "favors", "klas": "none", "conditions": [] },
+          { "key": "literacy", "klas": "none", "conditions": ["tech>-1500"] },
+          { "key": "omen", "klas": "none", "conditions": [] },
+          { "key": "cats", "klas": "none", "conditions": [] },
+          { "key": "name", "klas": "none", "conditions": [] },
+          { "key": "siesta", "klas": "none", "conditions": [] },
+          { "key": "meals", "klas": "none", "conditions": [] },
+          { "key": "omiyage", "klas": "none", "conditions": [] },
+          { "key": "guest", "klas": "none", "conditions": [] },
+          { "key": "bow", "klas": "none", "conditions": [] },
+          { "key": "handshake", "klas": "none", "conditions": [] },
+          { "key": "hug", "klas": "none", "conditions": [] },
+          { "key": "noses", "klas": "none", "conditions": [] },
+          { "key": "kiss", "klas": "none", "conditions": [] },
+          { "key": "try_the_floor", "klas": "none", "conditions": [] },
+          { "key": "anticle", "klas": "none", "conditions": [] },
+          { "key": "creche", "klas": "none", "conditions": [] },
+          { "key": "adults", "klas": "none", "conditions": [] },
+          { "key": "language", "klas": "none", "conditions": [] },
+          { "key": "geophagy", "klas": "none", "conditions": ["-desert"] },
+          { "key": "eat_sand", "klas": "none", "conditions": ["+desert"] },
+          { "key": "weekday", "klas": "none", "conditions": ["-sapphire", "-ruby", "-emerald", "-amber"] }
+        ]
+      }
+    ]
+  }
+];

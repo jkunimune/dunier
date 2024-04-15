@@ -70,19 +70,6 @@ export enum Biome {
 	SWAMP,
 	STEAMLAND,
 }
-export const BIOME_NAMES: Map<string, Biome> = new Map([
-	["ocean", Biome.OCEAN],
-	["lake", Biome.LAKE],
-	["ice", Biome.ICE],
-	["tundra", Biome.TUNDRA],
-	["taiga", Biome.TAIGA],
-	["forest", Biome.FOREST],
-	["jungle", Biome.JUNGLE],
-	["desert", Biome.DESERT],
-	["plains", Biome.PLAINS],
-	["swamp", Biome.SWAMP],
-	["steamland", Biome.STEAMLAND],
-]);
 
 
 /**

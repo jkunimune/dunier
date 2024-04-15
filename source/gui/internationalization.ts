@@ -2,11 +2,33 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {loadJSON} from "../utilities/fileio.js";
 import {Name} from "../language/name.js";
 import {DOM} from "./dom.js";
 
-const USER_STRINGS = loadJSON(`../../resources/translations/${DOM.elm('bash').textContent}.json`);
+import EN_STRINGS from "../../resources/translations/en.js";
+import ES_STRINGS from "../../resources/translations/es.js";
+import JA_STRINGS from "../../resources/translations/ja.js";
+import PD_STRINGS from "../../resources/translations/pd.js";
+
+
+let USER_STRINGS: { [index: string]: string };
+switch (DOM.elm("bash").textContent) {
+    case "en":
+        USER_STRINGS = EN_STRINGS;
+        break;
+    case "es":
+        USER_STRINGS = ES_STRINGS;
+        break;
+    case "ja":
+        USER_STRINGS = JA_STRINGS;
+        break;
+    case "pd":
+        USER_STRINGS = PD_STRINGS;
+        break;
+    default:
+        throw new Error(`I don't recognize the language code ${DOM.elm("bash").textContent}`);
+}
+
 
 /**
  * cast the given args to user strings (with a fixd format specificacion) and add them to
@@ -15,10 +37,10 @@ const USER_STRINGS = loadJSON(`../../resources/translations/${DOM.elm('bash').te
  * @param sentence the key for the encompassing phrase
  * @param args the key for the arguments to slot in
  */
-export function format(sentence: string, ...args: (string|number|object)[]): string {
-    if (!USER_STRINGS.has(sentence))
+export function format(sentence: string, ...args: (string|number|Name)[]): string {
+    if (!USER_STRINGS.hasOwnProperty(sentence))
         throw new Error(`Could not find user string in resource file for ${sentence}`);
-    let format = USER_STRINGS.get(sentence);
+    let format = USER_STRINGS[sentence];
     for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
         let convertedArg: string;
         if (args[i] === null || args[i] === undefined) {
@@ -30,10 +52,7 @@ export function format(sentence: string, ...args: (string|number|object)[]): str
             convertedArg = (<Name>args[i]).toString(); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
         }
         else if (typeof args[i] === 'string') {
-            convertedArg = USER_STRINGS.get(<string>args[i]); // look up strings in the resource file
-        }
-        else if (typeof args[i] === 'object') {
-            convertedArg = USER_STRINGS.get((<object>args[i]).toString()); // do the same for objects
+            convertedArg = USER_STRINGS[<string>args[i]]; // look up strings in the resource file
         }
         else if (typeof args[i] == 'number') {
             if (args[i] === 0) {

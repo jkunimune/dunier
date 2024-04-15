@@ -18,8 +18,9 @@ import {
 	Voze
 } from "./sound.js";
 import {ipaSymbol, transcribe} from "./script.js";
-import {loadTSV} from "../utilities/fileio.js";
 import {Name} from "./name.js";
+
+import UNPARSED_PROCESS_OPTIONS from "../../resources/processes.js";
 
 /**
  * a process by which words change over time
@@ -363,14 +364,13 @@ export class SpecialProcess {
 export const DEFAULT_STRESS = new StressPlacement(true, 1, 1, 'lapse', false);
 
 export const PROCESS_OPTIONS: {chanse: number, proces: Process | SpecialProcess}[] = [];
-for (const processString of loadTSV('processes.txt', /\s+/, /%/)) { // load the phonological processes
-	const chance = Number.parseInt(processString[0])/1000;
-	if (processString[1] === 'mute') {
+for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phonological processes
+	if (type === 'mute') {
 		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
 		let idx: number[] = [];
 		let fen = ca;
 		let sa: Feature[] = null, na: Feature[] = null, ka: string[] = null;
-		for (let token of processString.slice(2)) { // and parse them
+		for (let token of code.split(" ")) { // and parse them
 			if (token === '>') // > transitions from ca to pa
 				fen = pa;
 			else if (token === '_') // _ transitions from badu to chenu
@@ -379,7 +379,7 @@ for (const processString of loadTSV('processes.txt', /\s+/, /%/)) { // load the 
 				fen.push(new Klas([], [Quality.SPOKEN]));
 			else if (token === '/') { // / transitions from pa to badu
 				if (idx.length < pa.length) { // and assigns indices if they weren't assigned explicitly
-					if (ca.length > 1 && ca.length !== pa.length) throw new Error(`please specify indices for ${processString}`);
+					if (ca.length > 1 && ca.length !== pa.length) throw new Error(`please specify indices for ${code}`);
 					idx = [];
 					for (let i = idx.length; i < pa.length; i++)
 						idx.push(Math.min(i, ca.length - 1));
@@ -438,35 +438,36 @@ for (const processString of loadTSV('processes.txt', /\s+/, /%/)) { // load the 
 				idx.push(ca.length); // they index to len(ca), to indicate they don't need any reference foneme
 			}
 			else {
-				throw RangeError(`unintelligible symbol near line ${PROCESS_OPTIONS.length}: ${token}`);
+				throw RangeError(`unintelligible symbol in '${code}': '${token}'`);
 			}
 		}
 		PROCESS_OPTIONS.push({chanse: chance, proces:
 				new SoundChange(ca, pa, idx, bada, chena)});
 	}
-	else if (processString[1] === 'harmonia') {
-		const feature = processString[2];
-		const affectsConsonants = processString[3] === 'all';
+	else if (type === 'harmonia') {
+		const [feature, scope] = code.split(" ");
 		PROCESS_OPTIONS.push({chanse: chance, proces:
-				new Harmony(feature, affectsConsonants)});
+				new Harmony(feature, scope !== "vowel")});
 	}
-	else if (processString[1] === 'acente') {
-		const reverse = processString[2] === 'right';
-		const headSize = Number.parseInt(processString[3]);
+	else if (type === 'acente') {
+		const [reverse, headSize] = code.split(" ");
 		for (let attractors = 1; attractors <= 3; attractors ++)
 			for (const tailMode of ['clash', 'lapse', 'none'])
 				for (const lengthen of [true, false])
 					PROCESS_OPTIONS.push({chanse: chance/18., proces:
-							new StressPlacement(reverse, headSize, attractors, tailMode, lengthen)});
+							new StressPlacement(
+								reverse === "true",
+								Number.parseInt(headSize),
+								attractors, tailMode, lengthen)});
 	}
-	else if (processString[1] === 'silabe') {
-		const minSilabia = Number.parseInt(processString[2]);
+	else if (type === 'silabe') {
+		const minSilabia = Number.parseInt(code);
 		for (let bias = -1; bias <= 1; bias ++)
 			PROCESS_OPTIONS.push({chanse: chance/3, proces:
 					new Syllabicization(bias, minSilabia)});
 	}
 	else {
 		PROCESS_OPTIONS.push({chanse: chance, proces:
-			new SpecialProcess(processString[1])});
+			new SpecialProcess(type)});
 	}
 }

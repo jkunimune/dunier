@@ -1,4 +1,4 @@
-{
+export default {
 	".language": "es",
 	".language.fallback": "es",
 	"about.credits.body": "<p>Dunier se hace por Justin Kunimune, un editor de Wikipedia y entusiasta de la lingüística.  Se deja inspirar mucho por <a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">Fantasy Map Generator</a> de Azgaar.  En adición, usa <a href=\"https://github.com/mourner/tinyqueue\">Tinyqueue</a> de Vladimir Agaforkin, <a href=\"https://github.com/shaack/bootstrap-input-spinner\">Bootstrap Input Spinner</a> de Stefan Haack, <a href=\"https://2ality.com/2020/01/enum-pattern.html\">Enumify</a> de Axel Rauchmayer, <a href=\"https://parall.ax/products/jspdf\">JSPDF</a> de James Hall, <a href=\"https://popper.js.org/docs/v2\">Popper</a>, <a href=\"https://plotly.com\">Plotly</a>, <a href=\"https://jquery.com\">JQuery</a>, y <a href=\"https://getbootstrap.com\">Bootstrap</a>.</p>",
@@ -769,4 +769,4 @@
 	"unit.meter_per_year": "m/a",
 	"unit.per_gigayear": "/Ga",
 	"unit.year": ""
-}
+};

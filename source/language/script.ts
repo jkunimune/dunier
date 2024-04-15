@@ -3,7 +3,10 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Klas, Loke, Longia, MinorLoke, Mode, Nosia, Quality, Silabia, Voze, Feature, Sound, Latia} from "./sound.js";
-import {loadTSV} from "../utilities/fileio.js";
+
+import HARFIA_TABLE from "../../resources/alphabet.js";
+import ENGLISH_REPLACEMENTS from "../../resources/rules_en.js";
+import KATAKANA_TABLE from "../../resources/rules_ja.js";
 
 
 const MODIFIERS: {klas: Klas, baze: Feature[], kode: string}[] = [ // TODO: can I rearrange this to put the macron underneath the acute accent?
@@ -32,99 +35,101 @@ const MODIFIERS: {klas: Klas, baze: Feature[], kode: string}[] = [ // TODO: can 
 	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'approx'},
 ];
 
-const FROM_IPA: Map<string, Sound> = new Map(); // load the IPA table from static res
-const TO_TEXT: Map<string, Map<string, string>> = new Map();
-const TO_DIACRITICS: Map<string, Map<string, string>> = new Map();
-const ORTHOGRAPHIC_FLAGS: Map<string, Map<string, boolean>> = new Map();
 const LOKE_KODE = new Map([
-	['bl', Loke.BILABIAL],
-	['ld', Loke.LABIODENTAL],
-	['d', Loke.DENTAL],
-	['ar', Loke.ALVEOLAR],
-	['pa', Loke.POSTALVEOLAR],
-	['rf', Loke.RETROFLEX],
-	['c',  Loke.PALATAL],
-	['m',  Loke.CENTRAL],
-	['v',  Loke.VELAR],
-	['uv', Loke.UVULAR],
-	['eg', Loke.EPIGLOTTAL],
-	['gl', Loke.GLOTTAL],
+	['bilabial', Loke.BILABIAL],
+	['labiodental', Loke.LABIODENTAL],
+	['dental', Loke.DENTAL],
+	['alveolar', Loke.ALVEOLAR],
+	['postalveolar', Loke.POSTALVEOLAR],
+	['retroflex', Loke.RETROFLEX],
+	['palatal',  Loke.PALATAL],
+	['central',  Loke.CENTRAL],
+	['velar',  Loke.VELAR],
+	['uvular', Loke.UVULAR],
+	['epiglottal', Loke.EPIGLOTTAL],
+	['glottal', Loke.GLOTTAL],
 ]);
 const MODE_KODE = new Map([
-	['n', {mode: Mode.NASAL, voze: Voze.VOICED}],
-	['p', {mode: Mode.STOP, voze: Voze.TENUIS}],
-	['b', {mode: Mode.STOP, voze: Voze.VOICED}],
-	['pf', {mode: Mode.AFFRICATE, voze: Voze.TENUIS}],
-	['bv', {mode: Mode.AFFRICATE, voze: Voze.VOICED}],
-	['f', {mode: Mode.FRICATE, voze: Voze.TENUIS}],
-	['v', {mode: Mode.FRICATE, voze: Voze.VOICED}],
-	['t', {mode: Mode.TAP, voze: Voze.VOICED}],
-	['r', {mode: Mode.TRILL, voze: Voze.VOICED}],
-	['a', {mode: Mode.CLOSE, voze: Voze.VOICED}],
-	['1', {mode: Mode.NEAR_CLOSE, voze: Voze.VOICED}],
-	['2', {mode: Mode.CLOSE_MID, voze: Voze.VOICED}],
-	['3', {mode: Mode.OPEN_MID, voze: Voze.VOICED}],
-	['4', {mode: Mode.NEAR_OPEN, voze: Voze.VOICED}],
-	['5', {mode: Mode.OPEN, voze: Voze.VOICED}],
-	['k!', {mode: Mode.CLICK, voze: Voze.TENUIS}],
-	['g!', {mode: Mode.CLICK, voze: Voze.VOICED}],
+	['nasal', Mode.NASAL],
+	['stop', Mode.STOP],
+	['breathy', Mode.STOP],
+	['affricate', Mode.AFFRICATE],
+	['fricate', Mode.FRICATE],
+	['tap', Mode.TAP],
+	['trill', Mode.TRILL],
+	['close', Mode.CLOSE],
+	['near close', Mode.NEAR_CLOSE],
+	['close mid', Mode.CLOSE_MID],
+	['open mid', Mode.OPEN_MID],
+	['near open', Mode.NEAR_OPEN],
+	['open', Mode.OPEN],
+	['click', Mode.CLICK],
 ]);
-const harfiaTable = loadTSV('alphabet.tsv');
-const header = harfiaTable[0];
-for (const style of header) {
-	TO_TEXT.set(style, new Map());
-	TO_DIACRITICS.set(style, new Map());
-	ORTHOGRAPHIC_FLAGS.set(style, new Map());
-}
-for (const row of harfiaTable.slice(1)) { // each row of the orthographick table tells us about the different available styles
-	const grafeme = row.slice(0, header.length);
-	const features = row.slice(header.length);
-	if (features.length === 3) { // first we read all the phonemes and their transcripcions
-		// s in element 0 means syllabic
-		const silabia = features[0].includes('s') ? Silabia.UNSTRESSED : Silabia.NONSYLLABIC;
-		// l in element 0 means lateral
-		const latia = features[0].includes('l') ? Latia.LATERAL : Latia.MEDIAN;
-		// w and v in element 0 mean labialized or velarized
-		const aliSif = features[0].includes('w') ? MinorLoke.LABIALIZED : features[0].includes('v') ? MinorLoke.VELARIZED : MinorLoke.UNROUNDED;
-		// element 1 indicates the place of articulation
-		console.assert(LOKE_KODE.has(features[1]));
-		const loke = LOKE_KODE.get(features[1]);
-		// element 2 indicates the manner of articulation and voicing
-		console.assert(MODE_KODE.has(features[2]));
-		let {mode, voze} = MODE_KODE.get(features[2]);
-		// but b in element 0 overrides the voicing to breathy
-		if (features[0].includes('b'))
-			voze = Voze.BREATHY;
-		// put it all together in one record and store it in our IPA lookup tables
-		const foneme = new Sound(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
-		for (let i = 0; i < header.length; i ++)
-			TO_TEXT.get(header[i]).set(foneme.hash(), grafeme[i]);
-		FROM_IPA.set(grafeme[header.indexOf('ipa')], foneme);
-	}
-	else if (features[0].match(/^!/)) { // then we read any special non-phonemic symbols
-		for (let i = 0; i < header.length; i ++)
-			TO_TEXT.get(header[i]).set(features[0].slice(1), grafeme[i]);
-	}
-	else if (features[0].match(/^\^/)) { // then we read the modifying features and their transcripcions
-		for (let i = 0; i < header.length; i ++)
-			TO_DIACRITICS.get(header[i]).set(features[0].slice(1), grafeme[i]);
-	}
-	else if (features[0].match(/^\?/)) { // then we read the special rules
-		for (let i = 0; i < header.length; i ++)
-			ORTHOGRAPHIC_FLAGS.get(header[i]).set(features[0].slice(1), grafeme[i] === 'y');
-	}
-	else {
-		throw new Error(`incomprehensible orthographickal feature: ${features}`);
-	}
-}
 
-const ENGLISH_REPLACEMENTS = loadTSV('rules_en.tsv');
-const KATAKANA_TABLE = loadTSV('rules_ja.tsv');
+// each collum of the orthographic table tells us about a different available style
+const styles = HARFIA_TABLE.styles;
+// first we read all the phonemes and their transcripcions
+const TO_TEXT: Map<string, Map<string, string>> = new Map();
+const FROM_IPA: Map<string, Sound> = new Map(); // load the IPA table from static res
+for (const style of styles)
+	TO_TEXT.set(style, new Map());
+for (const {features, symbols} of HARFIA_TABLE.sounds) {
+	// element 0 indicates the place of articulation
+	console.assert(LOKE_KODE.has(features[0]), features[0]);
+	const loke = LOKE_KODE.get(features[0]);
+	// element 1 indicates the manner of articulation and voicing
+	console.assert(MODE_KODE.has(features[1]), features[1]);
+	let mode = MODE_KODE.get(features[1]);
+	// the other elements modify voicing, syllabicity, laterality, or secondary articulation
+	let voze = Voze.VOICED, silabia = Silabia.NONSYLLABIC;
+	let latia = Latia.MEDIAN, aliSif = MinorLoke.UNROUNDED;
+	for (const feature of features.slice(2)) {
+		if (feature === "voiceless")
+			voze = Voze.TENUIS;
+		else if (feature === "breathy")
+			voze = Voze.BREATHY;
+		else if (feature === "vowel")
+			silabia = Silabia.UNSTRESSED;
+		else if (feature === "lateral")
+			latia = Latia.LATERAL;
+		else if (feature === "rounded")
+			aliSif = MinorLoke.LABIALIZED;
+		else if (feature === "velarized")
+			aliSif = MinorLoke.VELARIZED;
+		else
+			throw new Error(`unrecognized phonetic feature: ${feature}`);
+	}
+	// put it all together in one record and store it in our IPA lookup tables
+	const foneme = new Sound(mode, loke, voze, silabia, Longia.SHORT, latia, aliSif, Nosia.ORAL);
+	for (let i = 0; i < symbols.length; i++)
+		TO_TEXT.get(styles[i]).set(foneme.hash(), symbols[i]);
+	FROM_IPA.set(symbols[styles.indexOf('ipa')], foneme);
+}
+// then we read any special non-phonemic symbols
+for (const {name, symbols} of HARFIA_TABLE.suprasegmentals)
+	for (let i = 0; i < symbols.length; i ++)
+		TO_TEXT.get(styles[i]).set(name, symbols[i]);
+// then we read the modifying features and their transcripcions
+const TO_DIACRITICS: Map<string, Map<string, string>> = new Map();
+for (const style of styles)
+	TO_DIACRITICS.set(style, new Map());
+for (const {name, symbols} of HARFIA_TABLE.modifiers)
+	for (let i = 0; i < symbols.length; i ++)
+		TO_DIACRITICS.get(styles[i]).set(name, symbols[i]);
+// then we read the special rules
+const ORTHOGRAPHIC_FLAGS: Map<string, Map<string, boolean>> = new Map();
+for (const style of styles)
+	ORTHOGRAPHIC_FLAGS.set(style, new Map());
+for (const {name, values} of HARFIA_TABLE.flags)
+	for (let i = 0; i < values.length; i ++)
+		ORTHOGRAPHIC_FLAGS.get(styles[i]).set(name, values[i]);
+
+// convert the loaded katakana table to a 2D map
 const KATAKANA = new Map<string, Map<string, string>>();
-for (const row of KATAKANA_TABLE) {
-	KATAKANA.set(row[0], new Map<string, string>());
-	for (let i = 0; i < 5; i ++)
-		KATAKANA.get(row[0]).set("aiueo"[i], row[1 + i]);
+for (const column of KATAKANA_TABLE.columns) {
+	KATAKANA.set(column.consonant, new Map<string, string>());
+	for (let i = 0; i < column.kana.length; i ++)
+		KATAKANA.get(column.consonant).set(KATAKANA_TABLE.vowels[i], column.kana[i]);
 }
 
 
@@ -194,6 +199,10 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
 		}
 	}
 
+	console.log(level);
+	console.log(sound);
+	console.log(MODIFIERS[20].klas.matches(sound));
+	console.log(sound.with(MODIFIERS[20].baze[0]))
 	throw new Error(`I don't know how to write ${sound}`);
 }
 
@@ -203,6 +212,8 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
  * @param style the transcription style to use
  */
 export function transcribe(allSounds: Sound[][], style: string): string {
+	if (!ORTHOGRAPHIC_FLAGS.has(style))
+		throw new Error(`there is no such transcription style as '${style}'.`);
 	let allSymbols = [];
 	for (let sounds of allSounds) {
 		// start by making our own copy of each part
@@ -231,10 +242,10 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		if (style === 'en') {
 			symbols = "#" + symbols + "#";
 			for (const vise of ENGLISH_REPLACEMENTS) {
-				for (let j = 1; j < vise.length; j++) { // look through the replacements in ENGLI_VISE
+				for (const pattern of vise.patterns) { // look through the replacements in ENGLI_VISE
 					for (let i = symbols.length; i >= 1; i--) { // ang go through the string
-						if (i - vise[j].length >= 0 && symbols.substring(i - vise[j].length, i) === vise[j])
-							symbols = symbols.substring(0, i - vise[j].length) + vise[0] + symbols.substring(i);
+						if (i - pattern.length >= 0 && symbols.substring(i - pattern.length, i) === pattern)
+							symbols = symbols.substring(0, i - pattern.length) + vise.result + symbols.substring(i);
 					}
 				}
 			}
