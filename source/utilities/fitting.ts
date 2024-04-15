@@ -11,7 +11,7 @@ import {circumcenter} from "./geometry.js";
  *     Chernov, N., Lesort, C. "Least Squares Fitting of Circles". J Math Imaging Vis 23,
  *     239–252 (2005). https://doi.org/10.1007/s10851-005-0482-8
  * @return {R: the radius of the arc, cx,cy: the coordinates of the center of curvature of
- *          the arc, μx,μy: the coordinates of the center of mass of the arc
+ *          the arc, μx,μy: the coordinates of the center of mass of the arc}
  */
 export function circularRegression(
 	points: {x: number, y: number}[]): {cx: number, cy: number, R: number} {

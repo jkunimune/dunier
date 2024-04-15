@@ -56,7 +56,7 @@ export default {
 	"factbook.building.depiction.birds": "birds",
 	"factbook.building.depiction.cats": "cats",
 	"factbook.building.depiction.celebrities": "historical figures",
-	"factbook.building.depiction.commoners": "common people",
+	"factbook.building.depiction.commoners": "the common man",
 	"factbook.building.depiction.dragons": "dragons",
 	"factbook.building.depiction.events": "historical events",
 	"factbook.building.depiction.fish": "fish",

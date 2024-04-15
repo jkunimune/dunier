@@ -99,7 +99,7 @@ export class World {
 					civ.update(rng);
 			this.spawnCivs(rng); // TODO: build cities
 			this.spreadCivs(rng);
-			this.spreadIdeas(rng);
+			this.spreadIdeas();
 			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
 				this.haveCataclysm(rng);
 		}
@@ -174,9 +174,8 @@ export class World {
 	/**
 	 * carry technology across borders. every civ has a chance to gain each technology at least one of their neighors
 	 * have that they don't
-	 * @param rng
 	 */
-	spreadIdeas(rng: Random) {
+	spreadIdeas() {
 		const visibleTechnology: Map<Civ, number> = new Map(); // how much advanced technology can they access?
 		for (const civ of this.civs) {
 			visibleTechnology.set(civ, civ.technology); // well, any technology they _have_, for one

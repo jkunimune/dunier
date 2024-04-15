@@ -202,7 +202,7 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
 	console.log(level);
 	console.log(sound);
 	console.log(MODIFIERS[20].klas.matches(sound));
-	console.log(sound.with(MODIFIERS[20].baze[0]))
+	console.log(sound.with(MODIFIERS[20].baze[0]));
 	throw new Error(`I don't know how to write ${sound}`);
 }
 

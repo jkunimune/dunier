@@ -251,11 +251,11 @@ export class StressPlacement implements Process {
 
 	/**
 	 * create a new stress system given some simplified parameters
-	 * @param reverse
-	 * @param headSize
-	 * @param attractors
-	 * @param tailMode ['lapse', 'clash', or 'none']
-	 * @param lengthen
+	 * @param reverse whether to assign stress to the end of the word rather than the start
+	 * @param headSize the number of syllables between the primary stress and the start of the word
+	 * @param attractors the minimum attractiveness of a syllable to take the stress away from its normal head position
+	 * @param tailMode how to handle stress away from the primary – one of ['lapse', 'clash', or 'none']
+	 * @param lengthen whether to lengthen stressed open syllables
 	 */
 	constructor(reverse: boolean, headSize: number, attractors: number, tailMode: string, lengthen: boolean) {
 		this.reverse = reverse;
@@ -312,7 +312,7 @@ export class StressPlacement implements Process {
 			if (!stress[i]) {
 				newWord[nuclei[i].i] = oldWord[nuclei[i].i].with(Silabia.UNSTRESSED); // stressless is stressless
 				if (this.lengthen && nuclei[i].weight === 2)
-					newWord[nuclei[i].i] = newWord[nuclei[i].i].with(Longia.SHORT); // shorten unstressed heavy syllables if Ident long is outranked
+					newWord[nuclei[i].i] = newWord[nuclei[i].i].with(Longia.SHORT); // shorten unstressed heavy syllables if Ident long is outranked (tf is "Ident"?)
 			}
 			else {
 				newWord[nuclei[i].i] = oldWord[nuclei[i].i].with(

@@ -104,33 +104,6 @@ export class Random {
 	}
 
 	/**
-	 * return a pseudorandom number drawn from a Poisson distribution (approximate for means >= 36)
-	 * @param mean
-	 */
-	poisson(mean: number): number {
-		if (mean === 0) {
-			return 0;
-		} else if (mean < 36) {
-			const expMean = Math.exp(-mean);
-			let u = this.random();
-			let k = 0;
-			let kFact = 1;
-			while (true) {
-				const pk = Math.pow(mean, k) * expMean / kFact;
-				if (u < pk)
-					return k;
-				else
-					u -= pk;
-				k++;
-				kFact *= k;
-			}
-		}
-		else {
-			return Math.max(0, Math.round(this.normal(mean, Math.sqrt(mean))));
-		}
-	}
-
-	/**
 	 * return a pseudorandom number drawn from a Binomial distribution (approximates with normal for expectations/
 	 * antiexpectations over 36).
 	 * @param num

@@ -113,7 +113,7 @@ export default [
           { "key": "bracelet", "klas": "none", "conditions": [] },
           { "key": "anklet", "klas": "none", "conditions": ["-tundra", "-taiga"] },
           { "key": "cord", "klas": "none", "conditions": [] },
-          { "key": "eyeware", "klas": "none", "conditions": ["tech>1100"] }
+          { "key": "eyepiece", "klas": "none", "conditions": ["tech>1100"] }
         ]
       },
       {
