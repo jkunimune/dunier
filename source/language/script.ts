@@ -238,8 +238,27 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		for (const sound of sounds)
 			symbols += lookUp(sound, style);
 
+		// apply russian spelling rules
+		if (style === 'ru') {
+			// a soft-sign turns ш into щ
+			symbols = symbols.replace(/шь/, "щь");
+			// a soft-sign or й merges with a following vowel
+			symbols = symbols.replace(/[йь]а/g, "я");
+			symbols = symbols.replace(/[йь]э/g, "е");
+			symbols = symbols.replace(/[йь]о/g, "ё");
+			symbols = symbols.replace(/[йь]ы/g, "и");
+			symbols = symbols.replace(/[йь]у/g, "ю");
+			// an и softens the following vowel (except э and ы)
+			symbols = symbols.replace(/иа/g, "ия");
+			symbols = symbols.replace(/ио/g, "иё");
+			symbols = symbols.replace(/иу/g, "ию");
+			// й must be adjacent to a vowel or becomes и
+			symbols = symbols.replace(/([^аеёиоуыэюя])й([^аеёиоуыэюя])/g, "$1и$2");
+			// э is only used at the starts of words
+			symbols = symbols.replace(/(.)э/, "$1е");
+		}
 		// apply english spelling rules
-		if (style === 'en') {
+		else if (style === 'en') {
 			symbols = "#" + symbols + "#";
 			for (const vise of ENGLISH_REPLACEMENTS) {
 				for (const pattern of vise.patterns) { // look through the replacements in ENGLI_VISE
