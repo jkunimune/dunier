@@ -25,14 +25,14 @@ import UNPARSED_PROCESS_OPTIONS from "../../resources/processes.js";
 /**
  * a process by which words change over time
  */
-export interface Process {
+export interface WordProcess {
 	apply(old: Sound[]): Sound[];
 }
 
 /**
  * a process that causes segments to change according to a rule
  */
-export class SoundChange implements Process {
+export class SoundChange implements WordProcess {
 	private readonly pattern: Klas[]; // original value
 	private readonly result: Klas[]; // target value
 	private readonly idx: number[]; // reference indices for target phones
@@ -59,10 +59,24 @@ export class SoundChange implements Process {
 		while (i >= 0) {
 			if (this.applies(oldWord.slice(0, i), drowWen)) { // if it applies here,
 				for (let j = this.result.length - 1; j >= 0; j --) { // fill in the replacement
-					if (this.idx[j] < this.pattern.length)
+					if (this.idx[j] < this.pattern.length) {
+						let ref; // choose an appropriate reference phoneme if there's a ± feature
+						if (this.result[j].referencesAnything()) {
+							if (this.pattern.length === 2 && this.pre.length === 0 && this.post.length === 0)
+								ref = oldWord[i - this.idx[j] - 1];
+							else if (this.pattern.length === 1 && this.pre.length > 0 && this.post.length === 0)
+								ref = oldWord[i - 2];
+							else if (this.pattern.length === 1 && this.pre.length === 0 && this.post.length > 0)
+								ref = oldWord[i];
+							else
+								throw new Error(`I don't know what ref to use for this ± expression in ${this}`);
+						}
+						else {
+							ref = null;
+						}
 						drowWen.push(this.result[j].apply(
-							oldWord[i + this.idx[j] - this.pattern.length], // mapping to the relevant old segments
-							this.post.length > 0 ? oldWord[i] : oldWord[i-1]));
+							oldWord[i + this.idx[j] - this.pattern.length], ref)); // mapping to the relevant old segments
+					}
 					else
 						drowWen.push(this.result[j].apply()); // or drawing new segments from thin air
 				}
@@ -73,13 +87,6 @@ export class SoundChange implements Process {
 				if (i >= 0) drowWen.push(oldWord[i]); // just add the next character of old
 			}
 		}
-		// double check that we didn't delete the stress
-		let numStress = 0;
-		for (let i = 0; i < drowWen.length; i ++)
-			if (drowWen[i].is(Silabia.PRIMARY_STRESSED))
-				numStress ++;
-		if (numStress !== 1)
-			throw new Error(`this process deleted the stress in [${transcribe([oldWord], "ipa")}]: ${this}`);
 		return drowWen.reverse();
 	}
 
@@ -125,10 +132,15 @@ export class SoundChange implements Process {
 /**
  * a process that causes sounds in the same word to share a feature
  */
-export class Harmony implements Process {
+export class Harmony implements WordProcess {
 	private readonly kutube: Feature[];
 	private readonly affectsConsonants: boolean;
 
+	/**
+	 * construct a new Harmony process on a given feature
+	 * @param feature what aspect of the sounds must match; one of ["front", "hight", "round", "tense]
+	 * @param affectsConsonants whether consonants are affected as well as vowels
+	 */
 	constructor(feature: string, affectsConsonants: boolean) {
 		this.affectsConsonants = affectsConsonants;
 		if (feature === 'front') // then construct the list of "polar" attributes
@@ -148,7 +160,7 @@ export class Harmony implements Process {
 		let val: Feature = null;
 		for (let i = 0; i < oldWord.length; i ++) { // iterate backwards through the word
 			newWord[i] = oldWord[i]; // in most cases, we will just make this the same as it was in the old word
-			if (this.affectsConsonants || !oldWord[i].is(Quality.VOWEL)) { // but if this segment isn't immune
+			if (this.affectsConsonants || oldWord[i].is(Quality.VOWEL)) { // but if this segment isn't immune
 				for (let feature of this.kutube) { // check its polarity
 					if (oldWord[i].is(feature)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before
@@ -167,7 +179,7 @@ export class Harmony implements Process {
 /**
  * a process that places syllables according to the sonority sequencing constraint
  */
-export class Syllabicization implements Process {
+export class Syllabicization implements WordProcess {
 	private readonly bias: number; // amount to prefer earlier or later syllables
 	private readonly minSonority: number; // minimum allowable sonority of a nucleus
 
@@ -194,7 +206,7 @@ export class Syllabicization implements Process {
 			const l = (i-1 >= 0) ? sonority[i-1] : -Infinity;
 			const r = (i+1 < oldWord.length) ? sonority[i+1] : -Infinity;
 			// if it is a local maximum of sonority, make it syllabic
-			if (c >= l && c >= r && !(this.bias < 0 && c === l && c < r) && !(this.bias > 0 && c < l && c === r)) { // if it is a peak
+			if (c >= l && c >= r && !(this.bias < 0 && c === l && c > r) && !(this.bias > 0 && c > l && c === r)) { // if it is a peak
 				let desiredLevelOfStress;
 				if (weNeedANewStress)
 					desiredLevelOfStress = Silabia.PRIMARY_STRESSED;
@@ -242,7 +254,7 @@ export class Syllabicization implements Process {
 /**
  * a process that places stress according to certain rules
  */
-export class StressPlacement implements Process {
+export class StressPlacement implements WordProcess {
 	private readonly reverse: boolean; // whether the primary stress is on the right
 	private readonly headSize: number; // the number of unstressed syllables to put between the word edge and the initial stress
 	private readonly attractors: number; // the minimum weight that attracts stress
@@ -253,8 +265,12 @@ export class StressPlacement implements Process {
 	 * create a new stress system given some simplified parameters
 	 * @param reverse whether to assign stress to the end of the word rather than the start
 	 * @param headSize the number of syllables between the primary stress and the start of the word
-	 * @param attractors the minimum attractiveness of a syllable to take the stress away from its normal head position
-	 * @param tailMode how to handle stress away from the primary – one of ['lapse', 'clash', or 'none']
+	 * @param attractors the minimum attractiveness of a syllable to take the stress away from its normal head
+	 *                   position (an open syllable has weight 0, a long vowel has weight 2, and any other closed
+	 *                   syllable has weight 1)
+	 * @param tailMode how to handle stress away from the primary – either "lapse" to put in as much stress as possible
+	 *                 without having any adjacent stressed syllables, "clash" to put in as little stress as possible
+	 *                 without ever having adjacent unstressed syllables, or "none" to have no secondary stress at all.
 	 * @param lengthen whether to lengthen stressed open syllables
 	 */
 	constructor(reverse: boolean, headSize: number, attractors: number, tailMode: string, lengthen: boolean) {
@@ -330,7 +346,7 @@ export class StressPlacement implements Process {
 /**
  * a process that applies to a whole phrase; not just a single word
  */
-export class SpecialProcess {
+export class PhraseProcess {
 	private readonly name: string;
 
 	/**
@@ -363,7 +379,8 @@ export class SpecialProcess {
 
 export const DEFAULT_STRESS = new StressPlacement(true, 1, 1, 'lapse', false);
 
-export const PROCESS_OPTIONS: {chanse: number, proces: Process | SpecialProcess}[] = [];
+export const WORD_PROCESS_OPTIONS: {chanse: number, proces: WordProcess}[] = [];
+export const PHRASE_PROCESS_OPTIONS: {chanse: number, proces: PhraseProcess}[] = [];
 for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phonological processes
 	if (type === 'mute') {
 		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
@@ -441,12 +458,12 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 				throw RangeError(`unintelligible symbol in '${code}': '${token}'`);
 			}
 		}
-		PROCESS_OPTIONS.push({chanse: chance, proces:
+		WORD_PROCESS_OPTIONS.push({chanse: chance, proces:
 				new SoundChange(ca, pa, idx, bada, chena)});
 	}
 	else if (type === 'harmonia') {
 		const [feature, scope] = code.split(" ");
-		PROCESS_OPTIONS.push({chanse: chance, proces:
+		WORD_PROCESS_OPTIONS.push({chanse: chance, proces:
 				new Harmony(feature, scope !== "vowel")});
 	}
 	else if (type === 'acente') {
@@ -454,7 +471,7 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 		for (let attractors = 1; attractors <= 3; attractors ++)
 			for (const tailMode of ['clash', 'lapse', 'none'])
 				for (const lengthen of [true, false])
-					PROCESS_OPTIONS.push({chanse: chance/18., proces:
+					WORD_PROCESS_OPTIONS.push({chanse: chance/18., proces:
 							new StressPlacement(
 								reverse === "true",
 								Number.parseInt(headSize),
@@ -463,11 +480,11 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 	else if (type === 'silabe') {
 		const minSilabia = Number.parseInt(code);
 		for (let bias = -1; bias <= 1; bias ++)
-			PROCESS_OPTIONS.push({chanse: chance/3, proces:
+			WORD_PROCESS_OPTIONS.push({chanse: chance/3, proces:
 					new Syllabicization(bias, minSilabia)});
 	}
 	else {
-		PROCESS_OPTIONS.push({chanse: chance, proces:
-			new SpecialProcess(type)});
+		PHRASE_PROCESS_OPTIONS.push({chanse: chance, proces:
+			new PhraseProcess(type)});
 	}
 }

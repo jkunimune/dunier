@@ -391,7 +391,7 @@ export default [
     "code": "[ +NONSYLLAB ] [ +NONSYLLAB -GUTTURAL ] > [ +CLICK ]1 /"
   }, {
     "chance": 0.002, "type": "mute", "comment": "click genesis",
-    "code": "[ +OCCL ] [ +CORON ] > [ +CLICK ]1 /"
+    "code": "[ +NONSYLLAB +OCCL ] [ +NONSYLLAB +CORON ] > [ +CLICK ]1 /"
   }, {
     "chance": 0.010, "type": "mute", "comment": "dm > nm",
     "code": "[ +VOICE +OCCL ] > [ +NASAL ] / _ [ +OCCL ]"
@@ -568,7 +568,7 @@ export default [
     "code": "[ +PALATALIZ +TRILL ] > [ +BREATHY +UNROUND +TRILL ] /"
   }, {
     "chance": 0.050, "type": "mute", "comment": "break up Czech trill-fricative",
-    "code": "[ +BREATHY +TRILL ] > [ +VOICE +CLOSE ] [ +VOICE +FRIC ] /"
+    "code": "[ +BREATHY +TRILL ] > [ +VOICE +CLOSE ] [ +NONSYLLAB +VOICE +FRIC ] /"
   }, {
     "chance": 0.050, "type": "mute", "comment": "soften Czech trill-fricative",
     "code": "[ +BREATHY +CORON +TRILL ] > [ +VOICE +POSTALV +FRIC ] /"
@@ -601,10 +601,10 @@ export default [
     "code": "[ +NASALIZ ] > [ +UNROUND ] /"
   }, {
     "chance": 0.005, "type": "mute", "comment": "loss of double-articulated tp",
-    "code": "[ +LABIOCORON ] > [ +ALVEO ] [ +BILAB ] /"
+    "code": "[ +LABIOCORON ] > [ +NONSYLLAB +ALVEO ] [ +BILAB ] /"
   }, {
     "chance": 0.005, "type": "mute", "comment": "loss of double-articulated kp",
-    "code": "[ +LABIOVELAR ] > [ +VELAR ] [ +BILAB ] /"
+    "code": "[ +LABIOVELAR ] > [ +NONSYLLAB +VELAR ] [ +BILAB ] /"
   }, {
     "chance": 0.020, "type": "mute", "comment": "d > n in coda",
     "code": "[ +VOICE +STOP ] > [ +NASAL ] / _ [ -VOCOID -LIQ ]"
@@ -877,7 +877,7 @@ export default [
     "code": "[ +SONOR ] > [ +NASALIZ ] / _ [ +NASAL ]"
   }, {
     "chance": 0.002, "type": "mute", "comment": "rhoticizacion onto vowels",
-    "code": "[ +UNSTRESS +VOWEL ] [ +RHOTIC ] > [ +UNSTRESS ]1 /"
+    "code": "[ +VOWEL ] [ +RHOTIC ] > [ +LONG ±silabia ]1 /"
   }, {
     "chance": 0.010, "type": "mute", "comment": "we > je",
     "code": "[ +GLIDE ] > [ ±loke ±minorLoke ] / _ [ +VOWEL ]"
@@ -913,7 +913,7 @@ export default [
     "code": "[ +HIGH +VOWEL ] [ -PRIMARY +HIGH +VOWEL ] > [ +LONG ±loke ]0 /"
   }, {
     "chance": 0.500, "type": "mute", "comment": "assimilation of w~v",
-    "code": "[ +WIBBLY ] [ +WIBBLY ] > [ ]0 /"
+    "code": "[ -SYLLAB +WIBBLY ] [ +WIBBLY ] > [ ]1 /"
   }, {
     "chance": 0.050, "type": "mute", "comment": "assimilation of coronals",
     "code": "[ -SYLLAB +CORON -!NASAL -VOCOID -SIBIL ] [ +CORON -VOCOID ] > [ +LONG ]1 /"
@@ -1019,7 +1019,7 @@ export default [
     "code": "[ +LABIAL +VOWEL ] > [ +UNROUND +PALATAL ] / [ +LABIAL +VOCOID ] _"
   }, {
     "chance": 0.010, "type": "mute", "comment": "dː > nd",
-    "code": "[ +LONG +VOICE +STOP ] > [ +SHORT +NASAL ] [ +SHORT ] /"
+    "code": "[ +LONG +VOICE +STOP ] > [ +NONSYLLAB +SHORT +NASAL ] [ +SHORT ] /"
   }, {
     "chance": 0.010, "type": "mute", "comment": "lub > lib",
     "code": "[ +SHORT +VOWEL ] > [ +PALATAL ] / [ +LATERAL ] _ [ +LABIAL ]"

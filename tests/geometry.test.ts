@@ -51,7 +51,7 @@ describe("checkVoronoiPolygon()", () => {
         const originalPolygon = [{x: 1, y: 0}, {x: -3, y: -4}, {x: 0, y: 2}];
         expect(checkVoronoiPolygon(originalPolygon)).toEqual([originalPolygon[1], originalPolygon[0], originalPolygon[2]]);
     });
-    test.only("real life", () => {
+    test("real life", () => {
         const originalPolygon = [
             {x: 13.8, y: -111.3},
             {x: 173.2, y: -91.1},

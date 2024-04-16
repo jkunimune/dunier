@@ -4,7 +4,7 @@
  */
 import {Random} from "../utilities/random.js";
 import {Sound} from "./sound.js";
-import {DEFAULT_STRESS, Process, PROCESS_OPTIONS, SpecialProcess} from "./process.js";
+import {DEFAULT_STRESS, WordProcess, PhraseProcess, WORD_PROCESS_OPTIONS, PHRASE_PROCESS_OPTIONS} from "./process.js";
 import {ipa} from "./script.js";
 import {Name} from "./name.js";
 import {Enumify} from "../libraries/enumify.js";
@@ -202,24 +202,22 @@ export class ProtoLang extends Lect {
 
 export class Dialect extends Lect {
 	private readonly parent: Lect;
-	private readonly changes: Process[];
-	private readonly specialChanges: SpecialProcess[];
+	private readonly wordProcesses: WordProcess[];
+	private readonly phraseProcesses: PhraseProcess[];
 
 	constructor(parent: Lect, rng: Random) {
 		super(parent.defaultStyle, parent.prefixing);
 		this.parent = parent;
 		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 
-		this.changes = [];
-		this.specialChanges = [];
-		for (const {chanse, proces} of PROCESS_OPTIONS) {
-			if (rng.probability(chanse)) {
-				if (proces instanceof SpecialProcess)
-					this.specialChanges.push(proces);
-				else
-					this.changes.push(proces);
-			}
-		}
+		this.wordProcesses = [];
+		this.phraseProcesses = [];
+		for (const {chanse, proces} of WORD_PROCESS_OPTIONS)
+			if (rng.probability(chanse))
+				this.wordProcesses.push(proces);
+		for (const {chanse, proces} of PHRASE_PROCESS_OPTIONS)
+			if (rng.probability(chanse))
+				this.phraseProcesses.push(proces);
 	}
 
 	getName(index: string, tipo: WordType) {
@@ -229,12 +227,12 @@ export class Dialect extends Lect {
 	applyChanges(lekse: Name): Name {
 		const newParts = [];
 		for (let part of lekse.parts) {
-			for (const change of this.changes)
+			for (const change of this.wordProcesses)
 				part = change.apply(part);
 			newParts.push(part);
 		}
 		let newLekse = new Name(newParts, lekse.language);
-		for (const change of this.specialChanges)
+		for (const change of this.phraseProcesses)
 			newLekse = change.apply(newLekse);
 		return newLekse;
 	}

@@ -227,10 +227,15 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]); // and change them to vowels
 		}
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
-			for (let i = 0; i < sounds.length; i++)
-				if (sounds[i].is(Loke.VELAR) && sounds[i].is(Mode.NASAL) && i + 1 < sounds.length
+			for (let i = 0; i < sounds.length - 1; i++)
+				if (sounds[i].is(Loke.VELAR) && sounds[i].is(Mode.NASAL)
 					&& sounds[i + 1].is(Loke.VELAR) && sounds[i + 1].is(Quality.OCCLUSIVE)) // find velar nasals followd by velar stops
 					sounds[i] = new Klas([Loke.ALVEOLAR]).apply(sounds[i]); // and change them to be coronal
+		}
+		if (ORTHOGRAPHIC_FLAGS.get(style).get('chain nasalized vocoids')) {
+			for (let i = 0; i < sounds.length - 1; i++)
+				if (sounds[i].is(Quality.VOCOID) && sounds[i].is(Nosia.NASALIZED) && sounds[i + 1].is(Quality.NASAL)) // find nasalized vocoids followd by other nasal sounds
+					sounds[i] = new Klas([Nosia.ORAL]).apply(sounds[i]); // and change them to be not nasalized
 		}
 
 		// form the inicial spelling by reading the transcripcion out of the table
@@ -356,7 +361,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			// superscript n means add an ン if it's after a vowel but omit it otherwise
 			for (let i = symbols.length - 1; i >= 0; i --) {
 				if (symbols[i] === "ⁿ") {
-					if (i - 1 >= 0 && "aiueoy".includes(symbols[i - 1]))
+					if (i - 1 >= 0 && "aiueo".includes(symbols[i - 1]))
 						symbols = symbols.slice(0, i) + "ン" + symbols.slice(i + 1);
 					else
 						symbols = symbols.slice(0, i) + symbols.slice(i + 1);
@@ -389,11 +394,11 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 				}
 			}
 			// convert invalid y to i or remove it
-			for (let i = symbols.length; i >= 2; i --) {
+			for (let i = symbols.length; i >= 1; i --) {
 				if (symbols[i - 1] === "y") {
 					if (i >= symbols.length || !"aiueo".includes(symbols[i]))
 						symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i);
-					else if (i - 2 >= 0 && "tdcfwv".includes(symbols[i - 2]))
+					else if (i - 2 >= 0 && !"aiueoンー".includes(symbols[i - 2]))
 						symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i - 1);
 				}
 			}
@@ -421,8 +426,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 					newSymbols.push(symbols[i]);
 				}
 				else {
-					console.log(symbols.charCodeAt(i));
-					throw new Error(`invalid romaji input: ${symbols.slice(0, i)}[${symbols[i]}]${symbols.slice(i + 1)}`);
+					throw new Error(`invalid romaji input: /${transcribe([sounds], "ipa")}/ -> '${symbols.slice(0, i)}[${symbols[i]}]${symbols.slice(i + 1)}'`);
 				}
 				i --;
 			}

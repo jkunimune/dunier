@@ -334,6 +334,14 @@ export class Klas {
 	private readonly forbidden: Feature[]; // qualities this class explicitly does not have
 	private readonly tracked: string[]; // qualities this class might have
 
+	/**
+	 * assemble a collection of phonological features to describe, qualify, or alter a Sound.
+	 * @param plus features that the Sound must have, or that will be applied to it.
+	 * @param minus features that the Sound must not have.
+	 * @param alpha features that the Sound may or may not have depending on context. this one is specifically used
+	 *              when applying a Klas to a Sound; if there are any of these alpha features, a reference Sound must
+	 *              also be passed, and the specified alpha features will be copied from that reference.
+	 */
 	constructor(plus: Feature[], minus: Feature[] = [], alpha: string[] = []) {
 		this.required = plus;
 		this.forbidden = minus;
@@ -355,10 +363,17 @@ export class Klas {
 	}
 
 	/**
-	 * does this sound have only negative requirements, such that the absense of speech can match?
+	 * does this Klas have only negative requirements, such that the absense of speech can match?
 	 */
 	matchesSilence(): boolean {
 		return this.required.length === 0;
+	}
+
+	/**
+	 * does this Klas have any "tracked" requirements, such that applying it will require a reference sound?
+	 */
+	referencesAnything() {
+		return this.tracked.length > 0;
 	}
 
 	/**
@@ -366,10 +381,10 @@ export class Klas {
 	 * @param sound the foneme that is being made to conform here
 	 * @param ref if this.ka has stuff in it, draw those features from ref.
 	 */
-	apply(sound: Sound = Sound.BLANK, ref: Sound = null): Sound {
+	apply(sound: Sound = Sound.BLANK, ref: Sound | null = null): Sound {
 		if (this.forbidden.length > 0)
 			throw Error(`you can't use -${this.forbidden[0]} in the final state of a process!`);
-		if (this.required.length === 0) // if there are no properties, you don't have to do anything
+		if (this.required.length === 0 && this.tracked.length === 0) // if there are no properties, you don't have to do anything
 			return sound;
 
 		let mode = sound.mode, loke = sound.loke, voze = sound.voze;
@@ -465,6 +480,8 @@ export class Klas {
 			}
 		}
 
+		if (this.tracked.length > 0 && ref === null)
+			throw new Error("this process uses ± symbols but it's not clear what sound it's supposed to use to decide between + and -.");
 		for (const axis of this.tracked) { // match features from ka
 			if (axis === 'loke')
 				loke = ref.loke;
@@ -472,6 +489,8 @@ export class Klas {
 				voze = ref.voze;
 			else if (axis === 'minorLoke')
 				minorLoke = ref.minorLoke;
+			else if (axis === 'silabia')
+				silabia = ref.silabia;
 			else
 				throw Error(`I can't understand ${axis}`);
 		}

@@ -93,6 +93,8 @@ export default {
       "symbols": ["ʐ",  "r",  "y",  "j",  "ж",  "zy", "j",  "ẓ",  "zh", "rz", "zh"] },
     { "features": ["retroflex", "fricate", "voiceless", "lateral"],
       "symbols": ["ꞎ",  "l",  "l",  "fl", "л",  "r",  "l",  "ll", "rl", "ꞎ",  "hlh"] },
+    { "features": ["retroflex", "fricate", "lateral"],
+      "symbols": ["ɭ˔", "l",  "l",  "ll", "зл", "r",  "l",  "dl", "zl", "zl", "dl"] },
     { "features": ["retroflex", "close"],
       "symbols": ["ɻ",  "r",  "r",  "r",  "р",  "r",  "r",  "r",  "r",  "ṛ",  "rh"] },
     { "features": ["retroflex", "close", "lateral"],
@@ -110,9 +112,9 @@ export default {
     { "features": ["palatal", "fricate"],
       "symbols": ["ʝ",  "j",  "y",  "y",  "й",  "y",  "y",  "y",  "y",  "j",  "y"] },
     { "features": ["palatal", "fricate", "voiceless", "lateral"],
-      "symbols": ["ʎ̥", "hj", "ll", "sh", "щ",  "hy", "hy", "lly","shl", "lhj","ł̣y"] },
+      "symbols": ["ʎ̥",  "hj", "ll", "sh", "щ",  "hy", "hy", "lly","shl","lhj","ł̣y"] },
     { "features": ["palatal", "fricate", "lateral"],
-      "symbols": ["ʎ̝", "j",  "ll", "j",  "ж",  "zy", "j",  "dly","zhl", "hlj","y"] },
+      "symbols": ["ʎ̝",  "j",  "ll", "j",  "ж",  "zy", "j",  "dly","zhl","hlj","y"] },
     { "features": ["palatal", "close", "lateral"],
       "symbols": ["ʎ",  "gl", "ll", "y",  "ль", "ry", "ly", "ly", "lh", "lj", "ly"] },
     { "features": ["velar", "nasal"],
@@ -125,6 +127,10 @@ export default {
       "symbols": ["x",  "ch", "j",  "gh", "х",  "h",  "h",  "h",  "kh", "x",  "kh"] },
     { "features": ["velar", "fricate"],
       "symbols": ["ɣ",  "g",  "g",  "g",  "г",  "g",  "g",  "gh", "gh", "ğ",  "ɣ"] },
+    { "features": ["velar", "fricate", "voiceless", "lateral"],
+      "symbols": ["ʟ̥",  "l",  "ll", "sl", "хл", "hy", "hl", "ll", "khl","lwh","khl"] },
+    { "features": ["velar", "fricate", "lateral"],
+      "symbols": ["ʟ̝",  "l",  "ll", "gl", "гл", "zy", "l",  "gl", "ghl","ğl", "ɣl"] },
     { "features": ["velar", "close", "lateral"],
       "symbols": ["ʟ",  "l",  "ll", "y",  "ль", "ry", "l",  "lw", "lw", "lw", "lw"] },
     { "features": ["uvular", "nasal"],
@@ -288,10 +294,12 @@ export default {
   ],
   "flags": [
     { "name": "capitalization",
-      "values": [false, true, true, true, true, false, true, true, true, true, true] },
+      "values": [false, true, true, true, true, false, false, true, true, true, true] },
     { "name": "diphthong as hiatus",
       "values": [false, true, false, true, false, false, true, true, true, true, false] },
     { "name": "velar nasal as coronal",
-      "values": [false, true, true, true, true, true, true, true, false, true, false] }
+      "values": [false, true, true, true, true, true, true, true, false, true, false] },
+    { "name": "chain nasalized vocoids",
+      "values": [false, false, false, false, false, true, true, false, true, false, false] }
   ]
 };

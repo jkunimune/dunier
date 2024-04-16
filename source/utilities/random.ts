@@ -142,7 +142,7 @@ export class Random {
 	 * return a random choice from this list
 	 * @param options the elements from which we choose
 	 */
-	choice(options: any[]): any {
+	choice<T>(options: T[]): T {
 		return options[this.discrete(0, options.length)];
 	}
 
