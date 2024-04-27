@@ -15,8 +15,8 @@ export class Disc extends Surface {
 	protected readonly firmamentHite: number;
 	private readonly effectiveObliquity: number;
 
-	constructor(radius: number, obliquity: number, aspectRatio = 4.) {
-		super(Math.atan(1/aspectRatio), Math.PI/2);
+	constructor(radius: number, obliquity: number, hasDayNightCycle: boolean, aspectRatio = 4.) {
+		super(Math.atan(1/aspectRatio), Math.PI/2, hasDayNightCycle);
 		this.radius = radius;
 		this.firmamentHite = radius/aspectRatio;
 		this.effectiveObliquity = obliquity;

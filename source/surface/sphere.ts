@@ -13,7 +13,7 @@ import {Place} from "../utilities/coordinates.js";
  */
 export class Sphere extends Spheroid {
 	constructor(radius: number) {
-		super(radius, 1, 0, NaN);
+		super(radius, 1, 0, NaN, false);
 	}
 
 	insolation(ф: number): number {

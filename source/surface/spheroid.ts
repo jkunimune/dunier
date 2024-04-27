@@ -17,8 +17,8 @@ export class Spheroid extends Surface {
 	private readonly eccentricity: number;
 	private readonly obliquity: number;
 
-	constructor(radius: number, gravity: number, omega: number, obliquity: number) {
-		super(-Math.PI/2, Math.PI/2);
+	constructor(radius: number, gravity: number, omega: number, obliquity: number, hasDayNightCycle: boolean) {
+		super(-Math.PI/2, Math.PI/2, hasDayNightCycle);
 		this.radius = radius; // keep radius in km
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
 		this.aspectRatio = 1 + w/2 + 1.5*w*w + 6.5*w*w*w; // numerically determined formula for oblateness

@@ -79,7 +79,7 @@ let mappedCivs: Civ[] = null;
 function applyPlanet() {
 	console.log("jena planete...");
 	const planetType = DOM.val('planet-type'); // read input
-	const tidallyLocked = DOM.checked('planet-locked');
+	const hasDayNightCycle = !DOM.checked('planet-locked');
 	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
 	const gravity = Number(DOM.val('planet-gravity')) * 9.8;
 	const spinRate = 1 / Number(DOM.val('planet-day')) * 2*Math.PI/3600;
@@ -87,16 +87,16 @@ function applyPlanet() {
 
 	try { // create a surface
 		if (planetType === 'spheroid') { // spheroid
-			if (tidallyLocked) { // spherical
-				surface = new Sphere(
-					radius);
-			}
-			else { // oblate
+			if (hasDayNightCycle) { // oblate
 				surface = new Spheroid(
 					radius,
 					gravity,
 					spinRate,
-					obliquity);
+					obliquity,
+					hasDayNightCycle);
+			} else { // spherical
+				surface = new Sphere(
+					radius);
 			}
 		}
 		else if (planetType === 'toroid') { // toroid
@@ -107,14 +107,14 @@ function applyPlanet() {
 				obliquity);
 		}
 		else if (planetType === 'plane') { // plane
-			if (tidallyLocked) { // with static sun
-				surface = new LockedDisc(
-					radius);
-			}
-			else { // with orbiting sun
+			if (hasDayNightCycle) { // with orbiting sun
 				surface = new Disc(
 					radius,
-					obliquity);
+					obliquity,
+					hasDayNightCycle);
+			} else { // with static sun
+				surface = new LockedDisc(
+					radius);
 			}
 		}
 		else {

@@ -151,14 +151,18 @@ export class Civ {
 	 */
 	update(rng: Random) {
 		const newKultur: Map<Lect, Culture> = new Map();
-		newKultur.set(this.capital.culture.lect.macrolanguage, new Culture(this.capital.culture, this.capital, this, rng.next())); // start by updating the capital, tying it to the new homeland
+		newKultur.set(
+			this.capital.culture.lect.macrolanguage,
+			new Culture(this.capital.culture, this.capital, this, rng.next())); // start by updating the capital, tying it to the new homeland
 		for (const tile of this.tiles) { // update the culture of each tile in the empire in turn
 			if (rng.probability(TIME_STEP/MEAN_ASSIMILATION_TIME)) { // if the province fails its heritage saving throw
 				tile.culture = this.capital.culture; // its culture gets overritten
 			}
 			else { // otherwise update it normally
 				if (!newKultur.has(tile.culture.lect.macrolanguage)) // if anyone isn't already in the thing
-					newKultur.set(tile.culture.lect.macrolanguage, new Culture(tile.culture, null, this, rng.next() + 1)); // update that culture, treating it as a diaspora
+					newKultur.set(
+						tile.culture.lect.macrolanguage,
+						new Culture(tile.culture, tile.culture.homeland, this, rng.next() + 1)); // update that culture, treating it as a diaspora
 				tile.culture = newKultur.get(tile.culture.lect.macrolanguage); // then make the assinement
 			}
 		}

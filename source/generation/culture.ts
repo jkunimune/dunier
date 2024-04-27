@@ -8,6 +8,7 @@ import {Tile} from "../surface/surface.js";
 import {Civ} from "./civ.js";
 import {Name} from "../language/name.js";
 import {format} from "../gui/internationalization.js";
+import {BIOME_NAMES} from "./terrain.js";
 
 import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";
 
@@ -78,18 +79,23 @@ export class Culture {
 	/**
 	 * base a culture off of some ancestor culture, with some changes
 	 * @param parent the proto-culture off of which this one is based
-	 * @param homeland the place that will serve as the new cultural capital, or null if
-	 *                 it will keep using the old one
+	 * @param homeland the place that will serve as the new cultural capital
 	 * @param government the Civ that rules this Nodo
 	 * @param seed a random number seed
 	 */
-	constructor(parent: Culture, homeland: Tile, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
+	constructor(parent: Culture | null, homeland: Tile, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
 		const rng = new Random(seed);
 		this.featureLists = [];
 		this.government = government;
+		this.homeland = homeland;
+		this.klas = new Set<string>();
+		
+		// start by assigning the deterministic cultural classes it has from its location
+		this.klas.add(BIOME_NAMES[homeland.biome]);
+		if (this.homeland.surface.hasDayNightCycle)
+			this.klas.add("day_night_cycle");
+		
 		if (parent === null) {
-			this.klas = new Set<string>();
-			this.homeland = homeland;
 			this.lect = new ProtoLang(rng); // create a new language from scratch
 			for (const aspect of KULTUR_ASPECTS) { // make up a whole new culture
 				if (rng.probability(aspect.chance)) {
@@ -107,8 +113,6 @@ export class Culture {
 			}
 		}
 		else {
-			this.klas = new Set<string>();
-			this.homeland = (homeland === null) ? parent.homeland : homeland;
 			this.lect = new Dialect(parent.lect, rng);
 			for (let i = 0; i < KULTUR_ASPECTS.length; i ++) {
 				let featureList;

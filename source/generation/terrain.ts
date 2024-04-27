@@ -48,6 +48,7 @@ const OCEAN_SIZE = 0.2; // as a fraction of continental length scale
 const CONTINENTAL_CONVEXITY = 0.05; // between 0 and 1
 
 
+/** different ways two plates can interact at a given fault */
 enum FaultType {
 	CONTINENT_COLLISION,
 	SEA_TRENCH,
@@ -57,6 +58,7 @@ enum FaultType {
 }
 
 
+/** terrestrial ecoregion classifications */
 export enum Biome {
 	OCEAN,
 	LAKE,
@@ -70,6 +72,12 @@ export enum Biome {
 	SWAMP,
 	STEAMLAND,
 }
+
+/** keys used for referencing biomes in configuration files */
+export const BIOME_NAMES = [
+	"ocean", "lake", "ice", "tundra", "taiga", "forest",
+	"jungle", "desert", "plains", "swamp", "steamland"
+];
 
 
 /**

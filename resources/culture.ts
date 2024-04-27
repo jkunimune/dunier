@@ -378,7 +378,7 @@ export default [
           { "key": "trees", "klas": "none", "conditions": ["-barren"] },
           { "key": "fossils", "klas": "none", "conditions": [] },
           { "key": "rivers", "klas": "none", "conditions": [] },
-          { "key": "stars", "klas": "none", "conditions": ["+days"] },
+          { "key": "stars", "klas": "none", "conditions": ["+day_night_cycle"] },
           { "key": "sun", "klas": "none", "conditions": [] },
           { "key": "moon", "klas": "none", "conditions": [] },
           { "key": "maps", "klas": "none", "conditions": [] },

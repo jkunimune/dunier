@@ -31,17 +31,19 @@ export abstract class Surface {
 	public edge: Map<Tile, {prev: Tile, next: Tile}>;
 	readonly фMin: number;
 	readonly фMax: number;
+	readonly hasDayNightCycle: boolean;
 	refLatitudes: number[];
 	cumulAreas: number[];
 	cumulDistances: number[];
 
 
-	protected constructor(фMin: number, фMax: number) {
+	protected constructor(фMin: number, фMax: number, hasDayNightCycle: boolean) {
 		this.tiles = null;
 		this.фMin = фMin;
 		this.фMax = фMax;
 		this.axis = null;
 		this.edge = new Map();
+		this.hasDayNightCycle = hasDayNightCycle;
 	}
 
 	/**
