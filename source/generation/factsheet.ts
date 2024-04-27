@@ -7,6 +7,9 @@ import {PortableDocument} from "../utilities/portabledocument.js";
 import {format} from "../gui/internationalization.js";
 
 
+const PRINT_DEBUGGING_INFORMATION = false;
+
+
 /**
  * add a page to this PDF document with all the interesting informacion about the given Civ
  * @param doc
@@ -39,7 +42,7 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 		format('factbook.demography'), // TODO: bold this
 		18);
 
-	for (const {culture, size} of topick.getCultures())
+	for (const {culture, size} of topick.getCultures()) {
 		doc.addParagraph(
 			format((size < 2/3) ?
 				       'factbook.demography.minority' :
@@ -50,5 +53,11 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 			       topick.getName()) +
 			culture.toString(),
 			12, true);
+		
+		if (PRINT_DEBUGGING_INFORMATION)
+			doc.addParagraph(
+				`that culture has the following classes: [${[...culture.klas].join(", ")}]`,
+				12, true);
+	}
 }
 
