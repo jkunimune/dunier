@@ -2,11 +2,11 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {EmptySpace, Tile, Vertex} from "../source/surface/surface.js";
+import {EmptySpace, Tile} from "../source/surface/surface.js";
 import {Disc} from "../source/surface/disc.js";
 import {Vector} from "../source/utilities/geometry.js";
 
-const surface = new Disc(Math.sqrt(7)/2, 0);
+const surface = new Disc(Math.sqrt(7)/2, 0, false);
 surface.initialize();
 const tiles = [
     new Tile(0, surface.фλ(new Vector(-Math.sqrt(3)/2, 0, 0)), surface),
