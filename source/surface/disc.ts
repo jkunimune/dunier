@@ -56,6 +56,10 @@ export class Disc extends Surface {
 			(38.728*cosψ -  8.049)*Math.pow(ρ, 6));
 	}
 
+	hasSeasons(ф: number): boolean {
+		return Math.abs(this.firmamentHite/Math.tan(ф) - this.equatorRadius) > this.effectiveObliquity/(Math.PI/2)*this.equatorRadius;
+	}
+
 	windConvergence(ф: number): number {
 		return 1.5*(Math.sin(2*ф)**2 + Math.sin(3*ф)**2 - 0.5);
 	}

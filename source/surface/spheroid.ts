@@ -98,12 +98,16 @@ export class Spheroid extends Surface {
 		return Spheroid.annualInsolationFunction(this.obliquity, ф);
 	}
 
+	hasSeasons(ф: number): boolean {
+		return Math.abs(ф) > this.obliquity;
+	}
+
 	windConvergence(ф: number): number {
 		return Math.pow(Math.cos(ф), 2) + Math.pow(Math.cos(3*ф), 2);
 	}
 
 	windVelocity(ф: number): {north: number, east: number} {
-		return {north: 0, east: Math.cos(ф)}; // realistically this should change direccion, but this formula makes orographs more apparent
+		return {north: 0, east: Math.cos(ф)}; // realistically this should change direccion, but this formula makes rain shadows more apparent
 	}
 
 	xyz(place: Place): Vector {

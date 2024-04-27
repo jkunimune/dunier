@@ -269,6 +269,11 @@ export abstract class Surface {
 	abstract insolation(ф: number): number;
 
 	/**
+	 * whether the given latitude is nontropical
+	 */
+	abstract hasSeasons(ф: number): boolean;
+
+	/**
 	 * return the amount of moisture accumulation at a latitude, normalized to peak at 1.
 	 */
 	abstract windConvergence(ф: number): number;

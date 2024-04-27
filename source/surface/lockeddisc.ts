@@ -16,6 +16,10 @@ export class LockedDisc extends Disc {
 		return 2.0/Math.pow(1 + Math.pow(Math.tan(ф), -2), 3/2.);
 	}
 
+	hasSeasons(ф: number): boolean {
+		return false;
+	}
+	
 	windConvergence(ф: number): number {
 		return Math.pow(Math.sin(ф), 2);
 	}

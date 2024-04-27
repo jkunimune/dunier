@@ -8,7 +8,7 @@ import {Tile} from "../surface/surface.js";
 import {Civ} from "./civ.js";
 import {Name} from "../language/name.js";
 import {format} from "../gui/internationalization.js";
-import {BIOME_NAMES} from "./terrain.js";
+import {Biome, BIOME_NAMES} from "./terrain.js";
 
 import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";
 
@@ -80,7 +80,7 @@ export class Culture {
 	 * base a culture off of some ancestor culture, with some changes
 	 * @param parent the proto-culture off of which this one is based
 	 * @param homeland the place that will serve as the new cultural capital
-	 * @param government the Civ that rules this Nodo
+	 * @param government the Civ that rules this people
 	 * @param seed a random number seed
 	 */
 	constructor(parent: Culture | null, homeland: Tile, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
@@ -92,8 +92,17 @@ export class Culture {
 		
 		// start by assigning the deterministic cultural classes it has from its location
 		this.klas.add(BIOME_NAMES[homeland.biome]);
-		if (this.homeland.surface.hasDayNightCycle)
+		for (const neibor of this.homeland.neighbors.keys())
+			if (neibor.biome === Biome.OCEAN)
+				this.klas.add("coastal");
+		// TODO: define mountainusness and add class for "mountainous"
+		if (homeland.surface.hasDayNightCycle)
 			this.klas.add("day_night_cycle");
+		if (homeland.surface.hasSeasons(homeland.ф))
+			this.klas.add("seasons");
+		if (homeland === government.capital)
+			this.klas.add("nation_state");
+		// TODO: have flag for nomadic and sedentary
 		
 		if (parent === null) {
 			this.lect = new ProtoLang(rng); // create a new language from scratch

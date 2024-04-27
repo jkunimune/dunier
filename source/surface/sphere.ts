@@ -20,6 +20,10 @@ export class Sphere extends Spheroid {
 		return 2.0*Math.max(0, Math.sin(ф));
 	}
 
+	hasSeasons(ф: number): boolean {
+		return false;
+	}
+
 	windConvergence(ф: number): number {
 		return Math.cos(ф);
 	}

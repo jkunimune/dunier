@@ -100,6 +100,10 @@ export class Toroid extends Surface {
 		return incident*(1 - opacity);
 	}
 
+	hasSeasons(ф: number): boolean {
+		return Math.min(Math.abs(ф), Math.PI - Math.abs(ф)) > this.obliquity && this.insolation(ф) > 0;
+	}
+	
 	windConvergence(ф: number): number {
 		return Math.pow(Math.cos(ф), 2) + Math.pow(Math.cos(3*ф), 2);
 	}
