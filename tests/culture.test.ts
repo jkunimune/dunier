@@ -15,57 +15,57 @@ import TECHNOLOGIES from "../resources/tech_tree.js";
 
 const USER_STRING_SETS = [EN_STRINGS, ES_STRINGS, JA_STRINGS, PD_STRINGS];
 describe("culture.json", () => {
-    describe("keys are all inlized", () => {
-        for (const aspect of UNPARSED_KULTUR_ASPECTS)
-            for (const feature of aspect.features)
-                for (const value of feature.values)
-                    for (const strings of USER_STRING_SETS)
-                        test(`${aspect.key}.${feature.key}.${value.key} in ${strings[".language"]}`, () => {
-                            expect(strings.hasOwnProperty(`factbook.${aspect.key}.${feature.key}.${value.key}`)).toBe(true);
-                        });
-    });
-    describe("condition classes are all defined", () => {
-        const definedClasses = [
-            "day_night_cycle", "four_seasons", "nation_state", "nomadic", "sedentary",
-            "coastal", "mountainous", ...BIOME_NAMES];
-        for (const aspect of UNPARSED_KULTUR_ASPECTS) {
-            for (const feature of aspect.features) {
-                for (const value of feature.values) {
-                    const requiredClasses: string[] = [];
-                    for (const condition of value.conditions)
-                        if (condition.startsWith("+") || condition.startsWith("-"))
-                            requiredClasses.push(condition.slice(1));
-                    test(`${aspect.key}.${feature.key}.${value.key}`, () => {
-                        expect(definedClasses).toEqual(expect.arrayContaining(requiredClasses));
-                    });
-                    definedClasses.push(value.klas);
-                }
-            }
-        }
-    });
-    test("classes are all used", () => {
-        const definedClasses = new Set();
-        const usedClasses = new Set();
-        for (const aspect of UNPARSED_KULTUR_ASPECTS) {
-            for (const feature of aspect.features) {
-                for (const value of feature.values) {
-                    if (value.klas !== "none")
-                        definedClasses.add(value.klas);
-                    for (const condition of value.conditions)
-                        if (condition.startsWith("+") || condition.startsWith("-"))
-                            usedClasses.add(condition.slice(1));
-                }
-            }
-        }
-        expect([...usedClasses]).toEqual(expect.arrayContaining([...definedClasses]));
-    });
+	describe("keys are all inlized", () => {
+		for (const aspect of UNPARSED_KULTUR_ASPECTS)
+			for (const feature of aspect.features)
+				for (const value of feature.values)
+					for (const strings of USER_STRING_SETS)
+						test(`${aspect.key}.${feature.key}.${value.key} in ${strings[".language"]}`, () => {
+							expect(strings.hasOwnProperty(`factbook.${aspect.key}.${feature.key}.${value.key}`)).toBe(true);
+						});
+	});
+	describe("condition classes are all defined", () => {
+		const definedClasses = [
+			"day_night_cycle", "four_seasons", "nation_state", "nomadic", "sedentary",
+			"coastal", "mountainous", ...BIOME_NAMES];
+		for (const aspect of UNPARSED_KULTUR_ASPECTS) {
+			for (const feature of aspect.features) {
+				for (const value of feature.values) {
+					const requiredClasses: string[] = [];
+					for (const condition of value.conditions)
+						if (condition.startsWith("+") || condition.startsWith("-"))
+							requiredClasses.push(condition.slice(1));
+					test(`${aspect.key}.${feature.key}.${value.key}`, () => {
+						expect(definedClasses).toEqual(expect.arrayContaining(requiredClasses));
+					});
+					definedClasses.push(value.klas);
+				}
+			}
+		}
+	});
+	test("classes are all used", () => {
+		const definedClasses = new Set();
+		const usedClasses = new Set();
+		for (const aspect of UNPARSED_KULTUR_ASPECTS) {
+			for (const feature of aspect.features) {
+				for (const value of feature.values) {
+					if (value.klas !== "none")
+						definedClasses.add(value.klas);
+					for (const condition of value.conditions)
+						if (condition.startsWith("+") || condition.startsWith("-"))
+							usedClasses.add(condition.slice(1));
+				}
+			}
+		}
+		expect([...usedClasses]).toEqual(expect.arrayContaining([...definedClasses]));
+	});
 });
 
 describe("tech_tree.ts", () => {
-    for (const technology of TECHNOLOGIES) {
-        for (const strings of USER_STRING_SETS)
-            test(`${technology.key} is inlized in ${strings[".language"]}`, () => {
-                expect(strings.hasOwnProperty(`factbook.tech.${technology.key}`)).toBe(true);
-            });
-    }
+	for (const technology of TECHNOLOGIES) {
+		for (const strings of USER_STRING_SETS)
+			test(`${technology.key} is inlized in ${strings[".language"]}`, () => {
+				expect(strings.hasOwnProperty(`factbook.tech.${technology.key}`)).toBe(true);
+			});
+	}
 });
