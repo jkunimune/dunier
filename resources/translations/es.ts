@@ -58,6 +58,7 @@ export default {
 	"factbook.building.depiction.celebrities": "figuras históricas",
 	"factbook.building.depiction.commoners": "la gente corriente",
 	"factbook.building.depiction.dragons": "dragones",
+	"factbook.building.depiction.eclipse": "eclipses solares",
 	"factbook.building.depiction.events": "eventos históricos",
 	"factbook.building.depiction.fish": "pez",
 	"factbook.building.depiction.flowers": "flores",

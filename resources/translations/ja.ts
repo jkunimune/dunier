@@ -58,6 +58,7 @@ export default {
 	"factbook.building.depiction.celebrities": "歴史的な人",
 	"factbook.building.depiction.commoners": "庶民",
 	"factbook.building.depiction.dragons": "竜",
+	"factbook.building.depiction.eclipse": "日食",
 	"factbook.building.depiction.events": "故事",
 	"factbook.building.depiction.fish": "魚",
 	"factbook.building.depiction.flowers": "花",

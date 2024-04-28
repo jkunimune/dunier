@@ -58,6 +58,7 @@ export default {
 	"factbook.building.depiction.celebrities": "ba histori jan",
 	"factbook.building.depiction.commoners": "ba putong jan",
 	"factbook.building.depiction.dragons": "yo lung",
+	"factbook.building.depiction.eclipse": "solar eclipses",
 	"factbook.building.depiction.events": "ba histori kas",
 	"factbook.building.depiction.fish": "ba pesh",
 	"factbook.building.depiction.flowers": "ba hua",
