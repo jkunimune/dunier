@@ -31,8 +31,8 @@ for filename in os.listdir('../../templates/'):
 	for lang_code in LANGUAGES:
 		print(f"  {lang_code}")
 		# replace the basic keys
-		with open(f'../../resources/translations/{lang_code}.json', 'r', encoding='utf8') as lang_file:
-			lang = json.load(lang_file)
+		with open(f'../../resources/translations/{lang_code}.ts', 'r', encoding='utf8') as lang_file:
+			lang = json.loads(lang_file.read()[15:-2])
 		page = template
 		for key, value in lang.items():
 			page = page.replace(f'{{{key}}}', value)
