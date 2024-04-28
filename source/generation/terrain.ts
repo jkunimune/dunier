@@ -357,7 +357,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 
 	for (const tile of surf.tiles)
 		tile.downwind = [];
-	const queue = [];
+	const queue: {tile: Tile, moisture: number}[] = [];
 	for (const tile of surf.tiles) {
 		let bestTile = null, bestDixe = null; // define tile.upwind as the neighbor that is in the upwindest direction of each tile
 		for (const neighbor of tile.neighbors.keys()) {
@@ -375,7 +375,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 			tile.rainfall -= OROGRAPHIC_MAGNITUDE;
 	}
 	while (queue.length > 0) {
-		const {tile: tile, moisture} = queue.pop(); // each tile looks downwind
+		const {tile, moisture} = queue.pop(); // each tile looks downwind
 		tile.rainfall += moisture;
 		for (const downwind of tile.downwind) {
 			if (downwind.biome !== Biome.OCEAN && downwind.height <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
@@ -414,7 +414,7 @@ function addRivers(surf: Surface): void {
 
 	for (const vertex of surf.vertices) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean or off the edge
 		for (const tile of vertex.tiles) {
-			if (tile instanceof EmptySpace || tile.biome === Biome.OCEAN) {
+			if (tile instanceof Tile && tile.biome === Biome.OCEAN) {
 				riverQueue.push({
 					below: tile, above: vertex,
 					maxHeight: 0, uphillLength: 0,
@@ -527,7 +527,7 @@ function addRivers(surf: Surface): void {
 			outflow.height - outflow.downstream.height < LAKE_THRESH) { // if we made it through all that, make an altitude check
 			tile.biome = Biome.LAKE; // and assign lake status. you've earned it, tile.
 			for (const neighbor of tile.neighbors.keys())
-				lageQueue.push(); // tell your friends.
+				lageQueue.push(neighbor); // tell your friends.
 		}
 	}
 }
@@ -545,7 +545,11 @@ function setBiomes(surf: Surface): void {
 					tile.neighbors.get(neighbor).flow > RAINFALL_NEEDED_TO_CREATE_MARSH)
 				adjacentWater = true;
 
-		if (tile.biome === null) {
+		// make sure the edge is frozen to hold all the water in
+		if (surf.edge.has(tile))
+			tile.biome = Biome.ICE;
+		// assign all other biomes based on temperature and rainfall
+		else if (tile.biome === null) {
 			if (tile.temperature < RIVER_THRESH)
 				tile.biome = Biome.ICE;
 			else if (tile.temperature < TUNDRA_TEMP)
