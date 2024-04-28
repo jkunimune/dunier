@@ -2,7 +2,21 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Klas, Loke, Longia, MinorLoke, Mode, Nosia, Quality, Silabia, Voze, Feature, Sound, Latia} from "./sound.js";
+import {
+	Klas,
+	Loke,
+	Longia,
+	MinorLoke,
+	Mode,
+	Nosia,
+	Quality,
+	Silabia,
+	Voze,
+	Feature,
+	Sound,
+	Latia,
+	get_loke_from_name, get_mode_from_name
+} from "./sound.js";
 
 import HARFIA_TABLE from "../../resources/alphabet.js";
 import ENGLISH_REPLACEMENTS from "../../resources/rules_en.js";
@@ -35,36 +49,6 @@ const MODIFIERS: {klas: Klas, baze: Feature[], kode: string}[] = [ // TODO: can 
 	{klas: new Klas([Mode.CLOSE]), baze: [Mode.FRICATE], kode: 'approx'},
 ];
 
-const LOKE_KODE = new Map([
-	['bilabial', Loke.BILABIAL],
-	['labiodental', Loke.LABIODENTAL],
-	['dental', Loke.DENTAL],
-	['alveolar', Loke.ALVEOLAR],
-	['postalveolar', Loke.POSTALVEOLAR],
-	['retroflex', Loke.RETROFLEX],
-	['palatal',  Loke.PALATAL],
-	['central',  Loke.CENTRAL],
-	['velar',  Loke.VELAR],
-	['uvular', Loke.UVULAR],
-	['epiglottal', Loke.EPIGLOTTAL],
-	['glottal', Loke.GLOTTAL],
-]);
-const MODE_KODE = new Map([
-	['nasal', Mode.NASAL],
-	['stop', Mode.STOP],
-	['breathy', Mode.STOP],
-	['affricate', Mode.AFFRICATE],
-	['fricate', Mode.FRICATE],
-	['tap', Mode.TAP],
-	['trill', Mode.TRILL],
-	['close', Mode.CLOSE],
-	['near close', Mode.NEAR_CLOSE],
-	['close mid', Mode.CLOSE_MID],
-	['open mid', Mode.OPEN_MID],
-	['near open', Mode.NEAR_OPEN],
-	['open', Mode.OPEN],
-	['click', Mode.CLICK],
-]);
 
 // each collum of the orthographic table tells us about a different available style
 const styles = HARFIA_TABLE.styles;
@@ -75,11 +59,9 @@ for (const style of styles)
 	TO_TEXT.set(style, new Map());
 for (const {features, symbols} of HARFIA_TABLE.sounds) {
 	// element 0 indicates the place of articulation
-	console.assert(LOKE_KODE.has(features[0]), features[0]);
-	const loke = LOKE_KODE.get(features[0]);
+	const loke = get_loke_from_name(features[0]);
 	// element 1 indicates the manner of articulation and voicing
-	console.assert(MODE_KODE.has(features[1]), features[1]);
-	let mode = MODE_KODE.get(features[1]);
+	let mode = get_mode_from_name(features[1]);
 	// the other elements modify voicing, syllabicity, laterality, or secondary articulation
 	let voze = Voze.VOICED, silabia = Silabia.NONSYLLABIC;
 	let latia = Latia.MEDIAN, aliSif = MinorLoke.UNROUNDED;

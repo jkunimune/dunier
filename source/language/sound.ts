@@ -38,6 +38,15 @@ export class Mode extends Enumify { // this should just be an enum, but JavaScri
 	}
 }
 
+/** look up the manner of articulation by name */
+export function get_mode_from_name(name: string): Mode {
+	const normalizedName = name.toUpperCase().replace(" ", "_");
+	for (const mode of Mode)
+		if (mode.enumKey === normalizedName)
+			return mode as Mode;
+	throw new Error(`unrecognized manner of articulation: '${name}'`);
+}
+
 /** location of primary articulation or vowel frontness */
 export class Loke extends Enumify {
 	static BILABIAL = new Loke(Foner.LABIA);
@@ -62,6 +71,15 @@ export class Loke extends Enumify {
 		super();
 		this.foner = articulator;
 	}
+}
+
+/** look up the place of articulation by name */
+export function get_loke_from_name(name: string): Loke {
+	const normalizedName = name.toUpperCase().replace(" ", "_");
+	for (const loke of Loke)
+		if (loke.enumKey === normalizedName)
+			return loke as Loke;
+	throw new Error(`unrecognized place of articulation: '${name}'`);
 }
 
 /** voicing */
