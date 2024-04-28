@@ -414,7 +414,7 @@ function addRivers(surf: Surface): void {
 
 	for (const vertex of surf.vertices) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean or off the edge
 		for (const tile of vertex.tiles) {
-			if (tile instanceof EmptySpace || tile.biome === Biome.OCEAN) {
+			if (tile instanceof Tile && tile.biome === Biome.OCEAN) {
 				riverQueue.push({
 					below: tile, above: vertex,
 					maxHeight: 0, uphillLength: 0,
