@@ -527,7 +527,7 @@ function addRivers(surf: Surface): void {
 			outflow.height - outflow.downstream.height < LAKE_THRESH) { // if we made it through all that, make an altitude check
 			tile.biome = Biome.LAKE; // and assign lake status. you've earned it, tile.
 			for (const neighbor of tile.neighbors.keys())
-				lageQueue.push(); // tell your friends.
+				lageQueue.push(neighbor); // tell your friends.
 		}
 	}
 }
