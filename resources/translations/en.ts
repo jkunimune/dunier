@@ -620,6 +620,7 @@ export default {
 	"factbook.tech.cannon": "cannons",
 	"factbook.tech.car": "automobiles",
 	"factbook.tech.carriage": "in horse-drawn carriages",
+	"factbook.tech.catapult": "catapults",
 	"factbook.tech.clock": "use clocks to tell time",
 	"factbook.tech.compass": "navigate using compasses",
 	"factbook.tech.crossbow": "crossbows",

@@ -99,7 +99,7 @@ export class Culture {
 		if (homeland.surface.hasDayNightCycle)
 			this.klas.add("day_night_cycle");
 		if (homeland.surface.hasSeasons(homeland.ф))
-			this.klas.add("seasons");
+			this.klas.add("four_seasons");
 		if (homeland === government.capital)
 			this.klas.add("nation_state");
 		// TODO: have flag for nomadic and sedentary

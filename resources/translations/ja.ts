@@ -614,6 +614,7 @@ export default {
 	"factbook.tech.cannon": "大砲",
 	"factbook.tech.car": "自動車に乗って",
 	"factbook.tech.carriage": "馬車に乗って",
+	"factbook.tech.catapult": "投石機",
 	"factbook.tech.clock": "時計を使う",
 	"factbook.tech.compass": "羅針盤を使う",
 	"factbook.tech.crossbow": "石弓",
