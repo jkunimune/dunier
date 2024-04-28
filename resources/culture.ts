@@ -386,7 +386,7 @@ export default [
           { "key": "celebrities", "klas": "none", "conditions": [] },
           { "key": "politicians", "klas": "none", "conditions": [] },
           { "key": "commoners", "klas": "none", "conditions": [] },
-          { "key": "aliens", "klas": "none", "conditions": [] },
+          { "key": "aliens", "klas": "have_seen_aliens", "conditions": [] },
           { "key": "monsters", "klas": "none", "conditions": [] },
           { "key": "shapes", "klas": "none", "conditions": [] }
         ]
@@ -415,7 +415,7 @@ export default [
           { "key": "people_no_arms", "klas": "humancentric_art", "conditions": [] },
           { "key": "people_no_legs", "klas": "humancentric_art", "conditions": [] },
           { "key": "people_triangular", "klas": "humancentric_art", "conditions": [] },
-          { "key": "people_big_heads", "klas": "humancentric_art", "conditions": [] }
+          { "key": "people_big_heads", "klas": "humancentric_art", "conditions": ["-have_seen_aliens"] }
         ]
       },
       {
