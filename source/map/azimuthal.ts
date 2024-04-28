@@ -12,7 +12,6 @@ import {LongLineType, PathSegment, Place, Point} from "../utilities/coordinates.
  */
 export class Azimuthal extends MapProjection {
 	private readonly rMax: number;
-	private readonly rMin: number;
 	private readonly sign: number;
 
 	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
@@ -34,7 +33,6 @@ export class Azimuthal extends MapProjection {
 				}],
 			]);
 		this.rMax = rMax;
-		this.rMin = rMax - surface.height;
 		// decide whether to do the flip thing
 		if (MapProjection.standardParallels(locus, this).фStd < 0)
 			this.sign = -1;
