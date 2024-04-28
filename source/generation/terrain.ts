@@ -357,7 +357,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 
 	for (const tile of surf.tiles)
 		tile.downwind = [];
-	const queue = [];
+	const queue: {tile: Tile, moisture: number}[] = [];
 	for (const tile of surf.tiles) {
 		let bestTile = null, bestDixe = null; // define tile.upwind as the neighbor that is in the upwindest direction of each tile
 		for (const neighbor of tile.neighbors.keys()) {
@@ -375,7 +375,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 			tile.rainfall -= OROGRAPHIC_MAGNITUDE;
 	}
 	while (queue.length > 0) {
-		const {tile: tile, moisture} = queue.pop(); // each tile looks downwind
+		const {tile, moisture} = queue.pop(); // each tile looks downwind
 		tile.rainfall += moisture;
 		for (const downwind of tile.downwind) {
 			if (downwind.biome !== Biome.OCEAN && downwind.height <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
