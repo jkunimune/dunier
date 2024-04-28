@@ -13,10 +13,10 @@ export class Bonne extends MapProjection {
 	private readonly фRef: number[];
 	private readonly yRef: number[];
 	private readonly sRef: number[];
-	private readonly minф: number;
-	private readonly maxф: number;
-	private readonly minλ: number;
-	private readonly maxλ: number;
+	private readonly фMin: number;
+	private readonly фMax: number;
+	private readonly λMin: number;
+	private readonly λMax: number;
 
 	public constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
 		super(surface, northUp, locus,
@@ -34,20 +34,20 @@ export class Bonne extends MapProjection {
 			this.sRef.push(surface.ds_dλ(this.фRef[i])); // TODO: try this with something that spans both poles.  I feel like it probably won't work
 		}
 
-		this.maxф = Math.min(surface.фMax, 1.4*focus.фMax - 0.4*focus.фMin); // spread the limits out a bit to give a contextual view
-		this.minф = Math.max(surface.фMin, 1.4*focus.фMin - 0.4*focus.фMax); // TODO: this should be a constant distance, not a constant latitude difference
-		this.maxλ = Math.min(Math.PI, 1.8*focus.λMax);
-		this.minλ = -this.maxλ;
+		this.фMax = Math.min(surface.фMax, 1.4*focus.фMax - 0.4*focus.фMin); // spread the limits out a bit to give a contextual view
+		this.фMin = Math.max(surface.фMin, 1.4*focus.фMin - 0.4*focus.фMax); // TODO: this should be a constant distance, not a constant latitude difference
+		this.λMax = Math.min(Math.PI, 1.8*focus.λMax);
+		this.λMin = -this.λMax;
 
 		this.geoEdges = MapProjection.buildGeoEdges(
-			this.minф, this.maxф, this.minλ, this.maxλ); // redo the edges
+			this.фMin, this.фMax, this.λMin, this.λMax); // redo the edges
 
-		let top = this.projectPoint({ф: this.maxф, λ: 0}).y; // then determine the dimensions of this map
-		let bottom = this.projectPoint({ф: this.minф, λ: 0}).y;
+		let top = this.projectPoint({ф: this.фMax, λ: 0}).y; // then determine the dimensions of this map
+		let bottom = this.projectPoint({ф: this.фMin, λ: 0}).y;
 		let right = 0;
-		for (const ф of surface.refLatitudes.concat(this.minф, this.maxф)) {
-			if (ф >= this.minф && ф <= this.maxф) {
-				const {x, y} = this.projectPoint({ф: ф, λ: this.maxλ});
+		for (const ф of surface.refLatitudes.concat(this.фMin, this.фMax)) {
+			if (ф >= this.фMin && ф <= this.фMax) {
+				const {x, y} = this.projectPoint({ф: ф, λ: this.λMax});
 				if (x > right)
 					right = x;
 				if (y < top)
@@ -56,9 +56,9 @@ export class Bonne extends MapProjection {
 					bottom = y;
 			}
 		}
-		for (const ф of [this.minф, this.maxф]) {
+		for (const ф of [this.фMin, this.фMax]) {
 			const r = Math.abs(this.radius(ф));
-			if (Math.abs(this.maxλ*this.sRadian(ф)) > Math.PI*r/2) {
+			if (Math.abs(this.λMax*this.sRadian(ф)) > Math.PI*r/2) {
 				if (r > right)
 					right = r;
 			}
