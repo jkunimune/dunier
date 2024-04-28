@@ -92,8 +92,7 @@ function applyPlanet() {
 					radius,
 					gravity,
 					spinRate,
-					obliquity,
-					hasDayNightCycle);
+					obliquity);
 			} else { // spherical
 				surface = new Sphere(
 					radius);

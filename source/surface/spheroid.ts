@@ -8,20 +8,31 @@ import {Place} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
 
 /**
- * an oblate spheroid
+ * an oblate spheroid (i.e. a normal planet)
  */
 export class Spheroid extends Surface {
 	protected readonly radius: number;
 	private readonly aspectRatio: number;
-	private readonly flattening: number;
+	readonly flattening: number;
 	private readonly eccentricity: number;
 	private readonly obliquity: number;
 
-	constructor(radius: number, gravity: number, omega: number, obliquity: number, hasDayNightCycle: boolean) {
-		super(-Math.PI/2, Math.PI/2, hasDayNightCycle);
+	/**
+	 * construct an oblate spheroid
+	 * @param radius the radius of the equator in km
+	 * @param gravity the surface gravity at the equator in m/s^2
+	 * @param omega the rotation rate in radians/s
+	 * @param obliquity the axial tilt in radians
+	 */
+	constructor(radius: number, gravity: number, omega: number, obliquity: number) {
+		if (obliquity < 0)
+			throw new Error(`the obliquity must be a nonnegative number, not ${obliquity}`);
+		super(-Math.PI/2, Math.PI/2, omega > 0);
 		this.radius = radius; // keep radius in km
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
-		this.aspectRatio = 1 + w/2 + 1.5*w*w + 6.5*w*w*w; // numerically determined formula for oblateness
+		// this polynomial is based on some fitting done in source/python/simulate_perspective.py, assuming a uniformly dense fluid body.
+		// it doesn't quite match the Earth's flattening because the Earth is not uniformly dense.
+		this.aspectRatio = 1 + 1.25*w - 0.550*w*w + 7.362*w*w*w;
 		if (this.aspectRatio > 4)
 			throw new RangeError("Too fast to sustain an ellipsoidal planet.");
 		this.flattening = 1 - 1/this.aspectRatio;

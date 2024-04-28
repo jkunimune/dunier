@@ -130,9 +130,13 @@ print(aspect_ratios)
 print(elongations)
 valid = np.isfinite(aspect_ratios)
 if MODE == 'ellipsoid':
-	α_fit_params, err = opt.curve_fit(lambda x, a, b: 1 + x/2 + a*x**2 + b*x**3, rotation_parameters[valid], aspect_ratios[valid])
-	α_fit = 1 + 0.5*rotation_parameters + α_fit_params[0]*rotation_parameters**2 + α_fit_params[1]*rotation_parameters**3
-	print("α = 1 + 1/2*Rω^2/g + {:.3f}*(Rω^2/g)^2 + {:.3f}*(Rω^2/g)^3".format(*α_fit_params))
+	# the first-order coefficient is 5/4, as can be found from differential analysis
+	# (see R. Fitzpatrick's "Introduction to Celestial Mechanics" (2012), 2nd edition available at
+	# https://farside.ph.utexas.edu/teaching/celestial/Celestialhtml/node52.html).
+	# the twoth- and third-order parameters are fit to my finite element solver's results.
+	α_fit_params, err = opt.curve_fit(lambda x, a, b: 1 + 5/4*x + a*x**2 + b*x**3, rotation_parameters[valid], aspect_ratios[valid])
+	α_fit = 1 + 5/4*rotation_parameters + α_fit_params[0]*rotation_parameters**2 + α_fit_params[1]*rotation_parameters**3
+	print("α = 1 + 5/4*Rω^2/g + {:.3f}*(Rω^2/g)^2 + {:.3f}*(Rω^2/g)^3".format(*α_fit_params))
 	e_fit = elongations
 else:
 	α_fit_params, err = opt.curve_fit(lambda x, a, b: (a*x + b*x**2), rotation_parameters[valid], 1/aspect_ratios[valid])

@@ -125,7 +125,7 @@ export abstract class Surface {
 		for (const vertex of new Set(this.vertices)) {
 			for (const edge of vertex.edges) {
 				if (edge.vertex1 === null) { // you're looking for Edges that are missing a Vertex
-					const {pos, coordinates} = this.computeEdgeVertexLocation(edge.tileL, edge.tileR, edge);
+					const {pos, coordinates} = this.computeEdgeVertexLocation(edge.tileL, edge.tileR);
 					this.vertices.add(new Vertex(edge.tileL, edge.tileR, new EmptySpace(this), pos, coordinates));
 				}
 			}
@@ -243,7 +243,7 @@ export abstract class Surface {
 	/**
 	 * find the place where the given Edge hits the edge of this surface
 	 */
-	computeEdgeVertexLocation(tileL: Tile, tileR: Tile, edge: Edge): {pos: Vector, coordinates: Place} {
+	computeEdgeVertexLocation(tileL: Tile, tileR: Tile): {pos: Vector, coordinates: Place} {
 		throw new Error("this surface doesn't have an edge.");
 	}
 	/**

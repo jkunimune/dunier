@@ -12,22 +12,35 @@ import {Vector} from "../utilities/geometry.js";
  * a toroidal planet
  */
 export class Toroid extends Surface {
-	private readonly majorRadius: number;
-	private readonly minorRadius: number;
-	private readonly elongation: number;
-	private readonly obliquity: number;
+	/** the distance from the center to the radial centroid  in km */
+	readonly majorRadius: number;
+	/** the distance from the radial centroid to either equator in km */
+	readonly minorRadius: number;
+	/** the ratio of the height of the torus to its radial extent */
+	readonly elongation: number;
+	/** the axial tilt in km */
+	readonly obliquity: number;
 
+	/**
+	 * construct a toroid
+	 * @param radius the distance from the center to the furthest point (the major radius plus the minor radius) in km
+	 * @param gravity the surface gravity on the outer equator in m/s^2
+	 * @param omega the rate at which the planet rotates in radians/s
+	 * @param obliquity the axial tilt in radians
+	 */
 	constructor(radius: number, gravity: number, omega: number, obliquity: number) {
 		super(-Math.PI, Math.PI, true);
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
 		const aspectRatio = 1/(1.010*w + 0.618*w*w); // numerically determined formula for aspect ratio
 		this.elongation = 1/(1 - 0.204*w + 4.436*w*w); // numerically determined formula for elongation
+		if (!Number.isFinite(aspectRatio))
+			throw new RangeError("The toroid must be rotating.");
 		if (aspectRatio < 1.5)
 			throw new RangeError("Too fast to sustain a toroidal planet.");
 		if (aspectRatio > 6)
 			throw new RangeError("Too slow to sustain a toroidal planet.");
-		this.majorRadius = radius*aspectRatio/(1 + aspectRatio);
-		this.minorRadius = radius/(1 + aspectRatio);
+		this.majorRadius = radius/(1 + 1/aspectRatio);
+		this.minorRadius = radius/aspectRatio/(1 + 1/aspectRatio);
 		this.obliquity = obliquity;
 	}
 

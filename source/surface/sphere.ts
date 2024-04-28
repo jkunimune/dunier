@@ -12,8 +12,12 @@ import {Place} from "../utilities/coordinates.js";
  * rather than the z.
  */
 export class Sphere extends Spheroid {
+	/**
+	 * construct a stationary sphere
+	 * @param radius the radius of the sphere in km
+	 */
 	constructor(radius: number) {
-		super(radius, 1, 0, NaN, false);
+		super(radius, 1, 0, NaN);
 	}
 
 	insolation(ф: number): number {

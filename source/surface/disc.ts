@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Tile, Surface, Vertex, Edge} from "./surface.js";
+import {Tile, Surface, Vertex} from "./surface.js";
 import {Vector} from "../utilities/geometry.js";
 import {Place} from "../utilities/coordinates.js";
 
@@ -12,14 +12,23 @@ import {Place} from "../utilities/coordinates.js";
  */
 export class Disc extends Surface {
 	protected readonly radius: number;
+	protected readonly equatorRadius: number;
 	protected readonly firmamentHite: number;
 	private readonly effectiveObliquity: number;
 
-	constructor(radius: number, obliquity: number, hasDayNightCycle: boolean, aspectRatio = 4.) {
+	/**
+	 * construct a flat earth
+	 * @param radius the radius of the disc edge in km
+	 * @param effectiveObliquity the effective magnitude of the seasons in radians
+	 * @param hasDayNightCycle whether there are days (typically true but the subclass makes it false)
+	 * @param aspectRatio the ratio of the disc radius to the firmament height
+	 */
+	constructor(radius: number, effectiveObliquity: number, hasDayNightCycle: boolean, aspectRatio = 4.) {
 		super(Math.atan(1/aspectRatio), Math.PI/2, hasDayNightCycle);
 		this.radius = radius;
+		this.equatorRadius = radius/2;
 		this.firmamentHite = radius/aspectRatio;
-		this.effectiveObliquity = obliquity;
+		this.effectiveObliquity = effectiveObliquity;
 	}
 
 	partition(): {triangles: Vertex[], nodos: Tile[]} {
@@ -47,8 +56,9 @@ export class Disc extends Surface {
 	}
 
 	insolation(ф: number): number {
+		// this polynomial is based on some fitting done in source/python/simulate_perspective.py
 		const cosψ = Math.cos(2*this.effectiveObliquity);
-		const ρ = this.firmamentHite/this.radius/Math.tan(ф);
+		const ρ = this.firmamentHite/this.equatorRadius/2/Math.tan(ф);
 		return 7.0/(
 			(3.865*cosψ + 6.877) -
 			(44.803*cosψ +  1.216)*Math.pow(ρ, 2) +
@@ -92,8 +102,8 @@ export class Disc extends Surface {
 	isOnEdge(place: Place): boolean {
 		return place.ф === this.фMin;
 	}
-
-	computeEdgeVertexLocation(tileL: Tile, tileR: Tile, edge: Edge): { pos: Vector; coordinates: Place } {
+	
+	computeEdgeVertexLocation(tileL: Tile, tileR: Tile): { pos: Vector; coordinates: Place } {
 		const x0 = (tileL.pos.x + tileR.pos.x)/2;
 		const y0 = (tileL.pos.y + tileR.pos.y)/2;
 		const vx = tileL.pos.y - tileR.pos.y;

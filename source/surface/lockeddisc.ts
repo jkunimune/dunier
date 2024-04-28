@@ -8,6 +8,10 @@ import {Disc} from "./disc.js";
  * a planar planet where the sun hovers stationary above the center.
  */
 export class LockedDisc extends Disc {
+	/**
+	 * construct a constantly lit disc
+	 * @param radius the radius of the disc's edge in km
+	 */
 	constructor(radius: number) {
 		super(radius, NaN, false, 2);
 	}
