@@ -34,9 +34,13 @@ export class Bonne extends MapProjection {
 			this.sRef.push(surface.ds_dλ(this.фRef[i])); // TODO: try this with something that spans both poles.  I feel like it probably won't work
 		}
 
-		this.фMax = Math.min(surface.фMax, 1.4*focus.фMax - 0.4*focus.фMin); // spread the limits out a bit to give a contextual view
-		this.фMin = Math.max(surface.фMin, 1.4*focus.фMin - 0.4*focus.фMax); // TODO: this should be a constant distance, not a constant latitude difference
-		this.λMax = Math.min(Math.PI, 1.8*focus.λMax);
+		const yBottom = this.yVertex(focus.фMin);
+		const yTop = this.yVertex(focus.фMax);
+		this.фMax = linterp(Math.max(1.4*yTop - 0.4*yBottom, this.yRef[this.yRef.length - 1]),
+		                    this.yRef.slice().reverse(), this.фRef.slice().reverse()); // spread the limits out a bit to give a contextual view
+		this.фMin = linterp(Math.min(1.4*yBottom - 0.4*yTop, this.yRef[0]),
+		                    this.yRef.slice().reverse(), this.фRef.slice().reverse());
+		this.λMax = Math.min(Math.PI, focus.λMax + 0.4*(yBottom - yTop)/this.sRadian(focus.фStd));
 		this.λMin = -this.λMax;
 
 		this.geoEdges = MapProjection.buildGeoEdges(

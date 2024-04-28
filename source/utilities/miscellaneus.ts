@@ -86,6 +86,10 @@ export function binarySearch<T>(array: T[], condition: (item: T) => boolean): nu
 export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
 	if (inRef.length !== exRef.length)
 		throw new Error("array lengths must match");
+	if (inRef[0] > inRef[inRef.length - 1])
+		throw new Error(
+			`input reference array must be monotonicly increasing, 
+			but this one goes from ${inRef[0]} to ${inRef[inRef.length - 1]}`);
 	else if (inVal <= inRef[0])
 		return exRef[0];
 	else if (inVal >= inRef[inRef.length - 1])
