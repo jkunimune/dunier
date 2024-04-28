@@ -13,21 +13,21 @@ const PRINT_DEBUGGING_INFORMATION = false;
 /**
  * add a page to this PDF document with all the interesting informacion about the given Civ
  * @param doc
- * @param topick
+ * @param topic
  */
-export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO: this file is kind of empty; consider pushing this method somewhere else
+export function generateFactSheet(doc: PortableDocument, topic: Civ) { // TODO: this file is kind of empty; consider pushing this method somewhere else
 
 	doc.addPage("a4", "portrait", { left: 30, rite: 30, top: 30, bottom: 30});
 	doc.addParagraph(
 		format('factbook.title',
-			topick.getName(),
-			topick.getName().pronunciation()),
+			topic.getName(),
+			topic.getName().pronunciation()),
 		24);
 
 	doc.addParagraph(
 		format('factbook.stats',
-			topick.getArea(),
-			topick.getPopulation()),
+			topic.getArea(),
+			topic.getPopulation()),
 		12);
 
 	doc.addParagraph(
@@ -42,7 +42,7 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 		format('factbook.demography'), // TODO: bold this
 		18);
 
-	for (const {culture, size} of topick.getCultures()) {
+	for (const {culture, size} of topic.getCultures()) {
 		doc.addParagraph(
 			format((size < 2/3) ?
 				       'factbook.demography.minority' :
@@ -50,7 +50,7 @@ export function generateFactSheet(doc: PortableDocument, topick: Civ) { // TODO:
 			       culture.getName(),
 			       0,
 			       Math.round(size*100),
-			       topick.getName()) +
+			       topic.getName()) +
 			culture.toString(),
 			12, true);
 		

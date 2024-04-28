@@ -90,17 +90,17 @@ export class Spheroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	dsdф(ф: number): number {
+	ds_dф(ф: number): number {
 		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
-		const dβdф = this.aspectRatio/(
+		const dβ_dф = this.aspectRatio/(
 			Math.pow(Math.sin(ф), 2) +
 			Math.pow(this.aspectRatio*Math.cos(ф), 2));
-		const dsdβ = this.radius*
+		const ds_dβ = this.radius*
 			Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(β), 2));
-		return dsdβ*dβdф;
+		return ds_dβ*dβ_dф;
 	}
 
-	dsdλ(ф: number): number {
+	ds_dλ(ф: number): number {
 		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
 		return this.radius*Math.cos(β);
 	}
@@ -164,7 +164,7 @@ export class Spheroid extends Surface {
 			65/1024.*legendreP6(Math.cos(obliquity))*legendreP6(Math.sin(latitude));
 	}
 
-	isOnEdge(place: Place): boolean {
+	isOnEdge(_: Place): boolean {
 		return false;
 	}
 }

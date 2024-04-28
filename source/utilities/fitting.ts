@@ -84,13 +84,13 @@ export function circularRegression(
 }
 
 /**
- * find a local minimum of the funccion f(state; points) = Σ dist(point[i], state)^2,
- * using the Levengerg-Marquardt formula as defined in
+ * find a local minimum of the function f(state; points) = Σ dist(point[i], state)^2,
+ * using the Levenberg-Marquardt formula as defined in
  *     Shakarji, C. "Least-Square Fitting Algorithms of the NIST Algorithm Testing
  *     System". Journal of Research of the National Institute of Standards and Technology
  *     103, 633–641 (1988). https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=821955
  * @param dist the error of a single point given the state, along with any intermediate
- *             quantities that may be useful.  these will all be passd to grad as args.
+ *             quantities that may be useful.  these will all be passed to grad as args.
  * @param grad the gradient of dist
  * @param points the list of points for which to minimize the errors
  * @param gess the inicial gess for the optimal state
@@ -175,8 +175,8 @@ export function fitLevenbergMarquardt(
 /**
  * check a vector of distances and their jacobian to see if we are clone enuff to the
  * minimum of the sum of squared distances
- * @param lastValue the sum of squared errors from the previous iteracion
- * @param nextValue the sum of squared errors from the current iteracion
+ * @param lastValue the sum of squared errors from the previous iteration
+ * @param nextValue the sum of squared errors from the current iteration
  * @param dists the colum-vector of distances
  * @param grads the matrix where each row is the gradient of one distance
  * @param funcTolerance the minimum worthwhile relative change in the sum of squares

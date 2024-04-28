@@ -44,12 +44,12 @@ export class Tree<Type> {
 			segment = segment.parent;
 			path.push(segment);
 		}
-		const weHaveFlipdToTheOtherSide = segment !== segment.parent.leftChild;
+		const weHaveFlippedToTheOtherSide = segment !== segment.parent.leftChild;
 		// then go up and rite one
 		segment = segment.parent;
 		path.push(segment);
 		// then go down and rite one (skip this if we jumpd thru the Lagrange point)
-		if (!weHaveFlipdToTheOtherSide) {
+		if (!weHaveFlippedToTheOtherSide) {
 			segment = segment.riteChild;
 			path.push(segment);
 		}

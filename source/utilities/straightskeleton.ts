@@ -127,20 +127,20 @@ class Nodo extends Tree<Point> {
 		this.direction = {
 			x: (leftEdge.vx + riteEdge.vx)/2.,
 			y: (leftEdge.vy + riteEdge.vy)/2. }; // average the two edge velocities
-		const sinθ2 = Math.pow(this.direction.x, 2) + Math.pow(this.direction.y, 2); // use this handy identity
-		if (sinθ2 > 1e-6) {
-			this.direction.x /= sinθ2;
-			this.direction.y /= sinθ2;
+		const sin2_θ = Math.pow(this.direction.x, 2) + Math.pow(this.direction.y, 2); // use this handy identity
+		if (sin2_θ > 1e-6) {
+			this.direction.x /= sin2_θ;
+			this.direction.y /= sin2_θ;
 		}
 		else { // but it mite fail for nearly parallel edges...
 			this.direction = { // get the direction this way
 				x: (riteEdge.vy - leftEdge.vy)/2.,
 				y: (leftEdge.vx - riteEdge.vx)/2. };
-			if (sinθ2 !== 0) {
-				const cosθ2 = Math.pow(this.direction.x, 2) + Math.pow(this.direction.y, 2); // try using this other identity
-				const cosθsinθ = Math.sqrt(sinθ2*cosθ2);
-				this.direction.x /= cosθsinθ;
-				this.direction.y /= cosθsinθ;
+			if (sin2_θ !== 0) {
+				const cos2_θ = Math.pow(this.direction.x, 2) + Math.pow(this.direction.y, 2); // try using this other identity
+				const cos_θ_sin_θ = Math.sqrt(sin2_θ*cos2_θ);
+				this.direction.x /= cos_θ_sin_θ;
+				this.direction.y /= cos_θ_sin_θ;
 			}
 			else {} // of course, if they're actually parallel, sikataganai. this is garanteed not to merge anything in that case.
 		}

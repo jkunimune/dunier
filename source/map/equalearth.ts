@@ -18,16 +18,16 @@ export class EqualEarth extends MapProjection {
 	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
 		super(surface, northUp, locus, null, null, null, null);
 
-		let dsdλAvg = 0;
+		let ds_dλAvg = 0;
 		for (let i = 1; i < surface.refLatitudes.length; i ++) // first measure the typical width of the surface
-			dsdλAvg += surface.dsdλ((surface.refLatitudes[i-1] + surface.refLatitudes[i])/2)*
+			ds_dλAvg += surface.ds_dλ((surface.refLatitudes[i-1] + surface.refLatitudes[i])/2)*
 				(surface.cumulAreas[i] - surface.cumulAreas[i-1])/surface.area;
 
 		this.фRef = surface.refLatitudes;
 		this.xRef = [];
 		this.yRef = [0];
 		for (let i = 0; i < this.фRef.length; i ++) {
-			this.xRef.push(this.shapeFunction(surface.dsdλ(this.фRef[i])/dsdλAvg)*dsdλAvg);
+			this.xRef.push(this.shapeFunction(surface.ds_dλ(this.фRef[i])/ds_dλAvg)*ds_dλAvg);
 			if (i > 0) {
 				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
 				this.yRef.push(this.yRef[i-1] - verAre / (2*Math.PI*(this.xRef[i-1] + this.xRef[i])/2));

@@ -14,20 +14,20 @@ describe("Spheroid", () => {
 	test("flattening", () => {
 		expect(surface.flattening).toBeCloseTo(1/298, 2);
 	});
-	describe("dsdф()", () => {
+	describe("ds_dф()", () => {
 		test("equator", () => {
-			expect(surface.dsdф(0)).toBeCloseTo(110.567/(Math.PI/180), -2);
+			expect(surface.ds_dф(0)).toBeCloseTo(110.567/(Math.PI/180), -2);
 		});
 		test("pole", () => {
-			expect(surface.dsdф(Math.PI/2)).toBeCloseTo(111.699/(Math.PI/180), -2);
+			expect(surface.ds_dф(Math.PI/2)).toBeCloseTo(111.699/(Math.PI/180), -2);
 		});
 	});
-	describe("dsdλ()", () => {
+	describe("ds_dλ()", () => {
 		test("equator", () => {
-			expect(surface.dsdλ(0)).toBeCloseTo(radius, 3);
+			expect(surface.ds_dλ(0)).toBeCloseTo(radius, 3);
 		});
 		test("pole", () => {
-			expect(surface.dsdλ(Math.PI/2)).toBeCloseTo(0, 3);
+			expect(surface.ds_dλ(Math.PI/2)).toBeCloseTo(0, 3);
 		});
 	});
 	describe("фλ()", () => {
@@ -97,12 +97,12 @@ describe("Toroid", () => {
 		expect(surface.elongation).toBeGreaterThan(0);
 		expect(surface.elongation).toBeLessThan(1);
 	});
-	describe("dsdλ()", () => {
+	describe("ds_dλ()", () => {
 		test("equator", () => {
-			expect(surface.dsdλ(0)).toBeCloseTo(radius);
+			expect(surface.ds_dλ(0)).toBeCloseTo(radius);
 		});
 		test("pole", () => {
-			expect(surface.dsdλ(Math.PI/2)).toBeLessThan(radius);
+			expect(surface.ds_dλ(Math.PI/2)).toBeLessThan(radius);
 		});
 	});
 	describe("фλ()", () => {
@@ -166,20 +166,20 @@ describe("Disc", () => {
 	const radius = 20000;
 	const firmamentHeight = 5000;
 	const surface = new Disc(radius, Math.PI/4, true);
-	describe("dsdф()", () => {
+	describe("ds_dф()", () => {
 		test("Boston", () => {
-			expect(surface.dsdф(Math.PI/4)).toBeCloseTo(2*firmamentHeight);
+			expect(surface.ds_dф(Math.PI/4)).toBeCloseTo(2*firmamentHeight);
 		});
 		test("pole", () => {
-			expect(surface.dsdф(Math.PI/2)).toBeCloseTo(firmamentHeight);
+			expect(surface.ds_dф(Math.PI/2)).toBeCloseTo(firmamentHeight);
 		});
 	});
-	describe("dsdλ()", () => {
+	describe("ds_dλ()", () => {
 		test("Boston", () => {
-			expect(surface.dsdλ(Math.PI/4)).toBeCloseTo(firmamentHeight);
+			expect(surface.ds_dλ(Math.PI/4)).toBeCloseTo(firmamentHeight);
 		});
 		test("pole", () => {
-			expect(surface.dsdλ(Math.PI/2)).toBeCloseTo(0);
+			expect(surface.ds_dλ(Math.PI/2)).toBeCloseTo(0);
 		});
 	});
 	describe("фλ()", () => {

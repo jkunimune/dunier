@@ -90,7 +90,7 @@ export default [
           { "key": "belt", "klas": "fabric", "conditions": [] },
           { "key": "neckerchief", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
           { "key": "pants", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
-          { "key": "sleve", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
+          { "key": "sleeve", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
           { "key": "scarf", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
           { "key": "headscarf", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
           { "key": "shawl", "klas": "fabric", "conditions": ["-jungle", "-steamland", "-swamp"] },
@@ -325,7 +325,7 @@ export default [
           { "key": "spire", "klas": "spire", "conditions": [] },
           { "key": "minaret", "klas": "minaret", "conditions": [] },
           { "key": "aqueduct", "klas": "aqueduct", "conditions": [] },
-          { "key": "bell", "klas": "bell_tower", "conditions": [] },
+          { "key": "belfry", "klas": "belfry", "conditions": [] },
           { "key": "porch", "klas": "porch", "conditions": [] },
           { "key": "courtyard", "klas": "none", "conditions": [] },
           { "key": "garden", "klas": "none", "conditions": [] },
@@ -358,7 +358,7 @@ export default [
           { "key": "spire", "klas": "none", "conditions": ["-spire"] },
           { "key": "minaret", "klas": "none", "conditions": ["-minaret"] },
           { "key": "aqueduct", "klas": "none", "conditions": ["-aqueduct"] },
-          { "key": "bell", "klas": "none", "conditions": ["-bell_tower"] },
+          { "key": "belfry", "klas": "none", "conditions": ["-belfry"] },
           { "key": "porch", "klas": "none", "conditions": ["-porch"] },
           { "key": "fountain", "klas": "none", "conditions": ["-fountain", "-utilitarian_building"] }
         ]

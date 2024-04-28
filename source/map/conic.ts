@@ -17,10 +17,10 @@ export class Conic extends MapProjection {
 
 		const focus = MapProjection.standardParallels(locus, this);
 		const y0 = -linterp(focus.фStd, surface.refLatitudes, surface.cumulDistances);
-		this.yJong = surface.dsdλ(focus.фStd)/surface.ddsdλdф(focus.фStd) + y0; // TODO: try this with something that spans both poles.  I feel like it probably won't work
+		this.yJong = surface.ds_dλ(focus.фStd)/surface.dds_dλdф(focus.фStd) + y0; // TODO: try this with something that spans both poles.  I feel like it probably won't work
 		this.n = (Number.isFinite(this.yJong)) ?
-			surface.dsdλ(focus.фStd)/(y0 - this.yJong) :
-			surface.dsdλ(focus.фStd); // use that to calculate the angular scale
+			surface.ds_dλ(focus.фStd)/(y0 - this.yJong) :
+			surface.ds_dλ(focus.фStd); // use that to calculate the angular scale
 
 		let locusTop = Infinity; // then determine the dimensions of this map
 		let locusBottom = -Infinity;

@@ -135,7 +135,7 @@ function removeNode(node: DelaunayNodo): DelaunayTriangle[] {
 		else
 			oldTriangles.push(next);
 	}
-	return removeNodeInterior(node, oldTriangles); // and then call the embeded node function
+	return removeNodeInterior(node, oldTriangles); // and then call the embedded node function
 }
 
 /**
@@ -359,7 +359,7 @@ function contains(triangle: DelaunayTriangle, p: DelaunayNodo): boolean {
 function distanceSqr(triangle: DelaunayTriangle, p: DelaunayNodo): number {
 	for (let i = 0; i < 3; i ++) { // for each edge
 		const [a, b, c] = [triangle.nodos[i%3], triangle.nodos[(i+1)%3], triangle.nodos[(i+2)%3]];
-		const u = b.r.minus(a.r); // throw together some quick orthogonal alined with each edge
+		const u = b.r.minus(a.r); // throw together some quick orthogonal aligned with each edge
 		const v = triangle.n.cross(u);
 		const t = v.dot(p.r.minus(a.r)); // project onto the perpendicular plane
 		if (t < 0) { // if it lands outside the triangle

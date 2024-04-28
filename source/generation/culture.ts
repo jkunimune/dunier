@@ -67,7 +67,7 @@ for (const {key, chance, features} of UNPARSED_KULTUR_ASPECTS) {
 
 
 /**
- * a class that contains factoids about a peeple groop.
+ * a class that contains factoids about a people group.
  */
 export class Culture {
 	private readonly featureLists: (FeatureValue[] | null)[];
@@ -95,7 +95,7 @@ export class Culture {
 		for (const neibor of this.homeland.neighbors.keys())
 			if (neibor.biome === Biome.OCEAN)
 				this.klas.add("coastal");
-		// TODO: define mountainusness and add class for "mountainous"
+		// TODO: define mountainousness and add class for "mountainous"
 		if (homeland.surface.hasDayNightCycle)
 			this.klas.add("day_night_cycle");
 		if (homeland.surface.hasSeasons(homeland.ф))

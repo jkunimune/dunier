@@ -31,7 +31,7 @@ switch (DOM.elm("bash").textContent) {
 
 
 /**
- * cast the given args to user strings (with a fixd format specificacion) and add them to
+ * cast the given args to user strings (with a fixed format specificacion) and add them to
  * the given format in place of '{0}', '{1}', etc.  output will all ultimately be
  * extracted from USER_STRINGS.
  * @param sentence the key for the encompassing phrase

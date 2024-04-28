@@ -60,11 +60,11 @@ export abstract class Surface {
 			this.refLatitudes.push(ф);
 			this.cumulAreas.push(A);
 			this.cumulDistances.push(s);
-			const dsdф = this.dsdф(ф + dф/2); // a simple middle Riemann sum will do
-			const dsdλ = this.dsdλ(ф + dф/2);
+			const ds_dф = this.ds_dф(ф + dф/2); // a simple middle Riemann sum will do
+			const ds_dλ = this.ds_dλ(ф + dф/2);
 			ф += dф;
-			A += dsdλ*dλ*dsdф*dф;
-			s += dsdф*dф;
+			A += ds_dλ*dλ*ds_dф*dф;
+			s += ds_dф*dф;
 		}
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
@@ -229,21 +229,21 @@ export abstract class Surface {
 	}
 
 	/**
-	 * the latitude derivative of dsdλ
+	 * the latitude derivative of ds_dλ
 	 * @param ф
 	 */
-	ddsdλdф(ф: number): number {
+	dds_dλdф(ф: number): number {
 		let фL = ф - 1e-2, фR = ф + 1e-2;
 		if (фL < this.фMin) фL = this.фMin;
 		if (фR > this.фMax) фR = this.фMax;
-		return (this.dsdλ(фR) - this.dsdλ(фL))/
-			(this.dsdф(ф) * (фR - фL));
+		return (this.ds_dλ(фR) - this.ds_dλ(фL))/
+			(this.ds_dф(ф) * (фR - фL));
 	}
 
 	/**
 	 * find the place where the given Edge hits the edge of this surface
 	 */
-	computeEdgeVertexLocation(tileL: Tile, tileR: Tile): {pos: Vector, coordinates: Place} {
+	computeEdgeVertexLocation(_tileL: Tile, _tileR: Tile): {pos: Vector, coordinates: Place} {
 		throw new Error("this surface doesn't have an edge.");
 	}
 	/**
@@ -256,12 +256,12 @@ export abstract class Surface {
 	/**
 	 * return the local length-to-latitude rate [km/rad]
 	 */
-	abstract dsdф(ф: number): number;
+	abstract ds_dф(ф: number): number;
 
 	/**
 	 * return the local length-to-longitude rate [km/rad]
 	 */
-	abstract dsdλ(ф: number): number;
+	abstract ds_dλ(ф: number): number;
 
 	/**
 	 * return the amount of solar radiation at a latitude, normalized to average to 1.

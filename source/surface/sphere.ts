@@ -24,7 +24,7 @@ export class Sphere extends Spheroid {
 		return 2.0*Math.max(0, Math.sin(ф));
 	}
 
-	hasSeasons(ф: number): boolean {
+	hasSeasons(_: number): boolean {
 		return false;
 	}
 

@@ -80,17 +80,17 @@ export class Toroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	dsdф(ф: number): number {
+	ds_dф(ф: number): number {
 		const β = Math.atan(Math.tan(ф)*this.elongation);
-		const dβdф = this.elongation/(
+		const dβ_dф = this.elongation/(
 			Math.pow(Math.cos(ф), 2) +
 			Math.pow(this.elongation*Math.sin(ф), 2));
-		const dsdβ = this.minorRadius*
+		const ds_dβ = this.minorRadius*
 			Math.hypot(Math.sin(β), this.elongation*Math.cos(β));
-		return dsdβ*dβdф;
+		return ds_dβ*dβ_dф;
 	}
 
-	dsdλ(ф: number): number {
+	ds_dλ(ф: number): number {
 		const β = Math.atan2(Math.sin(ф)*this.elongation, Math.cos(ф));
 		return this.majorRadius + this.minorRadius*Math.cos(β);
 	}
@@ -152,13 +152,13 @@ export class Toroid extends Surface {
 		const rAvg = 2/(
 			1/(this.majorRadius + this.minorRadius*Math.cos(a.ф)) +
 			1/(this.majorRadius + this.minorRadius*Math.cos(b.ф)));
-		const aAvg = (this.dsdф(a.ф) + this.dsdф(b.ф))/2;
+		const aAvg = (this.ds_dф(a.ф) + this.ds_dф(b.ф))/2;
 		const sTor = rAvg * (Math.abs(a.λ - b.λ) % (2*Math.PI));
 		const sPol = aAvg * Math.abs((a.ф - b.ф) % (2*Math.PI));
 		return Math.hypot(sTor, sPol);
 	}
 
-	isOnEdge(place: Place): boolean {
+	isOnEdge(_: Place): boolean {
 		return false;
 	}
 }

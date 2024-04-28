@@ -144,7 +144,7 @@ export class ErodingSegmentTree {
 	 * @param rait
 	 * @param start the root of the subtree where we're doing
 	 */
-	private deleteBetween(left: Link, rait: Link, start: Link): void { // TODO how will this work with identical leavs?
+	private deleteBetween(left: Link, rait: Link, start: Link): void { // TODO how will this work with identical leaves?
 		if (start === this.mul) { // if this is the top level, there's some stuff we need to check
 			if (left === null && rait === null) { // if we're deleting the whole thing
 				this.mul = null; // delete the whole thing and be done

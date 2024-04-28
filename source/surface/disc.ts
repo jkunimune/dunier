@@ -47,23 +47,23 @@ export class Disc extends Surface {
 		return {triangles: triangles, nodos: nodos};
 	}
 
-	dsdф(ф: number): number {
+	ds_dф(ф: number): number {
 		return this.firmamentHite*Math.pow(Math.sin(ф), -2);
 	}
 
-	dsdλ(ф: number): number {
+	ds_dλ(ф: number): number {
 		return this.firmamentHite/Math.tan(ф);
 	}
 
 	insolation(ф: number): number {
 		// this polynomial is based on some fitting done in source/python/simulate_perspective.py
-		const cosψ = Math.cos(2*this.effectiveObliquity);
+		const cos_ψ = Math.cos(2*this.effectiveObliquity);
 		const ρ = this.firmamentHite/this.equatorRadius/2/Math.tan(ф);
 		return 7.0/(
-			(3.865*cosψ + 6.877) -
-			(44.803*cosψ +  1.216)*Math.pow(ρ, 2) +
-			(87.595*cosψ + 19.836)*Math.pow(ρ, 4) -
-			(38.728*cosψ -  8.049)*Math.pow(ρ, 6));
+			(3.865*cos_ψ + 6.877) -
+			(44.803*cos_ψ +  1.216)*Math.pow(ρ, 2) +
+			(87.595*cos_ψ + 19.836)*Math.pow(ρ, 4) -
+			(38.728*cos_ψ -  8.049)*Math.pow(ρ, 6));
 	}
 
 	hasSeasons(ф: number): boolean {
@@ -89,7 +89,7 @@ export class Disc extends Surface {
 			λ: Math.atan2(point.x, -point.y)};
 	}
 
-	normal(place: Place | Vertex): Vector {
+	normal(_: Place | Vertex): Vector {
 		return new Vector(0, 0, 1);
 	}
 

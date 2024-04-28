@@ -54,7 +54,7 @@ export function endpoint(segment: PathSegment): Location {
 }
 
 /**
- * cast the generalized coordinate pair to cartesian, so that it can be passd to
+ * cast the generalized coordinate pair to cartesian, so that it can be passed to
  * cartesian-specific functions
  * @param location
  */
@@ -63,7 +63,7 @@ export function assert_xy(location: Location): Point {
 }
 
 /**
- * cast the generalized coordinate pair to geographic, so that it can be passd to
+ * cast the generalized coordinate pair to geographic, so that it can be passed to
  * geographic functions
  * @param location
  */

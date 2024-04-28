@@ -191,7 +191,7 @@ export class ProtoLang extends Lect {
 		return mul;
 	}
 
-	getAncestor(n: number): Lect {
+	getAncestor(_n: number): Lect {
 		return this;
 	}
 

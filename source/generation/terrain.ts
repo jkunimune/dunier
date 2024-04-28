@@ -95,7 +95,7 @@ export function generateTerrain(numContinents: number, seaLevel: number, meanTem
 	movePlates(surf, rng);
 	fillOcean(seaLevel, surf);
 	rng = rng.reset();
-	generateClimate(meanTemperature, surf, rng); // TODO: I reely think I should have an avgRain parameter
+	generateClimate(meanTemperature, surf, rng); // TODO: I realy think I should have an avgRain parameter
 	addRivers(surf);
 	setBiomes(surf);
 }
@@ -207,7 +207,7 @@ function movePlates(surf: Surface, rng: Random): void {
 			const relVelocity = velocities[tile.plateIndex].minus(velocities[fault.plateIndex]);
 			const relSpeed = relPosition.normalized().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
 			let type, width; // and whether these are both continents or if this is a top or a bottom or what
-			if (relSpeed < 0) { // TODO: make relspeed also depend on adjacent tiles to smooth out the fault lines and make better oceans
+			if (relSpeed < 0) { // TODO: make relSpeed also depend on adjacent tiles to smooth out the fault lines and make better oceans
 				if (tile.height > 0 && fault.height > 0) {
 					type = FaultType.CONTINENT_COLLISION; // continental collision
 					width = -relSpeed*MOUNTAIN_WIDTH*Math.sqrt(2);

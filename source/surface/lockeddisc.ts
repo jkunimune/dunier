@@ -20,7 +20,7 @@ export class LockedDisc extends Disc {
 		return 2.0/Math.pow(1 + Math.pow(Math.tan(ф), -2), 3/2.);
 	}
 
-	hasSeasons(ф: number): boolean {
+	hasSeasons(_: number): boolean {
 		return false;
 	}
 	

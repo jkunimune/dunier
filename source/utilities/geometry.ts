@@ -25,7 +25,7 @@ export function signCrossing(a: Point, b: Point, c: Point, d: Point): number {
  * @param c
  * @return a positive number if the triangle goes widdershins, a negative number if it
  *         goes clockwise, and zero if it is degenerate.  in actuality, this returns
- *         two times the area of the triangle formd by these points, so if there is
+ *         two times the area of the triangle formed by these points, so if there is
  *         roundoff error, it will be of that order.
  */
 export function signAngle(a: Point, b: Point, c: Point): number {
@@ -79,11 +79,11 @@ export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean): 
 	const d = Math.hypot(b.x - a.x, b.y - a.y);
 	let l = Math.sqrt(r*r - d*d/4);
 	if (onTheLeft) l *= -1;
-	const sinθ =  (b.y - a.y)/d;
-	const cosθ = -(b.x - a.x)/d;
+	const sin_θ =  (b.y - a.y)/d;
+	const cos_θ = -(b.x - a.x)/d;
 	return {
-		x: (a.x + b.x)/2 + l*sinθ,
-		y: (a.y + b.y)/2 + l*cosθ,
+		x: (a.x + b.x)/2 + l*sin_θ,
+		y: (a.y + b.y)/2 + l*cos_θ,
 	};
 }
 /**
@@ -187,26 +187,26 @@ export function lineArcIntersections(
  * exactly orderd widdershins from the POV of the origin
  * @return the reorderd polygon
  */
-export function checkVoronoiPolygon(vertexen: Point[]): Point[] {
+export function checkVoronoiPolygon(vertexes: Point[]): Point[] {
 	// start by copying the polygon (a deep copy would be better but I don't think the points will get modified)
-	vertexen = vertexen.slice();
+	vertexes = vertexes.slice();
 	const origen = { x: 0, y: 0 };
 	// for each vertex
-	for (let i = 0; i < vertexen.length; i ++) {
+	for (let i = 0; i < vertexes.length; i ++) {
 		// if the next one seems to be clockwise from it
-		const j = (i + 1)%vertexen.length;
-		if (signAngle(vertexen[i], origen, vertexen[j]) > 0) {
+		const j = (i + 1)%vertexes.length;
+		if (signAngle(vertexes[i], origen, vertexes[j]) > 0) {
 			// see if the following one would be widershins
-			const k = (i + 2)%vertexen.length;
+			const k = (i + 2)%vertexes.length;
 			// if so, reverse them
-			if (signAngle(vertexen[i], origen, vertexen[k]) <= 0) {
-				const vertex = vertexen[i];
-				vertexen[i] = vertexen[j];
-				vertexen[j] = vertex;
+			if (signAngle(vertexes[i], origen, vertexes[k]) <= 0) {
+				const vertex = vertexes[i];
+				vertexes[i] = vertexes[j];
+				vertexes[j] = vertex;
 			}
 		}
 	}
-	return vertexen;
+	return vertexes;
 }
 
 

@@ -948,8 +948,8 @@ export abstract class MapProjection {
 				λMax = λ;
 		}
 
-		const minWeit = 1/Math.sqrt(projection.surface.dsdλ(фMin));
-		const maxWeit = 1/Math.sqrt(projection.surface.dsdλ(фMax));
+		const minWeit = 1/Math.sqrt(projection.surface.ds_dλ(фMin));
+		const maxWeit = 1/Math.sqrt(projection.surface.ds_dλ(фMax));
 		let фStd;
 		if (Number.isFinite(minWeit)) { // choose a standard parallel
 			if (Number.isFinite(maxWeit))
