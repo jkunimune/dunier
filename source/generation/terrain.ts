@@ -545,7 +545,11 @@ function setBiomes(surf: Surface): void {
 					tile.neighbors.get(neighbor).flow > RAINFALL_NEEDED_TO_CREATE_MARSH)
 				adjacentWater = true;
 
-		if (tile.biome === null) {
+		// make sure the edge is frozen to hold all the water in
+		if (surf.edge.has(tile))
+			tile.biome = Biome.ICE;
+		// assign all other biomes based on temperature and rainfall
+		else if (tile.biome === null) {
 			if (tile.temperature < RIVER_THRESH)
 				tile.biome = Biome.ICE;
 			else if (tile.temperature < TUNDRA_TEMP)
