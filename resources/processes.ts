@@ -291,6 +291,9 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "ɡ > ŋ",
     "code": "[ +VOICE +DORSAL +STOP ] > [ +NASAL ] /"
   }, {
+    "chance": 0.010, "type": "mute", "comment": "ɡ > v",
+    "code": "[ +VOICE +DORSAL +STOP ] > [ +BILAB +FRIC ] /"
+  }, {
     "chance": 0.100, "type": "mute", "comment": "θ > t",
     "code": "[ +DENTAL +OBSTR ] > [ +STOP ] /"
   }, {
@@ -914,6 +917,9 @@ export default [
   }, {
     "chance": 0.500, "type": "mute", "comment": "assimilation of w~v",
     "code": "[ -SYLLAB +WIBBLY ] [ +WIBBLY ] > [ ]1 /"
+  }, {
+    "chance": 0.010, "type": "mute", "comment": "vt > bt",
+    "code": "[ -CORON ] > [ +STOP ] / _ [ +CORON +STOP ]",
   }, {
     "chance": 0.050, "type": "mute", "comment": "assimilation of coronals",
     "code": "[ -SYLLAB +CORON -!NASAL -VOCOID -SIBIL ] [ +CORON -VOCOID ] > [ +LONG ]1 /"
