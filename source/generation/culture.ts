@@ -7,7 +7,6 @@ import {Dialect, Lect, WordType, ProtoLang} from "../language/lect.js";
 import {Tile} from "../surface/surface.js";
 import {Civ} from "./civ.js";
 import {Name} from "../language/name.js";
-import {format} from "../gui/internationalization.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 
 import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";
@@ -24,7 +23,7 @@ interface Condition { type: ConditionType, value: string | number }
 enum ConditionType { REQUIREMENT, INCOMPATIBLE, TECH_LEVEL}
 
 // do some postprocessing on the array of attributes you loaded
-const KULTUR_ASPECTS: Aspect[] = [];
+export const KULTUR_ASPECTS: Aspect[] = [];
 for (const {key, chance, features} of UNPARSED_KULTUR_ASPECTS) {
 	const aspect: Aspect = {
 		key: key, chance: chance, logaIndex: null, features: [] as Feature[],
@@ -70,7 +69,7 @@ for (const {key, chance, features} of UNPARSED_KULTUR_ASPECTS) {
  * a class that contains factoids about a people group.
  */
 export class Culture {
-	private readonly featureLists: (FeatureValue[] | null)[];
+	public readonly featureLists: (FeatureValue[] | null)[];
 	public readonly klas: Set<string>;
 	public readonly homeland: Tile;
 	public readonly government: Civ;
@@ -194,29 +193,5 @@ export class Culture {
 	public getName(): Name {
 		return this.lect.getName(
 			this.homeland.index.toString(), WordType.PEOPLE);
-	}
-
-	/**
-	 * format this Kultur as a nice short paragraff
-	 */
-	public toString(): string {
-		let str = "";
-		for (let i = 0; i < this.featureLists.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
-			const featureList = this.featureLists[i];
-			const logaIndex = KULTUR_ASPECTS[i].logaIndex;
-			if (featureList !== null) {
-				let madeUpWord;
-				if (logaIndex !== null)
-					madeUpWord = this.lect.getName(featureList[logaIndex].key, WordType.OTHER);
-				else
-					madeUpWord = null;
-				const keys: string[] = [];
-				for (let j = 0; j < this.featureLists[i].length; j ++)
-					keys.push(`factbook.${KULTUR_ASPECTS[i].key}.${KULTUR_ASPECTS[i].features[j].key}.${featureList[j].key}`);
-				str += format(`factbook.${KULTUR_ASPECTS[i].key}`,
-				              ...keys, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
-			}
-		}
-		return str.trim();
 	}
 }
