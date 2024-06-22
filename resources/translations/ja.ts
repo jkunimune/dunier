@@ -734,8 +734,6 @@ export default {
 	"parameter.map.type.classical": "地域的　（中世）",
 	"parameter.map.type.equal_area": "正積",
 	"parameter.map.type.modern": "地域的　（現代）",
-	"parameter.map.type.navigational": "航海",
-	"parameter.map.type.polar": "丸い",
 	"parameter.map.width": "幅",
 	"parameter.planet": "惑星",
 	"parameter.planet.circumference": "円周",

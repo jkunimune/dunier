@@ -736,8 +736,6 @@ export default {
 	"parameter.map.type.classical": "Regional (medieval)",
 	"parameter.map.type.equal_area": "Equivalente",
 	"parameter.map.type.modern": "Regional (moderno)",
-	"parameter.map.type.navigational": "Navegacional",
-	"parameter.map.type.polar": "Polar",
 	"parameter.map.width": "Anchura",
 	"parameter.planet": "Planeta",
 	"parameter.planet.circumference": "Circunferencia",

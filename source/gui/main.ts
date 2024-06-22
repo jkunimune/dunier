@@ -10,10 +10,8 @@ import {Surface} from "../surface/surface.js";
 import {World} from "../generation/world.js";
 import {Random} from "../utilities/random.js";
 import {Chart} from "../map/chart.js";
-import {Azimuthal} from "../map/azimuthal.js";
 import {Bonne} from "../map/bonne.js";
 import {Equirectangular} from "../map/equirectangular.js";
-import {Mercator} from "../map/mercator.js";
 import {EqualEarth} from "../map/equalearth.js";
 import {Spheroid} from "../surface/spheroid.js";
 import {Sphere} from "../surface/sphere.js";
@@ -305,10 +303,6 @@ function applyMap(): void {
 	let projection: MapProjection;
 	if (projectionName === 'basic')
 		projection = new Equirectangular(surface);
-	else if (projectionName === 'polar')
-		projection = new Azimuthal(surface, standardParallel >= 0);
-	else if (projectionName === 'navigational')
-		projection = new Mercator(surface);
 	else if (projectionName === 'equal_area')
 		projection = new EqualEarth(surface);
 	else if (projectionName === 'classical')

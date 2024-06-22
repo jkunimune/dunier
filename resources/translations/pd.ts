@@ -735,8 +735,6 @@ export default {
 	"parameter.map.type.classical": "feni (puronyangi)",
 	"parameter.map.type.equal_area": "egali are",
 	"parameter.map.type.modern": "feni (novyangi)",
-	"parameter.map.type.navigational": "daweureki",
-	"parameter.map.type.polar": "aksi",
 	"parameter.map.width": "gros",
 	"parameter.planet": "planete",
 	"parameter.planet.circumference": "cirkometre",
