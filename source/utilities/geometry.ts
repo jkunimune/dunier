@@ -6,10 +6,11 @@ import {Point} from "./coordinates.js";
 
 /**
  * calculate the sign of this triangle
- * @return a positive number if a car going from a to b would haff to yield to the car
- * going from c to d were they to arrive at the all-stop simultaneously in the US; a
- * negative number if it would haff to yield in Japan; zero if ab and cd are parallel
- * or either have length zero.
+ * @return a positive number if, in a right-handed coordinate system (like real math)
+ * a car going from a to b would haff to yield to the car going from c to d were they
+ * to arrive at the all-stop simultaneously in the US; a negative number if it would
+ * haff to yield in Japan; zero if ab and cd are parallel or either has length zero.
+ * if this is a left-handed coordinate system (like in computer graphics) it's obviusly reversed.
  */
 export function signCrossing(a: Point, b: Point, c: Point, d: Point): number {
 	const abx = b.x - a.x, aby = b.y - a.y;
@@ -19,7 +20,7 @@ export function signCrossing(a: Point, b: Point, c: Point, d: Point): number {
 
 
 /**
- * calculate the sign of this triangle
+ * calculate the sign of this triangle in a left-handed coordinate system
  * @param a
  * @param b
  * @param c

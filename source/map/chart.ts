@@ -2,17 +2,34 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Edge, Tile, Surface, Vertex, EmptySpace} from "../surface/surface.js";
-import {filterSet, longestShortestPath} from "../utilities/miscellaneus.js";
+import {Edge, EmptySpace, Surface, Tile, Vertex} from "../surface/surface.js";
+import {filterSet, linterp, localizeInRange, longestShortestPath} from "../utilities/miscellaneus.js";
 import {ARABILITY, World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
-import {assert_xy, endpoint, PathSegment, Place} from "../utilities/coordinates.js";
-import {chordCenter, Vector} from "../utilities/geometry.js";
+import {
+	assert_xy,
+	endpoint,
+	Location,
+	LongLineType,
+	PathSegment,
+	Place
+} from "../utilities/coordinates.js";
+import {chordCenter, signAngle, Vector} from "../utilities/geometry.js";
 import {Biome} from "../generation/terrain.js";
+import {
+	applyProjectionToPath,
+	contains,
+	cutToSize,
+	InfinitePlane,
+	MapEdge,
+	transformInput,
+	transformOutput
+} from "./plotting.js";
+import {Bonne} from "./bonne.js";
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -29,6 +46,7 @@ const BORDER_SPECIFY_THRESHOLD = 0.51;
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const N_DEGREES = 6; // number of line segments into which to break one radian of arc
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
+const MAP_PRECISION = 5e-2;
 
 const BIOME_COLORS = new Map([
 	[Biome.OCEAN,     '#06267f'],
@@ -112,15 +130,65 @@ enum Layer {
  * a class to handle all of the graphical arrangement stuff.
  */
 export class Chart {
-	private projection: MapProjection;
+	private readonly projection: MapProjection;
+	private readonly northUp: boolean;
+	private readonly centralMeridian: number;
+	private readonly geoEdges: MapEdge[][];
+	private readonly mapEdges: MapEdge[][];
+	private readonly dimensions: Dimensions;
+	public readonly scale: number; // the map scale in map-widths per km
 	private testText: SVGTextElement;
 	private testTextSize: number;
 	private labelIndex: number;
 
 
-	constructor(projection: MapProjection) {
+	constructor(
+		projection: MapProjection, northUp: boolean, focus: PathSegment[],
+	) {
 		this.projection = projection;
+		this.northUp = northUp;
+		
+		this.centralMeridian = Chart.chooseCentralMeridian(focus);
+		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} = Chart.calculateMapBounds(
+			transformInput(this.centralMeridian, focus), projection, !(projection instanceof Bonne));
 		this.labelIndex = 0;
+
+		// establish the bounds of the map, flipping them if it's a south-up map
+		if (this.northUp)
+			this.dimensions = new Dimensions(xLeft, xRight, yTop, yBottom);
+		else
+			this.dimensions = new Dimensions(-xRight, -xLeft, -yBottom, -yTop);
+
+		// calculate the map scale in map-widths per km
+		this.scale = 1/this.dimensions.diagonal;
+		
+		// set the geographic and Cartesian limits of the mapped area
+		if (λMax === Math.PI && this.projection.wrapsAround)
+			this.geoEdges = [
+				[{
+					type: LongLineType.PARALLEL,
+					start: { s: фMax, t:  λMax },
+					end:   { s: фMax, t: -λMax },
+				}],
+				[{
+					type: LongLineType.PARALLEL,
+					start: { s: фMin, t: -λMax },
+					end:   { s: фMin, t:  λMax },
+				}]
+			];
+		else
+			this.geoEdges = Chart.validateEdges([[
+				{ type: LongLineType.PARALLEL, start: {s: фMax, t: λMax} },
+				{ type: LongLineType.MERIDIAN, start: {s: фMax, t: -λMax} },
+				{ type: LongLineType.PARALLEL, start: {s: фMin, t: -λMax} },
+				{ type: LongLineType.MERIDIAN, start: {s: фMin, t: λMax} },
+			]]);
+		this.mapEdges = Chart.validateEdges([[
+			{ type: 'L', start: {s: this.dimensions.left, t: this.dimensions.top}, },
+			{ type: 'L', start: {s: this.dimensions.left, t: this.dimensions.bottom}, },
+			{ type: 'L', start: {s: this.dimensions.right, t: this.dimensions.bottom}, },
+			{ type: 'L', start: {s: this.dimensions.right, t: this.dimensions.top}, },
+		]]);
 	}
 
 	/**
@@ -145,7 +213,7 @@ export class Chart {
 		   rivers: boolean, borders: boolean, shading: boolean,
 		   civLabels: boolean, geoLabels: boolean,
 		   fontSize = 2, style: string = null): Civ[] {
-		const bbox = this.projection.getDimensions();
+		const bbox = this.dimensions;
 		svg.setAttribute('viewBox',
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
 		svg.textContent = ''; // clear the layer
@@ -163,10 +231,10 @@ export class Chart {
 
 		if (SHOW_BACKGROUND) {
 			const rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-			rectangle.setAttribute('x', `${this.projection.getDimensions().left}`);
-			rectangle.setAttribute('y', `${this.projection.getDimensions().top}`);
-			rectangle.setAttribute('width', `${this.projection.getDimensions().width}`);
-			rectangle.setAttribute('height', `${this.projection.getDimensions().height}`);
+			rectangle.setAttribute('x', `${this.dimensions.left}`);
+			rectangle.setAttribute('y', `${this.dimensions.top}`);
+			rectangle.setAttribute('width', `${this.dimensions.width}`);
+			rectangle.setAttribute('height', `${this.dimensions.height}`);
 			rectangle.setAttribute('style', 'fill: red; stroke: black; stroke-width: 10px');
 			g.appendChild(rectangle);
 		}
@@ -234,7 +302,7 @@ export class Chart {
 
 		// add rivers
 		if (rivers) {
-			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR*this.projection.getDimensions().area;
+			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR*this.dimensions.area;
 			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
 				g, riverColor, 1.5, Layer.GEO);
 		}
@@ -284,10 +352,10 @@ export class Chart {
 			// (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
 			const visible = [];
 			for (const civ of world.getCivs(true))
-				if (this.projection.projectPath(
+				if (this.projectPath(
 					Chart.convertToGreebledPath(
 						Chart.outline([...civ.tiles].filter(n => !n.isWater())),
-						Layer.KULTUR, this.projection.scale),
+						Layer.KULTUR, this.scale),
 					true).length > 0)
 					visible.push(civ);
 			return visible;
@@ -312,8 +380,8 @@ export class Chart {
 		if (tiles.size <= 0)
 			return this.draw([], svg);
 		const closePath = color !== 'none'; // leave the polygons open if we're not coloring them in
-		const segments = this.projection.projectPath(
-			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.projection.scale),
+		const segments = this.projectPath(
+			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.scale),
 			closePath);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
@@ -332,8 +400,8 @@ export class Chart {
 	 */
 	stroke(strokes: Iterable<Place[]>, svg: SVGGElement,
 		   color: string, width: number, greeble: Layer): SVGPathElement {
-		let segments = this.projection.projectPath(
-			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.projection.scale), false);
+		let segments = this.projectPath(
+			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.scale), false);
 		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
 		const path = this.draw(segments, svg);
@@ -381,8 +449,9 @@ export class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
-			this.draw(this.projection.projectPath(path, true), svg).setAttribute('style',
-				`fill: '#000'; fill-opacity: ${1-brightness};`);
+			this.draw(this.projectPath(path, true), svg).setAttribute('style',
+				`fill: '#000'; fill-opacity: ${1-brightness};`
+			);
 		}
 	}
 
@@ -405,12 +474,12 @@ export class Chart {
 		this.testText.textContent = '..'+label+'..';
 		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
 		this.testText.textContent = '';
-		const mapScale = svg.clientWidth/this.projection.getDimensions().width; // and also the current size of the map in px for reference
+		const mapScale = svg.clientWidth/this.dimensions.width; // and also the current size of the map in px for reference
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.projection.projectPath( // do the projection
-			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.projection.scale),
+		const path = this.projectPath( // do the projection
+			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.scale),
 			true
 		);
 		if (path.length === 0)
@@ -494,7 +563,7 @@ export class Chart {
 				r: 0, isContained: false, edges: new Array(triangulation.triangles.length).fill(null),
 			});
 			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
-			centers[i].isContained = MapProjection.contains(
+			centers[i].isContained = contains(
 				path,  {s: centers[i].x, t: -centers[i].y});
 			if (centers[i].isContained) {
 				for (let j = 0; j < i; j ++) {
@@ -718,6 +787,32 @@ export class Chart {
 
 
 	/**
+	 * project and convert a list of SVG paths in latitude-longitude coordinates representing a series of closed paths
+	 * into an SVG.Path object, and add that Path to the given SVG.
+	 * @param segments ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
+	 * @param closePath if this is set to true, the map will make adjustments to account for its complete nature
+	 * @return SVG.Path object in Cartesian coordinates
+	 */
+	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
+		return cutToSize(
+			transformOutput(
+				this.northUp,
+				applyProjectionToPath(
+					this.projection,
+					cutToSize(
+						transformInput(this.centralMeridian, segments),
+						this.projection.surface,
+						this.geoEdges, closePath,
+					),
+					MAP_PRECISION*this.dimensions.diagonal,
+				),
+			),
+			new InfinitePlane(), this.mapEdges, closePath,
+		);
+	}
+
+
+	/**
 	 * create an ordered Iterator of segments that form the border of this civ
 	 * @param civ the Civ whose outline is desired
 	 */
@@ -727,9 +822,32 @@ export class Chart {
 	}
 
 	/**
-	 * create an ordered Iterator of segments that form the boundary of these nodos.
-	 * @param tiles Set of Tiles that are part of this group.
+	 * create an ordered Iterator of segments that form the boundary of this Surface.
 	 * @return Array of PathSegments, ordered widdershins.
+	 */
+	static bounds(surface: Surface): PathSegment[] {
+		// it's just a rectangle, but it needs a bunch of extra points to avoid ambiguity about directions
+		return [
+			{type: 'M', args: [surface.фMin, -Math.PI]},
+			{type: LongLineType.PARALLEL, args: [surface.фMin, -Math.PI/3]},
+			{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI/3]},
+			{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI]},
+			{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, Math.PI]},
+			{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, Math.PI]},
+			{type: LongLineType.MERIDIAN, args: [surface.фMax, Math.PI]},
+			{type: LongLineType.PARALLEL, args: [surface.фMax, Math.PI/3]},
+			{type: LongLineType.PARALLEL, args: [surface.фMax, -Math.PI/3]},
+			{type: LongLineType.PARALLEL, args: [surface.фMax, -Math.PI]},
+			{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, -Math.PI]},
+			{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, -Math.PI]},
+			{type: LongLineType.MERIDIAN, args: [surface.фMin, -Math.PI]},
+		];
+	}
+
+	/**
+	 * create some ordered loops of points that describe the boundary of these Tiles.
+	 * @param tiles Set of Tiles that are part of this group.
+	 * @return Array of loops, each loop being an Array of Vertexes or plain coordinate pairs
 	 */
 	static outline(tiles: Tile[] | Set<Tile>): Place[][] {
 		const tileSet = new Set(tiles);
@@ -954,5 +1072,251 @@ export class Chart {
 			return true;
 	}
 
+	/**
+	 * identify the meridian that is the farthest from this path on the globe
+	 */
+	static chooseCentralMeridian(regionOfInterest: PathSegment[]): number {
+		const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
+		for (let i = 1; i < regionOfInterest.length; i ++) {
+			if (regionOfInterest[i].type !== 'M') {
+				const x1 = regionOfInterest[i - 1].args[1];
+				const x2 = regionOfInterest[i].args[1];
+				if (Math.abs(x1 - x2) < Math.PI) { // and then remove the space corresponding to each segment
+					emptyLongitudes.remove(Math.min(x1, x2), Math.max(x1, x2));
+				}
+				else {
+					emptyLongitudes.remove(Math.max(x1, x2), Math.PI);
+					emptyLongitudes.remove(-Math.PI, Math.min(x1, x2));
+				}
+			}
+		}
+		if (emptyLongitudes.getCenter(true).location !== null)
+			return localizeInRange(emptyLongitudes.getCenter(true).location + Math.PI, -Math.PI, Math.PI);
+		else
+			return 0; // default to 0°E TODO it would be really cool if I could pick a number more intelligently
+	}
+
+	/**
+	 * identify a parallel that runs thru the center of this region on the Surface
+	 */
+	static chooseStandardParallel(regionOfInterest: PathSegment[], surface: Surface): number {
+		// first calculate the minimum and maximum latitudes of the region
+		const {sMin: фMin, sMax: фMax} = Chart.calculatePathBounds(regionOfInterest);
+
+		const minWeit = 1/Math.sqrt(surface.ds_dλ(фMin));
+		const maxWeit = 1/Math.sqrt(surface.ds_dλ(фMax));
+		if (Number.isFinite(minWeit)) { // choose a standard parallel
+			if (Number.isFinite(maxWeit))
+				return (фMin*minWeit + фMax*maxWeit)/(minWeit + maxWeit);
+			else
+				return фMax;
+		}
+		else {
+			if (Number.isFinite(maxWeit))
+				return фMin;
+			else
+				return (фMin + фMax)/2;
+		}
+	}
+
+	/**
+	 * determine the coordinate bounds of this region –
+	 * both its geographical coordinates on the Surface and its Cartesian coordinates on the map.
+	 * @param regionOfInterest the region that must be enclosed entirely within the returned bounding box
+	 * @param projection the projection being used to map this region from a Surface to the plane
+	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
+	 */
+	static calculateMapBounds(
+		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
+	): {фMin: number, фMax: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
+		let фMin, фMax, λMax;
+		let xLeft, xRight, yTop, yBottom;
+		// if we want a rectangular map
+		if (rectangularBounds) {
+			// don't apply any geographic bounds
+			фMin = projection.surface.фMin;
+			фMax = projection.surface.фMax;
+			λMax = Math.PI;
+			// and calculate the maximum extent of the projected region to get the Cartesian bounds
+			const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
+			const regionBounds = Chart.calculatePathBounds(projectedRegion);
+			xLeft = 1.4*regionBounds.sMin - 0.4*regionBounds.sMax;
+			xRight = 1.4*regionBounds.sMax - 0.4*regionBounds.sMin;
+			yTop = 1.4*regionBounds.tMin - 0.4*regionBounds.tMax;
+			yBottom = 1.4*regionBounds.tMax - 0.4*regionBounds.tMin;;
+		}
+		// if we want a wedge-shaped map
+		else {
+			// calculate the minimum and maximum latitude and longitude of the region of interest
+			let regionBounds = Chart.calculatePathBounds(regionOfInterest); // note: s in here is a generic coordinate (equal to latitude in this context)
+			const фRef = projection.surface.refLatitudes; // TODO: extracting these variables shouldn't be necessary.  I should use the projection functions.
+			const sRef = projection.surface.cumulDistances; // note: s here is an arc length, not a generic coordinate
+			const sMin = linterp(regionBounds.sMin, фRef, sRef); // TODO use projection here
+			const sMax = linterp(regionBounds.sMax, фRef, sRef);
+			// spread the limits out a bit to give a contextual view
+			фMax = linterp(Math.min(1.4*sMax - 0.4*sMin, sRef[sRef.length - 1]), sRef, фRef); // TODO use inverse projection here
+			фMin = linterp(Math.max(1.4*sMin - 0.4*sMax, sRef[0]), sRef, фRef);
+			const ds_dλ = projection.surface.ds_dλ((фMin + фMax)/2);
+			λMax = Math.min(Math.PI, regionBounds.tMax + 0.4*(sMax - sMin)/ds_dλ);
+			// and don't apply any Cartesian bounds
+			xLeft = -Infinity;
+			xRight = Infinity;
+			yTop = -Infinity;
+			yBottom = Infinity;
+		}
+
+		// the extent of the geographic region will always impose some Cartesian limits; compute those now.
+		const start = projection.projectPoint({ф: фMin, λ: -λMax});
+		const edges = [ // then determine the dimensions of this map
+			{type: 'M', args: [start.x, start.y]},
+			...projection.projectParallel(-λMax, λMax, фMin),
+			...projection.projectMeridian(фMin, фMax, λMax),
+			...projection.projectParallel(λMax, -λMax, фMax),
+			...projection.projectMeridian(фMax, фMin, -λMax),
+		];
+		const mapBounds = Chart.calculatePathBounds(edges);
+		return {
+			фMin: фMin, фMax: фMax, λMax: λMax,
+			xLeft: Math.max(xLeft, mapBounds.sMin),
+			xRight: Math.min(xRight, mapBounds.sMax),
+			yTop: Math.max(yTop, mapBounds.tMin),
+			yBottom: Math.min(yBottom, mapBounds.tMax)
+		};
+	}
+
+	/**
+	 * determine the coordinate bounds of this region in some 2D coordinate system
+	 * @param segments the region that must be enclosed entirely within the returned bounding box
+	 */
+	static calculatePathBounds(segments: PathSegment[]): {sMin: number, sMax: number, tMin: number, tMax: number} {
+		let sMin = Infinity, sMax = -Infinity, tMin = Infinity, tMax = -Infinity;
+		for (let i = 0; i < segments.length; i ++) { // TODO: this won't notice when the pole is included in the region
+			const segment = segments[i];
+			// for each segment, pull out any points that might be extrema
+			let points: Location[];
+			switch (segment.type) {
+				// for most simple segment types it's just the endpoints
+				case 'M': case 'L': case LongLineType.MERIDIAN: case LongLineType.PARALLEL:
+					points = [{s: segment.args[0], t: segment.args[1]}];
+					break;
+				// for bezier curves use the control points for the bonuds
+				case 'Q': case 'C':
+					points = [];
+					for (let i = 0; i < segment.args.length; i += 2)
+						points.push({s: segment.args[i], t: segment.args[i + 1]});
+					break;
+				// for arcs you must also look at certain points along the circle
+				case 'A':
+					// first calculate the location of the center
+					if (i === 0) {
+						console.log(segments);
+						throw new Error("a path may not start with an arc.");
+					}
+					const previusSegment = segments[i - 1];
+					const start = {
+						x: previusSegment.args[previusSegment.args.length - 2],
+						y: previusSegment.args[previusSegment.args.length - 1]};
+					const [_, r, __, largeArcFlag, sweepFlag, xEnd, yEnd] = segment.args;
+					const end = {x: xEnd, y: yEnd};
+					const chord = Math.hypot(end.x - start.x, end.y - start.y);
+					if (chord === 0)
+						throw new Error(`this arc is degenerate (the start point is the same as the endpoint): A${segment.args.join(',')}`);
+					if (chord > 2*r)
+						throw new Error(`this arc is impossible; it needs to span a distance of ${chord} with a radius of only ${r}?`);
+					const apothem = Math.sqrt(r*r - chord*chord/4);
+					const arcSign = (largeArcFlag === sweepFlag) ? 1 : -1;
+					const step = {
+						x: (end.y - start.y)/chord*apothem*arcSign,
+						y: (start.x - end.x)/chord*apothem*arcSign};
+					const center = {
+						x: (start.x + end.x)/2 + step.x,
+						y: (start.y + end.y)/2 + step.y};
+					// then enumerate the four nodes of the circle
+					points = [
+						{s: end.x, t: end.y},
+						{s: center.x + r, t: center.y},
+						{s: center.x, t: center.y + r},
+						{s: center.x - r, t: center.y},
+						{s: center.x, t: center.y - r},
+					];
+					// cull any that are not on this specific arc
+					for (let i = 4; i >= 1; i --) {
+						const sign = signAngle(end, assert_xy(points[i]), start);
+						if ((sweepFlag > 0) === (sign > 0))
+							points.splice(i, 1);
+					}
+					break;
+				// ignore Zs, naturally
+				case 'Z':
+					points = [];
+					break;
+				default:
+					throw new Error(`idk what the bounds of a '${segment.type}' segment are`);
+			}
+			// finally, search those key points for their greatest and smallest coordinates
+			for (const {s, t} of points) {
+				if (s < sMin)
+					sMin = s;
+				if (s > sMax)
+					sMax = s;
+				if (t < tMin)
+					tMin = t;
+				if (t > tMax)
+					tMax = t;
+			}
+		}
+		return {sMin: sMin, sMax: sMax, tMin: tMin, tMax: tMax};
+	}
+
+	/**
+	 * flesh out a minimally represented set of map edges into a proper set of MapEdges.  in practice, all we're doing
+	 * is adding the end field to each edge and setting it to the start field of the following entry.
+	 */
+	static validateEdges(inputs: { start: Location, type: LongLineType | string }[][]): MapEdge[][] {
+		// first, bild the loops
+		const edges: MapEdge[][] = [];
+		for (let i = 0; i < inputs.length; i ++) {
+			edges.push([]);
+			for (const {start, type} of inputs[i]) {
+				edges[i].push({
+					type: type,
+					start: start,
+					end: null,
+				});
+			}
+
+			// enforce the contiguity of the edge loops
+			for (let j = 0; j < edges[i].length; j ++)
+				edges[i][j].end = edges[i][(j+1)%edges[i].length].start;
+		}
+		return edges;
+	}
 }
 
+
+/**
+ * a simple record to efficiently represent the size and shape of a rectangle
+ */
+class Dimensions {
+	public readonly left: number;
+	public readonly right: number;
+	public readonly top: number;
+	public readonly bottom: number;
+	public readonly width: number;
+	public readonly height: number;
+	public readonly diagonal: number;
+	public readonly area: number;
+
+	constructor(left: number, right: number, top: number, bottom: number) {
+		if (left >= right || top >= bottom)
+			throw new Error(`the axis bounds ${left}, ${right}, ${top}, ${bottom} are invalid.`);
+		this.left = left;
+		this.right = right;
+		this.top = top;
+		this.bottom = bottom;
+		this.width = this.right - this.left;
+		this.height = this.bottom - this.top;
+		this.diagonal = Math.hypot(this.width, this.height);
+		this.area = this.width*this.height;
+	}
+}

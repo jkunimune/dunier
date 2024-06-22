@@ -5,19 +5,18 @@
 import {Surface} from "../surface/surface.js";
 import {MapProjection} from "./projection.js";
 import {linterp} from "../utilities/miscellaneus.js";
-import {PathSegment, Place, Point} from "../utilities/coordinates.js";
+import {Place, Point} from "../utilities/coordinates.js";
 
 /**
  * a cylindrical projection that makes loxodromes appear as straight lines.
  */
 export class Mercator extends MapProjection {
-	private static readonly ASPECT: number = Math.sqrt(2);
 	private readonly dx_dλ: number;
 	private readonly фRef: number[];
 	private readonly yRef: number[];
 
-	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
-		super(surface, northUp, locus, null, null, null, null);
+	constructor(surface: Surface) {
+		super(surface, false);
 
 		// find the surface's widest point to set the scale
 		this.dx_dλ = Math.max(
@@ -32,20 +31,6 @@ export class Mercator extends MapProjection {
 			const ds_dλ = surface.ds_dλ((this.фRef[i-1] + this.фRef[i])/2);
 			this.yRef.push(this.yRef[i-1] - this.dx_dλ*ds_dф*dф/ds_dλ);
 		}
-
-		const width = 2*Math.PI*this.dx_dλ;
-		let bottom = this.yRef[0];
-		let top = this.yRef[this.yRef.length-1];
-		if (surface.ds_dλ(surface.фMin) > surface.ds_dλ(surface.фMax)) // if the South Pole is thicker than the North
-			top = Math.max(top, bottom - width/Mercator.ASPECT); // crop the top to get the correct aspect ratio
-		else if (surface.ds_dλ(surface.фMin) < surface.ds_dλ(surface.фMax)) // if the North Pole is thicker
-			 bottom = Math.min(bottom, top + width/Mercator.ASPECT); // crop the bottom to make correct
-		else { // if they are equally important
-			const excess = Math.max(0, bottom - top - width/Mercator.ASPECT);
-			top = top + excess/2; // crop both
-			bottom = bottom - excess/2;
-		}
-		this.setDimensions(-width/2, width/2, top, bottom);
 	}
 
 	projectPoint(point: Place): Point {

@@ -13,18 +13,12 @@ export class Bonne extends MapProjection {
 	private readonly фRef: number[];
 	private readonly yRef: number[];
 	private readonly sRef: number[];
-	private readonly фMin: number;
-	private readonly фMax: number;
-	private readonly λMin: number;
-	private readonly λMax: number;
 
-	public constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
-		super(surface, northUp, locus,
-			null, null, null, null, []);
+	public constructor(surface: Surface, фStd: number) {
+		super(surface, false);
 
-		const focus = MapProjection.standardParallels(locus, this);
-		const distance0 = linterp(focus.фStd, surface.refLatitudes, surface.cumulDistances);
-		this.yJong = surface.ds_dλ(focus.фStd)/surface.dds_dλdф(focus.фStd);
+		const distance0 = linterp(фStd, surface.refLatitudes, surface.cumulDistances);
+		this.yJong = surface.ds_dλ(фStd)/surface.dds_dλdф(фStd);
 
 		this.фRef = surface.refLatitudes; // do the necessary integrals
 		this.yRef = []; // to get the y positions of the prime meridian
@@ -33,41 +27,6 @@ export class Bonne extends MapProjection {
 			this.yRef.push(distance0 - surface.cumulDistances[i]);
 			this.sRef.push(surface.ds_dλ(this.фRef[i])); // TODO: try this with something that spans both poles.  I feel like it probably won't work
 		}
-
-		const yBottom = this.yVertex(focus.фMin);
-		const yTop = this.yVertex(focus.фMax);
-		this.фMax = linterp(Math.max(1.4*yTop - 0.4*yBottom, this.yRef[this.yRef.length - 1]),
-		                    this.yRef.slice().reverse(), this.фRef.slice().reverse()); // spread the limits out a bit to give a contextual view
-		this.фMin = linterp(Math.min(1.4*yBottom - 0.4*yTop, this.yRef[0]),
-		                    this.yRef.slice().reverse(), this.фRef.slice().reverse());
-		this.λMax = Math.min(Math.PI, focus.λMax + 0.4*(yBottom - yTop)/this.sRadian(focus.фStd));
-		this.λMin = -this.λMax;
-
-		this.geoEdges = MapProjection.buildGeoEdges(
-			this.фMin, this.фMax, this.λMin, this.λMax); // redo the edges
-
-		let top = this.projectPoint({ф: this.фMax, λ: 0}).y; // then determine the dimensions of this map
-		let bottom = this.projectPoint({ф: this.фMin, λ: 0}).y;
-		let right = 0;
-		for (const ф of surface.refLatitudes.concat(this.фMin, this.фMax)) {
-			if (ф >= this.фMin && ф <= this.фMax) {
-				const {x, y} = this.projectPoint({ф: ф, λ: this.λMax});
-				if (x > right)
-					right = x;
-				if (y < top)
-					top = y;
-				if (y > bottom)
-					bottom = y;
-			}
-		}
-		for (const ф of [this.фMin, this.фMax]) {
-			const r = Math.abs(this.radius(ф));
-			if (Math.abs(this.λMax*this.sRadian(ф)) > Math.PI*r/2) {
-				if (r > right)
-					right = r;
-			}
-		}
-		this.setDimensions(-right, right, top, bottom);
 	}
 
 	projectPoint(point: Place): Point {
@@ -89,14 +48,20 @@ export class Bonne extends MapProjection {
 		const {x, y} = this.projectPoint({ф: ф, λ: λ1});
 		if (Number.isFinite(this.yJong)) {
 			const r = Math.hypot(x, y - this.yJong);
-			return [{
-				type: 'A',
-				args: [
-					r, r, 0,
-					(this.sRadian(ф)*Math.abs(λ1 - λ0) > Math.PI*r) ? 1 : 0,
-					((λ1 > λ0) === (this.yJong > 0)) ? 1 : 0,
-					x, y],
-			}];
+			const sweepFlag = ((λ1 > λ0) === (this.yJong > 0)) ? 1 : 0;
+			if (r > 0) {
+				if (this.sRadian(ф)*Math.abs(λ1 - λ0) <= Math.PI*r)
+					return [
+						{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
+					];
+				else
+					return [
+						{type: 'A', args: [r, r, 0, 0, sweepFlag, 0, this.yJong + r]},
+						{type: 'A', args: [r, r, 0, 0, sweepFlag, x, y]},
+					];
+			}
+			else
+				return [];
 		}
 		else {
 			return [{
@@ -129,9 +94,4 @@ export class Bonne extends MapProjection {
 	private yVertex(ф: number): number {
 		return linterp(ф, this.фRef, this.yRef);
 	}
-
-	private radius(ф: number): number {
-		return this.yVertex(ф) - this.yJong;
-	}
-
 }

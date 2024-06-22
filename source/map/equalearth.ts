@@ -15,8 +15,8 @@ export class EqualEarth extends MapProjection {
 	private readonly xRef: number[];
 	private readonly yRef: number[];
 
-	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
-		super(surface, northUp, locus, null, null, null, null);
+	constructor(surface: Surface) {
+		super(surface, false);
 
 		let ds_dλAvg = 0;
 		for (let i = 1; i < surface.refLatitudes.length; i ++) // first measure the typical width of the surface
@@ -33,16 +33,6 @@ export class EqualEarth extends MapProjection {
 				this.yRef.push(this.yRef[i-1] - verAre / (2*Math.PI*(this.xRef[i-1] + this.xRef[i])/2));
 			}
 		}
-
-		let maxX = 0;
-		for (const x of this.xRef)
-			if (x > maxX)
-				maxX = x;
-		this.setDimensions(
-			-Math.PI*maxX,
-			Math.PI*maxX,
-			this.yRef[this.yRef.length-1],
-			this.yRef[0]);
 	}
 
 	projectPoint(point: Place): Point {

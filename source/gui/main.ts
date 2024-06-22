@@ -222,7 +222,7 @@ function applyTerrain(): void {
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new EqualEarth(surface, true, null));
+	const mapper = new Chart(new EqualEarth(surface), true, Chart.bounds(surface));
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
@@ -257,7 +257,7 @@ function applyHistory(): void {
 		rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new EqualEarth(surface, true, null));
+	const mapper = new Chart(new EqualEarth(surface), true, Chart.bounds(surface));
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
@@ -299,25 +299,26 @@ function applyMap(): void {
 	console.log("grafa zemgrafe...");
 	const projectionName = DOM.val('map-projection');
 	const northUp = (DOM.val('map-orientation') === 'north');
-	const locus = Chart.border(world.getCiv(Number.parseInt(DOM.val('map-jung'))));
+	const focus = Chart.border(world.getCiv(Number.parseInt(DOM.val('map-jung'))));
+	const standardParallel = Chart.chooseStandardParallel(focus, surface);
 
 	let projection: MapProjection;
 	if (projectionName === 'basic')
-		projection = new Equirectangular(surface, northUp, locus);
+		projection = new Equirectangular(surface);
 	else if (projectionName === 'polar')
-		projection = new Azimuthal(surface, northUp, locus);
+		projection = new Azimuthal(surface, standardParallel >= 0);
 	else if (projectionName === 'navigational')
-		projection = new Mercator(surface, northUp, locus);
+		projection = new Mercator(surface);
 	else if (projectionName === 'equal_area')
-		projection = new EqualEarth(surface, northUp, locus);
+		projection = new EqualEarth(surface);
 	else if (projectionName === 'classical')
-		projection = new Bonne(surface, northUp, locus);
+		projection = new Bonne(surface, standardParallel);
 	else if (projectionName === 'modern')
-		projection = new Conic(surface, northUp, locus);
+		projection = new Conic(surface, standardParallel);
 	else
 		throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
-	const chart = new Chart(projection);
+	const chart = new Chart(projection, northUp, focus);
 	mappedCivs = chart.depict(
 		surface,
 		world,

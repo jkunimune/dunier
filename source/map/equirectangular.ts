@@ -4,7 +4,7 @@
  */
 import {Surface} from "../surface/surface.js";
 import {MapProjection} from "./projection.js";
-import {PathSegment, Place, Point} from "../utilities/coordinates.js";
+import {Place, Point} from "../utilities/coordinates.js";
 
 /**
  * a Plate-Caree projection, primarily for interfacing with other mapping software.
@@ -12,12 +12,9 @@ import {PathSegment, Place, Point} from "../utilities/coordinates.js";
 export class Equirectangular extends MapProjection {
 	private readonly factor: number;
 
-	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
+	constructor(surface: Surface) {
 		const scale = Math.sqrt(surface.area/(2*Math.PI*(surface.фMax - surface.фMin)));
-		super(
-			surface, northUp, locus,
-			-Math.PI*scale, Math.PI*scale,
-			-surface.фMax*scale, -surface.фMin*scale);
+		super(surface, false);
 		this.factor = scale;
 	}
 

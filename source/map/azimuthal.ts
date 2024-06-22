@@ -5,7 +5,7 @@
 import {Surface} from "../surface/surface.js";
 import {MapProjection} from "./projection.js";
 import {linterp} from "../utilities/miscellaneus.js";
-import {LongLineType, PathSegment, Place, Point} from "../utilities/coordinates.js";
+import {PathSegment, Place, Point} from "../utilities/coordinates.js";
 
 /**
  * an azimuthal equidistant projection
@@ -15,31 +15,14 @@ export class Azimuthal extends MapProjection {
 	private readonly rMin: number;
 	private readonly sign: number;
 
-	constructor(surface: Surface, northUp: boolean, locus: PathSegment[]) {
+	constructor(surface: Surface, northernHemisphere: boolean) {
 		const r0 = surface.ds_dλ(Math.PI/2);
 		const rMax = r0 + linterp(Math.PI/2, surface.refLatitudes, surface.cumulDistances);
-		super(
-			surface, northUp, locus,
-			-rMax, rMax, -rMax, rMax,
-			[
-				[{
-					type: LongLineType.PARALLEL,
-					start: { s: surface.фMax, t:  Math.PI },
-					end:   { s: surface.фMax, t: -Math.PI },
-				}],
-				[{
-					type: LongLineType.PARALLEL,
-					start: { s: surface.фMin, t: -Math.PI },
-					end:   { s: surface.фMin, t:  Math.PI },
-				}],
-			]);
+		super(surface, true);
 		this.rMax = rMax;
 		this.rMin = rMax - surface.height;
 		// decide whether to do the flip thing
-		if (MapProjection.standardParallels(locus, this).фStd < 0)
-			this.sign = -1;
-		else
-			this.sign = 1;
+		this.sign = northernHemisphere ? 1 : -1;
 	}
 
 	projectPoint(point: Place): Point {
