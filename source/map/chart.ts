@@ -694,6 +694,9 @@ export class Chart {
 					return {location: pole.location, halfHeight: pole.radius/aspect};
 				}
 			}
+			else {
+				throw new Error("The algorithm that finds the optimal place on an arc to place a label failed.");
+			}
 		}
 	}
 
