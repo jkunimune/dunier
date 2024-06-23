@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Edge, EmptySpace, Surface, Tile, Vertex} from "../surface/surface.js";
-import {filterSet, linterp, localizeInRange, longestShortestPath} from "../utilities/miscellaneus.js";
+import {filterSet, linterp, localizeInRange, longestShortestPath, pathToString} from "../utilities/miscellaneus.js";
 import {ARABILITY, World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
@@ -775,12 +775,8 @@ export class Chart {
 	 * @param svg
 	 */
 	draw(segments: PathSegment[], svg: Element): SVGPathElement {
-		let str = ''; // create the d string
-		for (let i = 0; i < segments.length; i ++)
-			str += segments[i].type + segments[i].args.join(',') + ' ';
-
 		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-		path.setAttribute('d', str);
+		path.setAttribute('d', pathToString(segments));
 		path.setAttribute('vector-effect', 'non-scaling-stroke');
 		return svg.appendChild(path); // put it in the SVG
 	}

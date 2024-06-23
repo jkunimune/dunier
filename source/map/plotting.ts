@@ -13,7 +13,7 @@ import {
 	Point
 } from "../utilities/coordinates.js";
 import {chordCenter, isAcute, lineArcIntersections, lineLineIntersection} from "../utilities/geometry.js";
-import {isBetween, localizeInRange} from "../utilities/miscellaneus.js";
+import {isBetween, localizeInRange, pathToString} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
 import {Surface} from "../surface/surface.js";
 
@@ -172,9 +172,10 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 			throw new Error(`you can't pass ${segment.type}-type segments to this funccion.`);
 	if (segments.length === 0) // what're you trying to pull here?
 		return [];
-	else if (closePath && !isClosed(segments, surface))
+	else if (closePath && !isClosed(segments, surface)) {
+		console.error(pathToString(segments));
 		throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
-
+	}
 	const segmentCue = segments.slice().reverse();
 	const sections: PathSegment[][] = [];
 	let currentSection: PathSegment[] = null;
@@ -283,6 +284,8 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 					}
 				}
 				if (bestSection === null) {
+					console.error(pathToString(segments));
+					console.error(edges);
 					throw new Error(`couldn't find a new start position on loop ${endPosition.loop}`);
 				}
 

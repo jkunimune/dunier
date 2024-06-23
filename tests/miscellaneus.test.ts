@@ -10,7 +10,7 @@ import {
 	legendreP4,
 	legendreP6,
 	linterp,
-	localizeInRange, longestShortestPath, Matrix,
+	localizeInRange, longestShortestPath, Matrix, pathToString,
 	tanh, union
 } from "../source/utilities/miscellaneus.js";
 
@@ -190,6 +190,12 @@ describe("decodeBase36()", () => {
 	test("comparison", () => {
 		expect(decodeBase37("firstname13") - decodeBase37("firstname12")).toEqual(1);
 	});
+});
+
+test("pathToString()", () => {
+	const path = [
+		{type: 'M', args: [0, 1]}, {type: 'A', args: [2, 2, 0, 1, 1, 2, 3]}, {type: 'Z', args: []}];
+	expect(pathToString(path)).toEqual("M0,1 A2,2,0,1,1,2,3 Z");
 });
 
 describe("longestShortestPath()", () => {

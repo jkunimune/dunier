@@ -4,7 +4,7 @@
  */
 // @ts-ignore
 import Queue from "../datastructures/queue.js";
-import {Point} from "./coordinates.js";
+import {PathSegment, Point} from "./coordinates.js";
 import {Random} from "./random.js";
 import {trajectoryIntersection, Vector} from "./geometry.js";
 
@@ -171,6 +171,17 @@ export function decodeBase37(string: string): number {
 		totalValue = (totalValue*37 + digit)%0x10000000000;
 	}
 	return totalValue;
+}
+
+/**
+ * convert a path to an SVG path string that can be input to an SVG file
+ * @param path
+ */
+export function pathToString(path: PathSegment[]): string {
+	let str = ''; // create the d string
+	for (let i = 0; i < path.length; i ++)
+		str += path[i].type + path[i].args.join(',') + ' ';
+	return str.trim();
 }
 
 /**
