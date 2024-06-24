@@ -66,7 +66,8 @@ export abstract class Surface {
 			A += ds_dλ*dλ*ds_dф*dф;
 			s += ds_dф*dф;
 		}
-		this.area = this.cumulAreas[INTEGRATION_RESOLUTION];
+		this.refLatitudes[INTEGRATION_RESOLUTION] = this.фMax; // fix the inevitable roundoff here
+		this.area = this.cumulAreas[INTEGRATION_RESOLUTION]; // and record the totals as their own instance variables
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
 		this.axis = this.xyz({ф: 1, λ: Math.PI/2}).minus(this.xyz({ф: 1, λ: 0})).cross(

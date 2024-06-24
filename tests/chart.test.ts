@@ -3,7 +3,6 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Chart} from "../source/map/chart.js";
-import {Sphere} from "../source/surface/sphere.js";
 
 describe("chooseCentralMeridian", () => {
 	test("front hemisphere", () => {
@@ -33,22 +32,6 @@ describe("chooseCentralMeridian", () => {
 			{type: 'L', args: [0, Math.PI/3]},
 			{type: 'L', args: [0, Math.PI]}];
 		expect(Chart.chooseCentralMeridian(path)).toBeCloseTo(0);
-	});
-});
-
-describe("chooseStandardParallel", () => {
-	const sphere = new Sphere(1);
-	test("simple", () => {
-		const path = [{type: 'M', args: [0, 0]}, {type: 'L', args: [Math.PI/3, 0]}];
-		expect(Chart.chooseStandardParallel(path, sphere)).toBeCloseTo((2 - Math.sqrt(2))*Math.PI/3);
-	});
-	test("point on north pole", () => {
-		const path = [{type: 'M', args: [0, 0]}, {type: 'L', args: [Math.PI/2, 0]}];
-		expect(Chart.chooseStandardParallel(path, sphere)).toBeCloseTo(Math.PI/2);
-	});
-	test("points on both poles", () => {
-		const path = [{type: 'M', args: [-Math.PI/2, 0]}, {type: 'L', args: [Math.PI/2, 0]}];
-		expect(Chart.chooseStandardParallel(path, sphere)).toBeCloseTo(0);
 	});
 });
 

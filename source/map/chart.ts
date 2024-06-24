@@ -29,7 +29,6 @@ import {
 	transformInput,
 	transformOutput
 } from "./plotting.js";
-import {Bonne} from "./bonne.js";
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -143,14 +142,14 @@ export class Chart {
 
 
 	constructor(
-		projection: MapProjection, northUp: boolean, focus: PathSegment[],
+		projection: MapProjection, northUp: boolean, focus: PathSegment[], rectangularBounds: boolean,
 	) {
 		this.projection = projection;
 		this.northUp = northUp;
 		
 		this.centralMeridian = Chart.chooseCentralMeridian(focus);
 		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} = Chart.calculateMapBounds(
-			transformInput(this.centralMeridian, focus), projection, !(projection instanceof Bonne));
+			transformInput(this.centralMeridian, focus), projection, rectangularBounds);
 		this.labelIndex = 0;
 
 		// establish the bounds of the map, flipping them if it's a south-up map
@@ -163,7 +162,7 @@ export class Chart {
 		this.scale = 1/this.dimensions.diagonal;
 		
 		// set the geographic and Cartesian limits of the mapped area
-		if (λMax === Math.PI && this.projection.wrapsAround)
+		if (λMax === Math.PI && this.projection.wrapsAround())
 			this.geoEdges = [
 				[{
 					type: LongLineType.PARALLEL,
@@ -827,7 +826,7 @@ export class Chart {
 			{type: 'M', args: [surface.фMin, -Math.PI]},
 			{type: LongLineType.PARALLEL, args: [surface.фMin, -Math.PI/3]},
 			{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI/3]},
-			{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI]},
+			{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI]}, // TODO: I don't think I really need all these
 			{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, Math.PI]},
 			{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, Math.PI]},
 			{type: LongLineType.MERIDIAN, args: [surface.фMax, Math.PI]},
@@ -1092,28 +1091,6 @@ export class Chart {
 			return 0; // default to 0°E TODO it would be really cool if I could pick a number more intelligently
 	}
 
-	/**
-	 * identify a parallel that runs thru the center of this region on the Surface
-	 */
-	static chooseStandardParallel(regionOfInterest: PathSegment[], surface: Surface): number {
-		// first calculate the minimum and maximum latitudes of the region
-		const {sMin: фMin, sMax: фMax} = Chart.calculatePathBounds(regionOfInterest);
-
-		const minWeit = 1/Math.sqrt(surface.ds_dλ(фMin));
-		const maxWeit = 1/Math.sqrt(surface.ds_dλ(фMax));
-		if (Number.isFinite(minWeit)) { // choose a standard parallel
-			if (Number.isFinite(maxWeit))
-				return (фMin*minWeit + фMax*maxWeit)/(minWeit + maxWeit);
-			else
-				return фMax;
-		}
-		else {
-			if (Number.isFinite(maxWeit))
-				return фMin;
-			else
-				return (фMin + фMax)/2;
-		}
-	}
 
 	/**
 	 * determine the coordinate bounds of this region –
@@ -1139,7 +1116,7 @@ export class Chart {
 			xLeft = 1.4*regionBounds.sMin - 0.4*regionBounds.sMax;
 			xRight = 1.4*regionBounds.sMax - 0.4*regionBounds.sMin;
 			yTop = 1.4*regionBounds.tMin - 0.4*regionBounds.tMax;
-			yBottom = 1.4*regionBounds.tMax - 0.4*regionBounds.tMin;;
+			yBottom = 1.4*regionBounds.tMax - 0.4*regionBounds.tMin;
 		}
 		// if we want a wedge-shaped map
 		else {

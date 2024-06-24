@@ -10,16 +10,12 @@ import {Surface} from "../surface/surface.js";
 import {World} from "../generation/world.js";
 import {Random} from "../utilities/random.js";
 import {Chart} from "../map/chart.js";
-import {Bonne} from "../map/bonne.js";
-import {Equirectangular} from "../map/equirectangular.js";
-import {EqualEarth} from "../map/equalearth.js";
 import {Spheroid} from "../surface/spheroid.js";
 import {Sphere} from "../surface/sphere.js";
 import {Disc} from "../surface/disc.js";
 import {Toroid} from "../surface/toroid.js";
 import {LockedDisc} from "../surface/lockeddisc.js";
 import {generateFactSheet} from "../generation/factsheet.js";
-import {Conic} from "../map/conic.js";
 import {Selector} from "../utilities/selector.js";
 import {PortableDocument} from "../utilities/portabledocument.js";
 import {MapProjection} from "../map/projection.js";
@@ -220,7 +216,9 @@ function applyTerrain(): void {
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new EqualEarth(surface), true, Chart.bounds(surface));
+	const mapper = new Chart(
+		MapProjection.equalEarth(surface, surface.фMin, surface.фMax),
+		true, Chart.bounds(surface), false);
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
@@ -255,7 +253,9 @@ function applyHistory(): void {
 		rng); // create the terrain!
 
 	console.log("grafa...");
-	const mapper = new Chart(new EqualEarth(surface), true, Chart.bounds(surface));
+	const mapper = new Chart(
+		MapProjection.equalEarth(surface, surface.фMin, surface.фMax),
+		true, Chart.bounds(surface), false);
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
@@ -298,21 +298,21 @@ function applyMap(): void {
 	const projectionName = DOM.val('map-projection');
 	const northUp = (DOM.val('map-orientation') === 'north');
 	const focus = Chart.border(world.getCiv(Number.parseInt(DOM.val('map-jung'))));
-	const standardParallel = Chart.chooseStandardParallel(focus, surface);
+	const {sMin: фMin, sMax: фMax} = Chart.calculatePathBounds(focus);
 
 	let projection: MapProjection;
 	if (projectionName === 'basic')
-		projection = new Equirectangular(surface);
+		projection = MapProjection.plateCaree(surface);
 	else if (projectionName === 'equal_area')
-		projection = new EqualEarth(surface);
+		projection = MapProjection.equalEarth(surface, фMin, фMax);
 	else if (projectionName === 'classical')
-		projection = new Bonne(surface, standardParallel);
+		projection = MapProjection.bonne(surface, фMin, фMax);
 	else if (projectionName === 'modern')
-		projection = new Conic(surface, standardParallel);
+		projection = MapProjection.conic(surface, фMin, фMax);
 	else
 		throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
-	const chart = new Chart(projection, northUp, focus);
+	const chart = new Chart(projection, northUp, focus, projectionName !== 'classical');
 	mappedCivs = chart.depict(
 		surface,
 		world,

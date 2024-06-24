@@ -101,8 +101,12 @@ export class Spheroid extends Surface {
 	}
 
 	ds_dλ(ф: number): number {
-		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
-		return this.radius*Math.cos(β);
+		if (Math.abs(ф) === Math.PI/2)
+			return 0;
+		else {
+			const β = Math.atan(Math.tan(ф)/this.aspectRatio);
+			return this.radius*Math.cos(β);
+		}
 	}
 
 	insolation(ф: number): number {
@@ -168,5 +172,3 @@ export class Spheroid extends Surface {
 		return false;
 	}
 }
-
-

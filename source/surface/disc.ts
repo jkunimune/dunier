@@ -52,7 +52,10 @@ export class Disc extends Surface {
 	}
 
 	ds_dλ(ф: number): number {
-		return this.firmamentHite/Math.tan(ф);
+		if (ф === Math.PI/2)
+			return 0;
+		else
+			return this.firmamentHite/Math.tan(ф);
 	}
 
 	insolation(ф: number): number {
