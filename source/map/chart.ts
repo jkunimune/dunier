@@ -4,7 +4,7 @@
  */
 import {Edge, Tile, Surface, Vertex, EmptySpace} from "../surface/surface.js";
 import {filterSet, longestShortestPath} from "../utilities/miscellaneus.js";
-import {ARABILITY, World} from "../generation/world.js";
+import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
@@ -12,7 +12,7 @@ import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 import {assert_xy, endpoint, PathSegment, Place} from "../utilities/coordinates.js";
 import {chordCenter, Vector} from "../utilities/geometry.js";
-import {Biome} from "../generation/terrain.js";
+import {ARABILITY, Biome} from "../generation/terrain.js";
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible

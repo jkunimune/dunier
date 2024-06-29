@@ -47,7 +47,6 @@ const RIDGE_WIDTH = 100; // km
 const OCEAN_SIZE = 0.2; // as a fraction of continental length scale
 const CONTINENTAL_CONVEXITY = 0.05; // between 0 and 1
 
-
 /** different ways two plates can interact at a given fault */
 enum FaultType {
 	CONTINENT_COLLISION,
@@ -56,7 +55,6 @@ enum FaultType {
 	OCEANIC_RIFT,
 	RIFT_WITH_SLOPE,
 }
-
 
 /** terrestrial ecoregion classifications */
 export enum Biome {
@@ -78,6 +76,36 @@ export const BIOME_NAMES = [
 	"ocean", "lake", "ice", "tundra", "taiga", "forest",
 	"jungle", "desert", "plains", "swamp", "steamland"
 ];
+
+export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
+	[Biome.OCEAN,     0.1],
+	[Biome.SWAMP,     0.1],
+	[Biome.JUNGLE,    0.1],
+	[Biome.FOREST,    1.0],
+	[Biome.LAKE,      3.0],
+	[Biome.TAIGA,     1.0],
+	[Biome.STEAMLAND, 0.3],
+	[Biome.PLAINS,    3.0],
+	[Biome.DESERT,    0.1],
+	[Biome.TUNDRA,    0.3],
+	[Biome.ICE,       0.1],
+]);
+export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
+	[Biome.OCEAN,     0.00],
+	[Biome.SWAMP,     0.03],
+	[Biome.JUNGLE,    0.30],
+	[Biome.FOREST,    1.00],
+	[Biome.LAKE,      0.00],
+	[Biome.TAIGA,     0.10],
+	[Biome.STEAMLAND, 0.03],
+	[Biome.PLAINS,    0.30],
+	[Biome.DESERT,    0.00],
+	[Biome.TUNDRA,    0.03],
+	[Biome.ICE,       0.00],
+]);
+export const RIVER_UTILITY_THRESHOLD = 1e6; // [km^2] size of watershed needed to produce a river that supports large cities
+export const FRESHWATER_UTILITY = 20; // [km] width of highly populated region near river
+export const SALTWATER_UTILITY = 50; // [km] width of highly populated region near coast
 
 
 /**
@@ -569,6 +597,19 @@ function setBiomes(surf: Surface): void {
 			else
 				tile.biome = Biome.JUNGLE;
 		}
+
+		// assine the society-relevant values to the Tiles
+		tile.arableArea = ARABILITY.get(tile.biome)*tile.getArea(); // start with the biome-defined habitability
+		if (tile.arableArea > 0 || tile.biome === Biome.DESERT) { // if it is habitable at all or is a desert
+			for (const neighbor of tile.neighbors.keys()) { // increase habitability based on adjacent water
+				const edge = tile.neighbors.get(neighbor);
+				if (neighbor.biome === Biome.LAKE || edge.flow > RIVER_UTILITY_THRESHOLD)
+					tile.arableArea += FRESHWATER_UTILITY*edge.length;
+				if (neighbor.biome === Biome.OCEAN)
+					tile.arableArea += SALTWATER_UTILITY*edge.length;
+			}
+		}
+		tile.passability = PASSABILITY.get(tile.biome);
 	}
 }
 
