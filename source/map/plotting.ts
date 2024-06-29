@@ -176,17 +176,17 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 		console.error(pathToString(segments));
 		throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
 	}
-	const segmentCue = segments.slice().reverse();
+	const segmentQueue = segments.slice().reverse();
 	const sections: PathSegment[][] = [];
 	let currentSection: PathSegment[] = null;
 	let iterations = 0;
 	while (true) { // first, break it up into sections
-		const thisSegment = (segmentCue.length > 0 ? segmentCue.pop() : null);
+		const thisSegment = (segmentQueue.length > 0 ? segmentQueue.pop() : null);
 
 		if (thisSegment === null || thisSegment.type === 'M') { // at movetos and at the end
 			if (currentSection !== null) {
 				if (encompasses(surface, edges, currentSection))
-					sections.push(currentSection); // save if so TODO: save if no also
+					sections.push(currentSection); // save whatever you have so far to sections (if it's within the edges)
 			}
 			if (thisSegment !== null)
 				currentSection = [thisSegment]; // and start a new section
@@ -194,22 +194,22 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 				break; // or stop if we're done
 		}
 
-		else {
+		else { // for segments in the middle of a section
 			if (currentSection === null)
 				throw new Error("it didn't start with 'M', I gess?");
 
 			const lastSegment = currentSection[currentSection.length - 1];
 			const crossing = getEdgeCrossing(
-				lastSegment, thisSegment, surface, edges); // otherwise, check for interruption
+				lastSegment, thisSegment, surface, edges); // check for interruption
 
-			if (crossing === null) { // for uninterrupted segments
+			if (crossing === null) { // if there's no interruption
 				if (encompasses(surface, edges, [lastSegment]) !== encompasses(surface, edges, [lastSegment]))
 					throw new Error(`you failed to detect a crossing between ${lastSegment.type}${lastSegment.args.join(',')} and ${thisSegment.type}${thisSegment.args.join(',')}.`);
-				currentSection.push(thisSegment); // just add them to the thing
+				currentSection.push(thisSegment); // just add the points to the section
 			}
-			else { // otherwise, if it jumps across an interruption
+			else { // if there is, the line jumps across an interruption
 				const { intersect0, intersect1 } = crossing;
-				segmentCue.push(
+				segmentQueue.push( // add a moveto to the segment queue and go back to the start of the loop
 					...spliceSegment(
 						endpoint(lastSegment), thisSegment,
 						intersect0, intersect1,
@@ -250,19 +250,19 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 		}
 		startingANewSupersection = false; // turn off this notification flag until we need it agen
 
-		output.push(...section); // add its points to the thing
+		output.push(...section); // add the section's points to the thing
 		weHaveDrawn[sectionIndex] = true; // mark it as drawn
 
 		if (!closePath) { // if we're not worrying about closing it off
 			startingANewSupersection = true; // forget it and move onto a random section
 		}
-		else {
-			const sectionEnd = endpoint(section[section.length-1]); // otherwise, look at where on Earth we are
+		else { // if we *are* worrying about closing it off
+			const sectionEnd = endpoint(section[section.length-1]); // look at where on Earth we are
 			const endPosition = getPositionOnEdge(
 				sectionEnd, edges);
 
 			if (sectionEnd.s === supersectionStart.s &&
-				sectionEnd.t === supersectionStart.t) { // first, check if we have closed this supersection
+				sectionEnd.t === supersectionStart.t) { // first, check if this is the closure of this supersection
 				startingANewSupersection = true; // if so, don't look any further
 			}
 			else if (endPosition.loop !== null) { // if we ended hitting a wall
@@ -305,7 +305,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 				else
 					throw new Error("I don't think it should be possible to rap around to a drawn section that's not this one");
 			}
-			else { // if we ended in the middle someplace
+			else { // if we ended at a random point in the middle of the map
 				sectionIndex = null;
 				for (let i = 0; i < sections.length; i ++) { // look for the one that picks up from here
 					const start = endpoint(sections[i][0]);
@@ -314,7 +314,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 						break;
 					}
 				}
-				if (sectionIndex === null) {
+				if (sectionIndex === null) { // there really should be exactly one that picks up from here
 					throw new Error(`I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`);
 				}
 				if (weHaveDrawn[sectionIndex]) // if that one has already been drawn
