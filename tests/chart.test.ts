@@ -3,6 +3,9 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Chart} from "../source/map/chart.js";
+import {LongLineType} from "../source/utilities/coordinates.js";
+import {Sphere} from "../source/surface/sphere.js";
+import {MapProjection} from "../source/map/projection.js";
 
 describe("chooseCentralMeridian", () => {
 	test("front hemisphere", () => {
@@ -33,6 +36,15 @@ describe("chooseCentralMeridian", () => {
 			{type: 'L', args: [0, Math.PI]}];
 		expect(Chart.chooseCentralMeridian(path)).toBeCloseTo(0);
 	});
+});
+
+test("rectangle", () => {
+	expect(Chart.rectangle(1, 2, 3, 4, true)).toEqual([
+		{type: LongLineType.PARALLEL, start: {s: 1, t: 2}, end: {s: 1, t: 4}},
+		{type: LongLineType.MERIDIAN, start: {s: 1, t: 4}, end: {s: 3, t: 4}},
+		{type: LongLineType.PARALLEL, start: {s: 3, t: 4}, end: {s: 3, t: 2}},
+		{type: LongLineType.MERIDIAN, start: {s: 3, t: 2}, end: {s: 1, t: 2}},
+	]);
 });
 
 describe("calculatePathBounds", () => {
@@ -86,5 +98,19 @@ describe("calculatePathBounds", () => {
 			tMin: expect.closeTo(-1),
 			tMax: expect.closeTo(2 - Math.sqrt(3)),
 		});
+	});
+});
+
+describe("setting edges in the constructor", () => {
+	const globe = new Sphere(1);
+	globe.initialize();
+	test("full world Equal Earth", () => {
+		const chart = new Chart(
+			MapProjection.equalEarth(globe, -Math.PI/2, Math.PI/2),
+			true, Chart.bounds(globe), true);
+		expect(chart.dimensions).toEqual(expect.objectContaining({
+			left: expect.closeTo(-2.7893), right: expect.closeTo(2.7893),
+			bottom: 0, top: expect.closeTo(-2.5788),
+		}));
 	});
 });

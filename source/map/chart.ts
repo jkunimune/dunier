@@ -134,7 +134,7 @@ export class Chart {
 	private readonly centralMeridian: number;
 	private readonly geoEdges: MapEdge[][];
 	private readonly mapEdges: MapEdge[][];
-	private readonly dimensions: Dimensions;
+	public readonly dimensions: Dimensions;
 	public readonly scale: number; // the map scale in map-widths per km
 	private testText: SVGTextElement;
 	private testTextSize: number;
@@ -148,11 +148,18 @@ export class Chart {
 		this.northUp = northUp;
 		
 		this.centralMeridian = Chart.chooseCentralMeridian(focus);
-		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} = Chart.calculateMapBounds(
-			transformInput(this.centralMeridian, focus), projection, rectangularBounds);
+		// establish the bounds of the map
+		focus = cutToSize(
+			transformInput(this.centralMeridian, focus),
+			this.projection.surface,
+			[Chart.rectangle(projection.surface.фMax, Math.PI, projection.surface.фMin, -Math.PI, true)],
+			true,
+		);
+		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} =
+			Chart.calculateMapBounds(focus, projection, rectangularBounds);
 		this.labelIndex = 0;
 
-		// establish the bounds of the map, flipping them if it's a south-up map
+		// flip them if it's a south-up map
 		if (this.northUp)
 			this.dimensions = new Dimensions(xLeft, xRight, yTop, yBottom);
 		else
@@ -176,18 +183,8 @@ export class Chart {
 				}]
 			];
 		else
-			this.geoEdges = Chart.validateEdges([[
-				{ type: LongLineType.PARALLEL, start: {s: фMax, t: λMax} },
-				{ type: LongLineType.MERIDIAN, start: {s: фMax, t: -λMax} },
-				{ type: LongLineType.PARALLEL, start: {s: фMin, t: -λMax} },
-				{ type: LongLineType.MERIDIAN, start: {s: фMin, t: λMax} },
-			]]);
-		this.mapEdges = Chart.validateEdges([[
-			{ type: 'L', start: {s: this.dimensions.left, t: this.dimensions.top}, },
-			{ type: 'L', start: {s: this.dimensions.left, t: this.dimensions.bottom}, },
-			{ type: 'L', start: {s: this.dimensions.right, t: this.dimensions.bottom}, },
-			{ type: 'L', start: {s: this.dimensions.right, t: this.dimensions.top}, },
-		]]);
+			this.geoEdges = [Chart.rectangle(фMax, λMax, фMin, -λMax, true)];
+		this.mapEdges = [Chart.rectangle(this.dimensions.left, this.dimensions.top, this.dimensions.right, this.dimensions.bottom, false)];
 	}
 
 	/**
@@ -1102,6 +1099,9 @@ export class Chart {
 	static calculateMapBounds(
 		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
 	): {фMin: number, фMax: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
+		if (regionOfInterest.length === 0)
+			throw new Error("the region of interest has no vertices.");
+
 		let фMin, фMax, λMax;
 		let xLeft, xRight, yTop, yBottom;
 		// if we want a rectangular map
@@ -1242,25 +1242,28 @@ export class Chart {
 	}
 
 	/**
-	 * flesh out a minimally represented set of map edges into a proper set of MapEdges.  in practice, all we're doing
-	 * is adding the end field to each edge and setting it to the start field of the following entry.
+	 * create a set of MapEdges that delineate a rectangular region in either Cartesian or latitude/longitude space
 	 */
-	static validateEdges(inputs: { start: Location, type: LongLineType | string }[][]): MapEdge[][] {
-		// first, bild the loops
-		const edges: MapEdge[][] = [];
-		for (let i = 0; i < inputs.length; i ++) {
-			edges.push([]);
-			for (const {start, type} of inputs[i]) {
-				edges[i].push({
-					type: type,
-					start: start,
-					end: null,
-				});
-			}
-
-			// enforce the contiguity of the edge loops
-			for (let j = 0; j < edges[i].length; j ++)
-				edges[i][j].end = edges[i][(j+1)%edges[i].length].start;
+	static rectangle(s0: number, t0: number, s2: number, t2: number, geographic: boolean): MapEdge[] {
+		// first, define the s and t coordinates
+		const s = [s0, s0, s2, s2];
+		const t = [t0, t2, t2, t0];
+		const sIsVarying = [false, true, false, true];
+		// bild the loop, ensuring the edge ends are consistent with the edge starts
+		const edges: MapEdge[] = [];
+		for (let i = 0; i < 4; i ++) {
+			let type;
+			if (!geographic)
+				type = 'L';
+			else if (sIsVarying[i])
+				type = LongLineType.MERIDIAN;
+			else
+				type = LongLineType.PARALLEL;
+			edges.push({
+				type: type,
+				start: {s: s[i], t: t[i]},
+				end: {s: s[(i + 1)%4], t: t[(i + 1)%4]},
+			});
 		}
 		return edges;
 	}

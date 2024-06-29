@@ -103,14 +103,14 @@ export function applyProjectionToPath(
 		if (inPoints[i].type === LongLineType.MERIDIAN) { // do the projection
 			const [ф0, λ] = inPoints[i-1].args;
 			const [ф1, _] = inPoints[i].args;
-			console.assert(λ === _);
+			console.assert(λ === _, "meridians must start and end at the same longitude.");
 			outPoints.push(...projection.projectMeridian(ф0, ф1, λ));
 			i ++;
 		}
 		else if (inPoints[i].type === LongLineType.PARALLEL) {
 			const [ф, λ0] = inPoints[i-1].args;
 			const [_, λ1] = inPoints[i].args;
-			console.assert(ф === _);
+			console.assert(ф === _, "parallels must start and end at the same latitude.");
 			outPoints.push(...projection.projectParallel(λ0, λ1, ф));
 			i ++;
 		}
@@ -167,9 +167,9 @@ export function applyProjectionToPath(
  * @param closePath whether you should add stuff around the edges when things clip
  */
 export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePlane, edges: MapEdge[][], closePath: boolean): PathSegment[] {
-	for (const segment of segments)
-		if (typeof segment.type !== 'string')
-			throw new Error(`you can't pass ${segment.type}-type segments to this funccion.`);
+	// for (const segment of segments)
+	// 	if (typeof segment.type !== 'string')
+	// 		throw new Error(`you can't pass ${segment.type}-type segments to this funccion.`);
 	if (segments.length === 0) // what're you trying to pull here?
 		return [];
 	else if (closePath && !isClosed(segments, surface)) {
@@ -318,7 +318,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 					throw new Error(`I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`);
 				}
 				if (weHaveDrawn[sectionIndex]) // if that one has already been drawn
-					startingANewSupersection = true; // move on randomly
+					throw new Error(`how has the section starting at [${sectionEnd.s}, ${sectionEnd.t}] already been drawn? I'm on a supersection that started at ${supersectionStart.s}, ${supersectionStart.t}`); // we're done; move on randomly
 			}
 		}
 		if (startingANewSupersection) { // if we were planning to move onto whatever else for the next section
@@ -440,7 +440,7 @@ function encompasses(surface: Surface | InfinitePlane, edges: MapEdge[][], point
 		if (containd !== null) // in practice, this should always be unambiguous
 			return containd;
 	}
-	return false; // if it's completely on the edge, mark it as out so it goes away
+	return true; // if it's completely on the edge, mark it as in since it might determine whether the inside is included or not
 }
 
 
@@ -654,8 +654,8 @@ function getGeoEdgeCrossing(
 	coords0: PathSegment, coords1: PathSegment, surface: Surface, edges: MapEdge[][]
 ): { place0: Place, place1: Place, loopIndex: number } | null {
 	for (const coords of [coords0, coords1])
-		console.assert(coords.type === 'M' || coords.type === 'L',
-			`You can't use arcs in this funccion.`);
+		if (!['M', 'L', LongLineType.MERIDIAN, LongLineType.PARALLEL].includes(coords.type))
+			throw new Error(`You can't use '${coords.type}' segments in this funccion.`);
 
 	const [ф0, λ0] = coords0.args; // extract the input coordinates
 	const [ф1, λ1] = coords1.args;
