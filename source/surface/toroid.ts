@@ -5,7 +5,6 @@
 import {Tile, Surface, Vertex} from "./surface.js";
 import {Spheroid} from "./spheroid.js";
 import {Place} from "../utilities/coordinates.js";
-import {Vector} from "../utilities/geometry.js";
 
 
 /**
@@ -80,21 +79,6 @@ export class Toroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	ds_dф(ф: number): number {
-		const β = Math.atan(Math.tan(ф)*this.elongation);
-		const dβ_dф = this.elongation/(
-			Math.pow(Math.cos(ф), 2) +
-			Math.pow(this.elongation*Math.sin(ф), 2));
-		const ds_dβ = this.minorRadius*
-			Math.hypot(Math.sin(β), this.elongation*Math.cos(β));
-		return ds_dβ*dβ_dф;
-	}
-
-	ds_dλ(ф: number): number {
-		const β = Math.atan2(Math.sin(ф)*this.elongation, Math.cos(ф));
-		return this.majorRadius + this.minorRadius*Math.cos(β);
-	}
-
 	insolation(ф: number): number {
 		const β = Math.atan(Math.tan(ф)*this.elongation);
 		const incident = Spheroid.annualInsolationFunction(this.obliquity, ф);
@@ -125,27 +109,30 @@ export class Toroid extends Surface {
 		return {north: 0, east: Math.cos(ф)};
 	}
 
-	xyz(place: Place): Vector {
-		const β = Math.atan2(Math.sin(place.ф)*this.elongation, Math.cos(place.ф));
-		const r = this.majorRadius + this.minorRadius*Math.cos(β);
-		const z = this.elongation*this.minorRadius*Math.sin(β);
-		return new Vector(
-			r*Math.sin(place.λ), -r*Math.cos(place.λ), z);
+	ф(point: {r: number, z: number}): number {
+		const β = Math.atan2(point.z/this.elongation, point.r - this.majorRadius);
+		return Math.atan2(Math.sin(β)/this.elongation, Math.cos(β));
 	}
 
-	фλ(point: Vector): Place {
-		const r = Math.hypot(point.x, point.y);
-		const β = Math.atan2(point.z/this.elongation, r - this.majorRadius);
+	rz(ф: number): {r: number, z: number} {
+		const β = Math.atan2(Math.sin(ф)*this.elongation, Math.cos(ф));
 		return {
-			ф: Math.atan2(Math.sin(β)/this.elongation, Math.cos(β)),
-			λ: Math.atan2(point.x, -point.y)};
+			r: this.majorRadius + this.minorRadius*Math.cos(β),
+			z: this.elongation*this.minorRadius*Math.sin(β)};
 	}
 
-	normal(place: Place): Vector {
-		return new Vector(
-			Math.cos(place.ф)*Math.sin(place.λ),
-			-Math.cos(place.ф)*Math.cos(place.λ),
-			Math.sin(place.ф));
+	tangent(ф: number): {r: number, z: number} {
+		return {r: -Math.sin(ф), z: Math.cos(ф)};
+	}
+
+	ds_dф(ф: number): number {
+		const β = Math.atan(Math.tan(ф)*this.elongation);
+		const dβ_dф = this.elongation/(
+			Math.pow(Math.cos(ф), 2) +
+			Math.pow(this.elongation*Math.sin(ф), 2));
+		const ds_dβ = this.minorRadius*
+			Math.hypot(Math.sin(β), this.elongation*Math.cos(β));
+		return ds_dβ*dβ_dф;
 	}
 
 	distance(a: Place, b: Place): number {

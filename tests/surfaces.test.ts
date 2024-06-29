@@ -22,14 +22,6 @@ describe("Spheroid", () => {
 			expect(surface.ds_dф(Math.PI/2)).toBeCloseTo(111.699/(Math.PI/180), -2);
 		});
 	});
-	describe("ds_dλ()", () => {
-		test("equator", () => {
-			expect(surface.ds_dλ(0)).toBeCloseTo(radius, 3);
-		});
-		test("pole", () => {
-			expect(surface.ds_dλ(Math.PI/2)).toBeCloseTo(0, 3);
-		});
-	});
 	describe("фλ()", () => {
 		test("equator", () => {
 			expect(surface.фλ(new Vector(1, -Math.sqrt(3), 0))).toEqual(expect.objectContaining(
@@ -60,6 +52,16 @@ describe("Spheroid", () => {
 				{x: expect.closeTo(0, 6), y: expect.closeTo(0, 6), z: expect.closeTo(-1, 6)}));
 		});
 	});
+	test("consistency between rz() and tangent()", () => {
+		const ф = 1;
+		const dф = 1e-4;
+		const point0 = surface.rz(ф);
+		const point1 = surface.rz(ф + dф);
+		const ds = Math.hypot(point1.r - point0.r, point1.z - point0.z);
+		expect(surface.tangent(ф + dф/2)).toEqual({
+			r: expect.closeTo((point1.r - point0.r)/ds),
+			z: expect.closeTo((point1.z - point0.z)/ds)});
+	});
 	describe("insolation()", () => {
 		test("pole to equator", () => {
 			expect(surface.insolation(-Math.PI/2)/surface.insolation(0)).toBeCloseTo(.412, 1);
@@ -81,6 +83,11 @@ describe("Spheroid", () => {
 			expect(surface.hasSeasons(-24/180*Math.PI)).toBe(true);
 		});
 	});
+	test("cumulAreas", () => {
+		surface.initialize();
+		for (let i = 1; i < surface.cumulAreas.length; i ++)
+			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
+	});
 });
 
 describe("Toroid", () => {
@@ -96,14 +103,6 @@ describe("Toroid", () => {
 	test("elongation", () => {
 		expect(surface.elongation).toBeGreaterThan(0);
 		expect(surface.elongation).toBeLessThan(1);
-	});
-	describe("ds_dλ()", () => {
-		test("equator", () => {
-			expect(surface.ds_dλ(0)).toBeCloseTo(radius);
-		});
-		test("pole", () => {
-			expect(surface.ds_dλ(Math.PI/2)).toBeLessThan(radius);
-		});
 	});
 	describe("фλ()", () => {
 		test("outer equator", () => {
@@ -136,6 +135,16 @@ describe("Toroid", () => {
 				{x: expect.closeTo(0), y: expect.closeTo(0), z: expect.closeTo(-1)}));
 		});
 	});
+	test("consistency between rz() and tangent()", () => {
+		const ф = 1;
+		const dф = 1e-4;
+		const point0 = surface.rz(ф);
+		const point1 = surface.rz(ф + dф);
+		const ds = Math.hypot(point1.r - point0.r, point1.z - point0.z);
+		expect(surface.tangent(ф + dф/2)).toEqual({
+			r: expect.closeTo((point1.r - point0.r)/ds),
+			z: expect.closeTo((point1.z - point0.z)/ds)});
+	});
 	describe("insolation()", () => {
 		test("pole to equator", () => {
 			expect(surface.insolation(-Math.PI/2)/surface.insolation(0)).toBeCloseTo(.412, 1);
@@ -160,6 +169,11 @@ describe("Toroid", () => {
 			expect(surface.hasSeasons(-24/180*Math.PI)).toBe(true);
 		});
 	});
+	test("cumulAreas", () => {
+		surface.initialize();
+		for (let i = 1; i < surface.cumulAreas.length; i ++)
+			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
+	});
 });
 
 describe("Disc", () => {
@@ -172,14 +186,6 @@ describe("Disc", () => {
 		});
 		test("pole", () => {
 			expect(surface.ds_dф(Math.PI/2)).toBeCloseTo(firmamentHeight);
-		});
-	});
-	describe("ds_dλ()", () => {
-		test("Boston", () => {
-			expect(surface.ds_dλ(Math.PI/4)).toBeCloseTo(firmamentHeight);
-		});
-		test("pole", () => {
-			expect(surface.ds_dλ(Math.PI/2)).toBeCloseTo(0);
 		});
 	});
 	describe("фλ()", () => {
@@ -205,12 +211,22 @@ describe("Disc", () => {
 	describe("normal()", () => {
 		test("Boston", () => {
 			expect(surface.normal({ф: Math.PI/4, λ: Math.PI/6})).toEqual(expect.objectContaining(
-				{x: 0, y: 0, z: 1}));
+				{x: expect.closeTo(0), y: expect.closeTo(0), z: expect.closeTo(1)}));
 		});
 		test("pole", () => {
 			expect(surface.normal({ф: Math.PI/4, λ: Math.PI/6})).toEqual(expect.objectContaining(
-				{x: 0, y: 0, z: 1}));
+				{x: expect.closeTo(0), y: expect.closeTo(0), z: expect.closeTo(1)}));
 		});
+	});
+	test("consistency between rz() and tangent()", () => {
+		const ф = 1;
+		const dф = 1e-4;
+		const point0 = surface.rz(ф);
+		const point1 = surface.rz(ф + dф);
+		const ds = Math.hypot(point1.r - point0.r, point1.z - point0.z);
+		expect(surface.tangent(ф + dф/2)).toEqual({
+			r: expect.closeTo((point1.r - point0.r)/ds),
+			z: expect.closeTo((point1.z - point0.z)/ds)});
 	});
 	describe("isOnEdge()", () => {
 		test("edge", () => {
@@ -227,5 +243,10 @@ describe("Disc", () => {
 		test("southern temperates", () => {
 			expect(surface.hasSeasons(Math.atan(firmamentHeight/(.751*radius)))).toBe(true);
 		});
+	});
+	test("cumulAreas", () => {
+		surface.initialize();
+		for (let i = 1; i < surface.cumulAreas.length; i ++)
+			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
 	});
 });

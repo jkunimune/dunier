@@ -151,7 +151,7 @@ export class MapProjection {
 		if (!isFinite(this.yCenter))
 			return false;
 		for (let i = 0; i < this.фRef.length; i ++)
-			if (this.dx_dλRef[i] < Math.abs(this.yRef[i] - this.yCenter))
+			if (Math.abs(this.yRef[i] - this.yCenter) - this.dx_dλRef[i] > 1e-8*this.surface.height)
 				return false;
 		return true;
 	}
@@ -162,10 +162,13 @@ export class MapProjection {
 	 * permitted and will reverse all points about the origin such that θ = 0 is minimum y (the top of the circle)
 	 */
 	private convertPolarToCartesian(point: {r: number, θ: number}): Point {
-		return {
-			x: point.r*Math.sin(point.θ),
-			y: point.r*Math.cos(point.θ) + this.yCenter
-		};
+		if (Math.abs(point.θ) === Math.PI)
+			return {x: 0, y: -point.r + this.yCenter};
+		else
+			return {
+				x: point.r*Math.sin(point.θ),
+				y: point.r*Math.cos(point.θ) + this.yCenter
+			};
 	}
 
 	/**
@@ -210,13 +213,20 @@ export class MapProjection {
 	public static bonne(surface: Surface, фMin: number, фMax: number): MapProjection {
 		const фStd = MapProjection.chooseStandardParallel(фMin, фMax, surface);
 		const yStd = -linterp(фStd, surface.refLatitudes, surface.cumulDistances);
-		const yCenter = yStd + surface.ds_dλ(фStd)/surface.dds_dλdф(фStd);
+		let yCenter = yStd + surface.rz(фStd).r/surface.tangent(фStd).r;
 		const фRef = surface.refLatitudes; // do the necessary integrals
 		const yRef = []; // to get the y positions of the prime meridian
 		const dx_dλRef = []; // and the arc lengths corresponding to one radian
 		for (let i = 0; i < фRef.length; i ++) {
 			yRef.push(-surface.cumulDistances[i]);
-			dx_dλRef.push(surface.ds_dλ(фRef[i]));
+			dx_dλRef.push(surface.rz(фRef[i]).r);
+		}
+		// make sure the center is outside of the map area
+		if (yCenter < yRef[0] && yCenter > yRef[yRef.length - 1]) {
+			if (yCenter > yRef[Math.floor(yRef.length/2)])
+				yCenter = yRef[0];
+			else
+				yCenter = yRef[yRef.length - 1];
 		}
 		return new MapProjection(surface, фRef, yRef, dx_dλRef, yCenter);
 	}
@@ -233,18 +243,29 @@ export class MapProjection {
 		const фStd = MapProjection.chooseStandardParallel(фMin, фMax, surface);
 		// TODO: use the conformal conic projection instead; this will ensure radius never changes sign for toroidal planets, and will produce the Mercator projection for whole-world maps.
 		const yStd = -linterp(фStd, surface.refLatitudes, surface.cumulDistances);
-		const yCenter = yStd + surface.ds_dλ(фStd)/surface.dds_dλdф(фStd);
+		let yCenter = yStd + surface.rz(фStd).r/surface.tangent(фStd).r;
 		const фRef = surface.refLatitudes; // do the necessary integrals
 		const yRef = []; // to get the y positions of the prime meridian
 		const dx_dλRef = []; // and the arc lengths corresponding to one radian
 		for (let i = 0; i < фRef.length; i ++) {
 			yRef.push(-surface.cumulDistances[i]);
+		}
+		// make sure the center is outside of the map area
+		if (yCenter < yRef[0] && yCenter > yRef[yRef.length - 1]) {
+			if (yCenter > yRef[Math.floor(yRef.length/2)])
+				yCenter = yRef[0];
+			else
+				yCenter = yRef[yRef.length - 1];
+		}
+		for (let i = 0; i < фRef.length; i ++) {
 			if (!isFinite(yCenter)) // cylindrical projection
-				dx_dλRef.push(surface.ds_dλ(фStd));
-			else if (Math.abs(yStd - yCenter) > 1e-8*surface.height) // generic conic projection
-				dx_dλRef.push(surface.ds_dλ(фStd)/(yCenter - yStd)*(yCenter - yRef[i]));
-			else // azimuthal projection
+				dx_dλRef.push(surface.rz(фStd).r);
+			else if (Math.abs(yCenter - yRef[0]) < 1e-8*surface.height) // azimuthal projection (south pole)
 				dx_dλRef.push(yCenter - yRef[i]);
+			else if (Math.abs(yCenter - yRef[yRef.length - 1]) < 1e-8*surface.height) // azimuthal projection (north pole)
+				dx_dλRef.push(yRef[i] - yCenter);
+			else // generic conic projection
+				dx_dλRef.push(surface.rz(фStd).r/(yCenter - yStd)*(yCenter - yRef[i]));
 		}
 		return new MapProjection(surface, фRef, yRef, dx_dλRef, yCenter);
 	}
@@ -254,8 +275,8 @@ export class MapProjection {
 	 */
 	private static chooseStandardParallel(фMin: number, фMax: number, surface: Surface): number {
 		// first calculate the minimum and maximum latitudes of the region
-		const minWeit = 1/Math.sqrt(surface.ds_dλ(фMin));
-		const maxWeit = 1/Math.sqrt(surface.ds_dλ(фMax));
+		const minWeit = 1/Math.sqrt(surface.rz(фMin).r);
+		const maxWeit = 1/Math.sqrt(surface.rz(фMax).r);
 		if (Number.isFinite(minWeit)) { // choose a standard parallel
 			if (Number.isFinite(maxWeit))
 				return (фMin*minWeit + фMax*maxWeit)/(minWeit + maxWeit);
@@ -284,8 +305,8 @@ export class MapProjection {
 		let weitSum = 0;
 		for (let i = 0; i <= 16; i ++) { // first measure the typical width of the surface in the latitude bounds
 			const ф = фMin + (фMax - фMin)*i/16;
-			const weit = surface.ds_dф(ф)*surface.ds_dλ(ф)*2*Math.PI*(фMax - фMin)/16;
-			ds_dλSum += surface.ds_dλ(ф)*weit;
+			const weit = 2*Math.PI*surface.rz(ф).r*surface.ds_dф(ф)*(фMax - фMin)/16;
+			ds_dλSum += surface.rz(ф).r*weit;
 			weitSum += weit;
 		}
 		const ds_dλAvg = ds_dλSum/weitSum;
@@ -294,7 +315,7 @@ export class MapProjection {
 		const xRef = [];
 		const yRef = [0];
 		for (let i = 0; i < фRef.length; i ++) { // then set the widths
-			xRef.push(MapProjection.equalEarthShapeFunction(surface.ds_dλ(фRef[i])/ds_dλAvg)*ds_dλAvg);
+			xRef.push(MapProjection.equalEarthShapeFunction(surface.rz(фRef[i]).r/ds_dλAvg)*ds_dλAvg);
 			if (i > 0) { // and integrate the y values so that everything stays equal-area
 				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
 				yRef.push(yRef[i-1] - verAre / (2*Math.PI*(xRef[i-1] + xRef[i])/2));

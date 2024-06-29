@@ -50,23 +50,21 @@ export abstract class Surface {
 	 * do the general constructor stuff that has to be done after the subclass constructor
 	 */
 	initialize(): void {
-		this.refLatitudes = []; // fill in latitude-integrated values
-		this.cumulAreas = []; // for use in map projections
-		this.cumulDistances = [];
-		let ф = this.фMin, A = 0, s = 0;
+		this.refLatitudes = [this.фMin]; // fill in latitude-integrated values
+		this.cumulAreas = [0]; // for use in map projections
+		this.cumulDistances = [0];
 		const dф = (this.фMax - this.фMin)/INTEGRATION_RESOLUTION;
 		const dλ = 2*Math.PI;
-		for (let i = 0; i <= INTEGRATION_RESOLUTION; i ++) {
-			this.refLatitudes.push(ф);
-			this.cumulAreas.push(A);
-			this.cumulDistances.push(s);
-			const ds_dф = this.ds_dф(ф + dф/2); // a simple middle Riemann sum will do
-			const ds_dλ = this.ds_dλ(ф + dф/2);
-			ф += dф;
-			A += ds_dλ*dλ*ds_dф*dф;
-			s += ds_dф*dф;
+		for (let i = 1; i <= INTEGRATION_RESOLUTION; i ++) {
+			this.refLatitudes.push(this.фMin + (this.фMax - this.фMin)*i/INTEGRATION_RESOLUTION);
+			const ф = (this.refLatitudes[i] + this.refLatitudes[i - 1])/2;
+			const ds_dф = this.ds_dф(ф); // a simple middle Riemann sum will do
+			const ds_dλ = this.rz(ф).r;
+			const ΔArea = ds_dλ*dλ*ds_dф*dф;
+			const ΔDistance = ds_dф*dф;
+			this.cumulAreas.push(this.cumulAreas[i - 1] + ΔArea);
+			this.cumulDistances.push(this.cumulDistances[i - 1] + ΔDistance);
 		}
-		this.refLatitudes[INTEGRATION_RESOLUTION] = this.фMax; // fix the inevitable roundoff here
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION]; // and record the totals as their own instance variables
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
@@ -230,15 +228,32 @@ export abstract class Surface {
 	}
 
 	/**
-	 * the latitude derivative of ds_dλ
-	 * @param ф
+	 * return the 2D parameterization corresponding to the given cartesian coordinates
 	 */
-	dds_dλdф(ф: number): number {
-		let фL = ф - 1e-2, фR = ф + 1e-2;
-		if (фL < this.фMin) фL = this.фMin;
-		if (фR > this.фMax) фR = this.фMax;
-		return (this.ds_dλ(фR) - this.ds_dλ(фL))/
-			(this.ds_dф(ф) * (фR - фL));
+	фλ(point: {x: number, y: number, z: number}): Place {
+		return {
+			ф: this.ф({r: Math.hypot(point.x, point.y), z: point.z}),
+			λ: Math.atan2(point.x, -point.y)};
+	}
+
+	/**
+	 * return the 3D cartesian coordinate vector corresponding to the given parameters
+	 */
+	xyz(place: Place): Vector {
+		const {r, z} = this.rz(place.ф);
+		return new Vector(r*Math.sin(place.λ), -r*Math.cos(place.λ), z);
+	}
+
+	/**
+	 * return the normalized vector pointing outward at this location. the location may be assumed
+	 * to be on this Surface.
+	 */
+	normal(place: Place): Vector {
+		const tangent = this.tangent(place.ф);
+		return new Vector(
+			tangent.z*Math.sin(place.λ),
+			-tangent.z*Math.cos(place.λ),
+			-tangent.r);
 	}
 
 	/**
@@ -247,22 +262,13 @@ export abstract class Surface {
 	computeEdgeVertexLocation(_tileL: Tile, _tileR: Tile): {pos: Vector, coordinates: Place} {
 		throw new Error("this surface doesn't have an edge.");
 	}
+
 	/**
 	 * return a list of Delaunay nodes along with an associated list of triangles that
 	 * completely cover this Surface. The mesh must never diverge from the surface farther
 	 * than the radius of curvature.
 	 */
 	abstract partition(): {nodos: Tile[], triangles: Vertex[]};
-
-	/**
-	 * return the local length-to-latitude rate [km/rad]
-	 */
-	abstract ds_dф(ф: number): number;
-
-	/**
-	 * return the local length-to-longitude rate [km/rad]
-	 */
-	abstract ds_dλ(ф: number): number;
 
 	/**
 	 * return the amount of solar radiation at a latitude, normalized to average to 1.
@@ -285,20 +291,24 @@ export abstract class Surface {
 	abstract windVelocity(ф: number): {north: number, east: number};
 
 	/**
-	 * return the 3D cartesian coordinate vector corresponding to the given parameters
+	 * return the parametric latitude corresponding to the given cylindrical coordinates
 	 */
-	abstract xyz(place: Place): Vector;
+	abstract ф(point: {r: number, z: number}): number;
 
 	/**
-	 * return the 2D parameterization corresponding to the given parameters
+	 * return the 2D cylindrical coordinate vector corresponding to the given parameters
 	 */
-	abstract фλ(point: {x: number, y: number, z: number}): Place;
+	abstract rz(ф: number): {r: number, z: number};
 
 	/**
-	 * return the normalized vector pointing outward at this location. the location may be assumed
-	 * to be on this Surface.
+	 * return the local cylindrical gradient (that is, dr/ds and dz/ds)
 	 */
-	abstract normal(tile: Tile): Vector;
+	abstract tangent(ф: number): {r: number, z: number};
+
+	/**
+	 * return the local length-to-latitude rate [km/rad]
+	 */
+	abstract ds_dф(ф: number): number;
 
 	/**
 	 * orthodromic distance from A to B on the surface (it's okay if it's just

@@ -36,16 +36,12 @@ export class Sphere extends Spheroid {
 		return {north: -Math.cos(ф), east: 0};
 	}
 
-	xyz(place: Place): Vector {
+	xyz(place: Place): Vector { // rotate the surface in 3-space so the planet plot is more intuitive
 		const {x, y, z} = super.xyz(place);
 		return new Vector(x, z, -y);
 	}
 
 	фλ(point: Vector): Place {
 		return super.фλ(new Vector(point.x, -point.z, point.y));
-	}
-
-	normal(tile: Tile | Vertex): Vector {
-		return tile.pos.over(this.radius);
 	}
 }

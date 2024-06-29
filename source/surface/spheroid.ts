@@ -90,25 +90,6 @@ export class Spheroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	ds_dф(ф: number): number {
-		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
-		const dβ_dф = this.aspectRatio/(
-			Math.pow(Math.sin(ф), 2) +
-			Math.pow(this.aspectRatio*Math.cos(ф), 2));
-		const ds_dβ = this.radius*
-			Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(β), 2));
-		return ds_dβ*dβ_dф;
-	}
-
-	ds_dλ(ф: number): number {
-		if (Math.abs(ф) === Math.PI/2)
-			return 0;
-		else {
-			const β = Math.atan(Math.tan(ф)/this.aspectRatio);
-			return this.radius*Math.cos(β);
-		}
-	}
-
 	insolation(ф: number): number {
 		return Spheroid.annualInsolationFunction(this.obliquity, ф);
 	}
@@ -125,25 +106,37 @@ export class Spheroid extends Surface {
 		return {north: 0, east: Math.cos(ф)}; // realistically this should change direccion, but this formula makes rain shadows more apparent
 	}
 
-	xyz(place: Place): Vector {
-		const β = Math.atan(Math.tan(place.ф)/this.aspectRatio);
-		return new Vector(
-			this.radius*Math.cos(β)*Math.sin(place.λ),
-			-this.radius*Math.cos(β)*Math.cos(place.λ),
-			this.radius*Math.sin(β)/this.aspectRatio);
+	ф(point: {r: number, z: number}): number {
+		const β = Math.atan2(this.aspectRatio*point.z, point.r);
+		return Math.atan(Math.tan(β)*this.aspectRatio);
 	}
 
-	фλ(point: Vector): Place {
-		const β = Math.atan2(this.aspectRatio*point.z, Math.hypot(point.x, point.y));
-		const λ = Math.atan2(point.x, -point.y);
-		return {ф: Math.atan(Math.tan(β)*this.aspectRatio), λ: λ};
+	rz(ф: number): {r: number, z: number} {
+		if (Math.abs(ф) === Math.PI/2) {
+			return {
+				r: 0,
+				z: this.radius*Math.sign(ф)/this.aspectRatio};
+		}
+		else {
+			const β = Math.atan(Math.tan(ф)/this.aspectRatio);
+			return {
+				r: this.radius*Math.cos(β),
+				z: this.radius*Math.sin(β)/this.aspectRatio};
+		}
 	}
 
-	normal(place: Place): Vector {
-		return new Vector(
-			Math.cos(place.ф)*Math.sin(place.λ),
-			-Math.cos(place.ф)*Math.cos(place.λ),
-			Math.sin(place.ф));
+	tangent(ф: number): {r: number, z: number} {
+		return {r: -Math.sin(ф), z: Math.cos(ф)};
+	}
+
+	ds_dф(ф: number): number {
+		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
+		const dβ_dф = this.aspectRatio/(
+			Math.pow(Math.sin(ф), 2) +
+			Math.pow(this.aspectRatio*Math.cos(ф), 2));
+		const ds_dβ = this.radius*
+			Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(β), 2));
+		return ds_dβ*dβ_dф;
 	}
 
 	distance(a: Place, b: Place): number { // TODO: check

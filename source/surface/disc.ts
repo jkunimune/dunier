@@ -31,6 +31,22 @@ export class Disc extends Surface {
 		this.effectiveObliquity = effectiveObliquity;
 	}
 
+	initialize(): void {
+		super.initialize();
+		// it's really important for Disc that map projections use the correct meridian lengths,
+		// so recalculate all these things directly instead of the fairly imprecise integral
+		const n = this.refLatitudes.length;
+		this.height = this.radius;
+		this.area = Math.PI*this.radius*this.radius;
+		for (let i = 0; i < n - 1; i ++) {
+			const r = this.rz(this.refLatitudes[i]).r;
+			this.cumulDistances[i] = this.radius - r;
+			this.cumulAreas[i] = this.area - Math.PI*r*r;
+		}
+		this.cumulDistances[n - 1] = this.height;
+		this.cumulAreas[n - 1] = this.area;
+	}
+
 	partition(): {triangles: Vertex[], nodos: Tile[]} {
 		const nodos = [
 			new Tile(null, {ф: Math.atan(1/8), λ: 0}, this),
@@ -45,17 +61,6 @@ export class Disc extends Surface {
 		];
 
 		return {triangles: triangles, nodos: nodos};
-	}
-
-	ds_dф(ф: number): number {
-		return this.firmamentHite*Math.pow(Math.sin(ф), -2);
-	}
-
-	ds_dλ(ф: number): number {
-		if (ф === Math.PI/2)
-			return 0;
-		else
-			return this.firmamentHite/Math.tan(ф);
 	}
 
 	insolation(ф: number): number {
@@ -81,19 +86,23 @@ export class Disc extends Surface {
 		return {north: Math.sin(2*ф), east: 0};
 	}
 
-	xyz(place: Place): Vector {
-		const r = this.firmamentHite/Math.tan(place.ф);
-		return new Vector(r*Math.sin(place.λ), -r*Math.cos(place.λ), 0);
+	ф(point: {r: number, z: number}): number {
+		return Math.atan(this.firmamentHite/point.r);
 	}
 
-	фλ(point: Vector): Place {
-		return {
-			ф: Math.atan(this.firmamentHite/Math.hypot(point.x, point.y)),
-			λ: Math.atan2(point.x, -point.y)};
+	rz(ф: number): {r: number, z: number} {
+		if (ф === Math.PI/2)
+			return {r: 0, z: 0};
+		else
+			return {r: this.firmamentHite/Math.tan(ф), z: 0};
 	}
 
-	normal(_: Place | Vertex): Vector {
-		return new Vector(0, 0, 1);
+	tangent(_: number): {r: number, z: number} {
+		return {r: -1, z: 0};
+	}
+
+	ds_dф(ф: number): number {
+		return this.firmamentHite*Math.pow(Math.sin(ф), -2);
 	}
 
 	distance(a: Place, b: Place): number {
