@@ -209,7 +209,7 @@ function movePlates(surf: Surface, rng: Random): void {
 		let minDistance = Infinity;
 		for (const neighbor of tile.neighbors.keys()) { // look for adjacent tiles
 			if (neighbor.plateIndex !== tile.plateIndex) { // that are on different plates
-				const distance = tile.neighbors.get(neighbor).distance;
+				const distance = tile.neighbors.get(neighbor).getDistance();
 				if (fault === null || distance < minDistance) {
 					fault = neighbor;
 					minDistance = distance;
@@ -318,7 +318,7 @@ function movePlates(surf: Surface, rng: Random): void {
 				if (neighbor.plateIndex === tile.plateIndex)
 					queue.push({
 						tile: neighbor,
-						distance: distance + tile.neighbors.get(neighbor).distance,
+						distance: distance + tile.neighbors.get(neighbor).getDistance(),
 						width: width, speed: speed, type: type
 					});
 		}
@@ -407,7 +407,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 		tile.rainfall += moisture;
 		for (const downwind of tile.downwind) {
 			if (downwind.biome !== Biome.OCEAN && downwind.height <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
-				const distance: number = tile.neighbors.get(downwind).distance;
+				const distance: number = tile.neighbors.get(downwind).getDistance();
 				queue.push({
 					tile: downwind,
 					moisture: moisture*Math.exp(-distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
@@ -604,9 +604,9 @@ function setBiomes(surf: Surface): void {
 			for (const neighbor of tile.neighbors.keys()) { // increase habitability based on adjacent water
 				const edge = tile.neighbors.get(neighbor);
 				if (neighbor.biome === Biome.LAKE || edge.flow > RIVER_UTILITY_THRESHOLD)
-					tile.arableArea += FRESHWATER_UTILITY*edge.length;
+					tile.arableArea += FRESHWATER_UTILITY*edge.getLength();
 				if (neighbor.biome === Biome.OCEAN)
-					tile.arableArea += SALTWATER_UTILITY*edge.length;
+					tile.arableArea += SALTWATER_UTILITY*edge.getLength();
 			}
 		}
 		tile.passability = PASSABILITY.get(tile.biome);

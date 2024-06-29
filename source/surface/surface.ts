@@ -521,7 +521,7 @@ export class Vertex {
 				if (tileR.neighbors.has(tileL)) { // if so,
 					this.edges[i] = tileR.neighbors.get(tileL); // take that edge
 					if (this.edges[i].tileL === tileL) // and depending on its direction,
-						this.edges[i].vertex0 = this; // replace one of the Vertexes on it with this
+						throw new Error("vertex 0 should already be set to the vertex on the other side."); // replace one of the Vertexes on it with this
 					else
 						this.edges[i].vertex1 = this;
 				} else { // if not,
@@ -564,23 +564,23 @@ export class Vertex {
  * A line between two connected Vertexes, separating two adjacent Tiles
  */
 export class Edge {
-	public tileL: Tile;
-	public tileR: Tile;
+	public readonly tileL: Tile;
+	public readonly tileR: Tile;
 	public vertex1: Vertex;
-	public vertex0: Vertex;
-	public distance: number; // distance between the centers of the Tiles this separates
-	public length: number; // distance between the Vertices this connects
+	public readonly vertex0: Vertex;
+
 	public flow: number;
+
+	private readonly distance: number; // distance between the centers of the Tiles this separates
+	private length: number; // distance between the Vertices this connects
 	public rightBoundCartesian: Vector[]; // these borders are the limits of the greebling
 	public leftBoundCartesian: Vector[];
-
-	public bounds: Point[];
-	private readonly rng: Random; // this Random number generator is used exclusively for greebling
+	private bounds: Point[];
 	private currentResolution: number; // this number keeps of track of how much greebling we have resolved so far
+	private readonly rng: Random; // this Random number generator is used exclusively for greebling
 	private readonly paths: {resolution: number, points: Place[]}[]; // this path can be resolved at a variety of scales
 	private finestPathPointsInEdgeCoords: Point[];
 
-	private origin: Vector; // the (0, 0) point of this edge's coordinate system
 	private i: Vector; // the s unit-vector of this edge's coordinate system
 	private j: Vector; // the t unit-vector of this edge's coordinate system
 
@@ -600,7 +600,6 @@ export class Edge {
 		this.leftBoundCartesian = null;
 		this.bounds = null;
 		this.length = null;
-		this.origin = null;
 		this.i = null;
 		this.j = null;
 
@@ -628,9 +627,9 @@ export class Edge {
 		if (this.paths.length === 0) {
 			if (this.vertex0 === null || this.vertex1 === null)
 				throw new Error(`I cannot currently greeble paths that are on the edge of the map.`);
-			this.paths.push({resolution: this.length, points: [this.vertex0, this.vertex1]});
-			this.finestPathPointsInEdgeCoords = [{x: 0, y: 0}, {x: this.length, y: 0}];
-			this.currentResolution = this.length;
+			this.paths.push({resolution: this.getLength(), points: [this.vertex0, this.vertex1]});
+			this.finestPathPointsInEdgeCoords = [{x: 0, y: 0}, {x: this.getLength(), y: 0}];
+			this.currentResolution = this.getLength();
 		}
 
 		// resolve the edge if you haven't already
@@ -661,17 +660,31 @@ export class Edge {
 			return this.paths[pathIndex].points;
 	}
 
+	/** distance between the Vertices this connects */
+	getLength(): number {
+		if (this.length === null)
+			this.length = Math.sqrt(this.vertex0.pos.minus(this.vertex1.pos).sqr());
+		return this.length;
+	}
+
+	/** distance between the centers of the Tiles this separates */
+	getDistance(): number {
+		return this.distance;
+	}
+
+	/** the (0, 0) point of this edge's coordinate system */
+	origin(): Vector {
+		return this.vertex0.pos;
+	}
+
 	/**
 	 * do some setup stuff that only has to be done once, but has to be done after rightBound and leftBound have been set.
 	 * after this function executes, this.origin, this.i, this.j, and this.bounds will all be established, and you may
 	 * use toEdgeCoords and fromEdgeCoords.
 	 */
 	setCoordinatesAndBounds(): void {
-		// compute its length
-		this.length = Math.sqrt(this.vertex0.pos.minus(this.vertex1.pos).sqr());
 		// compute its coordinate system
-		this.origin = this.vertex0.pos;
-		const i = this.vertex1.pos.minus(this.origin).over(this.length);
+		const i = this.vertex1.pos.minus(this.origin()).over(this.getLength());
 		const k = this.tileL.normal.plus(this.tileR.normal);
 		let j = k.cross(i);
 		j = j.over(Math.sqrt(j.sqr())); // make sure |i| == |j| == 1
@@ -684,19 +697,19 @@ export class Edge {
 		const leftBound = this.leftBoundCartesian.map(this.toEdgeCoords, this);
 		const rightBound = this.rightBoundCartesian.map(this.toEdgeCoords, this);
 		// concatenate them to form a complete bounding polygon
-		this.bounds = [{x: 0., y: 0.}].concat(leftBound, [{x: this.length, y: 0.}], rightBound);
+		this.bounds = [{x: 0., y: 0.}].concat(leftBound, [{x: this.getLength(), y: 0.}], rightBound);
 	}
 
 	/**
 	 * transform a point from the global 3D coordinates into this edge's 2D coordinates, where
-	 * x increases [0, this.length] from vertex0 to vertex1, and y points perpendicularly across from right to left
+	 * x increases [0, this.getLength()] from vertex0 to vertex1, and y points perpendicularly across from right to left
 	 */
 	toEdgeCoords(point: Vector): Point {
-		if (this.origin === null)
+		if (this.i === null)
 			throw new Error(`the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`);
 		return {
-			x: point.minus(this.origin).dot(this.i)/this.i.sqr(),
-			y: point.minus(this.origin).dot(this.j)/this.j.sqr(),
+			x: point.minus(this.origin()).dot(this.i)/this.i.sqr(),
+			y: point.minus(this.origin()).dot(this.j)/this.j.sqr(),
 		};
 	}
 
@@ -704,9 +717,9 @@ export class Edge {
 	 * transform a point from this edge's 2D coordinates to the global 3D coordinates.
 	 */
 	fromEdgeCoords(point: Point): Vector {
-		if (this.origin === null)
+		if (this.i === null)
 			throw new Error(`the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`);
-		return this.origin.plus(this.i.times(point.x).plus(this.j.times(point.y)));
+		return this.origin().plus(this.i.times(point.x).plus(this.j.times(point.y)));
 	}
 
 	toString(): string {
