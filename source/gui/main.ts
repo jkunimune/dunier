@@ -5,8 +5,8 @@
 import "../libraries/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import {DOM} from "./dom.js";
 import {format} from "./internationalization.js";
-import {generateTerrain} from "../generation/terrain.js";
-import {Surface} from "../surface/surface.js";
+import {Biome, generateTerrain} from "../generation/terrain.js";
+import {Surface, Tile} from "../surface/surface.js";
 import {World} from "../generation/world.js";
 import {Random} from "../utilities/random.js";
 import {Chart} from "../map/chart.js";
@@ -61,6 +61,8 @@ let planetRendered = false;
 let inProgress: boolean = false; // TODO; I can't remember why this is here; if I click forward in the tabs while it's loading, does everything update?
 /** the planet on which the map is defined */
 let surface: Surface = null;
+/** the list of continents with at least some land */
+let continents: Set<Tile>[] = null;
 /** the human world on that planet */
 let world: World = null;
 /** the list of countries on the current map */
@@ -218,7 +220,7 @@ function applyTerrain(): void {
 	console.log("grafa...");
 	const mapper = new Chart(
 		MapProjection.equalEarth(surface, surface.фMin, surface.фMax),
-		true, Chart.bounds(surface), false);
+		true, Chart.border(surface.tiles, surface, false), false);
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
@@ -230,6 +232,19 @@ function applyTerrain(): void {
 	              false,
 	              false,
 	              false);
+
+	// save the continents in an easily accessible form
+	continents = [];
+	for (const tile of surface.tiles) {
+		if (tile.biome === Biome.OCEAN)
+			continue;
+		while (continents.length <= tile.plateIndex)
+			continents.push(new Set());
+		continents[tile.plateIndex].add(tile);
+	}
+	continents = continents.filter((tiles) => tiles.size > MIN_SIZE_TO_LIST);
+	continents = continents.sort((tilesA, tilesB) => tilesB.size - tilesA.size);
+	continents = continents.slice(0, Number(DOM.val('terrain-continents')));
 
 	console.log("fina!");
 	lastUpdated = Layer.TERRAIN;
@@ -255,7 +270,7 @@ function applyHistory(): void {
 	console.log("grafa...");
 	const mapper = new Chart(
 		MapProjection.equalEarth(surface, surface.фMin, surface.фMax),
-		true, Chart.bounds(surface), false);
+		true, Chart.border(surface.tiles, surface, false), false);
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
@@ -268,16 +283,28 @@ function applyHistory(): void {
 	              false,
 	              false);
 
+	// now set up the "focus" options for the map tab:
 	console.log("mute ba chuze bil...");
-	const countries = world.getCivs(true, MIN_SIZE_TO_LIST, MIN_COUNTRIES_TO_LIST) // list the biggest countries for the centering selection
-		.slice(0, MAX_COUNTRIES_TO_LIST); // TODO: if there are no countries, use fisickall rejons instead
 	const picker = document.getElementById('map-jung');
 	picker.textContent = "";
-	for (let i = 0; i < countries.length; i ++) {
-		const country = countries[i];
+	// show the whole world
+	const option = document.createElement('option');
+	option.setAttribute('value', 'world');
+	option.textContent = format("parameter.map.focus.whole_world");
+	picker.appendChild(option);
+	// show a single continent
+	for (let i = 0; i < continents.length; i ++) {
 		const option = document.createElement('option');
 		option.selected = (i === 0);
-		option.setAttribute('value', country.id.toString());
+		option.setAttribute('value', `continent${i}`);
+		option.textContent = format("parameter.map.focus.continent", i + 1);
+		picker.appendChild(option);
+	}
+	// or show a single country
+	const countries = world.getCivs(true, MIN_SIZE_TO_LIST, MIN_COUNTRIES_TO_LIST); // list the biggest countries for the centering selection
+	for (const country of countries.slice(0, MAX_COUNTRIES_TO_LIST)) {
+		const option = document.createElement('option');
+		option.setAttribute('value', `country${country.id}`);
 		option.textContent = country.getName().toString();
 		picker.appendChild(option);
 	}
@@ -297,7 +324,15 @@ function applyMap(): void {
 	console.log("grafa zemgrafe...");
 	const projectionName = DOM.val('map-projection');
 	const northUp = (DOM.val('map-orientation') === 'north');
-	const focus = Chart.border(world.getCiv(Number.parseInt(DOM.val('map-jung'))));
+	const focusSpecifier = DOM.val('map-jung');
+	let focus;
+	if (focusSpecifier === "world")
+		focus = Chart.border(surface.tiles, surface, false);
+	else if (focusSpecifier.startsWith("continent"))
+		focus = Chart.border(continents[Number.parseInt(focusSpecifier.slice(9))], surface, true);
+	else if (focusSpecifier.startsWith("country"))
+		focus = Chart.border(world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tiles, surface, true);
+
 	const {sMin: фMin, sMax: фMax} = Chart.calculatePathBounds(focus);
 
 	let projection: MapProjection;

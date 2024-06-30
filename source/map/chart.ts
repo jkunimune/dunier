@@ -806,34 +806,36 @@ export class Chart {
 
 	/**
 	 * create an ordered Iterator of segments that form the border of this civ
-	 * @param civ the Civ whose outline is desired
+	 * @param tiles the tiles that comprise the region whose outline is desired
+	 * @param surface the Surface on which the tiles exist (solely to tell at a glance whether all tiles are included)
+	 * @param excludeOcean whether to only outline the ocean
 	 */
-	static border(civ: Civ): PathSegment[] {
-		const landNodos = filterSet(civ.tiles, (n) => n.biome !== Biome.OCEAN);
-		return this.convertToGreebledPath(Chart.outline(landNodos), Layer.KULTUR, 1e-6);
-	}
+	static border(tiles: Iterable<Tile>, surface: Surface, excludeOcean=false): PathSegment[] {
+		if (excludeOcean)
+			tiles = filterSet(tiles, (n) => n.biome !== Biome.OCEAN);
+		const tileSet = new Set(tiles);
 
-	/**
-	 * create an ordered Iterator of segments that form the boundary of this Surface.
-	 * @return Array of PathSegments, ordered widdershins.
-	 */
-	static bounds(surface: Surface): PathSegment[] {
-		// it's just a rectangle, but it needs a bunch of extra points to avoid ambiguity about directions
-		return [
-			{type: 'M', args: [surface.фMin, -Math.PI]},
-			{type: LongLineType.PARALLEL, args: [surface.фMin, -Math.PI/3]},
-			{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI/3]},
-			{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI]}, // TODO: I don't think I really need all these
-			{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, Math.PI]},
-			{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, Math.PI]},
-			{type: LongLineType.MERIDIAN, args: [surface.фMax, Math.PI]},
-			{type: LongLineType.PARALLEL, args: [surface.фMax, Math.PI/3]},
-			{type: LongLineType.PARALLEL, args: [surface.фMax, -Math.PI/3]},
-			{type: LongLineType.PARALLEL, args: [surface.фMax, -Math.PI]},
-			{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, -Math.PI]},
-			{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, -Math.PI]},
-			{type: LongLineType.MERIDIAN, args: [surface.фMin, -Math.PI]},
-		];
+		if (tileSet.size === 0) // if no tiles are provided
+			return [];
+		else if (tileSet.size < surface.tiles.size) // if some but not all tiles are provided
+			return this.convertToGreebledPath(Chart.outline(tileSet), Layer.KULTUR, 1e-6);
+		else { // if the entire Surface is included in this set of tiles
+			return [ // build a rectangle (include a bunch of extra points to avoid ambiguity about directions)
+				{type: 'M', args: [surface.фMin, -Math.PI]},
+				{type: LongLineType.PARALLEL, args: [surface.фMin, -Math.PI/3]},
+				{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI/3]},
+				{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI]}, // TODO: I don't think I really need all these
+				{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, Math.PI]},
+				{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, Math.PI]},
+				{type: LongLineType.MERIDIAN, args: [surface.фMax, Math.PI]},
+				{type: LongLineType.PARALLEL, args: [surface.фMax, Math.PI/3]},
+				{type: LongLineType.PARALLEL, args: [surface.фMax, -Math.PI/3]},
+				{type: LongLineType.PARALLEL, args: [surface.фMax, -Math.PI]},
+				{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, -Math.PI]},
+				{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, -Math.PI]},
+				{type: LongLineType.MERIDIAN, args: [surface.фMin, -Math.PI]},
+			];
+		}
 	}
 
 	/**
@@ -1113,10 +1115,10 @@ export class Chart {
 			// and calculate the maximum extent of the projected region to get the Cartesian bounds
 			const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
 			const regionBounds = Chart.calculatePathBounds(projectedRegion);
-			xLeft = 1.4*regionBounds.sMin - 0.4*regionBounds.sMax;
-			xRight = 1.4*regionBounds.sMax - 0.4*regionBounds.sMin;
-			yTop = 1.4*regionBounds.tMin - 0.4*regionBounds.tMax;
-			yBottom = 1.4*regionBounds.tMax - 0.4*regionBounds.tMin;
+			xLeft = 1.1*regionBounds.sMin - 0.1*regionBounds.sMax;
+			xRight = 1.1*regionBounds.sMax - 0.1*regionBounds.sMin;
+			yTop = 1.1*regionBounds.tMin - 0.1*regionBounds.tMax;
+			yBottom = 1.1*regionBounds.tMax - 0.1*regionBounds.tMin;
 		}
 		// if we want a wedge-shaped map
 		else {
@@ -1127,8 +1129,8 @@ export class Chart {
 			const sMin = linterp(regionBounds.sMin, фRef, sRef); // TODO use projection here
 			const sMax = linterp(regionBounds.sMax, фRef, sRef);
 			// spread the limits out a bit to give a contextual view
-			фMax = linterp(Math.min(1.4*sMax - 0.4*sMin, sRef[sRef.length - 1]), sRef, фRef); // TODO use inverse projection here
-			фMin = linterp(Math.max(1.4*sMin - 0.4*sMax, sRef[0]), sRef, фRef);
+			фMax = linterp(Math.min(1.1*sMax - 0.1*sMin, sRef[sRef.length - 1]), sRef, фRef); // TODO use inverse projection here
+			фMin = linterp(Math.max(1.1*sMin - 0.1*sMax, sRef[0]), sRef, фRef);
 			const ds_dλ = projection.surface.rz((фMin + фMax)/2).r;
 			λMax = Math.min(Math.PI, regionBounds.tMax + 0.4*(sMax - sMin)/ds_dλ);
 			// and don't apply any Cartesian bounds

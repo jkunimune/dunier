@@ -6,6 +6,7 @@ import {Chart} from "../source/map/chart.js";
 import {LongLineType} from "../source/utilities/coordinates.js";
 import {Sphere} from "../source/surface/sphere.js";
 import {MapProjection} from "../source/map/projection.js";
+import {Random} from "../source/utilities/random.js";
 
 describe("chooseCentralMeridian", () => {
 	test("front hemisphere", () => {
@@ -101,13 +102,14 @@ describe("calculatePathBounds", () => {
 	});
 });
 
-describe("setting edges in the constructor", () => {
+describe("all together", () => {
 	const globe = new Sphere(1);
 	globe.initialize();
+	globe.populateWith(globe.randomlySubdivide(new Random(0)));
 	test("full world Equal Earth", () => {
 		const chart = new Chart(
 			MapProjection.equalEarth(globe, -Math.PI/2, Math.PI/2),
-			true, Chart.bounds(globe), true);
+			true, Chart.border(globe.tiles, globe, false), true);
 		expect(chart.dimensions).toEqual(expect.objectContaining({
 			left: expect.closeTo(-2.7893), right: expect.closeTo(2.7893),
 			bottom: 0, top: expect.closeTo(-2.5788),
