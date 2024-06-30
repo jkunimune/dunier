@@ -14,26 +14,32 @@ export interface PathSegment {
 }
 
 /**
- * Generalized 2D location specification
+ * the specification of a point in a generalized 2D coordinate system
  */
 export interface Location {
+	/** the first coordinate (either x or latitude depending on context) */
 	s: number;
+	/** the twoth coordinate (either y or longitude depending on context) */
 	t: number;
 }
 
 /**
- * Cartesian 2D location specification
+ * the specification of a point on a plane in Cartesian coordinates
  */
 export interface Point {
+	/** the horizontal coordinate in kilometers */
 	x: number;
+	/** the vertical coordinate, increasing downward, in kilometers */
 	y: number;
 }
 
 /**
- * Similar to a Vector but in spherical coordinates
+ * the specification of a point on a Surface in geographical coordinates
  */
 export interface Place {
+	/** the latitude in radians */
 	ф: number;
+	/** the longitude in radians */
 	λ: number;
 }
 
