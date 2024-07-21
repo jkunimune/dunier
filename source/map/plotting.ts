@@ -137,10 +137,8 @@ export function applyProjectionToPath(
 				i ++;
 			}
 			else { // if it's too long
-				const aGeo = assert_фλ(endpoint(inPoints[i-1]));
-				const bGeo = assert_фλ(endpoint(inPoints[i]));
-				const {ф, λ} = getGeoMidpoint(projection.surface, aGeo, bGeo); // that means we need to plot a midpoint
-				inPoints.splice(i, 0, {type: 'L', args: [ф, λ]});
+				const {s, t} = getMidpoint(inPoints[i - 1], inPoints[i], projection.surface); // that means we need to plot a midpoint
+				inPoints.splice(i, 0, {type: 'L', args: [s, t]});
 				ogi.splice(i, 0, ogi[i]);
 				break; // break out of this so we can go project it
 			}
@@ -519,10 +517,14 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, surface: Surface |
 	}
 	else if (surface instanceof Surface) {
 		if (segment.type === 'L') {
-			const midpoint = getGeoMidpoint(surface,
-				assert_фλ(endpoint(prev)),
-				assert_фλ(endpoint(segment)));
-			return { s: midpoint.ф, t: midpoint.λ };
+			const start = endpoint(prev);
+			const end = endpoint(segment);
+			const midpoint =  { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
+			if (Math.abs(end.s - start.s) > π) // it's an arithmetic mean of the coordinates but you have to account for periodicity
+				midpoint.s = localizeInRange(midpoint.s + π, -π, π);
+			if (Math.abs(end.t - start.t) > π)
+				midpoint.t = localizeInRange(midpoint.t + π, -π, π);
+			return midpoint;
 		}
 		else if (segment.type === LongLineType.MERIDIAN || segment.type === LongLineType.PARALLEL) {
 			const start = endpoint(prev);
@@ -543,13 +545,6 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, surface: Surface |
  * compute the coordinates of the midpoint between these two lines.
  * @return Place
  */
-function getGeoMidpoint(surface: Surface, a: Place, b: Place): Place {
-	const posA = surface.xyz(a);
-	const posB = surface.xyz(b);
-	const posM = posA.plus(posB).over(2);
-	return surface.фλ(posM);
-}
-
 /**
  * compute the coordinates at which the line between these two points crosses an interrupcion.  if
  * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
@@ -711,20 +706,12 @@ function getGeoEdgeCrossing(
 function getMeridianCrossing(
 	surface: Surface, ф0: number, λ0: number, ф1: number, λ1: number, λX = π
 ): { place0: Place, place1: Place } {
-	const pos0 = surface.xyz({ф: ф0, λ: λ0 - λX});
-	const pos1 = surface.xyz({ф: ф1, λ: λ1 - λX});
-	const posX = pos0.times(pos1.x).plus(pos1.times(-pos0.x)).over(
-		pos1.x - pos0.x);
-	const фX = surface.фλ(posX).ф;
-	if (Math.abs(λX) === π && λ0 < λ1)
-		return { place0: { ф: фX, λ: -π },
-			place1: { ф: фX, λ:  π } };
-	else if (Math.abs(λX) === π)
-		return { place0: { ф: фX, λ:  π },
-			place1: { ф: фX, λ: -π } };
-	else
-		return { place0: { ф: фX, λ: λX },
-			place1: { ф: фX, λ: λX } };
+	// just call getParallelCrossing but with the coordinates transposed
+	const {place0, place1} = getParallelCrossing(λ0, ф0, λ1, ф1, λX);
+	return {
+		place0: {ф: place0.λ, λ: place0.ф},
+		place1: {ф: place1.λ, λ: place1.ф},
+	};
 }
 
 /**
@@ -740,11 +727,20 @@ function getMeridianCrossing(
 function getParallelCrossing(
 	ф0: number, λ0: number, ф1: number, λ1: number, фX = π
 ): { place0: Place, place1: Place } {
-	const λX = ((ф1 - фX)*λ0 + (фX - ф0)*λ1)/(ф1 - ф0); // this solution is not as exact as the meridian one,
-	if (фX === π && ф0 < ф1) // but it's good enuff.  the interseccion between a cone and a line is too hard.
-		return { place0: { ф: -π, λ: λX }, // TODO: this won't work for the antiequator; need to weigh by sin(ф-фX)
+	const weit0 = localizeInRange(ф1 - фX, -π, π);
+	const weit1 = localizeInRange(фX - ф0, -π, π);
+	if (Math.abs(λ1 - λ0) > π) {
+		const λMin = Math.max(λ0, λ1);
+		const λMax = λMin + 2*π;
+		λ0 = localizeInRange(λ0, λMin, λMax);
+		λ1 = localizeInRange(λ1, λMin, λMax);
+	}
+	const λX = localizeInRange(
+		(weit0*λ0 + weit1*λ1)/(weit0 + weit1), -π, π);
+	if (Math.abs(фX) === π && ф0 < ф1)
+		return { place0: { ф: -π, λ: λX },
 			place1: { ф:  π, λ: λX } };
-	else if (фX === π)
+	else if (Math.abs(фX) === π)
 		return { place0: { ф:  π, λ: λX },
 			place1: { ф: -π, λ: λX } };
 	else
