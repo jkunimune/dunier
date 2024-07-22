@@ -3,21 +3,21 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Edge, EmptySpace, Surface, Tile, Vertex} from "../surface/surface.js";
-import {filterSet, linterp, localizeInRange, longestShortestPath, pathToString} from "../utilities/miscellaneus.js";
+import {
+	filterSet,
+	linterp,
+	localizeInRange,
+	longestShortestPath,
+	pathToString,
+	Side
+} from "../utilities/miscellaneus.js";
 import {ARABILITY, World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
-import {
-	assert_xy,
-	endpoint,
-	Location,
-	LongLineType,
-	PathSegment,
-	Place
-} from "../utilities/coordinates.js";
+import {assert_xy, endpoint, Location, LongLineType, PathSegment, Place} from "../utilities/coordinates.js";
 import {chordCenter, signAngle, Vector} from "../utilities/geometry.js";
 import {Biome} from "../generation/terrain.js";
 import {
@@ -25,7 +25,6 @@ import {
 	contains,
 	cutToSize,
 	InfinitePlane,
-	MapEdge,
 	transformInput,
 	transformOutput
 } from "./plotting.js";
@@ -132,8 +131,8 @@ export class Chart {
 	private readonly projection: MapProjection;
 	private readonly northUp: boolean;
 	private readonly centralMeridian: number;
-	private readonly geoEdges: MapEdge[][];
-	private readonly mapEdges: MapEdge[][];
+	private readonly geoEdges: PathSegment[];
+	private readonly mapEdges: PathSegment[];
 	public readonly dimensions: Dimensions;
 	public readonly scale: number; // the map scale in map-widths per km
 	private testText: SVGTextElement;
@@ -152,7 +151,7 @@ export class Chart {
 		focus = cutToSize(
 			transformInput(this.centralMeridian, focus),
 			this.projection.surface,
-			[Chart.rectangle(projection.surface.фMax, Math.PI, projection.surface.фMin, -Math.PI, true)],
+			Chart.rectangle(projection.surface.фMax, Math.PI, projection.surface.фMin, -Math.PI, true),
 			true,
 		);
 		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} =
@@ -171,20 +170,14 @@ export class Chart {
 		// set the geographic and Cartesian limits of the mapped area
 		if (λMax === Math.PI && this.projection.wrapsAround())
 			this.geoEdges = [
-				[{
-					type: LongLineType.PARALLEL,
-					start: { s: фMax, t:  λMax },
-					end:   { s: фMax, t: -λMax },
-				}],
-				[{
-					type: LongLineType.PARALLEL,
-					start: { s: фMin, t: -λMax },
-					end:   { s: фMin, t:  λMax },
-				}]
+				{type: 'M', args: [фMax, λMax]},
+				{type: LongLineType.PARALLEL, args: [фMax, -λMax]},
+				{type: 'M', args: [фMin, -λMax]},
+				{type: LongLineType.PARALLEL, args: [фMin, λMax]},
 			];
 		else
-			this.geoEdges = [Chart.rectangle(фMax, λMax, фMin, -λMax, true)];
-		this.mapEdges = [Chart.rectangle(this.dimensions.left, this.dimensions.top, this.dimensions.right, this.dimensions.bottom, false)];
+			this.geoEdges = Chart.rectangle(фMax, λMax, фMin, -λMax, true);
+		this.mapEdges = Chart.rectangle(this.dimensions.left, this.dimensions.top, this.dimensions.right, this.dimensions.bottom, false);
 	}
 
 	/**
@@ -559,8 +552,9 @@ export class Chart {
 				r: 0, isContained: false, edges: new Array(triangulation.triangles.length).fill(null),
 			});
 			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
-			centers[i].isContained = contains(
-				path,  {s: centers[i].x, t: -centers[i].y});
+			centers[i].isContained = contains( // build a graph out of the contained centers
+				path,  {s: centers[i].x, t: -centers[i].y}, new InfinitePlane(),
+			) !== Side.OUT; // (we're counting "borderline" as in)
 			if (centers[i].isContained) {
 				for (let j = 0; j < i; j ++) {
 					if (centers[j].isContained) {
@@ -779,63 +773,50 @@ export class Chart {
 
 
 	/**
-	 * project and convert a list of SVG paths in latitude-longitude coordinates representing a series of closed paths
-	 * into an SVG.Path object, and add that Path to the given SVG.
+	 * project and convert an SVG path in latitude-longitude coordinates into an SVG path in Cartesian coordinates,
+	 * accounting for the map edges properly.  if segments is [] but closePath is true, that will be interpreted as
+	 * meaning you want the path representing the whole Surface (which will end up being just the map outline)
 	 * @param segments ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
 	 * @param closePath if this is set to true, the map will make adjustments to account for its complete nature
 	 * @return SVG.Path object in Cartesian coordinates
 	 */
 	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
-		return cutToSize(
-			transformOutput(
-				this.northUp,
-				applyProjectionToPath(
-					this.projection,
-					cutToSize(
-						transformInput(this.centralMeridian, segments),
-						this.projection.surface,
-						this.geoEdges, closePath,
-					),
-					MAP_PRECISION*this.dimensions.diagonal,
-				),
-			),
-			new InfinitePlane(), this.mapEdges, closePath,
+		const croppedToGeoRegion = cutToSize(
+			transformInput(this.centralMeridian, segments),
+			this.projection.surface,
+			this.geoEdges, closePath,
 		);
+		if (croppedToGeoRegion.length === 0)
+			return [];
+		const projected = applyProjectionToPath(
+			this.projection,
+			croppedToGeoRegion,
+			MAP_PRECISION*this.dimensions.diagonal,
+		);
+		const croppedToMapRegion = cutToSize(
+			transformOutput(this.northUp, projected),
+			new InfinitePlane(),
+			this.mapEdges, closePath,
+		);
+		return croppedToMapRegion;
 	}
 
 
 	/**
-	 * create an ordered Iterator of segments that form the border of this civ
+	 * create a path that forms the border of this set of Tiles.  this will only include the interface between included
+	 * Tiles and excluded Tiles; even if it's a surface with an edge, the surface edge will not be part of the return
+	 * value.  that means that a region that takes up the entire Surface will always have a border of [].
 	 * @param tiles the tiles that comprise the region whose outline is desired
-	 * @param surface the Surface on which the tiles exist (solely to tell at a glance whether all tiles are included)
 	 * @param excludeOcean whether to only outline the ocean
 	 */
-	static border(tiles: Iterable<Tile>, surface: Surface, excludeOcean=false): PathSegment[] {
+	static border(tiles: Iterable<Tile>, excludeOcean=false): PathSegment[] {
 		if (excludeOcean)
 			tiles = filterSet(tiles, (n) => n.biome !== Biome.OCEAN);
 		const tileSet = new Set(tiles);
 
-		if (tileSet.size === 0) // if no tiles are provided
-			return [];
-		else if (tileSet.size < surface.tiles.size) // if some but not all tiles are provided
-			return this.convertToGreebledPath(Chart.outline(tileSet), Layer.KULTUR, 1e-6);
-		else { // if the entire Surface is included in this set of tiles
-			return [ // build a rectangle (include a bunch of extra points to avoid ambiguity about directions)
-				{type: 'M', args: [surface.фMin, -Math.PI]},
-				{type: LongLineType.PARALLEL, args: [surface.фMin, -Math.PI/3]},
-				{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI/3]},
-				{type: LongLineType.PARALLEL, args: [surface.фMin, Math.PI]}, // TODO: I don't think I really need all these
-				{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, Math.PI]},
-				{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, Math.PI]},
-				{type: LongLineType.MERIDIAN, args: [surface.фMax, Math.PI]},
-				{type: LongLineType.PARALLEL, args: [surface.фMax, Math.PI/3]},
-				{type: LongLineType.PARALLEL, args: [surface.фMax, -Math.PI/3]},
-				{type: LongLineType.PARALLEL, args: [surface.фMax, -Math.PI]},
-				{type: LongLineType.MERIDIAN, args: [surface.фMin*.3 + surface.фMax*.7, -Math.PI]},
-				{type: LongLineType.MERIDIAN, args: [surface.фMin*.7 + surface.фMax*.3, -Math.PI]},
-				{type: LongLineType.MERIDIAN, args: [surface.фMin, -Math.PI]},
-			];
-		}
+		if (tileSet.size === 0)
+			throw new Error(`I cannot find the border of a nonexistent region.`);
+		return this.convertToGreebledPath(Chart.outline(tileSet), Layer.KULTUR, 1e-6);
 	}
 
 	/**
@@ -1101,9 +1082,6 @@ export class Chart {
 	static calculateMapBounds(
 		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
 	): {фMin: number, фMax: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
-		if (regionOfInterest.length === 0)
-			throw new Error("the region of interest has no vertices.");
-
 		let фMin, фMax, λMax;
 		let xLeft, xRight, yTop, yBottom;
 		// if we want a rectangular map
@@ -1123,7 +1101,11 @@ export class Chart {
 		// if we want a wedge-shaped map
 		else {
 			// calculate the minimum and maximum latitude and longitude of the region of interest
-			let regionBounds = Chart.calculatePathBounds(regionOfInterest); // note: s in here is a generic coordinate (equal to latitude in this context)
+			let regionBounds;
+			if (regionOfInterest.length > 0)
+				regionBounds = Chart.calculatePathBounds(regionOfInterest); // note: s in here is a generic coordinate (equal to latitude in this context)
+			else
+				regionBounds = {sMin: projection.surface.фMin, sMax: projection.surface.фMax, tMin: -Math.PI, tMax: Math.PI};
 			const фRef = projection.surface.refLatitudes; // TODO: extracting these variables shouldn't be necessary.  I should use the projection functions.
 			const sRef = projection.surface.cumulDistances; // note: s here is an arc length, not a generic coordinate
 			const sMin = linterp(regionBounds.sMin, фRef, sRef); // TODO use projection here
@@ -1244,30 +1226,25 @@ export class Chart {
 	}
 
 	/**
-	 * create a set of MapEdges that delineate a rectangular region in either Cartesian or latitude/longitude space
+	 * create a Path that delineate a rectangular region in either Cartesian or latitude/longitude space
 	 */
-	static rectangle(s0: number, t0: number, s2: number, t2: number, geographic: boolean): MapEdge[] {
-		// first, define the s and t coordinates
-		const s = [s0, s0, s2, s2];
-		const t = [t0, t2, t2, t0];
-		const sIsVarying = [false, true, false, true];
-		// bild the loop, ensuring the edge ends are consistent with the edge starts
-		const edges: MapEdge[] = [];
-		for (let i = 0; i < 4; i ++) {
-			let type;
-			if (!geographic)
-				type = 'L';
-			else if (sIsVarying[i])
-				type = LongLineType.MERIDIAN;
-			else
-				type = LongLineType.PARALLEL;
-			edges.push({
-				type: type,
-				start: {s: s[i], t: t[i]},
-				end: {s: s[(i + 1)%4], t: t[(i + 1)%4]},
-			});
-		}
-		return edges;
+	static rectangle(s0: number, t0: number, s2: number, t2: number, geographic: boolean): PathSegment[] {
+		if (!geographic)
+			return [
+				{type: 'M', args: [s0, t0]},
+				{type: 'L', args: [s0, t2]},
+				{type: 'L', args: [s2, t2]},
+				{type: 'L', args: [s2, t0]},
+				{type: 'L', args: [s0, t0]},
+			];
+		else
+			return [
+				{type: 'M', args: [s0, t0]},
+				{type: LongLineType.PARALLEL, args: [s0, t2]},
+				{type: LongLineType.MERIDIAN, args: [s2, t2]},
+				{type: LongLineType.PARALLEL, args: [s2, t0]},
+				{type: LongLineType.MERIDIAN, args: [s0, t0]},
+			];
 	}
 }
 

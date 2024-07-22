@@ -6,7 +6,6 @@ import {Chart} from "../source/map/chart.js";
 import {LongLineType} from "../source/utilities/coordinates.js";
 import {Sphere} from "../source/surface/sphere.js";
 import {MapProjection} from "../source/map/projection.js";
-import {Random} from "../source/utilities/random.js";
 
 describe("chooseCentralMeridian", () => {
 	test("front hemisphere", () => {
@@ -41,10 +40,11 @@ describe("chooseCentralMeridian", () => {
 
 test("rectangle", () => {
 	expect(Chart.rectangle(1, 2, 3, 4, true)).toEqual([
-		{type: LongLineType.PARALLEL, start: {s: 1, t: 2}, end: {s: 1, t: 4}},
-		{type: LongLineType.MERIDIAN, start: {s: 1, t: 4}, end: {s: 3, t: 4}},
-		{type: LongLineType.PARALLEL, start: {s: 3, t: 4}, end: {s: 3, t: 2}},
-		{type: LongLineType.MERIDIAN, start: {s: 3, t: 2}, end: {s: 1, t: 2}},
+		{type: 'M', args: [1, 2]},
+		{type: LongLineType.PARALLEL, args: [1, 4]},
+		{type: LongLineType.MERIDIAN, args: [3, 4]},
+		{type: LongLineType.PARALLEL, args: [3, 2]},
+		{type: LongLineType.MERIDIAN, args: [1, 2]},
 	]);
 });
 
@@ -105,11 +105,10 @@ describe("calculatePathBounds", () => {
 describe("all together", () => {
 	const globe = new Sphere(1);
 	globe.initialize();
-	globe.populateWith(globe.randomlySubdivide(new Random(0)));
 	test("full world Equal Earth", () => {
 		const chart = new Chart(
 			MapProjection.equalEarth(globe, -Math.PI/2, Math.PI/2),
-			true, Chart.border(globe.tiles, globe, false), true);
+			true, [], true);
 		expect(chart.dimensions).toEqual(expect.objectContaining({
 			left: expect.closeTo(-2.7893), right: expect.closeTo(2.7893),
 			bottom: 0, top: expect.closeTo(-2.5788),

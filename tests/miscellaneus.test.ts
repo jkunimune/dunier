@@ -129,6 +129,14 @@ describe("localizeInRange()", () => {
 	test("on maximum", () => {
 		expect(localizeInRange(1, -12, 1)).toEqual(-12);
 	});
+	describe("with inclusive maximum", () => {
+		test("on minimum", () => {
+			expect(localizeInRange(1, 1, 4, true)).toEqual(4);
+		});
+		test("on maximum", () => {
+			expect(localizeInRange(1, -12, 1, true)).toEqual(1);
+		});
+	});
 	test("out of bounds", () => {
 		expect(localizeInRange(1, -12, -10)).toEqual(-11);
 	});
@@ -136,16 +144,22 @@ describe("localizeInRange()", () => {
 
 describe("isBetween()", () => {
 	test("in", () => {
-		expect(isBetween(1, 0, 1)).toEqual(true);
+		expect(isBetween(0.8, 0, 1)).toEqual(true);
 	});
 	test("out", () => {
 		expect(isBetween(2, 0, 1)).toEqual(false);
 	});
 	test("in, reversed", () => {
-		expect(isBetween(1, 1, 0)).toEqual(true);
+		expect(isBetween(0.8, 1, 0)).toEqual(true);
 	});
 	test("out, reversed", () => {
 		expect(isBetween(2, 1, 0)).toEqual(false);
+	});
+	test("on lower bound", () => {
+		expect(isBetween(0, 0, 1)).toEqual(true);
+	});
+	test("on upper bound", () => {
+		expect(isBetween(1, 0, 1)).toEqual(true);
 	});
 });
 

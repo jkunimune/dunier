@@ -20,6 +20,7 @@ import {Selector} from "../utilities/selector.js";
 import {PortableDocument} from "../utilities/portabledocument.js";
 import {MapProjection} from "../map/projection.js";
 import {Civ} from "../generation/civ.js";
+import {PathSegment} from "../utilities/coordinates.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -220,7 +221,7 @@ function applyTerrain(): void {
 	console.log("grafa...");
 	const mapper = new Chart(
 		MapProjection.equalEarth(surface, surface.фMin, surface.фMax),
-		true, Chart.border(surface.tiles, surface, false), false);
+		true, [], false);
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
@@ -270,7 +271,7 @@ function applyHistory(): void {
 	console.log("grafa...");
 	const mapper = new Chart(
 		MapProjection.equalEarth(surface, surface.фMin, surface.фMax),
-		true, Chart.border(surface.tiles, surface, false), false);
+		true, [], false);
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
@@ -325,13 +326,13 @@ function applyMap(): void {
 	const projectionName = DOM.val('map-projection');
 	const northUp = (DOM.val('map-orientation') === 'north');
 	const focusSpecifier = DOM.val('map-jung');
-	let focus;
+	let focus: PathSegment[];
 	if (focusSpecifier === "world")
-		focus = Chart.border(surface.tiles, surface, false);
+		focus = [];
 	else if (focusSpecifier.startsWith("continent"))
-		focus = Chart.border(continents[Number.parseInt(focusSpecifier.slice(9))], surface, true);
+		focus = Chart.border(continents[Number.parseInt(focusSpecifier.slice(9))], true);
 	else if (focusSpecifier.startsWith("country"))
-		focus = Chart.border(world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tiles, surface, true);
+		focus = Chart.border(world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tiles, true);
 
 	const {sMin: фMin, sMax: фMax} = Chart.calculatePathBounds(focus);
 

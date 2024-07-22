@@ -106,19 +106,22 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
  * @param value
  * @param min
  * @param max
+ * @param inclusiveMax if left as false, then a value at max or min or a whole multiple of (max - min) away from either will return min.  if set to true, it will return max.
  */
-export function localizeInRange(value: number, min: number, max: number): number {
+export function localizeInRange(value: number, min: number, max: number, inclusiveMax=false): number {
 	if (value > min && value < max)
 		return value;
+	else if (inclusiveMax)
+		return value - (Math.ceil((value - min)/(max - min)) - 1)*(max - min);
 	else
 		return value - Math.floor((value - min)/(max - min))*(max - min);
 }
 
 /**
- * is value inside the inclusive interval bounded by a and b (order of a and b matters not)
- * @param value
- * @param a
- * @param b
+ * is value inside the inclusive interval bounded by a and b.  the order of a and b matters not.
+ * @param value the value that may or may not be in the interval
+ * @param a the inclusive bound (could be minimum or maximum)
+ * @param b the exclusive bound (could be minimum or maximum)
  */
 export function isBetween(value: number, a: number, b: number): boolean {
 	if (a < b)
@@ -291,6 +294,14 @@ export function noisyProfile(initialProfile: Point[], resolution: number, rng: R
 		}
 	}
 	return confirmd;
+}
+
+
+/**
+ * whether something is contained in a region or not
+ */
+export enum Side {
+	OUT, IN, BORDERLINE
 }
 
 

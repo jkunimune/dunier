@@ -12,8 +12,8 @@ import {
 	Place,
 	Point
 } from "../utilities/coordinates.js";
-import {chordCenter, isAcute, lineArcIntersections, lineLineIntersection} from "../utilities/geometry.js";
-import {isBetween, localizeInRange, pathToString} from "../utilities/miscellaneus.js";
+import {chordCenter, isAcute, lineArcIntersections, lineLineIntersection, signCrossing} from "../utilities/geometry.js";
+import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
 import {Surface} from "../surface/surface.js";
 
@@ -164,21 +164,31 @@ export function applyProjectionToPath(
  * @param edges the MapEdges within which to fit this
  * @param closePath whether you should add stuff around the edges when things clip
  */
-export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePlane, edges: MapEdge[][], closePath: boolean): PathSegment[] {
-	// for (const segment of segments)
-	// 	if (typeof segment.type !== 'string')
-	// 		throw new Error(`you can't pass ${segment.type}-type segments to this funccion.`);
-	if (segments.length === 0) // what're you trying to pull here?
-		return [];
-	else if (closePath && !isClosed(segments, surface)) {
+export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePlane, edges: PathSegment[], closePath: boolean): PathSegment[] {
+	if (closePath && !isClosed(segments, surface)) {
 		console.error(pathToString(segments));
 		throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
 	}
+	if (!isClosed(edges, surface)) {
+		console.error(pathToString(edges));
+		throw new Error(`gross, your edges are open.  go check how you defined them!`);
+	}
+
+	// start by breaking the edges up into separate loops
+	const edgeLoops: PathSegment[][] = [];
+	for (const edge of edges) {
+		if (edge.type === 'M')
+			edgeLoops.push([]);
+		const currentLoop = edgeLoops[edgeLoops.length - 1];
+		currentLoop.push(edge);
+	}
+
+	// then break the segments up into separate sections
 	const segmentQueue = segments.slice().reverse();
 	const sections: PathSegment[][] = [];
 	let currentSection: PathSegment[] = null;
 	let iterations = 0;
-	while (true) { // first, break it up into sections
+	while (true) { // you'll have to go thru it like a cue rather than a set list, since we'll be adding segments as we go
 		const thisSegment = (segmentQueue.length > 0 ? segmentQueue.pop() : null);
 
 		if (thisSegment === null || thisSegment.type === 'M') { // at movetos and at the end
@@ -197,16 +207,33 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 				throw new Error("it didn't start with 'M', I gess?");
 
 			const lastSegment = currentSection[currentSection.length - 1];
-			const crossing = getEdgeCrossing(
-				lastSegment, thisSegment, surface, edges); // check for interruption
+			const start = endpoint(lastSegment);
+			const end = endpoint(thisSegment);
+			const crossings = getEdgeCrossings(
+				start, thisSegment, surface, edges); // check for interruption
+			// but discard any interruptions that coincide with existing breaks in segments
+			for (let i = crossings.length - 1; i >= 0; i --) {
+				const {intersect0, intersect1} = crossings[i];
+				if (intersect1.s === start.s && intersect1.t === start.t) {
+					if (lastSegment.type === 'M') {
+						crossings.splice(i, 1);
+						continue;
+					}
+				}
+				if (intersect0.s === end.s && intersect0.t === end.t) {
+					if (segmentQueue.length === 0 || segmentQueue[segmentQueue.length - 1].type === 'M') {
+						crossings.splice(i, 1);
+					}
+				}
+			}
 
-			if (crossing === null) { // if there's no interruption
+			if (crossings.length === 0) { // if there's no interruption or we discarded them all
 				if (encompasses(surface, edges, [lastSegment]) !== encompasses(surface, edges, [lastSegment]))
 					throw new Error(`you failed to detect a crossing between ${lastSegment.type}${lastSegment.args.join(',')} and ${thisSegment.type}${thisSegment.args.join(',')}.`);
-				currentSection.push(thisSegment); // just add the points to the section
+				currentSection.push(thisSegment); // move the points from the queue to the section
 			}
 			else { // if there is, the line jumps across an interruption
-				const { intersect0, intersect1 } = crossing;
+				const { intersect0, intersect1 } = crossings[0];
 				segmentQueue.push( // add a moveto to the segment queue and go back to the start of the loop
 					...spliceSegment(
 						endpoint(lastSegment), thisSegment,
@@ -219,9 +246,6 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 		if (iterations > 100000)
 			throw new Error(`*Someone* (not pointing any fingers) messd up an interruption between ${currentSection.pop()} and ${thisSegment}.`);
 	}
-
-	if (sections.length === 0) // if it's all off the map
-		return []; // goodbye TODO: have a way to check if we need to shade in the entire map
 
 	const startPositions: { loop: number, index: number }[] = [];
 	const weHaveDrawn: boolean[] = []; // set up some section-indexed vectors
@@ -236,7 +260,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 	let supersectionIndex = -1;
 	let supersectionStart = null;
 	let startingANewSupersection = true;
-	while (true) {
+	while (!weHaveDrawn.every((value) => value)) {
 
 		let section = sections[sectionIndex]; // take a section
 		if (!startingANewSupersection) {
@@ -264,7 +288,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 				startingANewSupersection = true; // if so, don't look any further
 			}
 			else if (endPosition.loop !== null) { // if we ended hitting a wall
-				const endLoop = edges[endPosition.loop]; // then we should move to another point on a wall
+				const edgeLoop = edgeLoops[endPosition.loop]; // then we should move to another point on a wall
 
 				let bestSection = null, bestPositionIndex = null;
 				for (let i = 0; i < startPositions.length; i ++) { // check the remaining sections
@@ -273,7 +297,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 						if (!weHaveDrawn[i] || i === supersectionIndex) {
 							let relativeIndex = startPosition.index;
 							if (startPosition.index < endPosition.index)
-								relativeIndex += endLoop.length;
+								relativeIndex += edgeLoop.length - 1; // account for the fact that the loops are all periodic
 							if (bestPositionIndex === null || relativeIndex < bestPositionIndex) {
 								bestSection = i; // calculate which one should come next
 								bestPositionIndex = relativeIndex;
@@ -283,16 +307,17 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 				}
 				if (bestSection === null) {
 					console.error(pathToString(segments));
-					console.error(edges);
+					console.error(pathToString(edges));
 					throw new Error(`couldn't find a new start position on loop ${endPosition.loop}`);
 				}
 
-				const endEdge = Math.trunc(endPosition.index);
-				const restartEdge = Math.trunc(bestPositionIndex);
+				const endEdge = Math.trunc(endPosition.index) + 1;
+				const restartEdge = Math.trunc(bestPositionIndex) + 1;
 				const nextStart = endpoint(sections[bestSection][0]);
 				for (let i = endEdge; i <= restartEdge; i ++) { // go around the edges to the new restarting point
-					const edge = endLoop[i%endLoop.length];
-					const targetPlace = (i === restartEdge) ? nextStart : edge.end;
+					const edge = edgeLoop[(i - 1)%(edgeLoop.length - 1) + 1];
+					const edgeEnd = endpoint(edge);
+					const targetPlace = (i === restartEdge) ? nextStart : edgeEnd;
 					output.push({type: edge.type,
 						args: [targetPlace.s, targetPlace.t]});
 				}
@@ -329,13 +354,14 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 	}
 
 	if (closePath) { // if it matters which side is inside and which side out, draw the outline of the map
-		for (let i = 0; i < edges.length; i ++) { // for each loop
-			if (isInsideOut(output, edges[i])) { // if it is inside out
-				const start = edges[i][0].start;
-				output.push({type: 'M', args: [start.s, start.t]}); // draw the outline of the entire map to contain it
-				for (const edge of edges[i])
-					output.push({type: edge.type, args: [edge.end.s, edge.end.t]});
-			}
+		for (const edgeLoop of edgeLoops) { // for each loop
+			let isInsideOut; // determine if it is inside out
+			if (output.length > 0)
+				isInsideOut = encompasses(surface, output, edgeLoop) === Side.IN; // using the newly cropped output
+			else
+				isInsideOut = encompasses(surface, segments, edgeLoop) === Side.IN; // or whatever was cropped out if the output is empty
+			if (isInsideOut) // if it is inside out with respect to that loop
+				output.push(...edgeLoop); // draw the outline of the entire edge loop to contain it
 		}
 	}
 
@@ -409,76 +435,138 @@ function spliceSegment(start: Location, segment: PathSegment, intersect0: Locati
 
 
 /**
- * find out if the given points are contained by a set of edges, using an even/odd
- * rule. it is assumed that they are either all in or all out.  points on an edge are
- * considerd ambiguous
+ * find out if the given points are wholly within a given path-defined region.
+ * it is assumed that they are either all in or all out.  points on an edge are considerd ambiguous, so
+ * the result may be ambiguous if *all* of the points are on the edge.  note that the directionality of
+ * the region path matters (see contains() for more details) but the directionality of points does not
+ * matter; we're just checking to see if the vertices themselves are enclosed.
  * @param surface the surface on which the points are defined
- * @param edges
- * @param points
+ * @param polygon the path that defines the region we're checking
+ * @param points the path whose points may or may not be in the region
  * @return whether all of points are inside edges
  */
-function encompasses(surface: Surface | InfinitePlane, edges: MapEdge[][], points: PathSegment[]): boolean {
-	const polygon: PathSegment[] = [];
-	for (const loop of edges) {
-		polygon.push({type: 'M', args: [loop[0].start.s, loop[0].start.t]});
-		for (const edge of loop)
-			polygon.push({type: 'L', args: [edge.end.s, edge.end.t]});
-	}
+export function encompasses(surface: Surface | InfinitePlane, polygon: PathSegment[], points: PathSegment[]): Side {
 	for (let i = 0; i < points.length; i ++) { // the fastest way to judge this is to just look at the first point
-		const containd = contains(
-			polygon,
-			endpoint(points[i]));
-		if (containd !== null) // that is not ambiguous
-			return containd;
+		const tenancy = contains(
+			polygon, endpoint(points[i]), surface);
+		if (tenancy !== Side.BORDERLINE) // that is not ambiguous
+			return tenancy;
 	}
 	for (let i = 1; i < points.length; i ++) { // if that didn't work, use midpoints
-		const containd = contains(
-			polygon,
-			getMidpoint(points[i - 1], points[i], surface));
-		if (containd !== null) // in practice, this should always be unambiguous
-			return containd;
+		const tenancy = contains(
+			polygon, getMidpoint(points[i - 1], points[i], surface), surface);
+		if (tenancy !== Side.BORDERLINE) // in practice, this should always be unambiguous
+			return tenancy;
 	}
-	return true; // if it's completely on the edge, mark it as in since it might determine whether the inside is included or not
+	return Side.BORDERLINE; // if it's completely on the edge, mark it as such
 }
 
 
 /**
- * find out if a point is contained by a polygon, using an even/odd rule.
- * if a point is on the polygon, return null to mark it as ambiguous.
- * @param polygon
- * @param point
- * @return whether point is inside polygon, or null if it is on the edge.
+ * find out if a point is contained by a polygon.
+ * the direction of the polygon matters; if you're travelling along the polygon's edge,
+ * points on your left are IN and points on your right are OUT.
+ * if a point is on the polygon, it is considered BORDERLINE.
+ * note that this operates on a left-handed coordinate system (if your y is decreasing, higher x is on your right)
+ * @param polygon the path that defines the region we're checking.  it may jump across the boundary domains if
+ *                periodicS and/or periodicT are set to true.  however, it may not intersect itself, and it must not
+ *                form any ambiguusly included regions (like two concentric circles going the same way) or the result
+ *                is undefined.
+ * @param point the point that may or may not be in the region
+ * @param surface the coordinate system in which the polygon and point exist
+ * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
+ *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Location): boolean {
-	let contained = false;
-	for (let i = 0; i < polygon.length; i ++)
-		console.assert(polygon[i].type === 'M' || polygon[i].type === 'L', "I can't do that segment type.");
+export function contains(polygon: PathSegment[], point: Location, surface: Surface | InfinitePlane): Side {
+	if (polygon.length === 0)
+		return Side.IN;
 
-	// take the point
-	const {s, t} = point;
-
-	// then look at each edge of the polygon
+	// choose a point near the polygon
+	let terminus = null;
 	for (let i = 1; i < polygon.length; i ++) {
-		if (polygon[i].type === 'L') {
-			const [s0, t0] = polygon[i-1].args;
-			const [s1, t1] = polygon[i].args;
-
-			// if the point is on an edge, return null
-			if (s >= Math.min(s0, s1) && s <= Math.max(s0, s1) &&
-				t >= Math.min(t0, t1) && t <= Math.max(t0, t1) &&
-				(s0 === s1 || t0 === t1))
-				return null;
-			// otherwise, toggle depending on if our virtual s-ward ray crosses the edge
-			if ((t < t0) !== (t < t1))
-				if (s0 + (t - t0)/(t1 - t0)*(s1 - s0) > s)
-					contained = !contained;
-		}
-		else {
-			if (polygon[i].type !== 'M')
-				throw new Error("nonononononnooooooooooooooo");
+		if (polygon[i].type !== 'M') {
+			const start = endpoint(polygon[i-1]);
+			const end = endpoint(polygon[i]);
+			if (polygon[i].type === 'A' || start.t !== end.t) {
+				const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], surface);
+				if (knownPolygonPoint.s !== point.s) {
+					const bonusLength = Math.hypot(end.s - start.s, end.t - start.t);
+					terminus = { // chosen to be a little bit beyond an arbitrary segment
+						s: knownPolygonPoint.s + Math.sign(knownPolygonPoint.s - point.s)*bonusLength,
+						t: knownPolygonPoint.t };
+					break;
+				}
+			}
 		}
 	}
-	return contained;
+	if (terminus === null)
+		throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
+	const geographical = surface instanceof Surface;
+	const testEdge = [ // and draw a path from the point to that point
+		{ type: 'M',
+		  args: [point.s, point.t] },
+		{ type: (geographical) ? LongLineType.PARALLEL : 'L',
+		  args: [point.s, terminus.t] },
+		{ type: (geographical) ? LongLineType.MERIDIAN : 'L',
+		  args: [terminus.s, terminus.t] },
+	];
+
+	// manually check for the most common forms of coincidences
+	for (let i = 1; i < polygon.length; i ++) {
+		if (polygon[i].type === 'L' || polygon[i].type === LongLineType.PARALLEL || polygon[i].type === LongLineType.MERIDIAN) {
+			const start = endpoint(polygon[i - 1]);
+			const end = endpoint(polygon[i]);
+			let inTheRightSNeighborhood = isBetween(point.s, start.s, end.s);
+			let inTheRightTNeighborhood = isBetween(point.t, start.t, end.t);
+			if (geographical && polygon[i].type === 'L') {
+				if (Math.abs(start.s - end.s) > π) // check for s periodicity
+					inTheRightSNeighborhood = !inTheRightSNeighborhood;
+				if (Math.abs(start.t - end.t) > π) // check for t periodicity
+					inTheRightTNeighborhood = !inTheRightTNeighborhood;
+			}
+			// if the point is exactly on this edge, count it as borderline
+			if (inTheRightSNeighborhood && inTheRightTNeighborhood)
+				if ((start.s === end.s && start.s === point.s) || (start.t === end.t && start.t === point.t))
+					return Side.BORDERLINE;
+		}
+	}
+
+	// this Stokes's-Theorem-inspired algorithm a little different from the normal nonzero/even-odd rule. this is
+	// chiefly because it needs to account for the directionality of the polygon.  drawing a ray from the point that
+	// doesn't intersect the polygon doesn't automaticly mean the point is out; you would need to then go and check
+	// whether the polygon is inside-out or not (or put more strictly, whether it contains the infinitely distant
+	// terminus of your ray). there are two modifications that have to be made here as a result.  first is that instead
+	// of a ray from the point in an arbitrary direction, our test path needs to be chosen to garantee it intersects the
+	// polygon.  this is acheved by calculating testPath as above.  twoth is that we need to mind the direction of the
+	// nearest crossing rather than just counting how many crossings there are in each direction.  nieve implementations
+	// of this will fail if the polygon has a vertex on the test path but doesn't *cross* the test path at that vertex,
+	// because if you're just noting the direction of the segments and the location where they intersect the path,
+	// you'll see two crossings in opposite directions at the exact same point, and it's then impossible to say which
+	// was closer, even tho by eye the anser might look unambiguus.  the solution is to not just count the crossings but
+	// *sum* them, weying them by how far they are from the point.  since the crossings should always alternate in
+	// direction when you look at them along a path, and any two crossings in the same place will now cancel out, it can
+	// be shown that the sign of that sum will then correspond to the nearest unambiguus crossing.
+	let crossingSum = 0.;
+	// iterate around the polygon
+	for (let i = 1; i < polygon.length; i ++) {
+		if (polygon[i].type !== 'M') {
+			// check to see if this segment crosses the test path
+			const crossings = getEdgeCrossings(endpoint(polygon[i - 1]), polygon[i], surface, testEdge);
+			for (const {intersect0, entering} of crossings) { // look for places where the polygon crosses the path we drew
+				// determine how far it is from the pole
+				const d = Math.abs(intersect0.s - point.s) + Math.abs(intersect0.t - point.t);
+				if (d === 0) // if any segment is *on* the point, it's borderline
+					return Side.BORDERLINE;
+				crossingSum += (entering) ? 1/d : -1/d; // otherwise, add its weited crossing direction to the sum
+			}
+		}
+	}
+	if (crossingSum === 0) {
+		console.log(pathToString(polygon));
+		console.log(pathToString(testEdge));
+		throw new Error("you need to check this algorithm because crossingSum should never be 0.");
+	}
+	return (crossingSum > 0) ? Side.IN : Side.OUT;
 }
 
 
@@ -512,7 +600,7 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, surface: Surface |
 			};
 		}
 		else {
-			throw new Error(`don't know how to take the midpoint of ${segment.type} segments`);
+			throw new Error(`don't know how to take the midpoint of ${segment.type} segments on a cartesian plane`);
 		}
 	}
 	else if (surface instanceof Surface) {
@@ -532,7 +620,7 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, surface: Surface |
 			return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
 		}
 		else {
-			throw new Error(`don't know how to take the midpoint of ${segment.type} segments`);
+			throw new Error(`don't know how to take the midpoint of ${segment.type} segments on a geographic surface`);
 		}
 	}
 	else {
@@ -540,178 +628,227 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, surface: Surface |
 	}
 }
 
+/**
+ * compute the coordinates at which the line between these two points crosses an interrupcion.  for
+ * each crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
+ * the 1th point's side.  also, the index of the loop on which this crossing lies,
+ * and whether the line is going from the right (outside) of the edge to the left (inside).
+ *
+ * the periodicity of the Surface, if the Surface is periodic, will be accounted for with the line between the points
+ * (that is, if coords0 and coords1 are on opposite sides of the map, the path between them will be interpreted as the
+ * line across the antimeridian).  the edges themselves must be LongLineType.MERIDIANs or LongLineType.PARALLELs if the
+ * surface is geographic, meaning they will never wrap around the backside of the map (since those line types are
+ * defined to always be monotonic in latitude or longitude) and their periodicity is therefore not accounted for.
+ *
+ * for the purposes of this function, points on an edge count as out.  so no crossing will be returnd for a segment
+ * between a point outside the edges and a point on an edge.
+ * if the segment passes thru the vertex between two edges, it will only register as a single crossing
+ */
+export function getEdgeCrossings(
+	segmentStart: Location, segment: PathSegment, surface: Surface | InfinitePlane, edges: PathSegment[]
+): { intersect0: Location, intersect1: Location, loopIndex: number, entering: boolean }[] {
+	const crossings = [];
+	let loopIndex = 0;
+	for (let i = 1; i < edges.length; i ++) { // then look at each edge segment
+		if (edges[i].type === 'M') {
+			loopIndex ++; // counting to keep track of which loop we're on
+			continue;
+		}
 
-/**
- * compute the coordinates of the midpoint between these two lines.
- * @return Place
- */
-/**
- * compute the coordinates at which the line between these two points crosses an interrupcion.  if
- * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
- * the 1th point's side.  also, the index of the loop on which this crossing lies.
- */
-function getEdgeCrossing(
-	coords0: PathSegment, coords1: PathSegment, surface: Surface | InfinitePlane, edges: MapEdge[][]
-): { intersect0: Location, intersect1: Location, loopIndex: number } | null {
-	// if we're on a geographic surface
-	if (surface instanceof Surface) {
-		const crossing = getGeoEdgeCrossing(coords0, coords1, surface, edges);
-		if (crossing === null)
-			return null;
-		const { place0, place1, loopIndex } = crossing;
-		return { intersect0: { s: place0.ф, t: place0.λ },
-			intersect1: { s: place1.ф, t: place1.λ },
-			loopIndex: loopIndex }; // note that if this is a double edge, it is always exiting
+		const edgeStart = endpoint(edges[i - 1]);
+		const edge = edges[i];
+		// if we're on a geographic surface
+		if (surface instanceof Surface) {
+			// find all the geo edge crossings
+			const crossing = getGeoEdgeCrossing(assert_фλ(segmentStart), segment, surface, assert_фλ(edgeStart), edge);
+			if (crossing !== null) {
+				const { place0, place1, entering } = crossing;
+				crossings.push({ intersect0: { s: place0.ф, t: place0.λ },
+					intersect1: { s: place1.ф, t: place1.λ },
+					loopIndex: loopIndex, entering: entering }); // note that if this is a double edge, it is always exiting
+			}
+		}
+		// if we're in the infinite cartesian plane
+		else if (surface instanceof InfinitePlane) {
+			// find all the map edge crossings
+			for (const crossing of getMapEdgeCrossings(assert_xy(segmentStart), segment, assert_xy(edgeStart), edge)) {
+				const { point, entering } = crossing;
+				crossings.push({ intersect0: { s: point.x, t: point.y },
+					intersect1: { s: point.x, t: point.y },
+					loopIndex: loopIndex, entering: entering }); // even if the getCrossing function thaut it was only entering
+			}
+		}
+		else {
+			throw new Error("no.");
+		}
 	}
-	// if we're in the infinite cartesian plane
-	else if (surface instanceof InfinitePlane) {
-		const crossing = getMapEdgeCrossing(coords0, coords1, edges);
-		if (crossing === null)
-			return null;
-		const { point0, point1, loopIndex } = crossing;
-		return { intersect0: { s: point0.x, t: point0.y },
-			intersect1: { s: point1.x, t: point1.y },
-			loopIndex: loopIndex }; // even if the getCrossing function thaut it was only entering
+	// now remove any duplicate crossings
+	for (let i = crossings.length - 1; i > 0; i --) {
+		for (let j = i - 1; j >= 0; j --) {
+			if ( // checking for crossing equality is kind of a pain
+				crossings[i].loopIndex === crossings[j].loopIndex &&
+				(
+					crossings[i].intersect0.s === crossings[j].intersect0.s &&
+					crossings[i].intersect0.t === crossings[j].intersect0.t
+				) || (
+					crossings[i].intersect1.s === crossings[j].intersect1.s &&
+					crossings[i].intersect1.t === crossings[j].intersect1.t
+				)
+			) {
+				crossings.splice(i, 1);
+				break;
+			}
+		}
 	}
-	else {
-		throw new Error("no.");
-	}
+	// return the pruned list
+	return crossings;
 }
 
 /**
- * compute the coordinates at which the line between these two points crosses an interrupcion in the map.  if
- * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
- * the 1th point's side.  also, the index of the loop on which this crossing lies.
+ * compute the coordinates at which the line between these two points crosses an interrupcion in the map.  for
+ * each crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
+ * the 1th point's side.  also, the index of the loop on which this crossing lies, and whether the line is crossing
+ * to the left from the POV of the edge (remember that SVG is a left-handed coordinate system).
+ *
+ * for the purposes of this function, points on the edge count as out.
+ * if the segment passes thru the vertex between two edges, it might register as two identical crossings.
  */
-function getMapEdgeCrossing(coords0: PathSegment, coords1: PathSegment, edges: MapEdge[][]
-): { point0: Point, point1: Point, loopIndex: number } | null {
-	for (const edgeLoop of edges)
-		for (const edge of edgeLoop)
-			console.assert(edge.type === 'L', `You can't use ${edge.type} edges in this funccion.`);
+function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStart: Point, edge: PathSegment
+): { point: Point, entering: boolean }[] {
+	if (edge.type !== 'L')
+		throw new Error(`You can't use ${edge.type} edges in this funccion.`);
 
-	let a = assert_xy(endpoint(coords0)); // extract the input coordinates
-	let b = assert_xy(endpoint(coords1));
-	if (coords1.type === 'L') { // if it's a line
-		for (let i = 0; i < edges.length; i ++) { // then look at each edge loop
-			for (const edge of edges[i]) { // and at each edge
-				const start = assert_xy(edge.start);
-				const end = assert_xy(edge.end);
-				const intersect = lineLineIntersection(
-					a, b, start, end);
-				if (intersect !== null && // if there is an intersection
-					!(intersect.x === a.x && intersect.y === a.y) &&
-					!(intersect.x === b.x && intersect.y === b.y)) // and that intersection is not on one of the endpoints
-					return {
-						point0: intersect, point1: intersect,
-						loopIndex: i }; // return it!
-			}
-		}
-		return null;
+	const crossings = [];
+	let segmentEnd = assert_xy(endpoint(segment));
+	const edgeEnd = assert_xy(endpoint(edge));
+	if (segment.type === 'L') { // if it's a line
+		const intersect = lineLineIntersection(
+			segmentStart, segmentEnd, edgeStart, edgeEnd);
+		if (intersect !== null) // if there is an intersection
+			crossings.push({
+				point: intersect,
+				entering: signCrossing(segmentStart, segmentEnd, edgeStart, edgeEnd) > 0 }); // return it!
 	}
-	else if (coords1.type === 'A') { // if it's an arc
-		const [r, rOther, , largeArc, sweepDirection, , ] = coords1.args; // get the parameters
+	else if (segment.type === 'A') { // if it's an arc
+		const [r, rOther, , largeArc, sweepDirection, , ] = segment.args; // get the parameters
 		console.assert(r === rOther, "I haven't accounted for ellipses.");
 
 		if (sweepDirection === 0) { // arrange a and b so that it sweeps clockwise (in graphical coordinates)
-			const temporary = a;
-			a = b;
-			b = temporary;
+			const temporary = segmentStart;
+			segmentStart = segmentEnd;
+			segmentEnd = temporary;
 		}
-		const center = chordCenter(a, b, r, largeArc === 0); // compute the center
+		const center = chordCenter(segmentStart, segmentEnd, r, largeArc === 0); // compute the center
 
-		for (let i = 0; i < edges.length; i ++) { // then look at each edge loop
-			for (const edge of edges[i]) { // and at each edge
-				const start = assert_xy(edge.start);
-				const end = assert_xy(edge.end);
-				const points = lineArcIntersections(start, end, center, r, a, b); // check for intersections
-				if (points.length > 0) {
-					const intersect = points[0];
-					return {
-						point0: intersect,
-						point1: intersect,
-						loopIndex: i };
-				}
-			}
+		const points = lineArcIntersections(edgeStart, edgeEnd, center, r, segmentStart, segmentEnd); // check for intersections
+		for (const intersect of points) {
+			let direction = {x: center.y - intersect.y, y: intersect.x - center.x};
+			if (sweepDirection === 0)
+				direction = {x: -direction.x, y: -direction.y};
+			crossings.push({
+				point: intersect,
+				entering: signCrossing({x: 0, y: 0}, direction, edgeStart, edgeEnd) > 0 });
 		}
-		return null;
 	}
 	else {
-		throw new Error(`I don't think you're allowd to use '${coords1.type}' segments here`);
+		throw new Error(`I don't think you're allowd to use '${segment.type}' segments here`);
 	}
+	// check any crossings that are on an endpoint to see if they're really supposed to be there
+	for (let i = crossings.length - 1; i >= 0; i --) {
+		if (crossings[i].point.x === segmentStart.x &&
+			crossings[i].point.y === segmentStart.y &&
+			!crossings[i].entering)
+			crossings.splice(i, 1); // if the intersect is the start point and it goes out after that then it's not a crossing
+		else if (crossings[i].point.x === segmentEnd.x &&
+			crossings[i].point.y === segmentEnd.y &&
+			crossings[i].entering)
+			crossings.splice(i, 1); // if the intersect is the endpoint and it's coming from outside then it's not a crossing
+	}
+	return crossings;
 }
 
 /**
  * compute the coordinates at which the line between these two points crosses a bound on the surface.  if
  * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
- * the 1th point's side.  also, the index of the loop on which this crossing lies.
+ * the 1th point's side.  also, whether the path is crossing to the left from the edge's POV.
+ *
+ * for the purposes of this function, points on the edge count as out.
+ * if the segment passes thru the vertex between two edges, it might register as two identical crossings.
  */
 function getGeoEdgeCrossing(
-	coords0: PathSegment, coords1: PathSegment, surface: Surface, edges: MapEdge[][]
-): { place0: Place, place1: Place, loopIndex: number } | null {
-	for (const coords of [coords0, coords1])
-		if (!['M', 'L', LongLineType.MERIDIAN, LongLineType.PARALLEL].includes(coords.type))
-			throw new Error(`You can't use '${coords.type}' segments in this funccion.`);
+	segmentStart: Place, segment: PathSegment, surface: Surface, edgeStart: Place, edge: PathSegment,
+): { place0: Place, place1: Place, entering: boolean } | null {
+	// if the edge is a meridian, rotate everything so we can reuse the parallel-crossing code
+	if (edge.type === LongLineType.MERIDIAN) {
+		let newSegmentType;
+		if (segment.type === LongLineType.PARALLEL)
+			newSegmentType = LongLineType.MERIDIAN;
+		else if (segment.type === LongLineType.MERIDIAN)
+			newSegmentType = LongLineType.PARALLEL;
+		else
+			newSegmentType = segment.type;
+		const crossing = getGeoEdgeCrossing(
+			{ф: segmentStart.λ, λ: -segmentStart.ф},
+			{type: newSegmentType, args: [segment.args[1], -segment.args[0]]},
+			surface,
+			{ф: edgeStart.λ, λ: -edgeStart.ф},
+			{type: LongLineType.PARALLEL, args: [edge.args[1], -edge.args[0]]},
+		);
+		if (crossing === null)
+			return null;
+		else
+			return {
+				place0: {λ: crossing.place0.ф, ф: -crossing.place0.λ},
+				place1: {λ: crossing.place1.ф, ф: -crossing.place1.λ},
+				entering: crossing.entering,
+			};
+	}
+	else if (edge.type !== LongLineType.PARALLEL)
+		throw new Error(`I don't think you're allowd to use ${edge.type} here`);
 
-	const [ф0, λ0] = coords0.args; // extract the input coordinates
-	const [ф1, λ1] = coords1.args;
-
-	for (let i = 0; i < edges.length; i ++) { // then look at each edge loop
-		for (const edge of edges[i]) { // and at each edge
-			const start = assert_фλ(edge.start);
-			const end = assert_фλ(edge.end);
-			if (edge.type === LongLineType.MERIDIAN) { // if it is a meridian
-				const λX = start.λ;
-				const λ̄0 = localizeInRange(λ0, λX, λX + 2*π);
-				const λ̄1 = localizeInRange(λ1, λX, λX + 2*π);
-				if (λ̄0 !== λX && λ̄1 !== λX && Math.abs(λ̄0 - λ̄1) >= π) { // check to see if it crosses this edge
-					const {place0, place1} = getMeridianCrossing(
-						surface, ф0, λ0, ф1, λ1, λX);
-					if (isBetween(place0.ф, start.ф, end.ф))
-						return {
-							place0: place0, place1: place1, loopIndex: i };
-				}
-			}
-			else if (edge.type === LongLineType.PARALLEL) { // do the same thing for parallels
-				const фX = start.ф;
-				const ф̄0 = localizeInRange(ф0, фX, фX + 2*π);
-				const ф̄1 = localizeInRange(ф1, фX, фX + 2*π);
-				if (ф̄0 !== фX && ф̄1 !== фX && Math.abs(ф̄0 - ф̄1) >= π) {
-					const {place0, place1} = getParallelCrossing(
-						ф0, λ0, ф1, λ1, start.ф);
-					if (isBetween(place0.λ, start.λ, end.λ))
-						return {
-							place0: place0, place1: place1, loopIndex: i };
-				}
-			}
-			else {
-				throw new Error(`I don't think you're allowd to use ${edge.type} here`);
+	const [ф0, λ0] = [segmentStart.ф, segmentStart.λ]; // extract the input coordinates
+	const [ф1, λ1] = segment.args;
+	const фX = edgeStart.ф;
+	const edgeEnd = assert_фλ(endpoint(edge));
+	// if it's a regular line crossing a parallel
+	if (segment.type === 'L') {
+		const inclusiveToTheSouth = edgeEnd.λ > edgeStart.λ;
+		const ф̄0 = localizeInRange(ф0, фX, фX + 2*π, inclusiveToTheSouth);
+		const ф̄1 = localizeInRange(ф1, фX, фX + 2*π, inclusiveToTheSouth);
+		if (Math.abs(ф̄0 - ф̄1) >= π) { // call the getParallelCrossing function
+			const {place0, place1} = getParallelCrossing(
+				ф̄0, λ0, ф̄1, λ1, фX);
+			if (isBetween(place0.λ, edgeStart.λ, edgeEnd.λ))
+				return {
+					place0: place0, place1: place1,
+					entering: (ф̄1 < ф̄0) === (edgeEnd.λ > edgeStart.λ) };
+		}
+	}
+	// if they're both parallels, they can't cross each other
+	else if (segment.type === LongLineType.PARALLEL) {
+		return null;
+	}
+	// if it's a meridian crossing a parallel
+	else if (segment.type === LongLineType.MERIDIAN) {
+		if (isBetween(λ0, edgeStart.λ, edgeEnd.λ)) { // crossings with meridians are simple
+			let crosses; // just make sure you get the tangencies right
+			if (edgeEnd.λ < edgeStart.λ)
+				crosses = (ф0 >= фX) !== (ф1 >= фX);
+			else
+				crosses = (ф0 > фX) !== (ф1 > фX);
+			if (crosses) {
+				const place = {ф: фX, λ: segmentStart.λ};
+				return {
+					place0: place, place1: place,
+					entering: (ф1 > ф0) === (edgeEnd.λ > edgeStart.λ) };
 			}
 		}
 	}
+	// if it's any other type of segment
+	else
+		throw new Error(`You can't use '${segment.type}' segments in this funccion.`);
 
 	return null;
-}
-
-/**
- * compute the coordinates at which the line between these two points crosses a particular meridian.  two Places
- * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.  if the
- * meridian is not the antimeridian, then they will just be the same.
- * @param surface the surface on which the meridian is defined
- * @param ф0 the transformed latitude of the zeroth point
- * @param λ0 the transformed longitude of the zeroth point
- * @param ф1 the transformed latitude of the oneth point
- * @param λ1 the transformed longitude of the oneth point
- * @param λX the longitude of the meridian
- */
-function getMeridianCrossing(
-	surface: Surface, ф0: number, λ0: number, ф1: number, λ1: number, λX = π
-): { place0: Place, place1: Place } {
-	// just call getParallelCrossing but with the coordinates transposed
-	const {place0, place1} = getParallelCrossing(λ0, ф0, λ1, ф1, λX);
-	return {
-		place0: {ф: place0.λ, λ: place0.ф},
-		place1: {ф: place1.λ, λ: place1.ф},
-	};
 }
 
 /**
@@ -756,86 +893,41 @@ function getParallelCrossing(
  * end of that point, or null if there is no such edge.  also, the index of the edge loop about which we're tauking
  * or null if the point isn't on an edge
  */
-function getPositionOnEdge(point: Location, edges: MapEdge[][]): {loop: number, index: number} {
-	for (let i = 0; i < edges.length; i ++) {
-		for (let j = 0; j < edges[i].length; j ++) { // start by choosing an edge
-			const edge = edges[i][j];
-			let onThisEdge = true;
-			if ((point.s < Math.min(edge.start.s, edge.end.s)) ||
-				(point.s > Math.max(edge.start.s, edge.end.s)) ||
-				(point.t < Math.min(edge.start.t, edge.end.t)) ||
-				(point.t > Math.max(edge.start.t, edge.end.t)))
-				onThisEdge = false;
+function getPositionOnEdge(point: Location, edges: PathSegment[]): {loop: number, index: number} {
+	let loopIndex = 0;
+	let segmentIndex = 0;
+	for (let i = 1; i < edges.length; i ++) { // start by choosing an edge
+		if (edges[i].type === 'M') {
+			loopIndex ++;
+			segmentIndex = 0;
+		}
+		else { // an edge that's not just a moveto
+			const start = endpoint(edges[i - 1]);
+			const end = endpoint(edges[i]);
+			const onThisEdge = (
+				(point.s >= Math.min(start.s, end.s)) &&
+				(point.s <= Math.max(start.s, end.s)) &&
+				(point.t >= Math.min(start.t, end.t)) &&
+				(point.t <= Math.max(start.t, end.t)));
 
 			if (onThisEdge) {
-				const startToPointVector = [ point.s - edge.start.s,
-					point.t - edge.start.t ];
-				const startToEndVector = [ edge.end.s - edge.start.s,
-					edge.end.t - edge.start.t ];
+				const startToPointVector = [ point.s - start.s,
+					point.t - start.t ];
+				const startToEndVector = [ end.s - start.s,
+					end.t - start.t ];
 				let startToEndSqr = 0;
 				let dotProduct = 0;
 				for (let k = 0; k < 2; k ++) {
 					startToEndSqr += Math.pow(startToEndVector[k], 2);
 					dotProduct += startToPointVector[k]*startToEndVector[k];
 				}
-				return { loop: i, index: j + dotProduct/startToEndSqr };
+				return { loop: loopIndex, index: segmentIndex + dotProduct/startToEndSqr };
 			}
+
+			segmentIndex ++;
 		}
 	}
 	return { loop: null, index: null };
-}
-/**
- * calculate whether the given closed curve curls in the direction opposite the given
- * edge loop
- * @param segments
- * @param edges
- */
-function isInsideOut(segments: PathSegment[], edges: MapEdge[]): boolean {
-	const edge = edges[0]; // pick one edge
-	console.assert(edge.start.s === edge.end.s, "conceptually there's noting rong with what you've done, but I've only accounted for vertical edges here");
-	const periodic = edges.length === 1; // check for periodicity in the form of an open edge
-	const period = (periodic) ? Math.abs(edge.end.t - edge.start.t) : 0; // and measure the period
-	const sEdge = edge.start.s;
-	let tTest = null;
-	let dMin = Infinity;
-	let antiparallel = null;
-	for (let i = 1; i < segments.length; i ++) { // look through the path
-		if (segments[i].type === 'M') {  // ignore moves
-		}
-		else if (segments[i].type === 'A') { // do something with arcs
-			return false; // well, assume that if there’s an arc, it’s never going to be inside out
-		}
-		else { // check lines and LongLines
-			const a = endpoint(segments[i - 1]);
-			const b = endpoint(segments[i]);
-			if (a.t !== b.t) {
-				const wraps = periodic && Math.abs(b.t - a.t) > period/2.; // if the domain is periodic and this line is long enuff, ita ctually raps around
-				if (tTest === null) {
-					tTest = (a.t + b.t)/2; // choose a y value
-					if (wraps)
-						tTest = localizeInRange(tTest + period/2, edge.start.t, edge.end.t);
-				}
-				let crossesTestLine = (a.t < tTest) !== (b.t < tTest); // look for segments that cross that y value
-				if (wraps) // account for rapping
-					crossesTestLine = !crossesTestLine;
-				if (crossesTestLine) {
-					let dt = b.t - a.t, dta = tTest - a.t, dtb = b.t - tTest;
-					if (wraps) {
-						dt = localizeInRange(dt, - period/2., period/2.);
-						dta = localizeInRange(dta, - period/2., period/2.);
-						dtb = localizeInRange(dtb, - period/2., period/2.);
-					}
-					const s = a.s*dtb/dt + b.s*dta/dt; // find the x value where they cross
-					if (Math.abs(s - sEdge) < dMin) { // the one nearest the edge will tell us
-						dMin = Math.abs(s - sEdge);
-						antiparallel = (a.t < b.t) !== (edge.start.t < edge.end.t); // if this path is widdershins relative to the edge
-						if (wraps) antiparallel = !antiparallel; // account for rapping
-					}
-				}
-			}
-		}
-	}
-	return antiparallel;
 }
 
 /**
@@ -873,14 +965,4 @@ export class InfinitePlane {
 	isOnEdge(_: Place): boolean {
 		return false;
 	}
-}
-
-
-/**
- * an edge on a map projection
- */
-export interface MapEdge {
-	type: string | LongLineType;
-	start: Location;
-	end: Location;
 }
