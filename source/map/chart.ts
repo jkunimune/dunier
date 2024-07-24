@@ -150,8 +150,8 @@ export class Chart {
 		// establish the bounds of the map
 		focus = cutToSize(
 			transformInput(this.centralMeridian, focus),
-			this.projection.surface,
 			Chart.rectangle(projection.surface.фMax, Math.PI, projection.surface.фMin, -Math.PI, true),
+			this.projection.surface,
 			true,
 		);
 		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} =
@@ -553,7 +553,7 @@ export class Chart {
 			});
 			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
 			centers[i].isContained = contains( // build a graph out of the contained centers
-				path,  {s: centers[i].x, t: -centers[i].y}, new InfinitePlane(),
+				path,  {s: centers[i].x, t: -centers[i].y}, false,
 			) !== Side.OUT; // (we're counting "borderline" as in)
 			if (centers[i].isContained) {
 				for (let j = 0; j < i; j ++) {
@@ -783,8 +783,8 @@ export class Chart {
 	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
 		const croppedToGeoRegion = cutToSize(
 			transformInput(this.centralMeridian, segments),
-			this.projection.surface,
-			this.geoEdges, closePath,
+			this.geoEdges,
+			this.projection.surface, closePath,
 		);
 		if (croppedToGeoRegion.length === 0)
 			return [];
@@ -795,8 +795,8 @@ export class Chart {
 		);
 		const croppedToMapRegion = cutToSize(
 			transformOutput(this.northUp, projected),
-			new InfinitePlane(),
-			this.mapEdges, closePath,
+			this.mapEdges,
+			new InfinitePlane(), closePath,
 		);
 		return croppedToMapRegion;
 	}

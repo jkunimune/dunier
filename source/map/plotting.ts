@@ -137,7 +137,7 @@ export function applyProjectionToPath(
 				i ++;
 			}
 			else { // if it's too long
-				const {s, t} = getMidpoint(inPoints[i - 1], inPoints[i], projection.surface); // that means we need to plot a midpoint
+				const {s, t} = getMidpoint(inPoints[i - 1], inPoints[i], true); // that means we need to plot a midpoint
 				inPoints.splice(i, 0, {type: 'L', args: [s, t]});
 				ogi.splice(i, 0, ogi[i]);
 				break; // break out of this so we can go project it
@@ -160,11 +160,11 @@ export function applyProjectionToPath(
  * take a path with some lines nad movetos and stuff, and modify it to fit within the
  * given edges by cutting it and adding lines and stuff.
  * @param segments the segments to cut
- * @param surface the surface on which the edges exist, or null if 
  * @param edges the MapEdges within which to fit this
+ * @param surface the surface on which the edges exist, or null if
  * @param closePath whether you should add stuff around the edges when things clip
  */
-export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePlane, edges: PathSegment[], closePath: boolean): PathSegment[] {
+export function cutToSize(segments: PathSegment[], edges: PathSegment[], surface: Surface | InfinitePlane, closePath: boolean): PathSegment[] {
 	if (closePath && !isClosed(segments, surface)) {
 		console.error(pathToString(segments));
 		throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
@@ -173,6 +173,8 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 		console.error(pathToString(edges));
 		throw new Error(`gross, your edges are open.  go check how you defined them!`);
 	}
+
+	const geographic = surface instanceof Surface;
 
 	// start by breaking the edges up into separate loops
 	const edgeLoops: PathSegment[][] = [];
@@ -193,7 +195,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 
 		if (thisSegment === null || thisSegment.type === 'M') { // at movetos and at the end
 			if (currentSection !== null) {
-				if (encompasses(surface, edges, currentSection))
+				if (encompasses(edges, currentSection, geographic))
 					sections.push(currentSection); // save whatever you have so far to sections (if it's within the edges)
 			}
 			if (thisSegment !== null)
@@ -210,7 +212,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 			const start = endpoint(lastSegment);
 			const end = endpoint(thisSegment);
 			const crossings = getEdgeCrossings(
-				start, thisSegment, surface, edges); // check for interruption
+				start, thisSegment, edges, geographic); // check for interruption
 			// but discard any interruptions that coincide with existing breaks in segments
 			for (let i = crossings.length - 1; i >= 0; i --) {
 				const {intersect0, intersect1} = crossings[i];
@@ -228,7 +230,7 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 			}
 
 			if (crossings.length === 0) { // if there's no interruption or we discarded them all
-				if (encompasses(surface, edges, [lastSegment]) !== encompasses(surface, edges, [lastSegment]))
+				if (encompasses(edges, [lastSegment], geographic) !== encompasses(edges, [lastSegment], geographic))
 					throw new Error(`you failed to detect a crossing between ${lastSegment.type}${lastSegment.args.join(',')} and ${thisSegment.type}${thisSegment.args.join(',')}.`);
 				currentSection.push(thisSegment); // move the points from the queue to the section
 			}
@@ -357,9 +359,9 @@ export function cutToSize(segments: PathSegment[], surface: Surface | InfinitePl
 		for (const edgeLoop of edgeLoops) { // for each loop
 			let isInsideOut; // determine if it is inside out
 			if (output.length > 0)
-				isInsideOut = encompasses(surface, output, edgeLoop) === Side.IN; // using the newly cropped output
+				isInsideOut = encompasses(output, edgeLoop, geographic) === Side.IN; // using the newly cropped output
 			else
-				isInsideOut = encompasses(surface, segments, edgeLoop) === Side.IN; // or whatever was cropped out if the output is empty
+				isInsideOut = encompasses(segments, edgeLoop, geographic) === Side.IN; // or whatever was cropped out if the output is empty
 			if (isInsideOut) // if it is inside out with respect to that loop
 				output.push(...edgeLoop); // draw the outline of the entire edge loop to contain it
 		}
@@ -440,21 +442,21 @@ function spliceSegment(start: Location, segment: PathSegment, intersect0: Locati
  * the result may be ambiguous if *all* of the points are on the edge.  note that the directionality of
  * the region path matters (see contains() for more details) but the directionality of points does not
  * matter; we're just checking to see if the vertices themselves are enclosed.
- * @param surface the surface on which the points are defined
  * @param polygon the path that defines the region we're checking
  * @param points the path whose points may or may not be in the region
+ * @param periodic whether these points are defined in geographic coordinates, mandating a [-π, π) periodic domain
  * @return whether all of points are inside edges
  */
-export function encompasses(surface: Surface | InfinitePlane, polygon: PathSegment[], points: PathSegment[]): Side {
+export function encompasses(polygon: PathSegment[], points: PathSegment[], periodic: boolean): Side {
 	for (let i = 0; i < points.length; i ++) { // the fastest way to judge this is to just look at the first point
 		const tenancy = contains(
-			polygon, endpoint(points[i]), surface);
+			polygon, endpoint(points[i]), periodic);
 		if (tenancy !== Side.BORDERLINE) // that is not ambiguous
 			return tenancy;
 	}
 	for (let i = 1; i < points.length; i ++) { // if that didn't work, use midpoints
 		const tenancy = contains(
-			polygon, getMidpoint(points[i - 1], points[i], surface), surface);
+			polygon, getMidpoint(points[i - 1], points[i], periodic), periodic);
 		if (tenancy !== Side.BORDERLINE) // in practice, this should always be unambiguous
 			return tenancy;
 	}
@@ -473,11 +475,11 @@ export function encompasses(surface: Surface | InfinitePlane, polygon: PathSegme
  *                form any ambiguusly included regions (like two concentric circles going the same way) or the result
  *                is undefined.
  * @param point the point that may or may not be in the region
- * @param surface the coordinate system in which the polygon and point exist
+ * @param periodic whether these points are defined in geographic coordinates, mandating a [-π, π) periodic domain
  * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Location, surface: Surface | InfinitePlane): Side {
+export function contains(polygon: PathSegment[], point: Location, periodic: boolean): Side {
 	if (polygon.length === 0)
 		return Side.IN;
 
@@ -488,7 +490,7 @@ export function contains(polygon: PathSegment[], point: Location, surface: Surfa
 			const start = endpoint(polygon[i-1]);
 			const end = endpoint(polygon[i]);
 			if (polygon[i].type === 'A' || start.t !== end.t) {
-				const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], surface);
+				const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], periodic);
 				if (knownPolygonPoint.s !== point.s) {
 					const bonusLength = Math.hypot(end.s - start.s, end.t - start.t);
 					terminus = { // chosen to be a little bit beyond an arbitrary segment
@@ -501,13 +503,12 @@ export function contains(polygon: PathSegment[], point: Location, surface: Surfa
 	}
 	if (terminus === null)
 		throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
-	const geographical = surface instanceof Surface;
 	const testEdge = [ // and draw a path from the point to that point
 		{ type: 'M',
 		  args: [point.s, point.t] },
-		{ type: (geographical) ? LongLineType.PARALLEL : 'L',
+		{ type: (periodic) ? LongLineType.PARALLEL : 'L',
 		  args: [point.s, terminus.t] },
-		{ type: (geographical) ? LongLineType.MERIDIAN : 'L',
+		{ type: (periodic) ? LongLineType.MERIDIAN : 'L',
 		  args: [terminus.s, terminus.t] },
 	];
 
@@ -518,7 +519,7 @@ export function contains(polygon: PathSegment[], point: Location, surface: Surfa
 			const end = endpoint(polygon[i]);
 			let inTheRightSNeighborhood = isBetween(point.s, start.s, end.s);
 			let inTheRightTNeighborhood = isBetween(point.t, start.t, end.t);
-			if (geographical && polygon[i].type === 'L') {
+			if (periodic && polygon[i].type === 'L') {
 				if (Math.abs(start.s - end.s) > π) // check for s periodicity
 					inTheRightSNeighborhood = !inTheRightSNeighborhood;
 				if (Math.abs(start.t - end.t) > π) // check for t periodicity
@@ -551,7 +552,7 @@ export function contains(polygon: PathSegment[], point: Location, surface: Surfa
 	for (let i = 1; i < polygon.length; i ++) {
 		if (polygon[i].type !== 'M') {
 			// check to see if this segment crosses the test path
-			const crossings = getEdgeCrossings(endpoint(polygon[i - 1]), polygon[i], surface, testEdge);
+			const crossings = getEdgeCrossings(endpoint(polygon[i - 1]), polygon[i], testEdge, periodic);
 			for (const {intersect0, entering} of crossings) { // look for places where the polygon crosses the path we drew
 				// determine how far it is from the pole
 				const d = Math.abs(intersect0.s - point.s) + Math.abs(intersect0.t - point.t);
@@ -572,59 +573,43 @@ export function contains(polygon: PathSegment[], point: Location, surface: Surfa
 
 /**
  * return a point on the given segment.
- * @param prev
- * @param segment
- * @param surface the surface on which the segment exists.
  */
-function getMidpoint(prev: PathSegment, segment: PathSegment, surface: Surface | InfinitePlane): Location {
-	if (surface instanceof InfinitePlane) {
-		if (segment.type === 'L') {
-			const start = endpoint(prev);
-			const end = endpoint(segment);
-			return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
-		}
-		else if (segment.type === 'A') {
-			const start = assert_xy(endpoint(prev));
-			const [r, , , largeArc, sweep, end_s, end_t] = segment.args;
-			const end = { x: end_s, y: end_t };
-			const sign = 1 - 2*sweep;
-			const center = chordCenter(start, end, r, sweep !== largeArc); // find the center
-			const direction = { // draw a ray thru the arc (bias it toward the start to avoid roundoff issues)
-				x: -sign*(end.y - start.y) + start.x - center.x,
-				y:  sign*(end.x - start.x) + start.y - center.y,
-			};
-			const scale = Math.hypot(direction.x, direction.y);
-			return {
-				s: center.x + direction.x/scale*r, // and then construct the point
-				t: center.y + direction.y/scale*r,
-			};
-		}
-		else {
-			throw new Error(`don't know how to take the midpoint of ${segment.type} segments on a cartesian plane`);
-		}
-	}
-	else if (surface instanceof Surface) {
-		if (segment.type === 'L') {
-			const start = endpoint(prev);
-			const end = endpoint(segment);
-			const midpoint =  { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
+function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean): Location {
+	if (segment.type === 'L') {
+		const start = endpoint(prev);
+		const end = endpoint(segment);
+		const midpoint =  { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
+		if (periodic) {
 			if (Math.abs(end.s - start.s) > π) // it's an arithmetic mean of the coordinates but you have to account for periodicity
 				midpoint.s = localizeInRange(midpoint.s + π, -π, π);
 			if (Math.abs(end.t - start.t) > π)
 				midpoint.t = localizeInRange(midpoint.t + π, -π, π);
-			return midpoint;
 		}
-		else if (segment.type === LongLineType.MERIDIAN || segment.type === LongLineType.PARALLEL) {
-			const start = endpoint(prev);
-			const end = endpoint(segment);
-			return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
-		}
-		else {
-			throw new Error(`don't know how to take the midpoint of ${segment.type} segments on a geographic surface`);
-		}
+		return midpoint;
+	}
+	else if (segment.type === 'A') {
+		const start = assert_xy(endpoint(prev));
+		const [r, , , largeArc, sweep, end_s, end_t] = segment.args;
+		const end = { x: end_s, y: end_t };
+		const sign = 1 - 2*sweep;
+		const center = chordCenter(start, end, r, sweep !== largeArc); // find the center
+		const direction = { // draw a ray thru the arc (bias it toward the start to avoid roundoff issues)
+			x: -sign*(end.y - start.y) + start.x - center.x,
+			y:  sign*(end.x - start.x) + start.y - center.y,
+		};
+		const scale = Math.hypot(direction.x, direction.y);
+		return {
+			s: center.x + direction.x/scale*r, // and then construct the point
+			t: center.y + direction.y/scale*r,
+		};
+	}
+	else if (segment.type === LongLineType.MERIDIAN || segment.type === LongLineType.PARALLEL) {
+		const start = endpoint(prev);
+		const end = endpoint(segment);
+		return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
 	}
 	else {
-		throw new Error(`this surface has an impossible type: ${typeof surface}`);
+		throw new Error(`don't know how to take the midpoint of ${segment.type} segments.`);
 	}
 }
 
@@ -645,7 +630,7 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, surface: Surface |
  * if the segment passes thru the vertex between two edges, it will only register as a single crossing
  */
 export function getEdgeCrossings(
-	segmentStart: Location, segment: PathSegment, surface: Surface | InfinitePlane, edges: PathSegment[]
+	segmentStart: Location, segment: PathSegment, edges: PathSegment[], periodic: boolean,
 ): { intersect0: Location, intersect1: Location, loopIndex: number, entering: boolean }[] {
 	const crossings = [];
 	let loopIndex = 0;
@@ -658,9 +643,9 @@ export function getEdgeCrossings(
 		const edgeStart = endpoint(edges[i - 1]);
 		const edge = edges[i];
 		// if we're on a geographic surface
-		if (surface instanceof Surface) {
+		if (periodic) {
 			// find all the geo edge crossings
-			const crossing = getGeoEdgeCrossing(assert_фλ(segmentStart), segment, surface, assert_фλ(edgeStart), edge);
+			const crossing = getGeoEdgeCrossing(assert_фλ(segmentStart), segment, assert_фλ(edgeStart), edge);
 			if (crossing !== null) {
 				const { place0, place1, entering } = crossing;
 				crossings.push({ intersect0: { s: place0.ф, t: place0.λ },
@@ -669,7 +654,7 @@ export function getEdgeCrossings(
 			}
 		}
 		// if we're in the infinite cartesian plane
-		else if (surface instanceof InfinitePlane) {
+		else {
 			// find all the map edge crossings
 			for (const crossing of getMapEdgeCrossings(assert_xy(segmentStart), segment, assert_xy(edgeStart), edge)) {
 				const { point, entering } = crossing;
@@ -677,9 +662,6 @@ export function getEdgeCrossings(
 					intersect1: { s: point.x, t: point.y },
 					loopIndex: loopIndex, entering: entering }); // even if the getCrossing function thaut it was only entering
 			}
-		}
-		else {
-			throw new Error("no.");
 		}
 	}
 	// now remove any duplicate crossings
@@ -776,7 +758,7 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
  * if the segment passes thru the vertex between two edges, it might register as two identical crossings.
  */
 function getGeoEdgeCrossing(
-	segmentStart: Place, segment: PathSegment, surface: Surface, edgeStart: Place, edge: PathSegment,
+	segmentStart: Place, segment: PathSegment, edgeStart: Place, edge: PathSegment,
 ): { place0: Place, place1: Place, entering: boolean } | null {
 	// if the edge is a meridian, rotate everything so we can reuse the parallel-crossing code
 	if (edge.type === LongLineType.MERIDIAN) {
@@ -790,7 +772,6 @@ function getGeoEdgeCrossing(
 		const crossing = getGeoEdgeCrossing(
 			{ф: segmentStart.λ, λ: -segmentStart.ф},
 			{type: newSegmentType, args: [segment.args[1], -segment.args[0]]},
-			surface,
 			{ф: edgeStart.λ, λ: -edgeStart.ф},
 			{type: LongLineType.PARALLEL, args: [edge.args[1], -edge.args[0]]},
 		);
