@@ -18,7 +18,6 @@ import {LockedDisc} from "../surface/lockeddisc.js";
 import {generateFactSheet} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
 import {PortableDocument} from "../utilities/portabledocument.js";
-import {MapProjection} from "../map/projection.js";
 import {Civ} from "../generation/civ.js";
 import {PathSegment} from "../utilities/coordinates.js";
 // @ts-ignore
@@ -220,8 +219,8 @@ function applyTerrain(): void {
 
 	console.log("grafa...");
 	const mapper = new Chart(
-		MapProjection.equalEarth(surface, surface.фMin, surface.фMax),
-		true, [], false);
+		"equal_area", surface, [],
+		true, false);
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
@@ -270,8 +269,8 @@ function applyHistory(): void {
 
 	console.log("grafa...");
 	const mapper = new Chart(
-		MapProjection.equalEarth(surface, surface.фMin, surface.фMax),
-		true, [], false);
+		"equal_area", surface, [],
+		true, false);
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
@@ -334,21 +333,9 @@ function applyMap(): void {
 	else if (focusSpecifier.startsWith("country"))
 		focus = Chart.border(world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tiles, true);
 
-	const {sMin: фMin, sMax: фMax} = Chart.calculatePathBounds(focus);
-
-	let projection: MapProjection;
-	if (projectionName === 'basic')
-		projection = MapProjection.plateCaree(surface);
-	else if (projectionName === 'equal_area')
-		projection = MapProjection.equalEarth(surface, фMin, фMax);
-	else if (projectionName === 'classical')
-		projection = MapProjection.bonne(surface, фMin, фMax);
-	else if (projectionName === 'modern')
-		projection = MapProjection.conic(surface, фMin, фMax);
-	else
-		throw new Error(`no jana metode da graflance: '${projectionName}'.`);
-
-	const chart = new Chart(projection, northUp, focus, projectionName !== 'classical');
+	const chart = new Chart(
+		projectionName, surface, focus,
+		northUp, projectionName !== 'classical');
 	mappedCivs = chart.depict(
 		surface,
 		world,

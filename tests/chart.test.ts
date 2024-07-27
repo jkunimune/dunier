@@ -49,6 +49,9 @@ test("rectangle", () => {
 });
 
 describe("calculatePathBounds", () => {
+	test("empty", () => {
+		expect(() => Chart.calculatePathBounds([])).toThrow();
+	});
 	test("forward arc", () => {
 		const path = [
 			{type: 'M', args: [0, 0]},

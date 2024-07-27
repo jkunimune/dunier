@@ -140,22 +140,43 @@ export class Chart {
 	private labelIndex: number;
 
 
+	/**
+	 * build an object for visualizing geographic information in SVG.
+	 * @param projectionName the type of projection to choose – one of "basic", "equal_area", "classical", or "modern"
+	 * @param surface the Surface for which to design the projection
+	 * @param focus the region of interest, for the purposes of tailoring the map projection and setting the bounds
+	 * @param northUp whether the top of the map should ruffly correspond to North, rather than South
+	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
+	 */
 	constructor(
-		projection: MapProjection, northUp: boolean, focus: PathSegment[], rectangularBounds: boolean,
+		projectionName: string, surface: Surface, focus: PathSegment[], northUp: boolean, rectangularBounds: boolean,
 	) {
-		this.projection = projection;
-		this.northUp = northUp;
-		
+		// choose the central meridian somewhat naively
 		this.centralMeridian = Chart.chooseCentralMeridian(focus);
 		// establish the bounds of the map
 		focus = cutToSize(
 			transformInput(this.centralMeridian, focus),
-			Chart.rectangle(projection.surface.фMax, Math.PI, projection.surface.фMin, -Math.PI, true),
-			this.projection.surface,
-			true,
+			Chart.rectangle(surface.фMax, Math.PI, surface.фMin, -Math.PI, true),
+			surface, true,
 		);
+		// use that to choose the standard parallels intelligently
+		const {sMin: фMinFocus, sMax: фMaxFocus} = Chart.calculatePathBounds(focus);
+
+		if (projectionName === 'basic')
+			this.projection = MapProjection.plateCaree(surface);
+		else if (projectionName === 'equal_area')
+			this.projection = MapProjection.equalEarth(surface, фMinFocus, фMaxFocus);
+		else if (projectionName === 'classical')
+			this.projection = MapProjection.bonne(surface, фMinFocus, фMaxFocus);
+		else if (projectionName === 'modern')
+			this.projection = MapProjection.conic(surface, фMinFocus, фMaxFocus);
+		else
+			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
+
+		this.northUp = northUp;
+		
 		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} =
-			Chart.calculateMapBounds(focus, projection, rectangularBounds);
+			Chart.chooseMapBounds(focus, this.projection, rectangularBounds);
 		this.labelIndex = 0;
 
 		// flip them if it's a south-up map
@@ -1079,7 +1100,7 @@ export class Chart {
 	 * @param projection the projection being used to map this region from a Surface to the plane
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 */
-	static calculateMapBounds(
+	static chooseMapBounds(
 		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
 	): {фMin: number, фMax: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
 		let фMin, фMax, λMax;
@@ -1146,6 +1167,8 @@ export class Chart {
 	 * @param segments the region that must be enclosed entirely within the returned bounding box
 	 */
 	static calculatePathBounds(segments: PathSegment[]): {sMin: number, sMax: number, tMin: number, tMax: number} {
+		if (segments.length === 0)
+			throw new Error("this function requires some points to work at all.");
 		let sMin = Infinity, sMax = -Infinity, tMin = Infinity, tMax = -Infinity;
 		for (let i = 0; i < segments.length; i ++) { // TODO: this won't notice when the pole is included in the region
 			const segment = segments[i];
