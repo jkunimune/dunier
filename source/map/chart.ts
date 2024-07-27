@@ -1135,7 +1135,7 @@ export class Chart {
 			фMax = linterp(Math.min(1.1*sMax - 0.1*sMin, sRef[sRef.length - 1]), sRef, фRef); // TODO use inverse projection here
 			фMin = linterp(Math.max(1.1*sMin - 0.1*sMax, sRef[0]), sRef, фRef);
 			const ds_dλ = projection.surface.rz((фMin + фMax)/2).r;
-			λMax = Math.min(Math.PI, regionBounds.tMax + 0.4*(sMax - sMin)/ds_dλ);
+			λMax = Math.min(Math.PI, regionBounds.tMax + 0.1*(sMax - sMin)/ds_dλ);
 			// and don't apply any Cartesian bounds
 			xLeft = -Infinity;
 			xRight = Infinity;
