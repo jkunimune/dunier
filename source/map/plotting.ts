@@ -847,14 +847,21 @@ function getParallelCrossing(
 ): { place0: Place, place1: Place } {
 	const weit0 = localizeInRange(ф1 - фX, -π, π);
 	const weit1 = localizeInRange(фX - ф0, -π, π);
-	if (Math.abs(λ1 - λ0) > π) {
-		const λMin = Math.max(λ0, λ1);
-		const λMax = λMin + 2*π;
-		λ0 = localizeInRange(λ0, λMin, λMax);
-		λ1 = localizeInRange(λ1, λMin, λMax);
+	let λX;
+	if (weit0 === 0)
+		λX = λ1; // avoid doing division if you can help it (because of the roundoff)
+	else if (weit1 === 0)
+		λX = λ0;
+	else {
+		if (Math.abs(λ1 - λ0) > π) { // account for longitude-periodicity
+			const λMin = Math.max(λ0, λ1);
+			const λMax = λMin + 2*π;
+			λ0 = localizeInRange(λ0, λMin, λMax);
+			λ1 = localizeInRange(λ1, λMin, λMax);
+		}
+		λX = localizeInRange(
+			(weit0*λ0 + weit1*λ1)/(weit0 + weit1), -π, π);
 	}
-	const λX = localizeInRange(
-		(weit0*λ0 + weit1*λ1)/(weit0 + weit1), -π, π);
 	if (Math.abs(фX) === π && ф0 < ф1)
 		return { place0: { ф: -π, λ: λX },
 			place1: { ф:  π, λ: λX } };

@@ -169,6 +169,20 @@ describe("getEdgeCrossings", () => {
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([]);
 			});
 		});
+		test("line onto a meridian (with known roundoff issues)", () => {
+			const meridian = [
+				{type: 'M', args: [π, -π]},
+				{type: LongLineType.MERIDIAN, args: [-π, -π]},
+			];
+			const segment = [
+				{type: 'M', args: [0.130964506054289, -3.118616303993922]},
+				{type: 'L', args: [0.18247162241832457, -π]},
+			];
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, true)).toEqual([{
+				intersect0: {s: 0.18247162241832457, t: -π}, intersect1: {s: 0.18247162241832457, t: π},
+				loopIndex: 0, entering: false
+			}]);
+		});
 	});
 	describe("Cartesian", () => {
 		test("line", () => {

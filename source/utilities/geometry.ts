@@ -97,11 +97,15 @@ export function lineLineIntersection(
 	p1: Point, p2: Point,
 	q1: Point, q2: Point): Point {
 	if (q1.x === q2.x) {
-		if (Math.min(p1.x, p2.x) <= q1.x && Math.max(p1.x, p2.x) >= q1.x) {
-			const r = {x: q1.x, y: (q1.x - p1.x)/(p2.x - p1.x)*(p2.y - p1.y) + p1.y};
-			if (r.y >= Math.min(q1.y, q2.y) && r.y <= Math.max(q1.y, q2.y))
-				return r;
-		}
+		let r = null;
+		if (p1.x === q1.x)
+			r = p1;
+		else if (p2.x === q1.x)
+			r = p2;
+		else if (Math.min(p1.x, p2.x) <= q1.x && Math.max(p1.x, p2.x) >= q1.x)
+			r = {x: q1.x, y: (q1.x - p1.x)/(p2.x - p1.x)*(p2.y - p1.y) + p1.y};
+		if (r !== null && r.y >= Math.min(q1.y, q2.y) && r.y <= Math.max(q1.y, q2.y))
+			return r;
 		return null;
 	}
 	else if (q1.y === q2.y) {
