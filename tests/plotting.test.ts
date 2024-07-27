@@ -2,10 +2,19 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {contains, cutToSize, encompasses, getEdgeCrossings, InfinitePlane} from "../source/map/plotting.js";
+import {
+	applyProjectionToPath,
+	contains,
+	cutToSize,
+	encompasses,
+	getEdgeCrossings,
+	InfinitePlane
+} from "../source/map/plotting.js";
 import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, LongLineType, PathSegment} from "../source/utilities/coordinates.js";
 import {Toroid} from "../source/surface/toroid.js";
+import {LockedDisc} from "../source/surface/lockeddisc.js";
+import {MapProjection} from "../source/map/projection.js";
 
 const π = Math.PI;
 
@@ -727,6 +736,25 @@ describe("cutToSize", () => {
 			{type: LongLineType.PARALLEL, args: [π, 1]},
 		]);
 	});
+	test("single vertex over a periodic domain", () => {
+		const segments = [
+			{type: 'M', args: [1, 3]},
+			{type: 'L', args: [2, -3]},
+		];
+		const toroidalEdges = [
+			{type: 'M', args: [-π, -π]},
+			{type: LongLineType.PARALLEL, args: [-π, π]},
+			{type: LongLineType.MERIDIAN, args: [π, π]},
+			{type: LongLineType.PARALLEL, args: [π, -π]},
+			{type: LongLineType.MERIDIAN, args: [-π, -π]},
+		];
+		expect(cutToSize(segments, toroidalEdges, TOROID, false)).toEqual([
+			{type: 'M', args: [1, 3]},
+			{type: 'L', args: [1.5, π]},
+			{type: 'M', args: [1.5, -π]},
+			{type: 'L', args: [2, -3]},
+		]);
+	});
 	test("fully coincident", () => {
 		expect(cutToSize(
 			edges, edges, PLANE, true,
@@ -777,6 +805,89 @@ describe("cutToSize", () => {
 			{type: 'L', args: [0.0, 1.0]},
 			{type: 'L', args: [1.0, 1.0]},
 			{type: 'L', args: [1.0, 0.0]},
+		]);
+	});
+});
+
+describe("applyProjectionToPath", () => {
+	const surface = new LockedDisc(2);
+	surface.initialize();
+	const projection = MapProjection.conic(surface, surface.фMin, surface.фMax);
+	test("points", () => {
+		const path = [
+			{type: 'M', args: [π/4, -π/2]},
+			{type: 'M', args: [π/4, π/2]},
+		];
+		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
+			{type: 'M', args: [
+				expect.closeTo(-1),
+				expect.closeTo(-2),
+			]},
+			{type: 'M', args: [
+				expect.closeTo(1),
+				expect.closeTo(-2),
+			]},
+		]);
+	});
+	test("line", () => {
+		const path = [
+			{type: 'M', args: [π/2, 0]},
+			{type: 'L', args: [π/4, π/2]},
+		];
+		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
+			{type: 'M', args: [
+				expect.closeTo(0),
+				expect.closeTo(-2),
+			]},
+			{type: 'L', args: [
+				expect.closeTo(1),
+				expect.closeTo(-2),
+			]},
+		]);
+	});
+	test("long line", () => {
+		const path = [
+			{type: 'M', args: [π/4, -π/2]},
+			{type: 'L', args: [π/4, π/2]},
+		];
+		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
+			{type: 'M', args: [
+				expect.closeTo(-1),
+				expect.closeTo(-2),
+			]},
+			{type: 'L', args: [
+				expect.closeTo(-Math.sqrt(2)/2),
+				expect.closeTo(-2 + Math.sqrt(2)/2),
+			]},
+			{type: 'L', args: [
+				expect.closeTo(0),
+				expect.closeTo(-1),
+			]},
+			{type: 'L', args: [
+				expect.closeTo(Math.sqrt(2)/2),
+				expect.closeTo(-2 + Math.sqrt(2)/2),
+			]},
+			{type: 'L', args: [
+				expect.closeTo(1),
+				expect.closeTo(-2),
+			]},
+		]);
+	});
+	test("parallel", () => {
+		const path = [
+			{type: 'M', args: [π/4, -π/2]},
+			{type: LongLineType.PARALLEL, args: [π/4, π/2]},
+		];
+		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
+			{type: 'M', args: [
+				expect.closeTo(-1),
+				expect.closeTo(-2),
+			]},
+			{type: 'A', args: [
+				expect.closeTo(1), expect.closeTo(1),
+				0, expect.anything(), 0,
+				expect.closeTo(1), expect.closeTo(-2),
+			]},
 		]);
 	});
 });

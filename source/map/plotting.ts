@@ -92,61 +92,60 @@ export function applyProjectionToPath(
 			if (!isFinite(arg))
 				throw new Error(`you may not pass ${arg} to the mapping functions!`);
 
-	let repeatCount = 0; // now do the math
 	const outPoints: PathSegment[] = []; // start a list of the projected points that are done
-	const pendingPoints: PathSegment[] = []; // and a list of projected points that mite come later (in reverse order)
-	const ogi: number[] = [];
-	for (let i = 0; i < inPoints.length; i ++)
-		ogi.push(i);
-	let i = 0; // and the index in inPoints that corresponds to the end of outPoints
-	while (i < inPoints.length) {
+	for (let i = 0; i < inPoints.length; i ++) {
 		if (inPoints[i].type === LongLineType.MERIDIAN) { // do the projection
+			// call projectMeridian for meridians
 			const [ф0, λ] = inPoints[i-1].args;
 			const [ф1, _] = inPoints[i].args;
 			console.assert(λ === _, "meridians must start and end at the same longitude.");
 			outPoints.push(...projection.projectMeridian(ф0, ф1, λ));
-			i ++;
 		}
 		else if (inPoints[i].type === LongLineType.PARALLEL) {
+			// call projectParallel for parallels
 			const [ф, λ0] = inPoints[i-1].args;
 			const [_, λ1] = inPoints[i].args;
 			console.assert(ф === _, "parallels must start and end at the same latitude.");
 			outPoints.push(...projection.projectParallel(λ0, λ1, ф));
-			i ++;
 		}
 		else if (inPoints[i].type === 'M') {
+			// call projectPoint for movetos
 			const point = assert_фλ(endpoint(inPoints[i]));
 			const {x, y} = projection.projectPoint(point);
 			outPoints.push({type: 'M', args: [x, y]});
-			i ++;
 		}
 		else if (inPoints[i].type === 'L') {
-			const point = assert_фλ(endpoint(inPoints[i]));
-			let {x, y} = projection.projectPoint(point);
-			pendingPoints.push({type: 'L', args: [x, y]}); // put a pin in it; we mite haff to split it in haff
+			// for continuus segments, don't call projectPoint just yet
+			const pendingInPoints = [assert_фλ(endpoint(inPoints[i]))]; // add the desired destination to a queue
+			const completedInPoints = [assert_фλ(endpoint(inPoints[i - 1]))];
+			while (pendingInPoints.length > 0) { // now, as long as there are points in the pending cue
+				const nextInPoint = pendingInPoints.pop(); // take the next point
+				const nextOutPoint = projection.projectPoint(nextInPoint); // project it
+				const lastInPoint = completedInPoints[completedInPoints.length - 1];
+				const lastOutPoint = assert_xy(endpoint(outPoints[outPoints.length - 1])); // check the map distance between here and the last point
+				if (Math.hypot(nextOutPoint.x - lastOutPoint.x, nextOutPoint.y - lastOutPoint.y) < precision) { // if it's short enuff
+					completedInPoints.push(nextInPoint); // unpend it
+					outPoints.push({type: 'L', args: [nextOutPoint.x, nextOutPoint.y]});
+				}
+				else { // if it's too long
+					pendingInPoints.push(nextInPoint); // put it back
+					const intermediateInPoint = assert_фλ(getMidpoint(
+						{type: 'M', args: [lastInPoint.ф, lastInPoint.λ]},
+						{type: 'L', args: [nextInPoint.ф, nextInPoint.λ]}, true)); // that means we need to plot a midpoint first
+					pendingInPoints.push(intermediateInPoint);
+
+					if (Math.abs(nextInPoint.λ - lastInPoint.λ) > π || Math.abs(nextInPoint.ф - lastInPoint.ф) > π)
+						throw new Error(`the input to applyProjectionToPath needs to be run thru cutToSize first.  ` +
+						                `this clearly hasn't because there's no way you can draw an uncropped line ` +
+						                `from ${lastInPoint.ф},${lastInPoint.λ} to ${nextInPoint.ф},${nextInPoint.λ}.`);
+					if (pendingInPoints.length + outPoints.length > 100000)
+						throw new Error(`why can't I find a point between [${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.ф},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}]`);
+				}
+			}
 		}
 		else {
 			throw new Error(`I don't think you can use ${inPoints[i].type} here`);
 		}
-
-		while (pendingPoints.length > 0) { // now, if there are points in the pending cue
-			const a = assert_xy(endpoint(outPoints[outPoints.length - 1])); // check the map distance
-			const b = assert_xy(endpoint(pendingPoints[pendingPoints.length - 1])); // between the end of outPoints and the start of pendingPoints
-			if (Math.hypot(b.x - a.x, b.y - a.y) < precision) { // if it's short enuff
-				outPoints.push(pendingPoints.pop()); // unpend it
-				i ++;
-			}
-			else { // if it's too long
-				const {s, t} = getMidpoint(inPoints[i - 1], inPoints[i], true); // that means we need to plot a midpoint
-				inPoints.splice(i, 0, {type: 'L', args: [s, t]});
-				ogi.splice(i, 0, ogi[i]);
-				break; // break out of this so we can go project it
-			}
-		}
-
-		repeatCount ++;
-		if (repeatCount > 100000)
-			throw new Error(`why can't I find a point between ${inPoints[i - 1].args}=>${outPoints[outPoints.length - 1].args} and ${inPoints[i].args}=>${pendingPoints[pendingPoints.length - 1].args}`);
 	}
 
 	// check for NaNs because they can really mess things up
