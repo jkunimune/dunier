@@ -41,7 +41,6 @@ const TERRAIN_COLORMAP = [
 ];
 
 const MIN_SIZE_TO_LIST = 6;
-const MIN_COUNTRIES_TO_LIST = 3;
 const MAX_COUNTRIES_TO_LIST = 20;
 
 enum Layer {
@@ -242,8 +241,11 @@ function applyTerrain(): void {
 			continents.push(new Set());
 		continents[tile.plateIndex].add(tile);
 	}
-	continents = continents.filter((tiles) => tiles.size > MIN_SIZE_TO_LIST);
 	continents = continents.sort((tilesA, tilesB) => tilesB.size - tilesA.size);
+	let minSizeToList = MIN_SIZE_TO_LIST;
+	if (continents[0].size < minSizeToList && continents[0].size > 0)
+		minSizeToList = continents[0].size;
+	continents = continents.filter((tiles) => tiles.size >= minSizeToList);
 	continents = continents.slice(0, Number(DOM.val('terrain-continents')));
 
 	console.log("fina!");
@@ -301,7 +303,7 @@ function applyHistory(): void {
 		picker.appendChild(option);
 	}
 	// or show a single country
-	const countries = world.getCivs(true, MIN_SIZE_TO_LIST, MIN_COUNTRIES_TO_LIST); // list the biggest countries for the centering selection
+	const countries = world.getCivs(true, MIN_SIZE_TO_LIST); // list the biggest countries for the centering selection
 	for (const country of countries.slice(0, MAX_COUNTRIES_TO_LIST)) {
 		const option = document.createElement('option');
 		option.setAttribute('value', `country${country.id}`);
