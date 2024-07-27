@@ -8,15 +8,48 @@ import {
 	cutToSize,
 	encompasses,
 	getEdgeCrossings,
-	InfinitePlane
+	InfinitePlane, isClosed
 } from "../source/map/plotting.js";
 import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, LongLineType, PathSegment} from "../source/utilities/coordinates.js";
 import {Toroid} from "../source/surface/toroid.js";
 import {LockedDisc} from "../source/surface/lockeddisc.js";
 import {MapProjection} from "../source/map/projection.js";
+import {Sphere} from "../source/surface/sphere.js";
 
 const π = Math.PI;
+
+describe("isClosed", () => {
+	const plane = new InfinitePlane();
+	const sphere = new Sphere(1);
+	test("nothing", () => {
+		const path: PathSegment[] = [];
+		expect(isClosed(path, plane)).toBe(true);
+	});
+	test("line", () => {
+		const path = [
+			{type: 'M', args: [-1, 2]},
+			{type: 'L', args: [3, -4]},
+		];
+		expect(isClosed(path, plane)).toBe(false);
+	});
+	test("loop", () => {
+		const path = [
+			{type: 'M', args: [-1, 2]},
+			{type: 'L', args: [3, -4]},
+			{type: 'L', args: [-5, 0]},
+			{type: 'L', args: [-1, 2]},
+		];
+		expect(isClosed(path, plane)).toBe(true);
+	});
+	test("loop around the antimeridian", () => {
+		const path = [
+			{type: 'M', args: [1, -π]},
+			{type: LongLineType.PARALLEL, args: [1, π]},
+		];
+		expect(isClosed(path, sphere)).toBe(true);
+	});
+});
 
 describe("getEdgeCrossings", () => {
 	describe("geographical", () => {

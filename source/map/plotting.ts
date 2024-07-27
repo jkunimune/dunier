@@ -922,7 +922,7 @@ function getPositionOnEdge(point: Location, edges: PathSegment[]): {loop: number
  * @param segments the Path to test
  * @param surface the surface that contains the points (so we know when it goes off the edge)
  */
-function isClosed(segments: PathSegment[], surface: Surface | InfinitePlane): boolean {
+export function isClosed(segments: PathSegment[], surface: Surface | InfinitePlane): boolean {
 	let start: Location = null;
 	for (let i = 0; i < segments.length; i ++) {
 		if (segments[i].type === 'M')
@@ -932,6 +932,13 @@ function isClosed(segments: PathSegment[], surface: Surface | InfinitePlane): bo
 			if (start === null)
 				throw new Error(`path must begin with a moveto, not ${segments[0].type}`);
 			const end = endpoint(segments[i]);
+			// account for periodicity
+			if (surface instanceof Surface) {
+				start.s = localizeInRange(start.s, -π, π);
+				start.t = localizeInRange(start.t, -π, π);
+				end.s = localizeInRange(end.s, -π, π);
+				end.t = localizeInRange(end.t, -π, π);
+			}
 			// if it doesn't end where it started
 			const endsOnStart = start.s === end.s && start.t === end.t;
 			// and it doesn't start and end on edges
