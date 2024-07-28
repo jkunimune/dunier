@@ -110,8 +110,7 @@ describe("all together", () => {
 	globe.initialize();
 	test("full world Equal Earth", () => {
 		const chart = new Chart(
-			MapProjection.equalEarth(globe, -Math.PI/2, Math.PI/2),
-			true, [], true);
+			"equal_area", globe, [], true, true);
 		expect(chart.dimensions).toEqual(expect.objectContaining({
 			left: expect.closeTo(-2.7893), right: expect.closeTo(2.7893),
 			bottom: 0, top: expect.closeTo(-2.5788),
