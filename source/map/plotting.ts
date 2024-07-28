@@ -391,7 +391,19 @@ export function cutToSize(segments: PathSegment[], edges: PathSegment[], surface
  *                   is not 1:1, this will be on the side of segment's endpoint.
  */
 function spliceSegment(start: Location, segment: PathSegment, intersect0: Location, intersect1: Location): PathSegment[] {
-	if (segment.type === 'L') { // to split a line
+	const end = endpoint(segment);
+	if (start.s === intersect0.s && start.t === intersect0.t) // if you're splicing at the beginning
+		return [
+			{ type: 'M', args: [start.s, start.t] }, // just add a single moveto before the segment
+			segment,
+		];
+	else if (intersect1.s === end.s && intersect1.t === end.t) // if you're splicing at the end
+		return [
+			segment,
+			{ type: 'M', args: [end.s, end.t] }, // just add a single moveto after the segment
+		];
+
+	else if (segment.type === 'L') { // to split a line in the middle
 		return [
 			{ type: 'L', args: [intersect0.s, intersect0.t] }, // it's a line up to the very edge
 			{ type: 'M', args: [intersect1.s, intersect1.t] }, // then a jump to the other side
@@ -399,7 +411,7 @@ function spliceSegment(start: Location, segment: PathSegment, intersect0: Locati
 		];
 	}
 
-	else if (segment.type === 'A') { // to split an arc
+	else if (segment.type === 'A') { // to split an arc in the middle
 		const a = assert_xy(start);
 		const b = assert_xy(intersect0);
 		const c = assert_xy(intersect1);
@@ -714,14 +726,17 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
 		const [r, rOther, , largeArc, sweepDirection, , ] = segment.args; // get the parameters
 		console.assert(r === rOther, "I haven't accounted for ellipses.");
 
-		if (sweepDirection === 0) { // arrange a and b so that it sweeps clockwise (in graphical coordinates)
-			const temporary = segmentStart;
-			segmentStart = segmentEnd;
-			segmentEnd = temporary;
+		let q0, q1;
+		if (sweepDirection === 1) {
+			q0 = segmentStart;
+			q1 = segmentEnd;
 		}
-		const center = chordCenter(segmentStart, segmentEnd, r, largeArc === 0); // compute the center
-
-		const points = lineArcIntersections(edgeStart, edgeEnd, center, r, segmentStart, segmentEnd); // check for intersections
+		else { // arrange the arc endpoints so that it sweeps clockwise (in graphical coordinates)
+			q0 = segmentEnd;
+			q1 = segmentStart;
+		}
+		const center = chordCenter(q0, q1, r, largeArc === 0); // compute the center
+		const points = lineArcIntersections(edgeStart, edgeEnd, center, r, q0, q1); // check for intersections
 		for (const intersect of points) {
 			let direction = {x: center.y - intersect.y, y: intersect.x - center.x};
 			if (sweepDirection === 0)

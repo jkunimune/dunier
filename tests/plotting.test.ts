@@ -285,7 +285,7 @@ describe("getEdgeCrossings", () => {
 				loopIndex: 0, entering: false,
 			}]);
 		});
-		describe("onto a line", () => {
+		describe("line onto a line", () => {
 			const edge = [
 				{type: 'M', args: [3, 0]},
 				{type: 'L', args: [-2, 0]},
@@ -314,6 +314,20 @@ describe("getEdgeCrossings", () => {
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([]);
 			});
+		});
+		test("arc onto a line", () => {
+			const edge = [
+				{type: 'M', args: [0, -3]},
+				{type: 'L', args: [0, -1]},
+			];
+			const segments = [
+				{type: 'M', args: [1, -2]},
+				{type: 'A', args: [3, 3, 0, 0, 0, 0, -2]},
+			];
+			expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([{
+				intersect0: {s: 0, t: -2}, intersect1: {s: 0, t: -2},
+				loopIndex: 0, entering: false,
+			}]);
 		});
 	});
 });
@@ -806,6 +820,28 @@ describe("cutToSize", () => {
 			{type: 'M', args: [1.0, 0.5]},
 			{type: 'L', args: [0.5, 1.0]},
 		]);
+	});
+	test("tangent", () => {
+		const segments = [
+			{type: 'M', args: [0.5, 0.1]},
+			{type: 'L', args: [0.0, 0.5]},
+			{type: 'L', args: [0.5, 0.9]},
+			{type: 'L', args: [0.5, 0.1]},
+		];
+		expect(cutToSize(
+			segments, edges, PLANE, true,
+		)).toEqual(segments);
+	});
+	test("doubly tangent", () => {
+		const segments = [
+			{type: 'M', args: [0.5, 0.1]},
+			{type: 'L', args: [0.0, 0.5]},
+			{type: 'L', args: [0.5, 1.0]},
+			{type: 'L', args: [0.5, 0.1]},
+		];
+		expect(cutToSize(
+			segments, edges, PLANE, true,
+		)).toEqual(segments);
 	});
 	test("partially coincident but not tangent", () => {
 		const segments = [

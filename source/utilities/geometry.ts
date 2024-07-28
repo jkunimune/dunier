@@ -140,7 +140,9 @@ export function trajectoryIntersection(
 
 /**
  * find the intersections between a line segment and an arc.  for the purposes of this
- * function, tangency does not count as an intersection.
+ * function, the line being tangent to the arc body does not count as intersection, but
+ * the line passing thru one of the arc's endpoints does, as does the arc passing thru
+ * one of the line's endpoints.
  * @param p0 one endpoint of the line segment
  * @param p1 the other endpoint of the line segment
  * @param o the center of the arc
@@ -168,12 +170,12 @@ export function lineArcIntersections(
 
 		// then, check each one to see if it is between the line segment endpoints
 		for (const t of roots) {
-			if (t > 0 && t < 1) {
+			if (t >= 0 && t <= 1) {
 				const x = { x: p0.x + (p1.x - p0.x)*t, y: p0.y + (p1.y - p0.y)*t };
 				// and if it is between the arc endpoints
 				const largeArc = signAngle(o, q0, q1) < 0;
-				const afterQ0 = signAngle(o, q0, x) > r*r*epsilon;
-				const aforeQ1 = signAngle(o, x, q1) > r*r*epsilon;
+				const afterQ0 = signAngle(o, q0, x) >= 0;
+				const aforeQ1 = signAngle(o, x, q1) >= 0;
 				if ((afterQ0 && aforeQ1) || (largeArc && afterQ0 !== aforeQ1))
 					crossings.push(x);
 			}
