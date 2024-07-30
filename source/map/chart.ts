@@ -18,7 +18,7 @@ import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 import {assert_xy, endpoint, Location, LongLineType, PathSegment, Place} from "../utilities/coordinates.js";
-import {chordCenter, signAngle, Vector} from "../utilities/geometry.js";
+import {arcCenter, angleSign, Vector} from "../utilities/geometry.js";
 import {Biome} from "../generation/terrain.js";
 import {
 	applyProjectionToPath,
@@ -501,7 +501,7 @@ export class Chart {
 				const end = assert_xy(endpoint(path[i]));
 				const l = Math.hypot(end.x - start.x, end.y - start.y);
 				const r = Math.abs(path[i].args[0] + path[i].args[1])/2;
-				const c = chordCenter(start, end, r,
+				const c = arcCenter(start, end, r,
 					path[i].args[3] === path[i].args[4]);
 				const Δθ = 2*Math.asin(l/(2*r));
 				const θ0 = Math.atan2(start.y - c.y, start.x - c.x);
@@ -1221,7 +1221,7 @@ export class Chart {
 					];
 					// cull any that are not on this specific arc
 					for (let i = 4; i >= 1; i --) {
-						const sign = signAngle(end, assert_xy(points[i]), start);
+						const sign = angleSign(end, assert_xy(points[i]), start);
 						if ((sweepFlag > 0) === (sign > 0))
 							points.splice(i, 1);
 					}

@@ -12,7 +12,7 @@ import {
 	Place,
 	Point
 } from "../utilities/coordinates.js";
-import {chordCenter, isAcute, lineArcIntersections, lineLineIntersection, signCrossing} from "../utilities/geometry.js";
+import {arcCenter, isAcute, lineArcIntersections, lineLineIntersection, crossingSign} from "../utilities/geometry.js";
 import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
 import {Surface} from "../surface/surface.js";
@@ -603,7 +603,7 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean)
 		const [r, , , largeArc, sweep, end_s, end_t] = segment.args;
 		const end = { x: end_s, y: end_t };
 		const sign = 1 - 2*sweep;
-		const center = chordCenter(start, end, r, sweep !== largeArc); // find the center
+		const center = arcCenter(start, end, r, sweep !== largeArc); // find the center
 		const direction = { // draw a ray thru the arc (bias it toward the start to avoid roundoff issues)
 			x: -sign*(end.y - start.y) + start.x - center.x,
 			y:  sign*(end.x - start.x) + start.y - center.y,
@@ -720,7 +720,7 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
 		if (intersect !== null) // if there is an intersection
 			crossings.push({
 				point: intersect,
-				entering: signCrossing(segmentStart, segmentEnd, edgeStart, edgeEnd) > 0 }); // return it!
+				entering: crossingSign(segmentStart, segmentEnd, edgeStart, edgeEnd) > 0 }); // return it!
 	}
 	else if (segment.type === 'A') { // if it's an arc
 		const [r, rOther, , largeArc, sweepDirection, , ] = segment.args; // get the parameters
@@ -735,7 +735,7 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
 			q0 = segmentEnd;
 			q1 = segmentStart;
 		}
-		const center = chordCenter(q0, q1, r, largeArc === 0); // compute the center
+		const center = arcCenter(q0, q1, r, largeArc === 0); // compute the center
 		const points = lineArcIntersections(edgeStart, edgeEnd, center, r, q0, q1); // check for intersections
 		for (const intersect of points) {
 			let direction = {x: center.y - intersect.y, y: intersect.x - center.x};
@@ -743,7 +743,7 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
 				direction = {x: -direction.x, y: -direction.y};
 			crossings.push({
 				point: intersect,
-				entering: signCrossing({x: 0, y: 0}, direction, edgeStart, edgeEnd) > 0 });
+				entering: crossingSign({x: 0, y: 0}, direction, edgeStart, edgeEnd) > 0 });
 		}
 	}
 	else {

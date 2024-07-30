@@ -6,31 +6,27 @@ import {Point} from "./coordinates.js";
 
 /**
  * calculate the sign of this triangle
- * @return a positive number if, in a right-handed coordinate system (like real math)
- * a car going from a to b would haff to yield to the car going from c to d were they
- * to arrive at the all-stop simultaneously in the US; a negative number if it would
- * haff to yield in Japan; zero if ab and cd are parallel or either has length zero.
- * if this is a left-handed coordinate system (like in computer graphics) it's obviusly reversed.
+ * @return a positive number if, in a left-handed coordinate system,
+ *         b is to the left of a from the point of view of an observer at c facing toward d
+ *         (meaning d is to the right of c for an observer facing from a to b);
+ *         a negative number if b is to the right of a for an observer facing from c to d,
+ *         or 0 if ab and cd are collinear or either has zero magnitude.
  */
-export function signCrossing(a: Point, b: Point, c: Point, d: Point): number {
-	const abx = b.x - a.x, aby = b.y - a.y;
-	const cdx = d.x - c.x, cdy = d.y - c.y;
-	return abx*cdy - cdx*aby;
+export function crossingSign(a: Point, b: Point, c: Point, d: Point): number {
+	return (b.x - a.x)*(d.y - c.y) - (b.y - a.y)*(d.x - c.x);
 }
 
 
 /**
  * calculate the sign of this triangle in a left-handed coordinate system
- * @param a
- * @param b
- * @param c
  * @return a positive number if the triangle goes widdershins, a negative number if it
  *         goes clockwise, and zero if it is degenerate.  in actuality, this returns
  *         two times the area of the triangle formed by these points, so if there is
  *         roundoff error, it will be of that order.
  */
-export function signAngle(a: Point, b: Point, c: Point): number {
-	return signCrossing(b, c, b, a);
+export function angleSign(a: Point, b: Point, c: Point): number {
+	return crossingSign(b, c, b, a);
+}
 
 
 /**
@@ -81,7 +77,7 @@ export function circumcenter(points: Point[]): Point {
  * @param r the radius of the circle
  * @param onTheLeft whether the center is on the left of the strait-line path from a to b
  */
-export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean): Point {
+export function arcCenter(a: Point, b: Point, r: number, onTheLeft: boolean): Point {
 	const d = Math.hypot(b.x - a.x, b.y - a.y);
 	let l = Math.sqrt(r*r - d*d/4);
 	if (onTheLeft) l *= -1;
@@ -178,12 +174,12 @@ export function lineArcIntersections(
 			if (t >= 0 && t <= 1) {
 				let x = { x: p0.x + (p1.x - p0.x)*t, y: p0.y + (p1.y - p0.y)*t };
 				for (const q of [q0, q1])
-					if (signAngle(q, p0, p1) === 0 && (t > vertex) === (passingSign(o, q, p0, p1) > 0))
+					if (angleSign(q, p0, p1) === 0 && (t > vertex) === (passingSign(o, q, p0, p1) > 0))
 						x = q; // make it exactly equal to the endpoint if it seems like it should be
 				// and if it is between the arc endpoints
-				const largeArc = signAngle(o, q0, q1) < 0;
-				const afterQ0 = signAngle(o, q0, x) >= 0;
-				const aforeQ1 = signAngle(o, x, q1) >= 0;
+				const largeArc = angleSign(o, q0, q1) < 0;
+				const afterQ0 = angleSign(o, q0, x) >= 0;
+				const aforeQ1 = angleSign(o, x, q1) >= 0;
 				if ((afterQ0 && aforeQ1) || (largeArc && afterQ0 !== aforeQ1))
 					crossings.push(x);
 			}
@@ -210,11 +206,11 @@ export function checkVoronoiPolygon(vertexes: Point[]): Point[] {
 	for (let i = 0; i < vertexes.length; i ++) {
 		// if the next one seems to be clockwise from it
 		const j = (i + 1)%vertexes.length;
-		if (signAngle(vertexes[i], origen, vertexes[j]) > 0) {
+		if (angleSign(vertexes[i], origen, vertexes[j]) > 0) {
 			// see if the following one would be widershins
 			const k = (i + 2)%vertexes.length;
 			// if so, reverse them
-			if (signAngle(vertexes[i], origen, vertexes[k]) <= 0) {
+			if (angleSign(vertexes[i], origen, vertexes[k]) <= 0) {
 				const vertex = vertexes[i];
 				vertexes[i] = vertexes[j];
 				vertexes[j] = vertex;
