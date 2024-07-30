@@ -31,19 +31,24 @@ export function signCrossing(a: Point, b: Point, c: Point, d: Point): number {
  */
 export function signAngle(a: Point, b: Point, c: Point): number {
 	return signCrossing(b, c, b, a);
+
+
+/**
+ * calculate the sign of this passing
+ * @return a positive number if the vector from a to b is roughly in the same direction
+ * as that from c to d (within 90°), a negative number if they're in roughly opposite
+ * directions, and 0 if they're perpendicular or either has zero length.
+ */
+export function passingSign(a: Point, b: Point, c: Point, d: Point): number {
+	return (b.x - a.x)*(d.x - c.x) + (b.y - a.y)*(d.y - c.y);
 }
 
 
 /**
  * determine whether the angle abc is acute or not
- * @param a
- * @param b
- * @param c
  */
 export function isAcute(a: Point, b: Point, c: Point): boolean {
-	const bax = a.x - b.x, bay = a.y - b.y;
-	const bcx = c.x - b.x, bcy = c.y - b.y;
-	return bax*bcx + bay*bcy > 0;
+	return passingSign(b, a, b, c) > 0;
 }
 
 
@@ -171,7 +176,10 @@ export function lineArcIntersections(
 		// then, check each one to see if it is between the line segment endpoints
 		for (const t of roots) {
 			if (t >= 0 && t <= 1) {
-				const x = { x: p0.x + (p1.x - p0.x)*t, y: p0.y + (p1.y - p0.y)*t };
+				let x = { x: p0.x + (p1.x - p0.x)*t, y: p0.y + (p1.y - p0.y)*t };
+				for (const q of [q0, q1])
+					if (signAngle(q, p0, p1) === 0 && (t > vertex) === (passingSign(o, q, p0, p1) > 0))
+						x = q; // make it exactly equal to the endpoint if it seems like it should be
 				// and if it is between the arc endpoints
 				const largeArc = signAngle(o, q0, q1) < 0;
 				const afterQ0 = signAngle(o, q0, x) >= 0;

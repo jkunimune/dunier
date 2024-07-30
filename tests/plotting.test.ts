@@ -227,107 +227,148 @@ describe("getEdgeCrossings", () => {
 		});
 	});
 	describe("Cartesian", () => {
-		test("line", () => {
-			const edge = [
-				{type: 'M', args: [1, 0]},
-				{type: 'L', args: [1, -1]},
-			];
-			const segment = [
-				{type: 'M', args: [0, 0]},
-				{type: 'L', args: [2, -1]},
-			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
-				intersect0: {s: 1, t: -1/2}, intersect1: {s: 1, t: -1/2},
-				loopIndex: 0, entering: false,
-			}]);
-		});
-		test("arc", () => {
-			const edge = [
-				{type: 'M', args: [1., 0.]},
-				{type: 'L', args: [1., -2.]},
-			];
-			const segment = [
-				{type: 'M', args: [0., 0.]},
-				{type: 'A', args: [1., 1., 0, 0, 1, 2., 0.]},
-			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
-				intersect0: {s: 1., t: -1.}, intersect1: {s: 1., t: -1.},
-				loopIndex: 0, entering: false,
-			}]);
-		});
-		test("across two edges", () => {
-			const edges = [
-				{type: 'M', args: [1, 1]},
-				{type: 'L', args: [1, -1]},
-				{type: 'L', args: [-1, -1]},
-			];
-			const segment = [
-				{type: 'M', args: [2, 1]},
-				{type: 'L', args: [-1, -2]},
-			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, false)).toEqual([
-				{intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0, entering: true},
-				{intersect0: {s: 0, t: -1}, intersect1: {s: 0, t: -1}, loopIndex: 0, entering: false},
-			]);
-		});
-		test("thru a vertex", () => {
-			const corner = [
-				{type: 'M', args: [1, 1]},
-				{type: 'L', args: [1, -1]},
-				{type: 'L', args: [-1, -1]},
-			];
-			const segment = [
-				{type: 'M', args: [0, 0]},
-				{type: 'L', args: [2, -2]},
-			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, false)).toEqual([{
-				intersect0: {s: 1, t: -1}, intersect1: {s: 1, t: -1},
-				loopIndex: 0, entering: false,
-			}]);
-		});
-		describe("line onto a line", () => {
-			const edge = [
-				{type: 'M', args: [3, 0]},
-				{type: 'L', args: [-2, 0]},
-			];
-			test("entering", () => {
-				const segment = [
-					{type: 'M', args: [1, -1]},
-					{type: 'L', args: [2, 0]},
+		describe("line", () => {
+			test("across a line", () => {
+				const edge = [
+					{type: 'M', args: [1, 0]},
+					{type: 'L', args: [1, -1]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([]);
-			});
-			test("exiting", () => {
 				const segment = [
-					{type: 'M', args: [1, 1]},
-					{type: 'L', args: [2, 0]},
+					{type: 'M', args: [0, 0]},
+					{type: 'L', args: [2, -1]},
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
-					intersect0: {s: 2, t: 0}, intersect1: {s: 2, t: 0},
+					intersect0: {s: 1, t: -1/2}, intersect1: {s: 1, t: -1/2},
 					loopIndex: 0, entering: false,
 				}]);
 			});
-			test("along", () => {
-				const segment = [
-					{type: 'M', args: [1, 0]},
-					{type: 'L', args: [2, 0]},
+			test("across two lines", () => {
+				const edges = [
+					{type: 'M', args: [1, 1]},
+					{type: 'L', args: [1, -1]},
+					{type: 'L', args: [-1, -1]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([]);
+				const segment = [
+					{type: 'M', args: [2, 1]},
+					{type: 'L', args: [-1, -2]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, false)).toEqual([
+					{intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0, entering: true},
+					{intersect0: {s: 0, t: -1}, intersect1: {s: 0, t: -1}, loopIndex: 0, entering: false},
+				]);
+			});
+			test("thru a vertex", () => {
+				const corner = [
+					{type: 'M', args: [1, 1]},
+					{type: 'L', args: [1, -1]},
+					{type: 'L', args: [-1, -1]},
+				];
+				const segment = [
+					{type: 'M', args: [0, 0]},
+					{type: 'L', args: [2, -2]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, false)).toEqual([{
+					intersect0: {s: 1, t: -1}, intersect1: {s: 1, t: -1},
+					loopIndex: 0, entering: false,
+				}]);
+			});
+			describe("onto a line", () => {
+				const edge = [
+					{type: 'M', args: [3, 0]},
+					{type: 'L', args: [-2, 0]},
+				];
+				test("entering", () => {
+					const segment = [
+						{type: 'M', args: [1, -1]},
+						{type: 'L', args: [2, 0]},
+					];
+					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([]);
+				});
+				test("exiting", () => {
+					const segment = [
+						{type: 'M', args: [1, 1]},
+						{type: 'L', args: [2, 0]},
+					];
+					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
+						intersect0: {s: 2, t: 0}, intersect1: {s: 2, t: 0},
+						loopIndex: 0, entering: false,
+					}]);
+				});
+				test("along", () => {
+					const segment = [
+						{type: 'M', args: [1, 0]},
+						{type: 'L', args: [2, 0]},
+					];
+					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([]);
+				});
 			});
 		});
-		test("arc onto a line", () => {
-			const edge = [
-				{type: 'M', args: [0, -3]},
-				{type: 'L', args: [0, -1]},
-			];
-			const segments = [
-				{type: 'M', args: [1, -2]},
-				{type: 'A', args: [3, 3, 0, 0, 0, 0, -2]},
-			];
-			expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([{
-				intersect0: {s: 0, t: -2}, intersect1: {s: 0, t: -2},
-				loopIndex: 0, entering: false,
-			}]);
+		describe("arc", () => {
+			test("crossing a line", () => {
+				const edge = [
+					{type: 'M', args: [1., 0.]},
+					{type: 'L', args: [1., -2.]},
+				];
+				const segment = [
+					{type: 'M', args: [0., 0.]},
+					{type: 'A', args: [1., 1., 0, 0, 1, 2., 0.]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
+					intersect0: {s: 1., t: -1.}, intersect1: {s: 1., t: -1.},
+					loopIndex: 0, entering: false,
+				}]);
+			});
+			test("onto a line", () => {
+				const edge = [
+					{type: 'M', args: [0, -3]},
+					{type: 'L', args: [0, -1]},
+				];
+				const segments = [
+					{type: 'M', args: [1, -2]},
+					{type: 'A', args: [3, 3, 0, 0, 0, 0, -2]},
+				];
+				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([{
+					intersect0: {s: 0, t: -2}, intersect1: {s: 0, t: -2},
+					loopIndex: 0, entering: false,
+				}]);
+			});
+			test("onto a line (with known roundoff issues)", () => {
+				const edge = [
+					{type: 'M', args: [-346.1074722752436, -2846.159606596557]},
+					{type: 'L', args: [-346.1074722752436, -2752]},
+				];
+				const segments = [
+					{type: 'M', args: [-263.4140742546302, -2838.7311389789447]},
+					{type: 'A', args: [4674.056630597984, 4674.056630597984, 0, 0, 0, -346.1074722752436, -2833.32760088764]},
+				];
+				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([{
+					intersect0: {s: -346.1074722752436, t: -2833.32760088764},
+					intersect1: {s: -346.1074722752436, t: -2833.32760088764},
+					loopIndex: 0, entering: false,
+				}]);
+			});
+			test("across a line and back", () => {
+				const edge = [
+					{type: 'M', args: [0, -1]},
+					{type: 'L', args: [4, -1]},
+				];
+				const segments = [
+					{type: 'M', args: [2, 0]},
+					{type: 'A', args: [2, 2, 0, 1, 1, 2 + Math.sqrt(3), -1]},
+				];
+				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([
+					{
+						intersect0: {s: 2 + Math.sqrt(3), t: -1},
+						intersect1: {s: 2 + Math.sqrt(3), t: -1},
+						loopIndex: 0, entering: false,
+					},
+					{
+						intersect0: {s: expect.closeTo(2 - Math.sqrt(3)), t: -1},
+						intersect1: {s: expect.closeTo(2 - Math.sqrt(3)), t: -1},
+						loopIndex: 0, entering: true,
+					},
+				]);
+			});
 		});
 	});
 });
