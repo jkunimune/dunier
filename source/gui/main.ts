@@ -334,6 +334,8 @@ function applyMap(): void {
 		focus = Chart.border(continents[Number.parseInt(focusSpecifier.slice(9))], true);
 	else if (focusSpecifier.startsWith("country"))
 		focus = Chart.border(world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tiles, true);
+	else
+		throw new Error(`invalid focusSpecifier: '${focusSpecifier}'`);
 
 	const chart = new Chart(
 		projectionName, surface, focus,
