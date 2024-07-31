@@ -188,14 +188,14 @@ describe("getEdgeCrossings", () => {
 			];
 			test("entering", () => {
 				const segment = [
-					{type: 'M', args: [1, 0]},
+					{type: 'M', args: [1, 3]},
 					{type: 'L', args: [0, 0]},
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([]);
 			});
 			test("exiting", () => {
 				const segment = [
-					{type: 'M', args: [-1, 0]},
+					{type: 'M', args: [-1, 3]},
 					{type: 'L', args: [0, 0]},
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
@@ -209,6 +209,21 @@ describe("getEdgeCrossings", () => {
 					{type: 'L', args: [0, 1]},
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([]);
+			});
+			test("exiting, with known roundoff issues", () => {
+				const edge = [
+					{type: 'M', args: [2.2990403105010992, -1]},
+					{type: LongLineType.PARALLEL, args: [2.2990403105010992, 1]},
+				];
+				const segment = [
+					{type: 'M', args: [2.3011331145822087, -0.08713711381374845]},
+					{type: 'L', args: [2.2990403105010992, -0.08824891027566292]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, true)).toEqual([{
+					intersect0: {s: 2.2990403105010992, t: -0.08824891027566292},
+					intersect1: {s: 2.2990403105010992, t: -0.08824891027566292},
+					loopIndex: 0, entering: false,
+				}]);
 			});
 		});
 		test("line onto a meridian (with known roundoff issues)", () => {

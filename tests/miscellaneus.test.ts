@@ -129,14 +129,6 @@ describe("localizeInRange()", () => {
 	test("on maximum", () => {
 		expect(localizeInRange(1, -12, 1)).toEqual(-12);
 	});
-	describe("with inclusive maximum", () => {
-		test("on minimum", () => {
-			expect(localizeInRange(1, 1, 4, true)).toEqual(4);
-		});
-		test("on maximum", () => {
-			expect(localizeInRange(1, -12, 1, true)).toEqual(1);
-		});
-	});
 	test("out of bounds", () => {
 		expect(localizeInRange(1, -12, -10)).toEqual(-11);
 	});

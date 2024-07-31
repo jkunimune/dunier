@@ -106,13 +106,10 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
  * @param value
  * @param min
  * @param max
- * @param inclusiveMax if left as false, then a value at max or min or a whole multiple of (max - min) away from either will return min.  if set to true, it will return max.
  */
-export function localizeInRange(value: number, min: number, max: number, inclusiveMax=false): number {
+export function localizeInRange(value: number, min: number, max: number): number {
 	if (value > min && value < max)
 		return value;
-	else if (inclusiveMax)
-		return value - (Math.ceil((value - min)/(max - min)) - 1)*(max - min);
 	else
 		return value - Math.floor((value - min)/(max - min))*(max - min);
 }

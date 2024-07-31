@@ -12,7 +12,7 @@ import {
 	Place,
 	Point
 } from "../utilities/coordinates.js";
-import {arcCenter, isAcute, lineArcIntersections, lineLineIntersection, crossingSign} from "../utilities/geometry.js";
+import {arcCenter, crossingSign, isAcute, lineArcIntersections, lineLineIntersection} from "../utilities/geometry.js";
 import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
 import {Surface} from "../surface/surface.js";
@@ -774,8 +774,13 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
 function getGeoEdgeCrossing(
 	segmentStart: Place, segment: PathSegment, edgeStart: Place, edge: PathSegment,
 ): { place0: Place, place1: Place, entering: boolean } | null {
-	// if the edge is a meridian, rotate everything so we can reuse the parallel-crossing code
-	if (edge.type === LongLineType.MERIDIAN) {
+	const edgeEnd = assert_фλ(endpoint(edge));
+
+	if (edge.type !== LongLineType.MERIDIAN && edge.type !== LongLineType.PARALLEL)
+		throw new Error(`I don't think you're allowd to use ${edge.type} here`);
+
+	// the body of this function assumes the edge is a parallel going east.  if it isn't that, rotate 90° until it is.
+	else if (edge.type === LongLineType.MERIDIAN || edgeEnd.λ > edgeStart.λ) {
 		let newSegmentType;
 		if (segment.type === LongLineType.PARALLEL)
 			newSegmentType = LongLineType.MERIDIAN;
@@ -783,11 +788,12 @@ function getGeoEdgeCrossing(
 			newSegmentType = LongLineType.PARALLEL;
 		else
 			newSegmentType = segment.type;
+		const newEdgeType = (edge.type === LongLineType.PARALLEL) ? LongLineType.MERIDIAN : LongLineType.PARALLEL;
 		const crossing = getGeoEdgeCrossing(
 			{ф: segmentStart.λ, λ: -segmentStart.ф},
-			{type: newSegmentType, args: [segment.args[1], -segment.args[0]]},
+			{type: newSegmentType, args: [segment.args[1], -segment.args[0]]}, // TODO this won't work for bezier curves
 			{ф: edgeStart.λ, λ: -edgeStart.ф},
-			{type: LongLineType.PARALLEL, args: [edge.args[1], -edge.args[0]]},
+			{type: newEdgeType, args: [edge.args[1], -edge.args[0]]},
 		);
 		if (crossing === null)
 			return null;
@@ -798,18 +804,14 @@ function getGeoEdgeCrossing(
 				entering: crossing.entering,
 			};
 	}
-	else if (edge.type !== LongLineType.PARALLEL)
-		throw new Error(`I don't think you're allowd to use ${edge.type} here`);
 
 	const [ф0, λ0] = [segmentStart.ф, segmentStart.λ]; // extract the input coordinates
 	const [ф1, λ1] = segment.args;
 	const фX = edgeStart.ф;
-	const edgeEnd = assert_фλ(endpoint(edge));
 	// if it's a regular line crossing a parallel
 	if (segment.type === 'L') {
-		const inclusiveToTheSouth = edgeEnd.λ > edgeStart.λ;
-		const ф̄0 = localizeInRange(ф0, фX, фX + 2*π, inclusiveToTheSouth);
-		const ф̄1 = localizeInRange(ф1, фX, фX + 2*π, inclusiveToTheSouth);
+		const ф̄0 = localizeInRange(ф0, фX, фX + 2*π);
+		const ф̄1 = localizeInRange(ф1, фX, фX + 2*π);
 		if (Math.abs(ф̄0 - ф̄1) >= π) { // call the getParallelCrossing function
 			const {place0, place1} = getParallelCrossing(
 				ф̄0, λ0, ф̄1, λ1, фX);
@@ -826,12 +828,7 @@ function getGeoEdgeCrossing(
 	// if it's a meridian crossing a parallel
 	else if (segment.type === LongLineType.MERIDIAN) {
 		if (isBetween(λ0, edgeStart.λ, edgeEnd.λ)) { // crossings with meridians are simple
-			let crosses; // just make sure you get the tangencies right
-			if (edgeEnd.λ < edgeStart.λ)
-				crosses = (ф0 >= фX) !== (ф1 >= фX);
-			else
-				crosses = (ф0 > фX) !== (ф1 > фX);
-			if (crosses) {
+			if ((ф0 >= фX) !== (ф1 >= фX)) {
 				const place = {ф: фX, λ: segmentStart.λ};
 				return {
 					place0: place, place1: place,
