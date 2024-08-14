@@ -135,7 +135,7 @@ export function applyProjectionToPath(
 					pendingInPoints.push(intermediateInPoint);
 
 					if (Math.abs(nextInPoint.λ - lastInPoint.λ) > π || Math.abs(nextInPoint.ф - lastInPoint.ф) > π)
-						throw new Error(`the input to applyProjectionToPath needs to be run thru cutToSize first.  ` +
+						throw new Error(`the input to applyProjectionToPath needs to be run thru cropToEdges first.  ` +
 						                `this clearly hasn't because there's no way you can draw an uncropped line ` +
 						                `from ${lastInPoint.ф},${lastInPoint.λ} to ${nextInPoint.ф},${nextInPoint.λ}.`);
 					if (pendingInPoints.length + outPoints.length > 100000)
@@ -163,7 +163,7 @@ export function applyProjectionToPath(
  * @param surface the surface on which the edges exist, or null if
  * @param closePath whether you should add stuff around the edges when things clip
  */
-export function cutToSize(segments: PathSegment[], edges: PathSegment[], surface: Domain, closePath: boolean): PathSegment[] {
+export function cropToEdges(segments: PathSegment[], edges: PathSegment[], surface: Domain, closePath: boolean): PathSegment[] {
 	if (closePath && !isClosed(segments, surface)) {
 		console.error(pathToString(segments));
 		throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
