@@ -357,10 +357,10 @@ export function cutToSize(segments: PathSegment[], edges: PathSegment[], surface
 	if (closePath) { // if it matters which side is inside and which side out, draw the outline of the map
 		for (const edgeLoop of edgeLoops) { // for each loop
 			let isInsideOut; // determine if it is inside out
-			if (output.length > 0)
-				isInsideOut = encompasses(output, edgeLoop, geographic) === Side.IN; // using the newly cropped output
-			else
-				isInsideOut = encompasses(segments, edgeLoop, geographic) === Side.IN; // or whatever was cropped out if the output is empty
+			if (output.length > 0) // using the newly cropped output
+				isInsideOut = encompasses(output, edgeLoop, false) === Side.IN; // (set periodic to false because the shape should not be crossing the boundary now but might be running along the boundary which causes problems)
+			else // or whatever was cropped out if the output is empty
+				isInsideOut = encompasses(segments, edgeLoop, geographic) === Side.IN;
 			if (isInsideOut) // if it is inside out with respect to that loop
 				output.push(...edgeLoop); // draw the outline of the entire edge loop to contain it
 		}
@@ -480,7 +480,9 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], perio
  * the direction of the polygon matters; if you're travelling along the polygon's edge,
  * points on your left are IN and points on your right are OUT.
  * if a point is on the polygon, it is considered BORDERLINE.
- * note that this operates on a left-handed coordinate system (if your y is decreasing, higher x is on your right)
+ * note that this operates on a left-handed coordinate system (if your y is decreasing, higher x is on your right).
+ * also note that this function can fail to behave consistently when segments of the polygon move along the boundary of
+ * the periodic domain ad point is also on the same boundary of the periodic domain.
  * @param polygon the path that defines the region we're checking.  it may jump across the boundary domains if
  *                periodicS and/or periodicT are set to true.  however, it may not intersect itself, and it must not
  *                form any ambiguusly included regions (like two concentric circles going the same way) or the result
@@ -667,7 +669,7 @@ export function getEdgeCrossings(
 		// if we're in the infinite cartesian plane
 		else {
 			// find all the map edge crossings
-			for (const crossing of getMapEdgeCrossings(assert_xy(segmentStart), segment, assert_xy(edgeStart), edge)) {
+			for (const crossing of getPlanarEdgeCrossing(assert_xy(segmentStart), segment, assert_xy(edgeStart), edge)) {
 				const { point, entering } = crossing;
 				crossings.push({ intersect0: { s: point.x, t: point.y },
 					intersect1: { s: point.x, t: point.y },
@@ -698,15 +700,19 @@ export function getEdgeCrossings(
 }
 
 /**
- * compute the coordinates at which the line between these two points crosses an interrupcion in the map.  for
- * each crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
+ * compute the coordinates at which the line between these two points crosses an interrupcion on a non-periodic domain.
+ * this function is normally used for points in the map plane, whereas getGeoEdgeCrossing is used for points on a
+ * geographical surface, but this function can also be used for geographical coordinates as long as you're not
+ * accounting for periodicity.
+ *
+ * for each crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
  * the 1th point's side.  also, the index of the loop on which this crossing lies, and whether the line is crossing
  * to the left from the POV of the edge (remember that SVG is a left-handed coordinate system).
  *
  * for the purposes of this function, points on the edge count as out.
  * if the segment passes thru the vertex between two edges, it might register as two identical crossings.
  */
-function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStart: Point, edge: PathSegment
+function getPlanarEdgeCrossing(segmentStart: Point, segment: PathSegment, edgeStart: Point, edge: PathSegment
 ): { point: Point, entering: boolean }[] {
 	if (edge.type !== 'L')
 		throw new Error(`You can't use ${edge.type} edges in this funccion.`);
@@ -714,7 +720,7 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
 	const crossings = [];
 	let segmentEnd = assert_xy(endpoint(segment));
 	const edgeEnd = assert_xy(endpoint(edge));
-	if (segment.type === 'L') { // if it's a line
+	if (segment.type === 'L' || segment.type === LongLineType.MERIDIAN || segment.type === LongLineType.PARALLEL) { // if it's a line
 		const intersect = lineLineIntersection(
 			segmentStart, segmentEnd, edgeStart, edgeEnd);
 		if (intersect !== null) // if there is an intersection
