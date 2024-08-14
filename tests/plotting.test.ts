@@ -8,7 +8,7 @@ import {
 	cutToSize,
 	encompasses,
 	getEdgeCrossings,
-	InfinitePlane, isClosed
+	isClosed
 } from "../source/map/plotting.js";
 import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, LongLineType, PathSegment} from "../source/utilities/coordinates.js";
@@ -16,11 +16,12 @@ import {Toroid} from "../source/surface/toroid.js";
 import {LockedDisc} from "../source/surface/lockeddisc.js";
 import {MapProjection} from "../source/map/projection.js";
 import {Sphere} from "../source/surface/sphere.js";
+import {INFINITE_PLANE} from "../source/surface/surface";
 
 const π = Math.PI;
 
 describe("isClosed", () => {
-	const plane = new InfinitePlane();
+	const plane = INFINITE_PLANE;
 	const sphere = new Sphere(1);
 	test("nothing", () => {
 		const path: PathSegment[] = [];
@@ -684,7 +685,6 @@ describe("encompasses", () => {
 });
 
 describe("cutToSize", () => {
-	const PLANE = new InfinitePlane();
 	const TOROID = new Toroid(3, 1, .008, 0);
 	const edges = [
 		{type: 'M', args: [0, 0]},
@@ -696,7 +696,7 @@ describe("cutToSize", () => {
 	test("open region", () => {
 		expect(() => cutToSize(
 			[{type: 'M', args: [0, 0]}, {type: 'L', args: [1, 0]}],
-			edges, PLANE,
+			edges, INFINITE_PLANE,
 			true,
 		)).toThrow(); // open regions are not allowed if closePath is true
 	});
@@ -704,13 +704,13 @@ describe("cutToSize", () => {
 		expect(() => cutToSize(
 			edges,
 			[{type: 'M', args: [0, 0]}, {type: 'L', args: [1, 0]}],
-			PLANE,
+			INFINITE_PLANE,
 			false,
 		)).toThrow(); // open edges are never allowed
 	});
 	test("zero islands", () => {
 		expect(cutToSize(
-			[], edges, PLANE, true,
+			[], edges, INFINITE_PLANE, true,
 		)).toEqual(edges); // [] is interpreted as the region that includes everything
 	});
 	test("one island, inside", () => {
@@ -721,7 +721,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [0.1, 0.1]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, true,
+			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments); // for a well-behaved island like this, cropping it doesn't change anything
 	});
 	test("one island, outside", () => {
@@ -732,7 +732,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [1.1, 1.1]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, true,
+			segments, edges, INFINITE_PLANE, true,
 		)).toEqual([]); // if the island is completely outside of the region, it's removed completely
 	});
 	test("one island, straddling", () => {
@@ -743,7 +743,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [0.5, 0.1]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, true,
+			segments, edges, INFINITE_PLANE, true,
 		)).toEqual([ // if the island is partly out, it should be clipped at the edge
 			{type: 'M', args: [0.5, 0.1]},
 			{type: 'L', args: [0.5, 0.9]},
@@ -760,7 +760,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [0.1, 0.9]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, true,
+			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments.concat(edges)); // if the island is inverted, the edges need to be added to set its clipped boundaries
 	});
 	test("negative two islands, straddling", () => {
@@ -775,7 +775,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [0.3, 0.1]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, true,
+			segments, edges, INFINITE_PLANE, true,
 		)).toEqual([ // if there are multiple negative islands, they get connected along the edges
 			{type: 'M', args: [0.7, 0.9]},
 			{type: 'L', args: [0.7, 0.1]},
@@ -860,7 +860,7 @@ describe("cutToSize", () => {
 	});
 	test("fully coincident", () => {
 		expect(cutToSize(
-			edges, edges, PLANE, true,
+			edges, edges, INFINITE_PLANE, true,
 		)).toEqual(edges); // if the region is the same as the edges, that's what should be returned
 	});
 	test("one segment with two crossings", () => {
@@ -871,7 +871,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [1.5, 1.5]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, false,
+			segments, edges, INFINITE_PLANE, false,
 		)).toEqual([ // even tho all vertices are outside the square, part of one segment should get caught
 			{type: 'M', args: [1.0, 0.5]},
 			{type: 'L', args: [0.5, 1.0]},
@@ -885,7 +885,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [0.5, 0.1]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, true,
+			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments);
 	});
 	test("doubly tangent", () => {
@@ -896,7 +896,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [0.5, 0.1]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, true,
+			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments);
 	});
 	test("partially coincident but not tangent", () => {
@@ -909,7 +909,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [1.1, 0.1]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, false,
+			segments, edges, INFINITE_PLANE, false,
 		)).toEqual([
 			{type: 'M', args: [1.0, 0.3]},
 			{type: 'L', args: [0.9, 0.4]},
@@ -924,7 +924,7 @@ describe("cutToSize", () => {
 			{type: 'L', args: [1.5, -0.5]},
 		];
 		expect(cutToSize(
-			segments, edges, PLANE, true,
+			segments, edges, INFINITE_PLANE, true,
 		)).toEqual([ // make sure it doesn't duplicate any vertices
 			{type: 'M', args: [1.0, 0.0]},
 			{type: 'L', args: [0.0, 1.0]},

@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Edge, EmptySpace, Surface, Tile, Vertex} from "../surface/surface.js";
+import {Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
 import {
 	filterSet,
 	linterp,
@@ -24,7 +24,6 @@ import {
 	applyProjectionToPath,
 	contains,
 	cutToSize,
-	InfinitePlane,
 	transformInput,
 	transformOutput
 } from "./plotting.js";
@@ -817,7 +816,7 @@ export class Chart {
 		const croppedToMapRegion = cutToSize(
 			transformOutput(this.northUp, projected),
 			this.mapEdges,
-			new InfinitePlane(), closePath,
+			INFINITE_PLANE, closePath,
 		);
 		return croppedToMapRegion;
 	}

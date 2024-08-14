@@ -19,9 +19,33 @@ const INTEGRATION_RESOLUTION = 32;
 
 
 /**
+ * an object that is either a Surface or something else,
+ * that encodes basic topologic information for a 2D coordinate system.
+ */
+export abstract class Domain {
+	abstract isPeriodic(): boolean;
+	abstract isOnEdge(place: Place): boolean;
+}
+
+
+/**
+ * a domain with no edge and no periodicity in its coordinates
+ */
+export const INFINITE_PLANE: Domain = {
+	isPeriodic(): boolean {
+		return false;
+	},
+
+	isOnEdge(_): boolean {
+		return false;
+	}
+};
+
+
+/**
  * Generic 3D collection of Voronoi polygons
  */
-export abstract class Surface {
+export abstract class Surface implements Domain {
 	public tiles: Set<Tile>;
 	public vertices: Set<Vertex>;
 	public rivers: Set<(Tile | Vertex)[]>;
@@ -44,6 +68,10 @@ export abstract class Surface {
 		this.axis = null;
 		this.edge = new Map();
 		this.hasDayNightCycle = hasDayNightCycle;
+	}
+
+	isPeriodic(): boolean {
+		return true;
 	}
 
 	/**

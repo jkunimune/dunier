@@ -15,7 +15,7 @@ import {
 import {arcCenter, crossingSign, isAcute, lineArcIntersections, lineLineIntersection} from "../utilities/geometry.js";
 import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
-import {Surface} from "../surface/surface.js";
+import {Domain} from "../surface/surface.js";
 
 
 const π = Math.PI;
@@ -163,7 +163,7 @@ export function applyProjectionToPath(
  * @param surface the surface on which the edges exist, or null if
  * @param closePath whether you should add stuff around the edges when things clip
  */
-export function cutToSize(segments: PathSegment[], edges: PathSegment[], surface: Surface | InfinitePlane, closePath: boolean): PathSegment[] {
+export function cutToSize(segments: PathSegment[], edges: PathSegment[], surface: Domain, closePath: boolean): PathSegment[] {
 	if (closePath && !isClosed(segments, surface)) {
 		console.error(pathToString(segments));
 		throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
@@ -173,7 +173,7 @@ export function cutToSize(segments: PathSegment[], edges: PathSegment[], surface
 		throw new Error(`gross, your edges are open.  go check how you defined them!`);
 	}
 
-	const geographic = surface instanceof Surface;
+	const geographic = surface.isPeriodic();
 
 	// start by breaking the edges up into separate loops
 	const edgeLoops: PathSegment[][] = [];
@@ -938,9 +938,9 @@ function getPositionOnEdge(point: Location, edges: PathSegment[]): {loop: number
 /**
  * just make sure every contiguus section either ends where it started or starts and ends on an edge
  * @param segments the Path to test
- * @param surface the surface that contains the points (so we know when it goes off the edge)
+ * @param domain the surface that contains the points (so we know when it goes off the edge)
  */
-export function isClosed(segments: PathSegment[], surface: Surface | InfinitePlane): boolean {
+export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 	let start: Location = null;
 	for (let i = 0; i < segments.length; i ++) {
 		if (segments[i].type === 'M')
@@ -951,7 +951,7 @@ export function isClosed(segments: PathSegment[], surface: Surface | InfinitePla
 				throw new Error(`path must begin with a moveto, not ${segments[0].type}`);
 			const end = endpoint(segments[i]);
 			// account for periodicity
-			if (surface instanceof Surface) {
+			if (domain.isPeriodic()) {
 				start.s = localizeInRange(start.s, -π, π);
 				start.t = localizeInRange(start.t, -π, π);
 				end.s = localizeInRange(end.s, -π, π);
@@ -960,21 +960,11 @@ export function isClosed(segments: PathSegment[], surface: Surface | InfinitePla
 			// if it doesn't end where it started
 			const endsOnStart = start.s === end.s && start.t === end.t;
 			// and it doesn't start and end on edges
-			let endsOnEdge = surface.isOnEdge(assert_фλ(start)) && surface.isOnEdge(assert_фλ(end));
+			let endsOnEdge = domain.isOnEdge(assert_фλ(start)) && domain.isOnEdge(assert_фλ(end));
 			// then the Path isn't closed
 			if (!endsOnStart && !endsOnEdge)
 				return false;
 		}
 	}
 	return true;
-}
-
-
-/**
- * a sort of pseudo-subclass of Surface that represents the cartesian coordinate system of the map.
- */
-export class InfinitePlane {
-	isOnEdge(_: Place): boolean {
-		return false;
-	}
 }
