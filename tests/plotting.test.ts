@@ -11,7 +11,7 @@ import {
 	isClosed
 } from "../source/map/plotting.js";
 import {Side} from "../source/utilities/miscellaneus.js";
-import {endpoint, LongLineType, PathSegment} from "../source/utilities/coordinates.js";
+import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
 import {Toroid} from "../source/surface/toroid.js";
 import {LockedDisc} from "../source/surface/lockeddisc.js";
 import {MapProjection} from "../source/map/projection.js";
@@ -46,7 +46,7 @@ describe("isClosed", () => {
 	test("loop around the antimeridian", () => {
 		const path = [
 			{type: 'M', args: [1, -π]},
-			{type: LongLineType.PARALLEL, args: [1, π]},
+			{type: 'Φ', args: [1, π]},
 		];
 		expect(isClosed(path, sphere)).toBe(true);
 	});
@@ -57,7 +57,7 @@ describe("getEdgeCrossings", () => {
 		test("line across a meridian", () => {
 			const meridian = [
 				{type: 'M', args: [-1, 3]},
-				{type: LongLineType.MERIDIAN, args: [1, 3]}
+				{type: 'Λ', args: [1, 3]}
 			];
 			const segment = [
 				{type: 'M', args: [1, 2]},
@@ -71,7 +71,7 @@ describe("getEdgeCrossings", () => {
 		test("line across the antimeridian", () => {
 			const antimeridian = [
 				{type: 'M', args: [-1, π]},
-				{type: LongLineType.MERIDIAN, args: [1, π]}
+				{type: 'Λ', args: [1, π]}
 			];
 			const segment = [
 				{type: 'M', args: [0, 3]},
@@ -85,11 +85,11 @@ describe("getEdgeCrossings", () => {
 		test("parallel across a meridian", () => {
 			const meridian = [
 				{type: 'M', args: [0, 0]},
-				{type: LongLineType.MERIDIAN, args: [π, 0]},
+				{type: 'Λ', args: [π, 0]},
 			];
 			const segment = [
 				{type: 'M', args: [1, -2]},
-				{type: LongLineType.PARALLEL, args: [1, 2]},
+				{type: 'Φ', args: [1, 2]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, true)).toEqual([{
 				intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0},
@@ -99,7 +99,7 @@ describe("getEdgeCrossings", () => {
 		test("line across a parallel", () => {
 			const parallel = [
 				{type: 'M', args: [0, 2]},
-				{type: LongLineType.PARALLEL, args: [0, -3]},
+				{type: 'Φ', args: [0, -3]},
 			];
 			const segment = [
 				{type: 'M', args: [-1, 0]},
@@ -113,7 +113,7 @@ describe("getEdgeCrossings", () => {
 		test("periodic line across a parallel", () => {
 			const parallel = [
 				{type: 'M', args: [0, π]},
-				{type: LongLineType.PARALLEL, args: [0, 0]},
+				{type: 'Φ', args: [0, 0]},
 			];
 			const segment = [
 				{type: 'M', args: [-1, 2*π/3]},
@@ -127,11 +127,11 @@ describe("getEdgeCrossings", () => {
 		test("meridian across a parallel", () => {
 			const parallel = [
 				{type: 'M', args: [0, π]},
-				{type: LongLineType.PARALLEL, args: [0, 0]},
+				{type: 'Φ', args: [0, 0]},
 			];
 			const segment = [
 				{type: 'M', args: [-1, 2]},
-				{type: LongLineType.MERIDIAN, args: [3, 2]},
+				{type: 'Λ', args: [3, 2]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
 				intersect0: {s: 0, t: 2}, intersect1: {s: 0, t: 2},
@@ -141,7 +141,7 @@ describe("getEdgeCrossings", () => {
 		test("line across the antiequator", () => {
 			const parallel = [
 				{type: 'M', args: [π, 2]},
-				{type: LongLineType.PARALLEL, args: [π, -3]},
+				{type: 'Φ', args: [π, -3]},
 			];
 			const segment = [
 				{type: 'M', args: [3, 2]},
@@ -155,8 +155,8 @@ describe("getEdgeCrossings", () => {
 		test("line across two edges", () => {
 			const corner = [
 				{type: 'M', args: [-1, 1]},
-				{type: LongLineType.MERIDIAN, args: [1, 1]},
-				{type: LongLineType.PARALLEL, args: [1, -1]},
+				{type: 'Λ', args: [1, 1]},
+				{type: 'Φ', args: [1, -1]},
 			];
 			const segment = [
 				{type: 'M', args: [-1.5, 2.5]},
@@ -170,8 +170,8 @@ describe("getEdgeCrossings", () => {
 		test("line thru a vertex", () => {
 			const corner = [
 				{type: 'M', args: [-1, 0]},
-				{type: LongLineType.MERIDIAN, args: [0, 0]},
-				{type: LongLineType.PARALLEL, args: [0, -1]},
+				{type: 'Λ', args: [0, 0]},
+				{type: 'Φ', args: [0, -1]},
 			];
 			const segment = [
 				{type: 'M', args: [-1, -1]},
@@ -185,7 +185,7 @@ describe("getEdgeCrossings", () => {
 		describe("line onto a parallel", () => {
 			const parallel = [
 				{type: 'M', args: [0, 2]},
-				{type: LongLineType.PARALLEL, args: [0, -3]},
+				{type: 'Φ', args: [0, -3]},
 			];
 			test("entering", () => {
 				const segment = [
@@ -214,7 +214,7 @@ describe("getEdgeCrossings", () => {
 			test("exiting, with known roundoff issues", () => {
 				const edge = [
 					{type: 'M', args: [2.2990403105010992, -1]},
-					{type: LongLineType.PARALLEL, args: [2.2990403105010992, 1]},
+					{type: 'Φ', args: [2.2990403105010992, 1]},
 				];
 				const segment = [
 					{type: 'M', args: [2.3011331145822087, -0.08713711381374845]},
@@ -230,7 +230,7 @@ describe("getEdgeCrossings", () => {
 		test("line onto a meridian (with known roundoff issues)", () => {
 			const meridian = [
 				{type: 'M', args: [π, -π]},
-				{type: LongLineType.MERIDIAN, args: [-π, -π]},
+				{type: 'Λ', args: [-π, -π]},
 			];
 			const segment = [
 				{type: 'M', args: [0.130964506054289, -3.118616303993922]},
@@ -473,7 +473,7 @@ describe("contains", () => {
 	describe("periodic region", () => {
 		const region = [
 			{type: 'M', args: [.5, π]},
-			{type: LongLineType.PARALLEL, args: [.5, -π]},
+			{type: 'Φ', args: [.5, -π]},
 		];
 		test("inside", () => {
 			expect(contains(region, {s: 0, t: 2}, true))
@@ -524,7 +524,7 @@ describe("contains", () => {
 				{type: 'L', args: [2, 2]},
 				{type: 'L', args: [2, -2]},
 				{type: 'M', args: [0, π]},
-				{type: LongLineType.PARALLEL, args: [0, -π]},
+				{type: 'Φ', args: [0, -π]},
 			];
 			test("inside", () => {
 				expect(contains(region, {s: -1, t: 0}, true))
@@ -539,10 +539,10 @@ describe("contains", () => {
 	describe("region is domain boundary", () => {
 		const region = [
 			{type: 'M', args: [-π, -π]},
-			{type: LongLineType.PARALLEL, args: [-π, π]},
-			{type: LongLineType.MERIDIAN, args: [π, π]},
-			{type: LongLineType.PARALLEL, args: [π, -π]},
-			{type: LongLineType.MERIDIAN, args: [-π, -π]},
+			{type: 'Φ', args: [-π, π]},
+			{type: 'Λ', args: [π, π]},
+			{type: 'Φ', args: [π, -π]},
+			{type: 'Λ', args: [-π, -π]},
 		];
 		test("inside", () => {
 			expect(contains(region, {s: -3, t: -1}, true))
@@ -805,10 +805,10 @@ describe("cropToEdges", () => {
 		];
 		const toroidalEdges = [
 			{type: 'M', args: [-π, -π]},
-			{type: LongLineType.PARALLEL, args: [-π, π]},
-			{type: LongLineType.MERIDIAN, args: [π, π]},
-			{type: LongLineType.PARALLEL, args: [π, -π]},
-			{type: LongLineType.MERIDIAN, args: [-π, -π]},
+			{type: 'Φ', args: [-π, π]},
+			{type: 'Λ', args: [π, π]},
+			{type: 'Φ', args: [π, -π]},
+			{type: 'Λ', args: [-π, -π]},
 		];
 		expect(cropToEdges(
 			segments, toroidalEdges, TOROID,true,
@@ -816,27 +816,27 @@ describe("cropToEdges", () => {
 			// the northwest corner
 			{type: 'M', args: [3, -2]},
 			{type: 'L', args: [π, -1]},
-			{type: LongLineType.PARALLEL, args: [π, -π]},
-			{type: LongLineType.MERIDIAN, args: [3, -π]},
+			{type: 'Φ', args: [π, -π]},
+			{type: 'Λ', args: [3, -π]},
 			{type: 'L', args: [3, -2]},
 			// the southern crescent
 			{type: 'M', args: [-π, -1]},
 			{type: 'L', args: [-3, 0]},
 			{type: 'L', args: [-π, 1]},
-			{type: LongLineType.PARALLEL, args: [-π, π]},
-			{type: LongLineType.MERIDIAN, args: [0, π]},
+			{type: 'Φ', args: [-π, π]},
+			{type: 'Λ', args: [0, π]},
 			{type: 'L', args: [0, 2]},
 			{type: 'L', args: [0, 0]},
 			{type: 'L', args: [0, -2]},
 			{type: 'L', args: [0, -π]},
-			{type: LongLineType.MERIDIAN, args: [-π, -π]},
-			{type: LongLineType.PARALLEL, args: [-π, -1]},
+			{type: 'Λ', args: [-π, -π]},
+			{type: 'Φ', args: [-π, -1]},
 			// and the northeast corner
 			{type: 'M', args: [π, 1]},
 			{type: 'L', args: [3, 2]},
 			{type: 'L', args: [3, π]},
-			{type: LongLineType.MERIDIAN, args: [π, π]},
-			{type: LongLineType.PARALLEL, args: [π, 1]},
+			{type: 'Λ', args: [π, π]},
+			{type: 'Φ', args: [π, 1]},
 		]);
 	});
 	test("single vertex over a periodic domain", () => {
@@ -846,10 +846,10 @@ describe("cropToEdges", () => {
 		];
 		const toroidalEdges = [
 			{type: 'M', args: [-π, -π]},
-			{type: LongLineType.PARALLEL, args: [-π, π]},
-			{type: LongLineType.MERIDIAN, args: [π, π]},
-			{type: LongLineType.PARALLEL, args: [π, -π]},
-			{type: LongLineType.MERIDIAN, args: [-π, -π]},
+			{type: 'Φ', args: [-π, π]},
+			{type: 'Λ', args: [π, π]},
+			{type: 'Φ', args: [π, -π]},
+			{type: 'Λ', args: [-π, -π]},
 		];
 		expect(cropToEdges(segments, toroidalEdges, TOROID, false)).toEqual([
 			{type: 'M', args: [1, 3]},
@@ -1001,7 +1001,7 @@ describe("applyProjectionToPath", () => {
 	test("parallel", () => {
 		const path = [
 			{type: 'M', args: [π/4, -π/2]},
-			{type: LongLineType.PARALLEL, args: [π/4, π/2]},
+			{type: 'Φ', args: [π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [

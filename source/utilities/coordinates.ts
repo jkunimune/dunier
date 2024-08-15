@@ -5,11 +5,28 @@
 
 /**
  * something that can be dropped into an SVG <path>.
- * in addition to the basic SVG 'M', 'L', 'Z', 'A', etc., this also supports types of
- * long line, which are only defined on the surface, not on the map
+ * each of these can be defined either on a geographical surface or on a Cartesian plane.
  */
 export interface PathSegment {
-	type: string | LongLineType;
+	/**
+	 * the one-letter code for what kind of segment this is. one of:
+	 * - 'M' - movement without drawing anything
+	 * - 'L' - straight line in equirectangular space that may wrap around if the coordinate system is periodic
+	 * - 'Z' - straight line to the last 'M' location
+	 * - 'A' - arc (not valid unless the coordinate system is Cartesian)
+	 * - 'Q' - quadratic Bezier curve that may wrap around like a line
+	 * - 'Φ' - line of constant latitude that does not wrap around but instead progresses monotonically in longitude
+	 * - 'Λ' - line of constant longitude that does not wrap around but instead progresses monotonically in latitude
+	 */
+	type: string;
+
+	/**
+	 * the arguments that specify the movement.  usually it's just two numbers for
+	 * either the latitude and longitude of the destination, or the x and y of the
+	 * destination, depending on whether the coordinate system is geographic or Cartesian.
+	 * if the type is 'Q' then there's a control point first, and if it's 'A' there's a
+	 * bunch of additional numbers (see the SVG docs).
+	 */
 	args: number[];
 }
 
@@ -41,14 +58,6 @@ export interface Place {
 	ф: number;
 	/** the longitude in radians */
 	λ: number;
-}
-
-/**
- * the direccion and shape of a long "strait" line
- */
-export enum LongLineType {
-	MERIDIAN, // along a constant longitude
-	PARALLEL, // around a constant latitude
 }
 
 /**

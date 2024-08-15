@@ -17,7 +17,7 @@ import {Civ} from "../generation/civ.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
-import {assert_xy, endpoint, Location, LongLineType, PathSegment, Place} from "../utilities/coordinates.js";
+import {assert_xy, endpoint, Location, PathSegment, Place} from "../utilities/coordinates.js";
 import {arcCenter, angleSign, Vector} from "../utilities/geometry.js";
 import {Biome} from "../generation/terrain.js";
 import {
@@ -191,9 +191,9 @@ export class Chart {
 		if (λMax === Math.PI && this.projection.wrapsAround())
 			this.geoEdges = [
 				{type: 'M', args: [фMax, λMax]},
-				{type: LongLineType.PARALLEL, args: [фMax, -λMax]},
+				{type: 'Φ', args: [фMax, -λMax]},
 				{type: 'M', args: [фMin, -λMax]},
-				{type: LongLineType.PARALLEL, args: [фMin, λMax]},
+				{type: 'Φ', args: [фMin, λMax]},
 			];
 		else
 			this.geoEdges = Chart.rectangle(фMax, λMax, фMin, -λMax, true);
@@ -1175,7 +1175,7 @@ export class Chart {
 			let points: Location[];
 			switch (segment.type) {
 				// for most simple segment types it's just the endpoints
-				case 'M': case 'L': case LongLineType.MERIDIAN: case LongLineType.PARALLEL:
+				case 'M': case 'L': case 'Φ': case 'Λ':
 					points = [{s: segment.args[0], t: segment.args[1]}];
 					break;
 				// for bezier curves use the control points for the bonuds
@@ -1262,10 +1262,10 @@ export class Chart {
 		else
 			return [
 				{type: 'M', args: [s0, t0]},
-				{type: LongLineType.PARALLEL, args: [s0, t2]},
-				{type: LongLineType.MERIDIAN, args: [s2, t2]},
-				{type: LongLineType.PARALLEL, args: [s2, t0]},
-				{type: LongLineType.MERIDIAN, args: [s0, t0]},
+				{type: 'Φ', args: [s0, t2]},
+				{type: 'Λ', args: [s2, t2]},
+				{type: 'Φ', args: [s2, t0]},
+				{type: 'Λ', args: [s0, t0]},
 			];
 	}
 }

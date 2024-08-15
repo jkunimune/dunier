@@ -7,7 +7,6 @@ import {
 	assert_фλ,
 	endpoint,
 	Location,
-	LongLineType,
 	PathSegment,
 	Place,
 	Point
@@ -94,14 +93,14 @@ export function applyProjectionToPath(
 
 	const outPoints: PathSegment[] = []; // start a list of the projected points that are done
 	for (let i = 0; i < inPoints.length; i ++) {
-		if (inPoints[i].type === LongLineType.MERIDIAN) { // do the projection
+		if (inPoints[i].type === 'Λ') { // do the projection
 			// call projectMeridian for meridians
 			const [ф0, λ] = inPoints[i-1].args;
 			const [ф1, _] = inPoints[i].args;
 			console.assert(λ === _, "meridians must start and end at the same longitude.");
 			outPoints.push(...projection.projectMeridian(ф0, ф1, λ));
 		}
-		else if (inPoints[i].type === LongLineType.PARALLEL) {
+		else if (inPoints[i].type === 'Φ') {
 			// call projectParallel for parallels
 			const [ф, λ0] = inPoints[i-1].args;
 			const [_, λ1] = inPoints[i].args;
@@ -519,15 +518,15 @@ export function contains(polygon: PathSegment[], point: Location, periodic: bool
 	const testEdge = [ // and draw a path from the point to that point
 		{ type: 'M',
 		  args: [point.s, point.t] },
-		{ type: (periodic) ? LongLineType.PARALLEL : 'L',
+		{ type: (periodic) ? 'Φ' : 'L',
 		  args: [point.s, terminus.t] },
-		{ type: (periodic) ? LongLineType.MERIDIAN : 'L',
+		{ type: (periodic) ? 'Λ' : 'L',
 		  args: [terminus.s, terminus.t] },
 	];
 
 	// manually check for the most common forms of coincidences
 	for (let i = 1; i < polygon.length; i ++) {
-		if (polygon[i].type === 'L' || polygon[i].type === LongLineType.PARALLEL || polygon[i].type === LongLineType.MERIDIAN) {
+		if (polygon[i].type === 'L' || polygon[i].type === 'Φ' || polygon[i].type === 'Λ') {
 			const start = endpoint(polygon[i - 1]);
 			const end = endpoint(polygon[i]);
 			let inTheRightSNeighborhood = isBetween(point.s, start.s, end.s);
@@ -616,7 +615,7 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean)
 			t: center.y + direction.y/scale*r,
 		};
 	}
-	else if (segment.type === LongLineType.MERIDIAN || segment.type === LongLineType.PARALLEL) {
+	else if (segment.type === 'Φ' || segment.type === 'Λ') {
 		const start = endpoint(prev);
 		const end = endpoint(segment);
 		return { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
@@ -634,7 +633,7 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean)
  *
  * the periodicity of the Surface, if the Surface is periodic, will be accounted for with the line between the points
  * (that is, if coords0 and coords1 are on opposite sides of the map, the path between them will be interpreted as the
- * line across the antimeridian).  the edges themselves must be LongLineType.MERIDIANs or LongLineType.PARALLELs if the
+ * line across the antimeridian).  the edges themselves must be meridians or parallels if the
  * surface is geographic, meaning they will never wrap around the backside of the map (since those line types are
  * defined to always be monotonic in latitude or longitude) and their periodicity is therefore not accounted for.
  *
@@ -720,7 +719,7 @@ function getPlanarEdgeCrossing(segmentStart: Point, segment: PathSegment, edgeSt
 	const crossings = [];
 	let segmentEnd = assert_xy(endpoint(segment));
 	const edgeEnd = assert_xy(endpoint(edge));
-	if (segment.type === 'L' || segment.type === LongLineType.MERIDIAN || segment.type === LongLineType.PARALLEL) { // if it's a line
+	if (segment.type === 'L' || segment.type === 'Φ' || segment.type === 'Λ') { // if it's a line
 		const intersect = lineLineIntersection(
 			segmentStart, segmentEnd, edgeStart, edgeEnd);
 		if (intersect !== null) // if there is an intersection
@@ -782,19 +781,19 @@ function getGeoEdgeCrossing(
 ): { place0: Place, place1: Place, entering: boolean } | null {
 	const edgeEnd = assert_фλ(endpoint(edge));
 
-	if (edge.type !== LongLineType.MERIDIAN && edge.type !== LongLineType.PARALLEL)
+	if (edge.type !== 'Φ' && edge.type !== 'Λ')
 		throw new Error(`I don't think you're allowd to use ${edge.type} here`);
 
 	// the body of this function assumes the edge is a parallel going east.  if it isn't that, rotate 90° until it is.
-	else if (edge.type === LongLineType.MERIDIAN || edgeEnd.λ > edgeStart.λ) {
+	else if (edge.type === 'Λ' || edgeEnd.λ > edgeStart.λ) {
 		let newSegmentType;
-		if (segment.type === LongLineType.PARALLEL)
-			newSegmentType = LongLineType.MERIDIAN;
-		else if (segment.type === LongLineType.MERIDIAN)
-			newSegmentType = LongLineType.PARALLEL;
+		if (segment.type === 'Φ')
+			newSegmentType = 'Λ';
+		else if (segment.type === 'Λ')
+			newSegmentType = 'Φ';
 		else
 			newSegmentType = segment.type;
-		const newEdgeType = (edge.type === LongLineType.PARALLEL) ? LongLineType.MERIDIAN : LongLineType.PARALLEL;
+		const newEdgeType = (edge.type === 'Φ') ? 'Λ' : 'Φ';
 		const crossing = getGeoEdgeCrossing(
 			{ф: segmentStart.λ, λ: -segmentStart.ф},
 			{type: newSegmentType, args: [segment.args[1], -segment.args[0]]}, // TODO this won't work for bezier curves
@@ -828,11 +827,11 @@ function getGeoEdgeCrossing(
 		}
 	}
 	// if they're both parallels, they can't cross each other
-	else if (segment.type === LongLineType.PARALLEL) {
+	else if (segment.type === 'Φ') {
 		return null;
 	}
 	// if it's a meridian crossing a parallel
-	else if (segment.type === LongLineType.MERIDIAN) {
+	else if (segment.type === 'Λ') {
 		if (isBetween(λ0, edgeStart.λ, edgeEnd.λ)) { // crossings with meridians are simple
 			if ((ф0 >= фX) !== (ф1 >= фX)) {
 				const place = {ф: фX, λ: segmentStart.λ};
