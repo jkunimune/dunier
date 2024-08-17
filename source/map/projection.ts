@@ -30,7 +30,7 @@ export class MapProjection {
 	 * define a pseudoconic map projection with lookup tables for the y coordinate and x scale along the prime meridian.
 	 * @param surface the surface on which points exist before we project them
 	 * @param фRef the latitudes at which y and dx/dλ are defined (must be evenly spaced)
-	 * @param yRef the y coordinate of the prime meridian at each reference latitude
+	 * @param yRef the y coordinate of the prime meridian at each reference latitude (must all be finite)
 	 * @param dx_dλRef the horizontal scale along each reference latitude (equal to the parallel's length divided by 2π)
 	 * @param yCenter the center of the parallels if the parallels are concentric arcs, or ±Infinity if the parallels are straight lines
 	 */
@@ -38,9 +38,12 @@ export class MapProjection {
 		// check the inputs
 		if (фRef.length !== yRef.length || yRef.length !== dx_dλRef.length)
 			throw new Error("these inputs' lengths don't match.");
+		for (const y of yRef)
+			if (!isFinite(y))
+				throw new Error("these reference parallel positions must be finite.");
 		for (const dx_dλ of dx_dλRef)
-			if (dx_dλ < 0)
-				throw new Error("these reference parallel lengths must be nonnegative.");
+			if (dx_dλ < 0 || !isFinite(dx_dλ))
+				throw new Error("these reference parallel lengths must be finite and nonnegative.");
 		for (let i = 1; i < фRef.length; i ++) {
 			if (фRef[i] <= фRef[i - 1])
 				throw new Error("these reference latitudes must be monotonicly increasing.");
@@ -241,33 +244,79 @@ export class MapProjection {
 	 */
 	public static conic(surface: Surface, фMin: number, фMax: number): MapProjection {
 		const фStd = MapProjection.chooseStandardParallel(фMin, фMax, surface);
-		// TODO: use the conformal conic projection instead; this will ensure radius never changes sign for toroidal planets, and will produce the Mercator projection for whole-world maps.
-		const yStd = -linterp(фStd, surface.refLatitudes, surface.cumulDistances);
-		let yCenter = yStd + surface.rz(фStd).r/surface.tangent(фStd).r;
-		const фRef = surface.refLatitudes; // do the necessary integrals
-		const yRef = []; // to get the y positions of the prime meridian
-		const dx_dλRef = []; // and the arc lengths corresponding to one radian
-		for (let i = 0; i < фRef.length; i ++) {
-			yRef.push(-surface.cumulDistances[i]);
-		}
-		// make sure the center is outside of the map area
-		if (yCenter < yRef[0] && yCenter > yRef[yRef.length - 1]) {
-			if (yCenter > yRef[Math.floor(yRef.length/2)])
-				yCenter = yRef[0];
+		const n = -surface.tangent(фStd).r;
+		if (Math.abs(n) < 1e-12)
+			return this.mercator(surface, фStd);
+
+		// build out from the standard parallel to get the radii
+		const ф = surface.refLatitudes;
+		const iStart = Math.round((фStd - ф[0])/(ф[1] - ф[0]));
+		const fillingOrder = [];
+		for (let i = iStart; i < ф.length; i ++)
+			fillingOrder.push(i);
+		for (let i = iStart - 1; i >= 0; i --)
+			fillingOrder.push(i);
+
+		// for each y you need to calculate
+		const y = Array(ф.length).fill(null);
+		for (const i of fillingOrder) {
+			let iPrevius; // find a nearby reference off which to base it
+			if (i - 1 >= 0 && y[i - 1] !== null)
+				iPrevius = i - 1;
+			else if (i + 1 < y.length && y[i + 1] !== null)
+				iPrevius = i + 1;
+			else {
+				y[i] = surface.rz(ф[i]).r/n; // or initialize the first one you find like so
+				continue;
+			}
+			const rPrevius = surface.rz(ф[iPrevius]).r;
+			const yPrevius = y[iPrevius];
+			const r = surface.rz(ф[i]).r;
+			const Δr = r - rPrevius;
+			const Δs = surface.cumulDistances[i] - surface.cumulDistances[iPrevius];
+			// be careful because there are many edge cases for which we must account
+			if (Δs === 0) // in the case where this parallel is zero distance away from the previus one
+				y[i] = yPrevius; // then obviusly their y values should be equal
+			else if (rPrevius === 0) // in the case where the previus one was a pole
+				y[i] = r/n; // we get to choose the scale and should choose it with this formula
+			else if (r === 0 && n*Δs < 0) // if this is a pole that should technicly go to infinity
+				y[i] = yPrevius*Math.exp(n*Δs/Δr); // fix the base at exp(-1) to truncate it at finity
+			else if (Δr === 0) // in the case where the surface is exactly cylindrical
+				y[i] = yPrevius*Math.exp(-n*Δs/rPrevius); // the exact solution resolves to an exponential
 			else
-				yCenter = yRef[yRef.length - 1];
+				y[i] = yPrevius*Math.pow(r/rPrevius, -n*Δs/Δr); // otherwise use the full exact solution
 		}
-		for (let i = 0; i < фRef.length; i ++) {
-			if (!isFinite(yCenter)) // cylindrical projection
-				dx_dλRef.push(surface.rz(фStd).r);
-			else if (Math.abs(yCenter - yRef[0]) < 1e-8*surface.height) // azimuthal projection (south pole)
-				dx_dλRef.push(yCenter - yRef[i]);
-			else if (Math.abs(yCenter - yRef[yRef.length - 1]) < 1e-8*surface.height) // azimuthal projection (north pole)
-				dx_dλRef.push(yRef[i] - yCenter);
-			else // generic conic projection
-				dx_dλRef.push(surface.rz(фStd).r/(yCenter - yStd)*(yCenter - yRef[i]));
+
+		// then do the arc lengths corresponding to one radian
+		const dx_dλRef = [];
+		for (let i = 0; i < ф.length; i ++)
+			dx_dλRef.push(y[i]*n);
+
+		return new MapProjection(surface, ф, y, dx_dλRef, 0);
+	}
+
+	/**
+	 * construct a mercator projection scaled to the given standard parallel.
+	 * @param surface the surface from which to project
+	 * @param фStd the standard parallel in radians
+	 */
+	public static mercator(surface: Surface, фStd: number): MapProjection {
+		const dx_dλ = surface.rz(фStd).r;
+		const ф: number[] = surface.refLatitudes;
+		const r: number[] = [];
+		const y: number[] = [];
+		// do this integral to get the parallel position lookup table
+		for (let i = 0; i < ф.length; i ++) {
+			r.push(surface.rz(ф[i]).r);
+			const Δs = surface.cumulDistances[i] - surface.cumulDistances[i - 1];
+			if (i === 0) // for the southernmost parallel
+				y[i] = 0; // just initialize it at y = 0
+			else if (r[i] === 0 || r[i - 1] === 0) // for poles, rather than going to Infinity as would be technically correct
+				y[i] = y[i - 1] - dx_dλ*Δs/Math.abs(r[i] - r[i - 1]); // remove the log term to get something squareish
+			else
+				y[i] = y[i - 1] - dx_dλ*Δs/(r[i] - r[i - 1])*Math.log(r[i]/r[i - 1]); // otherwise use the exact solution
 		}
-		return new MapProjection(surface, фRef, yRef, dx_dλRef, yCenter);
+		return new MapProjection(surface, ф, y, Array(ф.length).fill(dx_dλ), Infinity);
 	}
 
 	/**

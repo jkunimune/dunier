@@ -20,8 +20,8 @@ describe("on a sphere", () => {
 		test("projectMeridian()", () => {
 			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, 1);
 			const expectedMeridian = [];
-			for (let i = 1; i < projection.surface.refLatitudes.length/2; i ++) {
-				const ф = projection.surface.refLatitudes[i];
+			for (let i = 1; i < sphere.refLatitudes.length/2; i ++) {
+				const ф = sphere.refLatitudes[i];
 				expectedMeridian.push({type: 'L', args: [expect.closeTo(Math.cos(ф)), expect.closeTo(-Math.PI/2 - ф)]});
 			}
 			expect(trueMeridian).toEqual(expectedMeridian);
@@ -41,20 +41,20 @@ describe("on a sphere", () => {
 		});
 	});
 
-	describe("azimuthal equidistant projection", () => {
+	describe("stereographic projection", () => {
 		const projection = MapProjection.conic(sphere, -Math.PI/2, 1);
 		describe("projectPoint()", () => {
-			test("pole", () => {
+			test("south pole", () => {
 				expect(projection.projectPoint({ф: -Math.PI/2, λ: 2})).toEqual(
 					{x: expect.closeTo(0), y: expect.closeTo(0)});
 			});
 			test("equator", () => {
 				expect(projection.projectPoint({ф: 0, λ: -Math.PI/6})).toEqual(
-					{x: expect.closeTo(-Math.PI/4), y: expect.closeTo(-Math.PI*Math.sqrt(3)/4)});
+					{x: expect.closeTo(-1), y: expect.closeTo(-Math.sqrt(3))});
 			});
 			test("antimeridian", () => {
 				expect(projection.projectPoint({ф: 0, λ: Math.PI})).toEqual(
-					{x: expect.closeTo(0), y: expect.closeTo(Math.PI/2)});
+					{x: expect.closeTo(0), y: expect.closeTo(2)});
 			});
 			test("consistency of antimeridian", () => {
 				expect(projection.projectPoint({ф: -1, λ: Math.PI})).toEqual(
@@ -64,15 +64,15 @@ describe("on a sphere", () => {
 		test("projectMeridian()", () => {
 			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, Math.PI/2);
 			const expectedMeridian = [];
-			for (let i = 1; i < projection.surface.refLatitudes.length/2; i ++) {
-				const ф = projection.surface.refLatitudes[i];
-				expectedMeridian.push({type: 'L', args: [expect.closeTo(Math.PI/2 + ф), expect.closeTo(0)]});
+			for (let i = 1; i < sphere.refLatitudes.length/2; i ++) {
+				const ф = sphere.refLatitudes[i];
+				expectedMeridian.push({type: 'L', args: [expect.closeTo(2*Math.tan((ф + Math.PI/2)/2)), expect.closeTo(0)]});
 			}
 			expect(trueMeridian).toEqual(expectedMeridian);
 		});
 		describe("projectParallel()", () => {
 			test("small arc", () => {
-				expect(projection.projectParallel(Math.PI/6, -Math.PI/3, 2 - Math.PI/2)).toEqual([
+				expect(projection.projectParallel(Math.PI/6, -Math.PI/3, 0)).toEqual([
 					{type: 'A', args: [
 						expect.closeTo(2), expect.closeTo(2),
 						0, 0, 0,
@@ -81,7 +81,7 @@ describe("on a sphere", () => {
 				]);
 			});
 			test("large arc", () => {
-				expect(projection.projectParallel(5*Math.PI/6, -2*Math.PI/3, 2 - Math.PI/2)).toEqual([
+				expect(projection.projectParallel(5*Math.PI/6, -2*Math.PI/3, 0)).toEqual([
 					{type: 'A', args: [
 						expect.closeTo(2), expect.closeTo(2),
 						0, 0, 0,
@@ -103,28 +103,44 @@ describe("on a sphere", () => {
 		});
 	});
 
-	describe("equirectangular projection", () => {
+	describe("Mercator projection", () => {
 		const projection = MapProjection.conic(sphere, -1, 1);
-		test("projectPoint()", () => {
-			expect(projection.projectPoint({ф: -Math.PI/4, λ: -1})).toEqual(
-				{x: expect.closeTo(-1), y: expect.closeTo(-Math.PI/4)});
+		describe("projectPoint()", () => {
+			test("normal point", () => {
+				const origin = projection.projectPoint({ф: 0, λ: 0});
+				expect(projection.projectPoint({ф: -Math.PI/4, λ: -1})).toEqual(
+					{x: expect.closeTo(origin.x - 1), y: expect.closeTo(origin.y + Math.log(Math.tan(3*Math.PI/8)))});
+			});
+			test("north pole", () => {
+				expect(projection.projectPoint({ф: Math.PI/2, λ: 2})).toEqual({x: 2, y: expect.anything()});
+			});
+			test("south pole", () => {
+				expect(projection.projectPoint({ф: -Math.PI/2, λ: 2})).toEqual({x: 2, y: expect.anything()});
+			});
 		});
 		test("projectMeridian()", () => {
 			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, 1);
 			const expectedMeridian = [];
-			for (let i = 1; i < projection.surface.refLatitudes.length/2; i ++) {
-				const ф = projection.surface.refLatitudes[i];
-				expectedMeridian.push({type: 'L', args: [expect.closeTo(1), expect.closeTo(-Math.PI/2 - ф)]});
-			}
+			for (let i = 1; i < sphere.refLatitudes.length/2; i ++)
+				expectedMeridian.push({type: 'L', args: [expect.closeTo(1), expect.anything()]});
 			expect(trueMeridian).toEqual(expectedMeridian);
 		});
 		test("projectParallel()", () => {
 			expect(projection.projectParallel(-2, 3, Math.PI/4)).toEqual([
-				{type: 'L', args: [expect.closeTo(3), expect.closeTo(-3*Math.PI/4)]},
+				{type: 'L', args: [expect.closeTo(3), expect.anything()]},
 			]);
 		});
 		test("wrapsAround()", () => {
 			expect(projection.wrapsAround()).toEqual(false);
+		});
+	});
+
+	describe("conic projection", () => {
+		const projection = MapProjection.conic(sphere, 1, 1);
+		describe("projectPoint()", () => {
+			test("north pole", () => {
+				expect(projection.projectPoint({ф: Math.PI/2, λ: 1})).toEqual({x: 0, y: 0});
+			});
 		});
 	});
 });

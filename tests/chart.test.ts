@@ -4,7 +4,6 @@
  */
 import {Chart} from "../source/map/chart.js";
 import {Sphere} from "../source/surface/sphere.js";
-import {MapProjection} from "../source/map/projection.js";
 
 describe("chooseCentralMeridian", () => {
 	test("front hemisphere", () => {

@@ -946,11 +946,11 @@ describe("applyProjectionToPath", () => {
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
 				expect.closeTo(-1),
-				expect.closeTo(-2),
+				expect.closeTo(0),
 			]},
 			{type: 'M', args: [
 				expect.closeTo(1),
-				expect.closeTo(-2),
+				expect.closeTo(0),
 			]},
 		]);
 	});
@@ -962,11 +962,11 @@ describe("applyProjectionToPath", () => {
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
 				expect.closeTo(0),
-				expect.closeTo(-2),
+				expect.closeTo(0),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(1),
-				expect.closeTo(-2),
+				expect.closeTo(0),
 			]},
 		]);
 	});
@@ -978,23 +978,23 @@ describe("applyProjectionToPath", () => {
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
 				expect.closeTo(-1),
-				expect.closeTo(-2),
+				expect.closeTo(0),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(-Math.sqrt(2)/2),
-				expect.closeTo(-2 + Math.sqrt(2)/2),
+				expect.closeTo(Math.sqrt(2)/2),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(0),
-				expect.closeTo(-1),
+				expect.closeTo(1),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(Math.sqrt(2)/2),
-				expect.closeTo(-2 + Math.sqrt(2)/2),
+				expect.closeTo(Math.sqrt(2)/2),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(1),
-				expect.closeTo(-2),
+				expect.closeTo(0),
 			]},
 		]);
 	});
@@ -1006,12 +1006,12 @@ describe("applyProjectionToPath", () => {
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
 				expect.closeTo(-1),
-				expect.closeTo(-2),
+				expect.closeTo(0),
 			]},
 			{type: 'A', args: [
 				expect.closeTo(1), expect.closeTo(1),
 				0, expect.anything(), 0,
-				expect.closeTo(1), expect.closeTo(-2),
+				expect.closeTo(1), expect.closeTo(0),
 			]},
 		]);
 	});
