@@ -3,7 +3,6 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Chart} from "../source/map/chart.js";
-import {LongLineType} from "../source/utilities/coordinates.js";
 import {Sphere} from "../source/surface/sphere.js";
 import {MapProjection} from "../source/map/projection.js";
 
@@ -41,10 +40,10 @@ describe("chooseCentralMeridian", () => {
 test("rectangle", () => {
 	expect(Chart.rectangle(1, 2, 3, 4, true)).toEqual([
 		{type: 'M', args: [1, 2]},
-		{type: LongLineType.PARALLEL, args: [1, 4]},
-		{type: LongLineType.MERIDIAN, args: [3, 4]},
-		{type: LongLineType.PARALLEL, args: [3, 2]},
-		{type: LongLineType.MERIDIAN, args: [1, 2]},
+		{type: 'Φ', args: [1, 4]},
+		{type: 'Λ', args: [3, 4]},
+		{type: 'Φ', args: [3, 2]},
+		{type: 'Λ', args: [1, 2]},
 	]);
 });
 
