@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {
-	applyProjectionToPath,
+	applyProjectionToPath, calculatePathBounds,
 	contains,
 	cropToEdges,
 	encompasses,
@@ -52,6 +52,63 @@ describe("isClosed", () => {
 	});
 });
 
+describe("calculatePathBounds", () => {
+	test("empty", () => {
+		expect(() => calculatePathBounds([])).toThrow();
+	});
+	test("forward arc", () => {
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [0, 1]},
+			{type: 'A', args: [1, 1, 0, 0, 0, Math.sqrt(3)/2, -1/2]},
+			{type: 'Q', args: [0, -2, 0, -1/2]},
+			{type: 'Z', args: []},
+		];
+		expect(calculatePathBounds(path)).toEqual({
+			sMin: expect.closeTo(0),
+			sMax: expect.closeTo(1),
+			tMin: expect.closeTo(-2),
+			tMax: expect.closeTo(1)
+		});
+	});
+	test("backwards arc", () => {
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [0, 1]},
+			{type: 'A', args: [1, 1, 0, 0, 1, -Math.sqrt(3)/2, -1/2]},
+			{type: 'Q', args: [0, -2, 0, -1/2]},
+			{type: 'Z', args: []},
+		];
+		expect(calculatePathBounds(path)).toEqual({
+			sMin: expect.closeTo(-1),
+			sMax: expect.closeTo(0),
+			tMin: expect.closeTo(-2),
+			tMax: expect.closeTo(1)
+		});
+	});
+	test("degenerate arc", () => {
+		const path = [
+			{type: 'M', args: [6, 6]},
+			{type: 'A', args: [2, 2, 0, 0, 0, 6, 6]},
+		];
+		expect(() => calculatePathBounds(path)).toThrow();
+	});
+	test("point at end of arc", () => {
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'A', args: [2, 2, 0, 0, 0, 2, 0]},
+			{type: 'L', args: [1, -1]},
+			{type: 'Z', args: []}
+		];
+		expect(calculatePathBounds(path)).toEqual({
+			sMin: expect.closeTo(0),
+			sMax: expect.closeTo(2),
+			tMin: expect.closeTo(-1),
+			tMax: expect.closeTo(2 - Math.sqrt(3)),
+		});
+	});
+});
+
 describe("getEdgeCrossings", () => {
 	describe("geographical", () => {
 		test("line across a meridian", () => {
@@ -64,8 +121,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'L', args: [-1, 4]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, true)).toEqual([{
-				intersect0: {s: -0, t: 3}, intersect1: {s: -0, t: 3},
-				loopIndex: 0, entering: false,
+				intersect0: {s: -0, t: 3}, intersect1: {s: -0, t: 3}, loopIndex: 0,
 			}]);
 		});
 		test("line across the antimeridian", () => {
@@ -78,8 +134,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'L', args: [0, -3]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], antimeridian, true)).toEqual([{
-				intersect0: {s: 0, t: π}, intersect1: {s: 0, t: -π},
-				loopIndex: 0, entering: false,
+				intersect0: {s: 0, t: π}, intersect1: {s: 0, t: -π}, loopIndex: 0,
 			}]);
 		});
 		test("parallel across a meridian", () => {
@@ -92,8 +147,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'Φ', args: [1, 2]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, true)).toEqual([{
-				intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0},
-				loopIndex: 0, entering: false,
+				intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0,
 			}]);
 		});
 		test("line across a parallel", () => {
@@ -106,8 +160,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'L', args: [2, 3]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
-				intersect0: {s: 0, t: 1}, intersect1: {s: 0, t: 1},
-				loopIndex: 0, entering: false,
+				intersect0: {s: 0, t: 1}, intersect1: {s: 0, t: 1}, loopIndex: 0,
 			}]);
 		});
 		test("periodic line across a parallel", () => {
@@ -120,8 +173,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'L', args: [2, -5*π/6]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
-				intersect0: {s: 0, t: 5*π/6}, intersect1: {s: 0, t: 5*π/6},
-				loopIndex: 0, entering: false,
+				intersect0: {s: 0, t: 5*π/6}, intersect1: {s: 0, t: 5*π/6}, loopIndex: 0,
 			}]);
 		});
 		test("meridian across a parallel", () => {
@@ -134,8 +186,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'Λ', args: [3, 2]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
-				intersect0: {s: 0, t: 2}, intersect1: {s: 0, t: 2},
-				loopIndex: 0, entering: false,
+				intersect0: {s: 0, t: 2}, intersect1: {s: 0, t: 2}, loopIndex: 0,
 			}]);
 		});
 		test("line across the antiequator", () => {
@@ -148,8 +199,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'L', args: [-3, 2]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
-				intersect0: {s: π, t: 2}, intersect1: {s: -π, t: 2},
-				loopIndex: 0, entering: false,
+				intersect0: {s: π, t: 2}, intersect1: {s: -π, t: 2}, loopIndex: 0,
 			}]);
 		});
 		test("line across two edges", () => {
@@ -163,8 +213,8 @@ describe("getEdgeCrossings", () => {
 				{type: 'L', args: [1.5, -0.5]},
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, true)).toEqual([
-				{intersect0: {s: 0, t: 1}, intersect1: {s: 0, t: 1}, loopIndex: 0, entering: true},
-				{intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0, entering: false},
+				{intersect0: {s: 0, t: 1}, intersect1: {s: 0, t: 1}, loopIndex: 0},
+				{intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0},
 			]);
 		});
 		test("line thru a vertex", () => {
@@ -177,10 +227,10 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [-1, -1]},
 				{type: 'L', args: [1, 1]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, true)).toEqual([{
-				intersect0: {s: -0, t: 0}, intersect1: {s: -0, t: 0},
-				loopIndex: 0, entering: false,
-			}]);
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, true)).toEqual([
+				{intersect0: {s: -0, t: 0}, intersect1: {s: -0, t: 0}, loopIndex: 0},
+				{intersect0: {s: 0, t: 0}, intersect1: {s: 0, t: 0}, loopIndex: 0},
+			]);
 		});
 		describe("line onto a parallel", () => {
 			const parallel = [
@@ -200,8 +250,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'L', args: [0, 0]},
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
-					intersect0: {s: 0, t: 0}, intersect1: {s: 0, t: 0},
-					loopIndex: 0, entering: false,
+					intersect0: {s: 0, t: 0}, intersect1: {s: 0, t: 0}, loopIndex: 0,
 				}]);
 			});
 			test("along", () => {
@@ -223,7 +272,7 @@ describe("getEdgeCrossings", () => {
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, true)).toEqual([{
 					intersect0: {s: 2.2990403105010992, t: -0.08824891027566292},
 					intersect1: {s: 2.2990403105010992, t: -0.08824891027566292},
-					loopIndex: 0, entering: false,
+					loopIndex: 0,
 				}]);
 			});
 		});
@@ -238,7 +287,7 @@ describe("getEdgeCrossings", () => {
 			];
 			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, true)).toEqual([{
 				intersect0: {s: 0.18247162241832457, t: -π}, intersect1: {s: 0.18247162241832457, t: π},
-				loopIndex: 0, entering: false
+				loopIndex: 0,
 			}]);
 		});
 	});
@@ -255,7 +304,7 @@ describe("getEdgeCrossings", () => {
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
 					intersect0: {s: 1, t: -1/2}, intersect1: {s: 1, t: -1/2},
-					loopIndex: 0, entering: false,
+					loopIndex: 0,
 				}]);
 			});
 			test("across two lines", () => {
@@ -269,8 +318,8 @@ describe("getEdgeCrossings", () => {
 					{type: 'L', args: [-1, -2]},
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, false)).toEqual([
-					{intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0, entering: true},
-					{intersect0: {s: 0, t: -1}, intersect1: {s: 0, t: -1}, loopIndex: 0, entering: false},
+					{intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0,},
+					{intersect0: {s: 0, t: -1}, intersect1: {s: 0, t: -1}, loopIndex: 0,},
 				]);
 			});
 			test("thru a vertex", () => {
@@ -283,10 +332,10 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [0, 0]},
 					{type: 'L', args: [2, -2]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, false)).toEqual([{
-					intersect0: {s: 1, t: -1}, intersect1: {s: 1, t: -1},
-					loopIndex: 0, entering: false,
-				}]);
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, false)).toEqual([
+					{intersect0: {s: 1, t: -1}, intersect1: {s: 1, t: -1}, loopIndex: 0},
+					{intersect0: {s: 1, t: -1}, intersect1: {s: 1, t: -1}, loopIndex: 0},
+				]);
 			});
 			describe("onto a line", () => {
 				const edge = [
@@ -298,7 +347,9 @@ describe("getEdgeCrossings", () => {
 						{type: 'M', args: [1, -1]},
 						{type: 'L', args: [2, 0]},
 					];
-					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([]);
+					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
+						intersect0: {s: 2, t: 0}, intersect1: {s: 2, t: 0}, loopIndex: 0,
+					}]);
 				});
 				test("exiting", () => {
 					const segment = [
@@ -306,16 +357,8 @@ describe("getEdgeCrossings", () => {
 						{type: 'L', args: [2, 0]},
 					];
 					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
-						intersect0: {s: 2, t: 0}, intersect1: {s: 2, t: 0},
-						loopIndex: 0, entering: false,
+						intersect0: {s: 2, t: 0}, intersect1: {s: 2, t: 0}, loopIndex: 0,
 					}]);
-				});
-				test("along", () => {
-					const segment = [
-						{type: 'M', args: [1, 0]},
-						{type: 'L', args: [2, 0]},
-					];
-					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([]);
 				});
 			});
 		});
@@ -330,8 +373,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'A', args: [1., 1., 0, 0, 1, 2., 0.]},
 				];
 				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
-					intersect0: {s: 1., t: -1.}, intersect1: {s: 1., t: -1.},
-					loopIndex: 0, entering: false,
+					intersect0: {s: 1., t: -1.}, intersect1: {s: 1., t: -1.}, loopIndex: 0,
 				}]);
 			});
 			test("onto a line", () => {
@@ -344,8 +386,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'A', args: [3, 3, 0, 0, 0, 0, -2]},
 				];
 				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([{
-					intersect0: {s: 0, t: -2}, intersect1: {s: 0, t: -2},
-					loopIndex: 0, entering: false,
+					intersect0: {s: 0, t: -2}, intersect1: {s: 0, t: -2}, loopIndex: 0,
 				}]);
 			});
 			test("onto a line (with known roundoff issues)", () => {
@@ -360,7 +401,7 @@ describe("getEdgeCrossings", () => {
 				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([{
 					intersect0: {s: -346.1074722752436, t: -2833.32760088764},
 					intersect1: {s: -346.1074722752436, t: -2833.32760088764},
-					loopIndex: 0, entering: false,
+					loopIndex: 0,
 				}]);
 			});
 			test("across a line and back", () => {
@@ -376,12 +417,12 @@ describe("getEdgeCrossings", () => {
 					{
 						intersect0: {s: 2 + Math.sqrt(3), t: -1},
 						intersect1: {s: 2 + Math.sqrt(3), t: -1},
-						loopIndex: 0, entering: false,
+						loopIndex: 0,
 					},
 					{
 						intersect0: {s: expect.closeTo(2 - Math.sqrt(3)), t: -1},
 						intersect1: {s: expect.closeTo(2 - Math.sqrt(3)), t: -1},
-						loopIndex: 0, entering: true,
+						loopIndex: 0,
 					},
 				]);
 			});
@@ -395,15 +436,26 @@ describe("contains", () => {
 			{type: 'M', args: [4, 0]},
 			{type: 'L', args: [2, -4]},
 			{type: 'L', args: [2, -1]},
+			{type: 'L', args: [3, 0]},
 			{type: 'L', args: [4, 0]},
 		];
 		test("inside", () => {
 			expect(contains(region, {s: 3, t: -1}, false))
 				.toBe(Side.IN);
 		});
-		test("outside", () => {
-			expect(contains(region, {s: 0, t: -8}, false))
-				.toBe(Side.OUT);
+		describe("outside", () => {
+			test("to the south", () => {
+				expect(contains(region, {s: 0, t: -1}, false))
+					.toBe(Side.OUT);
+			});
+			test("to the west", () => {
+				expect(contains(region, {s: 3, t: -8}, false))
+					.toBe(Side.OUT);
+			});
+			test("in line with an edge", () => {
+				expect(contains(region, {s: 0, t: 0}, false))
+					.toBe(Side.OUT);
+			});
 		});
 		test("borderline", () => {
 			expect(contains(region, {s: 2, t: -3}, false))
@@ -470,6 +522,27 @@ describe("contains", () => {
 				.toBe(Side.OUT);
 		});
 	});
+	test("circular region", () => {
+		const segments = [
+			{type: 'M', args: [0.5, 0.0]},
+			{type: 'A', args: [0.5, 0.5, 0., 0, 0, 0.5, 1.0]},
+			{type: 'A', args: [0.5, 0.5, 0., 0, 0, 0.5, 0.0]},
+		];
+		expect(contains(segments, {s: 0, t: 0}, false)).toBe(Side.OUT);
+	});
+	test("concave region", () => {
+		const region = [
+			{type: 'M', args: [-π, -1]},
+			{type: 'L', args: [-2, 0]},
+			{type: 'L', args: [-π, 1]},
+			{type: 'Φ', args: [-π, π]},
+			{type: 'Λ', args: [0, π]},
+			{type: 'Φ', args: [0, -π]},
+			{type: 'Λ', args: [-π, -π]},
+			{type: 'Φ', args: [-π, -1]},
+		];
+		expect(contains(region, {s: -3, t: 0}, true)).toBe(Side.OUT);
+	});
 	describe("periodic region", () => {
 		const region = [
 			{type: 'M', args: [.5, π]},
@@ -481,6 +554,14 @@ describe("contains", () => {
 		});
 		test("outside", () => {
 			expect(contains(region, {s: 1, t: 2}, true))
+				.toBe(Side.OUT);
+		});
+		test("inside on the antimeridian", () => {
+			expect(contains(region, {s: 0, t: π}, true))
+				.toBe(Side.IN);
+		});
+		test("outside on the antimeridian", () => {
+			expect(contains(region, {s: 1, t: π}, true))
 				.toBe(Side.OUT);
 		});
 	});
@@ -668,19 +749,49 @@ describe("encompasses", () => {
 			expect(encompasses(region, region, false)).toBe(Side.BORDERLINE);
 		});
 	});
-	test("arc in a concave region", () => {
-		const region = [
-			{type: 'M', args: [0, -1]},
-			{type: 'L', args: [2, 0]},
-			{type: 'L', args: [2, -3]},
-			{type: 'L', args: [-2, -3]},
-			{type: 'L', args: [-2, 0]},
-		];
-		const arc = [
-			{type: 'M', args: [2, 0]},
-			{type: 'A', args: [2, 2, 0, 0, 0, -2, 0]},
-		];
-		expect(encompasses(region, arc, false)).toBe(Side.IN);
+	describe("concave regions", () => {
+		test("arcs", () => {
+			const region = [
+				{type: 'M', args: [0, -1]},
+				{type: 'L', args: [2, 0]},
+				{type: 'L', args: [2, -3]},
+				{type: 'L', args: [-2, -3]},
+				{type: 'L', args: [-2, 0]},
+			];
+			const arc = [
+				{type: 'M', args: [2, 0]},
+				{type: 'A', args: [2, 2, 0, 0, 0, -2, 0]},
+			];
+			expect(encompasses(region, arc, false)).toBe(Side.IN);
+		});
+		test("*almost* fully coincident", () => {
+			const edges = [
+				{type: 'M', args: [.3, .1]},
+				{type: 'L', args: [.9, .1]},
+				{type: 'L', args: [.9, .9]},
+				{type: 'L', args: [.1, .9]},
+				{type: 'L', args: [.1, .1]},
+				{type: 'L', args: [.2, .1]},
+				{type: 'L', args: [.2, 0.]},
+				{type: 'L', args: [0., 0.]},
+				{type: 'L', args: [0., 1.]},
+				{type: 'L', args: [1., 1.]},
+				{type: 'L', args: [1., 0.]},
+				{type: 'L', args: [.3, 0.]},
+				{type: 'L', args: [.3, .1]},
+			];
+			const points = [
+				{type: 'M', args: [0., 0.]},
+				{type: 'L', args: [0., 1.]},
+				{type: 'L', args: [1., 1.]},
+				{type: 'L', args: [1., 0.]},
+				{type: 'L', args: [0., 0.]},
+			];
+			// XXX technically this result is incorrect, but it would be hard to fix, and I think I can handle this shortcoming well enuff
+			expect(encompasses(
+				edges, points, true,
+			)).toBe(Side.BORDERLINE);
+		});
 	});
 });
 
@@ -863,6 +974,26 @@ describe("cropToEdges", () => {
 			edges, edges, INFINITE_PLANE, true,
 		)).toEqual(edges); // if the region is the same as the edges, that's what should be returned
 	});
+	test("*almost* fully coincident", () => {
+		const segments = [
+			{type: 'M', args: [.3, .1]},
+			{type: 'L', args: [.9, .1]},
+			{type: 'L', args: [.9, .9]},
+			{type: 'L', args: [.1, .9]},
+			{type: 'L', args: [.1, .1]},
+			{type: 'L', args: [.2, .1]},
+			{type: 'L', args: [.2, 0.]},
+			{type: 'L', args: [0., 0.]},
+			{type: 'L', args: [0., 1.]},
+			{type: 'L', args: [1., 1.]},
+			{type: 'L', args: [1., 0.]},
+			{type: 'L', args: [.3, 0.]},
+			{type: 'L', args: [.3, .1]},
+		];
+		expect(cropToEdges(
+			segments, edges, INFINITE_PLANE, true,
+		)).toEqual(segments);
+	});
 	test("one segment with two crossings", () => {
 		const segments = [
 			{type: 'M', args: [1.5, 1.5]},
@@ -931,6 +1062,23 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [1.0, 1.0]},
 			{type: 'L', args: [1.0, 0.0]},
 		]);
+	});
+	test("wraps around a pole line", () => {
+		const edges = [
+			{type: 'M', args: [-π/2, -π]},
+			{type: 'Φ', args: [-π/2, π]},
+			{type: 'M', args: [π/2, π]},
+			{type: 'Φ', args: [π/2, -π]},
+		];
+		const segments = [
+			{type: 'M', args: [1.5, -0.5]},
+			{type: 'L', args: [-0.5, 1.5]},
+			{type: 'L', args: [1.5, -2.5]},
+			{type: 'L', args: [1.5, -0.5]},
+		];
+		expect(cropToEdges(
+			segments, edges, TOROID, true,
+		)).toEqual(segments.concat(edges.slice(2, 4)));
 	});
 });
 

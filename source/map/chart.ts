@@ -17,11 +17,11 @@ import {Civ} from "../generation/civ.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
-import {assert_xy, endpoint, Location, PathSegment, Place} from "../utilities/coordinates.js";
-import {arcCenter, angleSign, Vector} from "../utilities/geometry.js";
+import {assert_xy, endpoint, PathSegment, Place} from "../utilities/coordinates.js";
+import {arcCenter, Vector} from "../utilities/geometry.js";
 import {Biome} from "../generation/terrain.js";
 import {
-	applyProjectionToPath,
+	applyProjectionToPath, calculatePathBounds,
 	contains,
 	cropToEdges,
 	transformInput,
@@ -159,7 +159,7 @@ export class Chart {
 			surface, true,
 		);
 		// use that to choose the standard parallels intelligently
-		const {sMin: фMinFocus, sMax: фMaxFocus} = Chart.calculatePathBounds(focus);
+		const {sMin: фMinFocus, sMax: фMaxFocus} = calculatePathBounds(focus);
 
 		if (projectionName === 'basic')
 			this.projection = MapProjection.plateCaree(surface);
@@ -1112,7 +1112,7 @@ export class Chart {
 			λMax = Math.PI;
 			// and calculate the maximum extent of the projected region to get the Cartesian bounds
 			const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
-			const regionBounds = Chart.calculatePathBounds(projectedRegion);
+			const regionBounds = calculatePathBounds(projectedRegion);
 			xLeft = 1.1*regionBounds.sMin - 0.1*regionBounds.sMax;
 			xRight = 1.1*regionBounds.sMax - 0.1*regionBounds.sMin;
 			yTop = 1.1*regionBounds.tMin - 0.1*regionBounds.tMax;
@@ -1123,7 +1123,7 @@ export class Chart {
 			// calculate the minimum and maximum latitude and longitude of the region of interest
 			let regionBounds;
 			if (regionOfInterest.length > 0)
-				regionBounds = Chart.calculatePathBounds(regionOfInterest); // note: s in here is a generic coordinate (equal to latitude in this context)
+				regionBounds = calculatePathBounds(regionOfInterest); // note: s in here is a generic coordinate (equal to latitude in this context)
 			else
 				regionBounds = {sMin: projection.surface.фMin, sMax: projection.surface.фMax, tMin: -Math.PI, tMax: Math.PI};
 			const фRef = projection.surface.refLatitudes; // TODO: extracting these variables shouldn't be necessary.  I should use the projection functions.
@@ -1151,7 +1151,7 @@ export class Chart {
 			...projection.projectParallel(λMax, -λMax, фMax),
 			...projection.projectMeridian(фMax, фMin, -λMax),
 		];
-		const mapBounds = Chart.calculatePathBounds(edges);
+		const mapBounds = calculatePathBounds(edges);
 		return {
 			фMin: фMin, фMax: фMax, λMax: λMax,
 			xLeft: Math.max(xLeft, mapBounds.sMin),
@@ -1159,92 +1159,6 @@ export class Chart {
 			yTop: Math.max(yTop, mapBounds.tMin),
 			yBottom: Math.min(yBottom, mapBounds.tMax)
 		};
-	}
-
-	/**
-	 * determine the coordinate bounds of this region in some 2D coordinate system
-	 * @param segments the region that must be enclosed entirely within the returned bounding box
-	 */
-	static calculatePathBounds(segments: PathSegment[]): {sMin: number, sMax: number, tMin: number, tMax: number} {
-		if (segments.length === 0)
-			throw new Error("this function requires some points to work at all.");
-		let sMin = Infinity, sMax = -Infinity, tMin = Infinity, tMax = -Infinity;
-		for (let i = 0; i < segments.length; i ++) { // TODO: this won't notice when the pole is included in the region
-			const segment = segments[i];
-			// for each segment, pull out any points that might be extrema
-			let points: Location[];
-			switch (segment.type) {
-				// for most simple segment types it's just the endpoints
-				case 'M': case 'L': case 'Φ': case 'Λ':
-					points = [{s: segment.args[0], t: segment.args[1]}];
-					break;
-				// for bezier curves use the control points for the bonuds
-				case 'Q': case 'C':
-					points = [];
-					for (let i = 0; i < segment.args.length; i += 2)
-						points.push({s: segment.args[i], t: segment.args[i + 1]});
-					break;
-				// for arcs you must also look at certain points along the circle
-				case 'A':
-					// first calculate the location of the center
-					if (i === 0) {
-						console.log(segments);
-						throw new Error("a path may not start with an arc.");
-					}
-					const previusSegment = segments[i - 1];
-					const start = {
-						x: previusSegment.args[previusSegment.args.length - 2],
-						y: previusSegment.args[previusSegment.args.length - 1]};
-					const [_, r, __, largeArcFlag, sweepFlag, xEnd, yEnd] = segment.args;
-					const end = {x: xEnd, y: yEnd};
-					const chord = Math.hypot(end.x - start.x, end.y - start.y);
-					if (chord === 0)
-						throw new Error(`this arc is degenerate (the start point is the same as the endpoint): A${segment.args.join(',')}`);
-					if (chord > 2*r)
-						throw new Error(`this arc is impossible; it needs to span a distance of ${chord} with a radius of only ${r}?`);
-					const apothem = Math.sqrt(r*r - chord*chord/4);
-					const arcSign = (largeArcFlag === sweepFlag) ? 1 : -1;
-					const step = {
-						x: (end.y - start.y)/chord*apothem*arcSign,
-						y: (start.x - end.x)/chord*apothem*arcSign};
-					const center = {
-						x: (start.x + end.x)/2 + step.x,
-						y: (start.y + end.y)/2 + step.y};
-					// then enumerate the four nodes of the circle
-					points = [
-						{s: end.x, t: end.y},
-						{s: center.x + r, t: center.y},
-						{s: center.x, t: center.y + r},
-						{s: center.x - r, t: center.y},
-						{s: center.x, t: center.y - r},
-					];
-					// cull any that are not on this specific arc
-					for (let i = 4; i >= 1; i --) {
-						const sign = angleSign(end, assert_xy(points[i]), start);
-						if ((sweepFlag > 0) === (sign > 0))
-							points.splice(i, 1);
-					}
-					break;
-				// ignore Zs, naturally
-				case 'Z':
-					points = [];
-					break;
-				default:
-					throw new Error(`idk what the bounds of a '${segment.type}' segment are`);
-			}
-			// finally, search those key points for their greatest and smallest coordinates
-			for (const {s, t} of points) {
-				if (s < sMin)
-					sMin = s;
-				if (s > sMax)
-					sMax = s;
-				if (t < tMin)
-					tMin = t;
-				if (t > tMax)
-					tMax = t;
-			}
-		}
-		return {sMin: sMin, sMax: sMax, tMin: tMin, tMax: tMax};
 	}
 
 	/**

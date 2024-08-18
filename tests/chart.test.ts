@@ -46,63 +46,6 @@ test("rectangle", () => {
 	]);
 });
 
-describe("calculatePathBounds", () => {
-	test("empty", () => {
-		expect(() => Chart.calculatePathBounds([])).toThrow();
-	});
-	test("forward arc", () => {
-		const path = [
-			{type: 'M', args: [0, 0]},
-			{type: 'L', args: [0, 1]},
-			{type: 'A', args: [1, 1, 0, 0, 0, Math.sqrt(3)/2, -1/2]},
-			{type: 'Q', args: [0, -2, 0, -1/2]},
-			{type: 'Z', args: []},
-		];
-		expect(Chart.calculatePathBounds(path)).toEqual({
-			sMin: expect.closeTo(0),
-			sMax: expect.closeTo(1),
-			tMin: expect.closeTo(-2),
-			tMax: expect.closeTo(1)
-		});
-	});
-	test("backwards arc", () => {
-		const path = [
-			{type: 'M', args: [0, 0]},
-			{type: 'L', args: [0, 1]},
-			{type: 'A', args: [1, 1, 0, 0, 1, -Math.sqrt(3)/2, -1/2]},
-			{type: 'Q', args: [0, -2, 0, -1/2]},
-			{type: 'Z', args: []},
-		];
-		expect(Chart.calculatePathBounds(path)).toEqual({
-			sMin: expect.closeTo(-1),
-			sMax: expect.closeTo(0),
-			tMin: expect.closeTo(-2),
-			tMax: expect.closeTo(1)
-		});
-	});
-	test("degenerate arc", () => {
-		const path = [
-			{type: 'M', args: [6, 6]},
-			{type: 'A', args: [2, 2, 0, 0, 0, 6, 6]},
-		];
-		expect(() => Chart.calculatePathBounds(path)).toThrow();
-	});
-	test("point at end of arc", () => {
-		const path = [
-			{type: 'M', args: [0, 0]},
-			{type: 'A', args: [2, 2, 0, 0, 0, 2, 0]},
-			{type: 'L', args: [1, -1]},
-			{type: 'Z', args: []}
-		];
-		expect(Chart.calculatePathBounds(path)).toEqual({
-			sMin: expect.closeTo(0),
-			sMax: expect.closeTo(2),
-			tMin: expect.closeTo(-1),
-			tMax: expect.closeTo(2 - Math.sqrt(3)),
-		});
-	});
-});
-
 describe("all together", () => {
 	const globe = new Sphere(1);
 	globe.initialize();
