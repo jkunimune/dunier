@@ -1126,15 +1126,15 @@ export class Chart {
 				regionBounds = calculatePathBounds(regionOfInterest); // note: s in here is a generic coordinate (equal to latitude in this context)
 			else
 				regionBounds = {sMin: projection.surface.фMin, sMax: projection.surface.фMax, tMin: -Math.PI, tMax: Math.PI};
-			const фRef = projection.surface.refLatitudes; // TODO: extracting these variables shouldn't be necessary.  I should use the projection functions.
-			const sRef = projection.surface.cumulDistances; // note: s here is an arc length, not a generic coordinate
-			const sMin = linterp(regionBounds.sMin, фRef, sRef); // TODO use projection here
-			const sMax = linterp(regionBounds.sMax, фRef, sRef);
+			const yAbsoluteMax = projection.projectPoint({ф: projection.surface.фMin, λ: 0}).y; // note: s here is an arc length, not a generic coordinate
+			const yAbsoluteMin = projection.projectPoint({ф: projection.surface.фMax, λ: 0}).y;
+			const yMax = projection.projectPoint({ф: regionBounds.sMin, λ: 0}).y;
+			const yMin = projection.projectPoint({ф: regionBounds.sMax, λ: 0}).y;
 			// spread the limits out a bit to give a contextual view
-			фMax = linterp(Math.min(1.1*sMax - 0.1*sMin, sRef[sRef.length - 1]), sRef, фRef); // TODO use inverse projection here
-			фMin = linterp(Math.max(1.1*sMin - 0.1*sMax, sRef[0]), sRef, фRef);
+			фMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.1*yMin - 0.1*yMax, yAbsoluteMin)}).ф;
+			фMin = projection.inverseProjectPoint({x: 0, y: Math.min(1.1*yMax - 0.1*yMin, yAbsoluteMax)}).ф;
 			const ds_dλ = projection.surface.rz((фMin + фMax)/2).r;
-			λMax = Math.min(Math.PI, regionBounds.tMax + 0.1*(sMax - sMin)/ds_dλ);
+			λMax = Math.min(Math.PI, regionBounds.tMax + 0.1*(yMax - yMin)/ds_dλ);
 			// and don't apply any Cartesian bounds
 			xLeft = -Infinity;
 			xRight = Infinity;

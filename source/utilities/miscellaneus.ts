@@ -82,6 +82,7 @@ export function binarySearch<T>(array: T[], condition: (item: T) => boolean): nu
 
 /**
  * linearly interpolate x from the sorted function X onto the corresponding output Y.
+ * @throws an error if the reference array lengths don't match or if the input value is outside the given range.
  */
 export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
 	if (inRef.length !== exRef.length)
@@ -90,10 +91,12 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 		throw new Error(
 			`input reference array must be monotonicly increasing, 
 			but this one goes from ${inRef[0]} to ${inRef[inRef.length - 1]}`);
-	else if (inVal <= inRef[0])
+	else if (inVal === inRef[0])
 		return exRef[0];
-	else if (inVal >= inRef[inRef.length - 1])
-		return exRef[exRef.length - 1];
+	else if (inVal < inRef[0] || inVal > inRef[inRef.length - 1])
+		throw new Error(
+			`you tried to interpolate the point ${inVal}, which is out of bounds 
+			(must be between ${inRef[0]} and ${inRef[inRef.length - 1]}`);
 	else {
 		const i = binarySearch(inRef, (ref) => ref >= inVal);
 		return (inVal - inRef[i - 1])/(inRef[i] - inRef[i - 1])*(exRef[i] - exRef[i - 1]) + exRef[i - 1];

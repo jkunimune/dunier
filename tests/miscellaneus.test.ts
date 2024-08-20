@@ -111,11 +111,17 @@ describe("linterp()", () => {
 	test("generic", () => {
 		expect(linterp(1.5, [0, 1, 2], [8, 5, 6])).toBeCloseTo(5.5);
 	});
+	test("minimum", () => {
+		expect(linterp(0, [0, 1, 2], [8, 5, 6])).toEqual(8);
+	});
+	test("maximum", () => {
+		expect(linterp(2, [0, 1, 2], [8, 5, 6])).toEqual(6);
+	});
 	test("below minimum", () => {
-		expect(linterp(-1, [0, 1, 2], [8, 5, 6])).toEqual(8);
+		expect(() => linterp(-1, [0, 1, 2], [8, 5, 6])).toThrow();
 	});
 	test("above maximum", () => {
-		expect(linterp(3, [0, 1, 2], [8, 5, 6])).toEqual(6);
+		expect(() => linterp(3, [0, 1, 2], [8, 5, 6])).toThrow();
 	});
 });
 

@@ -8,7 +8,7 @@ import {
 	Place,
 	Point
 } from "../utilities/coordinates.js";
-import {linterp} from "../utilities/miscellaneus.js";
+import {linterp, localizeInRange} from "../utilities/miscellaneus.js";
 
 
 /**
@@ -59,7 +59,7 @@ export class MapProjection {
 	}
 
 	/**
-	 * transform the given parametric coordinates to Cartesian ones.
+	 * transform the given geographic coordinates to Cartesian ones.
 	 * @param point the latitude and longitude in radians, in the range [-π, π]
 	 * @return the x and y coordinates in km
 	 */
@@ -75,6 +75,30 @@ export class MapProjection {
 		}
 		else
 			return {x: this.dx_dλ(point.ф)*point.λ, y: this.y(point.ф)};
+	}
+
+	/**
+	 * transform the given Cartesian coordinates to geographic ones.
+	 * @param point the x and y coordinates in km
+	 * @return the latitude and longitude in radians
+	 */
+	public inverseProjectPoint(point: Point): Place {
+		if (isFinite(this.yCenter)) {
+			let r = Math.hypot(point.x, point.y - this.yCenter);
+			let θ = Math.atan2(point.x, point.y);
+			if (r + this.yCenter > this.yRef[0]) { // polar coordinates have this slite degeneracy; set r's sign to whatever works
+				r = -r;
+				θ = localizeInRange(θ + Math.PI, -Math.PI, Math.PI);
+			}
+			const ф = this.ф(r + this.yCenter);
+			const λ = r*θ/this.dx_dλ(ф);
+			return {ф: ф, λ: λ};
+		}
+		else {
+			const ф = this.ф(point.y);
+			const λ = point.x/this.dx_dλ(ф);
+			return {ф: ф, λ: λ};
+		}
 	}
 
 	/**
@@ -181,6 +205,17 @@ export class MapProjection {
 	 */
 	private y(ф: number): number {
 		return linterp(ф, this.фRef, this.yRef); // TODO: use better interpolation
+	}
+
+	/**
+	 * calculate the latitude of the point on the central meridian at the given latitude
+	 * @param y the y coordinate in kilometers
+	 * @return the latitude in radians
+	 * @param y
+	 * @private
+	 */
+	private ф(y: number): number {
+		return linterp(y, this.yRef.slice().reverse(), this.фRef.slice().reverse());
 	}
 
 	/**

@@ -17,6 +17,10 @@ describe("on a sphere", () => {
 			expect(projection.projectPoint({ф: 1, λ: -1})).toEqual(
 				{x: expect.closeTo(-Math.cos(1)), y: expect.closeTo(-Math.PI/2 - 1)});
 		});
+		test("inverseProjectPoint()", () => {
+			expect(projection.inverseProjectPoint({x: -Math.cos(1), y: -Math.PI/2 - 1})).toEqual(
+				{ф: expect.closeTo(1), λ: expect.closeTo(-1)});
+		});
 		test("projectMeridian()", () => {
 			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, 1);
 			const expectedMeridian = [];
@@ -59,6 +63,16 @@ describe("on a sphere", () => {
 			test("consistency of antimeridian", () => {
 				expect(projection.projectPoint({ф: -1, λ: Math.PI})).toEqual(
 					projection.projectPoint({ф: -1, λ: -Math.PI}));
+			});
+		});
+		describe("inverseProjectPoint()", () => {
+			test("south pole", () => {
+				expect(projection.inverseProjectPoint({x: 0, y: 0})).toEqual(
+					{ф: expect.closeTo(-Math.PI/2), λ: NaN});
+			});
+			test("equator", () => {
+				expect(projection.inverseProjectPoint({x: -1, y: -Math.sqrt(3)})).toEqual(
+					{ф: expect.closeTo(0), λ: expect.closeTo(-Math.PI/6)});
 			});
 		});
 		test("projectMeridian()", () => {
@@ -118,6 +132,13 @@ describe("on a sphere", () => {
 				expect(projection.projectPoint({ф: -Math.PI/2, λ: 2})).toEqual({x: 2, y: expect.anything()});
 			});
 		});
+		describe("inverseProjectPoint()", () => {
+			test("normal point", () => {
+				const origin = projection.projectPoint({ф: 0, λ: 0});
+				expect(projection.inverseProjectPoint({x: origin.x - 1, y: origin.y + Math.log(Math.tan(3*Math.PI/8))})).toEqual(
+					{ф: expect.closeTo(-Math.PI/4), λ: expect.closeTo(-1)});
+			});
+		})
 		test("projectMeridian()", () => {
 			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, 1);
 			const expectedMeridian = [];
@@ -137,10 +158,11 @@ describe("on a sphere", () => {
 
 	describe("conic projection", () => {
 		const projection = MapProjection.conic(sphere, 1, 1);
-		describe("projectPoint()", () => {
-			test("north pole", () => {
-				expect(projection.projectPoint({ф: Math.PI/2, λ: 1})).toEqual({x: 0, y: 0});
-			});
+		test("projectPoint()", () => {
+			expect(projection.projectPoint({ф: Math.PI/2, λ: 1})).toEqual({x: 0, y: 0});
+		});
+		test("inverseProjectPoint()", () => {
+			expect(projection.inverseProjectPoint({x: 0, y: 0})).toEqual({ф: Math.PI/2, λ: NaN});
 		});
 	});
 });
@@ -161,8 +183,8 @@ describe("on a disc", () => {
 					{x: expect.closeTo(1/2), y: expect.closeTo(Math.sqrt(3)/2 - 4)});
 			});
 			test("consistency of antimeridian", () => {
-				expect(projection.projectPoint({ф: -1, λ: Math.PI})).toEqual(
-					projection.projectPoint({ф: -1, λ: -Math.PI}));
+				expect(projection.projectPoint({ф: 0.5, λ: Math.PI})).toEqual(
+					projection.projectPoint({ф: 0.5, λ: -Math.PI}));
 			});
 		});
 		test("wrapsAround()", () => {
@@ -173,8 +195,8 @@ describe("on a disc", () => {
 		const projection = MapProjection.conic(disc, Math.PI/6, Math.PI/3);
 		describe("projectPoint()", () => {
 			test("consistency of antimeridian", () => {
-				expect(projection.projectPoint({ф: -1, λ: Math.PI})).toEqual(
-					projection.projectPoint({ф: -1, λ: -Math.PI}));
+				expect(projection.projectPoint({ф: 0.5, λ: Math.PI})).toEqual(
+					projection.projectPoint({ф: 0.5, λ: -Math.PI}));
 			});
 		});
 		test("wrapsAround()", () => {
