@@ -6,7 +6,7 @@
 import {Spheroid} from "../source/surface/spheroid.js";
 import {Vector} from "../source/utilities/geometry.js";
 import {Toroid} from "../source/surface/toroid.js";
-import {Disc} from "../source/surface/disc";
+import {Disc} from "../source/surface/disc.js";
 
 describe("Spheroid", () => {
 	const radius = 6371;
