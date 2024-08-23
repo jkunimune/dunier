@@ -5,7 +5,6 @@
 import {Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
 import {
 	filterSet,
-	linterp,
 	localizeInRange,
 	longestShortestPath,
 	pathToString,
@@ -1102,6 +1101,20 @@ export class Chart {
 	static chooseMapBounds(
 		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
 	): {фMin: number, фMax: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
+		// start by identifying the geographic extent of this thing
+		let regionBounds;
+		if (regionOfInterest.length > 0)
+			regionBounds = calculatePathBounds(regionOfInterest);
+		else
+			regionBounds = {sMin: projection.surface.фMin, sMax: projection.surface.фMax, tMin: -Math.PI, tMax: Math.PI};
+
+		// first infer some things about this projection
+		const northPoleIsDistant = projection.differentiability(projection.surface.фMax) < .7;
+		const southPoleIsDistant = projection.differentiability(projection.surface.фMin) < .7;
+		const northPoleIsPoint = projection.projectPoint({ф: projection.surface.фMax, λ: 1}).x === 0;
+		const southPoleIsPoint = projection.projectPoint({ф: projection.surface.фMin, λ: 1}).x === 0;
+
+		// now to choose those bounds
 		let фMin, фMax, λMax;
 		let xLeft, xRight, yTop, yBottom;
 		// if we want a rectangular map
@@ -1112,29 +1125,46 @@ export class Chart {
 			λMax = Math.PI;
 			// and calculate the maximum extent of the projected region to get the Cartesian bounds
 			const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
-			const regionBounds = calculatePathBounds(projectedRegion);
-			xLeft = 1.1*regionBounds.sMin - 0.1*regionBounds.sMax;
-			xRight = 1.1*regionBounds.sMax - 0.1*regionBounds.sMin;
-			yTop = 1.1*regionBounds.tMin - 0.1*regionBounds.tMax;
-			yBottom = 1.1*regionBounds.tMax - 0.1*regionBounds.tMin;
+			const projectedBounds = calculatePathBounds(projectedRegion);
+			xLeft = 1.1*projectedBounds.sMin - 0.1*projectedBounds.sMax;
+			xRight = 1.1*projectedBounds.sMax - 0.1*projectedBounds.sMin;
+			yTop = 1.1*projectedBounds.tMin - 0.1*projectedBounds.tMax;
+			yBottom = 1.1*projectedBounds.tMax - 0.1*projectedBounds.tMin;
+			// but if the poles are super far away, put some global limits on the map extent
+			const globeWidth = 2*Math.PI*projection.surface.rz((projectedBounds.sMin + projectedBounds.sMax)/2).r;
+			const maxHeight = globeWidth/Math.sqrt(2);
+			let yNorthCutoff = -Infinity, ySouthCutoff = Infinity;
+			if (northPoleIsDistant) {
+				if (southPoleIsDistant) {
+					yNorthCutoff = (yTop + yBottom)/2 - maxHeight/2;
+					ySouthCutoff = (yTop + yBottom)/2 + maxHeight/2;
+				}
+				else
+					yNorthCutoff = yBottom - maxHeight;
+			}
+			else if (southPoleIsDistant)
+				ySouthCutoff = yTop + maxHeight;
+			// apply those limits
+			yTop = Math.max(yTop, yNorthCutoff);
+			yBottom = Math.min(yBottom, ySouthCutoff);
 		}
 		// if we want a wedge-shaped map
 		else {
 			// calculate the minimum and maximum latitude and longitude of the region of interest
-			let regionBounds;
-			if (regionOfInterest.length > 0)
-				regionBounds = calculatePathBounds(regionOfInterest); // note: s in here is a generic coordinate (equal to latitude in this context)
-			else
-				regionBounds = {sMin: projection.surface.фMin, sMax: projection.surface.фMax, tMin: -Math.PI, tMax: Math.PI};
-			const yAbsoluteMax = projection.projectPoint({ф: projection.surface.фMin, λ: 0}).y; // note: s here is an arc length, not a generic coordinate
-			const yAbsoluteMin = projection.projectPoint({ф: projection.surface.фMax, λ: 0}).y;
 			const yMax = projection.projectPoint({ф: regionBounds.sMin, λ: 0}).y;
 			const yMin = projection.projectPoint({ф: regionBounds.sMax, λ: 0}).y;
 			// spread the limits out a bit to give a contextual view
-			фMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.1*yMin - 0.1*yMax, yAbsoluteMin)}).ф;
-			фMin = projection.inverseProjectPoint({x: 0, y: Math.min(1.1*yMax - 0.1*yMin, yAbsoluteMax)}).ф;
+			const ySouthPole = projection.projectPoint({ф: projection.surface.фMin, λ: 0}).y;
+			const yNorthPole = projection.projectPoint({ф: projection.surface.фMax, λ: 0}).y;
+			фMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.1*yMin - 0.1*yMax, yNorthPole)}).ф;
+			фMin = projection.inverseProjectPoint({x: 0, y: Math.min(1.1*yMax - 0.1*yMin, ySouthPole)}).ф;
 			const ds_dλ = projection.surface.rz((фMin + фMax)/2).r;
 			λMax = Math.min(Math.PI, regionBounds.tMax + 0.1*(yMax - yMin)/ds_dλ);
+			// cut out the poles if desired
+			if (northPoleIsDistant || northPoleIsPoint)
+				фMax = Math.max(Math.min(фMax, projection.surface.фMax - 10/180*Math.PI), фMin);
+			if (southPoleIsDistant || southPoleIsPoint)
+				фMin = Math.min(Math.max(фMin, projection.surface.фMin + 10/180*Math.PI), фMax);
 			// and don't apply any Cartesian bounds
 			xLeft = -Infinity;
 			xRight = Infinity;

@@ -184,6 +184,40 @@ export class MapProjection {
 	}
 
 	/**
+	 * quantify how nondifferentiable the prime meridian is at this latitude, if at all
+	 * @param ф the latitude at which to check, in radians
+	 * @return a number near 1 if the prime meridian is smooth at that point,
+	 *         a number less than 1 if it's cuspy, and
+	 *         a number much less than 1 if this point should theoreticly diverge to infinity
+	 *         (in practice it doesn't get very low for asymptotes; maybe .6 for a Mercator pole).
+	 */
+	differentiability(ф: number): number {
+		const n = this.surface.refLatitudes.length;
+		const i = Math.min(Math.floor((ф - this.surface.фMin)/(this.surface.фMax - this.surface.фMin)*(n - 1)), n - 2);
+		// choose three refLatitudes intervals that are near the point
+		let iMin, iMax;
+		if (i < 2) {
+			iMin = 0;
+			iMax = 5;
+		}
+		else if (i >= n - 2) {
+			iMin = n - 6;
+			iMax = n - 1;
+		}
+		else {
+			iMin = i - 2;
+			iMax = i + 3;
+		}
+		// compare the y difference across one of them to the y difference across all of them
+		const innerΔy = this.y(this.surface.refLatitudes[i + 1]) - this.y(this.surface.refLatitudes[i]);
+		const outerΔy = this.y(this.surface.refLatitudes[iMax]) - this.y(this.surface.refLatitudes[iMin]);
+		const innerΔs = this.surface.cumulDistances[i + 1] - this.surface.cumulDistances[i];
+		const outerΔs = this.surface.cumulDistances[iMax] - this.surface.cumulDistances[iMin];
+		// fit a power law to their ratio
+		return Math.log(outerΔy/innerΔy)/Math.log(outerΔs/innerΔs);
+	}
+
+	/**
 	 * convert an r and θ to Cartesian x and y, where θ is in radians and is defined such that, for positive r,
 	 * θ = 0 is maximum y (the bottom of the circle) and increases as you go counterclockwise.  negative r is
 	 * permitted and will reverse all points about the origin such that θ = 0 is minimum y (the top of the circle)

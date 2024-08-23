@@ -43,6 +43,17 @@ describe("on a sphere", () => {
 		test("wrapsAround()", () => {
 			expect(projection.wrapsAround()).toEqual(false);
 		});
+		describe("differentiability()", () => {
+			test("north pole", () => {
+				expect(projection.differentiability(Math.PI/2)).toBeCloseTo(1, 1);
+			});
+			test("equator", () => {
+				expect(projection.differentiability(0)).toBeCloseTo(1, 1);
+			});
+			test("south pole", () => {
+				expect(projection.differentiability(-Math.PI/2)).toBeCloseTo(1, 1);
+			});
+		});
 	});
 
 	describe("stereographic projection", () => {
@@ -115,6 +126,17 @@ describe("on a sphere", () => {
 		test("wrapsAround()", () => {
 			expect(projection.wrapsAround()).toEqual(true);
 		});
+		describe("differentiability()", () => {
+			test("north pole", () => {
+				expect(projection.differentiability(Math.PI/2)).toBeLessThan(0.5);
+			});
+			test("equator", () => {
+				expect(projection.differentiability(0)).toBeCloseTo(1, 1);
+			});
+			test("south pole", () => {
+				expect(projection.differentiability(-Math.PI/2)).toBeCloseTo(1, 1);
+			});
+		});
 	});
 
 	describe("Mercator projection", () => {
@@ -138,7 +160,7 @@ describe("on a sphere", () => {
 				expect(projection.inverseProjectPoint({x: origin.x - 1, y: origin.y + Math.log(Math.tan(3*Math.PI/8))})).toEqual(
 					{ф: expect.closeTo(-Math.PI/4), λ: expect.closeTo(-1)});
 			});
-		})
+		});
 		test("projectMeridian()", () => {
 			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, 1);
 			const expectedMeridian = [];
@@ -154,15 +176,40 @@ describe("on a sphere", () => {
 		test("wrapsAround()", () => {
 			expect(projection.wrapsAround()).toEqual(false);
 		});
+		describe("differentiability()", () => {
+			test("north pole", () => {
+				expect(projection.differentiability(Math.PI/2)).toBeLessThan(0.7);
+			});
+			test("equator", () => {
+				expect(projection.differentiability(0)).toBeCloseTo(1, 1);
+			});
+			test("south pole", () => {
+				expect(projection.differentiability(-Math.PI/2)).toBeLessThan(0.7);
+			});
+		});
 	});
 
 	describe("conic projection", () => {
-		const projection = MapProjection.conic(sphere, 1, 1);
+		const projection = MapProjection.conic(sphere, Math.PI/6, Math.PI/6);
 		test("projectPoint()", () => {
 			expect(projection.projectPoint({ф: Math.PI/2, λ: 1})).toEqual({x: 0, y: 0});
 		});
 		test("inverseProjectPoint()", () => {
 			expect(projection.inverseProjectPoint({x: 0, y: 0})).toEqual({ф: Math.PI/2, λ: NaN});
+		});
+		test("wrapsAround()", () => {
+			expect(projection.wrapsAround()).toEqual(false);
+		});
+		describe("differentiability()", () => {
+			test("north pole", () => {
+				expect(projection.differentiability(Math.PI/2)).toBeCloseTo(0.5, 1);
+			});
+			test("equator", () => {
+				expect(projection.differentiability(0)).toBeCloseTo(1, 1);
+			});
+			test("south pole", () => {
+				expect(projection.differentiability(-Math.PI/2)).toBeLessThan(0.5);
+			});
 		});
 	});
 });
@@ -190,6 +237,14 @@ describe("on a disc", () => {
 		test("wrapsAround()", () => {
 			expect(projection.wrapsAround()).toEqual(true);
 		});
+		describe("differentiability()", () => {
+			test("north pole", () => {
+				expect(projection.differentiability(Math.PI/2)).toBeCloseTo(1, 1);
+			});
+			test("edge", () => {
+				expect(projection.differentiability(disc.фMin)).toBeCloseTo(1, 1);
+			});
+		});
 	});
 	describe("also azimuthal equidistant projection", () => {
 		const projection = MapProjection.conic(disc, Math.PI/6, Math.PI/3);
@@ -201,6 +256,14 @@ describe("on a disc", () => {
 		});
 		test("wrapsAround()", () => {
 			expect(projection.wrapsAround()).toEqual(true);
+		});
+		describe("differentiability()", () => {
+			test("north pole", () => {
+				expect(projection.differentiability(Math.PI/2)).toBeCloseTo(1, 1);
+			});
+			test("south pole", () => {
+				expect(projection.differentiability(disc.фMin)).toBeCloseTo(1, 1);
+			});
 		});
 	});
 });
