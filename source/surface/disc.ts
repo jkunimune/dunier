@@ -31,22 +31,6 @@ export class Disc extends Surface {
 		this.effectiveObliquity = effectiveObliquity;
 	}
 
-	initialize(): void {
-		super.initialize();
-		// it's really important for Disc that map projections use the correct meridian lengths,
-		// so recalculate all these things directly instead of the fairly imprecise integral
-		const n = this.refLatitudes.length;
-		this.height = this.radius;
-		this.area = Math.PI*this.radius*this.radius;
-		for (let i = 0; i < n - 1; i ++) {
-			const r = this.rz(this.refLatitudes[i]).r;
-			this.cumulDistances[i] = this.radius - r;
-			this.cumulAreas[i] = this.area - Math.PI*r*r;
-		}
-		this.cumulDistances[n - 1] = this.height;
-		this.cumulAreas[n - 1] = this.area;
-	}
-
 	partition(): {triangles: Vertex[], nodos: Tile[]} {
 		const nodos = [
 			new Tile(null, {ф: Math.atan(1/8), λ: 0}, this),

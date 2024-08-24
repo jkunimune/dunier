@@ -99,7 +99,9 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 			(must be between ${inRef[0]} and ${inRef[inRef.length - 1]}`);
 	else {
 		const i = binarySearch(inRef, (ref) => ref >= inVal);
-		return (inVal - inRef[i - 1])/(inRef[i] - inRef[i - 1])*(exRef[i] - exRef[i - 1]) + exRef[i - 1];
+		const rightWeit = (inVal - inRef[i - 1])/(inRef[i] - inRef[i - 1]);
+		const leftWeit = 1 - rightWeit;
+		return exRef[i - 1]*leftWeit + exRef[i]*rightWeit;
 	}
 }
 

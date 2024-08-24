@@ -82,16 +82,16 @@ export abstract class Surface implements Domain {
 		this.cumulAreas = [0]; // for use in map projections
 		this.cumulDistances = [0];
 		const dф = (this.фMax - this.фMin)/INTEGRATION_RESOLUTION;
-		const dλ = 2*Math.PI;
+		const Δλ = 2*Math.PI;
 		for (let i = 1; i <= INTEGRATION_RESOLUTION; i ++) {
 			this.refLatitudes.push(this.фMin + (this.фMax - this.фMin)*i/INTEGRATION_RESOLUTION);
-			const ф = (this.refLatitudes[i] + this.refLatitudes[i - 1])/2;
-			const ds_dф = this.ds_dф(ф); // a simple middle Riemann sum will do
-			const ds_dλ = this.rz(ф).r;
-			const ΔArea = ds_dλ*dλ*ds_dф*dф;
-			const ΔDistance = ds_dф*dф;
+			const north = this.rz(this.refLatitudes[i]);
+			const south = this.rz(this.refLatitudes[i - 1]);
+			const Δs = Math.hypot(north.r - south.r, north.z - south.z); // treat the surface as a series of cone segments
+			const ds_dλ = (north.r + south.r)/2;
+			const ΔArea = ds_dλ*Δλ*Δs;
 			this.cumulAreas.push(this.cumulAreas[i - 1] + ΔArea);
-			this.cumulDistances.push(this.cumulDistances[i - 1] + ΔDistance);
+			this.cumulDistances.push(this.cumulDistances[i - 1] + Δs);
 		}
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION]; // and record the totals as their own instance variables
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
