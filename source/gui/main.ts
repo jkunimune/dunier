@@ -326,6 +326,7 @@ function applyMap(): void {
 	console.log("grafa zemgrafe...");
 	const projectionName = DOM.val('map-projection');
 	const northUp = (DOM.val('map-orientation') === 'north');
+	const rectangularBounds = (DOM.val('map-shape') === 'rectangle');
 	const focusSpecifier = DOM.val('map-jung');
 	let focus: PathSegment[];
 	if (focusSpecifier === "world")
@@ -339,7 +340,7 @@ function applyMap(): void {
 
 	const chart = new Chart(
 		projectionName, surface, focus,
-		northUp, projectionName !== 'classical');
+		northUp, rectangularBounds);
 	mappedCivs = chart.depict(
 		surface,
 		world,
