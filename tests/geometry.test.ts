@@ -2,9 +2,9 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {checkVoronoiPolygon, crossingSign, trajectoryIntersection} from "../source/utilities/geometry.js";
+import {angleSign, checkVoronoiPolygon, crossingSign, trajectoryIntersection} from "../source/utilities/geometry.js";
 
-describe("signCrossing()", () => {
+describe("crossingSign()", () => {
 	test("positive", () => {
 		expect(crossingSign({x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 0}, {x: 2, y: 2})).toBeGreaterThan(0);
 	});
@@ -19,6 +19,18 @@ describe("signCrossing()", () => {
 	});
 	test("stationary", () => {
 		expect(crossingSign({x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 0}, {x: 2, y: 0})).toBeCloseTo(0);
+	});
+});
+
+describe("angleSign()", () => {
+	test("positive", () => {
+		expect(angleSign({x: 0, y: 0}, {x: 1, y: 0}, {x: 0, y: 1})).toBeGreaterThan(0);
+	});
+	test("negative", () => {
+		expect(angleSign({x: 0, y: 0}, {x: 0, y: 1}, {x: 1, y: 0})).toBeLessThan(0);
+	});
+	test("degenerate", () => {
+		expect(angleSign({x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 2})).toBeCloseTo(0);
 	});
 });
 

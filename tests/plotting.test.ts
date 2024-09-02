@@ -530,6 +530,30 @@ describe("contains", () => {
 		];
 		expect(contains(segments, {s: 0, t: 0}, false)).toBe(Side.OUT);
 	});
+	describe("circular segment region", () => {
+		const segments = [
+			{type: 'M', args: [0., 0.]},
+			{type: 'A', args: [6., 6., 0., 0, 0, 0., 1.]},
+			{type: 'L', args: [0., 0.]},
+		];
+		describe("on the arc side", () => {
+			test("in line with top edge", () => {
+				expect(contains(segments, {s: -1., t: 0.}, false)).toBe(Side.OUT);
+			});
+			test("in line with bottom edge", () => {
+				expect(contains(segments, {s: -1., t: 1.}, false)).toBe(Side.OUT);
+			});
+		});
+		describe ("on the line side", () => {
+			test("in line with top edge", () => {
+				expect(contains(segments, {s: 1., t: 0.}, false)).toBe(Side.OUT);
+
+			});
+			test("in line with bottom edge", () => {
+				expect(contains(segments, {s: 1., t: 0.}, false)).toBe(Side.OUT);
+			});
+		})
+	});
 	test("concave region", () => {
 		const region = [
 			{type: 'M', args: [-π, -1]},

@@ -579,21 +579,33 @@ export function contains(polygon: PathSegment[], point: Location, periodic: bool
 				intersections = [];
 		}
 		else if (polygon[i].type === 'A') {
+			if (periodic)
+				throw new Error("you may not use arcs on periodic domains.");
 			const [radius, , , largeArc, sweepDirection, , ] = polygon[i].args;
+			// first compute the circle
 			const q0 = assert_xy(start);
 			const q1 = assert_xy(end);
 			const center = arcCenter(q0, q1, radius, largeArc !== sweepDirection);
+			// solve for the zero or two intersections with the circle
 			intersections = [];
 			const discriminant = Math.pow(radius, 2) - Math.pow(point.t - center.y, 2);
 			if (discriminant >= 0) {
 				for (let sign of [-1, 1]) {
 					const x = center.x + sign*Math.sqrt(discriminant);
-					let vy = x - center.x;
-					if (sweepDirection === 0)
-						vy = -vy;
-					if (vy !== 0)
-						if ((angleSign(q1, {x: x, y: point.t}, q1) > 0) === (sweepDirection > 0))
+					const vy = (sweepDirection > 0) ? x - center.x : center.x - x;
+					if (vy !== 0) { // (ignore tangencies)
+						// make sure the intersection is on or between the endpoints
+						const pointSign = -angleSign(q0, {x: x, y: point.t}, q1); // negate this because of the left-handed coordinate system
+						if (pointSign === 0 || (pointSign < 0) === (sweepDirection > 0)) {
+							// discard it if it's on an endpoint and the rest of the arc is below the endpoint (for consistency with linetos)
+							if (point.t === q0.y && vy > 0)
+								continue;
+							if (point.t === q1.y && vy < 0)
+								continue;
+							// otherwise add it to the list
 							intersections.push({s: x, goingEast: vy > 0});
+						}
+					}
 				}
 			}
 		}
@@ -673,10 +685,7 @@ export function calculatePathBounds(segments: PathSegment[]): {sMin: number, sMa
 					console.log(segments);
 					throw new Error("a path may not start with an arc.");
 				}
-				const previusSegment = segments[i - 1];
-				const start = {
-					x: previusSegment.args[previusSegment.args.length - 2],
-					y: previusSegment.args[previusSegment.args.length - 1]};
+				const start = assert_xy(endpoint(segments[i - 1]));
 				const [_, r, __, largeArcFlag, sweepFlag, xEnd, yEnd] = segment.args;
 				const end = {x: xEnd, y: yEnd};
 				const chord = Math.hypot(end.x - start.x, end.y - start.y);
@@ -702,8 +711,8 @@ export function calculatePathBounds(segments: PathSegment[]): {sMin: number, sMa
 				];
 				// cull any that are not on this specific arc
 				for (let i = 4; i >= 1; i --) {
-					const sign = angleSign(end, assert_xy(points[i]), start);
-					if ((sweepFlag > 0) === (sign > 0))
+					const sign = -angleSign(start, assert_xy(points[i]), end);
+					if ((sweepFlag === 0) !== (sign > 0))
 						points.splice(i, 1);
 				}
 				break;

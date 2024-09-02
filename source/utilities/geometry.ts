@@ -6,11 +6,15 @@ import {Point} from "./coordinates.js";
 
 /**
  * calculate the sign of this triangle
- * @return a positive number if, in a left-handed coordinate system,
- *         b is to the left of a from the point of view of an observer at c facing toward d
- *         (meaning d is to the right of c for an observer facing from a to b);
- *         a negative number if b is to the right of a for an observer facing from c to d,
- *         or 0 if ab and cd are collinear or either has zero magnitude.
+ * @return in a left-handed coordinate system:
+ *         - a positive number if b is to the left of a from the point of view of an observer at c facing d
+ *           (meaning d is to the right of c for an observer facing from a to b);
+ *         - a negative number if b is to the right of a for an observer at c facing d; or
+ *         - 0 if ab and cd are collinear or either has zero magnitude.
+ *         in a right-handed coordinate system:
+ *         - a positive number of b is to the right of a for an observer at c facing d;
+ *         - a negative number if b is to the left of a for an observer at c facing d; or
+ *         - 0 if ab and cd are colinear or either has zero magnitude.
  */
 export function crossingSign(a: Point, b: Point, c: Point, d: Point): number {
 	return (b.x - a.x)*(d.y - c.y) - (b.y - a.y)*(d.x - c.x);
@@ -18,11 +22,11 @@ export function crossingSign(a: Point, b: Point, c: Point, d: Point): number {
 
 
 /**
- * calculate the sign of this triangle in a left-handed coordinate system
+ * calculate the sign of this triangle in a right-handed coordinate system
  * @return a positive number if the triangle goes widdershins, a negative number if it
  *         goes clockwise, and zero if it is degenerate.  in actuality, this returns
  *         two times the area of the triangle formed by these points, so if there is
- *         roundoff error, it will be of that order.
+ *         roundoff error, know that it will be of that order.
  */
 export function angleSign(a: Point, b: Point, c: Point): number {
 	return crossingSign(b, c, b, a);
