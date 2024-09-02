@@ -161,14 +161,14 @@ export function applyProjectionToPath(
 }
 
 /**
- * take a path with some lines nad movetos and stuff, and modify it to fit within the
+ * take a path with some lines and movetos and stuff, and modify it to fit within the
  * given edges by cutting it and adding lines and stuff.
  * @param segments the segments to cut
  * @param edges the MapEdges within which to fit this
  * @param surface the surface on which the edges exist, or null if
  * @param closePath whether you should add stuff around the edges when things clip
  */
-export function cropToEdges(segments: PathSegment[], edges: PathSegment[], surface: Domain, closePath: boolean): PathSegment[] {
+export function intersection(segments: PathSegment[], edges: PathSegment[], surface: Domain, closePath: boolean): PathSegment[] {
 	if (closePath && !isClosed(segments, surface)) {
 		console.error(pathToString(segments));
 		throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);

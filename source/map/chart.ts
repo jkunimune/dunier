@@ -22,10 +22,10 @@ import {Biome} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
 	contains,
-	cropToEdges,
+	intersection,
 	transformInput,
 	transformOutput
-} from "./plotting.js";
+} from "./pathutilities.js";
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -152,7 +152,7 @@ export class Chart {
 		// choose the central meridian somewhat naively
 		this.centralMeridian = Chart.chooseCentralMeridian(focus);
 		// establish the bounds of the map
-		focus = cropToEdges(
+		focus = intersection(
 			transformInput(this.centralMeridian, focus),
 			Chart.rectangle(surface.фMax, Math.PI, surface.фMin, -Math.PI, true),
 			surface, true,
@@ -800,7 +800,7 @@ export class Chart {
 	 * @return SVG.Path object in Cartesian coordinates
 	 */
 	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
-		const croppedToGeoRegion = cropToEdges(
+		const croppedToGeoRegion = intersection(
 			transformInput(this.centralMeridian, segments),
 			this.geoEdges,
 			this.projection.surface, closePath,
@@ -812,7 +812,7 @@ export class Chart {
 			croppedToGeoRegion,
 			MAP_PRECISION*this.dimensions.diagonal,
 		);
-		const croppedToMapRegion = cropToEdges(
+		const croppedToMapRegion = intersection(
 			transformOutput(this.northUp, projected),
 			this.mapEdges,
 			INFINITE_PLANE, closePath,

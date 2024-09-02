@@ -5,11 +5,11 @@
 import {
 	applyProjectionToPath, calculatePathBounds,
 	contains,
-	cropToEdges,
+	intersection,
 	encompasses,
 	getEdgeCrossings,
 	isClosed
-} from "../source/map/plotting.js";
+} from "../source/map/pathutilities.js";
 import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
 import {Toroid} from "../source/surface/toroid.js";
@@ -829,14 +829,14 @@ describe("cropToEdges", () => {
 		{type: 'L', args: [0, 0]},
 	];
 	test("open region", () => {
-		expect(() => cropToEdges(
+		expect(() => intersection(
 			[{type: 'M', args: [0, 0]}, {type: 'L', args: [1, 0]}],
 			edges, INFINITE_PLANE,
 			true,
 		)).toThrow(); // open regions are not allowed if closePath is true
 	});
 	test("open edges", () => {
-		expect(() => cropToEdges(
+		expect(() => intersection(
 			edges,
 			[{type: 'M', args: [0, 0]}, {type: 'L', args: [1, 0]}],
 			INFINITE_PLANE,
@@ -844,7 +844,7 @@ describe("cropToEdges", () => {
 		)).toThrow(); // open edges are never allowed
 	});
 	test("zero islands", () => {
-		expect(cropToEdges(
+		expect(intersection(
 			[], edges, INFINITE_PLANE, true,
 		)).toEqual(edges); // [] is interpreted as the region that includes everything
 	});
@@ -855,7 +855,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [0.9, 0.5]},
 			{type: 'L', args: [0.1, 0.1]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments); // for a well-behaved island like this, cropping it doesn't change anything
 	});
@@ -866,7 +866,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [1.9, 1.5]},
 			{type: 'L', args: [1.1, 1.1]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual([]); // if the island is completely outside of the region, it's removed completely
 	});
@@ -877,7 +877,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [1.5, 0.5]},
 			{type: 'L', args: [0.5, 0.1]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual([ // if the island is partly out, it should be clipped at the edge
 			{type: 'M', args: [0.5, 0.1]},
@@ -894,7 +894,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [0.9, 0.5]},
 			{type: 'L', args: [0.1, 0.9]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments.concat(edges)); // if the island is inverted, the edges need to be added to set its clipped boundaries
 	});
@@ -909,7 +909,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [-.3, 0.5]},
 			{type: 'L', args: [0.3, 0.1]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual([ // if there are multiple negative islands, they get connected along the edges
 			{type: 'M', args: [0.7, 0.9]},
@@ -945,7 +945,7 @@ describe("cropToEdges", () => {
 			{type: 'Φ', args: [π, -π]},
 			{type: 'Λ', args: [-π, -π]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, toroidalEdges, TOROID,true,
 		)).toEqual([ // this one gets broken up into three distinct regions
 			// the northwest corner
@@ -986,7 +986,7 @@ describe("cropToEdges", () => {
 			{type: 'Φ', args: [π, -π]},
 			{type: 'Λ', args: [-π, -π]},
 		];
-		expect(cropToEdges(segments, toroidalEdges, TOROID, false)).toEqual([
+		expect(intersection(segments, toroidalEdges, TOROID, false)).toEqual([
 			{type: 'M', args: [1, 3]},
 			{type: 'L', args: [1.5, π]},
 			{type: 'M', args: [1.5, -π]},
@@ -994,7 +994,7 @@ describe("cropToEdges", () => {
 		]);
 	});
 	test("fully coincident", () => {
-		expect(cropToEdges(
+		expect(intersection(
 			edges, edges, INFINITE_PLANE, true,
 		)).toEqual(edges); // if the region is the same as the edges, that's what should be returned
 	});
@@ -1014,7 +1014,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [.3, 0.]},
 			{type: 'L', args: [.3, .1]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments);
 	});
@@ -1025,7 +1025,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [0.0, 1.5]},
 			{type: 'L', args: [1.5, 1.5]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, false,
 		)).toEqual([ // even tho all vertices are outside the square, part of one segment should get caught
 			{type: 'M', args: [1.0, 0.5]},
@@ -1039,7 +1039,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [0.5, 0.9]},
 			{type: 'L', args: [0.5, 0.1]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments);
 	});
@@ -1050,7 +1050,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [0.5, 1.0]},
 			{type: 'L', args: [0.5, 0.1]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual(segments);
 	});
@@ -1063,7 +1063,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [1.1, 0.4]},
 			{type: 'L', args: [1.1, 0.1]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, false,
 		)).toEqual([
 			{type: 'M', args: [1.0, 0.3]},
@@ -1078,7 +1078,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [1.5, 1.5]},
 			{type: 'L', args: [1.5, -0.5]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, INFINITE_PLANE, true,
 		)).toEqual([ // make sure it doesn't duplicate any vertices
 			{type: 'M', args: [1.0, 0.0]},
@@ -1100,7 +1100,7 @@ describe("cropToEdges", () => {
 			{type: 'L', args: [1.5, -2.5]},
 			{type: 'L', args: [1.5, -0.5]},
 		];
-		expect(cropToEdges(
+		expect(intersection(
 			segments, edges, TOROID, true,
 		)).toEqual(segments.concat(edges.slice(2, 4)));
 	});
