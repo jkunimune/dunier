@@ -1087,17 +1087,24 @@ export class Chart {
 		}
 		const centralMeridian = Math.atan2(yCenter, xCenter);
 
-		// do the same thing for parallel, but be sure to weit by radius
-		let ξCenter = 0;
-		let υCenter = 0;
-		for (const tile of regionOfInterest) {
-			if (tile.biome !== Biome.OCEAN) {
-				const weit = surface.rz(tile.ф).r;
-				ξCenter += weit*Math.cos(tile.ф);
-				υCenter += weit*Math.sin(tile.ф);
-			}
+		// do the same thing for parallel, with one exception
+		let centralParallel;
+		if (regionOfInterest === surface.tiles && surface.фMax - surface.фMin < 2*Math.PI) {
+			// if it's a whole-world map and non-periodic in latitude, always use the equator
+			centralParallel = (surface.фMin + surface.фMax)/2;
 		}
-		const centralParallel = Math.atan2(υCenter, ξCenter);
+		else {
+			let ξCenter = 0;
+			let υCenter = 0;
+			for (const tile of regionOfInterest) {
+				if (tile.biome !== Biome.OCEAN) {
+					const weit = surface.rz(tile.ф).r; // this time be sure to weit by radius
+					ξCenter += weit * Math.cos(tile.ф);
+					υCenter += weit * Math.sin(tile.ф);
+				}
+			}
+			centralParallel = Math.atan2(υCenter, ξCenter);
+		}
 
 		return {
 			centralMeridian: centralMeridian,
