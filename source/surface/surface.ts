@@ -81,7 +81,6 @@ export abstract class Surface implements Domain {
 		this.refLatitudes = [this.фMin]; // fill in latitude-integrated values
 		this.cumulAreas = [0]; // for use in map projections
 		this.cumulDistances = [0];
-		const dф = (this.фMax - this.фMin)/INTEGRATION_RESOLUTION;
 		const Δλ = 2*Math.PI;
 		for (let i = 1; i <= INTEGRATION_RESOLUTION; i ++) {
 			this.refLatitudes.push(this.фMin + (this.фMax - this.фMin)*i/INTEGRATION_RESOLUTION);

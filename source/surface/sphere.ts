@@ -41,6 +41,11 @@ export class Sphere extends Spheroid {
 		return new Vector(x, z, -y);
 	}
 
+	normal(place: Place): Vector { // rotate the normal vectors too to match the xyz
+		const {x, y, z} = super.normal(place);
+		return new Vector(x, z, -y);
+	}
+
 	фλ(point: Vector): Place {
 		return super.фλ(new Vector(point.x, -point.z, point.y));
 	}

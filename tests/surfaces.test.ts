@@ -7,10 +7,12 @@ import {Spheroid} from "../source/surface/spheroid.js";
 import {Vector} from "../source/utilities/geometry.js";
 import {Toroid} from "../source/surface/toroid.js";
 import {Disc} from "../source/surface/disc.js";
+import {Sphere} from "../source/surface/sphere.js";
 
 describe("Spheroid", () => {
 	const radius = 6371;
 	const surface = new Spheroid(radius, 9.83, 2*Math.PI/86400, 23.5/180*Math.PI);
+	surface.initialize();
 	test("flattening", () => {
 		expect(surface.flattening).toBeCloseTo(1/298, 2);
 	});
@@ -84,9 +86,38 @@ describe("Spheroid", () => {
 		});
 	});
 	test("cumulAreas", () => {
-		surface.initialize();
 		for (let i = 1; i < surface.cumulAreas.length; i ++)
 			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
+	});
+});
+
+describe("Sphere", () => {
+	const radius = 6371;
+	const surface = new Sphere(radius);
+	surface.initialize();
+	test("flattening", () => {
+		expect(surface.flattening).toEqual(0);
+	});
+	describe("ds_dф()", () => {
+		test("equator", () => {
+			expect(surface.ds_dф(0)).toEqual(radius);
+		});
+		test("pole", () => {
+			expect(surface.ds_dф(Math.PI/2)).toEqual(radius);
+		});
+	});
+	test("consistency between xyz() and normal()", () => {
+		const {x, y, z} = surface.xyz({ф: 0.5, λ: Math.PI/6});
+		expect(surface.normal({ф: 0.5, λ: Math.PI/6})).toEqual(expect.objectContaining({
+			x: expect.closeTo(x/radius),
+			y: expect.closeTo(y/radius),
+			z: expect.closeTo(z/radius),
+		}));
+	});
+	describe("hasSeasons()", () => {
+		test("tropics", () => {
+			expect(surface.hasSeasons(-Math.PI/3)).toBe(false);
+		});
 	});
 });
 
