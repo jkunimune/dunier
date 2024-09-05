@@ -1109,7 +1109,7 @@ describe("cropToEdges", () => {
 describe("applyProjectionToPath", () => {
 	const surface = new LockedDisc(2);
 	surface.initialize();
-	const projection = MapProjection.conic(surface, surface.фMin, surface.фMax);
+	const projection = MapProjection.conic(surface, 1);
 	test("points", () => {
 		const path = [
 			{type: 'M', args: [π/4, -π/2]},

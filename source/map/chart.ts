@@ -5,7 +5,6 @@
 import {Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
 import {
 	filterSet,
-	localizeInRange,
 	longestShortestPath,
 	pathToString,
 	Side
@@ -142,39 +141,38 @@ export class Chart {
 	 * build an object for visualizing geographic information in SVG.
 	 * @param projectionName the type of projection to choose – one of "basic", "equal_area", "classical", or "modern"
 	 * @param surface the Surface for which to design the projection
-	 * @param focus the region of interest, for the purposes of tailoring the map projection and setting the bounds
+	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
 	 * @param northUp whether the top of the map should ruffly correspond to North, rather than South
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 */
 	constructor(
-		projectionName: string, surface: Surface, focus: PathSegment[], northUp: boolean, rectangularBounds: boolean,
+		projectionName: string, surface: Surface, regionOfInterest: Iterable<Tile>,
+		northUp: boolean, rectangularBounds: boolean,
 	) {
-		// choose the central meridian somewhat naively
-		this.centralMeridian = Chart.chooseCentralMeridian(focus);
-		// establish the bounds of the map
-		focus = intersection(
-			transformInput(this.centralMeridian, focus),
-			Chart.rectangle(surface.фMax, Math.PI, surface.фMin, -Math.PI, true),
-			surface, true,
-		);
-		// use that to choose the standard parallels intelligently
-		const {sMin: фMinFocus, sMax: фMaxFocus} = calculatePathBounds(focus);
+		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
+		this.centralMeridian = centralMeridian;
 
 		if (projectionName === 'basic')
 			this.projection = MapProjection.plateCaree(surface);
 		else if (projectionName === 'equal_area')
-			this.projection = MapProjection.equalEarth(surface, фMinFocus, фMaxFocus);
+			this.projection = MapProjection.equalEarth(surface, meanRadius);
 		else if (projectionName === 'classical')
-			this.projection = MapProjection.bonne(surface, фMinFocus, фMaxFocus);
+			this.projection = MapProjection.bonne(surface, centralParallel);
 		else if (projectionName === 'modern')
-			this.projection = MapProjection.conic(surface, фMinFocus, фMaxFocus);
+			this.projection = MapProjection.conic(surface, centralParallel);
 		else
 			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
 		this.northUp = northUp;
-		
+
+		// establish the bounds of the map
 		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} =
-			Chart.chooseMapBounds(focus, this.projection, rectangularBounds);
+			Chart.chooseMapBounds(
+				intersection(
+					transformInput(this.centralMeridian, Chart.border(regionOfInterest)),
+					Chart.rectangle(surface.фMax, Math.PI, surface.фMin, -Math.PI, true),
+					surface, true),
+				this.projection, rectangularBounds);
 		this.labelIndex = 0;
 
 		// flip them if it's a south-up map
@@ -826,11 +824,8 @@ export class Chart {
 	 * Tiles and excluded Tiles; even if it's a surface with an edge, the surface edge will not be part of the return
 	 * value.  that means that a region that takes up the entire Surface will always have a border of [].
 	 * @param tiles the tiles that comprise the region whose outline is desired
-	 * @param excludeOcean whether to only outline the ocean
 	 */
-	static border(tiles: Iterable<Tile>, excludeOcean=false): PathSegment[] {
-		if (excludeOcean)
-			tiles = filterSet(tiles, (n) => n.biome !== Biome.OCEAN);
+	static border(tiles: Iterable<Tile>): PathSegment[] {
 		const tileSet = new Set(tiles);
 
 		if (tileSet.size === 0)
@@ -1069,25 +1064,45 @@ export class Chart {
 	/**
 	 * identify the meridian that is the farthest from this path on the globe
 	 */
-	static chooseCentralMeridian(regionOfInterest: PathSegment[]): number {
-		const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
-		for (let i = 1; i < regionOfInterest.length; i ++) {
-			if (regionOfInterest[i].type !== 'M') {
-				const x1 = regionOfInterest[i - 1].args[1];
-				const x2 = regionOfInterest[i].args[1];
-				if (Math.abs(x1 - x2) < Math.PI) { // and then remove the space corresponding to each segment
-					emptyLongitudes.remove(Math.min(x1, x2), Math.max(x1, x2));
-				}
-				else {
-					emptyLongitudes.remove(Math.max(x1, x2), Math.PI);
-					emptyLongitudes.remove(-Math.PI, Math.min(x1, x2));
-				}
+	static chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface): { centralMeridian: number, centralParallel: number, meanRadius: number } {
+		// start by calculating the mean radius of the region, for pseudocylindrical standard parallels
+		let rSum = 0;
+		let count = 0;
+		for (const tile of regionOfInterest) { // first measure the typical width of the surface in the latitude bounds
+			rSum += surface.rz(tile.ф).r;
+			count += 1;
+		}
+		if (count === 0)
+			throw new Error("I can't choose a map centering with an empty region of interest.");
+		const meanRadius = rSum/count;
+
+		// then do a periodic mean of the longitude of the land part of the region of interest
+		let xCenter = 0;
+		let yCenter = 0;
+		for (const tile of regionOfInterest) {
+			if (tile.biome !== Biome.OCEAN) {
+				xCenter += Math.cos(tile.λ);
+				yCenter += Math.sin(tile.λ);
 			}
 		}
-		if (emptyLongitudes.getCenter(true).location !== null)
-			return localizeInRange(emptyLongitudes.getCenter(true).location + Math.PI, -Math.PI, Math.PI);
-		else
-			return 0; // default to 0°E TODO it would be really cool if I could pick a number more intelligently
+		const centralMeridian = Math.atan2(yCenter, xCenter);
+
+		// do the same thing for parallel, but be sure to weit by radius
+		let ξCenter = 0;
+		let υCenter = 0;
+		for (const tile of regionOfInterest) {
+			if (tile.biome !== Biome.OCEAN) {
+				const weit = surface.rz(tile.ф).r;
+				ξCenter += weit*Math.cos(tile.ф);
+				υCenter += weit*Math.sin(tile.ф);
+			}
+		}
+		const centralParallel = Math.atan2(υCenter, ξCenter);
+
+		return {
+			centralMeridian: centralMeridian,
+			centralParallel: centralParallel,
+			meanRadius: meanRadius};
 	}
 
 

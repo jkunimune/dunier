@@ -12,7 +12,7 @@ describe("on a sphere", () => {
 	sphere.initialize();
 
 	describe("sinusoidal projection", () => {
-		const projection = MapProjection.bonne(sphere, -1, 1);
+		const projection = MapProjection.bonne(sphere, 0);
 		test("projectPoint()", () => {
 			expect(projection.projectPoint({ф: 1, λ: -1})).toEqual(
 				{x: expect.closeTo(-Math.cos(1)), y: expect.closeTo(-Math.PI/2 - 1)});
@@ -57,7 +57,7 @@ describe("on a sphere", () => {
 	});
 
 	describe("stereographic projection", () => {
-		const projection = MapProjection.conic(sphere, -Math.PI/2, 1);
+		const projection = MapProjection.conic(sphere, -Math.PI/2);
 		describe("projectPoint()", () => {
 			test("south pole", () => {
 				expect(projection.projectPoint({ф: -Math.PI/2, λ: 2})).toEqual(
@@ -140,7 +140,7 @@ describe("on a sphere", () => {
 	});
 
 	describe("Mercator projection", () => {
-		const projection = MapProjection.conic(sphere, -1, 1);
+		const projection = MapProjection.conic(sphere, 0);
 		describe("projectPoint()", () => {
 			test("normal point", () => {
 				const origin = projection.projectPoint({ф: 0, λ: 0});
@@ -190,7 +190,7 @@ describe("on a sphere", () => {
 	});
 
 	describe("conic projection", () => {
-		const projection = MapProjection.conic(sphere, Math.PI/6, Math.PI/6);
+		const projection = MapProjection.conic(sphere, Math.PI/6);
 		test("projectPoint()", () => {
 			expect(projection.projectPoint({ф: Math.PI/2, λ: 1})).toEqual({x: 0, y: 0});
 		});
@@ -219,7 +219,7 @@ describe("on a disc", () => {
 	disc.initialize();
 
 	describe("azimuthal equidistant projection", () => {
-		const projection = MapProjection.bonne(disc, Math.PI/6, Math.PI/3);
+		const projection = MapProjection.bonne(disc, 1);
 		describe("projectPoint()", () => {
 			test("pole", () => {
 				expect(projection.projectPoint({ф: Math.PI/2, λ: 2})).toEqual(
@@ -247,7 +247,7 @@ describe("on a disc", () => {
 		});
 	});
 	describe("also azimuthal equidistant projection", () => {
-		const projection = MapProjection.conic(disc, Math.PI/6, Math.PI/3);
+		const projection = MapProjection.conic(disc, 1);
 		describe("projectPoint()", () => {
 			test("consistency of antimeridian", () => {
 				expect(projection.projectPoint({ф: 0.5, λ: Math.PI})).toEqual(

@@ -279,11 +279,11 @@ export class MapProjection {
 	 * construct a Bonne projection with a standard parallel in the given range.  if the standard parallel is an equator,
 	 * this will resolve to the sinusoidal projection, and if it is a pole, this will resolve to the Stab-Werner projection.
 	 * @param surface the surface from which to project
-	 * @param фMin the southernmost latitude to worry about, in radians
-	 * @param фMax the northernmost latitude to worry about, in radians
+	 * @param фStd the latitude to use to set the curvature, in radians
 	 */
-	public static bonne(surface: Surface, фMin: number, фMax: number): MapProjection {
-		const фStd = MapProjection.chooseStandardParallel(фMin, фMax, surface);
+	public static bonne(surface: Surface, фStd: number): MapProjection {
+		if (!(фStd >= surface.фMin && фStd <= surface.фMax))
+			throw new Error(`${фStd} is not a valid standard latitude`);
 		const yStd = -linterp(фStd, surface.refLatitudes, surface.cumulDistances);
 		let yCenter = yStd + surface.rz(фStd).r/surface.tangent(фStd).r;
 		const фRef = surface.refLatitudes; // do the necessary integrals
@@ -308,14 +308,23 @@ export class MapProjection {
 	 * is an equator, this will resolve to the equidistant projection, and if it is a pole, this will resolve to the
 	 * azimuthal equidistant projection.
 	 * @param surface the surface from which to project
-	 * @param фMin the southernmost latitude to worry about, in radians
-	 * @param фMax the northernmost latitude to worry about, in radians
+	 * @param фStd the latitude to use to set the curvature, in radians
 	 */
-	public static conic(surface: Surface, фMin: number, фMax: number): MapProjection {
-		const фStd = MapProjection.chooseStandardParallel(фMin, фMax, surface);
-		const n = -surface.tangent(фStd).r;
+	public static conic(surface: Surface, фStd: number): MapProjection {
+		if (!(фStd >= surface.фMin && фStd <= surface.фMax))
+			throw new Error(`${фStd} is not a valid standard latitude`);
+
+		// start by calculating the angular scale
+		let n = -surface.tangent(фStd).r;
+
+		// for cylindrical projections, you need to use a different function
 		if (Math.abs(n) < 1e-12)
 			return this.mercator(surface, фStd);
+		// for nearly azimuthal projections, make it azimuthal
+		else if (n > 0.75)
+			n = 1;
+		else if (n < -0.75)
+			n = -1;
 
 		// build out from the standard parallel to get the radii
 		const ф = surface.refLatitudes;
@@ -389,51 +398,21 @@ export class MapProjection {
 	}
 
 	/**
-	 * identify a parallel that runs thru the center of this region on the Surface
-	 */
-	private static chooseStandardParallel(фMin: number, фMax: number, surface: Surface): number {
-		// first calculate the minimum and maximum latitudes of the region
-		const minWeit = 1/Math.sqrt(surface.rz(фMin).r);
-		const maxWeit = 1/Math.sqrt(surface.rz(фMax).r);
-		if (Number.isFinite(minWeit)) { // choose a standard parallel
-			if (Number.isFinite(maxWeit))
-				return (фMin*minWeit + фMax*maxWeit)/(minWeit + maxWeit);
-			else
-				return фMax;
-		}
-		else {
-			if (Number.isFinite(maxWeit))
-				return фMin;
-			else
-				return (фMin + фMax)/2;
-		}
-	}
-
-	/**
 	 * construct an Equal Earth projection scaled to best represent the region between the two given parallels.
 	 * this is only a true Equal Earth projection when the surface is a sphere and фMin and фMax are ±π/2.  in all
 	 * other cases, it's a generalization meant to mimic the spirit of the Equal Earth projection as best as possible,
 	 * scaled vertically and horizontally to minimize angular error between the given latitude bounds.
 	 * @param surface the surface from which to project
-	 * @param фMin the southernmost latitude to worry about, in radians
-	 * @param фMax the northernmost latitude to worry about, in radians
+	 * @param meanRadius the
 	 */
-	public static equalEarth(surface: Surface, фMin: number, фMax: number): MapProjection {
-		let ds_dλSum = 0;
-		let weitSum = 0;
-		for (let i = 0; i <= 16; i ++) { // first measure the typical width of the surface in the latitude bounds
-			const ф = фMin + (фMax - фMin)*i/16;
-			const weit = 2*Math.PI*surface.rz(ф).r*surface.ds_dф(ф)*(фMax - фMin)/16;
-			ds_dλSum += surface.rz(ф).r*weit;
-			weitSum += weit;
-		}
-		const ds_dλAvg = ds_dλSum/weitSum;
-
+	public static equalEarth(surface: Surface, meanRadius: number): MapProjection {
+		if (!(meanRadius > 0))
+			throw new Error(`${meanRadius} is not a valid map width`);
 		const фRef = surface.refLatitudes;
 		const xRef = [];
 		const yRef = [0];
 		for (let i = 0; i < фRef.length; i ++) { // then set the widths
-			xRef.push(MapProjection.equalEarthShapeFunction(surface.rz(фRef[i]).r/ds_dλAvg)*ds_dλAvg);
+			xRef.push(MapProjection.equalEarthShapeFunction(surface.rz(фRef[i]).r/meanRadius)*meanRadius);
 			if (i > 0) { // and integrate the y values so that everything stays equal-area
 				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
 				yRef.push(yRef[i-1] - verAre / (2*Math.PI*(xRef[i-1] + xRef[i])/2));

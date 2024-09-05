@@ -19,7 +19,6 @@ import {generateFactSheet} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
 import {PortableDocument} from "../utilities/portabledocument.js";
 import {Civ} from "../generation/civ.js";
-import {PathSegment} from "../utilities/coordinates.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -218,7 +217,7 @@ function applyTerrain(): void {
 
 	console.log("grafa...");
 	const mapper = new Chart(
-		"equal_area", surface, [],
+		"equal_area", surface, surface.tiles,
 		true, false);
 	mapper.depict(surface,
 	              null,
@@ -271,7 +270,7 @@ function applyHistory(): void {
 
 	console.log("grafa...");
 	const mapper = new Chart(
-		"equal_area", surface, [],
+		"equal_area", surface, surface.tiles,
 		true, false);
 	mapper.depict(surface,
 	              world,
@@ -328,18 +327,18 @@ function applyMap(): void {
 	const northUp = (DOM.val('map-orientation') === 'north');
 	const rectangularBounds = (DOM.val('map-shape') === 'rectangle');
 	const focusSpecifier = DOM.val('map-jung');
-	let focus: PathSegment[];
+	let regionOfInterest: Iterable<Tile>;
 	if (focusSpecifier === "world")
-		focus = [];
+		regionOfInterest = surface.tiles;
 	else if (focusSpecifier.startsWith("continent"))
-		focus = Chart.border(continents[Number.parseInt(focusSpecifier.slice(9))], true);
+		regionOfInterest = continents[Number.parseInt(focusSpecifier.slice(9))];
 	else if (focusSpecifier.startsWith("country"))
-		focus = Chart.border(world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tiles, true);
+		regionOfInterest = world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tiles;
 	else
 		throw new Error(`invalid focusSpecifier: '${focusSpecifier}'`);
 
 	const chart = new Chart(
-		projectionName, surface, focus,
+		projectionName, surface, regionOfInterest,
 		northUp, rectangularBounds);
 	mappedCivs = chart.depict(
 		surface,
