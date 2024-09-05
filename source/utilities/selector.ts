@@ -14,8 +14,12 @@ export class Selector {
 	}
 
 	elm(id: string): HTMLElement | SVGElement {
-		if (!this.cash.has(id))
-			this.cash.set(id, this.document.getElementById(id));
+		if (!this.cash.has(id)) {
+			const element = this.document.getElementById(id);
+			if (element === null)
+				throw new Error(`there is no such element #${id} in this document.`);
+			this.cash.set(id, element);
+		}
 		return this.cash.get(id);
 	}
 
