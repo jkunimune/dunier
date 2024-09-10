@@ -1192,8 +1192,8 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "elision of d specifically",
     "code": "[ -STRESS +SHORT +CORON +STOP ] > / [ +VOCOID ] _ [ +STRESS ]"
   }, {
-    "chance": 0.002, "type": "mute", "comment": "loss of dorsal nasal",
-    "code": "[ +VOCOID ] [ -STRESS +DORSAL +!NASAL ] > [ +LONG ]0 /"
+    "chance": 0.002, "type": "mute", "comment": "ŋ > nasalized glide",
+    "code": "[ +VOCOID ] [ -STRESS +DORSAL +!NASAL ] > [ ]0 [ +NASALIZ +NONSYLLAB +HIGH ]0 /"
   }, {
     "chance": 0.002, "type": "mute", "comment": "loss intervocalic nasal",
     "code": "[ +VOCOID ] [ -STRESS +!NASAL ] > [ +LONG ]0 / _ [ +CONT ]"
