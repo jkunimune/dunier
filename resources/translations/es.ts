@@ -650,6 +650,7 @@ export default {
 	"factbook.tech.sword": "espadas de {1}",
 	"factbook.tech.telescope": "observan en el cielo por telescopio",
 	"factbook.tech.toilet": "se limpian con papel de baño",
+	"factbook.tech.train": "por trenes",
 	"factbook.tech.vr": "juegan Minecraft en cintas de correr de RV en que puede caminar en espacio físico",
 	"factbook.tech.walking": "por caminar",
 	"factbook.title": "{0} (se pronuncia [{1}])",

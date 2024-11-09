@@ -649,6 +649,7 @@ export default {
 	"factbook.tech.sword": "{1} swords",
 	"factbook.tech.telescope": "watch the stars through telescopes",
 	"factbook.tech.toilet": "wipe with toilet paper",
+	"factbook.tech.train": "by train",
 	"factbook.tech.vr": "play Minecraft on VR treadmills that let you physically walk around",
 	"factbook.tech.walking": "on foot",
 	"factbook.title": "{0} (NFH: [{1}])",
