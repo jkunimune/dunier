@@ -31,7 +31,7 @@ export default [
   {"year":  1861, "key": "machine_gun", "type": "fighting"},
   {"year":  1879, "key": "electricity", "type": "lighting"},
   {"year":  1908, "key": "car", "type": "movement"},
-  {"year":  1919, "key": "airliner", "type": "movement"},
+  {"year":  1919, "key": "airplane", "type": "movement"},
   {"year":  1920, "key": "radio", "type": "pastime"},
   {"year":  1945, "key": "nuke", "type": "fighting"},
   {"year":  1957, "key": "satellite", "type": "pastime"},

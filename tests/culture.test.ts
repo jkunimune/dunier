@@ -65,7 +65,7 @@ describe("tech_tree.ts", () => {
 	for (const technology of TECHNOLOGIES) {
 		for (const strings of USER_STRING_SETS)
 			test(`${technology.key} is inlized in ${strings[".language"]}`, () => {
-				expect(strings.hasOwnProperty(`factbook.tech.${technology.key}`)).toBe(true);
+				expect(strings.hasOwnProperty(`factbook.tech.${technology.type}.${technology.key}`)).toBe(true);
 			});
 	}
 });
