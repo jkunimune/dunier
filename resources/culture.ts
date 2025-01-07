@@ -69,7 +69,7 @@ export default [
           { "key": "leaders", "klas": "none", "conditions": [] },
           { "key": "clerics", "klas": "none", "conditions": [] },
           { "key": "aristocrats", "klas": "none", "conditions": [] },
-          { "key": "rich", "klas": "none", "conditions": ["tech>-700"] },
+          { "key": "rich", "klas": "none", "conditions": ["tech>-700", "+sedentary"] },
           { "key": "dancers", "klas": "none", "conditions": [] },
           { "key": "grooms", "klas": "none", "conditions": [] },
           { "key": "brides", "klas": "none", "conditions": [] }
@@ -387,6 +387,7 @@ export default [
           { "key": "celebrities", "klas": "none", "conditions": [] },
           { "key": "politicians", "klas": "none", "conditions": [] },
           { "key": "commoners", "klas": "none", "conditions": [] },
+          { "key": "lava", "klas": "none", "conditions": ["+mountainous"] },
           { "key": "aliens", "klas": "have_seen_aliens", "conditions": [] },
           { "key": "monsters", "klas": "none", "conditions": [] },
           { "key": "shapes", "klas": "none", "conditions": [] }
