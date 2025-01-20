@@ -207,11 +207,14 @@
                   <div class="form-group">
                     <label for="map-projection">{parameter.map.type}</label>
                     <select class="custom-select" id="map-projection">
-                      <option value="basic">{parameter.map.type.basic}</option>
-                      <option value="equal_area">{parameter.map.type.equal_area}</option>
-                      <option selected value="classical">{parameter.map.type.classical}</option>
-                      <option value="modern">{parameter.map.type.modern}</option>
+                      <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
+                      <option selected value="bonne">{parameter.map.type.bonne}</option>
+                      <option value="equal_earth">{parameter.map.type.equal_earth}</option>
+                      <option value="equirectangular">{parameter.map.type.equirectangular}</option>
                     </select>
+                    <div id="map-projection-description">
+                      {parameter.map.type.bonne.description}
+                    </div>
                   </div>
                   <div class="form-group">
                     <label for="map-shape">{parameter.map.shape}</label>

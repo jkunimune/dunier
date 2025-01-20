@@ -819,7 +819,7 @@ describe("encompasses", () => {
 	});
 });
 
-describe("cropToEdges", () => {
+describe("intersection", () => {
 	const TOROID = new Toroid(3, 1, .008, 0);
 	const edges = [
 		{type: 'M', args: [0, 0]},
@@ -1109,7 +1109,7 @@ describe("cropToEdges", () => {
 describe("applyProjectionToPath", () => {
 	const surface = new LockedDisc(2);
 	surface.initialize();
-	const projection = MapProjection.conic(surface, 1);
+	const projection = MapProjection.conformalConic(surface, 1);
 	test("points", () => {
 		const path = [
 			{type: 'M', args: [π/4, -π/2]},

@@ -217,7 +217,7 @@ function applyTerrain(): void {
 
 	console.log("grafa...");
 	const mapper = new Chart(
-		"equal_area", surface, surface.tiles,
+		"equal_earth", surface, surface.tiles,
 		true, false);
 	mapper.depict(surface,
 	              null,
@@ -270,7 +270,7 @@ function applyHistory(): void {
 
 	console.log("grafa...");
 	const mapper = new Chart(
-		"equal_area", surface, surface.tiles,
+		"equal_earth", surface, surface.tiles,
 		true, false);
 	mapper.depict(surface,
 	              world,
@@ -478,6 +478,15 @@ for (const { layer, name } of tabs) {
 		}
 	});
 }
+
+
+/**
+ * when the map projection changes, update the description.
+ */
+DOM.elm('map-projection').addEventListener('change', () => {
+	DOM.elm('map-projection-description').innerHTML = format(
+		`parameter.map.type.${DOM.val('map-projection')}.description`);
+});
 
 
 /**

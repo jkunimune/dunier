@@ -13,6 +13,9 @@ export class Selector {
 		this.cash = new Map();
 	}
 
+	/**
+	 * query an element by its ID, with caching
+	 */
 	elm(id: string): HTMLElement | SVGElement {
 		if (!this.cash.has(id)) {
 			const element = this.document.getElementById(id);
@@ -23,6 +26,9 @@ export class Selector {
 		return this.cash.get(id);
 	}
 
+	/**
+	 * get the current value of an input element from its ID
+	 */
 	val(id: string): string {
 		const element = this.elm(id);
 		if (element.tagName.toLowerCase() === 'input')
@@ -35,6 +41,9 @@ export class Selector {
 			throw new Error(`This element has no value:\n${element}`);
 	}
 
+	/**
+	 * see if the checkbox with the given ID is checked or not
+	 */
 	checked(id: string): boolean {
 		const element = this.elm(id);
 		if (element.tagName.toLowerCase() === 'input')
@@ -55,4 +64,3 @@ export class Selector {
 			this.mapToAllChildren(children[i], func);
 	}
 }
-

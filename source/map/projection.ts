@@ -266,7 +266,7 @@ export class MapProjection {
 	 * construct a plate carey projection.  this projection will <i>not</i> adjust based on the surface being
 	 * projected or the region being focused on; it will always linearly translate latitude to y and longitude to x.
 	 */
-	public static plateCaree(surface: Surface): MapProjection {
+	public static equirectangular(surface: Surface): MapProjection {
 		const scale = Math.sqrt(surface.area/(2*Math.PI*(surface.фMax - surface.фMin)));
 		return new MapProjection(
 			surface,
@@ -310,7 +310,7 @@ export class MapProjection {
 	 * @param surface the surface from which to project
 	 * @param фStd the latitude to use to set the curvature, in radians
 	 */
-	public static conic(surface: Surface, фStd: number): MapProjection {
+	public static conformalConic(surface: Surface, фStd: number): MapProjection {
 		if (!(фStd >= surface.фMin && фStd <= surface.фMax))
 			throw new Error(`${фStd} is not a valid standard latitude`);
 

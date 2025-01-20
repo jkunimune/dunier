@@ -139,7 +139,7 @@ export class Chart {
 
 	/**
 	 * build an object for visualizing geographic information in SVG.
-	 * @param projectionName the type of projection to choose – one of "basic", "equal_area", "classical", or "modern"
+	 * @param projectionName the type of projection to choose – one of "equirectangular", "equal_earth", "bonne", or "conformal_conic"
 	 * @param surface the Surface for which to design the projection
 	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
 	 * @param northUp whether the top of the map should ruffly correspond to North, rather than South
@@ -152,14 +152,14 @@ export class Chart {
 		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
 		this.centralMeridian = centralMeridian;
 
-		if (projectionName === 'basic')
-			this.projection = MapProjection.plateCaree(surface);
-		else if (projectionName === 'equal_area')
+		if (projectionName === 'equirectangular')
+			this.projection = MapProjection.equirectangular(surface);
+		else if (projectionName === 'equal_earth')
 			this.projection = MapProjection.equalEarth(surface, meanRadius);
-		else if (projectionName === 'classical')
+		else if (projectionName === 'bonne')
 			this.projection = MapProjection.bonne(surface, centralParallel);
-		else if (projectionName === 'modern')
-			this.projection = MapProjection.conic(surface, centralParallel);
+		else if (projectionName === 'conformal_conic')
+			this.projection = MapProjection.conformalConic(surface, centralParallel);
 		else
 			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
