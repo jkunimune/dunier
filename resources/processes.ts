@@ -279,6 +279,12 @@ export default [
     "chance": 0.002, "type": "mute", "comment": "l > ɾ",
     "code": "[ +LATERAL +CLOSE ] > [ +MEDIAN +TAP ] /"
   }, {
+    "chance": 0.050, "type": "mute", "comment": "nr > nd",
+    "code": "[ +CORON +VIBR ] > [ +STOP ] / [ +CORON +!NASAL ] _"
+  }, {
+    "chance": 0.050, "type": "mute", "comment": "ŋʀ > ŋɡ",
+    "code": "[ +DORSAL +VIBR ] > [ +STOP ] / [ +DORSAL +!NASAL ] _"
+  }, {
     "chance": 0.020, "type": "mute", "comment": "z > ɹ",
     "code": "[ +VOICE +CORON +FRIC ] > [ +CLOSE ] /"
   }, {
@@ -1098,6 +1104,9 @@ export default [
   }, {
     "chance": 0.005, "type": "mute", "comment": "",
     "code": "> j / [ +POSTALV ] _ [ +VOWEL ]"
+  }, {
+    "chance": 0.100, "type": "mute", "comment": "m'a > mwa",
+    "code": "[ +SYLLAB -VOCOID ] > [ ] [ +CLOSE +NONSYLLAB ] / _ [ +VOCOID ]"
   }, {
     "chance": 0.010, "type": "mute", "comment": "egg > aig",
     "code": "[ +PALATAL +MID +VOWEL ] > [ ] [ +CLOSE +NONSYLLAB ] / _ [ +VOICE +DORSAL -VOCOID ]"
