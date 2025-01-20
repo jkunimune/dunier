@@ -139,10 +139,6 @@ export function applyProjectionToPath(
 						{type: 'L', args: [nextInPoint.ф, nextInPoint.λ]}, true)); // that means we need to plot a midpoint first
 					pendingInPoints.push(intermediateInPoint);
 
-					if (Math.abs(nextInPoint.λ - lastInPoint.λ) > π || Math.abs(nextInPoint.ф - lastInPoint.ф) > π)
-						throw new Error(`the input to applyProjectionToPath needs to be run thru cropToEdges first.  ` +
-						                `this clearly hasn't because there's no way you can draw an uncropped line ` +
-						                `from ${lastInPoint.ф},${lastInPoint.λ} to ${nextInPoint.ф},${nextInPoint.λ}.`);
 					if (pendingInPoints.length + outPoints.length > 100000)
 						throw new Error(`why can't I find a point between [${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.ф},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}]`);
 				}
