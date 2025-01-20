@@ -4,7 +4,6 @@
  */
 import {Spheroid} from "./spheroid.js";
 import {Vector} from "../utilities/geometry.js";
-import {Tile, Vertex} from "./surface.js";
 import {Place} from "../utilities/coordinates.js";
 
 /**
@@ -29,11 +28,11 @@ export class Sphere extends Spheroid {
 	}
 
 	windConvergence(ф: number): number {
-		return Math.cos(ф);
+		return Math.pow((Math.sin(ф) + 1)/2, 2);
 	}
 
 	windVelocity(ф: number): {north: number, east: number} {
-		return {north: -Math.cos(ф), east: 0};
+		return {north: ((Math.sin(ф) + 1)/2)*Math.cos(ф), east: 0};
 	}
 
 	xyz(place: Place): Vector {
