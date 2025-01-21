@@ -78,10 +78,10 @@ describe("Edge", () => {
 		const edge = tiles[0].neighbors.get(tiles[2]);
 		edge.setCoordinatesAndBounds();
 		test("distance", () => {
-			expect(edge.distance).toBeCloseTo(Math.sqrt(3)/2);
+			expect(edge.getDistance()).toBeCloseTo(Math.sqrt(3)/2);
 		});
 		test("length", () => {
-			expect(edge.length).toBeCloseTo(1/2);
+			expect(edge.getLength()).toBeCloseTo(1/2);
 		});
 		test("leftBound", () => {
 			expect(edge.leftBoundCartesian).toEqual([
@@ -92,15 +92,6 @@ describe("Edge", () => {
 		test("rightBound", () => {
 			expect(edge.rightBoundCartesian).toEqual([
 				expect.objectContaining({x: expect.closeTo(-Math.sqrt(3)/4 + 1/4), y: expect.closeTo(0)}),
-			]);
-		});
-		test("bounds", () => {
-			expect(edge.bounds).toEqual([
-				{x: expect.closeTo(0.), y: expect.closeTo(0.)},
-				{x: expect.closeTo(Math.sqrt(3)/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(Math.sqrt(3)/8)},
-				{x: expect.closeTo(1/2 - Math.sqrt(3)/8*Math.tan(15/180*Math.PI)), y: expect.closeTo(Math.sqrt(3)/8)},
-				{x: expect.closeTo(1/2), y: expect.closeTo(0.)},
-				{x: expect.closeTo(1/4), y: expect.closeTo(-1/4)},
 			]);
 		});
 		test("toEdgeCoords()", () => {
@@ -132,20 +123,10 @@ describe("Edge", () => {
 		const edge = tiles[1].neighbors.get(tiles[2]);
 		edge.setCoordinatesAndBounds();
 		test("distance", () => {
-			expect(edge.distance).toBeCloseTo(1/2);
+			expect(edge.getDistance()).toBeCloseTo(1/2);
 		});
 		test("length", () => {
-			expect(edge.length).toBeCloseTo(Math.sqrt(3)/2);
-		});
-		test("bounds", () => {
-			expect(edge.bounds).toEqual([
-				{x: expect.closeTo(0.), y: expect.closeTo(0.)},
-				{x: expect.closeTo(1/4), y: expect.closeTo(1/4)},
-				{x: expect.closeTo(Math.sqrt(3)/2 - 1/4), y: expect.closeTo(1/4)},
-				{x: expect.closeTo(Math.sqrt(3)/2), y: expect.closeTo(0)},
-				{x: expect.closeTo(Math.sqrt(3)/2 - Math.sqrt(3)/8), y: expect.closeTo(-3/8)},
-				{x: expect.closeTo(Math.sqrt(3)/8), y: expect.closeTo(-3/8)},
-			]);
+			expect(edge.getLength()).toBeCloseTo(Math.sqrt(3)/2);
 		});
 		describe("getPath()", () => {
 			test("finer scale", () => {

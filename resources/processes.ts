@@ -886,7 +886,7 @@ export default [
     "code": "[ +SONOR ] > [ +NASALIZ ] / _ [ +NASAL ]"
   }, {
     "chance": 0.002, "type": "mute", "comment": "rhoticizacion onto vowels",
-    "code": "[ +VOWEL ] [ +RHOTIC ] > [ +LONG ±silabia ]1 /"
+    "code": "[ +VOWEL ] [ +NONSYLLAB +RHOTIC ] > [ +LONG ±silabia ]1 /"
   }, {
     "chance": 0.010, "type": "mute", "comment": "we > je",
     "code": "[ +GLIDE ] > [ ±loke ±minorLoke ] / _ [ +VOWEL ]"
@@ -952,7 +952,7 @@ export default [
     "code": "[ -SYLLAB +!NASAL ] [ +NASAL ] > [ +LONG ]1 /"
   }, {
     "chance": 0.050, "type": "mute", "comment": "assimilation of nasals",
-    "code": "[ -SYLLAB +NASAL ] [ +!NASAL ] > [ +LONG ]0 /"
+    "code": "[ +NASAL ] [ -SYLLAB +!NASAL ] > [ +LONG ]0 /"
   }, {
     "chance": 0.020, "type": "mute", "comment": "assimilation of occlusives",
     "code": "[ -SYLLAB +OCCL -!NASAL ] [ +OCCL +OBSTR ] > [ +LONG ]1 /"
