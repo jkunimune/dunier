@@ -2,8 +2,13 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Edge, Tile, Surface, Vertex, EmptySpace} from "../surface/surface.js";
-import {filterSet, longestShortestPath} from "../utilities/miscellaneus.js";
+import {Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
+import {
+	filterSet,
+	longestShortestPath,
+	pathToString,
+	Side
+} from "../utilities/miscellaneus.js";
 import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
@@ -11,8 +16,15 @@ import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 import {assert_xy, endpoint, PathSegment, Place} from "../utilities/coordinates.js";
-import {chordCenter, Vector} from "../utilities/geometry.js";
+import {arcCenter, Vector} from "../utilities/geometry.js";
 import {ARABILITY, Biome} from "../generation/terrain.js";
+import {
+	applyProjectionToPath, calculatePathBounds,
+	contains,
+	intersection,
+	transformInput,
+	transformOutput
+} from "./pathutilities.js";
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -29,6 +41,7 @@ const BORDER_SPECIFY_THRESHOLD = 0.51;
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const N_DEGREES = 6; // number of line segments into which to break one radian of arc
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
+const MAP_PRECISION = 5e-2;
 
 const BIOME_COLORS = new Map([
 	[Biome.OCEAN,     '#06267f'],
@@ -112,15 +125,76 @@ enum Layer {
  * a class to handle all of the graphical arrangement stuff.
  */
 export class Chart {
-	private projection: MapProjection;
+	private readonly projection: MapProjection;
+	private readonly northUp: boolean;
+	private readonly centralMeridian: number;
+	private readonly geoEdges: PathSegment[];
+	private readonly mapEdges: PathSegment[];
+	public readonly dimensions: Dimensions;
+	public readonly scale: number; // the map scale in map-widths per km
 	private testText: SVGTextElement;
 	private testTextSize: number;
 	private labelIndex: number;
 
 
-	constructor(projection: MapProjection) {
-		this.projection = projection;
+	/**
+	 * build an object for visualizing geographic information in SVG.
+	 * @param projectionName the type of projection to choose – one of "equirectangular", "equal_earth", "bonne", or "conformal_conic"
+	 * @param surface the Surface for which to design the projection
+	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
+	 * @param northUp whether the top of the map should ruffly correspond to North, rather than South
+	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
+	 */
+	constructor(
+		projectionName: string, surface: Surface, regionOfInterest: Iterable<Tile>,
+		northUp: boolean, rectangularBounds: boolean,
+	) {
+		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
+		this.centralMeridian = centralMeridian;
+
+		if (projectionName === 'equirectangular')
+			this.projection = MapProjection.equirectangular(surface);
+		else if (projectionName === 'equal_earth')
+			this.projection = MapProjection.equalEarth(surface, meanRadius);
+		else if (projectionName === 'bonne')
+			this.projection = MapProjection.bonne(surface, centralParallel);
+		else if (projectionName === 'conformal_conic')
+			this.projection = MapProjection.conformalConic(surface, centralParallel);
+		else
+			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
+
+		this.northUp = northUp;
+
+		// establish the bounds of the map
+		const {фMin, фMax, λMax, xRight, xLeft, yBottom, yTop} =
+			Chart.chooseMapBounds(
+				intersection(
+					transformInput(this.centralMeridian, Chart.border(regionOfInterest)),
+					Chart.rectangle(surface.фMax, Math.PI, surface.фMin, -Math.PI, true),
+					surface, true),
+				this.projection, rectangularBounds);
 		this.labelIndex = 0;
+
+		// flip them if it's a south-up map
+		if (this.northUp)
+			this.dimensions = new Dimensions(xLeft, xRight, yTop, yBottom);
+		else
+			this.dimensions = new Dimensions(-xRight, -xLeft, -yBottom, -yTop);
+
+		// calculate the map scale in map-widths per km
+		this.scale = 1/this.dimensions.diagonal;
+
+		// set the geographic and Cartesian limits of the mapped area
+		if (λMax === Math.PI && this.projection.wrapsAround())
+			this.geoEdges = [
+				{type: 'M', args: [фMax, λMax]},
+				{type: 'Φ', args: [фMax, -λMax]},
+				{type: 'M', args: [фMin, -λMax]},
+				{type: 'Φ', args: [фMin, λMax]},
+			];
+		else
+			this.geoEdges = Chart.rectangle(фMax, λMax, фMin, -λMax, true);
+		this.mapEdges = Chart.rectangle(this.dimensions.left, this.dimensions.top, this.dimensions.right, this.dimensions.bottom, false);
 	}
 
 	/**
@@ -145,7 +219,7 @@ export class Chart {
 		   rivers: boolean, borders: boolean, shading: boolean,
 		   civLabels: boolean, geoLabels: boolean,
 		   fontSize = 2, style: string = null): Civ[] {
-		const bbox = this.projection.getDimensions();
+		const bbox = this.dimensions;
 		svg.setAttribute('viewBox',
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
 		svg.textContent = ''; // clear the layer
@@ -163,10 +237,10 @@ export class Chart {
 
 		if (SHOW_BACKGROUND) {
 			const rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-			rectangle.setAttribute('x', `${this.projection.getDimensions().left}`);
-			rectangle.setAttribute('y', `${this.projection.getDimensions().top}`);
-			rectangle.setAttribute('width', `${this.projection.getDimensions().width}`);
-			rectangle.setAttribute('height', `${this.projection.getDimensions().height}`);
+			rectangle.setAttribute('x', `${this.dimensions.left}`);
+			rectangle.setAttribute('y', `${this.dimensions.top}`);
+			rectangle.setAttribute('width', `${this.dimensions.width}`);
+			rectangle.setAttribute('height', `${this.dimensions.height}`);
 			rectangle.setAttribute('style', 'fill: red; stroke: black; stroke-width: 10px');
 			g.appendChild(rectangle);
 		}
@@ -234,7 +308,7 @@ export class Chart {
 
 		// add rivers
 		if (rivers) {
-			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR*this.projection.getDimensions().area;
+			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR*this.dimensions.area;
 			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
 				g, riverColor, 1.5, Layer.GEO);
 		}
@@ -284,10 +358,10 @@ export class Chart {
 			// (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
 			const visible = [];
 			for (const civ of world.getCivs(true))
-				if (this.projection.projectPath(
+				if (this.projectPath(
 					Chart.convertToGreebledPath(
 						Chart.outline([...civ.tiles].filter(n => !n.isWater())),
-						Layer.KULTUR, this.projection.scale),
+						Layer.KULTUR, this.scale),
 					true).length > 0)
 					visible.push(civ);
 			return visible;
@@ -312,8 +386,8 @@ export class Chart {
 		if (tiles.size <= 0)
 			return this.draw([], svg);
 		const closePath = color !== 'none'; // leave the polygons open if we're not coloring them in
-		const segments = this.projection.projectPath(
-			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.projection.scale),
+		const segments = this.projectPath(
+			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.scale),
 			closePath);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
@@ -332,8 +406,8 @@ export class Chart {
 	 */
 	stroke(strokes: Iterable<Place[]>, svg: SVGGElement,
 		   color: string, width: number, greeble: Layer): SVGPathElement {
-		let segments = this.projection.projectPath(
-			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.projection.scale), false);
+		let segments = this.projectPath(
+			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.scale), false);
 		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
 		const path = this.draw(segments, svg);
@@ -381,8 +455,9 @@ export class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
-			this.draw(this.projection.projectPath(path, true), svg).setAttribute('style',
-				`fill: '#000'; fill-opacity: ${1-brightness};`);
+			this.draw(this.projectPath(path, true), svg).setAttribute('style',
+				`fill: '#000'; fill-opacity: ${1-brightness};`
+			);
 		}
 	}
 
@@ -405,12 +480,12 @@ export class Chart {
 		this.testText.textContent = '..'+label+'..';
 		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
 		this.testText.textContent = '';
-		const mapScale = svg.clientWidth/this.projection.getDimensions().width; // and also the current size of the map in px for reference
+		const mapScale = svg.clientWidth/this.dimensions.width; // and also the current size of the map in px for reference
 		const aspect = boundBox.width/(this.testTextSize*mapScale);
 		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
 
-		const path = this.projection.projectPath( // do the projection
-			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.projection.scale),
+		const path = this.projectPath( // do the projection
+			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.scale),
 			true
 		);
 		if (path.length === 0)
@@ -422,7 +497,7 @@ export class Chart {
 				const end = assert_xy(endpoint(path[i]));
 				const l = Math.hypot(end.x - start.x, end.y - start.y);
 				const r = Math.abs(path[i].args[0] + path[i].args[1])/2;
-				const c = chordCenter(start, end, r,
+				const c = arcCenter(start, end, r,
 					path[i].args[3] === path[i].args[4]);
 				const Δθ = 2*Math.asin(l/(2*r));
 				const θ0 = Math.atan2(start.y - c.y, start.x - c.x);
@@ -494,8 +569,9 @@ export class Chart {
 				r: 0, isContained: false, edges: new Array(triangulation.triangles.length).fill(null),
 			});
 			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
-			centers[i].isContained = MapProjection.contains(
-				path,  {s: centers[i].x, t: -centers[i].y});
+			centers[i].isContained = contains( // build a graph out of the contained centers
+				path,  {s: centers[i].x, t: -centers[i].y}, false,
+			) !== Side.OUT; // (we're counting "borderline" as in)
 			if (centers[i].isContained) {
 				for (let j = 0; j < i; j ++) {
 					if (centers[j].isContained) {
@@ -694,6 +770,9 @@ export class Chart {
 					return {location: pole.location, halfHeight: pole.radius/aspect};
 				}
 			}
+			else {
+				throw new Error("The algorithm that finds the optimal place on an arc to place a label failed.");
+			}
 		}
 	}
 
@@ -703,30 +782,61 @@ export class Chart {
 	 * @param svg
 	 */
 	draw(segments: PathSegment[], svg: Element): SVGPathElement {
-		let str = ''; // create the d string
-		for (let i = 0; i < segments.length; i ++)
-			str += segments[i].type + segments[i].args.join(',') + ' ';
-
 		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-		path.setAttribute('d', str);
+		path.setAttribute('d', pathToString(segments));
 		path.setAttribute('vector-effect', 'non-scaling-stroke');
 		return svg.appendChild(path); // put it in the SVG
 	}
 
 
 	/**
-	 * create an ordered Iterator of segments that form the border of this civ
-	 * @param civ the Civ whose outline is desired
+	 * project and convert an SVG path in latitude-longitude coordinates into an SVG path in Cartesian coordinates,
+	 * accounting for the map edges properly.  if segments is [] but closePath is true, that will be interpreted as
+	 * meaning you want the path representing the whole Surface (which will end up being just the map outline)
+	 * @param segments ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
+	 * @param closePath if this is set to true, the map will make adjustments to account for its complete nature
+	 * @return SVG.Path object in Cartesian coordinates
 	 */
-	static border(civ: Civ): PathSegment[] {
-		const landNodos = filterSet(civ.tiles, (n) => n.biome !== Biome.OCEAN);
-		return this.convertToGreebledPath(Chart.outline(landNodos), Layer.KULTUR, 1e-6);
+	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
+		const croppedToGeoRegion = intersection(
+			transformInput(this.centralMeridian, segments),
+			this.geoEdges,
+			this.projection.surface, closePath,
+		);
+		if (croppedToGeoRegion.length === 0)
+			return [];
+		const projected = applyProjectionToPath(
+			this.projection,
+			croppedToGeoRegion,
+			MAP_PRECISION*this.dimensions.diagonal,
+		);
+		const croppedToMapRegion = intersection(
+			transformOutput(this.northUp, projected),
+			this.mapEdges,
+			INFINITE_PLANE, closePath,
+		);
+		return croppedToMapRegion;
+	}
+
+
+	/**
+	 * create a path that forms the border of this set of Tiles.  this will only include the interface between included
+	 * Tiles and excluded Tiles; even if it's a surface with an edge, the surface edge will not be part of the return
+	 * value.  that means that a region that takes up the entire Surface will always have a border of [].
+	 * @param tiles the tiles that comprise the region whose outline is desired
+	 */
+	static border(tiles: Iterable<Tile>): PathSegment[] {
+		const tileSet = new Set(tiles);
+
+		if (tileSet.size === 0)
+			throw new Error(`I cannot find the border of a nonexistent region.`);
+		return this.convertToGreebledPath(Chart.outline(tileSet), Layer.KULTUR, 1e-6);
 	}
 
 	/**
-	 * create an ordered Iterator of segments that form the boundary of these nodos.
+	 * create some ordered loops of points that describe the boundary of these Tiles.
 	 * @param tiles Set of Tiles that are part of this group.
-	 * @return Array of PathSegments, ordered widdershins.
+	 * @return Array of loops, each loop being an Array of Vertexes or plain coordinate pairs
 	 */
 	static outline(tiles: Tile[] | Set<Tile>): Place[][] {
 		const tileSet = new Set(tiles);
@@ -951,5 +1061,205 @@ export class Chart {
 			return true;
 	}
 
+	/**
+	 * identify the meridian that is the farthest from this path on the globe
+	 */
+	static chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface): { centralMeridian: number, centralParallel: number, meanRadius: number } {
+		// start by calculating the mean radius of the region, for pseudocylindrical standard parallels
+		let rSum = 0;
+		let count = 0;
+		for (const tile of regionOfInterest) { // first measure the typical width of the surface in the latitude bounds
+			rSum += surface.rz(tile.ф).r;
+			count += 1;
+		}
+		if (count === 0)
+			throw new Error("I can't choose a map centering with an empty region of interest.");
+		const meanRadius = rSum/count;
+
+		// then do a periodic mean of the longitude of the land part of the region of interest
+		let xCenter = 0;
+		let yCenter = 0;
+		for (const tile of regionOfInterest) {
+			if (tile.biome !== Biome.OCEAN) {
+				xCenter += Math.cos(tile.λ);
+				yCenter += Math.sin(tile.λ);
+			}
+		}
+		const centralMeridian = Math.atan2(yCenter, xCenter);
+
+		// do the same thing for parallel, with one exception
+		let centralParallel;
+		if (regionOfInterest === surface.tiles && surface.фMax - surface.фMin < 2*Math.PI) {
+			// if it's a whole-world map and non-periodic in latitude, always use the equator
+			centralParallel = (surface.фMin + surface.фMax)/2;
+		}
+		else {
+			let ξCenter = 0;
+			let υCenter = 0;
+			for (const tile of regionOfInterest) {
+				if (tile.biome !== Biome.OCEAN) {
+					const weit = surface.rz(tile.ф).r; // this time be sure to weit by radius
+					ξCenter += weit * Math.cos(tile.ф);
+					υCenter += weit * Math.sin(tile.ф);
+				}
+			}
+			centralParallel = Math.atan2(υCenter, ξCenter);
+		}
+
+		return {
+			centralMeridian: centralMeridian,
+			centralParallel: centralParallel,
+			meanRadius: meanRadius};
+	}
+
+
+	/**
+	 * determine the coordinate bounds of this region –
+	 * both its geographical coordinates on the Surface and its Cartesian coordinates on the map.
+	 * @param regionOfInterest the region that must be enclosed entirely within the returned bounding box
+	 * @param projection the projection being used to map this region from a Surface to the plane
+	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
+	 */
+	static chooseMapBounds(
+		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
+	): {фMin: number, фMax: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
+		// start by identifying the geographic extent of this thing
+		let regionBounds;
+		if (regionOfInterest.length > 0)
+			regionBounds = calculatePathBounds(regionOfInterest);
+		else
+			regionBounds = {sMin: projection.surface.фMin, sMax: projection.surface.фMax, tMin: -Math.PI, tMax: Math.PI};
+
+		// first infer some things about this projection
+		const northPoleIsDistant = projection.differentiability(projection.surface.фMax) < .7;
+		const southPoleIsDistant = projection.differentiability(projection.surface.фMin) < .7;
+		const northPoleIsPoint = projection.projectPoint({ф: projection.surface.фMax, λ: 1}).x === 0;
+		const southPoleIsPoint = projection.projectPoint({ф: projection.surface.фMin, λ: 1}).x === 0;
+
+		// now to choose those bounds
+		let фMin, фMax, λMax;
+		let xLeft, xRight, yTop, yBottom;
+		// if we want a rectangular map
+		if (rectangularBounds) {
+			// don't apply any geographic bounds
+			фMin = projection.surface.фMin;
+			фMax = projection.surface.фMax;
+			λMax = Math.PI;
+			// and calculate the maximum extent of the projected region to get the Cartesian bounds
+			const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
+			const projectedBounds = calculatePathBounds(projectedRegion);
+			xLeft = 1.1*projectedBounds.sMin - 0.1*projectedBounds.sMax;
+			xRight = 1.1*projectedBounds.sMax - 0.1*projectedBounds.sMin;
+			yTop = 1.1*projectedBounds.tMin - 0.1*projectedBounds.tMax;
+			yBottom = 1.1*projectedBounds.tMax - 0.1*projectedBounds.tMin;
+			// but if the poles are super far away, put some global limits on the map extent
+			const globeWidth = 2*Math.PI*projection.surface.rz((projectedBounds.sMin + projectedBounds.sMax)/2).r;
+			const maxHeight = globeWidth/Math.sqrt(2);
+			let yNorthCutoff = -Infinity, ySouthCutoff = Infinity;
+			if (northPoleIsDistant) {
+				if (southPoleIsDistant) {
+					yNorthCutoff = (yTop + yBottom)/2 - maxHeight/2;
+					ySouthCutoff = (yTop + yBottom)/2 + maxHeight/2;
+				}
+				else
+					yNorthCutoff = yBottom - maxHeight;
+			}
+			else if (southPoleIsDistant)
+				ySouthCutoff = yTop + maxHeight;
+			// apply those limits
+			yTop = Math.max(yTop, yNorthCutoff);
+			yBottom = Math.min(yBottom, ySouthCutoff);
+		}
+		// if we want a wedge-shaped map
+		else {
+			// calculate the minimum and maximum latitude and longitude of the region of interest
+			const yMax = projection.projectPoint({ф: regionBounds.sMin, λ: 0}).y;
+			const yMin = projection.projectPoint({ф: regionBounds.sMax, λ: 0}).y;
+			// spread the limits out a bit to give a contextual view
+			const ySouthPole = projection.projectPoint({ф: projection.surface.фMin, λ: 0}).y;
+			const yNorthPole = projection.projectPoint({ф: projection.surface.фMax, λ: 0}).y;
+			фMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.1*yMin - 0.1*yMax, yNorthPole)}).ф;
+			фMin = projection.inverseProjectPoint({x: 0, y: Math.min(1.1*yMax - 0.1*yMin, ySouthPole)}).ф;
+			const ds_dλ = projection.surface.rz((фMin + фMax)/2).r;
+			λMax = Math.min(Math.PI, regionBounds.tMax + 0.1*(yMax - yMin)/ds_dλ);
+			// cut out the poles if desired
+			if (northPoleIsDistant || northPoleIsPoint)
+				фMax = Math.max(Math.min(фMax, projection.surface.фMax - 10/180*Math.PI), фMin);
+			if (southPoleIsDistant || southPoleIsPoint)
+				фMin = Math.min(Math.max(фMin, projection.surface.фMin + 10/180*Math.PI), фMax);
+			// and don't apply any Cartesian bounds
+			xLeft = -Infinity;
+			xRight = Infinity;
+			yTop = -Infinity;
+			yBottom = Infinity;
+		}
+
+		// the extent of the geographic region will always impose some Cartesian limits; compute those now.
+		const start = projection.projectPoint({ф: фMin, λ: -λMax});
+		const edges = [ // then determine the dimensions of this map
+			{type: 'M', args: [start.x, start.y]},
+			...projection.projectParallel(-λMax, λMax, фMin),
+			...projection.projectMeridian(фMin, фMax, λMax),
+			...projection.projectParallel(λMax, -λMax, фMax),
+			...projection.projectMeridian(фMax, фMin, -λMax),
+		];
+		const mapBounds = calculatePathBounds(edges);
+		return {
+			фMin: фMin, фMax: фMax, λMax: λMax,
+			xLeft: Math.max(xLeft, mapBounds.sMin),
+			xRight: Math.min(xRight, mapBounds.sMax),
+			yTop: Math.max(yTop, mapBounds.tMin),
+			yBottom: Math.min(yBottom, mapBounds.tMax)
+		};
+	}
+
+	/**
+	 * create a Path that delineate a rectangular region in either Cartesian or latitude/longitude space
+	 */
+	static rectangle(s0: number, t0: number, s2: number, t2: number, geographic: boolean): PathSegment[] {
+		if (!geographic)
+			return [
+				{type: 'M', args: [s0, t0]},
+				{type: 'L', args: [s0, t2]},
+				{type: 'L', args: [s2, t2]},
+				{type: 'L', args: [s2, t0]},
+				{type: 'L', args: [s0, t0]},
+			];
+		else
+			return [
+				{type: 'M', args: [s0, t0]},
+				{type: 'Φ', args: [s0, t2]},
+				{type: 'Λ', args: [s2, t2]},
+				{type: 'Φ', args: [s2, t0]},
+				{type: 'Λ', args: [s0, t0]},
+			];
+	}
 }
 
+
+/**
+ * a simple record to efficiently represent the size and shape of a rectangle
+ */
+class Dimensions {
+	public readonly left: number;
+	public readonly right: number;
+	public readonly top: number;
+	public readonly bottom: number;
+	public readonly width: number;
+	public readonly height: number;
+	public readonly diagonal: number;
+	public readonly area: number;
+
+	constructor(left: number, right: number, top: number, bottom: number) {
+		if (left >= right || top >= bottom)
+			throw new Error(`the axis bounds ${left}, ${right}, ${top}, ${bottom} are invalid.`);
+		this.left = left;
+		this.right = right;
+		this.top = top;
+		this.bottom = bottom;
+		this.width = this.right - this.left;
+		this.height = this.bottom - this.top;
+		this.diagonal = Math.hypot(this.width, this.height);
+		this.area = this.width*this.height;
+	}
+}

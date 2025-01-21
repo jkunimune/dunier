@@ -62,7 +62,7 @@ export function straightSkeleton(polygon: Point[]): Tree<Point> {
 		}
 	}
 
-	throw new Error("I don't remember when I got here");
+	throw new Error("the straight skeleton algorithm failed.  I don't fully understand how that's possible, but is this polygon by chance concave?");
 }
 
 

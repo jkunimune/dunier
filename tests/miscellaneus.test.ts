@@ -10,7 +10,7 @@ import {
 	legendreP4,
 	legendreP6,
 	linterp,
-	localizeInRange, longestShortestPath, Matrix,
+	localizeInRange, longestShortestPath, Matrix, pathToString,
 	tanh, union
 } from "../source/utilities/miscellaneus.js";
 
@@ -111,11 +111,17 @@ describe("linterp()", () => {
 	test("generic", () => {
 		expect(linterp(1.5, [0, 1, 2], [8, 5, 6])).toBeCloseTo(5.5);
 	});
+	test("minimum", () => {
+		expect(linterp(0, [0, 1, 2], [8, 5, 6])).toEqual(8);
+	});
+	test("maximum", () => {
+		expect(linterp(2, [0, 1, 2], [8, 5, 6])).toEqual(6);
+	});
 	test("below minimum", () => {
-		expect(linterp(-1, [0, 1, 2], [8, 5, 6])).toEqual(8);
+		expect(() => linterp(-1, [0, 1, 2], [8, 5, 6])).toThrow();
 	});
 	test("above maximum", () => {
-		expect(linterp(3, [0, 1, 2], [8, 5, 6])).toEqual(6);
+		expect(() => linterp(3, [0, 1, 2], [8, 5, 6])).toThrow();
 	});
 });
 
@@ -136,16 +142,22 @@ describe("localizeInRange()", () => {
 
 describe("isBetween()", () => {
 	test("in", () => {
-		expect(isBetween(1, 0, 1)).toEqual(true);
+		expect(isBetween(0.8, 0, 1)).toEqual(true);
 	});
 	test("out", () => {
 		expect(isBetween(2, 0, 1)).toEqual(false);
 	});
 	test("in, reversed", () => {
-		expect(isBetween(1, 1, 0)).toEqual(true);
+		expect(isBetween(0.8, 1, 0)).toEqual(true);
 	});
 	test("out, reversed", () => {
 		expect(isBetween(2, 1, 0)).toEqual(false);
+	});
+	test("on lower bound", () => {
+		expect(isBetween(0, 0, 1)).toEqual(true);
+	});
+	test("on upper bound", () => {
+		expect(isBetween(1, 0, 1)).toEqual(true);
 	});
 });
 
@@ -190,6 +202,12 @@ describe("decodeBase36()", () => {
 	test("comparison", () => {
 		expect(decodeBase37("firstname13") - decodeBase37("firstname12")).toEqual(1);
 	});
+});
+
+test("pathToString()", () => {
+	const path = [
+		{type: 'M', args: [0, 1]}, {type: 'A', args: [2, 2, 0, 1, 1, 2, 3]}, {type: 'Z', args: []}];
+	expect(pathToString(path)).toEqual("M0,1 A2,2,0,1,1,2,3 Z");
 });
 
 describe("longestShortestPath()", () => {

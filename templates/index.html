@@ -207,12 +207,20 @@
                   <div class="form-group">
                     <label for="map-projection">{parameter.map.type}</label>
                     <select class="custom-select" id="map-projection">
-                      <option value="basic">{parameter.map.type.basic}</option>
-                      <option value="navigational">{parameter.map.type.navigational}</option>
-                      <option value="polar">{parameter.map.type.polar}</option>
-                      <option value="equal_area">{parameter.map.type.equal_area}</option>
-                      <option selected value="classical">{parameter.map.type.classical}</option>
-                      <option value="modern">{parameter.map.type.modern}</option>
+                      <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
+                      <option selected value="bonne">{parameter.map.type.bonne}</option>
+                      <option value="equal_earth">{parameter.map.type.equal_earth}</option>
+                      <option value="equirectangular">{parameter.map.type.equirectangular}</option>
+                    </select>
+                    <div id="map-projection-description">
+                      {parameter.map.type.bonne.description}
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-shape">{parameter.map.shape}</label>
+                    <select class="custom-select" id="map-shape">
+                      <option selected value="rectangle">{parameter.map.shape.rectangle}</option>
+                      <option value="sector">{parameter.map.shape.sector}</option>
                     </select>
                   </div>
                   <div class="form-group">
@@ -223,7 +231,7 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-jung">{parameter.map.center}</label>
+                    <label for="map-jung">{parameter.map.focus}</label>
                     <select class="custom-select" id="map-jung">
                       <option selected value="0">United States of America</option>
                       <option value="1">China</option>

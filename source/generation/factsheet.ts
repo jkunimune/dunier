@@ -5,6 +5,8 @@
 import {Civ} from "./civ.js";
 import {PortableDocument} from "../utilities/portabledocument.js";
 import {format} from "../gui/internationalization.js";
+import {WordType} from "../language/lect.js";
+import {Culture, KULTUR_ASPECTS} from "./culture.js";
 
 
 const PRINT_DEBUGGING_INFORMATION = false;
@@ -51,7 +53,7 @@ export function generateFactSheet(doc: PortableDocument, topic: Civ) { // TODO: 
 			       0,
 			       Math.round(size*100),
 			       topic.getName()) +
-			culture.toString(),
+			writeParagraphAbout(culture),
 			12, true);
 		
 		if (PRINT_DEBUGGING_INFORMATION)
@@ -61,3 +63,27 @@ export function generateFactSheet(doc: PortableDocument, topic: Civ) { // TODO: 
 	}
 }
 
+
+/**
+ * format this Culture as a nice short paragraff
+ */
+function writeParagraphAbout(culture: Culture): string {
+	let str = "";
+	for (let i = 0; i < culture.featureLists.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
+		const featureList = culture.featureLists[i];
+		const logaIndex = KULTUR_ASPECTS[i].logaIndex;
+		if (featureList !== null) {
+			let madeUpWord;
+			if (logaIndex !== null)
+				madeUpWord = culture.lect.getName(featureList[logaIndex].key, WordType.OTHER);
+			else
+				madeUpWord = null;
+			const keys: string[] = [];
+			for (let j = 0; j < culture.featureLists[i].length; j ++)
+				keys.push(`factbook.${KULTUR_ASPECTS[i].key}.${KULTUR_ASPECTS[i].features[j].key}.${featureList[j].key}`);
+			str += format(`factbook.${KULTUR_ASPECTS[i].key}`,
+				...keys, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
+		}
+	}
+	return str.trim();
+}

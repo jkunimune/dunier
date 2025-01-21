@@ -6,43 +6,49 @@ import {Point} from "./coordinates.js";
 
 /**
  * calculate the sign of this triangle
- * @return a positive number if a car going from a to b would haff to yield to the car
- * going from c to d were they to arrive at the all-stop simultaneously in the US; a
- * negative number if it would haff to yield in Japan; zero if ab and cd are parallel
- * or either have length zero.
+ * @return in a left-handed coordinate system:
+ *         - a positive number if b is to the left of a from the point of view of an observer at c facing d
+ *           (meaning d is to the right of c for an observer facing from a to b);
+ *         - a negative number if b is to the right of a for an observer at c facing d; or
+ *         - 0 if ab and cd are collinear or either has zero magnitude.
+ *         in a right-handed coordinate system:
+ *         - a positive number of b is to the right of a for an observer at c facing d;
+ *         - a negative number if b is to the left of a for an observer at c facing d; or
+ *         - 0 if ab and cd are colinear or either has zero magnitude.
  */
-export function signCrossing(a: Point, b: Point, c: Point, d: Point): number {
-	const abx = b.x - a.x, aby = b.y - a.y;
-	const cdx = d.x - c.x, cdy = d.y - c.y;
-	return abx*cdy - cdx*aby;
+export function crossingSign(a: Point, b: Point, c: Point, d: Point): number {
+	return (b.x - a.x)*(d.y - c.y) - (b.y - a.y)*(d.x - c.x);
 }
 
 
 /**
- * calculate the sign of this triangle
- * @param a
- * @param b
- * @param c
+ * calculate the sign of this triangle in a right-handed coordinate system
  * @return a positive number if the triangle goes widdershins, a negative number if it
  *         goes clockwise, and zero if it is degenerate.  in actuality, this returns
  *         two times the area of the triangle formed by these points, so if there is
- *         roundoff error, it will be of that order.
+ *         roundoff error, know that it will be of that order.
  */
-export function signAngle(a: Point, b: Point, c: Point): number {
-	return signCrossing(b, c, b, a);
+export function angleSign(a: Point, b: Point, c: Point): number {
+	return crossingSign(b, c, b, a);
+}
+
+
+/**
+ * calculate the sign of this passing
+ * @return a positive number if the vector from a to b is roughly in the same direction
+ * as that from c to d (within 90°), a negative number if they're in roughly opposite
+ * directions, and 0 if they're perpendicular or either has zero length.
+ */
+export function passingSign(a: Point, b: Point, c: Point, d: Point): number {
+	return (b.x - a.x)*(d.x - c.x) + (b.y - a.y)*(d.y - c.y);
 }
 
 
 /**
  * determine whether the angle abc is acute or not
- * @param a
- * @param b
- * @param c
  */
 export function isAcute(a: Point, b: Point, c: Point): boolean {
-	const bax = a.x - b.x, bay = a.y - b.y;
-	const bcx = c.x - b.x, bcy = c.y - b.y;
-	return bax*bcx + bay*bcy > 0;
+	return passingSign(b, a, b, c) > 0;
 }
 
 
@@ -75,7 +81,7 @@ export function circumcenter(points: Point[]): Point {
  * @param r the radius of the circle
  * @param onTheLeft whether the center is on the left of the strait-line path from a to b
  */
-export function chordCenter(a: Point, b: Point, r: number, onTheLeft: boolean): Point {
+export function arcCenter(a: Point, b: Point, r: number, onTheLeft: boolean): Point {
 	const d = Math.hypot(b.x - a.x, b.y - a.y);
 	let l = Math.sqrt(r*r - d*d/4);
 	if (onTheLeft) l *= -1;
@@ -96,11 +102,15 @@ export function lineLineIntersection(
 	p1: Point, p2: Point,
 	q1: Point, q2: Point): Point {
 	if (q1.x === q2.x) {
-		if (Math.min(p1.x, p2.x) <= q1.x && Math.max(p1.x, p2.x) >= q1.x) {
-			const r = {x: q1.x, y: (q1.x - p1.x)/(p2.x - p1.x)*(p2.y - p1.y) + p1.y};
-			if (r.y >= Math.min(q1.y, q2.y) && r.y <= Math.max(q1.y, q2.y))
-				return r;
-		}
+		let r = null;
+		if (p1.x === q1.x)
+			r = p1;
+		else if (p2.x === q1.x)
+			r = p2;
+		else if (Math.min(p1.x, p2.x) <= q1.x && Math.max(p1.x, p2.x) >= q1.x)
+			r = {x: q1.x, y: (q1.x - p1.x)/(p2.x - p1.x)*(p2.y - p1.y) + p1.y};
+		if (r !== null && r.y >= Math.min(q1.y, q2.y) && r.y <= Math.max(q1.y, q2.y))
+			return r;
 		return null;
 	}
 	else if (q1.y === q2.y) {
@@ -135,7 +145,9 @@ export function trajectoryIntersection(
 
 /**
  * find the intersections between a line segment and an arc.  for the purposes of this
- * function, tangency does not count as an intersection.
+ * function, the line being tangent to the arc body does not count as intersection, but
+ * the line passing thru one of the arc's endpoints does, as does the arc passing thru
+ * one of the line's endpoints.
  * @param p0 one endpoint of the line segment
  * @param p1 the other endpoint of the line segment
  * @param o the center of the arc
@@ -163,13 +175,13 @@ export function lineArcIntersections(
 
 		// then, check each one to see if it is between the line segment endpoints
 		for (const t of roots) {
-			if (t > 0 && t < 1) {
-				const x = { x: p0.x + (p1.x - p0.x)*t, y: p0.y + (p1.y - p0.y)*t };
+			if (t >= 0 && t <= 1) {
+				let x = { x: p0.x + (p1.x - p0.x)*t, y: p0.y + (p1.y - p0.y)*t };
+				for (const q of [q0, q1])
+					if (angleSign(q, p0, p1) === 0 && (t > vertex) === (passingSign(o, q, p0, p1) > 0))
+						x = q; // make it exactly equal to the endpoint if it seems like it should be
 				// and if it is between the arc endpoints
-				const largeArc = signAngle(o, q0, q1) < 0;
-				const afterQ0 = signAngle(o, q0, x) > r*r*epsilon;
-				const aforeQ1 = signAngle(o, x, q1) > r*r*epsilon;
-				if ((afterQ0 && aforeQ1) || (largeArc && afterQ0 !== aforeQ1))
+				if (angleSign(q0, x, q1) >= 0)
 					crossings.push(x);
 			}
 		}
@@ -195,11 +207,11 @@ export function checkVoronoiPolygon(vertexes: Point[]): Point[] {
 	for (let i = 0; i < vertexes.length; i ++) {
 		// if the next one seems to be clockwise from it
 		const j = (i + 1)%vertexes.length;
-		if (signAngle(vertexes[i], origen, vertexes[j]) > 0) {
+		if (angleSign(vertexes[i], origen, vertexes[j]) > 0) {
 			// see if the following one would be widershins
 			const k = (i + 2)%vertexes.length;
 			// if so, reverse them
-			if (signAngle(vertexes[i], origen, vertexes[k]) <= 0) {
+			if (angleSign(vertexes[i], origen, vertexes[k]) <= 0) {
 				const vertex = vertexes[i];
 				vertexes[i] = vertexes[j];
 				vertexes[j] = vertex;

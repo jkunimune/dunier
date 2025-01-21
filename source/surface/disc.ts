@@ -47,14 +47,6 @@ export class Disc extends Surface {
 		return {triangles: triangles, nodos: nodos};
 	}
 
-	ds_dф(ф: number): number {
-		return this.firmamentHite*Math.pow(Math.sin(ф), -2);
-	}
-
-	ds_dλ(ф: number): number {
-		return this.firmamentHite/Math.tan(ф);
-	}
-
 	insolation(ф: number): number {
 		// this polynomial is based on some fitting done in source/python/simulate_perspective.py
 		const cos_ψ = Math.cos(2*this.effectiveObliquity);
@@ -78,19 +70,23 @@ export class Disc extends Surface {
 		return {north: Math.sin(2*ф), east: 0};
 	}
 
-	xyz(place: Place): Vector {
-		const r = this.firmamentHite/Math.tan(place.ф);
-		return new Vector(r*Math.sin(place.λ), -r*Math.cos(place.λ), 0);
+	ф(point: {r: number, z: number}): number {
+		return Math.atan(this.firmamentHite/point.r);
 	}
 
-	фλ(point: Vector): Place {
-		return {
-			ф: Math.atan(this.firmamentHite/Math.hypot(point.x, point.y)),
-			λ: Math.atan2(point.x, -point.y)};
+	rz(ф: number): {r: number, z: number} {
+		if (ф === Math.PI/2)
+			return {r: 0, z: 0};
+		else
+			return {r: this.firmamentHite/Math.tan(ф), z: 0};
 	}
 
-	normal(_: Place | Vertex): Vector {
-		return new Vector(0, 0, 1);
+	tangent(_: number): {r: number, z: number} {
+		return {r: -1, z: 0};
+	}
+
+	ds_dф(ф: number): number {
+		return this.firmamentHite*Math.pow(Math.sin(ф), -2);
 	}
 
 	distance(a: Place, b: Place): number {

@@ -58,14 +58,20 @@ To find out how, read on!
 
 This webapp is based on static HTML files that load in compiled TypeScript files.
 If you want to host your own fork of it, you'll need to compile the TypeScript.
-You can install the TypeScript compiler with Node; I still don't really understand how Node works,
-but I think all the information you need regarding Node dependencies is in `package.json`.
+You can install the TypeScript compiler with Node
+(I don't know how to install Node because IntelliJ does it for me).
+~~~bash
+npm install typescript
+~~~
 Once you have that, you should be able to just go to the root directory and call
 ~~~bash
 tsc
 ~~~
 
 If you want to run the tests, you'll need Jest, which can also be installed with Node.
+~~~bash
+npm install jest
+~~~
 Once you've got that done, you should be able to just call
 ~~~bash
 npm test

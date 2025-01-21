@@ -10,13 +10,11 @@
 export class Random {
 	private readonly seed: number;
 	private value: number;
-	private index: number;
 	private boxMullerBacklog: number;
 
 	constructor(seed: number) {
 		this.seed = seed;
 		this.value = seed;
-		this.index = 0;
 		this.boxMullerBacklog = null;
 		for (let i = 0; i < 3; i ++)
 			this.next(); // throw out the first few values, which are not random at all

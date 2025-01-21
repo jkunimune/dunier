@@ -4,7 +4,7 @@
  */
 // @ts-ignore
 import Queue from "../datastructures/queue.js";
-import {Point} from "./coordinates.js";
+import {PathSegment, Point} from "./coordinates.js";
 import {Random} from "./random.js";
 import {trajectoryIntersection, Vector} from "./geometry.js";
 
@@ -82,17 +82,26 @@ export function binarySearch<T>(array: T[], condition: (item: T) => boolean): nu
 
 /**
  * linearly interpolate x from the sorted function X onto the corresponding output Y.
+ * @throws an error if the reference array lengths don't match or if the input value is outside the given range.
  */
 export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
 	if (inRef.length !== exRef.length)
 		throw new Error("array lengths must match");
-	else if (inVal <= inRef[0])
+	if (inRef[0] > inRef[inRef.length - 1])
+		throw new Error(
+			`input reference array must be monotonicly increasing, 
+			but this one goes from ${inRef[0]} to ${inRef[inRef.length - 1]}`);
+	else if (inVal === inRef[0])
 		return exRef[0];
-	else if (inVal >= inRef[inRef.length - 1])
-		return exRef[exRef.length - 1];
+	else if (inVal < inRef[0] || inVal > inRef[inRef.length - 1])
+		throw new Error(
+			`you tried to interpolate the point ${inVal}, which is out of bounds 
+			(must be between ${inRef[0]} and ${inRef[inRef.length - 1]}`);
 	else {
 		const i = binarySearch(inRef, (ref) => ref >= inVal);
-		return (inVal - inRef[i - 1])/(inRef[i] - inRef[i - 1])*(exRef[i] - exRef[i - 1]) + exRef[i - 1];
+		const rightWeit = (inVal - inRef[i - 1])/(inRef[i] - inRef[i - 1]);
+		const leftWeit = 1 - rightWeit;
+		return exRef[i - 1]*leftWeit + exRef[i]*rightWeit;
 	}
 }
 
@@ -111,10 +120,10 @@ export function localizeInRange(value: number, min: number, max: number): number
 }
 
 /**
- * is value inside the inclusive interval bounded by a and b (order of a and b matters not)
- * @param value
- * @param a
- * @param b
+ * is value inside the inclusive interval bounded by a and b.  the order of a and b matters not.
+ * @param value the value that may or may not be in the interval
+ * @param a the inclusive bound (could be minimum or maximum)
+ * @param b the exclusive bound (could be minimum or maximum)
  */
 export function isBetween(value: number, a: number, b: number): boolean {
 	if (a < b)
@@ -167,6 +176,17 @@ export function decodeBase37(string: string): number {
 		totalValue = (totalValue*37 + digit)%0x10000000000;
 	}
 	return totalValue;
+}
+
+/**
+ * convert a path to an SVG path string that can be input to an SVG file
+ * @param path
+ */
+export function pathToString(path: PathSegment[]): string {
+	let str = ''; // create the d string
+	for (let i = 0; i < path.length; i ++)
+		str += path[i].type + path[i].args.join(',') + ' ';
+	return str.trim();
 }
 
 /**
@@ -276,6 +296,14 @@ export function noisyProfile(initialProfile: Point[], resolution: number, rng: R
 		}
 	}
 	return confirmd;
+}
+
+
+/**
+ * whether something is contained in a region or not
+ */
+export enum Side {
+	OUT, IN, BORDERLINE
 }
 
 
