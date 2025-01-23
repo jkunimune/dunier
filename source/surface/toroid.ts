@@ -5,13 +5,14 @@
 import {Tile, Surface, Vertex} from "./surface.js";
 import {Spheroid} from "./spheroid.js";
 import {Place} from "../utilities/coordinates.js";
+import {localizeInRange} from "../utilities/miscellaneus.js";
 
 
 /**
  * a toroidal planet
  */
 export class Toroid extends Surface {
-	/** the distance from the center to the radial centroid  in km */
+	/** the distance from the center to the radial centroid in km */
 	readonly majorRadius: number;
 	/** the distance from the radial centroid to either equator in km */
 	readonly minorRadius: number;
@@ -51,8 +52,8 @@ export class Toroid extends Surface {
 			const ф0 = (i%2 === 0) ? 0 : Math.PI/m;
 			for (let j = 0; j < m; j ++)
 				nodos.push(new Tile(null, {
-					ф: ф0 + 2*Math.PI/m * j,
-					λ: 2*Math.PI/n * i,
+					ф: localizeInRange(ф0 + 2*Math.PI/m * j, -Math.PI, Math.PI),
+					λ: localizeInRange(2*Math.PI/n * i, -Math.PI, Math.PI),
 				}, this));
 		}
 
@@ -136,13 +137,14 @@ export class Toroid extends Surface {
 	}
 
 	distance(a: Place, b: Place): number {
-		const rAvg = 2/(
-			1/(this.majorRadius + this.minorRadius*Math.cos(a.ф)) +
-			1/(this.majorRadius + this.minorRadius*Math.cos(b.ф)));
-		const aAvg = (this.ds_dф(a.ф) + this.ds_dф(b.ф))/2;
-		const sTor = rAvg * (Math.abs(a.λ - b.λ) % (2*Math.PI));
-		const sPol = aAvg * Math.abs((a.ф - b.ф) % (2*Math.PI));
-		return Math.hypot(sTor, sPol);
+		const rAvg = 2/(1/this.rz(a.ф).r + 1/this.rz(b.ф).r);
+		const sToroidal = rAvg * localizeInRange(Math.abs(a.λ - b.λ), -Math.PI, Math.PI);
+		const aβ = Math.atan2(this.elongation*Math.sin(a.ф), Math.cos(a.ф));
+		const bβ = Math.atan2(this.elongation*Math.sin(b.ф), Math.cos(b.ф));
+		const sPoloidal = this.minorRadius*(
+			(1 + this.elongation)/2*localizeInRange(aβ - bβ, -Math.PI, Math.PI) -
+			(1 - this.elongation)/2*Math.sin(aβ - bβ)*Math.cos(aβ + bβ));
+		return Math.hypot(sToroidal, sPoloidal);
 	}
 
 	isOnEdge(_: Place): boolean {

@@ -89,6 +89,26 @@ describe("Spheroid", () => {
 		for (let i = 1; i < surface.cumulAreas.length; i ++)
 			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
 	});
+	describe("distance()", () => {
+		test("along equator", () => {
+			expect(surface.distance({ф: 0, λ: 1}, {ф: 0, λ: 2}))
+				.toEqual(radius);
+		});
+		test("across equator", () => {
+			expect(surface.distance({ф: -0.01, λ: -3}, {ф: 0.01, λ: -3}))
+				.toBeCloseTo(0.02*radius*Math.pow(1 - surface.flattening, 2));
+		});
+		test("over pole", () => {
+			expect(surface.distance({ф: Math.PI/2 - 0.01, λ: 0}, {ф: Math.PI/2 - 0.01, λ: Math.PI}))
+				.toBeCloseTo(0.02*radius/(1 - surface.flattening));
+		});
+		test("diagonal", () => {
+			const p1 = surface.xyz({ф: 0.003, λ: -0.004});
+			const p2 = surface.xyz({ф: -0.003, λ: 0.004});
+			expect(surface.distance({ф: 0.003, λ: -0.004}, {ф: -0.003, λ: 0.004}))
+				.toBeCloseTo(Math.sqrt(p1.minus(p2).sqr()));
+		});
+	});
 });
 
 describe("Sphere", () => {
@@ -124,6 +144,7 @@ describe("Sphere", () => {
 describe("Toroid", () => {
 	const radius = 6371;
 	const surface = new Toroid(radius, 9.83, 2*Math.PI/7200, 23.5/180*Math.PI);
+	surface.initialize();
 	test("majorRadius", () => {
 		expect(surface.majorRadius).toBeGreaterThan(radius/2);
 		expect(surface.majorRadius).toBeLessThan(radius);
@@ -201,9 +222,29 @@ describe("Toroid", () => {
 		});
 	});
 	test("cumulAreas", () => {
-		surface.initialize();
 		for (let i = 1; i < surface.cumulAreas.length; i ++)
 			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
+	});
+	describe("distance()", () => {
+		test("along inner equator", () => {
+			const innerRadius = surface.xyz({ф: Math.PI, λ: Math.PI}).y;
+			expect(surface.distance({ф: Math.PI, λ: 1}, {ф: Math.PI, λ: 2}))
+				.toEqual(innerRadius);
+		});
+		test("across inner equator", () => {
+			expect(surface.distance({ф: Math.PI - 0.01, λ: 0}, {ф: -Math.PI + 0.01, λ: 0}))
+				.toBeCloseTo(0.02*surface.minorRadius*Math.pow(surface.elongation, 2), 0);
+		});
+		test("over pole", () => {
+			expect(surface.distance({ф: Math.PI/2 - 0.01, λ: 0}, {ф: Math.PI/2 + 0.01, λ: 0}))
+				.toBeCloseTo(0.02*surface.minorRadius/surface.elongation, 0);
+		});
+		test("diagonal", () => {
+			const p1 = surface.xyz({ф: 0.003, λ: -0.004});
+			const p2 = surface.xyz({ф: -0.003, λ: 0.004});
+			expect(surface.distance({ф: 0.003, λ: -0.004}, {ф: -0.003, λ: 0.004}))
+				.toBeCloseTo(Math.sqrt(p1.minus(p2).sqr()));
+		});
 	});
 });
 
@@ -279,5 +320,11 @@ describe("Disc", () => {
 		surface.initialize();
 		for (let i = 1; i < surface.cumulAreas.length; i ++)
 			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
+	});
+	test("distance()", () => {
+		expect(surface.distance(
+			{ф: Math.atan(firmamentHeight/3000), λ: Math.PI/2},
+			{ф: Math.atan(firmamentHeight/4000), λ: Math.PI}))
+			.toBeCloseTo(5000);
 	});
 });

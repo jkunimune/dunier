@@ -139,18 +139,27 @@ export class Spheroid extends Surface {
 		return ds_dβ*dβ_dф;
 	}
 
-	distance(a: Place, b: Place): number { // TODO: check
-		const s = Math.acos(Math.sin(a.ф)*Math.sin(b.ф) +
+	/**
+	 * from Walter D. Lambert, J. Washington Academy of Sciences (1942)
+	 */
+	distance(a: Place, b: Place): number {
+		// first convert a and b to parametric latitude
+		a = {ф: Math.atan((1 - this.flattening)*Math.tan(a.ф)), λ: a.λ};
+		b = {ф: Math.atan((1 - this.flattening)*Math.tan(b.ф)), λ: b.λ};
+		// use the law of haversines to get the angle between them
+		const σ = Math.acos(Math.sin(a.ф)*Math.sin(b.ф) +
 			Math.cos(a.ф)*Math.cos(b.ф)*Math.cos(a.λ - b.λ));
+		// calculate the correction factors
 		const p = (a.ф + b.ф)/2;
 		const q = (b.ф - a.ф)/2;
-		const x = (s - Math.sin(s))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(s/2), 2);
-		const y = (s + Math.sin(s))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(s/2), 2);
-		return this.radius*(s - this.flattening/2*(x + y));
+		const x = (σ - Math.sin(σ))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(σ/2), 2);
+		const y = (σ + Math.sin(σ))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(σ/2), 2);
+		// put it all together
+		return this.radius*(σ - this.flattening/2*(x + y));
 	}
 
 	/**
-	 * from Alice Nadeau and Richard McGehee (2018)
+	 * from Alice Nadeau and Richard McGehee, J. Math. Anal. Appl. (2021)
 	 * @param obliquity
 	 * @param latitude
 	 */
