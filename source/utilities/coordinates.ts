@@ -33,7 +33,7 @@ export interface PathSegment {
 /**
  * the specification of a point in a generalized 2D coordinate system
  */
-export interface Location {
+export interface Point {
 	/** the first coordinate (either x or latitude depending on context) */
 	s: number;
 	/** the twoth coordinate (either y or longitude depending on context) */
@@ -43,7 +43,7 @@ export interface Location {
 /**
  * the specification of a point on a plane in Cartesian coordinates
  */
-export interface Point {
+export interface XYPoint {
 	/** the horizontal coordinate in kilometers */
 	x: number;
 	/** the vertical coordinate, increasing downward, in kilometers */
@@ -53,7 +53,7 @@ export interface Point {
 /**
  * the specification of a point on a Surface in geographical coordinates
  */
-export interface Place {
+export interface ΦΛPoint {
 	/** the latitude in radians */
 	φ: number;
 	/** the longitude in radians */
@@ -63,7 +63,7 @@ export interface Place {
 /**
  * extract the endpoint from a segment (i.e. the last two args)
  */
-export function endpoint(segment: PathSegment): Location {
+export function endpoint(segment: PathSegment): Point {
 	const args = segment.args;
 	return { s: args[args.length - 2], t: args[args.length - 1] };
 }
@@ -73,7 +73,7 @@ export function endpoint(segment: PathSegment): Location {
  * cartesian-specific functions
  * @param location
  */
-export function assert_xy(location: Location): Point {
+export function assert_xy(location: Point): XYPoint {
 	return { x: location.s, y: location.t };
 }
 
@@ -82,6 +82,6 @@ export function assert_xy(location: Location): Point {
  * geographic functions
  * @param location
  */
-export function assert_φλ(location: Location): Place {
+export function assert_φλ(location: Point): ΦΛPoint {
 	return { φ: location.s, λ: location.t };
 }

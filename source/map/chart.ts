@@ -15,7 +15,7 @@ import {Civ} from "../generation/civ.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
-import {assert_xy, endpoint, PathSegment, Place} from "../utilities/coordinates.js";
+import {assert_xy, endpoint, PathSegment, ΦΛPoint} from "../utilities/coordinates.js";
 import {arcCenter, Vector} from "../utilities/geometry.js";
 import {ARABILITY, Biome} from "../generation/terrain.js";
 import {
@@ -404,8 +404,8 @@ export class Chart {
 	 * @param greeble what kind of edge it is for the purposes of greebling
 	 * @returns the newly created element comprising all these lines
 	 */
-	stroke(strokes: Iterable<Place[]>, svg: SVGGElement,
-		   color: string, width: number, greeble: Layer): SVGPathElement {
+	stroke(strokes: Iterable<ΦΛPoint[]>, svg: SVGGElement,
+	       color: string, width: number, greeble: Layer): SVGPathElement {
 		let segments = this.projectPath(
 			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.scale), false);
 		if (SMOOTH_RIVERS)
@@ -838,10 +838,10 @@ export class Chart {
 	 * @param tiles Set of Tiles that are part of this group.
 	 * @return Array of loops, each loop being an Array of Vertexes or plain coordinate pairs
 	 */
-	static outline(tiles: Tile[] | Set<Tile>): Place[][] {
+	static outline(tiles: Tile[] | Set<Tile>): ΦΛPoint[][] {
 		const tileSet = new Set(tiles);
 		const accountedFor = new Set(); // keep track of which Edge have been done
-		const output: Place[][] = []; // TODO: will this thro an error if I try to outline the entire surface?
+		const output: ΦΛPoint[][] = []; // TODO: will this thro an error if I try to outline the entire surface?
 		for (let inTile of tileSet) { // look at every included tile
 			for (let outTile of inTile.neighbors.keys()) { // and every tile adjacent to an included one
 				if (tileSet.has(outTile))
@@ -908,12 +908,12 @@ export class Chart {
 	 * nonendpoints that are endpoints of others.
 	 * @param lines Set of lists of points to be combined and pathified.
 	 */
-	static aggregate(lines: Iterable<Place[]>): Iterable<Place[]> {
+	static aggregate(lines: Iterable<ΦΛPoint[]>): Iterable<ΦΛPoint[]> {
 		const queue = [...lines];
-		const consolidated = new Set<Place[]>(); // first, consolidate
-		const heads: Map<Place, Place[][]> = new Map(); // map from points to [lines beginning with endpoint]
-		const tails: Map<Place, Place[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
-		const torsos: Map<Place, {containing: Place[], index: number}> = new Map(); // map from midpoints to line containing midpoint
+		const consolidated = new Set<ΦΛPoint[]>(); // first, consolidate
+		const heads: Map<ΦΛPoint, ΦΛPoint[][]> = new Map(); // map from points to [lines beginning with endpoint]
+		const tails: Map<ΦΛPoint, ΦΛPoint[][]> = new Map(); // map from points endpoints to [lines ending with endpoint]
+		const torsos: Map<ΦΛPoint, {containing: ΦΛPoint[], index: number}> = new Map(); // map from midpoints to line containing midpoint
 		while (queue.length > 0) {
 			for (const l of consolidated) {
 				if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
@@ -969,7 +969,7 @@ export class Chart {
 			}
 		}
 
-		function combine(a: Place[], b: Place[]): Place[] {
+		function combine(a: ΦΛPoint[], b: ΦΛPoint[]): ΦΛPoint[] {
 			consolidated.delete(b); // delete b
 			heads.delete(b[0]); // b[0] is no longer a startpoint or an endpoint
 			tails.delete(b[0]);
@@ -993,7 +993,7 @@ export class Chart {
 	 * @param greeble what kinds of connections these are for the purposes of greebling
 	 * @param scale the map scale at which to greeble in map-widths per km
 	 */
-	static convertToGreebledPath(points: Iterable<Place[]>, greeble: Layer, scale: number): PathSegment[] {
+	static convertToGreebledPath(points: Iterable<ΦΛPoint[]>, greeble: Layer, scale: number): PathSegment[] {
 		let path = [];
 		for (const line of points) { // then do the conversion
 			path.push({type: 'M', args: [line[0].φ, line[0].λ]});
@@ -1004,12 +1004,12 @@ export class Chart {
 				// do this long type-casting song and dance to see if there's an edge to greeble
 				let edge: Edge | null = null;
 				if (start.hasOwnProperty('neighbors')) {
-					const neighbors = (<{neighbors: Map<Place, Edge>}><unknown>start).neighbors;
+					const neighbors = (<{neighbors: Map<ΦΛPoint, Edge>}><unknown>start).neighbors;
 					if (typeof neighbors.has === 'function' && typeof neighbors.get === 'function')
 						if (neighbors.has(end))
 							edge = neighbors.get(end);
 				}
-				let step: Place[];
+				let step: ΦΛPoint[];
 				// if there is an edge and it should be greebled, greeble it
 				if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
 					const path = edge.getPath(GREEBLE_FACTOR/scale);

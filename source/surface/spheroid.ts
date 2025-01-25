@@ -4,7 +4,7 @@
  */
 import {Tile, Surface, Vertex} from "./surface.js";
 import {legendreP2, legendreP4, legendreP6} from "../utilities/miscellaneus.js";
-import {Place} from "../utilities/coordinates.js";
+import {ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
 
 /**
@@ -142,7 +142,7 @@ export class Spheroid extends Surface {
 	/**
 	 * from Walter D. Lambert, J. Washington Academy of Sciences (1942)
 	 */
-	distance(a: Place, b: Place): number {
+	distance(a: ΦΛPoint, b: ΦΛPoint): number {
 		// first convert a and b to parametric latitude
 		a = {φ: Math.atan((1 - this.flattening)*Math.tan(a.φ)), λ: a.λ};
 		b = {φ: Math.atan((1 - this.flattening)*Math.tan(b.φ)), λ: b.λ};
@@ -170,7 +170,7 @@ export class Spheroid extends Surface {
 			65/1024.*legendreP6(Math.cos(obliquity))*legendreP6(Math.sin(latitude));
 	}
 
-	isOnEdge(_: Place): boolean {
+	isOnEdge(_: ΦΛPoint): boolean {
 		return false;
 	}
 }

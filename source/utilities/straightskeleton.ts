@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Point} from "./coordinates.js";
+import {XYPoint} from "./coordinates.js";
 import {Tree} from "../datastructures/tree.js";
 import Queue from "../datastructures/queue.js";
 import {trajectoryIntersection} from "./geometry.js";
@@ -15,7 +15,7 @@ import {trajectoryIntersection} from "./geometry.js";
  *         be found by traversing the attached tree graph.  each of the top two nodes is
  *         the other's parent
  */
-export function straightSkeleton(polygon: Point[]): Tree<Point> {
+export function straightSkeleton(polygon: XYPoint[]): Tree<XYPoint> {
 	if (polygon.length < 3)
 		throw new Error(`this polygon only has ${polygon.length} vertices; how can it have any geometric properties at all?`);
 	// start by laying a foundation which is just the polygon
@@ -69,7 +69,7 @@ export function straightSkeleton(polygon: Point[]): Tree<Point> {
 /**
  * the normalized direction inward from a given edge
  */
-function direction(a: Point, b: Point): { vx: number, vy: number } {
+function direction(a: XYPoint, b: XYPoint): { vx: number, vy: number } {
 	const vx = a.y - b.y;
 	const vy = b.x - a.x;
 	const length = Math.hypot(vx, vy);
@@ -81,7 +81,7 @@ class Merger {
 	left: Nodo;
 	rite: Nodo;
 	time: number;
-	place: Point;
+	place: XYPoint;
 
 	constructor(left: Nodo, rite: Nodo) {
 		this.left = left;
@@ -101,7 +101,7 @@ class Merger {
 /**
  * a node on the strait skeleton grid
  */
-class Nodo extends Tree<Point> {
+class Nodo extends Tree<XYPoint> {
 	leftEdge: { vx: number, vy: number };
 	riteEdge: { vx: number, vy: number };
 	time: number;
@@ -114,7 +114,7 @@ class Nodo extends Tree<Point> {
 
 	constructor(leftEdge: { vx: number, vy: number },
 				riteEdge: { vx: number, vy: number },
-				location: Point,
+				location: XYPoint,
 				time: number,
 				leftChild: Nodo = null,
 				riteChild: Nodo = null) {

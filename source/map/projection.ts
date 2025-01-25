@@ -5,8 +5,8 @@
 import {Surface} from "../surface/surface.js";
 import {
 	PathSegment,
-	Place,
-	Point
+	ΦΛPoint,
+	XYPoint
 } from "../utilities/coordinates.js";
 import {linterp, localizeInRange} from "../utilities/miscellaneus.js";
 
@@ -63,7 +63,7 @@ export class MapProjection {
 	 * @param point the latitude and longitude in radians, in the range [-π, π]
 	 * @return the x and y coordinates in km
 	 */
-	public projectPoint(point: Place): Point {
+	public projectPoint(point: ΦΛPoint): XYPoint {
 		if (isFinite(this.yCenter)) {
 			const r = this.y(point.φ) - this.yCenter;
 			if (r !== 0) {
@@ -82,7 +82,7 @@ export class MapProjection {
 	 * @param point the x and y coordinates in km
 	 * @return the latitude and longitude in radians
 	 */
-	public inverseProjectPoint(point: Point): Place {
+	public inverseProjectPoint(point: XYPoint): ΦΛPoint {
 		if (isFinite(this.yCenter)) {
 			let r = Math.hypot(point.x, point.y - this.yCenter);
 			let θ = Math.atan2(point.x, point.y);
@@ -222,7 +222,7 @@ export class MapProjection {
 	 * θ = 0 is maximum y (the bottom of the circle) and increases as you go counterclockwise.  negative r is
 	 * permitted and will reverse all points about the origin such that θ = 0 is minimum y (the top of the circle)
 	 */
-	private convertPolarToCartesian(point: {r: number, θ: number}): Point {
+	private convertPolarToCartesian(point: {r: number, θ: number}): XYPoint {
 		if (Math.abs(point.θ) === Math.PI)
 			return {x: 0, y: -point.r + this.yCenter};
 		else

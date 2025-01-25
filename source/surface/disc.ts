@@ -4,7 +4,7 @@
  */
 import {Tile, Surface, Vertex} from "./surface.js";
 import {Vector} from "../utilities/geometry.js";
-import {Place} from "../utilities/coordinates.js";
+import {ΦΛPoint} from "../utilities/coordinates.js";
 
 /**
  * a planar planet based on the modern flat earth model, where the sun circles in a horizontal plane above the world,
@@ -89,17 +89,17 @@ export class Disc extends Surface {
 		return this.firmamentHite*Math.pow(Math.sin(φ), -2);
 	}
 
-	distance(a: Place, b: Place): number {
+	distance(a: ΦΛPoint, b: ΦΛPoint): number {
 		const ar = this.firmamentHite/Math.tan(a.φ);
 		const br = this.firmamentHite/Math.tan(b.φ);
 		return Math.sqrt(ar*ar + br*br - 2*ar*br*Math.cos(a.λ - b.λ));
 	}
 
-	isOnEdge(place: Place): boolean {
+	isOnEdge(place: ΦΛPoint): boolean {
 		return place.φ === this.φMin;
 	}
 	
-	computeEdgeVertexLocation(tileL: Tile, tileR: Tile): { pos: Vector; coordinates: Place } {
+	computeEdgeVertexLocation(tileL: Tile, tileR: Tile): { pos: Vector; coordinates: ΦΛPoint } {
 		const x0 = (tileL.pos.x + tileR.pos.x)/2;
 		const y0 = (tileL.pos.y + tileR.pos.y)/2;
 		const vx = tileL.pos.y - tileR.pos.y;

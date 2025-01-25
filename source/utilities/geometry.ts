@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Point} from "./coordinates.js";
+import {XYPoint} from "./coordinates.js";
 
 /**
  * calculate the sign of this triangle
@@ -16,7 +16,7 @@ import {Point} from "./coordinates.js";
  *         - a negative number if b is to the left of a for an observer at c facing d; or
  *         - 0 if ab and cd are colinear or either has zero magnitude.
  */
-export function crossingSign(a: Point, b: Point, c: Point, d: Point): number {
+export function crossingSign(a: XYPoint, b: XYPoint, c: XYPoint, d: XYPoint): number {
 	return (b.x - a.x)*(d.y - c.y) - (b.y - a.y)*(d.x - c.x);
 }
 
@@ -28,7 +28,7 @@ export function crossingSign(a: Point, b: Point, c: Point, d: Point): number {
  *         two times the area of the triangle formed by these points, so if there is
  *         roundoff error, know that it will be of that order.
  */
-export function angleSign(a: Point, b: Point, c: Point): number {
+export function angleSign(a: XYPoint, b: XYPoint, c: XYPoint): number {
 	return crossingSign(b, c, b, a);
 }
 
@@ -39,7 +39,7 @@ export function angleSign(a: Point, b: Point, c: Point): number {
  * as that from c to d (within 90°), a negative number if they're in roughly opposite
  * directions, and 0 if they're perpendicular or either has zero length.
  */
-export function passingSign(a: Point, b: Point, c: Point, d: Point): number {
+export function passingSign(a: XYPoint, b: XYPoint, c: XYPoint, d: XYPoint): number {
 	return (b.x - a.x)*(d.x - c.x) + (b.y - a.y)*(d.y - c.y);
 }
 
@@ -47,7 +47,7 @@ export function passingSign(a: Point, b: Point, c: Point, d: Point): number {
 /**
  * determine whether the angle abc is acute or not
  */
-export function isAcute(a: Point, b: Point, c: Point): boolean {
+export function isAcute(a: XYPoint, b: XYPoint, c: XYPoint): boolean {
 	return passingSign(b, a, b, c) > 0;
 }
 
@@ -55,7 +55,7 @@ export function isAcute(a: Point, b: Point, c: Point): boolean {
 /**
  * compute the point equidistant from the three points given.
  */
-export function circumcenter(points: Point[]): Point {
+export function circumcenter(points: XYPoint[]): XYPoint {
 	if (points.length !== 3)
 		throw new Error("it has to be 3.");
 	let xNumerator = 0, yNumerator = 0;
@@ -81,7 +81,7 @@ export function circumcenter(points: Point[]): Point {
  * @param r the radius of the circle
  * @param onTheLeft whether the center is on the left of the strait-line path from a to b
  */
-export function arcCenter(a: Point, b: Point, r: number, onTheLeft: boolean): Point {
+export function arcCenter(a: XYPoint, b: XYPoint, r: number, onTheLeft: boolean): XYPoint {
 	const d = Math.hypot(b.x - a.x, b.y - a.y);
 	let l = Math.sqrt(r*r - d*d/4);
 	if (onTheLeft) l *= -1;
@@ -99,8 +99,8 @@ export function arcCenter(a: Point, b: Point, r: number, onTheLeft: boolean): Po
  * @returns the location where they cross, or null if they don't
  */
 export function lineLineIntersection(
-	p1: Point, p2: Point,
-	q1: Point, q2: Point): Point {
+	p1: XYPoint, p2: XYPoint,
+	q1: XYPoint, q2: XYPoint): XYPoint {
 	if (q1.x === q2.x) {
 		let r = null;
 		if (p1.x === q1.x)
@@ -129,8 +129,8 @@ export function lineLineIntersection(
  * @returns the location where the lines cross and the corresponding times
  */
 export function trajectoryIntersection(
-	a: Point, va: { x: number, y: number },
-	b: Point, vb: { x: number, y: number }): { x: number, y: number, ta: number, tb: number} {
+	a: XYPoint, va: { x: number, y: number },
+	b: XYPoint, vb: { x: number, y: number }): { x: number, y: number, ta: number, tb: number} {
 	if (va.x*vb.y - va.y*vb.x === 0)
 		throw new Error(`the given trajectories do not ever intersect.`);
 	const ta = (vb.x*(a.y - b.y) - vb.y*(a.x - b.x))/
@@ -157,8 +157,8 @@ export function trajectoryIntersection(
  * @param epsilon amount of roundoff for which to account
  */
 export function lineArcIntersections(
-	p0: Point, p1: Point, o: Point, r: number, q0: Point, q1: Point, epsilon=1e-15
-): Point[] {
+	p0: XYPoint, p1: XYPoint, o: XYPoint, r: number, q0: XYPoint, q1: XYPoint, epsilon=1e-15
+): XYPoint[] {
 	const scale = Math.pow(p1.x - p0.x, 2) + Math.pow(p1.y - p0.y, 2);
 	const pitch = (p0.x - o.x)*(p1.x - p0.x) + (p0.y - o.y)*(p1.y - p0.y);
 	const distance = (p0.x + q0.x - 2*o.x)*(p0.x - q0.x) +
@@ -171,7 +171,7 @@ export function lineArcIntersections(
 		const roots = [
 			vertex + sqrtDiscriminant,
 			vertex - sqrtDiscriminant];
-		const crossings: Point[] = [];
+		const crossings: XYPoint[] = [];
 
 		// then, check each one to see if it is between the line segment endpoints
 		for (const t of roots) {
@@ -199,7 +199,7 @@ export function lineArcIntersections(
  * exactly orderd widdershins from the POV of the origin
  * @return the reorderd polygon
  */
-export function checkVoronoiPolygon(vertexes: Point[]): Point[] {
+export function checkVoronoiPolygon(vertexes: XYPoint[]): XYPoint[] {
 	// start by copying the polygon (a deep copy would be better but I don't think the points will get modified)
 	vertexes = vertexes.slice();
 	const origen = { x: 0, y: 0 };
@@ -226,7 +226,7 @@ export function checkVoronoiPolygon(vertexes: Point[]): Point[] {
  * exchange x and y for this point
  * @param p
  */
-function transpose(p: Point): Point {
+function transpose(p: XYPoint): XYPoint {
 	if (p === null)
 		return null;
 	else

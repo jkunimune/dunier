@@ -4,7 +4,7 @@
  */
 import {Spheroid} from "./spheroid.js";
 import {Vector} from "../utilities/geometry.js";
-import {Place} from "../utilities/coordinates.js";
+import {ΦΛPoint} from "../utilities/coordinates.js";
 
 /**
  * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the y direction
@@ -35,17 +35,17 @@ export class Sphere extends Spheroid {
 		return {north: ((Math.sin(φ) + 1)/2)*Math.cos(φ), east: 0};
 	}
 
-	xyz(place: Place): Vector { // rotate the surface in 3-space so the planet plot is more intuitive
+	xyz(place: ΦΛPoint): Vector { // rotate the surface in 3-space so the planet plot is more intuitive
 		const {x, y, z} = super.xyz(place);
 		return new Vector(x, z, -y);
 	}
 
-	normal(place: Place): Vector { // rotate the normal vectors too to match the xyz
+	normal(place: ΦΛPoint): Vector { // rotate the normal vectors too to match the xyz
 		const {x, y, z} = super.normal(place);
 		return new Vector(x, z, -y);
 	}
 
-	φλ(point: Vector): Place {
+	φλ(point: Vector): ΦΛPoint {
 		return super.φλ(new Vector(point.x, -point.z, point.y));
 	}
 }

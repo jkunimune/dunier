@@ -6,7 +6,7 @@ import {Random} from "../utilities/random.js";
 import {binarySearch, linterp, noisyProfile} from "../utilities/miscellaneus.js";
 import {Culture} from "../generation/culture.js";
 import {Biome} from "../generation/terrain.js";
-import {Place, Point} from "../utilities/coordinates.js";
+import {ΦΛPoint, XYPoint} from "../utilities/coordinates.js";
 import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../utilities/geometry.js";
 import {straightSkeleton} from "../utilities/straightskeleton.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
@@ -24,7 +24,7 @@ const INTEGRATION_RESOLUTION = 32;
  */
 export abstract class Domain {
 	abstract isPeriodic(): boolean;
-	abstract isOnEdge(place: Place): boolean;
+	abstract isOnEdge(place: ΦΛPoint): boolean;
 }
 
 
@@ -180,7 +180,7 @@ export abstract class Surface implements Domain {
 
 		// now we can save each tile's strait skeleton to the edges (to bound the greebling)
 		for (const tile of this.tiles) {
-			let vertices: Point[] = [];
+			let vertices: XYPoint[] = [];
 			for (const {vertex} of tile.getPolygon()) {
 				vertices.push({
 					x: vertex.pos.minus(tile.pos).dot(tile.east), // project the voronoi polygon into 2D
@@ -257,7 +257,7 @@ export abstract class Surface implements Domain {
 	/**
 	 * return the 2D parameterization corresponding to the given cartesian coordinates
 	 */
-	φλ(point: {x: number, y: number, z: number}): Place {
+	φλ(point: {x: number, y: number, z: number}): ΦΛPoint {
 		return {
 			φ: this.φ({r: Math.hypot(point.x, point.y), z: point.z}),
 			λ: Math.atan2(point.x, -point.y)};
@@ -266,7 +266,7 @@ export abstract class Surface implements Domain {
 	/**
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
-	xyz(place: Place): Vector {
+	xyz(place: ΦΛPoint): Vector {
 		const {r, z} = this.rz(place.φ);
 		return new Vector(r*Math.sin(place.λ), -r*Math.cos(place.λ), z);
 	}
@@ -275,7 +275,7 @@ export abstract class Surface implements Domain {
 	 * return the normalized vector pointing outward at this location. the location may be assumed
 	 * to be on this Surface.
 	 */
-	normal(place: Place): Vector {
+	normal(place: ΦΛPoint): Vector {
 		const tangent = this.tangent(place.φ);
 		return new Vector(
 			tangent.z*Math.sin(place.λ),
@@ -286,7 +286,7 @@ export abstract class Surface implements Domain {
 	/**
 	 * find the place where the given Edge hits the edge of this surface
 	 */
-	computeEdgeVertexLocation(_tileL: Tile, _tileR: Tile): {pos: Vector, coordinates: Place} {
+	computeEdgeVertexLocation(_tileL: Tile, _tileR: Tile): {pos: Vector, coordinates: ΦΛPoint} {
 		throw new Error("this surface doesn't have an edge.");
 	}
 
@@ -341,12 +341,12 @@ export abstract class Surface implements Domain {
 	 * orthodromic distance from A to B on the surface (it's okay if it's just
 	 * an approximation).
 	 */
-	abstract distance(a: Place, b: Place): number;
+	abstract distance(a: ΦΛPoint, b: ΦΛPoint): number;
 
 	/**
 	 * whether the point is exactly on the line between this surface's domain and oblivion
 	 */
-	abstract isOnEdge(place: Place): boolean;
+	abstract isOnEdge(place: ΦΛPoint): boolean;
 }
 
 
@@ -381,7 +381,7 @@ export class Tile {
 	public flag: boolean;
 	private area: number;
 
-	constructor(index: number, position: Place, surface: Surface) {
+	constructor(index: number, position: ΦΛPoint, surface: Surface) {
 		this.surface = surface;
 		this.index = index;
 		this.φ = position.φ;
@@ -508,7 +508,7 @@ export class Vertex {
 	 * locate the confluence of the three given adjacent Tiles,
 	 * such that we might put a Vertex there.
 	 */
-	static computeLocation(a: Tile, b: Tile, c: Tile): {pos: Vector, coordinates: Place} {
+	static computeLocation(a: Tile, b: Tile, c: Tile): {pos: Vector, coordinates: ΦΛPoint} {
 		const tileNormal = a.normal.plus(b.normal).plus(c.normal);
 		const vertexNormal = b.pos.minus(a.pos).cross(c.pos.minus(a.pos));
 		if (tileNormal.dot(vertexNormal) <= 0)
@@ -541,7 +541,7 @@ export class Vertex {
 	 * @param pos the Cartesian coordinate vector (not needed if we're just using this for its network graph)
 	 * @param coordinates the geographical coordinates (not needed if we're just using this for its network graph)
 	 */
-	constructor(a: Tile, b: Tile, c: Tile | EmptySpace, pos: Vector = null, coordinates: Place = null) {
+	constructor(a: Tile, b: Tile, c: Tile | EmptySpace, pos: Vector = null, coordinates: ΦΛPoint = null) {
 		this.pos = pos;
 		if (coordinates !== null) {
 			this.φ = coordinates.φ;
@@ -613,11 +613,11 @@ export class Edge {
 	private length: number; // distance between the Vertices this connects
 	public rightBoundCartesian: Vector[]; // these borders are the limits of the greebling
 	public leftBoundCartesian: Vector[];
-	private bounds: Point[];
+	private bounds: XYPoint[];
 	private currentResolution: number; // this number keeps of track of how much greebling we have resolved so far
 	private readonly rng: Random; // this Random number generator is used exclusively for greebling
-	private readonly paths: {resolution: number, points: Place[]}[]; // this path can be resolved at a variety of scales
-	private finestPathPointsInEdgeCoords: Point[];
+	private readonly paths: {resolution: number, points: ΦΛPoint[]}[]; // this path can be resolved at a variety of scales
+	private finestPathPointsInEdgeCoords: XYPoint[];
 
 	private i: Vector; // the s unit-vector of this edge's coordinate system
 	private j: Vector; // the t unit-vector of this edge's coordinate system
@@ -653,7 +653,7 @@ export class Edge {
 	 * and fast execution of later mappings.  in addition, if this edge ever needs to be rendered at
 	 * an even finer scale, it will bild off of what it has generated here today.
 	 */
-	getPath(resolution: number): Place[] {
+	getPath(resolution: number): ΦΛPoint[] {
 		// you'll crash the browser if the resolution is too fine
 		if (resolution < FINEST_RESOLUTION)
 			throw new Error(`a resolution of ${resolution} is unacceptable`);
@@ -742,7 +742,7 @@ export class Edge {
 	 * transform a point from the global 3D coordinates into this edge's 2D coordinates, where
 	 * x increases [0, this.getLength()] from vertex0 to vertex1, and y points perpendicularly across from right to left
 	 */
-	toEdgeCoords(point: Vector): Point {
+	toEdgeCoords(point: Vector): XYPoint {
 		if (this.i === null)
 			throw new Error(`the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`);
 		return {
@@ -754,7 +754,7 @@ export class Edge {
 	/**
 	 * transform a point from this edge's 2D coordinates to the global 3D coordinates.
 	 */
-	fromEdgeCoords(point: Point): Vector {
+	fromEdgeCoords(point: XYPoint): Vector {
 		if (this.i === null)
 			throw new Error(`the coordinate system hasn't been set yet. don't call this function agen until after you've called setCoordinatesAndBounds().`);
 		return this.origin().plus(this.i.times(point.x).plus(this.j.times(point.y)));

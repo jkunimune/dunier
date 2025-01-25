@@ -4,7 +4,7 @@
  */
 // @ts-ignore
 import Queue from "../datastructures/queue.js";
-import {PathSegment, Point} from "./coordinates.js";
+import {PathSegment, XYPoint} from "./coordinates.js";
 import {Random} from "./random.js";
 import {trajectoryIntersection, Vector} from "./geometry.js";
 
@@ -252,7 +252,7 @@ export function longestShortestPath(nodes: {x: number, y: number, edges: {length
  * @param bounds a closed convex polygon that the profile will try not to cross
  * @param alpha a dimensionless parameter that alters how noisy it is (limit is 1 or so)
  */
-export function noisyProfile(initialProfile: Point[], resolution: number, rng: Random, bounds: Point[] = [], alpha = 0.5): Point[] {
+export function noisyProfile(initialProfile: XYPoint[], resolution: number, rng: Random, bounds: XYPoint[] = [], alpha = 0.5): XYPoint[] {
 	if (initialProfile.length < 2)
 		throw new Error(`this function must be called on an initial path with at least two points (you only gave ${initialProfile.length}).`);
 	const confirmd = [initialProfile[0]]; // the profile, which we will build gradually

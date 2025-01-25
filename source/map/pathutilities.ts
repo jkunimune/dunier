@@ -6,10 +6,10 @@ import {
 	assert_xy,
 	assert_φλ,
 	endpoint,
-	Location,
+	Point,
 	PathSegment,
-	Place,
-	Point
+	ΦΛPoint,
+	XYPoint
 } from "../utilities/coordinates.js";
 import {
 	angleSign,
@@ -391,7 +391,7 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], surf
  * @param intersect1 the intersection point. in the event that the coordinate system
  *                   is not 1:1, this will be on the side of segment's endpoint.
  */
-function spliceSegment(start: Location, segment: PathSegment, intersect0: Location, intersect1: Location): PathSegment[] {
+function spliceSegment(start: Point, segment: PathSegment, intersect0: Point, intersect1: Point): PathSegment[] {
 	const end = endpoint(segment);
 	if (start.s === intersect0.s && start.t === intersect0.t) // if you're splicing at the beginning
 		return [
@@ -495,7 +495,7 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], perio
  * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Location, periodic: boolean, garanteedToSucced=false): Side {
+export function contains(polygon: PathSegment[], point: Point, periodic: boolean, garanteedToSucced=false): Side {
 	if (polygon.length === 0)
 		return Side.IN;
 
@@ -662,7 +662,7 @@ export function calculatePathBounds(segments: PathSegment[]): {sMin: number, sMa
 	for (let i = 0; i < segments.length; i ++) { // TODO: this won't notice when the pole is included in the region
 		const segment = segments[i];
 		// for each segment, pull out any points that might be extrema
-		let points: Location[];
+		let points: Point[];
 		switch (segment.type) {
 			// for most simple segment types it's just the endpoints
 			case 'M': case 'L': case 'Φ': case 'Λ':
@@ -738,7 +738,7 @@ export function calculatePathBounds(segments: PathSegment[]): {sMin: number, sMa
 /**
  * return a point on the given segment.
  */
-function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean): Location {
+function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean): Point {
 	if (segment.type === 'L') {
 		const start = endpoint(prev);
 		const end = endpoint(segment);
@@ -789,8 +789,8 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean)
  * defined to always be monotonic in latitude or longitude) and their periodicity is therefore not accounted for.
  */
 export function getEdgeCrossings(
-	segmentStart: Location, segment: PathSegment, edges: PathSegment[], periodic: boolean,
-): { intersect0: Location, intersect1: Location, loopIndex: number }[] {
+	segmentStart: Point, segment: PathSegment, edges: PathSegment[], periodic: boolean,
+): { intersect0: Point, intersect1: Point, loopIndex: number }[] {
 	const crossings = [];
 	let loopIndex = 0;
 	for (let i = 1; i < edges.length; i ++) { // then look at each edge segment
@@ -835,8 +835,8 @@ export function getEdgeCrossings(
  * points on the edge will generally count as crossings.
  * also, if the segment passes thru the vertex between two edges, it might register as two identical crossings.
  */
-function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStart: Point, edge: PathSegment
-): Point[] {
+function getMapEdgeCrossings(segmentStart: XYPoint, segment: PathSegment, edgeStart: XYPoint, edge: PathSegment
+): XYPoint[] {
 	if (edge.type !== 'L')
 		throw new Error(`You can't use ${edge.type} edges in this funccion.`);
 
@@ -882,8 +882,8 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
  * if the segment passes thru the vertex between two edges, it might register as two identical crossings.
  */
 function getGeoEdgeCrossing(
-	segmentStart: Place, segment: PathSegment, edgeStart: Place, edge: PathSegment,
-): { place0: Place, place1: Place } | null {
+	segmentStart: ΦΛPoint, segment: PathSegment, edgeStart: ΦΛPoint, edge: PathSegment,
+): { place0: ΦΛPoint, place1: ΦΛPoint } | null {
 	const edgeEnd = assert_φλ(endpoint(edge));
 
 	if (edge.type !== 'Φ' && edge.type !== 'Λ')
@@ -960,7 +960,7 @@ function getGeoEdgeCrossing(
  */
 function getParallelCrossing(
 	φ0: number, λ0: number, φ1: number, λ1: number, φX = π
-): { place0: Place, place1: Place } {
+): { place0: ΦΛPoint, place1: ΦΛPoint } {
 	const weit0 = localizeInRange(φ1 - φX, -π, π);
 	const weit1 = localizeInRange(φX - φ0, -π, π);
 	let λX;
@@ -997,7 +997,7 @@ function getParallelCrossing(
  * end of that point, or null if there is no such edge.  also, the index of the edge loop about which we're tauking
  * or null if the point isn't on an edge
  */
-function getPositionOnEdge(point: Location, edges: PathSegment[]): {loop: number, index: number} {
+function getPositionOnEdge(point: Point, edges: PathSegment[]): {loop: number, index: number} {
 	let loopIndex = 0;
 	let segmentIndex = 0;
 	for (let i = 1; i < edges.length; i ++) { // start by choosing an edge
@@ -1040,7 +1040,7 @@ function getPositionOnEdge(point: Location, edges: PathSegment[]): {loop: number
  * @param domain the surface that contains the points (so we know when it goes off the edge)
  */
 export function isClosed(segments: PathSegment[], domain: Domain): boolean {
-	let start: Location = null;
+	let start: Point = null;
 	for (let i = 0; i < segments.length; i ++) {
 		if (segments[i].type === 'M')
 			start = endpoint(segments[i]);

@@ -4,7 +4,7 @@
  */
 import {Tile, Surface, Vertex} from "./surface.js";
 import {Spheroid} from "./spheroid.js";
-import {Place} from "../utilities/coordinates.js";
+import {ΦΛPoint} from "../utilities/coordinates.js";
 import {localizeInRange} from "../utilities/miscellaneus.js";
 
 
@@ -136,7 +136,7 @@ export class Toroid extends Surface {
 		return ds_dβ*dβ_dφ;
 	}
 
-	distance(a: Place, b: Place): number {
+	distance(a: ΦΛPoint, b: ΦΛPoint): number {
 		const rAvg = 2/(1/this.rz(a.φ).r + 1/this.rz(b.φ).r);
 		const sToroidal = rAvg * localizeInRange(Math.abs(a.λ - b.λ), -Math.PI, Math.PI);
 		const aβ = Math.atan2(this.elongation*Math.sin(a.φ), Math.cos(a.φ));
@@ -147,7 +147,7 @@ export class Toroid extends Surface {
 		return Math.hypot(sToroidal, sPoloidal);
 	}
 
-	isOnEdge(_: Place): boolean {
+	isOnEdge(_: ΦΛPoint): boolean {
 		return false;
 	}
 }
