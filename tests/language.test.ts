@@ -68,7 +68,7 @@ describe("process", () => {
 		});
 	});
 	test("Harmony", () => {
-		const change = new Harmony("front", false);
+		const change = new Harmony(Loke.PALATAL, Loke.VELAR, Quality.VOWEL);
 		const word = ipa("uaiauai");
 		const result = change.apply(word);
 		expect(transcribe([result], "ipa")).toEqual("uaɯauaɯ");

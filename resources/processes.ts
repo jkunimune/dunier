@@ -1006,16 +1006,16 @@ export default [
     "code": "[ +STOP ] [ -SYLLAB +GLOT +STOP ] > [ +EJECT ]0 /"
   }, {
     "chance": 0.002, "type": "harmonia", "comment": "rounding harmony",
-    "code": "round vowel"
+    "code": "UNROUNDED / LABIALIZED VOWEL"
   }, {
-    "chance": 0.002, "type": "harmonia", "comment": "tense/lax harmony",
-    "code": "tense vowel"
+    "chance": 0.002, "type": "harmonia", "comment": "mid/high harmony",
+    "code": "MID / HIGH VOWEL"
   }, {
     "chance": 0.002, "type": "harmonia", "comment": "height harmony",
-    "code": "hight vowel"
+    "code": "LOW / HIGH VOWEL"
   }, {
     "chance": 0.002, "type": "harmonia", "comment": "frontness harmony",
-    "code": "front vowel"
+    "code": "VELAR / PALATAL VOWEL"
   }, {
     "chance": 0.050, "type": "mute", "comment": "raising dissimilation",
     "code": "[ +VOWEL ] > [ +RAISED ] / _ [ +LOW ]"
@@ -1138,8 +1138,8 @@ export default [
     "chance": 0.010, "type": "mute", "comment": "sr > str",
     "code": "[ +SIBILANT ] > [ +SHORT ] [ +SHORT +NONSYLLAB +STOP ] / _ [ +RHOTIC ]"
   }, {
-    "chance": 0.010, "type": "mute", "comment": "fill hiatus with ɾ",
-    "code": "> ɾ / [ +VOWEL ] _ [ +VOWEL ]"
+    "chance": 0.010, "type": "mute", "comment": "fill hiatus with l",
+    "code": "> l / [ +VOWEL ] _ [ +VOWEL ]"
   }, {
     "chance": 0.002, "type": "mute", "comment": "#ra > #ara",
     "code": "[ +TAP ] [ +VOCOID ] > [ +SHORT +UNSTRESS ]1 [ ]0 [ ]1 / [ -VOCOID ] _"

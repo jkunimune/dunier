@@ -172,6 +172,21 @@ export class Quality extends Enumify {
 export type Feature = Mode | Loke | Voze | Silabia | Longia | Latia | MinorLoke | Nosia | Quality;
 export const FEATURE_TYPES = [Quality, Loke, Mode, Voze, Silabia, Longia, Latia, Nosia, MinorLoke];
 
+
+export function parseFeature(s: string): Feature {
+	const starred = s.startsWith('!');
+	if (starred) s = s.slice(1);
+	for (const featureType of starred ? FEATURE_TYPES.slice(1) : FEATURE_TYPES) { // or their value is read
+		for (const feature of featureType) {
+			if ((feature.enumKey + typeof (feature)).startsWith(s)) {
+				return feature;
+			}
+		}
+	}
+	throw Error(`I can't understand to what feature '${s}' refers.`);
+}
+
+
 /** phonological segment */
 export class Sound {
 	/** the default phone, to be used for insertion rules */
@@ -582,4 +597,3 @@ export class Klas {
 		return `Klas(+[${this.required.join(", ")}], -[${this.forbidden.join(", ")}])`;
 	}
 }
-

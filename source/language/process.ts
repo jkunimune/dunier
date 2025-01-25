@@ -13,9 +13,8 @@ import {
 	Nosia,
 	Quality,
 	Feature,
-	FEATURE_TYPES,
 	Silabia,
-	Voze
+	Voze, parseFeature
 } from "./sound.js";
 import {ipaSymbol, transcribe} from "./script.js";
 import {Name} from "./name.js";
@@ -133,26 +132,18 @@ export class SoundChange implements WordProcess {
  * a process that causes sounds in the same word to share a feature
  */
 export class Harmony implements WordProcess {
-	private readonly kutube: Feature[];
-	private readonly affectsConsonants: boolean;
+	private readonly poles: Feature[];
+	private readonly affected: Feature;
 
 	/**
 	 * construct a new Harmony process on a given feature
-	 * @param feature what aspect of the sounds must match; one of ["front", "hight", "round", "tense]
-	 * @param affectsConsonants whether consonants are affected as well as vowels
+	 * @param leftPole a class of sounds that doesn't mix with the other class
+	 * @param rightPole the other class of sounds that deosn't mix with the first class
+	 * @param affected the class of sounds that are affected by this harmony
 	 */
-	constructor(feature: string, affectsConsonants: boolean) {
-		this.affectsConsonants = affectsConsonants;
-		if (feature === 'front') // then construct the list of "polar" attributes
-			this.kutube = [Loke.VELAR, Loke.PALATAL];
-		else if (feature === 'hight')
-			this.kutube = [Quality.LOW, Quality.HIGH];
-		else if (feature === 'round')
-			this.kutube = [MinorLoke.UNROUNDED, MinorLoke.LABIALIZED];
-		else if (feature === 'tense')
-			this.kutube = [Quality.LAX, Quality.TENSE];
-		else
-			throw new Error(`unrecognized harmony type: ${feature}`);
+	constructor(leftPole: Feature, rightPole: Feature, affected: Feature) {
+		this.affected = affected;
+		this.poles = [leftPole, rightPole];
 	}
 
 	apply(oldWord: Sound[]): Sound[] {
@@ -160,8 +151,8 @@ export class Harmony implements WordProcess {
 		let val: Feature = null;
 		for (let i = 0; i < oldWord.length; i ++) { // iterate backwards through the word
 			newWord[i] = oldWord[i]; // in most cases, we will just make this the same as it was in the old word
-			if (this.affectsConsonants || oldWord[i].is(Quality.VOWEL)) { // but if this segment isn't immune
-				for (let feature of this.kutube) { // check its polarity
+			if (oldWord[i].is(this.affected)) { // but if this segment isn't immune
+				for (let feature of this.poles) { // check its polarity
 					if (oldWord[i].is(feature)) { // if it's polar,
 						if (val !== null) // change this sound to match what came before
 							newWord[i] = oldWord[i].with(val); // and add it to the new word
@@ -429,22 +420,10 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 					const kutube = token.startsWith('+') ? sa : na;
 					if (kutube === null)
 						throw RangeError(`this ${token} doesn't seem to be in brackets.`);
-					token = token.slice(1);
-					const starred = token.startsWith('!');
-					if (starred) token = token.slice(1);
-					let val: Feature = null;
-					featureSearch:
-						for (const featureType of starred ? FEATURE_TYPES.slice(1) : FEATURE_TYPES) { // or their value is read
-							for (const feature of featureType) {
-								if ((feature.enumKey + typeof (feature)).startsWith(token)) {
-									val = feature;
-									break featureSearch;
-								}
-							}
-						}
-					if (val === null)
+					const feature = parseFeature(token.slice(1));
+					if (feature === null)
 						throw RangeError(`unrecognized feature: ${token}`);
-					kutube.push(val); // and added to sa or na
+					kutube.push(feature); // and added to sa or na
 				}
 			}
 			else if (ipaSymbol(token) !== null) { // IPA symbols are read for their specified features
@@ -462,9 +441,9 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 				new SoundChange(ca, pa, idx, bada, chena)});
 	}
 	else if (type === 'harmonia') {
-		const [feature, scope] = code.split(" ");
+		const [leftPole, _, rightPole, scope] = code.split(" ");
 		WORD_PROCESS_OPTIONS.push({chanse: chance, proces:
-				new Harmony(feature, scope !== "vowel")});
+				new Harmony(parseFeature(leftPole), parseFeature(rightPole), parseFeature(scope))});
 	}
 	else if (type === 'acente') {
 		const [reverse, headSize] = code.split(" ");
