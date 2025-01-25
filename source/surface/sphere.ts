@@ -19,20 +19,20 @@ export class Sphere extends Spheroid {
 		super(radius, 1, 0, NaN);
 	}
 
-	insolation(ф: number): number {
-		return 2.0*Math.max(0, Math.sin(ф));
+	insolation(φ: number): number {
+		return 2.0*Math.max(0, Math.sin(φ));
 	}
 
 	hasSeasons(_: number): boolean {
 		return false;
 	}
 
-	windConvergence(ф: number): number {
-		return Math.pow((Math.sin(ф) + 1)/2, 2);
+	windConvergence(φ: number): number {
+		return Math.pow((Math.sin(φ) + 1)/2, 2);
 	}
 
-	windVelocity(ф: number): {north: number, east: number} {
-		return {north: ((Math.sin(ф) + 1)/2)*Math.cos(ф), east: 0};
+	windVelocity(φ: number): {north: number, east: number} {
+		return {north: ((Math.sin(φ) + 1)/2)*Math.cos(φ), east: 0};
 	}
 
 	xyz(place: Place): Vector { // rotate the surface in 3-space so the planet plot is more intuitive
@@ -45,7 +45,7 @@ export class Sphere extends Spheroid {
 		return new Vector(x, z, -y);
 	}
 
-	фλ(point: Vector): Place {
-		return super.фλ(new Vector(point.x, -point.z, point.y));
+	φλ(point: Vector): Place {
+		return super.φλ(new Vector(point.x, -point.z, point.y));
 	}
 }

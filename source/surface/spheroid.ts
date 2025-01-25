@@ -48,13 +48,13 @@ export class Spheroid extends Surface {
 		for (let i = 1; i < n; i ++) // construct a grid of points,
 			for (let j = 0; j < m; j ++)
 				nodos.push(new Tile(null, {
-					ф: Math.PI*(i/n - .5),
+					φ: Math.PI*(i/n - .5),
 					λ: 2*Math.PI*(j + .5*(i%2))/m,
 				}, this));
 		const kS = nodos.length; // assign Nodes to the poles,
-		nodos.push(new Tile(null, { ф: -Math.PI/2, λ: 0 }, this));
+		nodos.push(new Tile(null, { φ: -Math.PI/2, λ: 0 }, this));
 		const kN = nodos.length;
-		nodos.push(new Tile(null, { ф: Math.PI/2, λ: 0 }, this));
+		nodos.push(new Tile(null, { φ: Math.PI/2, λ: 0 }, this));
 
 		const triangles = []; // and strew it all with triangles
 		for (let j = 0; j < m; j ++)
@@ -90,53 +90,53 @@ export class Spheroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	insolation(ф: number): number {
-		return Spheroid.annualInsolationFunction(this.obliquity, ф);
+	insolation(φ: number): number {
+		return Spheroid.annualInsolationFunction(this.obliquity, φ);
 	}
 
-	hasSeasons(ф: number): boolean {
-		return Math.abs(ф) > this.obliquity;
+	hasSeasons(φ: number): boolean {
+		return Math.abs(φ) > this.obliquity;
 	}
 
-	windConvergence(ф: number): number {
-		return Math.pow(Math.cos(ф), 2) + Math.pow(Math.cos(3*ф), 2);
+	windConvergence(φ: number): number {
+		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
 	}
 
-	windVelocity(ф: number): {north: number, east: number} {
-		return {north: 0, east: Math.cos(ф)}; // realistically this should change direccion, but this formula makes rain shadows more apparent
+	windVelocity(φ: number): {north: number, east: number} {
+		return {north: 0, east: Math.cos(φ)}; // realistically this should change direccion, but this formula makes rain shadows more apparent
 	}
 
-	ф(point: {r: number, z: number}): number {
+	φ(point: {r: number, z: number}): number {
 		const β = Math.atan2(this.aspectRatio*point.z, point.r);
 		return Math.atan(Math.tan(β)*this.aspectRatio);
 	}
 
-	rz(ф: number): {r: number, z: number} {
-		if (Math.abs(ф) === Math.PI/2) {
+	rz(φ: number): {r: number, z: number} {
+		if (Math.abs(φ) === Math.PI/2) {
 			return {
 				r: 0,
-				z: this.radius*Math.sign(ф)/this.aspectRatio};
+				z: this.radius*Math.sign(φ)/this.aspectRatio};
 		}
 		else {
-			const β = Math.atan(Math.tan(ф)/this.aspectRatio);
+			const β = Math.atan(Math.tan(φ)/this.aspectRatio);
 			return {
 				r: this.radius*Math.cos(β),
 				z: this.radius*Math.sin(β)/this.aspectRatio};
 		}
 	}
 
-	tangent(ф: number): {r: number, z: number} {
-		return {r: -Math.sin(ф), z: Math.cos(ф)};
+	tangent(φ: number): {r: number, z: number} {
+		return {r: -Math.sin(φ), z: Math.cos(φ)};
 	}
 
-	ds_dф(ф: number): number {
-		const β = Math.atan(Math.tan(ф)/this.aspectRatio);
-		const dβ_dф = this.aspectRatio/(
-			Math.pow(Math.sin(ф), 2) +
-			Math.pow(this.aspectRatio*Math.cos(ф), 2));
+	ds_dφ(φ: number): number {
+		const β = Math.atan(Math.tan(φ)/this.aspectRatio);
+		const dβ_dφ = this.aspectRatio/(
+			Math.pow(Math.sin(φ), 2) +
+			Math.pow(this.aspectRatio*Math.cos(φ), 2));
 		const ds_dβ = this.radius*
 			Math.sqrt(1 - Math.pow(this.eccentricity*Math.cos(β), 2));
-		return ds_dβ*dβ_dф;
+		return ds_dβ*dβ_dφ;
 	}
 
 	/**
@@ -144,14 +144,14 @@ export class Spheroid extends Surface {
 	 */
 	distance(a: Place, b: Place): number {
 		// first convert a and b to parametric latitude
-		a = {ф: Math.atan((1 - this.flattening)*Math.tan(a.ф)), λ: a.λ};
-		b = {ф: Math.atan((1 - this.flattening)*Math.tan(b.ф)), λ: b.λ};
+		a = {φ: Math.atan((1 - this.flattening)*Math.tan(a.φ)), λ: a.λ};
+		b = {φ: Math.atan((1 - this.flattening)*Math.tan(b.φ)), λ: b.λ};
 		// use the law of haversines to get the angle between them
-		const σ = Math.acos(Math.sin(a.ф)*Math.sin(b.ф) +
-			Math.cos(a.ф)*Math.cos(b.ф)*Math.cos(a.λ - b.λ));
+		const σ = Math.acos(Math.sin(a.φ)*Math.sin(b.φ) +
+			Math.cos(a.φ)*Math.cos(b.φ)*Math.cos(a.λ - b.λ));
 		// calculate the correction factors
-		const p = (a.ф + b.ф)/2;
-		const q = (b.ф - a.ф)/2;
+		const p = (a.φ + b.φ)/2;
+		const q = (b.φ - a.φ)/2;
 		const x = (σ - Math.sin(σ))*Math.pow(Math.sin(p)*Math.cos(q)/Math.cos(σ/2), 2);
 		const y = (σ + Math.sin(σ))*Math.pow(Math.cos(p)*Math.sin(q)/Math.sin(σ/2), 2);
 		// put it all together

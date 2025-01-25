@@ -49,10 +49,10 @@ export class Toroid extends Surface {
 		const n = 4*Math.trunc(m*this.majorRadius/(this.minorRadius*this.elongation));
 		const nodos = [];
 		for (let i = 0; i < n; i ++) { // construct a chain of points,
-			const ф0 = (i%2 === 0) ? 0 : Math.PI/m;
+			const φ0 = (i%2 === 0) ? 0 : Math.PI/m;
 			for (let j = 0; j < m; j ++)
 				nodos.push(new Tile(null, {
-					ф: localizeInRange(ф0 + 2*Math.PI/m * j, -Math.PI, Math.PI),
+					φ: localizeInRange(φ0 + 2*Math.PI/m * j, -Math.PI, Math.PI),
 					λ: localizeInRange(2*Math.PI/n * i, -Math.PI, Math.PI),
 				}, this));
 		}
@@ -80,11 +80,11 @@ export class Toroid extends Surface {
 		return {nodos: nodos, triangles: triangles};
 	}
 
-	insolation(ф: number): number {
-		const β = Math.atan(Math.tan(ф)*this.elongation);
-		const incident = Spheroid.annualInsolationFunction(this.obliquity, ф);
+	insolation(φ: number): number {
+		const β = Math.atan(Math.tan(φ)*this.elongation);
+		const incident = Spheroid.annualInsolationFunction(this.obliquity, φ);
 		let opacity;
-		if (Math.cos(ф) >= 0)
+		if (Math.cos(φ) >= 0)
 			opacity = 0;
 		else if (this.obliquity === 0)
 			opacity = 1;
@@ -93,54 +93,54 @@ export class Toroid extends Surface {
 			opacity =
 				Math.min(1, Math.min(1, (1 - Math.sin(β))/dz) * Math.min(1, (1 + Math.sin(β))/dz) +
 					0.4*Math.pow(Math.sin(2*β), 2)/(1 + dz) -
-					0.8*this.elongation*this.minorRadius/this.majorRadius * Math.pow(Math.cos(ф), 3));
+					0.8*this.elongation*this.minorRadius/this.majorRadius * Math.pow(Math.cos(φ), 3));
 		}
 		return incident*(1 - opacity);
 	}
 
-	hasSeasons(ф: number): boolean {
-		return Math.min(Math.abs(ф), Math.PI - Math.abs(ф)) > this.obliquity && this.insolation(ф) > 0;
+	hasSeasons(φ: number): boolean {
+		return Math.min(Math.abs(φ), Math.PI - Math.abs(φ)) > this.obliquity && this.insolation(φ) > 0;
 	}
 	
-	windConvergence(ф: number): number {
-		return Math.pow(Math.cos(ф), 2) + Math.pow(Math.cos(3*ф), 2);
+	windConvergence(φ: number): number {
+		return Math.pow(Math.cos(φ), 2) + Math.pow(Math.cos(3*φ), 2);
 	}
 
-	windVelocity(ф: number): {north: number, east: number} {
-		return {north: 0, east: Math.cos(ф)};
+	windVelocity(φ: number): {north: number, east: number} {
+		return {north: 0, east: Math.cos(φ)};
 	}
 
-	ф(point: {r: number, z: number}): number {
+	φ(point: {r: number, z: number}): number {
 		const β = Math.atan2(point.z/this.elongation, point.r - this.majorRadius);
 		return Math.atan2(Math.sin(β)/this.elongation, Math.cos(β));
 	}
 
-	rz(ф: number): {r: number, z: number} {
-		const β = Math.atan2(Math.sin(ф)*this.elongation, Math.cos(ф));
+	rz(φ: number): {r: number, z: number} {
+		const β = Math.atan2(Math.sin(φ)*this.elongation, Math.cos(φ));
 		return {
 			r: this.majorRadius + this.minorRadius*Math.cos(β),
 			z: this.elongation*this.minorRadius*Math.sin(β)};
 	}
 
-	tangent(ф: number): {r: number, z: number} {
-		return {r: -Math.sin(ф), z: Math.cos(ф)};
+	tangent(φ: number): {r: number, z: number} {
+		return {r: -Math.sin(φ), z: Math.cos(φ)};
 	}
 
-	ds_dф(ф: number): number {
-		const β = Math.atan(Math.tan(ф)*this.elongation);
-		const dβ_dф = this.elongation/(
-			Math.pow(Math.cos(ф), 2) +
-			Math.pow(this.elongation*Math.sin(ф), 2));
+	ds_dφ(φ: number): number {
+		const β = Math.atan(Math.tan(φ)*this.elongation);
+		const dβ_dφ = this.elongation/(
+			Math.pow(Math.cos(φ), 2) +
+			Math.pow(this.elongation*Math.sin(φ), 2));
 		const ds_dβ = this.minorRadius*
 			Math.hypot(Math.sin(β), this.elongation*Math.cos(β));
-		return ds_dβ*dβ_dф;
+		return ds_dβ*dβ_dφ;
 	}
 
 	distance(a: Place, b: Place): number {
-		const rAvg = 2/(1/this.rz(a.ф).r + 1/this.rz(b.ф).r);
+		const rAvg = 2/(1/this.rz(a.φ).r + 1/this.rz(b.φ).r);
 		const sToroidal = rAvg * localizeInRange(Math.abs(a.λ - b.λ), -Math.PI, Math.PI);
-		const aβ = Math.atan2(this.elongation*Math.sin(a.ф), Math.cos(a.ф));
-		const bβ = Math.atan2(this.elongation*Math.sin(b.ф), Math.cos(b.ф));
+		const aβ = Math.atan2(this.elongation*Math.sin(a.φ), Math.cos(a.φ));
+		const bβ = Math.atan2(this.elongation*Math.sin(b.φ), Math.cos(b.φ));
 		const sPoloidal = this.minorRadius*(
 			(1 + this.elongation)/2*localizeInRange(aβ - bβ, -Math.PI, Math.PI) -
 			(1 - this.elongation)/2*Math.sin(aβ - bβ)*Math.cos(aβ + bβ));

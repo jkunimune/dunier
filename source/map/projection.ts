@@ -21,7 +21,7 @@ import {linterp, localizeInRange} from "../utilities/miscellaneus.js";
  */
 export class MapProjection {
 	public readonly surface: Surface;
-	private readonly фRef: number[];
+	private readonly φRef: number[];
 	private readonly yRef: number[];
 	private readonly dx_dλRef: number[];
 	private readonly yCenter: number;
@@ -29,14 +29,14 @@ export class MapProjection {
 	/**
 	 * define a pseudoconic map projection with lookup tables for the y coordinate and x scale along the prime meridian.
 	 * @param surface the surface on which points exist before we project them
-	 * @param фRef the latitudes at which y and dx/dλ are defined (must be evenly spaced)
+	 * @param φRef the latitudes at which y and dx/dλ are defined (must be evenly spaced)
 	 * @param yRef the y coordinate of the prime meridian at each reference latitude (must all be finite)
 	 * @param dx_dλRef the horizontal scale along each reference latitude (equal to the parallel's length divided by 2π)
 	 * @param yCenter the center of the parallels if the parallels are concentric arcs, or ±Infinity if the parallels are straight lines
 	 */
-	private constructor(surface: Surface, фRef: number[], yRef: number[], dx_dλRef: number[], yCenter: number) {
+	private constructor(surface: Surface, φRef: number[], yRef: number[], dx_dλRef: number[], yCenter: number) {
 		// check the inputs
-		if (фRef.length !== yRef.length || yRef.length !== dx_dλRef.length)
+		if (φRef.length !== yRef.length || yRef.length !== dx_dλRef.length)
 			throw new Error("these inputs' lengths don't match.");
 		for (const y of yRef)
 			if (!isFinite(y))
@@ -44,15 +44,15 @@ export class MapProjection {
 		for (const dx_dλ of dx_dλRef)
 			if (dx_dλ < 0 || !isFinite(dx_dλ))
 				throw new Error("these reference parallel lengths must be finite and nonnegative.");
-		for (let i = 1; i < фRef.length; i ++) {
-			if (фRef[i] <= фRef[i - 1])
+		for (let i = 1; i < φRef.length; i ++) {
+			if (φRef[i] <= φRef[i - 1])
 				throw new Error("these reference latitudes must be monotonicly increasing.");
 			if (yRef[i] >= yRef[i - 1])
 				throw new Error("these reference y values must be monotonicly decreasing (going up).");
 		}
 
 		this.surface = surface;
-		this.фRef = фRef;
+		this.φRef = φRef;
 		this.yRef = yRef;
 		this.dx_dλRef = dx_dλRef;
 		this.yCenter = yCenter;
@@ -65,16 +65,16 @@ export class MapProjection {
 	 */
 	public projectPoint(point: Place): Point {
 		if (isFinite(this.yCenter)) {
-			const r = this.y(point.ф) - this.yCenter;
+			const r = this.y(point.φ) - this.yCenter;
 			if (r !== 0) {
-				const θ = this.dx_dλ(point.ф)*point.λ/r;
+				const θ = this.dx_dλ(point.φ)*point.λ/r;
 				return this.convertPolarToCartesian({r: r, θ: θ});
 			}
 			else
 				return {x: 0, y: this.yCenter};
 		}
 		else
-			return {x: this.dx_dλ(point.ф)*point.λ, y: this.y(point.ф)};
+			return {x: this.dx_dλ(point.φ)*point.λ, y: this.y(point.φ)};
 	}
 
 	/**
@@ -90,30 +90,30 @@ export class MapProjection {
 				r = -r;
 				θ = localizeInRange(θ + Math.PI, -Math.PI, Math.PI);
 			}
-			const ф = this.ф(r + this.yCenter);
-			const λ = r*θ/this.dx_dλ(ф);
-			return {ф: ф, λ: λ};
+			const φ = this.φ(r + this.yCenter);
+			const λ = r*θ/this.dx_dλ(φ);
+			return {φ: φ, λ: λ};
 		}
 		else {
-			const ф = this.ф(point.y);
-			const λ = point.x/this.dx_dλ(ф);
-			return {ф: ф, λ: λ};
+			const φ = this.φ(point.y);
+			const λ = point.x/this.dx_dλ(φ);
+			return {φ: φ, λ: λ};
 		}
 	}
 
 	/**
 	 * generate some <path> segments to trace a line of constant latitude between two longitudes.
-	 * @param ф the relative latitude in radians
+	 * @param φ the relative latitude in radians
 	 * @param λ0 the relative starting longitude in the range [-π, π]
 	 * @param λ1 the relative ending longitude in the range [-π, π]
 	 * @return the Cartesian path in km
 	 */
-	public projectParallel(λ0: number, λ1: number, ф: number): PathSegment[] {
-		if (this.dx_dλ(ф) > 0) {
+	public projectParallel(λ0: number, λ1: number, φ: number): PathSegment[] {
+		if (this.dx_dλ(φ) > 0) {
 			if (isFinite(this.yCenter)) {
-				const r = this.y(ф) - this.yCenter;
-				const θ0 = this.dx_dλ(ф)*λ0/r;
-				const θ1 = this.dx_dλ(ф)*λ1/r;
+				const r = this.y(φ) - this.yCenter;
+				const θ0 = this.dx_dλ(φ)*λ0/r;
+				const θ1 = this.dx_dλ(φ)*λ1/r;
 				const {x, y} = this.convertPolarToCartesian({r: r, θ: θ1});
 				const sweepFlag = (θ1 > θ0) ? 0 : 1;
 				if (Math.abs(θ1 - θ0) <= Math.PI)
@@ -127,7 +127,7 @@ export class MapProjection {
 					];
 			}
 			else {	// if the parallels are actually strait lines, just draw a strait line
-				const {x, y} = this.projectPoint({ф: ф, λ: λ1});
+				const {x, y} = this.projectPoint({φ: φ, λ: λ1});
 				return [{type: 'L', args: [x, y]}];
 			}
 		}
@@ -138,35 +138,35 @@ export class MapProjection {
 
 	/**
 	 * generate some <path> segments to trace a line of constant longitude between two latitudes.
-	 * @param ф0 the relative starting latitude in radians
-	 * @param ф1 the relative ending latitude in radians
+	 * @param φ0 the relative starting latitude in radians
+	 * @param φ1 the relative ending latitude in radians
 	 * @param λ the relative longitude in the range [-π, π]
 	 * @return the Cartesian path in km
 	 */
-	public projectMeridian(ф0: number, ф1: number, λ: number): PathSegment[] {
+	public projectMeridian(φ0: number, φ1: number, λ: number): PathSegment[] {
 		// bild the path as a sequence of line segments
 		const path = [];
 		// start by identifying the reference latitude closest to each endpoint
 		let i0, i1;
-		if (ф1 > ф0) {
+		if (φ1 > φ0) {
 			i0 = Math.floor(
-				(ф0 - this.фRef[0])/(this.фRef[this.фRef.length-1] - this.фRef[0])*(this.фRef.length-1)) + 1; // TODO: use bezier curves
+				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) + 1; // TODO: use bezier curves
 			i1 = Math.ceil(
-				(ф1 - this.фRef[0])/(this.фRef[this.фRef.length-1] - this.фRef[0])*(this.фRef.length-1));
+				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
 		}
 		else {
 			i0 = Math.ceil(
-				(ф0 - this.фRef[0])/(this.фRef[this.фRef.length-1] - this.фRef[0])*(this.фRef.length-1)) - 1;
+				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) - 1;
 			i1 = Math.floor(
-				(ф1 - this.фRef[0])/(this.фRef[this.фRef.length-1] - this.фRef[0])*(this.фRef.length-1));
+				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
 		}
 		// add a vertex to the path for every reference latitude between the two endpoints
 		for (let i = i0; i !== i1; i += Math.sign(i1 - i0)) {
-			const {x, y} = this.projectPoint({ф: this.фRef[i], λ: λ});
+			const {x, y} = this.projectPoint({φ: this.φRef[i], λ: λ});
 			path.push({type: 'L', args: [x, y]});
 		}
 		// then a final vertex for the destination latitude
-		const {x, y} = this.projectPoint({ф: ф1, λ: λ});
+		const {x, y} = this.projectPoint({φ: φ1, λ: λ});
 		path.push({type: 'L', args: [x, y]});
 		return path;
 	}
@@ -177,7 +177,7 @@ export class MapProjection {
 	wrapsAround(): boolean {
 		if (!isFinite(this.yCenter))
 			return false;
-		for (let i = 0; i < this.фRef.length; i ++)
+		for (let i = 0; i < this.φRef.length; i ++)
 			if (Math.abs(this.yRef[i] - this.yCenter) - this.dx_dλRef[i] > 1e-8*this.surface.height)
 				return false;
 		return true;
@@ -185,15 +185,15 @@ export class MapProjection {
 
 	/**
 	 * quantify how nondifferentiable the prime meridian is at this latitude, if at all
-	 * @param ф the latitude at which to check, in radians
+	 * @param φ the latitude at which to check, in radians
 	 * @return a number near 1 if the prime meridian is smooth at that point,
 	 *         a number less than 1 if it's cuspy, and
 	 *         a number much less than 1 if this point should theoreticly diverge to infinity
 	 *         (in practice it doesn't get very low for asymptotes; maybe .6 for a Mercator pole).
 	 */
-	differentiability(ф: number): number {
+	differentiability(φ: number): number {
 		const n = this.surface.refLatitudes.length;
-		const i = Math.min(Math.floor((ф - this.surface.фMin)/(this.surface.фMax - this.surface.фMin)*(n - 1)), n - 2);
+		const i = Math.min(Math.floor((φ - this.surface.φMin)/(this.surface.φMax - this.surface.φMin)*(n - 1)), n - 2);
 		// choose three refLatitudes intervals that are near the point
 		let iMin, iMax;
 		if (i < 2) {
@@ -234,11 +234,11 @@ export class MapProjection {
 
 	/**
 	 * calculate the y coordinate of the point on the central meridian with the given latitude
-	 * @param ф the latitude in radians
+	 * @param φ the latitude in radians
 	 * @return the y coordinate in kilometers
 	 */
-	private y(ф: number): number {
-		return linterp(ф, this.фRef, this.yRef); // TODO: use better interpolation
+	private y(φ: number): number {
+		return linterp(φ, this.φRef, this.yRef); // TODO: use better interpolation
 	}
 
 	/**
@@ -248,18 +248,18 @@ export class MapProjection {
 	 * @param y
 	 * @private
 	 */
-	private ф(y: number): number {
-		return linterp(y, this.yRef.slice().reverse(), this.фRef.slice().reverse());
+	private φ(y: number): number {
+		return linterp(y, this.yRef.slice().reverse(), this.φRef.slice().reverse());
 	}
 
 	/**
 	 * calculate the one-radian arc length for the parallel at the given latitude.
 	 * note that this is <i>not</i> the radius of the arc; it also folds in the angular scale.
-	 * @param ф the latitude in radians
+	 * @param φ the latitude in radians
 	 * @return the scale along the parallel in kilometers per radian
 	 */
-	private dx_dλ(ф: number): number {
-		return linterp(ф, this.фRef, this.dx_dλRef);
+	private dx_dλ(φ: number): number {
+		return linterp(φ, this.φRef, this.dx_dλRef);
 	}
 
 	/**
@@ -267,11 +267,11 @@ export class MapProjection {
 	 * projected or the region being focused on; it will always linearly translate latitude to y and longitude to x.
 	 */
 	public static equirectangular(surface: Surface): MapProjection {
-		const scale = Math.sqrt(surface.area/(2*Math.PI*(surface.фMax - surface.фMin)));
+		const scale = Math.sqrt(surface.area/(2*Math.PI*(surface.φMax - surface.φMin)));
 		return new MapProjection(
 			surface,
-			[surface.фMin, surface.фMax],
-			[-scale*surface.фMin, -scale*surface.фMax],
+			[surface.φMin, surface.φMax],
+			[-scale*surface.φMin, -scale*surface.φMax],
 			[scale, scale], Infinity);
 	}
 
@@ -279,19 +279,19 @@ export class MapProjection {
 	 * construct a Bonne projection with a standard parallel in the given range.  if the standard parallel is an equator,
 	 * this will resolve to the sinusoidal projection, and if it is a pole, this will resolve to the Stab-Werner projection.
 	 * @param surface the surface from which to project
-	 * @param фStd the latitude to use to set the curvature, in radians
+	 * @param φStd the latitude to use to set the curvature, in radians
 	 */
-	public static bonne(surface: Surface, фStd: number): MapProjection {
-		if (!(фStd >= surface.фMin && фStd <= surface.фMax))
-			throw new Error(`${фStd} is not a valid standard latitude`);
-		const yStd = -linterp(фStd, surface.refLatitudes, surface.cumulDistances);
-		let yCenter = yStd + surface.rz(фStd).r/surface.tangent(фStd).r;
-		const фRef = surface.refLatitudes; // do the necessary integrals
+	public static bonne(surface: Surface, φStd: number): MapProjection {
+		if (!(φStd >= surface.φMin && φStd <= surface.φMax))
+			throw new Error(`${φStd} is not a valid standard latitude`);
+		const yStd = -linterp(φStd, surface.refLatitudes, surface.cumulDistances);
+		let yCenter = yStd + surface.rz(φStd).r/surface.tangent(φStd).r;
+		const φRef = surface.refLatitudes; // do the necessary integrals
 		const yRef = []; // to get the y positions of the prime meridian
 		const dx_dλRef = []; // and the arc lengths corresponding to one radian
-		for (let i = 0; i < фRef.length; i ++) {
+		for (let i = 0; i < φRef.length; i ++) {
 			yRef.push(-surface.cumulDistances[i]);
-			dx_dλRef.push(surface.rz(фRef[i]).r);
+			dx_dλRef.push(surface.rz(φRef[i]).r);
 		}
 		// make sure the center is outside of the map area
 		if (yCenter < yRef[0] && yCenter > yRef[yRef.length - 1]) {
@@ -300,7 +300,7 @@ export class MapProjection {
 			else
 				yCenter = yRef[yRef.length - 1];
 		}
-		return new MapProjection(surface, фRef, yRef, dx_dλRef, yCenter);
+		return new MapProjection(surface, φRef, yRef, dx_dλRef, yCenter);
 	}
 
 	/**
@@ -308,18 +308,18 @@ export class MapProjection {
 	 * is an equator, this will resolve to the equidistant projection, and if it is a pole, this will resolve to the
 	 * azimuthal equidistant projection.
 	 * @param surface the surface from which to project
-	 * @param фStd the latitude to use to set the curvature, in radians
+	 * @param φStd the latitude to use to set the curvature, in radians
 	 */
-	public static conformalConic(surface: Surface, фStd: number): MapProjection {
-		if (!(фStd >= surface.фMin && фStd <= surface.фMax))
-			throw new Error(`${фStd} is not a valid standard latitude`);
+	public static conformalConic(surface: Surface, φStd: number): MapProjection {
+		if (!(φStd >= surface.φMin && φStd <= surface.φMax))
+			throw new Error(`${φStd} is not a valid standard latitude`);
 
 		// start by calculating the angular scale
-		let n = -surface.tangent(фStd).r;
+		let n = -surface.tangent(φStd).r;
 
 		// for cylindrical projections, you need to use a different function
 		if (Math.abs(n) < 1e-12)
-			return this.mercator(surface, фStd);
+			return this.mercator(surface, φStd);
 		// for nearly azimuthal projections, make it azimuthal
 		else if (n > 0.75)
 			n = 1;
@@ -327,16 +327,16 @@ export class MapProjection {
 			n = -1;
 
 		// build out from the standard parallel to get the radii
-		const ф = surface.refLatitudes;
-		const iStart = Math.round((фStd - ф[0])/(ф[1] - ф[0]));
+		const φ = surface.refLatitudes;
+		const iStart = Math.round((φStd - φ[0])/(φ[1] - φ[0]));
 		const fillingOrder = [];
-		for (let i = iStart; i < ф.length; i ++)
+		for (let i = iStart; i < φ.length; i ++)
 			fillingOrder.push(i);
 		for (let i = iStart - 1; i >= 0; i --)
 			fillingOrder.push(i);
 
 		// for each y you need to calculate
-		const y = Array(ф.length).fill(null);
+		const y = Array(φ.length).fill(null);
 		for (const i of fillingOrder) {
 			let iPrevius; // find a nearby reference off which to base it
 			if (i - 1 >= 0 && y[i - 1] !== null)
@@ -344,12 +344,12 @@ export class MapProjection {
 			else if (i + 1 < y.length && y[i + 1] !== null)
 				iPrevius = i + 1;
 			else {
-				y[i] = surface.rz(ф[i]).r/n; // or initialize the first one you find like so
+				y[i] = surface.rz(φ[i]).r/n; // or initialize the first one you find like so
 				continue;
 			}
-			const rPrevius = surface.rz(ф[iPrevius]).r;
+			const rPrevius = surface.rz(φ[iPrevius]).r;
 			const yPrevius = y[iPrevius];
-			const r = surface.rz(ф[i]).r;
+			const r = surface.rz(φ[i]).r;
 			const Δr = r - rPrevius;
 			const Δs = surface.cumulDistances[i] - surface.cumulDistances[iPrevius];
 			// be careful because there are many edge cases for which we must account
@@ -367,25 +367,25 @@ export class MapProjection {
 
 		// then do the arc lengths corresponding to one radian
 		const dx_dλRef = [];
-		for (let i = 0; i < ф.length; i ++)
+		for (let i = 0; i < φ.length; i ++)
 			dx_dλRef.push(y[i]*n);
 
-		return new MapProjection(surface, ф, y, dx_dλRef, 0);
+		return new MapProjection(surface, φ, y, dx_dλRef, 0);
 	}
 
 	/**
 	 * construct a mercator projection scaled to the given standard parallel.
 	 * @param surface the surface from which to project
-	 * @param фStd the standard parallel in radians
+	 * @param φStd the standard parallel in radians
 	 */
-	public static mercator(surface: Surface, фStd: number): MapProjection {
-		const dx_dλ = surface.rz(фStd).r;
-		const ф: number[] = surface.refLatitudes;
+	public static mercator(surface: Surface, φStd: number): MapProjection {
+		const dx_dλ = surface.rz(φStd).r;
+		const φ: number[] = surface.refLatitudes;
 		const r: number[] = [];
 		const y: number[] = [];
 		// do this integral to get the parallel position lookup table
-		for (let i = 0; i < ф.length; i ++) {
-			r.push(surface.rz(ф[i]).r);
+		for (let i = 0; i < φ.length; i ++) {
+			r.push(surface.rz(φ[i]).r);
 			const Δs = surface.cumulDistances[i] - surface.cumulDistances[i - 1];
 			if (i === 0) // for the southernmost parallel
 				y[i] = 0; // just initialize it at y = 0
@@ -394,12 +394,12 @@ export class MapProjection {
 			else
 				y[i] = y[i - 1] - dx_dλ*Δs/(r[i] - r[i - 1])*Math.log(r[i]/r[i - 1]); // otherwise use the exact solution
 		}
-		return new MapProjection(surface, ф, y, Array(ф.length).fill(dx_dλ), Infinity);
+		return new MapProjection(surface, φ, y, Array(φ.length).fill(dx_dλ), Infinity);
 	}
 
 	/**
 	 * construct an Equal Earth projection scaled to best represent the region between the two given parallels.
-	 * this is only a true Equal Earth projection when the surface is a sphere and фMin and фMax are ±π/2.  in all
+	 * this is only a true Equal Earth projection when the surface is a sphere and φMin and φMax are ±π/2.  in all
 	 * other cases, it's a generalization meant to mimic the spirit of the Equal Earth projection as best as possible,
 	 * scaled vertically and horizontally to minimize angular error between the given latitude bounds.
 	 * @param surface the surface from which to project
@@ -408,17 +408,17 @@ export class MapProjection {
 	public static equalEarth(surface: Surface, meanRadius: number): MapProjection {
 		if (!(meanRadius > 0))
 			throw new Error(`${meanRadius} is not a valid map width`);
-		const фRef = surface.refLatitudes;
+		const φRef = surface.refLatitudes;
 		const xRef = [];
 		const yRef = [0];
-		for (let i = 0; i < фRef.length; i ++) { // then set the widths
-			xRef.push(MapProjection.equalEarthShapeFunction(surface.rz(фRef[i]).r/meanRadius)*meanRadius);
+		for (let i = 0; i < φRef.length; i ++) { // then set the widths
+			xRef.push(MapProjection.equalEarthShapeFunction(surface.rz(φRef[i]).r/meanRadius)*meanRadius);
 			if (i > 0) { // and integrate the y values so that everything stays equal-area
 				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
 				yRef.push(yRef[i-1] - verAre / (2*Math.PI*(xRef[i-1] + xRef[i])/2));
 			}
 		}
-		return new MapProjection(surface, фRef, yRef, xRef, Infinity);
+		return new MapProjection(surface, φRef, yRef, xRef, Infinity);
 	}
 
 	/**

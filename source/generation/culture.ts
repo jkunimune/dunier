@@ -97,7 +97,7 @@ export class Culture {
 		// TODO: define mountainousness and add class for "mountainous"
 		if (homeland.surface.hasDayNightCycle)
 			this.klas.add("day_night_cycle");
-		if (homeland.surface.hasSeasons(homeland.ф))
+		if (homeland.surface.hasSeasons(homeland.φ))
 			this.klas.add("four_seasons");
 		if (homeland === government.capital)
 			this.klas.add("nation_state");

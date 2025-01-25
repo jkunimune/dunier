@@ -33,10 +33,10 @@ export class Disc extends Surface {
 
 	partition(): {triangles: Vertex[], nodos: Tile[]} {
 		const nodos = [
-			new Tile(null, {ф: Math.atan(1/8), λ: 0}, this),
-			new Tile(null, {ф: Math.atan(1/8), λ: Math.PI/2}, this),
-			new Tile(null, {ф: Math.atan(1/8), λ: Math.PI}, this),
-			new Tile(null, {ф: Math.atan(1/8), λ: 3*Math.PI/2}, this),
+			new Tile(null, {φ: Math.atan(1/8), λ: 0}, this),
+			new Tile(null, {φ: Math.atan(1/8), λ: Math.PI/2}, this),
+			new Tile(null, {φ: Math.atan(1/8), λ: Math.PI}, this),
+			new Tile(null, {φ: Math.atan(1/8), λ: 3*Math.PI/2}, this),
 		];
 
 		const triangles = [
@@ -47,10 +47,10 @@ export class Disc extends Surface {
 		return {triangles: triangles, nodos: nodos};
 	}
 
-	insolation(ф: number): number {
+	insolation(φ: number): number {
 		// this polynomial is based on some fitting done in source/python/simulate_perspective.py
 		const cos_ψ = Math.cos(2*this.effectiveObliquity);
-		const ρ = this.firmamentHite/this.equatorRadius/2/Math.tan(ф);
+		const ρ = this.firmamentHite/this.equatorRadius/2/Math.tan(φ);
 		return 7.0/(
 			(3.865*cos_ψ + 6.877) -
 			(44.803*cos_ψ +  1.216)*Math.pow(ρ, 2) +
@@ -58,45 +58,45 @@ export class Disc extends Surface {
 			(38.728*cos_ψ -  8.049)*Math.pow(ρ, 6));
 	}
 
-	hasSeasons(ф: number): boolean {
-		return Math.abs(this.firmamentHite/Math.tan(ф) - this.equatorRadius) > this.effectiveObliquity/(Math.PI/2)*this.equatorRadius;
+	hasSeasons(φ: number): boolean {
+		return Math.abs(this.firmamentHite/Math.tan(φ) - this.equatorRadius) > this.effectiveObliquity/(Math.PI/2)*this.equatorRadius;
 	}
 
-	windConvergence(ф: number): number {
-		return 1.5*(Math.sin(2*ф)**2 + Math.sin(3*ф)**2 - 0.5);
+	windConvergence(φ: number): number {
+		return 1.5*(Math.sin(2*φ)**2 + Math.sin(3*φ)**2 - 0.5);
 	}
 
-	windVelocity(ф: number): {north: number, east: number} {
-		return {north: Math.sin(2*ф), east: 0};
+	windVelocity(φ: number): {north: number, east: number} {
+		return {north: Math.sin(2*φ), east: 0};
 	}
 
-	ф(point: {r: number, z: number}): number {
+	φ(point: {r: number, z: number}): number {
 		return Math.atan(this.firmamentHite/point.r);
 	}
 
-	rz(ф: number): {r: number, z: number} {
-		if (ф === Math.PI/2)
+	rz(φ: number): {r: number, z: number} {
+		if (φ === Math.PI/2)
 			return {r: 0, z: 0};
 		else
-			return {r: this.firmamentHite/Math.tan(ф), z: 0};
+			return {r: this.firmamentHite/Math.tan(φ), z: 0};
 	}
 
 	tangent(_: number): {r: number, z: number} {
 		return {r: -1, z: 0};
 	}
 
-	ds_dф(ф: number): number {
-		return this.firmamentHite*Math.pow(Math.sin(ф), -2);
+	ds_dφ(φ: number): number {
+		return this.firmamentHite*Math.pow(Math.sin(φ), -2);
 	}
 
 	distance(a: Place, b: Place): number {
-		const ar = this.firmamentHite/Math.tan(a.ф);
-		const br = this.firmamentHite/Math.tan(b.ф);
+		const ar = this.firmamentHite/Math.tan(a.φ);
+		const br = this.firmamentHite/Math.tan(b.φ);
 		return Math.sqrt(ar*ar + br*br - 2*ar*br*Math.cos(a.λ - b.λ));
 	}
 
 	isOnEdge(place: Place): boolean {
-		return place.ф === this.фMin;
+		return place.φ === this.φMin;
 	}
 	
 	computeEdgeVertexLocation(tileL: Tile, tileR: Tile): { pos: Vector; coordinates: Place } {
@@ -111,6 +111,6 @@ export class Disc extends Surface {
 		const x = x0 + vx*t;
 		const y = y0 + vy*t;
 		const λ = Math.atan2(x, -y);
-		return {pos: new Vector(x, y, 0), coordinates: {ф: this.фMin, λ: λ}};
+		return {pos: new Vector(x, y, 0), coordinates: {φ: this.φMin, λ: λ}};
 	}
 }

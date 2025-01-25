@@ -55,7 +55,7 @@ export interface Point {
  */
 export interface Place {
 	/** the latitude in radians */
-	ф: number;
+	φ: number;
 	/** the longitude in radians */
 	λ: number;
 }
@@ -82,6 +82,6 @@ export function assert_xy(location: Location): Point {
  * geographic functions
  * @param location
  */
-export function assert_фλ(location: Location): Place {
-	return { ф: location.s, λ: location.t };
+export function assert_φλ(location: Location): Place {
+	return { φ: location.s, λ: location.t };
 }

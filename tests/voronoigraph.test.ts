@@ -9,11 +9,11 @@ import {Vector} from "../source/utilities/geometry.js";
 const surface = new Disc(Math.sqrt(7)/2, 0, false);
 surface.initialize();
 const tiles = [
-	new Tile(0, surface.фλ(new Vector(-Math.sqrt(3)/2, 0, 0)), surface),
-	new Tile(1, surface.фλ(new Vector(0, -1/2, 0)), surface),
-	new Tile(2, surface.фλ(new Vector(0, 0, 0)), surface),
-	new Tile(3, surface.фλ(new Vector(0, 1/2, 0)), surface),
-	new Tile(4, surface.фλ(new Vector(Math.sqrt(3)/2, 0, 0)), surface),
+	new Tile(0, surface.φλ(new Vector(-Math.sqrt(3)/2, 0, 0)), surface),
+	new Tile(1, surface.φλ(new Vector(0, -1/2, 0)), surface),
+	new Tile(2, surface.φλ(new Vector(0, 0, 0)), surface),
+	new Tile(3, surface.φλ(new Vector(0, 1/2, 0)), surface),
+	new Tile(4, surface.φλ(new Vector(Math.sqrt(3)/2, 0, 0)), surface),
 ];
 surface.populateWith(tiles);
 
@@ -113,8 +113,8 @@ describe("Edge", () => {
 			});
 			test("coarsest scale", () => {
 				expect(edge.getPath(Infinity)).toEqual([
-					expect.objectContaining({ф: edge.vertex0.ф, λ: edge.vertex0.λ}),
-					expect.objectContaining({ф: edge.vertex1.ф, λ: edge.vertex1.λ}),
+					expect.objectContaining({φ: edge.vertex0.φ, λ: edge.vertex0.λ}),
+					expect.objectContaining({φ: edge.vertex1.φ, λ: edge.vertex1.λ}),
 				]);
 			});
 		});
@@ -134,8 +134,8 @@ describe("Edge", () => {
 			});
 			test("coarsest scale", () => {
 				expect(edge.getPath(Infinity)).toEqual([
-					expect.objectContaining({ф: edge.vertex0.ф, λ: edge.vertex0.λ}),
-					expect.objectContaining({ф: edge.vertex1.ф, λ: edge.vertex1.λ}),
+					expect.objectContaining({φ: edge.vertex0.φ, λ: edge.vertex0.λ}),
+					expect.objectContaining({φ: edge.vertex1.φ, λ: edge.vertex1.λ}),
 				]);
 			});
 			test("illegal scale", () => {

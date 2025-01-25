@@ -53,18 +53,18 @@ export abstract class Surface implements Domain {
 	public height: number;
 	public axis: Vector; // orientation of geodetic coordinate system
 	public edge: Map<Tile, {prev: Tile, next: Tile}>;
-	readonly фMin: number;
-	readonly фMax: number;
+	readonly φMin: number;
+	readonly φMax: number;
 	readonly hasDayNightCycle: boolean;
 	refLatitudes: number[];
 	cumulAreas: number[];
 	cumulDistances: number[];
 
 
-	protected constructor(фMin: number, фMax: number, hasDayNightCycle: boolean) {
+	protected constructor(φMin: number, φMax: number, hasDayNightCycle: boolean) {
 		this.tiles = null;
-		this.фMin = фMin;
-		this.фMax = фMax;
+		this.φMin = φMin;
+		this.φMax = φMax;
 		this.axis = null;
 		this.edge = new Map();
 		this.hasDayNightCycle = hasDayNightCycle;
@@ -78,12 +78,12 @@ export abstract class Surface implements Domain {
 	 * do the general constructor stuff that has to be done after the subclass constructor
 	 */
 	initialize(): void {
-		this.refLatitudes = [this.фMin]; // fill in latitude-integrated values
+		this.refLatitudes = [this.φMin]; // fill in latitude-integrated values
 		this.cumulAreas = [0]; // for use in map projections
 		this.cumulDistances = [0];
 		const Δλ = 2*Math.PI;
 		for (let i = 1; i <= INTEGRATION_RESOLUTION; i ++) {
-			this.refLatitudes.push(this.фMin + (this.фMax - this.фMin)*i/INTEGRATION_RESOLUTION);
+			this.refLatitudes.push(this.φMin + (this.φMax - this.φMin)*i/INTEGRATION_RESOLUTION);
 			const north = this.rz(this.refLatitudes[i]);
 			const south = this.rz(this.refLatitudes[i - 1]);
 			const Δs = Math.hypot(north.r - south.r, north.z - south.z); // treat the surface as a series of cone segments
@@ -95,8 +95,8 @@ export abstract class Surface implements Domain {
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION]; // and record the totals as their own instance variables
 		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
-		this.axis = this.xyz({ф: 1, λ: Math.PI/2}).minus(this.xyz({ф: 1, λ: 0})).cross(
-			this.xyz({ф: 1, λ: Math.PI}).minus(this.xyz({ф: 1, λ: Math.PI/2}))).normalized(); // figure out which way the coordinate system points
+		this.axis = this.xyz({φ: 1, λ: Math.PI/2}).minus(this.xyz({φ: 1, λ: 0})).cross(
+			this.xyz({φ: 1, λ: Math.PI}).minus(this.xyz({φ: 1, λ: Math.PI/2}))).normalized(); // figure out which way the coordinate system points
 	}
 
 	/**
@@ -120,7 +120,7 @@ export abstract class Surface implements Domain {
 		for (const [ia, ib, ic] of triangulation.triangles) {
 			const {pos, coordinates} = Vertex.computeLocation(tiles[ia], tiles[ib], tiles[ic]);
 			// only create Vertices inside the surface domain; discard any that fall outside
-			if (coordinates.ф <= this.фMax && coordinates.ф >= this.фMin)
+			if (coordinates.φ <= this.φMax && coordinates.φ >= this.φMin)
 				this.vertices.add(new Vertex(tiles[ia], tiles[ib], tiles[ic], pos, coordinates)); // this will automatically generate the Edges
 		}
 		for (let i = 0; i < tiles.length; i ++) {
@@ -223,8 +223,8 @@ export abstract class Surface implements Domain {
 		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++) {
 			const λ = rng.uniform(-Math.PI, Math.PI);
 			const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
-			const ф = linterp(A, this.cumulAreas, this.refLatitudes);
-			tiles.push(new Tile(i, {ф: ф, λ: λ}, this)); // push a bunch of new ones
+			const φ = linterp(A, this.cumulAreas, this.refLatitudes);
+			tiles.push(new Tile(i, {φ: φ, λ: λ}, this)); // push a bunch of new ones
 		}
 		return tiles;
 	}
@@ -236,15 +236,15 @@ export abstract class Surface implements Domain {
 		const n = 2*resolution, m = 4*resolution;
 		const X = [], Y = [], Z = [], S = [];
 		for (let i = 0; i <= n; i ++) {
-			const ф = i/n*(this.фMax - this.фMin) + this.фMin; // map i to the valid range for ф
-			const s = this.insolation(ф);
+			const φ = i/n*(this.φMax - this.φMin) + this.φMin; // map i to the valid range for φ
+			const s = this.insolation(φ);
 			X.push([]);
 			Y.push([]);
 			Z.push([]);
 			S.push([]);
 			for (let j = 0; j <= m; j ++) {
 				const λ = j/m*2*Math.PI; // I think λ always represents some [0, 2*pi) angle
-				const {x, y, z} = this.xyz({ф: ф, λ: λ});
+				const {x, y, z} = this.xyz({φ: φ, λ: λ});
 				X[i].push(x);
 				Y[i].push(y);
 				Z[i].push(z);
@@ -257,9 +257,9 @@ export abstract class Surface implements Domain {
 	/**
 	 * return the 2D parameterization corresponding to the given cartesian coordinates
 	 */
-	фλ(point: {x: number, y: number, z: number}): Place {
+	φλ(point: {x: number, y: number, z: number}): Place {
 		return {
-			ф: this.ф({r: Math.hypot(point.x, point.y), z: point.z}),
+			φ: this.φ({r: Math.hypot(point.x, point.y), z: point.z}),
 			λ: Math.atan2(point.x, -point.y)};
 	}
 
@@ -267,7 +267,7 @@ export abstract class Surface implements Domain {
 	 * return the 3D cartesian coordinate vector corresponding to the given parameters
 	 */
 	xyz(place: Place): Vector {
-		const {r, z} = this.rz(place.ф);
+		const {r, z} = this.rz(place.φ);
 		return new Vector(r*Math.sin(place.λ), -r*Math.cos(place.λ), z);
 	}
 
@@ -276,7 +276,7 @@ export abstract class Surface implements Domain {
 	 * to be on this Surface.
 	 */
 	normal(place: Place): Vector {
-		const tangent = this.tangent(place.ф);
+		const tangent = this.tangent(place.φ);
 		return new Vector(
 			tangent.z*Math.sin(place.λ),
 			-tangent.z*Math.cos(place.λ),
@@ -300,42 +300,42 @@ export abstract class Surface implements Domain {
 	/**
 	 * return the amount of solar radiation at a latitude, normalized to average to 1.
 	 */
-	abstract insolation(ф: number): number;
+	abstract insolation(φ: number): number;
 
 	/**
 	 * whether the given latitude is nontropical
 	 */
-	abstract hasSeasons(ф: number): boolean;
+	abstract hasSeasons(φ: number): boolean;
 
 	/**
 	 * return the amount of moisture accumulation at a latitude, normalized to peak at 1.
 	 */
-	abstract windConvergence(ф: number): number;
+	abstract windConvergence(φ: number): number;
 
 	/**
 	 * for the purposes of the orographic effect, return a dimensionless tangent velocity.
 	 */
-	abstract windVelocity(ф: number): {north: number, east: number};
+	abstract windVelocity(φ: number): {north: number, east: number};
 
 	/**
 	 * return the parametric latitude corresponding to the given cylindrical coordinates
 	 */
-	abstract ф(point: {r: number, z: number}): number;
+	abstract φ(point: {r: number, z: number}): number;
 
 	/**
 	 * return the 2D cylindrical coordinate vector corresponding to the given parameters
 	 */
-	abstract rz(ф: number): {r: number, z: number};
+	abstract rz(φ: number): {r: number, z: number};
 
 	/**
 	 * return the local cylindrical gradient (that is, dr/ds and dz/ds)
 	 */
-	abstract tangent(ф: number): {r: number, z: number};
+	abstract tangent(φ: number): {r: number, z: number};
 
 	/**
 	 * return the local length-to-latitude rate [km/rad]
 	 */
-	abstract ds_dф(ф: number): number;
+	abstract ds_dφ(φ: number): number;
 
 	/**
 	 * orthodromic distance from A to B on the surface (it's okay if it's just
@@ -357,7 +357,7 @@ export abstract class Surface implements Domain {
 export class Tile {
 	public readonly surface: Surface;
 	public readonly index: number;
-	public readonly ф: number;
+	public readonly φ: number;
 	public readonly λ: number;
 	public readonly pos: Vector;
 	public readonly normal: Vector;
@@ -384,7 +384,7 @@ export class Tile {
 	constructor(index: number, position: Place, surface: Surface) {
 		this.surface = surface;
 		this.index = index;
-		this.ф = position.ф;
+		this.φ = position.φ;
 		this.λ = position.λ;
 		this.pos = surface.xyz(this);
 		const basis = orthogonalBasis(surface.normal(this), true, surface.axis, this.pos.times(-1));
@@ -492,7 +492,7 @@ export class EmptySpace {
  * equivalent to a Delaunay triangle.
  */
 export class Vertex {
-	public ф: number;
+	public φ: number;
 	public λ: number;
 	public tiles: (Tile | EmptySpace)[];
 	public edges: (Edge | null)[];
@@ -529,7 +529,7 @@ export class Vertex {
 			z += projectedVertex.z/3;
 		// put the resulting vector back in the global coordinate system
 		const pos = u.times(x).plus(v.times(y)).plus(n.times(z));
-		const coordinates = a.surface.фλ(pos); // finally, put it back in ф-λ space
+		const coordinates = a.surface.φλ(pos); // finally, put it back in φ-λ space
 		return {pos: pos, coordinates: coordinates};
 	}
 
@@ -544,7 +544,7 @@ export class Vertex {
 	constructor(a: Tile, b: Tile, c: Tile | EmptySpace, pos: Vector = null, coordinates: Place = null) {
 		this.pos = pos;
 		if (coordinates !== null) {
-			this.ф = coordinates.ф;
+			this.φ = coordinates.φ;
 			this.λ = coordinates.λ;
 		}
 
@@ -681,7 +681,7 @@ export class Edge {
 			// put it in the correct coordinate system
 			newPathPointsInGeoCoords.push(this.vertex0);
 			for (let i = 1; i < newPathPointsInEdgeCoords.length - 1; i ++)
-				newPathPointsInGeoCoords.push(this.tileL.surface.фλ(this.fromEdgeCoords(newPathPointsInEdgeCoords[i])));
+				newPathPointsInGeoCoords.push(this.tileL.surface.φλ(this.fromEdgeCoords(newPathPointsInEdgeCoords[i])));
 			newPathPointsInGeoCoords.push(this.vertex1);
 			// save it to this.paths
 			this.paths.push({resolution: this.currentResolution, points: newPathPointsInGeoCoords});

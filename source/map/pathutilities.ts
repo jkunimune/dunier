@@ -4,7 +4,7 @@
  */
 import {
 	assert_xy,
-	assert_фλ,
+	assert_φλ,
 	endpoint,
 	Location,
 	PathSegment,
@@ -42,9 +42,9 @@ export function transformInput(center: number, segments: PathSegment[]): PathSeg
 	else {
 		const output: PathSegment[] = [];
 		for (const segment of segments) {
-			let [фi, λ] = segment.args;
+			let [φi, λ] = segment.args;
 			λ = localizeInRange(λ - center, - π, π); // shift to the central meridian and snap the longitude into the [-π, π] domain
-			output.push({type: segment.type, args: [фi, λ]});
+			output.push({type: segment.type, args: [φi, λ]});
 		}
 		return output;
 	}
@@ -101,28 +101,28 @@ export function applyProjectionToPath(
 	for (let i = 0; i < inPoints.length; i ++) {
 		if (inPoints[i].type === 'Λ') { // do the projection
 			// call projectMeridian for meridians
-			const [ф0, λ] = inPoints[i-1].args;
-			const [ф1, _] = inPoints[i].args;
+			const [φ0, λ] = inPoints[i-1].args;
+			const [φ1, _] = inPoints[i].args;
 			console.assert(λ === _, "meridians must start and end at the same longitude.");
-			outPoints.push(...projection.projectMeridian(ф0, ф1, λ));
+			outPoints.push(...projection.projectMeridian(φ0, φ1, λ));
 		}
 		else if (inPoints[i].type === 'Φ') {
 			// call projectParallel for parallels
-			const [ф, λ0] = inPoints[i-1].args;
+			const [φ, λ0] = inPoints[i-1].args;
 			const [_, λ1] = inPoints[i].args;
-			console.assert(ф === _, "parallels must start and end at the same latitude.");
-			outPoints.push(...projection.projectParallel(λ0, λ1, ф));
+			console.assert(φ === _, "parallels must start and end at the same latitude.");
+			outPoints.push(...projection.projectParallel(λ0, λ1, φ));
 		}
 		else if (inPoints[i].type === 'M') {
 			// call projectPoint for movetos
-			const point = assert_фλ(endpoint(inPoints[i]));
+			const point = assert_φλ(endpoint(inPoints[i]));
 			const {x, y} = projection.projectPoint(point);
 			outPoints.push({type: 'M', args: [x, y]});
 		}
 		else if (inPoints[i].type === 'L') {
 			// for continuus segments, don't call projectPoint just yet
-			const pendingInPoints = [assert_фλ(endpoint(inPoints[i]))]; // add the desired destination to a queue
-			const completedInPoints = [assert_фλ(endpoint(inPoints[i - 1]))];
+			const pendingInPoints = [assert_φλ(endpoint(inPoints[i]))]; // add the desired destination to a queue
+			const completedInPoints = [assert_φλ(endpoint(inPoints[i - 1]))];
 			while (pendingInPoints.length > 0) { // now, as long as there are points in the pending cue
 				const nextInPoint = pendingInPoints.pop(); // take the next point
 				const nextOutPoint = projection.projectPoint(nextInPoint); // project it
@@ -134,13 +134,13 @@ export function applyProjectionToPath(
 				}
 				else { // if it's too long
 					pendingInPoints.push(nextInPoint); // put it back
-					const intermediateInPoint = assert_фλ(getMidpoint(
-						{type: 'M', args: [lastInPoint.ф, lastInPoint.λ]},
-						{type: 'L', args: [nextInPoint.ф, nextInPoint.λ]}, true)); // that means we need to plot a midpoint first
+					const intermediateInPoint = assert_φλ(getMidpoint(
+						{type: 'M', args: [lastInPoint.φ, lastInPoint.λ]},
+						{type: 'L', args: [nextInPoint.φ, nextInPoint.λ]}, true)); // that means we need to plot a midpoint first
 					pendingInPoints.push(intermediateInPoint);
 
 					if (pendingInPoints.length + outPoints.length > 100000)
-						throw new Error(`why can't I find a point between [${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.ф},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}]`);
+						throw new Error(`why can't I find a point between [${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.φ},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}]`);
 				}
 			}
 		}
@@ -804,11 +804,11 @@ export function getEdgeCrossings(
 		// if we're on a geographic surface
 		if (periodic) {
 			// find all the geo edge crossings
-			const crossing = getGeoEdgeCrossing(assert_фλ(segmentStart), segment, assert_фλ(edgeStart), edge);
+			const crossing = getGeoEdgeCrossing(assert_φλ(segmentStart), segment, assert_φλ(edgeStart), edge);
 			if (crossing !== null) {
 				const { place0, place1 } = crossing;
-				crossings.push({ intersect0: { s: place0.ф, t: place0.λ },
-					intersect1: { s: place1.ф, t: place1.λ },
+				crossings.push({ intersect0: { s: place0.φ, t: place0.λ },
+					intersect1: { s: place1.φ, t: place1.λ },
 					loopIndex: loopIndex }); // note that if this is a double edge, it is always exiting
 			}
 		}
@@ -884,7 +884,7 @@ function getMapEdgeCrossings(segmentStart: Point, segment: PathSegment, edgeStar
 function getGeoEdgeCrossing(
 	segmentStart: Place, segment: PathSegment, edgeStart: Place, edge: PathSegment,
 ): { place0: Place, place1: Place } | null {
-	const edgeEnd = assert_фλ(endpoint(edge));
+	const edgeEnd = assert_φλ(endpoint(edge));
 
 	if (edge.type !== 'Φ' && edge.type !== 'Λ')
 		throw new Error(`I don't think you're allowd to use ${edge.type} here`);
@@ -900,30 +900,30 @@ function getGeoEdgeCrossing(
 			newSegmentType = segment.type;
 		const newEdgeType = (edge.type === 'Φ') ? 'Λ' : 'Φ';
 		const crossing = getGeoEdgeCrossing(
-			{ф: segmentStart.λ, λ: -segmentStart.ф},
+			{φ: segmentStart.λ, λ: -segmentStart.φ},
 			{type: newSegmentType, args: [segment.args[1], -segment.args[0]]}, // TODO this won't work for bezier curves
-			{ф: edgeStart.λ, λ: -edgeStart.ф},
+			{φ: edgeStart.λ, λ: -edgeStart.φ},
 			{type: newEdgeType, args: [edge.args[1], -edge.args[0]]},
 		);
 		if (crossing === null)
 			return null;
 		else
 			return {
-				place0: {λ: crossing.place0.ф, ф: -crossing.place0.λ},
-				place1: {λ: crossing.place1.ф, ф: -crossing.place1.λ},
+				place0: {λ: crossing.place0.φ, φ: -crossing.place0.λ},
+				place1: {λ: crossing.place1.φ, φ: -crossing.place1.λ},
 			};
 	}
 
-	const [ф0, λ0] = [segmentStart.ф, segmentStart.λ]; // extract the input coordinates
-	const [ф1, λ1] = segment.args;
-	const фX = edgeStart.ф;
+	const [φ0, λ0] = [segmentStart.φ, segmentStart.λ]; // extract the input coordinates
+	const [φ1, λ1] = segment.args;
+	const φX = edgeStart.φ;
 	// if it's a regular line crossing a parallel
 	if (segment.type === 'L') {
-		const ф̄0 = localizeInRange(ф0, фX, фX + 2*π);
-		const ф̄1 = localizeInRange(ф1, фX, фX + 2*π);
-		if (Math.abs(ф̄0 - ф̄1) >= π) { // call the getParallelCrossing function
+		const φ̄0 = localizeInRange(φ0, φX, φX + 2*π);
+		const φ̄1 = localizeInRange(φ1, φX, φX + 2*π);
+		if (Math.abs(φ̄0 - φ̄1) >= π) { // call the getParallelCrossing function
 			const {place0, place1} = getParallelCrossing(
-				ф̄0, λ0, ф̄1, λ1, фX);
+				φ̄0, λ0, φ̄1, λ1, φX);
 			if (isBetween(place0.λ, edgeStart.λ, edgeEnd.λ))
 				return { place0: place0, place1: place1 };
 		}
@@ -935,8 +935,8 @@ function getGeoEdgeCrossing(
 	// if it's a meridian crossing a parallel
 	else if (segment.type === 'Λ') {
 		if (isBetween(λ0, edgeStart.λ, edgeEnd.λ)) { // crossings with meridians are simple
-			if ((ф0 >= фX) !== (ф1 >= фX)) {
-				const place = {ф: фX, λ: segmentStart.λ};
+			if ((φ0 >= φX) !== (φ1 >= φX)) {
+				const place = {φ: φX, λ: segmentStart.λ};
 				return { place0: place, place1: place };
 			}
 		}
@@ -952,17 +952,17 @@ function getGeoEdgeCrossing(
  * compute the coordinates at which the line between these two points crosses a particular parallel.  two Places
  * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.  if the
  * parallel is not the antiequator
- * @param ф0 the transformed latitude of the zeroth point
+ * @param φ0 the transformed latitude of the zeroth point
  * @param λ0 the transformed longitude of the zeroth point
- * @param ф1 the transformed latitude of the oneth point
+ * @param φ1 the transformed latitude of the oneth point
  * @param λ1 the transformed longitude of the oneth point
- * @param фX the latitude of the parallel
+ * @param φX the latitude of the parallel
  */
 function getParallelCrossing(
-	ф0: number, λ0: number, ф1: number, λ1: number, фX = π
+	φ0: number, λ0: number, φ1: number, λ1: number, φX = π
 ): { place0: Place, place1: Place } {
-	const weit0 = localizeInRange(ф1 - фX, -π, π);
-	const weit1 = localizeInRange(фX - ф0, -π, π);
+	const weit0 = localizeInRange(φ1 - φX, -π, π);
+	const weit1 = localizeInRange(φX - φ0, -π, π);
 	let λX;
 	if (weit0 === 0)
 		λX = λ1; // avoid doing division if you can help it (because of the roundoff)
@@ -978,15 +978,15 @@ function getParallelCrossing(
 		λX = localizeInRange(
 			(weit0*λ0 + weit1*λ1)/(weit0 + weit1), -π, π);
 	}
-	if (Math.abs(фX) === π && ф0 < ф1)
-		return { place0: { ф: -π, λ: λX },
-			place1: { ф:  π, λ: λX } };
-	else if (Math.abs(фX) === π)
-		return { place0: { ф:  π, λ: λX },
-			place1: { ф: -π, λ: λX } };
+	if (Math.abs(φX) === π && φ0 < φ1)
+		return { place0: { φ: -π, λ: λX },
+			place1: { φ:  π, λ: λX } };
+	else if (Math.abs(φX) === π)
+		return { place0: { φ:  π, λ: λX },
+			place1: { φ: -π, λ: λX } };
 	else
-		return { place0: { ф: фX, λ: λX },
-			place1: { ф: фX, λ: λX } };
+		return { place0: { φ: φX, λ: λX },
+			place1: { φ: φX, λ: λX } };
 }
 
 /**
@@ -1059,7 +1059,7 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 			// if it doesn't end where it started
 			const endsOnStart = start.s === end.s && start.t === end.t;
 			// and it doesn't start and end on edges
-			let endsOnEdge = domain.isOnEdge(assert_фλ(start)) && domain.isOnEdge(assert_фλ(end));
+			let endsOnEdge = domain.isOnEdge(assert_φλ(start)) && domain.isOnEdge(assert_φλ(end));
 			// then the Path isn't closed
 			if (!endsOnStart && !endsOnEdge)
 				return false;
