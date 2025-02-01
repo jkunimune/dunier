@@ -106,17 +106,18 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 }
 
 /**
- * shift a number by hole multiples of (max - min) to put it in the range [min, max],
+ * shift a number by hole multiples of (max - min) to put it in the range [min, max),
  * assuming max > min.  if not, it will automatically reverse them.
  * @param value
  * @param min
  * @param max
  */
 export function localizeInRange(value: number, min: number, max: number): number {
-	if (value > min && value < max)
-		return value;
+	const anser = value - Math.floor((value - min)/(max - min))*(max - min);
+	if (Math.abs(anser - max) < Number.EPSILON*(max - min))
+		return min;  // this is to make it resistant to roundoff error
 	else
-		return value - Math.floor((value - min)/(max - min))*(max - min);
+		return anser;
 }
 
 /**

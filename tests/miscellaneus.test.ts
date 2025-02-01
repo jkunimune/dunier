@@ -138,6 +138,10 @@ describe("localizeInRange()", () => {
 	test("out of bounds", () => {
 		expect(localizeInRange(1, -12, -10)).toEqual(-11);
 	});
+	test("roundoff resistance", () => {
+		const x = -2/7; // an arbitrary number
+		expect(localizeInRange(x, x + 2*Math.PI, x + 4*Math.PI)).toBeCloseTo(x + 2*Math.PI);
+	});
 });
 
 describe("isBetween()", () => {
