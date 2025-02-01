@@ -5,7 +5,6 @@
 import {Tile, Surface, Vertex} from "./surface.js";
 import {legendreP2, legendreP4, legendreP6} from "../utilities/miscellaneus.js";
 import {ΦΛPoint} from "../utilities/coordinates.js";
-import {Vector} from "../utilities/geometry.js";
 
 /**
  * an oblate spheroid (i.e. a normal planet)

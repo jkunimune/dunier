@@ -552,7 +552,7 @@ describe("contains", () => {
 			test("in line with bottom edge", () => {
 				expect(contains(segments, {s: 1., t: 0.}, false)).toBe(Side.OUT);
 			});
-		})
+		});
 	});
 	test("concave region", () => {
 		const region = [
