@@ -2,13 +2,13 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Surface} from "../surface/surface.js";
+import {Domain, Surface} from "../surface/surface.js";
 import {
 	PathSegment,
 	ΦΛPoint,
-	XYPoint
+	XYPoint, assert_φλ
 } from "../utilities/coordinates.js";
-import {linterp, localizeInRange} from "../utilities/miscellaneus.js";
+import {cumulativeIntegral, linterp, localizeInRange} from "../utilities/miscellaneus.js";
 
 
 /**
@@ -25,6 +25,12 @@ export class MapProjection {
 	private readonly yRef: number[];
 	private readonly dx_dλRef: number[];
 	private readonly yCenter: number;
+	public readonly λCenter: number;
+	public readonly φMin: number;
+	public readonly φMax: number;
+	public readonly λMin: number;
+	public readonly λMax: number;
+	public readonly domain: Domain;
 
 	/**
 	 * define a pseudoconic map projection with lookup tables for the y coordinate and x scale along the prime meridian.
@@ -33,8 +39,9 @@ export class MapProjection {
 	 * @param yRef the y coordinate of the prime meridian at each reference latitude (must all be finite)
 	 * @param dx_dλRef the horizontal scale along each reference latitude (equal to the parallel's length divided by 2π)
 	 * @param yCenter the center of the parallels if the parallels are concentric arcs, or ±Infinity if the parallels are straight lines
+	 * @param λCenter the central meridian
 	 */
-	private constructor(surface: Surface, φRef: number[], yRef: number[], dx_dλRef: number[], yCenter: number) {
+	private constructor(surface: Surface, φRef: number[], yRef: number[], dx_dλRef: number[], yCenter: number, λCenter: number) {
 		// check the inputs
 		if (φRef.length !== yRef.length || yRef.length !== dx_dλRef.length)
 			throw new Error("these inputs' lengths don't match.");
@@ -56,6 +63,15 @@ export class MapProjection {
 		this.yRef = yRef;
 		this.dx_dλRef = dx_dλRef;
 		this.yCenter = yCenter;
+		this.λCenter = λCenter;
+
+		this.φMin = this.φRef[0];
+		this.φMax = this.φRef[this.φRef.length - 1];
+		this.λMin = this.λCenter - Math.PI;
+		this.λMax = this.λCenter + Math.PI;
+		this.domain = new Domain(
+			this.φMin, this.φMin + 2*Math.PI, this.λMin, this.λMax,
+			(point) => this.surface.isOnEdge(assert_φλ(point)));
 	}
 
 	/**
@@ -67,14 +83,14 @@ export class MapProjection {
 		if (isFinite(this.yCenter)) {
 			const r = this.y(point.φ) - this.yCenter;
 			if (r !== 0) {
-				const θ = this.dx_dλ(point.φ)*point.λ/r;
+				const θ = this.dx_dλ(point.φ)*(point.λ - this.λCenter)/r;
 				return this.convertPolarToCartesian({r: r, θ: θ});
 			}
 			else
 				return {x: 0, y: this.yCenter};
 		}
 		else
-			return {x: this.dx_dλ(point.φ)*point.λ, y: this.y(point.φ)};
+			return {x: this.dx_dλ(point.φ)*(point.λ - this.λCenter), y: this.y(point.φ)};
 	}
 
 	/**
@@ -96,7 +112,7 @@ export class MapProjection {
 		}
 		else {
 			const φ = this.φ(point.y);
-			const λ = point.x/this.dx_dλ(φ);
+			const λ = point.x/this.dx_dλ(φ) + this.λCenter;
 			return {φ: φ, λ: λ};
 		}
 	}
@@ -112,8 +128,8 @@ export class MapProjection {
 		if (this.dx_dλ(φ) > 0) {
 			if (isFinite(this.yCenter)) {
 				const r = this.y(φ) - this.yCenter;
-				const θ0 = this.dx_dλ(φ)*λ0/r;
-				const θ1 = this.dx_dλ(φ)*λ1/r;
+				const θ0 = this.dx_dλ(φ)*(λ0 - this.λCenter)/r;
+				const θ1 = this.dx_dλ(φ)*(λ1 - this.λCenter)/r;
 				const {x, y} = this.convertPolarToCartesian({r: r, θ: θ1});
 				const sweepFlag = (θ1 > θ0) ? 0 : 1;
 				if (Math.abs(θ1 - θ0) <= Math.PI)
@@ -178,43 +194,42 @@ export class MapProjection {
 		if (!isFinite(this.yCenter))
 			return false;
 		for (let i = 0; i < this.φRef.length; i ++)
-			if (Math.abs(this.yRef[i] - this.yCenter) - this.dx_dλRef[i] > 1e-8*this.surface.height)
+			if (Math.abs(this.yRef[i] - this.yCenter) - this.dx_dλRef[i] > 1e-8*this.surface.rz(this.φRef[i]).r)
 				return false;
 		return true;
 	}
 
 	/**
 	 * quantify how nondifferentiable the prime meridian is at this latitude, if at all
-	 * @param φ the latitude at which to check, in radians
+	 * @param φ either the maximum latitude of this surface or the minimum latitude, in radians
 	 * @return a number near 1 if the prime meridian is smooth at that point,
 	 *         a number less than 1 if it's cuspy, and
 	 *         a number much less than 1 if this point should theoreticly diverge to infinity
-	 *         (in practice it doesn't get very low for asymptotes; maybe .6 for a Mercator pole).
+	 *         (in theory it should be negative for divergent conditions but we'll never measure that in practice;
+	 *         in practice you'll get maybe .6 for a Mercator pole).
 	 */
 	differentiability(φ: number): number {
-		const n = this.surface.refLatitudes.length;
-		const i = Math.min(Math.floor((φ - this.surface.φMin)/(this.surface.φMax - this.surface.φMin)*(n - 1)), n - 2);
+		const Δφ = 5/180*Math.PI;
 		// choose three refLatitudes intervals that are near the point
-		let iMin, iMax;
-		if (i < 2) {
-			iMin = 0;
-			iMax = 5;
+		let φ1, φ2;
+		if (φ === this.φMin) {
+			φ1 = φ + Δφ;
+			φ2 = φ + 2*Δφ;
 		}
-		else if (i >= n - 2) {
-			iMin = n - 6;
-			iMax = n - 1;
+		else if (φ === this.φMax) {
+			φ1 = φ - Δφ;
+			φ2 = φ - 2*Δφ;
 		}
 		else {
-			iMin = i - 2;
-			iMax = i + 3;
+			throw Error("this function is only defined at the limits of the map projection.");
 		}
-		// compare the y difference across one of them to the y difference across all of them
-		const innerΔy = this.y(this.surface.refLatitudes[i + 1]) - this.y(this.surface.refLatitudes[i]);
-		const outerΔy = this.y(this.surface.refLatitudes[iMax]) - this.y(this.surface.refLatitudes[iMin]);
-		const innerΔs = this.surface.cumulDistances[i + 1] - this.surface.cumulDistances[i];
-		const outerΔs = this.surface.cumulDistances[iMax] - this.surface.cumulDistances[iMin];
+		// compare the y difference across a small interval to the y difference across a big interval
+		const innerΔy = this.y(φ1) - this.y(φ);
+		const outerΔy = this.y(φ2) - this.y(φ);
+		const innerΔs = this.surface.ds_dφ((φ + φ1)/2)*Δφ;
+		const outerΔs = this.surface.ds_dφ((φ + φ2)/2)*2*Δφ;
 		// fit a power law to their ratio
-		return Math.log(outerΔy/innerΔy)/Math.log(outerΔs/innerΔs);
+		return Math.log(innerΔy/outerΔy)/Math.log(innerΔs/outerΔs);
 	}
 
 	/**
@@ -266,33 +281,35 @@ export class MapProjection {
 	 * construct a plate carey projection.  this projection will <i>not</i> adjust based on the surface being
 	 * projected or the region being focused on; it will always linearly translate latitude to y and longitude to x.
 	 */
-	public static equirectangular(surface: Surface): MapProjection {
-		const scale = Math.sqrt(surface.area/(2*Math.PI*(surface.φMax - surface.φMin)));
+	public static equirectangular(surface: Surface, φMin: number, φMax: number, λStd: number): MapProjection {
+		const scale = Math.sqrt(surface.area/(2*Math.PI*(φMax - φMin)));
 		return new MapProjection(
 			surface,
-			[surface.φMin, surface.φMax],
-			[-scale*surface.φMin, -scale*surface.φMax],
-			[scale, scale], Infinity);
+			[φMin, φMax],
+			[-scale*φMin, -scale*φMax],
+			[scale, scale], Infinity, λStd);
 	}
 
 	/**
 	 * construct a Bonne projection with a standard parallel in the given range.  if the standard parallel is an equator,
 	 * this will resolve to the sinusoidal projection, and if it is a pole, this will resolve to the Stab-Werner projection.
 	 * @param surface the surface from which to project
-	 * @param φStd the latitude to use to set the curvature, in radians
+	 * @param φMin the southernmost parallel in radians
+	 * @param φStd the standard parallel in radians
+	 * @param φMax the northernmost parallel in radians	 * @param λStd the central meridian
+	 * @param λStd the central meridian in radians
 	 */
-	public static bonne(surface: Surface, φStd: number): MapProjection {
+	public static bonne(surface: Surface, φMin: number, φStd: number, φMax: number, λStd: number): MapProjection {
 		if (!(φStd >= surface.φMin && φStd <= surface.φMax))
 			throw new Error(`${φStd} is not a valid standard latitude`);
-		const yStd = -linterp(φStd, surface.refLatitudes, surface.cumulDistances);
-		let yCenter = yStd + surface.rz(φStd).r/surface.tangent(φStd).r;
-		const φRef = surface.refLatitudes; // do the necessary integrals
-		const yRef = []; // to get the y positions of the prime meridian
+		const [φRef, yRef] = cumulativeIntegral(
+			(x) => -surface.ds_dφ(x), φMin, φMax, 0.2, 0.02, 1e-3); // do the necessary integrals to get the y positions of the prime meridian
 		const dx_dλRef = []; // and the arc lengths corresponding to one radian
-		for (let i = 0; i < φRef.length; i ++) {
-			yRef.push(-surface.cumulDistances[i]);
+		for (let i = 0; i < φRef.length; i ++)
 			dx_dλRef.push(surface.rz(φRef[i]).r);
-		}
+		// set the curvature at the standard parallel
+		const yStd = linterp(φStd, φRef, yRef);
+		let yCenter = yStd + surface.rz(φStd).r/surface.tangent(φStd).r;
 		// make sure the center is outside of the map area
 		if (yCenter < yRef[0] && yCenter > yRef[yRef.length - 1]) {
 			if (yCenter > yRef[Math.floor(yRef.length/2)])
@@ -300,7 +317,7 @@ export class MapProjection {
 			else
 				yCenter = yRef[yRef.length - 1];
 		}
-		return new MapProjection(surface, φRef, yRef, dx_dλRef, yCenter);
+		return new MapProjection(surface, φRef, yRef, dx_dλRef, yCenter, λStd);
 	}
 
 	/**
@@ -308,9 +325,12 @@ export class MapProjection {
 	 * is an equator, this will resolve to the equidistant projection, and if it is a pole, this will resolve to the
 	 * azimuthal equidistant projection.
 	 * @param surface the surface from which to project
-	 * @param φStd the latitude to use to set the curvature, in radians
+	 * @param φMin the southernmost parallel in radians
+	 * @param φStd the standard parallel in radians
+	 * @param φMax the northernmost parallel in radians	 * @param λStd the central meridian
+	 * @param λStd the central meridian in radians
 	 */
-	public static conformalConic(surface: Surface, φStd: number): MapProjection {
+	public static conformalConic(surface: Surface, φMin: number, φStd: number, φMax: number, λStd: number): MapProjection {
 		if (!(φStd >= surface.φMin && φStd <= surface.φMax))
 			throw new Error(`${φStd} is not a valid standard latitude`);
 
@@ -319,82 +339,71 @@ export class MapProjection {
 
 		// for cylindrical projections, you need to use a different function
 		if (Math.abs(n) < 1e-12)
-			return this.mercator(surface, φStd);
+			return this.mercator(surface, φMin, φStd, φMax, λStd);
 		// for nearly azimuthal projections, make it azimuthal
 		else if (n > 0.75)
 			n = 1;
 		else if (n < -0.75)
 			n = -1;
 
-		// build out from the standard parallel to get the radii
-		const φ = surface.refLatitudes;
-		const iStart = Math.round((φStd - φ[0])/(φ[1] - φ[0]));
-		const fillingOrder = [];
-		for (let i = iStart; i < φ.length; i ++)
-			fillingOrder.push(i);
-		for (let i = iStart - 1; i >= 0; i --)
-			fillingOrder.push(i);
-
-		// for each y you need to calculate
-		const y = Array(φ.length).fill(null);
-		for (const i of fillingOrder) {
-			let iPrevius; // find a nearby reference off which to base it
-			if (i - 1 >= 0 && y[i - 1] !== null)
-				iPrevius = i - 1;
-			else if (i + 1 < y.length && y[i + 1] !== null)
-				iPrevius = i + 1;
-			else {
-				y[i] = surface.rz(φ[i]).r/n; // or initialize the first one you find like so
-				continue;
-			}
-			const rPrevius = surface.rz(φ[iPrevius]).r;
-			const yPrevius = y[iPrevius];
-			const r = surface.rz(φ[i]).r;
-			const Δr = r - rPrevius;
-			const Δs = surface.cumulDistances[i] - surface.cumulDistances[iPrevius];
-			// be careful because there are many edge cases for which we must account
-			if (Δs === 0) // in the case where this parallel is zero distance away from the previus one
-				y[i] = yPrevius; // then obviusly their y values should be equal
-			else if (rPrevius === 0) // in the case where the previus one was a pole
-				y[i] = r/n; // we get to choose the scale and should choose it with this formula
-			else if (r === 0 && n*Δs < 0) // if this is a pole that should technicly go to infinity
-				y[i] = yPrevius*Math.exp(n*Δs/Δr); // fix the base at exp(-1) to truncate it at finity
-			else if (Δr === 0) // in the case where the surface is exactly cylindrical
-				y[i] = yPrevius*Math.exp(-n*Δs/rPrevius); // the exact solution resolves to an exponential
-			else
-				y[i] = yPrevius*Math.pow(r/rPrevius, -n*Δs/Δr); // otherwise use the full exact solution
+		// build out from some central parallel to get the log-radii to get the y positions of the prime meridian
+		const φMid = (φMin + φMax)/2;
+		const [northernΦ, northernLogR] = cumulativeIntegral(
+			(φ: number) => -n/surface.rz(φ).r*surface.ds_dφ(φ),
+			φMid, φMax, 0.2, 0.02, 1e-3);
+		const [southernΦ, southernLogR] = cumulativeIntegral(
+			(φ: number) => -n/surface.rz(φ).r*surface.ds_dφ(φ),
+			φMid, φMin, 0.2, 0.02, 1e-3);
+		// combine the two and exp them to get y positions
+		const rMid = surface.rz(φMid).r/n;
+		const φ = [];
+		const y = [];
+		for (let i = southernΦ.length - 1; i > 0; i --) {
+			φ.push(southernΦ[i]);
+			y.push(rMid*Math.min(Math.exp(southernLogR[i]), 1e3)); // limit the radii to finite values
 		}
+		for (let i = 0; i < northernΦ.length; i ++) {
+			φ.push(northernΦ[i]);
+			y.push(rMid*Math.min(Math.exp(northernLogR[i]), 1e3));
+		}
+		// TODO: it would be better to set the scale at φStd, not φMid, but it's harder because it might be a pole
 
 		// then do the arc lengths corresponding to one radian
 		const dx_dλRef = [];
 		for (let i = 0; i < φ.length; i ++)
 			dx_dλRef.push(y[i]*n);
 
-		return new MapProjection(surface, φ, y, dx_dλRef, 0);
+		return new MapProjection(surface, φ, y, dx_dλRef, 0, λStd);
 	}
 
 	/**
 	 * construct a mercator projection scaled to the given standard parallel.
 	 * @param surface the surface from which to project
+	 * @param φMin the southernmost parallel in radians
 	 * @param φStd the standard parallel in radians
+	 * @param φMax the northernmost parallel in radians
+	 * @param λStd the central meridian
+	 * @param λStd the central meridian in radians
 	 */
-	public static mercator(surface: Surface, φStd: number): MapProjection {
+	public static mercator(surface: Surface, φMin: number, φStd: number, φMax: number, λStd: number): MapProjection {
 		const dx_dλ = surface.rz(φStd).r;
-		const φ: number[] = surface.refLatitudes;
-		const r: number[] = [];
-		const y: number[] = [];
-		// do this integral to get the parallel position lookup table
-		for (let i = 0; i < φ.length; i ++) {
-			r.push(surface.rz(φ[i]).r);
-			const Δs = surface.cumulDistances[i] - surface.cumulDistances[i - 1];
-			if (i === 0) // for the southernmost parallel
-				y[i] = 0; // just initialize it at y = 0
-			else if (r[i] === 0 || r[i - 1] === 0) // for poles, rather than going to Infinity as would be technically correct
-				y[i] = y[i - 1] - dx_dλ*Δs/Math.abs(r[i] - r[i - 1]); // remove the log term to get something squareish
-			else
-				y[i] = y[i - 1] - dx_dλ*Δs/(r[i] - r[i - 1])*Math.log(r[i]/r[i - 1]); // otherwise use the exact solution
+		const [northernΦ, northernY] = cumulativeIntegral(
+			(φ: number) => -dx_dλ/surface.rz(φ).r*surface.ds_dφ(φ),
+			φStd, φMax, 0.2, 0.02, 1e-3);
+		const [southernΦ, southernY] = cumulativeIntegral(
+			(φ: number) => -dx_dλ/surface.rz(φ).r*surface.ds_dφ(φ),
+			φStd, φMin, 0.2, 0.02, 1e-3);
+		const φ = [];
+		const y = [];
+		for (let i = southernΦ.length - 1; i > 0; i --) {
+			φ.push(southernΦ[i]);
+			y.push(Math.min(southernY[i], dx_dλ*1e3)); // make sure to clip them to finite values
 		}
-		return new MapProjection(surface, φ, y, Array(φ.length).fill(dx_dλ), Infinity);
+		for (let i = 0; i < northernΦ.length; i ++) {
+			φ.push(northernΦ[i]);
+			y.push(Math.max(northernY[i], -dx_dλ*1e3));
+		}
+		return new MapProjection(surface, φ, y, Array(φ.length).fill(dx_dλ), Infinity, λStd);
 	}
 
 	/**
@@ -403,22 +412,25 @@ export class MapProjection {
 	 * other cases, it's a generalization meant to mimic the spirit of the Equal Earth projection as best as possible,
 	 * scaled vertically and horizontally to minimize angular error between the given latitude bounds.
 	 * @param surface the surface from which to project
-	 * @param meanRadius the
+	 * @param meanRadius this parameter sets the horizontal scale of the map projection
+	 * @param φMin the southernmost parallel in radians
+	 * @param φMax the northernmost parallel in radians
+	 * @param λStd the central meridian
 	 */
-	public static equalEarth(surface: Surface, meanRadius: number): MapProjection {
+	public static equalEarth(surface: Surface, meanRadius: number, φMin: number, φMax: number, λStd: number): MapProjection {
 		if (!(meanRadius > 0))
 			throw new Error(`${meanRadius} is not a valid map width`);
-		const φRef = surface.refLatitudes;
-		const xRef = [];
-		const yRef = [0];
-		for (let i = 0; i < φRef.length; i ++) { // then set the widths
-			xRef.push(MapProjection.equalEarthShapeFunction(surface.rz(φRef[i]).r/meanRadius)*meanRadius);
-			if (i > 0) { // and integrate the y values so that everything stays equal-area
-				const verAre = surface.cumulAreas[i] - surface.cumulAreas[i-1];
-				yRef.push(yRef[i-1] - verAre / (2*Math.PI*(xRef[i-1] + xRef[i])/2));
-			}
+		function x(φ: number): number {
+			return MapProjection.equalEarthShapeFunction(surface.rz(φ).r/meanRadius)*meanRadius;
 		}
-		return new MapProjection(surface, φRef, yRef, xRef, Infinity);
+		function dy_dφ(φ: number): number {
+			return -surface.rz(φ).r*surface.ds_dφ(φ)/x(φ);
+		}
+		const [φRef, yRef] = cumulativeIntegral(dy_dφ, φMin, φMax, 0.2, 0.02, 1e-3);
+		const xRef = [];
+		for (let i = 0; i < φRef.length; i ++)
+			xRef.push(x(φRef[i]));
+		return new MapProjection(surface, φRef, yRef, xRef, Infinity, λStd);
 	}
 
 	/**

@@ -29,7 +29,7 @@ export class Toroid extends Surface {
 	 * @param obliquity the axial tilt in radians
 	 */
 	constructor(radius: number, gravity: number, omega: number, obliquity: number) {
-		super(-Math.PI, Math.PI, true);
+		super(-Infinity, Infinity, true);
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
 		const aspectRatio = 1/(1.010*w + 0.618*w*w); // numerically determined formula for aspect ratio
 		this.elongation = 1/(1 - 0.204*w + 4.436*w*w); // numerically determined formula for elongation

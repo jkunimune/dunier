@@ -6,7 +6,7 @@ import {Random} from "../utilities/random.js";
 import {binarySearch, linterp, noisyProfile} from "../utilities/miscellaneus.js";
 import {Culture} from "../generation/culture.js";
 import {Biome} from "../generation/terrain.js";
-import {ΦΛPoint, XYPoint} from "../utilities/coordinates.js";
+import {ΦΛPoint, XYPoint, Point} from "../utilities/coordinates.js";
 import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../utilities/geometry.js";
 import {straightSkeleton} from "../utilities/straightskeleton.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
@@ -19,46 +19,52 @@ const INTEGRATION_RESOLUTION = 32;
 
 
 /**
- * an object that is either a Surface or something else,
- * that encodes basic topologic information for a 2D coordinate system.
+ * an object that encodes basic topologic information for a 2D coordinate system.
+ * it contains bounds, which should be either infinite for a Cartesian coordinate system,
+ * or two intervals of width 2π for an angular coordinate system.
  */
-export abstract class Domain {
-	abstract isPeriodic(): boolean;
-	abstract isOnEdge(place: ΦΛPoint): boolean;
+export class Domain {
+	public readonly sMin: number;
+	public readonly sMax: number;
+	public readonly tMin: number;
+	public readonly tMax: number;
+	public readonly isOnEdge: (point: Point) => boolean;
+
+	constructor(sMin: number, sMax: number, tMin: number, tMax: number, isOnEdge: (point: Point) => boolean) {
+		this.sMin = sMin;
+		this.sMax = sMax;
+		this.tMin = tMin;
+		this.tMax = tMax;
+		this.isOnEdge = isOnEdge;
+	}
+
+	isPeriodic() {
+		return Number.isFinite(this.sMin);
+	}
 }
 
 
 /**
  * a domain with no edge and no periodicity in its coordinates
  */
-export const INFINITE_PLANE: Domain = {
-	isPeriodic(): boolean {
-		return false;
-	},
-
-	isOnEdge(_): boolean {
-		return false;
-	}
-};
+export const INFINITE_PLANE = new Domain(-Infinity, Infinity, -Infinity, Infinity, (_) => false);
 
 
 /**
  * Generic 3D collection of Voronoi polygons
  */
-export abstract class Surface implements Domain {
+export abstract class Surface {
 	public tiles: Set<Tile>;
 	public vertices: Set<Vertex>;
 	public rivers: Set<(Tile | Vertex)[]>;
 	public area: number;
-	public height: number;
 	public axis: Vector; // orientation of geodetic coordinate system
 	public edge: Map<Tile, {prev: Tile, next: Tile}>;
-	readonly φMin: number;
-	readonly φMax: number;
-	readonly hasDayNightCycle: boolean;
-	refLatitudes: number[];
-	cumulAreas: number[];
-	cumulDistances: number[];
+	public readonly φMin: number;
+	public readonly φMax: number;
+	public readonly hasDayNightCycle: boolean;
+	private refLatitudes: number[];
+	private cumulAreas: number[];
 
 
 	protected constructor(φMin: number, φMax: number, hasDayNightCycle: boolean) {
@@ -70,30 +76,26 @@ export abstract class Surface implements Domain {
 		this.hasDayNightCycle = hasDayNightCycle;
 	}
 
-	isPeriodic(): boolean {
-		return true;
-	}
-
 	/**
 	 * do the general constructor stuff that has to be done after the subclass constructor
 	 */
 	initialize(): void {
-		this.refLatitudes = [this.φMin]; // fill in latitude-integrated values
-		this.cumulAreas = [0]; // for use in map projections
-		this.cumulDistances = [0];
+		const φStart = Math.max(this.φMin, -Math.PI);
+		const φEnd = Math.min(this.φMax, Math.PI);
+
+		this.refLatitudes = [φStart]; // fill in latitude-integrated values
+		this.cumulAreas = [0]; // for use in sampling
 		const Δλ = 2*Math.PI;
 		for (let i = 1; i <= INTEGRATION_RESOLUTION; i ++) {
-			this.refLatitudes.push(this.φMin + (this.φMax - this.φMin)*i/INTEGRATION_RESOLUTION);
+			this.refLatitudes.push(φStart + (φEnd - φStart)*i/INTEGRATION_RESOLUTION);
 			const north = this.rz(this.refLatitudes[i]);
 			const south = this.rz(this.refLatitudes[i - 1]);
 			const Δs = Math.hypot(north.r - south.r, north.z - south.z); // treat the surface as a series of cone segments
 			const ds_dλ = (north.r + south.r)/2;
 			const ΔArea = ds_dλ*Δλ*Δs;
 			this.cumulAreas.push(this.cumulAreas[i - 1] + ΔArea);
-			this.cumulDistances.push(this.cumulDistances[i - 1] + Δs);
 		}
 		this.area = this.cumulAreas[INTEGRATION_RESOLUTION]; // and record the totals as their own instance variables
-		this.height = this.cumulDistances[INTEGRATION_RESOLUTION];
 
 		this.axis = this.xyz({φ: 1, λ: Math.PI/2}).minus(this.xyz({φ: 1, λ: 0})).cross(
 			this.xyz({φ: 1, λ: Math.PI}).minus(this.xyz({φ: 1, λ: Math.PI/2}))).normalized(); // figure out which way the coordinate system points
@@ -233,10 +235,13 @@ export abstract class Surface implements Domain {
 	 * return 2d arrays of x, y, z, and insolation.
 	 */
 	parameterize(resolution: number): {x: number[][], y: number[][], z: number[][], I: number[][]} {
+		const φStart = Math.max(this.φMin, -Math.PI);
+		const φEnd = Math.min(this.φMax, Math.PI);
+
 		const n = 2*resolution, m = 4*resolution;
 		const X = [], Y = [], Z = [], S = [];
 		for (let i = 0; i <= n; i ++) {
-			const φ = i/n*(this.φMax - this.φMin) + this.φMin; // map i to the valid range for φ
+			const φ = i/n*(φEnd - φStart) + φStart; // map i to the valid range for φ
 			const s = this.insolation(φ);
 			X.push([]);
 			Y.push([]);

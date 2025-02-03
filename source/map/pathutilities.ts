@@ -27,27 +27,24 @@ const π = Math.PI;
 
 
 /**
- * make any preliminary transformations that don't depend on the type of map
- * projection.  this method accounts for central meridians, and
- * should almost always be calld before project or getCrossing.
- * @param center the central meridian in radians
+ * adjust the coordinates of a path to be in the correct domain for this map projection.
+ * note that this function does not change the actual values of any of the coordinates;
+ * it just shifts them to and fro by multiples of 2π to put them in the right range.
+ * this function can't go in MapProjection.projectPoint because it often must be called
+ * before the path is intersected with the geoEdges.
+ * @param projection the projection whose domain we're trying to match
  * @param segments the jeograffickal imputs in absolute coordinates
  * @returns the relative outputs in transformed coordinates
  */
-export function transformInput(center: number, segments: PathSegment[]): PathSegment[] {
-	// if the central meridian is zero, don't do anything.  we wouldn't want to disturb points positioned on the antimeridian
-	if (center === 0)
-		return segments;
-	// otherwise, go thru and shift all the longitudes
-	else {
-		const output: PathSegment[] = [];
-		for (const segment of segments) {
-			let [φi, λ] = segment.args;
-			λ = localizeInRange(λ - center, - π, π); // shift to the central meridian and snap the longitude into the [-π, π] domain
-			output.push({type: segment.type, args: [φi, λ]});
-		}
-		return output;
+export function transformInput(projection: MapProjection, segments: PathSegment[]): PathSegment[] {
+	const output: PathSegment[] = [];
+	for (const segment of segments) {
+		let [φ, λ] = segment.args;
+		φ = localizeInRange(φ, projection.φMin, projection.φMin + 2*π); // snap the latitude into the right domain
+		λ = localizeInRange(λ, projection.λMin, projection.λMin + 2*π); // snap the longitude into the right domain
+		output.push({type: segment.type, args: [φ, λ]});
 	}
+	return output;
 }
 
 /**
@@ -136,11 +133,11 @@ export function applyProjectionToPath(
 					pendingInPoints.push(nextInPoint); // put it back
 					const intermediateInPoint = assert_φλ(getMidpoint(
 						{type: 'M', args: [lastInPoint.φ, lastInPoint.λ]},
-						{type: 'L', args: [nextInPoint.φ, nextInPoint.λ]}, true)); // that means we need to plot a midpoint first
+						{type: 'L', args: [nextInPoint.φ, nextInPoint.λ]}, projection.domain)); // that means we need to plot a midpoint first
 					pendingInPoints.push(intermediateInPoint);
 
 					if (pendingInPoints.length + outPoints.length > 100000)
-						throw new Error(`why can't I find a point between [${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.φ},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}]`);
+						throw new Error(`why can't I find a point between [${lastInPoint.φ},${lastInPoint.λ}]=>[${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.φ},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}]`);
 				}
 			}
 		}
@@ -161,20 +158,23 @@ export function applyProjectionToPath(
  * given edges by cutting it and adding lines and stuff.
  * @param segments the segments to cut
  * @param edges the MapEdges within which to fit this
- * @param surface the surface on which the edges exist, or null if
+ * @param domain the surface on which the edges exist
  * @param closePath whether you should add stuff around the edges when things clip
  */
-export function intersection(segments: PathSegment[], edges: PathSegment[], surface: Domain, closePath: boolean): PathSegment[] {
-	if (closePath && !isClosed(segments, surface)) {
+export function intersection(segments: PathSegment[], edges: PathSegment[], domain: Domain, closePath: boolean): PathSegment[] {
+	if (closePath && !isClosed(segments, domain)) {
 		console.error(pathToString(segments));
 		throw new Error(`ew, it's open.  go make sure your projections are 1:1!`);
 	}
-	if (!isClosed(edges, surface)) {
+	if (!isClosed(edges, domain)) {
 		console.error(pathToString(edges));
 		throw new Error(`gross, your edges are open.  go check how you defined them!`);
 	}
-
-	const geographic = surface.isPeriodic();
+	for (let i = 1; i < edges.length; i ++) {
+		const {s, t} = endpoint(edges[i]);
+		if (s < domain.sMin || s > domain.sMax || t < domain.tMin || t > domain.tMax)
+			throw new Error(`these edges go out to s=${s},t=${t}, which is not contained in the domain [${domain.sMin}, ${domain.sMax}), [${domain.tMin}, ${domain.tMax})`);
+	}
 
 	// start by breaking the edges up into separate loops
 	const edgeLoops: PathSegment[][] = [];
@@ -190,12 +190,13 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], surf
 	const sections: PathSegment[][] = [];
 	let currentSection: PathSegment[] = null;
 	let iterations = 0;
-	while (true) { // you'll have to go thru it like a cue rather than a set list, since we'll be adding segments as we go
+	while (true) { // you'll have to go thru it like a cue rather than a fixed list, since we'll be adding segments as we go
 		const thisSegment = (segmentQueue.length > 0 ? segmentQueue.pop() : null);
 
-		if (thisSegment === null || thisSegment.type === 'M') { // at movetos and at the end
+		// for movetos and at the end
+		if (thisSegment === null || thisSegment.type === 'M') {
 			if (currentSection !== null) {
-				if (encompasses(edges, currentSection, geographic) === Side.IN)
+				if (encompasses(edges, currentSection, domain) === Side.IN)
 					sections.push(currentSection); // save whatever you have so far to sections (if it's within the edges)
 			}
 			if (thisSegment !== null)
@@ -204,7 +205,8 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], surf
 				break; // or stop if we're done
 		}
 
-		else { // for segments in the middle of a section
+		// for segments in the middle of a section
+		else {
 			if (currentSection === null)
 				throw new Error("it didn't start with 'M', I gess?");
 
@@ -212,7 +214,7 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], surf
 			const start = endpoint(lastSegment);
 			const end = endpoint(thisSegment);
 			const crossings = getEdgeCrossings(
-				start, thisSegment, edges, geographic); // check for interruption
+				start, thisSegment, edges, domain); // check for interruption
 			// but discard any interruptions that coincide with existing breaks in segments
 			for (let i = crossings.length - 1; i >= 0; i --) {
 				const {intersect0, intersect1} = crossings[i];
@@ -230,7 +232,7 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], surf
 			}
 
 			if (crossings.length === 0) { // if there's no interruption or we discarded them all
-				if (encompasses(edges, [lastSegment], geographic) !== encompasses(edges, [lastSegment], geographic))
+				if (encompasses(edges, [lastSegment], domain) !== encompasses(edges, [lastSegment], domain))
 					throw new Error(`you failed to detect a crossing between ${lastSegment.type}${lastSegment.args.join(',')} and ${thisSegment.type}${thisSegment.args.join(',')}.`);
 				currentSection.push(thisSegment); // move the points from the queue to the section
 			}
@@ -246,7 +248,7 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], surf
 		}
 		iterations ++;
 		if (iterations > 100000)
-			throw new Error(`*Someone* (not pointing any fingers) messd up an interruption between ${currentSection.pop()} and ${thisSegment}.`);
+			throw new Error(`*Someone* (not pointing any fingers) messd up an interruption between ${pathToString([currentSection.pop()])} and ${pathToString([thisSegment])}.`);
 	}
 
 	const startPositions: { loop: number, index: number }[] = [];
@@ -359,9 +361,9 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], surf
 		for (const edgeLoop of edgeLoops) { // for each loop
 			let isInsideOut; // determine if it is inside out
 			if (output.length > 0) // using the newly cropped output
-				isInsideOut = encompasses(output, edgeLoop, geographic) === Side.IN; // it's *probably* safe to assume that if the cropped output is BORDERLINE, the outline should not be drawn
+				isInsideOut = encompasses(output, edgeLoop, domain) === Side.IN; // it's *probably* safe to assume that if the cropped output is BORDERLINE, the outline should not be drawn
 			else // or whatever was cropped out if the output is empty
-				isInsideOut = encompasses(segments, edgeLoop, geographic) !== Side.OUT; // it's *probably* safe to assume that if the uncropped input is BORDERLINE, the outline does need to be drawn
+				isInsideOut = encompasses(segments, edgeLoop, domain) !== Side.OUT; // it's *probably* safe to assume that if the uncropped input is BORDERLINE, the outline does need to be drawn
 			if (isInsideOut) // if it is inside out with respect to that loop
 				output.push(...edgeLoop); // draw the outline of the entire edge loop to contain it
 		}
@@ -456,19 +458,19 @@ function spliceSegment(start: Point, segment: PathSegment, intersect0: Point, in
  * matter; we're just checking to see if the vertices themselves are enclosed.
  * @param polygon the path that defines the region we're checking
  * @param points the path whose points may or may not be in the region
- * @param periodic whether these points are defined in geographic coordinates, mandating a [-π, π) periodic domain
+ * @param domain the topology of the space on which these points' coordinates are defined
  * @return whether all of points are inside edges
  */
-export function encompasses(polygon: PathSegment[], points: PathSegment[], periodic: boolean): Side {
+export function encompasses(polygon: PathSegment[], points: PathSegment[], domain: Domain): Side {
 	for (let i = 0; i < points.length; i ++) { // the fastest way to judge this is to just look at the first point
 		const tenancy = contains(
-			polygon, endpoint(points[i]), periodic);
+			polygon, endpoint(points[i]), domain);
 		if (tenancy !== Side.BORDERLINE) // that is not ambiguous
 			return tenancy;
 	}
 	for (let i = 1; i < points.length; i ++) { // if that didn't work, use midpoints
 		const tenancy = contains(
-			polygon, getMidpoint(points[i - 1], points[i], periodic), periodic);
+			polygon, getMidpoint(points[i - 1], points[i], domain), domain);
 		if (tenancy !== Side.BORDERLINE) // in practice, this should always be unambiguous
 			return tenancy;
 	}
@@ -489,13 +491,13 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], perio
  *                form any ambiguusly included regions (like two concentric circles going the same way) or the result
  *                is undefined.
  * @param point the point that may or may not be in the region
- * @param periodic whether these points are defined in geographic coordinates, mandating a [-π, π) periodic domain
+ * @param domain the topology of the space on which these points' coordinates are defined
  * @param garanteedToSucced if this is false and our line fails to conclusively determine containment, we might choose a
  *                          new point and recurse this function.  if it's true and that happens we'll just give up.
  * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Point, periodic: boolean, garanteedToSucced=false): Side {
+export function contains(polygon: PathSegment[], point: Point, domain: Domain, garanteedToSucced=false): Side {
 	if (polygon.length === 0)
 		return Side.IN;
 
@@ -506,7 +508,7 @@ export function contains(polygon: PathSegment[], point: Point, periodic: boolean
 			const end = endpoint(polygon[i]);
 			let inTheRightSNeighborhood = isBetween(point.s, start.s, end.s);
 			let inTheRightTNeighborhood = isBetween(point.t, start.t, end.t);
-			if (periodic && polygon[i].type === 'L') {
+			if (domain.isPeriodic() && polygon[i].type === 'L') {
 				if (Math.abs(start.s - end.s) > π) // check for s periodicity
 					inTheRightSNeighborhood = !inTheRightSNeighborhood;
 				if (Math.abs(start.t - end.t) > π) // check for t periodicity
@@ -555,7 +557,7 @@ export function contains(polygon: PathSegment[], point: Point, periodic: boolean
 		else if (polygon[i].type === 'L') {
 			let crosses = (start.t < point.t) !== (end.t < point.t);
 			let goingRight = end.t > start.t;
-			if (periodic) {
+			if (domain.isPeriodic()) {
 				if (Math.abs(end.t - start.t) > π) { // account for wrapping
 					crosses = !crosses;
 					goingRight = !goingRight;
@@ -567,15 +569,15 @@ export function contains(polygon: PathSegment[], point: Point, periodic: boolean
 			if (crosses) {
 				const startWeight = (end.t - point.t)/(end.t - start.t);
 				let s = startWeight*start.s + (1 - startWeight)*end.s;
-				if (periodic)
-					s = localizeInRange(s, -π, π);
+				if (domain.isPeriodic())
+					s = localizeInRange(s, start.s - π, start.s + π);
 				intersections = [{s: s, goingEast: goingRight}];
 			}
 			else
 				intersections = [];
 		}
 		else if (polygon[i].type === 'A') {
-			if (periodic)
+			if (domain.isPeriodic())
 				throw new Error("you may not use arcs on periodic domains.");
 			const [radius, , , largeArc, sweepDirection, , ] = polygon[i].args;
 			// first compute the circle
@@ -636,7 +638,7 @@ export function contains(polygon: PathSegment[], point: Point, periodic: boolean
 				const start = endpoint(polygon[i-1]);
 				const end = endpoint(polygon[i]);
 				if (polygon[i].type === 'A' || start.t !== end.t) {
-					const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], periodic);
+					const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], domain);
 					if (knownPolygonPoint.s !== point.s) {
 						tOut = knownPolygonPoint.t;
 						break;
@@ -646,7 +648,7 @@ export function contains(polygon: PathSegment[], point: Point, periodic: boolean
 		}
 		if (tOut === null)
 			throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
-		return contains(polygon, {s: sOut, t: tOut}, periodic, true);
+		return contains(polygon, {s: sOut, t: tOut}, domain, true);
 	}
 }
 
@@ -738,16 +740,16 @@ export function calculatePathBounds(segments: PathSegment[]): {sMin: number, sMa
 /**
  * return a point on the given segment.
  */
-function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean): Point {
+function getMidpoint(prev: PathSegment, segment: PathSegment, domain: Domain): Point {
 	if (segment.type === 'L') {
 		const start = endpoint(prev);
 		const end = endpoint(segment);
 		const midpoint =  { s: (start.s + end.s)/2, t: (start.t + end.t)/2 };
-		if (periodic) {
+		if (domain.isPeriodic()) {
 			if (Math.abs(end.s - start.s) > π) // it's an arithmetic mean of the coordinates but you have to account for periodicity
-				midpoint.s = localizeInRange(midpoint.s + π, -π, π);
+				midpoint.s = localizeInRange(midpoint.s + π, domain.sMin, domain.sMax);
 			if (Math.abs(end.t - start.t) > π)
-				midpoint.t = localizeInRange(midpoint.t + π, -π, π);
+				midpoint.t = localizeInRange(midpoint.t + π, domain.tMin, domain.tMax);
 		}
 		return midpoint;
 	}
@@ -789,7 +791,7 @@ function getMidpoint(prev: PathSegment, segment: PathSegment, periodic: boolean)
  * defined to always be monotonic in latitude or longitude) and their periodicity is therefore not accounted for.
  */
 export function getEdgeCrossings(
-	segmentStart: Point, segment: PathSegment, edges: PathSegment[], periodic: boolean,
+	segmentStart: Point, segment: PathSegment, edges: PathSegment[], domain: Domain,
 ): { intersect0: Point, intersect1: Point, loopIndex: number }[] {
 	const crossings = [];
 	let loopIndex = 0;
@@ -802,9 +804,9 @@ export function getEdgeCrossings(
 		const edgeStart = endpoint(edges[i - 1]);
 		const edge = edges[i];
 		// if we're on a geographic surface
-		if (periodic) {
+		if (domain.isPeriodic()) {
 			// find all the geo edge crossings
-			const crossing = getGeoEdgeCrossing(assert_φλ(segmentStart), segment, assert_φλ(edgeStart), edge);
+			const crossing = getGeoEdgeCrossing(assert_φλ(segmentStart), segment, assert_φλ(edgeStart), edge, domain);
 			if (crossing !== null) {
 				const { place0, place1 } = crossing;
 				crossings.push({ intersect0: { s: place0.φ, t: place0.λ },
@@ -878,19 +880,22 @@ function getMapEdgeCrossings(segmentStart: XYPoint, segment: PathSegment, edgeSt
  * there is a crossing, two Places will be returnd: one on the 0th point's side of the interrupcion, and one on
  * the 1th point's side.  also, whether the path is crossing to the left from the edge's POV.
  *
- * for the purposes of this function, points on the edge count as out.
+ * for the purposes of this function, points on the edge count as out (i.e. on the edge's right).
  * if the segment passes thru the vertex between two edges, it might register as two identical crossings.
  */
 function getGeoEdgeCrossing(
-	segmentStart: ΦΛPoint, segment: PathSegment, edgeStart: ΦΛPoint, edge: PathSegment,
+	segmentStart: ΦΛPoint, segment: PathSegment, edgeStart: ΦΛPoint, edge: PathSegment, domain: Domain,
 ): { place0: ΦΛPoint, place1: ΦΛPoint } | null {
 	const edgeEnd = assert_φλ(endpoint(edge));
 
 	if (edge.type !== 'Φ' && edge.type !== 'Λ')
 		throw new Error(`I don't think you're allowd to use ${edge.type} here`);
 
-	// the body of this function assumes the edge is a parallel going east.  if it isn't that, rotate 90° until it is.
+	// the body of this function assumes the edge is a parallel going west.  if it isn't that, rotate 90° until it is.
 	else if (edge.type === 'Λ' || edgeEnd.λ > edgeStart.λ) {
+		const rotatedDomain = new Domain(
+			domain.tMin, domain.tMax, -domain.sMax, -domain.sMin,
+			(place) => domain.isOnEdge({s: -place.t, t: place.s}));
 		let newSegmentType;
 		if (segment.type === 'Φ')
 			newSegmentType = 'Λ';
@@ -904,6 +909,7 @@ function getGeoEdgeCrossing(
 			{type: newSegmentType, args: [segment.args[1], -segment.args[0]]}, // TODO this won't work for bezier curves
 			{φ: edgeStart.λ, λ: -edgeStart.φ},
 			{type: newEdgeType, args: [edge.args[1], -edge.args[0]]},
+			rotatedDomain,
 		);
 		if (crossing === null)
 			return null;
@@ -923,7 +929,7 @@ function getGeoEdgeCrossing(
 		const φ̄1 = localizeInRange(φ1, φX, φX + 2*π);
 		if (Math.abs(φ̄0 - φ̄1) >= π) { // call the getParallelCrossing function
 			const {place0, place1} = getParallelCrossing(
-				φ̄0, λ0, φ̄1, λ1, φX);
+				φ̄0, λ0, φ̄1, λ1, φX, domain);
 			if (isBetween(place0.λ, edgeStart.λ, edgeEnd.λ))
 				return { place0: place0, place1: place1 };
 		}
@@ -951,15 +957,16 @@ function getGeoEdgeCrossing(
 /**
  * compute the coordinates at which the line between these two points crosses a particular parallel.  two Places
  * will be returnd: one on the 0th point's side of the interrupcion, and one on the 1th point's side.  if the
- * parallel is not the antiequator
+ * parallel is not the antiequator, they will be the same.
  * @param φ0 the transformed latitude of the zeroth point
  * @param λ0 the transformed longitude of the zeroth point
  * @param φ1 the transformed latitude of the oneth point
  * @param λ1 the transformed longitude of the oneth point
- * @param φX the latitude of the parallel
+ * @param φX the latitude of the parallel.
+ * @param domain an object that contains information about the coordinates where parallels and meridians wrap around
  */
 function getParallelCrossing(
-	φ0: number, λ0: number, φ1: number, λ1: number, φX = π
+	φ0: number, λ0: number, φ1: number, λ1: number, φX: number, domain: Domain,
 ): { place0: ΦΛPoint, place1: ΦΛPoint } {
 	const weit0 = localizeInRange(φ1 - φX, -π, π);
 	const weit1 = localizeInRange(φX - φ0, -π, π);
@@ -976,14 +983,14 @@ function getParallelCrossing(
 			λ1 = localizeInRange(λ1, λMin, λMax);
 		}
 		λX = localizeInRange(
-			(weit0*λ0 + weit1*λ1)/(weit0 + weit1), -π, π);
+			(weit0*λ0 + weit1*λ1)/(weit0 + weit1), domain.tMin, domain.tMax);
 	}
-	if (Math.abs(φX) === π && φ0 < φ1)
-		return { place0: { φ: -π, λ: λX },
-			place1: { φ:  π, λ: λX } };
-	else if (Math.abs(φX) === π)
-		return { place0: { φ:  π, λ: λX },
-			place1: { φ: -π, λ: λX } };
+	if ((φX === domain.sMin || φX === domain.sMax) && φ0 < φ1)
+		return { place0: { φ: domain.sMin, λ: λX },
+			place1: { φ: domain.sMax, λ: λX } };
+	else if (φX === domain.sMin || φX === domain.sMax)
+		return { place0: { φ: domain.sMax, λ: λX },
+			place1: { φ: domain.sMin, λ: λX } };
 	else
 		return { place0: { φ: φX, λ: λX },
 			place1: { φ: φX, λ: λX } };
@@ -1059,7 +1066,7 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 			// if it doesn't end where it started
 			const endsOnStart = start.s === end.s && start.t === end.t;
 			// and it doesn't start and end on edges
-			let endsOnEdge = domain.isOnEdge(assert_φλ(start)) && domain.isOnEdge(assert_φλ(end));
+			let endsOnEdge = domain.isOnEdge(start) && domain.isOnEdge(end);
 			// then the Path isn't closed
 			if (!endsOnStart && !endsOnEdge)
 				return false;

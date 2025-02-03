@@ -6,13 +6,14 @@
 import {MapProjection} from "../source/map/projection.js";
 import {Disc} from "../source/surface/disc.js";
 import {Spheroid} from "../source/surface/spheroid.js";
+import {assert_xy, endpoint} from "../source/utilities/coordinates.js";
 
 describe("on a sphere", () => {
 	const sphere = new Spheroid(1, 1, 0, 0);
 	sphere.initialize();
 
 	describe("sinusoidal projection", () => {
-		const projection = MapProjection.bonne(sphere, 0);
+		const projection = MapProjection.bonne(sphere, -Math.PI/2, 0, Math.PI/2, 0);
 		test("projectPoint()", () => {
 			expect(projection.projectPoint({φ: 1, λ: -1})).toEqual(
 				{x: expect.closeTo(-Math.cos(1)), y: expect.closeTo(-Math.PI/2 - 1)});
@@ -22,13 +23,10 @@ describe("on a sphere", () => {
 				{φ: expect.closeTo(1), λ: expect.closeTo(-1)});
 		});
 		test("projectMeridian()", () => {
-			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, 1);
-			const expectedMeridian = [];
-			for (let i = 1; i < sphere.refLatitudes.length/2; i ++) {
-				const φ = sphere.refLatitudes[i];
-				expectedMeridian.push({type: 'L', args: [expect.closeTo(Math.cos(φ)), expect.closeTo(-Math.PI/2 - φ)]});
-			}
-			expect(trueMeridian).toEqual(expectedMeridian);
+			const meridian = projection.projectMeridian(-Math.PI/2, 0, 1);
+			for (let i = 0; i < meridian.length; i ++)
+				expect(meridian[i].args[0]).toBeCloseTo(Math.sin(-meridian[i].args[1]));
+			expect(assert_xy(endpoint(meridian[meridian.length - 1]))).toEqual(projection.projectPoint({φ: 0, λ: 1}));
 		});
 		describe("projectParallel()", () => {
 			test("non-pole", () => {
@@ -48,7 +46,7 @@ describe("on a sphere", () => {
 				expect(projection.differentiability(Math.PI/2)).toBeCloseTo(1, 1);
 			});
 			test("equator", () => {
-				expect(projection.differentiability(0)).toBeCloseTo(1, 1);
+				expect(() => projection.differentiability(0)).toThrow();
 			});
 			test("south pole", () => {
 				expect(projection.differentiability(-Math.PI/2)).toBeCloseTo(1, 1);
@@ -57,7 +55,7 @@ describe("on a sphere", () => {
 	});
 
 	describe("stereographic projection", () => {
-		const projection = MapProjection.conformalConic(sphere, -Math.PI/2);
+		const projection = MapProjection.conformalConic(sphere, -Math.PI/2, -Math.PI/2, Math.PI/2, 0);
 		describe("projectPoint()", () => {
 			test("south pole", () => {
 				expect(projection.projectPoint({φ: -Math.PI/2, λ: 2})).toEqual(
@@ -87,13 +85,10 @@ describe("on a sphere", () => {
 			});
 		});
 		test("projectMeridian()", () => {
-			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, Math.PI/2);
-			const expectedMeridian = [];
-			for (let i = 1; i < sphere.refLatitudes.length/2; i ++) {
-				const φ = sphere.refLatitudes[i];
-				expectedMeridian.push({type: 'L', args: [expect.closeTo(2*Math.tan((φ + Math.PI/2)/2)), expect.closeTo(0)]});
-			}
-			expect(trueMeridian).toEqual(expectedMeridian);
+			const meridian = projection.projectMeridian(-Math.PI/2, 0, Math.PI/2);
+			for (let i = 0; i < meridian.length; i ++)
+				expect(meridian[i].args[1]).toBeCloseTo(0);
+			expect(assert_xy(endpoint(meridian[meridian.length - 1]))).toEqual(projection.projectPoint({φ: 0, λ: Math.PI/2}));
 		});
 		describe("projectParallel()", () => {
 			test("small arc", () => {
@@ -131,7 +126,7 @@ describe("on a sphere", () => {
 				expect(projection.differentiability(Math.PI/2)).toBeLessThan(0.5);
 			});
 			test("equator", () => {
-				expect(projection.differentiability(0)).toBeCloseTo(1, 1);
+				expect(() => projection.differentiability(0)).toThrow();
 			});
 			test("south pole", () => {
 				expect(projection.differentiability(-Math.PI/2)).toBeCloseTo(1, 1);
@@ -140,7 +135,7 @@ describe("on a sphere", () => {
 	});
 
 	describe("Mercator projection", () => {
-		const projection = MapProjection.conformalConic(sphere, 0);
+		const projection = MapProjection.conformalConic(sphere, -Math.PI/2, 0, Math.PI/2, 0);
 		describe("projectPoint()", () => {
 			test("normal point", () => {
 				const origin = projection.projectPoint({φ: 0, λ: 0});
@@ -162,15 +157,15 @@ describe("on a sphere", () => {
 			});
 		});
 		test("projectMeridian()", () => {
-			const trueMeridian = projection.projectMeridian(-Math.PI/2, 0, 1);
-			const expectedMeridian = [];
-			for (let i = 1; i < sphere.refLatitudes.length/2; i ++)
-				expectedMeridian.push({type: 'L', args: [expect.closeTo(1), expect.anything()]});
-			expect(trueMeridian).toEqual(expectedMeridian);
+			const meridian = projection.projectMeridian(-Math.PI/2, 0, 1);
+			for (let i = 0; i < meridian.length; i ++)
+				expect(meridian[i].args[0]).toBeCloseTo(1);
+			expect(assert_xy(endpoint(meridian[meridian.length - 1]))).toEqual(projection.projectPoint({φ: 0, λ: 1}));
 		});
 		test("projectParallel()", () => {
+			const endpoint = projection.projectPoint({λ: 3, φ: Math.PI/4});
 			expect(projection.projectParallel(-2, 3, Math.PI/4)).toEqual([
-				{type: 'L', args: [expect.closeTo(3), expect.anything()]},
+				{type: 'L', args: [endpoint.x, endpoint.y]},
 			]);
 		});
 		test("wrapsAround()", () => {
@@ -181,7 +176,7 @@ describe("on a sphere", () => {
 				expect(projection.differentiability(Math.PI/2)).toBeLessThan(0.7);
 			});
 			test("equator", () => {
-				expect(projection.differentiability(0)).toBeCloseTo(1, 1);
+				expect(() => projection.differentiability(0)).toThrow();
 			});
 			test("south pole", () => {
 				expect(projection.differentiability(-Math.PI/2)).toBeLessThan(0.7);
@@ -190,7 +185,7 @@ describe("on a sphere", () => {
 	});
 
 	describe("conic projection", () => {
-		const projection = MapProjection.conformalConic(sphere, Math.PI/6);
+		const projection = MapProjection.conformalConic(sphere, -Math.PI/2, Math.PI/6, Math.PI/2, 0);
 		test("projectPoint()", () => {
 			expect(projection.projectPoint({φ: Math.PI/2, λ: 1})).toEqual({x: 0, y: 0});
 		});
@@ -205,7 +200,7 @@ describe("on a sphere", () => {
 				expect(projection.differentiability(Math.PI/2)).toBeCloseTo(0.5, 1);
 			});
 			test("equator", () => {
-				expect(projection.differentiability(0)).toBeCloseTo(1, 1);
+				expect(() => projection.differentiability(0)).toThrow();
 			});
 			test("south pole", () => {
 				expect(projection.differentiability(-Math.PI/2)).toBeLessThan(0.5);
@@ -219,7 +214,7 @@ describe("on a disc", () => {
 	disc.initialize();
 
 	describe("azimuthal equidistant projection", () => {
-		const projection = MapProjection.bonne(disc, 1);
+		const projection = MapProjection.bonne(disc, disc.φMin, 1, disc.φMax, 0);
 		describe("projectPoint()", () => {
 			test("pole", () => {
 				expect(projection.projectPoint({φ: Math.PI/2, λ: 2})).toEqual(
@@ -247,7 +242,7 @@ describe("on a disc", () => {
 		});
 	});
 	describe("also azimuthal equidistant projection", () => {
-		const projection = MapProjection.conformalConic(disc, 1);
+		const projection = MapProjection.conformalConic(disc, disc.φMin, 1, disc.φMax, 0);
 		describe("projectPoint()", () => {
 			test("consistency of antimeridian", () => {
 				expect(projection.projectPoint({φ: 0.5, λ: Math.PI})).toEqual(

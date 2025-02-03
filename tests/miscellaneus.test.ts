@@ -5,7 +5,7 @@
 import {
 	arctanh,
 	argmax,
-	binarySearch, decodeBase37, filterSet, isBetween,
+	binarySearch, cumulativeIntegral, decodeBase37, filterSet, isBetween,
 	legendreP2,
 	legendreP4,
 	legendreP6,
@@ -118,10 +118,10 @@ describe("linterp()", () => {
 		expect(linterp(2, [0, 1, 2], [8, 5, 6])).toEqual(6);
 	});
 	test("below minimum", () => {
-		expect(() => linterp(-1, [0, 1, 2], [8, 5, 6])).toThrow();
+		expect(linterp(-1, [0, 1, 2], [8, 5, 6])).toEqual(8);
 	});
 	test("above maximum", () => {
-		expect(() => linterp(3, [0, 1, 2], [8, 5, 6])).toThrow();
+		expect(linterp(3, [0, 1, 2], [8, 5, 6])).toEqual(6);
 	});
 });
 
@@ -159,6 +159,46 @@ describe("isBetween()", () => {
 	});
 	test("on upper bound", () => {
 		expect(isBetween(1, 0, 1)).toEqual(true);
+	});
+});
+
+describe("cumulativeIntegral()", () => {
+	test("line", () => {
+		function f(x: number): number {
+			return x + 2;
+		}
+		const [x, y] = cumulativeIntegral(f, -3, 3, 1, .01, 1e-17);
+		expect(x).toEqual([-3, -2, -1, 0, 1, 2, 3]);
+		expect(y).toEqual([0, -0.5, 0, 1.5, 4, 7.5, 12]);
+	});
+	test("backwards", () => {
+		function f(x: number): number {
+			return x + 2;
+		}
+		const [x, y] = cumulativeIntegral(f, 3, -3, 1, .01, 1e-17);
+		expect(x).toEqual([3, 2, 1, -0, -1, -2, -3]);
+		expect(y).toEqual([-0, -4.5, -8, -10.5, -12, -12.5, -12]);
+	});
+	test("parabola", () => {
+		function f(x: number): number {
+			return 10 + x*x;
+		}
+		const [x, y] = cumulativeIntegral(f, 0, 2.0, 1, .01, .01);
+		expect(x).toEqual([0.0, 0.5, 1.0, 1.5, 2.0]);
+		for (let i = 0; i < x.length; i ++)
+			expect(y[i]).toBeCloseTo(10*x[i] + x[i]*x[i]*x[i]/3, 0);
+	});
+	test("at min step size", () => {
+		function f(x: number): number {
+			return Math.exp(x/.01);
+		}
+		const [x, _] = cumulativeIntegral(f, 0, 1, 1, .1, 1e-6);
+		expect(x).toEqual([0.000, 0.125, 0.250, 0.375, 0.500, 0.625, 0.750, 0.875, 1.000]);
+	});
+	test("zero width", () => {
+		const [x, y] = cumulativeIntegral((_) => 10, 1, 1, 1, .01, 1e-17);
+		expect(x).toEqual([1]);
+		expect(y).toEqual([0]);
 	});
 });
 

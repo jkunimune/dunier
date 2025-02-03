@@ -127,7 +127,6 @@ enum Layer {
 export class Chart {
 	private readonly projection: MapProjection;
 	private readonly northUp: boolean;
-	private readonly centralMeridian: number;
 	private readonly geoEdges: PathSegment[];
 	private readonly mapEdges: PathSegment[];
 	public readonly dimensions: Dimensions;
@@ -150,28 +149,35 @@ export class Chart {
 		northUp: boolean, rectangularBounds: boolean,
 	) {
 		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
-		this.centralMeridian = centralMeridian;
+		const southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
+		const northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2*Math.PI);
 
 		if (projectionName === 'equirectangular')
-			this.projection = MapProjection.equirectangular(surface);
+			this.projection = MapProjection.equirectangular(
+				surface, southLimitingParallel, northLimitingParallel, centralMeridian);
 		else if (projectionName === 'equal_earth')
-			this.projection = MapProjection.equalEarth(surface, meanRadius);
+			this.projection = MapProjection.equalEarth(
+				surface, meanRadius, southLimitingParallel, northLimitingParallel, centralMeridian);
 		else if (projectionName === 'bonne')
-			this.projection = MapProjection.bonne(surface, centralParallel);
+			this.projection = MapProjection.bonne(
+				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
 		else if (projectionName === 'conformal_conic')
-			this.projection = MapProjection.conformalConic(surface, centralParallel);
+			this.projection = MapProjection.conformalConic(
+				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
 		else
 			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
 		this.northUp = northUp;
 
 		// establish the bounds of the map
-		const {φMin, φMax, λMax, xRight, xLeft, yBottom, yTop} =
+		const {φMin, φMax, λMin, λMax, xRight, xLeft, yBottom, yTop} =
 			Chart.chooseMapBounds(
 				intersection(
-					transformInput(this.centralMeridian, Chart.border(regionOfInterest)),
-					Chart.rectangle(surface.φMax, Math.PI, surface.φMin, -Math.PI, true),
-					surface, true),
+					transformInput(this.projection, Chart.border(regionOfInterest)),
+					Chart.rectangle(
+						this.projection.φMax, this.projection.λMax,
+						this.projection.φMin, this.projection.λMin, true),
+					this.projection.domain, true),
 				this.projection, rectangularBounds);
 		this.labelIndex = 0;
 
@@ -188,12 +194,12 @@ export class Chart {
 		if (λMax === Math.PI && this.projection.wrapsAround())
 			this.geoEdges = [
 				{type: 'M', args: [φMax, λMax]},
-				{type: 'Φ', args: [φMax, -λMax]},
-				{type: 'M', args: [φMin, -λMax]},
+				{type: 'Φ', args: [φMax, λMin]},
+				{type: 'M', args: [φMin, λMin]},
 				{type: 'Φ', args: [φMin, λMax]},
 			];
 		else
-			this.geoEdges = Chart.rectangle(φMax, λMax, φMin, -λMax, true);
+			this.geoEdges = Chart.rectangle(φMax, λMax, φMin, λMin, true);
 		this.mapEdges = Chart.rectangle(this.dimensions.left, this.dimensions.top, this.dimensions.right, this.dimensions.bottom, false);
 	}
 
@@ -570,7 +576,7 @@ export class Chart {
 			});
 			centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
 			centers[i].isContained = contains( // build a graph out of the contained centers
-				path,  {s: centers[i].x, t: -centers[i].y}, false,
+				path,  {s: centers[i].x, t: -centers[i].y}, INFINITE_PLANE,
 			) !== Side.OUT; // (we're counting "borderline" as in)
 			if (centers[i].isContained) {
 				for (let j = 0; j < i; j ++) {
@@ -799,9 +805,9 @@ export class Chart {
 	 */
 	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
 		const croppedToGeoRegion = intersection(
-			transformInput(this.centralMeridian, segments),
+			transformInput(this.projection, segments),
 			this.geoEdges,
-			this.projection.surface, closePath,
+			this.projection.domain, closePath,
 		);
 		if (croppedToGeoRegion.length === 0)
 			return [];
@@ -1122,29 +1128,30 @@ export class Chart {
 	 */
 	static chooseMapBounds(
 		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
-	): {φMin: number, φMax: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
+	): {φMin: number, φMax: number, λMin: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
 		// start by identifying the geographic extent of this thing
 		let regionBounds;
 		if (regionOfInterest.length > 0)
 			regionBounds = calculatePathBounds(regionOfInterest);
 		else
-			regionBounds = {sMin: projection.surface.φMin, sMax: projection.surface.φMax, tMin: -Math.PI, tMax: Math.PI};
+			regionBounds = {sMin: projection.φMin, sMax: projection.φMax, tMin: -Math.PI, tMax: Math.PI};
 
 		// first infer some things about this projection
-		const northPoleIsDistant = projection.differentiability(projection.surface.φMax) < .7;
-		const southPoleIsDistant = projection.differentiability(projection.surface.φMin) < .7;
-		const northPoleIsPoint = projection.projectPoint({φ: projection.surface.φMax, λ: 1}).x === 0;
-		const southPoleIsPoint = projection.projectPoint({φ: projection.surface.φMin, λ: 1}).x === 0;
+		const northPoleIsDistant = projection.differentiability(projection.φMax) < .7;
+		const southPoleIsDistant = projection.differentiability(projection.φMin) < .7;
+		const northPoleIsPoint = projection.projectPoint({φ: projection.φMax, λ: 1}).x === 0;
+		const southPoleIsPoint = projection.projectPoint({φ: projection.φMin, λ: 1}).x === 0;
 
 		// now to choose those bounds
-		let φMin, φMax, λMax;
+		let φMin, φMax, λMin, λMax;
 		let xLeft, xRight, yTop, yBottom;
 		// if we want a rectangular map
 		if (rectangularBounds) {
 			// don't apply any geographic bounds
-			φMin = projection.surface.φMin;
-			φMax = projection.surface.φMax;
-			λMax = Math.PI;
+			φMin = projection.φMin;
+			φMax = projection.φMax;
+			λMin = projection.λMin;
+			λMax = projection.λMax;
 			// and calculate the maximum extent of the projected region to get the Cartesian bounds
 			const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
 			const projectedBounds = calculatePathBounds(projectedRegion);
@@ -1173,20 +1180,21 @@ export class Chart {
 		// if we want a wedge-shaped map
 		else {
 			// calculate the minimum and maximum latitude and longitude of the region of interest
-			const yMax = projection.projectPoint({φ: regionBounds.sMin, λ: 0}).y;
-			const yMin = projection.projectPoint({φ: regionBounds.sMax, λ: 0}).y;
+			const yMax = projection.projectPoint({φ: regionBounds.sMin, λ: projection.λCenter}).y;
+			const yMin = projection.projectPoint({φ: regionBounds.sMax, λ: projection.λCenter}).y;
 			// spread the limits out a bit to give a contextual view
-			const ySouthPole = projection.projectPoint({φ: projection.surface.φMin, λ: 0}).y;
-			const yNorthPole = projection.projectPoint({φ: projection.surface.φMax, λ: 0}).y;
-			φMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.1*yMin - 0.1*yMax, yNorthPole)}).φ;
-			φMin = projection.inverseProjectPoint({x: 0, y: Math.min(1.1*yMax - 0.1*yMin, ySouthPole)}).φ;
+			const ySouthEdge = projection.projectPoint({φ: projection.φMin, λ: projection.λCenter}).y;
+			const yNorthEdge = projection.projectPoint({φ: projection.φMax, λ: projection.λCenter}).y;
+			φMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.1*yMin - 0.1*yMax, yNorthEdge)}).φ;
+			φMin = projection.inverseProjectPoint({x: 0, y: Math.min(1.1*yMax - 0.1*yMin, ySouthEdge)}).φ;
 			const ds_dλ = projection.surface.rz((φMin + φMax)/2).r;
-			λMax = Math.min(Math.PI, regionBounds.tMax + 0.1*(yMax - yMin)/ds_dλ);
+			λMin = Math.max(projection.λMin, regionBounds.tMin - 0.1*(yMax - yMin)/ds_dλ);
+			λMax = Math.min(projection.λMax, regionBounds.tMax + 0.1*(yMax - yMin)/ds_dλ);
 			// cut out the poles if desired
 			if (northPoleIsDistant || northPoleIsPoint)
-				φMax = Math.max(Math.min(φMax, projection.surface.φMax - 10/180*Math.PI), φMin);
+				φMax = Math.max(Math.min(φMax, projection.φMax - 10/180*Math.PI), φMin);
 			if (southPoleIsDistant || southPoleIsPoint)
-				φMin = Math.min(Math.max(φMin, projection.surface.φMin + 10/180*Math.PI), φMax);
+				φMin = Math.min(Math.max(φMin, projection.φMin + 10/180*Math.PI), φMax);
 			// and don't apply any Cartesian bounds
 			xLeft = -Infinity;
 			xRight = Infinity;
@@ -1195,17 +1203,17 @@ export class Chart {
 		}
 
 		// the extent of the geographic region will always impose some Cartesian limits; compute those now.
-		const start = projection.projectPoint({φ: φMin, λ: -λMax});
+		const start = projection.projectPoint({φ: φMin, λ: λMin});
 		const edges = [ // then determine the dimensions of this map
 			{type: 'M', args: [start.x, start.y]},
-			...projection.projectParallel(-λMax, λMax, φMin),
+			...projection.projectParallel(λMin, λMax, φMin),
 			...projection.projectMeridian(φMin, φMax, λMax),
-			...projection.projectParallel(λMax, -λMax, φMax),
-			...projection.projectMeridian(φMax, φMin, -λMax),
+			...projection.projectParallel(λMax, λMin, φMax),
+			...projection.projectMeridian(φMax, φMin, λMin),
 		];
 		const mapBounds = calculatePathBounds(edges);
 		return {
-			φMin: φMin, φMax: φMax, λMax: λMax,
+			φMin: φMin, φMax: φMax, λMin: λMin, λMax: λMax,
 			xLeft: Math.max(xLeft, mapBounds.sMin),
 			xRight: Math.min(xRight, mapBounds.sMax),
 			yTop: Math.max(yTop, mapBounds.tMin),

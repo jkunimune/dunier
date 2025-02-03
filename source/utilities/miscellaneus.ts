@@ -82,7 +82,7 @@ export function binarySearch<T>(array: T[], condition: (item: T) => boolean): nu
 
 /**
  * linearly interpolate x from the sorted function X onto the corresponding output Y.
- * @throws an error if the reference array lengths don't match or if the input value is outside the given range.
+ * if the input is out of the range covered by X, it will return the first or last element of Y, as appropriate.
  */
 export function linterp(inVal: number, inRef: number[], exRef: number[]): number {
 	if (inRef.length !== exRef.length)
@@ -91,12 +91,10 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 		throw new Error(
 			`input reference array must be monotonicly increasing, 
 			but this one goes from ${inRef[0]} to ${inRef[inRef.length - 1]}`);
-	else if (inVal === inRef[0])
+	else if (inVal <= inRef[0])
 		return exRef[0];
-	else if (inVal < inRef[0] || inVal > inRef[inRef.length - 1])
-		throw new Error(
-			`you tried to interpolate the point ${inVal}, which is out of bounds 
-			(must be between ${inRef[0]} and ${inRef[inRef.length - 1]}`);
+	else if (inVal >= inRef[inRef.length - 1])
+		return exRef[inRef.length - 1];
 	else {
 		const i = binarySearch(inRef, (ref) => ref >= inVal);
 		const rightWeit = (inVal - inRef[i - 1])/(inRef[i] - inRef[i - 1]);
@@ -131,6 +129,68 @@ export function isBetween(value: number, a: number, b: number): boolean {
 		return value >= a && value <= b;
 	else
 		return value >= b && value <= a;
+}
+
+/**
+ * find the antiderivative of the given function
+ * @param f the function to integrate
+ * @param xStart the starting value for the dependent variable
+ * @param xEnd the value of the dependent variable at which to stop
+ * @param maxStepSize the initial step size and largest allowable spacing between returned values
+ * @param minStepSize the smallest allowable spacing between returned values
+ * @param relTolerance the largest permissible estimated error to the slope at any given step
+ * @return a set of x values and the value of the antiderivative of f at each of those points.
+ *         (the first y value will always be 0)
+ */
+export function cumulativeIntegral(
+	f: (x: number) => number, xStart: number, xEnd: number,
+	maxStepSize: number, minStepSize: number, relTolerance: number): [number[], number[]] {
+	// first, normalize this problem so that it's going forward (it's a pain to keep track of which direction we're going otherwise)
+	if (xEnd < xStart) {
+		const [x, y] = cumulativeIntegral((x) => f(-x), -xStart, -xEnd, maxStepSize, minStepSize, relTolerance);
+		return [x.map((x) => -x), y.map((y) => -y)];
+	}
+	// build up arrays of x and y from xInit
+	const xFinalized = [xStart];
+	const fxFinalized = [f(xStart)];
+	const yFinalized = [0];
+	// and keep track of some future x and f(x) values so we don't have to make redundant calls to f
+	const xPending: number[] = [];
+	const fxPending: number[] = [];
+	while (xFinalized[xFinalized.length - 1] < xEnd) {
+		// if there's anything pending
+		if (xPending.length > 0) {
+			const i = xFinalized.length - 1;
+			const j = xPending.length - 1;
+			// check the midpoint between this and the next one
+			const xMid = (xFinalized[i] + xPending[j])/2;
+			const fxMid = f(xMid);
+			// if the midpoint is roughly where we expect it (or if we don't want to resolve further than this)
+			const Δx = xPending[j] - xFinalized[i];
+			const relError = 2/3*Math.abs(1 - fxMid/((fxFinalized[i] + fxPending[j])/2)); // this 2/3 is from fitting a parabola thru the points
+			if (relError < relTolerance || Δx/2 < minStepSize) {
+				// discard it, take that pending point off the queue, and increment y
+				xFinalized.push(xPending.pop());
+				fxFinalized.push(fxPending.pop());
+				yFinalized.push(yFinalized[i] + (fxFinalized[i] + fxFinalized[i + 1])/2*(xFinalized[i + 1] - xFinalized[i]));
+			}
+			// if the midpoint reveals unacceptable error
+			else {
+				// push it to the pending points queue and repeat
+				xPending.push(xMid);
+				fxPending.push(fxMid);
+			}
+		}
+		// if we haven't looked past where we currently are
+		else {
+			// step forward
+			const xNext = Math.min(xFinalized[xFinalized.length - 1] + maxStepSize, xEnd);
+			xPending.push(xNext);
+			fxPending.push(f(xNext));
+		}
+	}
+	// return the arrays when you're completely done
+	return [xFinalized, yFinalized];
 }
 
 /**

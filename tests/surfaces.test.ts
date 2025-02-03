@@ -85,9 +85,8 @@ describe("Spheroid", () => {
 			expect(surface.hasSeasons(-24/180*Math.PI)).toBe(true);
 		});
 	});
-	test("cumulAreas", () => {
-		for (let i = 1; i < surface.cumulAreas.length; i ++)
-			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
+	test("area", () => {
+		expect(surface.area).toBeCloseTo(4*Math.PI*radius*radius*(1 + Math.pow(1 - surface.flattening, 2))/2, -6);
 	});
 	describe("distance()", () => {
 		test("along equator", () => {
@@ -221,10 +220,6 @@ describe("Toroid", () => {
 			expect(surface.hasSeasons(-24/180*Math.PI)).toBe(true);
 		});
 	});
-	test("cumulAreas", () => {
-		for (let i = 1; i < surface.cumulAreas.length; i ++)
-			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
-	});
 	describe("distance()", () => {
 		test("along inner equator", () => {
 			const innerRadius = surface.xyz({φ: Math.PI, λ: Math.PI}).y;
@@ -316,10 +311,9 @@ describe("Disc", () => {
 			expect(surface.hasSeasons(Math.atan(firmamentHeight/(.751*radius)))).toBe(true);
 		});
 	});
-	test("cumulAreas", () => {
+	test("area", () => {
 		surface.initialize();
-		for (let i = 1; i < surface.cumulAreas.length; i ++)
-			expect(surface.cumulAreas[i] - surface.cumulAreas[i - 1]).toBeGreaterThan(0);
+		expect(surface.area).toBeCloseTo(Math.PI*radius*radius);
 	});
 	test("distance()", () => {
 		expect(surface.distance(

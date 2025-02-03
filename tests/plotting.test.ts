@@ -12,17 +12,15 @@ import {
 } from "../source/map/pathutilities.js";
 import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
-import {Toroid} from "../source/surface/toroid.js";
 import {LockedDisc} from "../source/surface/lockeddisc.js";
 import {MapProjection} from "../source/map/projection.js";
-import {Sphere} from "../source/surface/sphere.js";
-import {INFINITE_PLANE} from "../source/surface/surface";
+import {Domain, INFINITE_PLANE} from "../source/surface/surface.js";
 
 const π = Math.PI;
+const plane = INFINITE_PLANE;
+const geoid = new Domain(-π, π, -π, π, (_) => false);
 
 describe("isClosed", () => {
-	const plane = INFINITE_PLANE;
-	const sphere = new Sphere(1);
 	test("nothing", () => {
 		const path: PathSegment[] = [];
 		expect(isClosed(path, plane)).toBe(true);
@@ -48,7 +46,7 @@ describe("isClosed", () => {
 			{type: 'M', args: [1, -π]},
 			{type: 'Φ', args: [1, π]},
 		];
-		expect(isClosed(path, sphere)).toBe(true);
+		expect(isClosed(path, geoid)).toBe(true);
 	});
 });
 
@@ -111,6 +109,7 @@ describe("calculatePathBounds", () => {
 
 describe("getEdgeCrossings", () => {
 	describe("geographical", () => {
+		const geoid = new Domain(-π, π, -π, π, (_) => false);
 		test("line across a meridian", () => {
 			const meridian = [
 				{type: 'M', args: [-1, 3]},
@@ -120,7 +119,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [1, 2]},
 				{type: 'L', args: [-1, 4]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, true)).toEqual([{
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, geoid)).toEqual([{
 				intersect0: {s: -0, t: 3}, intersect1: {s: -0, t: 3}, loopIndex: 0,
 			}]);
 		});
@@ -133,7 +132,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [0, 3]},
 				{type: 'L', args: [0, -3]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], antimeridian, true)).toEqual([{
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], antimeridian, geoid)).toEqual([{
 				intersect0: {s: 0, t: π}, intersect1: {s: 0, t: -π}, loopIndex: 0,
 			}]);
 		});
@@ -146,7 +145,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [1, -2]},
 				{type: 'Φ', args: [1, 2]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, true)).toEqual([{
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, geoid)).toEqual([{
 				intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0,
 			}]);
 		});
@@ -159,7 +158,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [-1, 0]},
 				{type: 'L', args: [2, 3]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, geoid)).toEqual([{
 				intersect0: {s: 0, t: 1}, intersect1: {s: 0, t: 1}, loopIndex: 0,
 			}]);
 		});
@@ -172,7 +171,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [-1, 2*π/3]},
 				{type: 'L', args: [2, -5*π/6]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, geoid)).toEqual([{
 				intersect0: {s: 0, t: 5*π/6}, intersect1: {s: 0, t: 5*π/6}, loopIndex: 0,
 			}]);
 		});
@@ -185,7 +184,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [-1, 2]},
 				{type: 'Λ', args: [3, 2]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, geoid)).toEqual([{
 				intersect0: {s: 0, t: 2}, intersect1: {s: 0, t: 2}, loopIndex: 0,
 			}]);
 		});
@@ -198,7 +197,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [3, 2]},
 				{type: 'L', args: [-3, 2]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, geoid)).toEqual([{
 				intersect0: {s: π, t: 2}, intersect1: {s: -π, t: 2}, loopIndex: 0,
 			}]);
 		});
@@ -212,7 +211,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [-1.5, 2.5]},
 				{type: 'L', args: [1.5, -0.5]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, true)).toEqual([
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, geoid)).toEqual([
 				{intersect0: {s: 0, t: 1}, intersect1: {s: 0, t: 1}, loopIndex: 0},
 				{intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0},
 			]);
@@ -227,7 +226,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [-1, -1]},
 				{type: 'L', args: [1, 1]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, true)).toEqual([
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, geoid)).toEqual([
 				{intersect0: {s: -0, t: 0}, intersect1: {s: -0, t: 0}, loopIndex: 0},
 				{intersect0: {s: 0, t: 0}, intersect1: {s: 0, t: 0}, loopIndex: 0},
 			]);
@@ -242,14 +241,14 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [1, 3]},
 					{type: 'L', args: [0, 0]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([]);
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, geoid)).toEqual([]);
 			});
 			test("exiting", () => {
 				const segment = [
 					{type: 'M', args: [-1, 3]},
 					{type: 'L', args: [0, 0]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([{
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, geoid)).toEqual([{
 					intersect0: {s: 0, t: 0}, intersect1: {s: 0, t: 0}, loopIndex: 0,
 				}]);
 			});
@@ -258,7 +257,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [0, 0]},
 					{type: 'L', args: [0, 1]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, true)).toEqual([]);
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], parallel, geoid)).toEqual([]);
 			});
 			test("exiting, with known roundoff issues", () => {
 				const edge = [
@@ -269,10 +268,78 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [2.3011331145822087, -0.08713711381374845]},
 					{type: 'L', args: [2.2990403105010992, -0.08824891027566292]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, true)).toEqual([{
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, geoid)).toEqual([{
 					intersect0: {s: 2.2990403105010992, t: -0.08824891027566292},
 					intersect1: {s: 2.2990403105010992, t: -0.08824891027566292},
 					loopIndex: 0,
+				}]);
+			});
+		});
+		describe("line onto the antimeridian", () => {
+			const shiftedGeoid = new Domain(0, 2*π, 0, 2*π, (_) => false);
+			const edges = [
+				{type: 'M', args: [0, 0]},
+				{type: 'Φ', args: [0, 2*π]},
+				{type: 'Λ', args: [2*π, 2*π]},
+				{type: 'Φ', args: [2*π, 0]},
+				{type: 'Λ', args: [0, 0]},
+			];
+			test("west", () => {
+				const segment = [
+					{type: 'M', args: [2, 1]},
+					{type: 'L', args: [1, 0]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, shiftedGeoid)).toEqual([{
+					intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 2*π}, loopIndex: 0,
+				}]);
+			});
+			test("east", () => {
+				const segment = [
+					{type: 'M', args: [2, 6]},
+					{type: 'L', args: [1, 2*π]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, shiftedGeoid)).toEqual([{
+					intersect0: {s: 1, t: 2*π}, intersect1: {s: 1, t: 0}, loopIndex: 0,
+				}]);
+			});
+			test("west to east", () => {
+				const segment = [
+					{type: 'M', args: [1, 0]},
+					{type: 'L', args: [1, 2*π]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, shiftedGeoid)).toEqual([]);
+			});
+			test("east to west", () => {
+				const segment = [
+					{type: 'M', args: [1, 2*π]},
+					{type: 'L', args: [1, 0]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, shiftedGeoid)).toEqual([]);
+			});
+		});
+		describe("line off of the antimeridian", () => {
+			const shiftedGeoid = new Domain(-π/2, π/2, -5.06370236647894, 1.2194829407006464, (_) => false);
+			const edges = [
+				{type: 'M', args: [π/2, 1.2194829407006464]},
+				{type: 'Φ', args: [π/2, -5.06370236647894]},
+				{type: 'Λ', args: [-π/2, -5.06370236647894]},
+				{type: 'Φ', args: [-π/2, 1.2194829407006464]},
+				{type: 'Λ', args: [π/2, 1.2194829407006464]},
+			];
+			test("west", () => {
+				const segment = [
+					{type: 'M', args: [1, 0]},
+					{type: 'L', args: [0, 1]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, shiftedGeoid)).toEqual([]);
+			});
+			test("east", () => {
+				const segment = [
+					{type: 'M', args: [1, 1.2194829407006464]},
+					{type: 'L', args: [0, 1]},
+				];
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, shiftedGeoid)).toEqual([{
+					intersect0: {s: 1, t: -5.06370236647894}, intersect1: {s: 1, t: 1.2194829407006464}, loopIndex: 0,
 				}]);
 			});
 		});
@@ -285,7 +352,7 @@ describe("getEdgeCrossings", () => {
 				{type: 'M', args: [0.130964506054289, -3.118616303993922]},
 				{type: 'L', args: [0.18247162241832457, -π]},
 			];
-			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, true)).toEqual([{
+			expect(getEdgeCrossings(endpoint(segment[0]), segment[1], meridian, geoid)).toEqual([{
 				intersect0: {s: 0.18247162241832457, t: -π}, intersect1: {s: 0.18247162241832457, t: π},
 				loopIndex: 0,
 			}]);
@@ -302,7 +369,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [0, 0]},
 					{type: 'L', args: [2, -1]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, plane)).toEqual([{
 					intersect0: {s: 1, t: -1/2}, intersect1: {s: 1, t: -1/2},
 					loopIndex: 0,
 				}]);
@@ -317,7 +384,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [2, 1]},
 					{type: 'L', args: [-1, -2]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, false)).toEqual([
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edges, plane)).toEqual([
 					{intersect0: {s: 1, t: 0}, intersect1: {s: 1, t: 0}, loopIndex: 0,},
 					{intersect0: {s: 0, t: -1}, intersect1: {s: 0, t: -1}, loopIndex: 0,},
 				]);
@@ -332,7 +399,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [0, 0]},
 					{type: 'L', args: [2, -2]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, false)).toEqual([
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], corner, plane)).toEqual([
 					{intersect0: {s: 1, t: -1}, intersect1: {s: 1, t: -1}, loopIndex: 0},
 					{intersect0: {s: 1, t: -1}, intersect1: {s: 1, t: -1}, loopIndex: 0},
 				]);
@@ -347,7 +414,7 @@ describe("getEdgeCrossings", () => {
 						{type: 'M', args: [1, -1]},
 						{type: 'L', args: [2, 0]},
 					];
-					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
+					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, plane)).toEqual([{
 						intersect0: {s: 2, t: 0}, intersect1: {s: 2, t: 0}, loopIndex: 0,
 					}]);
 				});
@@ -356,7 +423,7 @@ describe("getEdgeCrossings", () => {
 						{type: 'M', args: [1, 1]},
 						{type: 'L', args: [2, 0]},
 					];
-					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
+					expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, plane)).toEqual([{
 						intersect0: {s: 2, t: 0}, intersect1: {s: 2, t: 0}, loopIndex: 0,
 					}]);
 				});
@@ -372,7 +439,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [0., 0.]},
 					{type: 'A', args: [1., 1., 0, 0, 1, 2., 0.]},
 				];
-				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, false)).toEqual([{
+				expect(getEdgeCrossings(endpoint(segment[0]), segment[1], edge, plane)).toEqual([{
 					intersect0: {s: 1., t: -1.}, intersect1: {s: 1., t: -1.}, loopIndex: 0,
 				}]);
 			});
@@ -385,7 +452,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [1, -2]},
 					{type: 'A', args: [3, 3, 0, 0, 0, 0, -2]},
 				];
-				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([{
+				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, plane)).toEqual([{
 					intersect0: {s: 0, t: -2}, intersect1: {s: 0, t: -2}, loopIndex: 0,
 				}]);
 			});
@@ -398,7 +465,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [-263.4140742546302, -2838.7311389789447]},
 					{type: 'A', args: [4674.056630597984, 4674.056630597984, 0, 0, 0, -346.1074722752436, -2833.32760088764]},
 				];
-				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([{
+				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, plane)).toEqual([{
 					intersect0: {s: -346.1074722752436, t: -2833.32760088764},
 					intersect1: {s: -346.1074722752436, t: -2833.32760088764},
 					loopIndex: 0,
@@ -413,7 +480,7 @@ describe("getEdgeCrossings", () => {
 					{type: 'M', args: [2, 0]},
 					{type: 'A', args: [2, 2, 0, 1, 1, 2 + Math.sqrt(3), -1]},
 				];
-				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, false)).toEqual([
+				expect(getEdgeCrossings(endpoint(segments[0]), segments[1], edge, plane)).toEqual([
 					{
 						intersect0: {s: 2 + Math.sqrt(3), t: -1},
 						intersect1: {s: 2 + Math.sqrt(3), t: -1},
@@ -440,25 +507,25 @@ describe("contains", () => {
 			{type: 'L', args: [4, 0]},
 		];
 		test("inside", () => {
-			expect(contains(region, {s: 3, t: -1}, false))
+			expect(contains(region, {s: 3, t: -1}, plane))
 				.toBe(Side.IN);
 		});
 		describe("outside", () => {
 			test("to the south", () => {
-				expect(contains(region, {s: 0, t: -1}, false))
+				expect(contains(region, {s: 0, t: -1}, plane))
 					.toBe(Side.OUT);
 			});
 			test("to the west", () => {
-				expect(contains(region, {s: 3, t: -8}, false))
+				expect(contains(region, {s: 3, t: -8}, plane))
 					.toBe(Side.OUT);
 			});
 			test("in line with an edge", () => {
-				expect(contains(region, {s: 0, t: 0}, false))
+				expect(contains(region, {s: 0, t: 0}, plane))
 					.toBe(Side.OUT);
 			});
 		});
 		test("borderline", () => {
-			expect(contains(region, {s: 2, t: -3}, false))
+			expect(contains(region, {s: 2, t: -3}, plane))
 				.toBe(Side.BORDERLINE);
 		});
 	});
@@ -470,15 +537,15 @@ describe("contains", () => {
 			{type: 'L', args: [1, -3]},
 		];
 		test("inside", () => {
-			expect(contains(region, {s: 2, t: -2}, false))
+			expect(contains(region, {s: 2, t: -2}, plane))
 				.toBe(Side.IN);
 		});
 		test("outside toward the point", () => {
-			expect(contains(region, {s: 4, t: -3}, false))
+			expect(contains(region, {s: 4, t: -3}, plane))
 				.toBe(Side.OUT);
 		});
 		test("outside away from the point", () => {
-			expect(contains(region, {s: 0, t: -3}, false))
+			expect(contains(region, {s: 0, t: -3}, plane))
 				.toBe(Side.OUT);
 		});
 	});
@@ -490,11 +557,11 @@ describe("contains", () => {
 			{type: 'L', args: [4, 0]},
 		];
 		test("inside", () => {
-			expect(contains(region, {s: 0, t: -8}, false))
+			expect(contains(region, {s: 0, t: -8}, plane))
 				.toBe(Side.IN);
 		});
 		test("outside", () => {
-			expect(contains(region, {s: 3, t: -1}, false))
+			expect(contains(region, {s: 3, t: -1}, plane))
 				.toBe(Side.OUT);
 		});
 	});
@@ -510,15 +577,15 @@ describe("contains", () => {
 			{type: 'L', args: [5, 1]},
 		];
 		test("inside", () => {
-			expect(contains(region, {s: 1.5, t: -1}, false))
+			expect(contains(region, {s: 1.5, t: -1}, plane))
 				.toBe(Side.IN);
 		});
 		test("outside", () => {
-			expect(contains(region, {s: 0, t: -8}, false))
+			expect(contains(region, {s: 0, t: -8}, plane))
 				.toBe(Side.OUT);
 		});
 		test("in the hole", () => {
-			expect(contains(region, {s: 3, t: -1}, false))
+			expect(contains(region, {s: 3, t: -1}, plane))
 				.toBe(Side.OUT);
 		});
 	});
@@ -528,7 +595,7 @@ describe("contains", () => {
 			{type: 'A', args: [0.5, 0.5, 0., 0, 0, 0.5, 1.0]},
 			{type: 'A', args: [0.5, 0.5, 0., 0, 0, 0.5, 0.0]},
 		];
-		expect(contains(segments, {s: 0, t: 0}, false)).toBe(Side.OUT);
+		expect(contains(segments, {s: 0, t: 0}, plane)).toBe(Side.OUT);
 	});
 	describe("circular segment region", () => {
 		const segments = [
@@ -538,19 +605,19 @@ describe("contains", () => {
 		];
 		describe("on the arc side", () => {
 			test("in line with top edge", () => {
-				expect(contains(segments, {s: -1., t: 0.}, false)).toBe(Side.OUT);
+				expect(contains(segments, {s: -1., t: 0.}, plane)).toBe(Side.OUT);
 			});
 			test("in line with bottom edge", () => {
-				expect(contains(segments, {s: -1., t: 1.}, false)).toBe(Side.OUT);
+				expect(contains(segments, {s: -1., t: 1.}, plane)).toBe(Side.OUT);
 			});
 		});
 		describe ("on the line side", () => {
 			test("in line with top edge", () => {
-				expect(contains(segments, {s: 1., t: 0.}, false)).toBe(Side.OUT);
+				expect(contains(segments, {s: 1., t: 0.}, plane)).toBe(Side.OUT);
 
 			});
 			test("in line with bottom edge", () => {
-				expect(contains(segments, {s: 1., t: 0.}, false)).toBe(Side.OUT);
+				expect(contains(segments, {s: 1., t: 0.}, plane)).toBe(Side.OUT);
 			});
 		});
 	});
@@ -565,7 +632,7 @@ describe("contains", () => {
 			{type: 'Λ', args: [-π, -π]},
 			{type: 'Φ', args: [-π, -1]},
 		];
-		expect(contains(region, {s: -3, t: 0}, true)).toBe(Side.OUT);
+		expect(contains(region, {s: -3, t: 0}, geoid)).toBe(Side.OUT);
 	});
 	describe("periodic region", () => {
 		const region = [
@@ -573,19 +640,19 @@ describe("contains", () => {
 			{type: 'Φ', args: [.5, -π]},
 		];
 		test("inside", () => {
-			expect(contains(region, {s: 0, t: 2}, true))
+			expect(contains(region, {s: 0, t: 2}, geoid))
 				.toBe(Side.IN);
 		});
 		test("outside", () => {
-			expect(contains(region, {s: 1, t: 2}, true))
+			expect(contains(region, {s: 1, t: 2}, geoid))
 				.toBe(Side.OUT);
 		});
 		test("inside on the antimeridian", () => {
-			expect(contains(region, {s: 0, t: π}, true))
+			expect(contains(region, {s: 0, t: π}, geoid))
 				.toBe(Side.IN);
 		});
 		test("outside on the antimeridian", () => {
-			expect(contains(region, {s: 1, t: π}, true))
+			expect(contains(region, {s: 1, t: π}, geoid))
 				.toBe(Side.OUT);
 		});
 	});
@@ -598,11 +665,11 @@ describe("contains", () => {
 				{type: 'L', args: [0.3, 2]},
 			];
 			test("inside", () => {
-				expect(contains(region, {s: 0.2, t: 3}, true))
+				expect(contains(region, {s: 0.2, t: 3}, geoid))
 					.toBe(Side.IN);
 			});
 			test("outside", () => {
-				expect(contains(region, {s: 0.2, t: 0}, true))
+				expect(contains(region, {s: 0.2, t: 0}, geoid))
 					.toBe(Side.OUT);
 			});
 		});
@@ -614,11 +681,11 @@ describe("contains", () => {
 				{type: 'L', args: [0.3, 2]},
 			];
 			test("inside", () => {
-				expect(contains(region, {s: 0.2, t: 0}, true))
+				expect(contains(region, {s: 0.2, t: 0}, geoid))
 					.toBe(Side.IN);
 			});
 			test("outside", () => {
-				expect(contains(region, {s: 0.2, t: 3}, true))
+				expect(contains(region, {s: 0.2, t: 3}, geoid))
 					.toBe(Side.OUT);
 			});
 		});
@@ -632,11 +699,11 @@ describe("contains", () => {
 				{type: 'Φ', args: [0, -π]},
 			];
 			test("inside", () => {
-				expect(contains(region, {s: -1, t: 0}, true))
+				expect(contains(region, {s: -1, t: 0}, geoid))
 					.toBe(Side.IN);
 			});
 			test("outside", () => {
-				expect(contains(region, {s: 3, t: 0}, true))
+				expect(contains(region, {s: 3, t: 0}, geoid))
 					.toBe(Side.OUT);
 			});
 		});
@@ -650,21 +717,21 @@ describe("contains", () => {
 			{type: 'Λ', args: [-π, -π]},
 		];
 		test("inside", () => {
-			expect(contains(region, {s: -3, t: -1}, true))
+			expect(contains(region, {s: -3, t: -1}, geoid))
 				.toBe(Side.IN);
 		});
 		test("outside", () => {
-			expect(contains(region, {s: -4, t: -1}, true))
+			expect(contains(region, {s: -4, t: -1}, geoid))
 				.toBe(Side.OUT);
 		});
 		test("borderline", () => {
-			expect(contains(region, {s: -π, t: -1}, true))
+			expect(contains(region, {s: -π, t: -1}, geoid))
 				.toBe(Side.BORDERLINE);
 		});
 	});
 	test("null region", () => {
 		const region: PathSegment[] = [];
-		expect(contains(region, {s: 9000, t: 9001}, false)).toBe(Side.IN);
+		expect(contains(region, {s: 9000, t: 9001}, plane)).toBe(Side.IN);
 	});
 });
 
@@ -684,7 +751,7 @@ describe("encompasses", () => {
 					{type: 'L', args: [0.1, 0.9]},
 					{type: 'L', args: [0.9, 0.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.IN);
+				expect(encompasses(region, points, plane)).toBe(Side.IN);
 			});
 			test("outside", () => {
 				const points = [
@@ -692,7 +759,7 @@ describe("encompasses", () => {
 					{type: 'L', args: [1.1, 1.9]},
 					{type: 'L', args: [1.9, 1.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.OUT);
+				expect(encompasses(region, points, plane)).toBe(Side.OUT);
 			});
 			test("around", () => {
 				const points = [
@@ -700,7 +767,7 @@ describe("encompasses", () => {
 					{type: 'L', args: [-2, 3]},
 					{type: 'L', args: [3, 0.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.OUT);
+				expect(encompasses(region, points, plane)).toBe(Side.OUT);
 			});
 		});
 		describe("partially coincident", () => {
@@ -710,7 +777,7 @@ describe("encompasses", () => {
 					{type: 'L', args: [0.0, 0.9]},
 					{type: 'L', args: [0.9, 0.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.IN);
+				expect(encompasses(region, points, plane)).toBe(Side.IN);
 			});
 			test("outside", () => {
 				const points = [
@@ -718,11 +785,11 @@ describe("encompasses", () => {
 					{type: 'L', args: [0.0, 0.9]},
 					{type: 'L', args: [-0.9, 0.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.OUT);
+				expect(encompasses(region, points, plane)).toBe(Side.OUT);
 			});
 		});
 		test("fully coincident", () => {
-			expect(encompasses(region, region, false)).toBe(Side.BORDERLINE);
+			expect(encompasses(region, region, plane)).toBe(Side.BORDERLINE);
 		});
 	});
 	describe("inside-out region", () => {
@@ -740,7 +807,7 @@ describe("encompasses", () => {
 					{type: 'L', args: [0.1, 0.9]},
 					{type: 'L', args: [0.9, 0.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.OUT);
+				expect(encompasses(region, points, plane)).toBe(Side.OUT);
 			});
 			test("outside", () => {
 				const points = [
@@ -748,7 +815,7 @@ describe("encompasses", () => {
 					{type: 'L', args: [1.1, 1.9]},
 					{type: 'L', args: [1.9, 1.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.IN);
+				expect(encompasses(region, points, plane)).toBe(Side.IN);
 			});
 		});
 		describe("partially coincident", () => {
@@ -758,7 +825,7 @@ describe("encompasses", () => {
 					{type: 'L', args: [0.0, 0.9]},
 					{type: 'L', args: [0.9, 0.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.OUT);
+				expect(encompasses(region, points, plane)).toBe(Side.OUT);
 			});
 			test("outside", () => {
 				const points = [
@@ -766,11 +833,11 @@ describe("encompasses", () => {
 					{type: 'L', args: [0.0, 0.9]},
 					{type: 'L', args: [-0.9, 0.5]},
 				];
-				expect(encompasses(region, points, false)).toBe(Side.IN);
+				expect(encompasses(region, points, plane)).toBe(Side.IN);
 			});
 		});
 		test("fully coincident", () => {
-			expect(encompasses(region, region, false)).toBe(Side.BORDERLINE);
+			expect(encompasses(region, region, plane)).toBe(Side.BORDERLINE);
 		});
 	});
 	describe("concave regions", () => {
@@ -786,7 +853,7 @@ describe("encompasses", () => {
 				{type: 'M', args: [2, 0]},
 				{type: 'A', args: [2, 2, 0, 0, 0, -2, 0]},
 			];
-			expect(encompasses(region, arc, false)).toBe(Side.IN);
+			expect(encompasses(region, arc, plane)).toBe(Side.IN);
 		});
 		test("*almost* fully coincident", () => {
 			const edges = [
@@ -813,14 +880,13 @@ describe("encompasses", () => {
 			];
 			// XXX technically this result is incorrect, but it would be hard to fix, and I think I can handle this shortcoming well enuff
 			expect(encompasses(
-				edges, points, true,
+				edges, points, geoid,
 			)).toBe(Side.BORDERLINE);
 		});
 	});
 });
 
 describe("intersection", () => {
-	const TOROID = new Toroid(3, 1, .008, 0);
 	const edges = [
 		{type: 'M', args: [0, 0]},
 		{type: 'L', args: [0, 1]},
@@ -946,7 +1012,7 @@ describe("intersection", () => {
 			{type: 'Λ', args: [-π, -π]},
 		];
 		expect(intersection(
-			segments, toroidalEdges, TOROID,true,
+			segments, toroidalEdges, geoid,true,
 		)).toEqual([ // this one gets broken up into three distinct regions
 			// the northwest corner
 			{type: 'M', args: [3, -2]},
@@ -986,7 +1052,7 @@ describe("intersection", () => {
 			{type: 'Φ', args: [π, -π]},
 			{type: 'Λ', args: [-π, -π]},
 		];
-		expect(intersection(segments, toroidalEdges, TOROID, false)).toEqual([
+		expect(intersection(segments, toroidalEdges, geoid, false)).toEqual([
 			{type: 'M', args: [1, 3]},
 			{type: 'L', args: [1.5, π]},
 			{type: 'M', args: [1.5, -π]},
@@ -1101,7 +1167,7 @@ describe("intersection", () => {
 			{type: 'L', args: [1.5, -0.5]},
 		];
 		expect(intersection(
-			segments, edges, TOROID, true,
+			segments, edges, geoid, true,
 		)).toEqual(segments.concat(edges.slice(2, 4)));
 	});
 });
@@ -1109,7 +1175,7 @@ describe("intersection", () => {
 describe("applyProjectionToPath", () => {
 	const surface = new LockedDisc(2);
 	surface.initialize();
-	const projection = MapProjection.conformalConic(surface, 1);
+	const projection = MapProjection.conformalConic(surface, surface.φMin, 1, surface.φMax, 0);
 	test("points", () => {
 		const path = [
 			{type: 'M', args: [π/4, -π/2]},
