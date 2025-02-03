@@ -114,7 +114,7 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
  */
 export function localizeInRange(value: number, min: number, max: number): number {
 	const anser = value - Math.floor((value - min)/(max - min))*(max - min);
-	if (Math.abs(anser - max) < Number.EPSILON*(max - min))
+	if (Math.abs(anser - max) < 2*Number.EPSILON*(max - min))
 		return min;  // this is to make it resistant to roundoff error
 	else
 		return anser;

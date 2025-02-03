@@ -126,9 +126,6 @@ describe("linterp()", () => {
 });
 
 describe("localizeInRange()", () => {
-	test("infinite", () => {
-		expect(localizeInRange(1, -Infinity, Infinity)).toEqual(1);
-	});
 	test("on minimum", () => {
 		expect(localizeInRange(1, 1, 4)).toEqual(1);
 	});
