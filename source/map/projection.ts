@@ -8,7 +8,7 @@ import {
 	ΦΛPoint,
 	XYPoint, assert_φλ
 } from "../utilities/coordinates.js";
-import {cumulativeIntegral, linterp, localizeInRange} from "../utilities/miscellaneus.js";
+import {binarySearch, cumulativeIntegral, linterp, localizeInRange} from "../utilities/miscellaneus.js";
 
 
 /**
@@ -165,21 +165,17 @@ export class MapProjection {
 		// start by identifying the reference latitude closest to each endpoint
 		let i0, i1;
 		if (φ1 > φ0) {
-			i0 = Math.floor(
-				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) + 1; // TODO: use bezier curves
-			i1 = Math.ceil(
-				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
+			i0 = binarySearch(this.φRef, (φi) => φi > φ0);
+			i1 = binarySearch(this.φRef, (φi) => φi >= φ1) - 1;
 		}
 		else {
-			i0 = Math.ceil(
-				(φ0 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1)) - 1;
-			i1 = Math.floor(
-				(φ1 - this.φRef[0])/(this.φRef[this.φRef.length-1] - this.φRef[0])*(this.φRef.length-1));
+			i0 = binarySearch(this.φRef, (φi) => φi >= φ0) - 1;
+			i1 = binarySearch(this.φRef, (φi) => φi > φ1);
 		}
 		// add a vertex to the path for every reference latitude between the two endpoints
 		for (let i = i0; i !== i1; i += Math.sign(i1 - i0)) {
 			const {x, y} = this.projectPoint({φ: this.φRef[i], λ: λ});
-			path.push({type: 'L', args: [x, y]});
+			path.push({type: 'L', args: [x, y]}); // TODO: use bezier curves
 		}
 		// then a final vertex for the destination latitude
 		const {x, y} = this.projectPoint({φ: φ1, λ: λ});
