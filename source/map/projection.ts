@@ -351,18 +351,27 @@ export class MapProjection {
 			(φ: number) => -n/surface.rz(φ).r*surface.ds_dφ(φ),
 			φMid, φMin, 0.2, 0.02, 1e-3);
 		// combine the two and exp them to get y positions
-		const rMid = surface.rz(φMid).r/n;
 		const φ = [];
 		const y = [];
 		for (let i = southernΦ.length - 1; i > 0; i --) {
 			φ.push(southernΦ[i]);
-			y.push(rMid*Math.min(Math.exp(southernLogR[i]), 1e3)); // limit the radii to finite values
+			y.push(Math.min(Math.exp(southernLogR[i]), 1e3)); // limit the radii to finite values
 		}
 		for (let i = 0; i < northernΦ.length; i ++) {
 			φ.push(northernΦ[i]);
-			y.push(rMid*Math.min(Math.exp(northernLogR[i]), 1e3));
+			y.push(Math.min(Math.exp(northernLogR[i]), 1e3));
 		}
-		// TODO: it would be better to set the scale at φStd, not φMid, but it's harder because it might be a pole
+
+		// figure out what the scale needs to be set to
+		const iStd = binarySearch(φ, (φi) => φi > φStd) - 1;
+		if (iStd < 0 || iStd + 1 >= φ.length)
+			throw new Error("the standard parallel ended up falling outside of the projection bounds so I can't set the scale");
+		const currentScale = (y[iStd + 1] - y[iStd])/(φ[iStd + 1] - φ[iStd]);
+		const desiredScale = -surface.ds_dφ(φStd);
+		const scaleFactor = desiredScale/currentScale;
+		// apply the new scale to the y values
+		for (let i = 0; i < φ.length; i ++)
+			y[i] *= scaleFactor; // limit the radii to finite values
 
 		// then do the arc lengths corresponding to one radian
 		const dx_dλRef = [];
