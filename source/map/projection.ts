@@ -276,6 +276,21 @@ export class MapProjection {
 	}
 
 	/**
+	 * construct an orthographic projection looking down at the north pole.
+	 * this projection will throw an error for a toroid or a spheroid.  it is only intended to be used for planes.
+	 */
+	public static orthographic(surface: Surface, φMin: number, φMax: number, λStd: number): MapProjection {
+		const resolution = 32;
+		const φ = [];
+		const R = [];
+		for (let i = 0; i <= resolution; i ++) {
+			φ.push(φMin + i/resolution*(φMax - φMin));
+			R.push(surface.rz(φ[i]).r);
+		}
+		return new MapProjection(surface, φ, R, R, 0, λStd);
+	}
+
+	/**
 	 * construct a plate carey projection.  this projection will <i>not</i> adjust based on the surface being
 	 * projected or the region being focused on; it will always linearly translate latitude to y and longitude to x.
 	 */

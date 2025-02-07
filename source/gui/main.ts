@@ -59,6 +59,8 @@ let planetRendered = false;
 let inProgress: boolean = false; // TODO; I can't remember why this is here; if I click forward in the tabs while it's loading, does everything update?
 /** the planet on which the map is defined */
 let surface: Surface = null;
+/** the map projection to use for the terrain and history tabs */
+let defaultMapProjection: string = null;
 /** the list of continents with at least some land */
 let continents: Set<Tile>[] = null;
 /** the human world on that planet */
@@ -137,6 +139,7 @@ function applyPlanet() {
 	console.log("fina!");
 	lastUpdated = Layer.PLANET;
 	planetRendered = false;
+	defaultMapProjection = (planetType === 'plane') ? "orthographic" : "equal_earth";
 }
 
 
@@ -217,7 +220,7 @@ function applyTerrain(): void {
 
 	console.log("grafa...");
 	const mapper = new Chart(
-		"equal_earth", surface, surface.tiles,
+		defaultMapProjection, surface, surface.tiles,
 		true, false);
 	mapper.depict(surface,
 	              null,
@@ -270,7 +273,7 @@ function applyHistory(): void {
 
 	console.log("grafa...");
 	const mapper = new Chart(
-		"equal_earth", surface, surface.tiles,
+		defaultMapProjection, surface, surface.tiles,
 		true, false);
 	mapper.depict(surface,
 	              world,

@@ -138,7 +138,7 @@ export class Chart {
 
 	/**
 	 * build an object for visualizing geographic information in SVG.
-	 * @param projectionName the type of projection to choose – one of "equirectangular", "equal_earth", "bonne", or "conformal_conic"
+	 * @param projectionName the type of projection to choose – one of "equirectangular", "equal_earth", "bonne", "conformal_conic", or "orthographic"
 	 * @param surface the Surface for which to design the projection
 	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
 	 * @param northUp whether the top of the map should ruffly correspond to North, rather than South
@@ -164,6 +164,9 @@ export class Chart {
 		else if (projectionName === 'conformal_conic')
 			this.projection = MapProjection.conformalConic(
 				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
+		else if (projectionName === 'orthographic')
+			this.projection = MapProjection.orthographic(
+				surface, southLimitingParallel, northLimitingParallel, centralMeridian);
 		else
 			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
@@ -191,7 +194,7 @@ export class Chart {
 		this.scale = 1/this.dimensions.diagonal;
 
 		// set the geographic and Cartesian limits of the mapped area
-		if (λMax === Math.PI && this.projection.wrapsAround())
+		if (λMax - λMin === 2*Math.PI && this.projection.wrapsAround())
 			this.geoEdges = [
 				{type: 'M', args: [φMax, λMax]},
 				{type: 'Φ', args: [φMax, λMin]},
