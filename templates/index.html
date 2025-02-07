@@ -3,9 +3,10 @@
 
 <!-- UI functions -->
 <script>
+  /** grey out tidal locking for toroidal planets */
   function disableTidalLocking(type) {
     const checkbox = $('#planet-locked');
-    if (type === '1') { // if it's toroidal now
+    if (type === 'toroid') { // if it's toroidal now
       if (checkbox.prop('checked')) { // uncheck tidal locking if we need to
         checkbox.click();
         disableRotationParams(checkbox.prop('checked'));
@@ -16,6 +17,7 @@
     }
   }
 
+  /** grey out the day length and obliquity when the planet is tidally locked */
   function disableRotationParams(locked) {
     $('#planet-day').prop('disabled', locked); // rotation period
     $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
