@@ -119,6 +119,7 @@ export class MapProjection {
 
 	/**
 	 * generate some <path> segments to trace a line of constant latitude between two longitudes.
+	 * the startpoint of the parallel (φ, λ0) is not part of the path, but the endpoint (φ, λ1) is.
 	 * @param φ the relative latitude in radians
 	 * @param λ0 the relative starting longitude in the range [-π, π]
 	 * @param λ1 the relative ending longitude in the range [-π, π]
@@ -154,6 +155,7 @@ export class MapProjection {
 
 	/**
 	 * generate some <path> segments to trace a line of constant longitude between two latitudes.
+	 * the startpoint of the parallel (φ0, λ) is not part of the path, but the endpoint (φ, λ1) is.
 	 * @param φ0 the relative starting latitude in radians
 	 * @param φ1 the relative ending latitude in radians
 	 * @param λ the relative longitude in the range [-π, π]
@@ -166,11 +168,11 @@ export class MapProjection {
 		let i0, i1;
 		if (φ1 > φ0) {
 			i0 = binarySearch(this.φRef, (φi) => φi > φ0);
-			i1 = binarySearch(this.φRef, (φi) => φi >= φ1) - 1;
+			i1 = binarySearch(this.φRef, (φi) => φi >= φ1);
 		}
 		else {
 			i0 = binarySearch(this.φRef, (φi) => φi >= φ0) - 1;
-			i1 = binarySearch(this.φRef, (φi) => φi > φ1);
+			i1 = binarySearch(this.φRef, (φi) => φi > φ1) - 1;
 		}
 		// add a vertex to the path for every reference latitude between the two endpoints
 		for (let i = i0; i !== i1; i += Math.sign(i1 - i0)) {

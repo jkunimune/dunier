@@ -24,8 +24,11 @@ describe("on a sphere", () => {
 		});
 		test("projectMeridian()", () => {
 			const meridian = projection.projectMeridian(-Math.PI/2, 0, 1);
-			for (let i = 0; i < meridian.length; i ++)
+			for (let i = 0; i < meridian.length; i ++) {
 				expect(meridian[i].args[0]).toBeCloseTo(Math.sin(-meridian[i].args[1]));
+				if (i > 0)
+					expect(meridian[i].args[1]).toBeLessThan(meridian[i - 1].args[1]);
+			}
 			expect(assert_xy(endpoint(meridian[meridian.length - 1]))).toEqual(projection.projectPoint({φ: 0, λ: 1}));
 		});
 		describe("projectParallel()", () => {
@@ -86,8 +89,13 @@ describe("on a sphere", () => {
 		});
 		test("projectMeridian()", () => {
 			const meridian = projection.projectMeridian(-Math.PI/2, 0, Math.PI/2);
-			for (let i = 0; i < meridian.length; i ++)
+			for (let i = 0; i < meridian.length; i ++) {
 				expect(meridian[i].args[1]).toBeCloseTo(0);
+				if (i === 0)
+					expect(meridian[i].args[0]).toBeGreaterThan(0);
+				else
+					expect(meridian[i].args[0]).toBeGreaterThan(meridian[i - 1].args[0]);
+			}
 			expect(assert_xy(endpoint(meridian[meridian.length - 1]))).toEqual(projection.projectPoint({φ: 0, λ: Math.PI/2}));
 		});
 		describe("projectParallel()", () => {
