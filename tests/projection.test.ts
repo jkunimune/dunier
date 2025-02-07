@@ -54,7 +54,7 @@ describe("on a sphere", () => {
 		});
 	});
 
-	describe("stereographic projection", () => {
+	describe("stereographic projection (south pole)", () => {
 		const projection = MapProjection.conformalConic(sphere, -Math.PI/2, -Math.PI/2, Math.PI/2, 0);
 		describe("projectPoint()", () => {
 			test("south pole", () => {
@@ -130,6 +130,28 @@ describe("on a sphere", () => {
 			});
 			test("south pole", () => {
 				expect(projection.differentiability(-Math.PI/2)).toBeCloseTo(1, 1);
+			});
+		});
+	});
+
+	describe("stereographic projection (north pole)", () => {
+		const projection = MapProjection.conformalConic(sphere, -Math.PI/2, Math.PI/2, Math.PI/2, 0);
+		describe("projectPoint()", () => {
+			test("north pole", () => {
+				expect(projection.projectPoint({φ: Math.PI/2, λ: 2})).toEqual(
+					{x: expect.closeTo(0), y: expect.closeTo(0)});
+			});
+			test("equator", () => {
+				expect(projection.projectPoint({φ: 0, λ: -Math.PI/6})).toEqual(
+					{x: expect.closeTo(-1), y: expect.closeTo(Math.sqrt(3))});
+			});
+			test("antimeridian", () => {
+				expect(projection.projectPoint({φ: 0, λ: Math.PI})).toEqual(
+					{x: expect.closeTo(0), y: expect.closeTo(-2)});
+			});
+			test("consistency of antimeridian", () => {
+				expect(projection.projectPoint({φ: -1, λ: Math.PI})).toEqual(
+					projection.projectPoint({φ: -1, λ: -Math.PI}));
 			});
 		});
 	});

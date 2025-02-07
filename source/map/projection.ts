@@ -342,28 +342,40 @@ export class MapProjection {
 		else if (n < -0.75)
 			n = -1;
 
-		// build out from some central parallel to get the log-radii to get the y positions of the prime meridian
+		// build out from some central parallel to get the log-normalized-radii to get the y positions of the prime meridian
+		// (specifically this integral calculates ln(R^|1/n|/surface.rz(φ).r), because that's what gets the smoothest integral)
+		function dLogR̃_dφ(φ: number): number {
+			if (Math.sign(n) + surface.tangent(φ).r !== 0)
+				return -(Math.sign(n) + surface.tangent(φ).r)/surface.rz(φ).r*surface.ds_dφ(φ);
+			else
+				return 0;
+		}
 		const φMid = (φMin + φMax)/2;
-		const [northernΦ, northernLogR] = cumulativeIntegral(
-			(φ: number) => -n/surface.rz(φ).r*surface.ds_dφ(φ),
-			φMid, φMax, 0.2, 0.02, 1e-3);
-		const [southernΦ, southernLogR] = cumulativeIntegral(
-			(φ: number) => -n/surface.rz(φ).r*surface.ds_dφ(φ),
-			φMid, φMin, 0.2, 0.02, 1e-3);
+		const [northernΦ, northernLogR̃] = cumulativeIntegral(
+			dLogR̃_dφ, φMid, φMax, 0.2, 0.02, 1e-3);
+		const [southernΦ, southernLogR̃] = cumulativeIntegral(
+			dLogR̃_dφ, φMid, φMin, 0.2, 0.02, 1e-3);
 		// combine the two and exp them to get y positions
 		const φ = [];
-		const y = [];
+		const logR̃ = [];
 		for (let i = southernΦ.length - 1; i > 0; i --) {
 			φ.push(southernΦ[i]);
-			y.push(Math.min(Math.exp(southernLogR[i]), 1e3)); // limit the radii to finite values
+			logR̃.push(southernLogR̃[i]);
 		}
 		for (let i = 0; i < northernΦ.length; i ++) {
 			φ.push(northernΦ[i]);
-			y.push(Math.min(Math.exp(northernLogR[i]), 1e3));
+			logR̃.push(northernLogR̃[i]);
+		}
+		const y = [];
+		for (let i = 0; i < logR̃.length; i ++) {
+			if (Number.isFinite(logR̃[i]))
+				y.push(Math.pow(surface.rz(φ[i]).r*Math.exp(logR̃[i]), Math.abs(n))); // limit the radii to finite values
+			else
+				y.push(1e19);
 		}
 
 		// figure out what the scale needs to be set to
-		const iStd = binarySearch(φ, (φi) => φi > φStd) - 1;
+		const iStd = Math.min(binarySearch(φ, (φi) => φi > φStd) - 1, φ.length - 2);
 		if (iStd < 0 || iStd + 1 >= φ.length)
 			throw new Error("the standard parallel ended up falling outside of the projection bounds so I can't set the scale");
 		const currentScale = (y[iStd + 1] - y[iStd])/(φ[iStd + 1] - φ[iStd]);
@@ -402,11 +414,11 @@ export class MapProjection {
 		const y = [];
 		for (let i = southernΦ.length - 1; i > 0; i --) {
 			φ.push(southernΦ[i]);
-			y.push(Math.min(southernY[i], dx_dλ*1e3)); // make sure to clip them to finite values
+			y.push(Math.min(southernY[i], dx_dλ*1e19)); // make sure to clip them to finite values
 		}
 		for (let i = 0; i < northernΦ.length; i ++) {
 			φ.push(northernΦ[i]);
-			y.push(Math.max(northernY[i], -dx_dλ*1e3));
+			y.push(Math.max(northernY[i], -dx_dλ*1e19));
 		}
 		return new MapProjection(surface, φ, y, Array(φ.length).fill(dx_dλ), Infinity, λStd);
 	}
