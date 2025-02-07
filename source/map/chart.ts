@@ -1194,9 +1194,10 @@ export class Chart {
 			λMin = Math.max(projection.λMin, regionBounds.tMin - 0.1*(yMax - yMin)/ds_dλ);
 			λMax = Math.min(projection.λMax, regionBounds.tMax + 0.1*(yMax - yMin)/ds_dλ);
 			// cut out the poles if desired
-			if (northPoleIsDistant || northPoleIsPoint)
+			const longitudesWrapAround = projection.wrapsAround() && λMax - λMin === 2*Math.PI;
+			if (northPoleIsDistant || (northPoleIsPoint && !longitudesWrapAround))
 				φMax = Math.max(Math.min(φMax, projection.φMax - 10/180*Math.PI), φMin);
-			if (southPoleIsDistant || southPoleIsPoint)
+			if (southPoleIsDistant || (southPoleIsPoint && !longitudesWrapAround))
 				φMin = Math.min(Math.max(φMin, projection.φMin + 10/180*Math.PI), φMax);
 			// and don't apply any Cartesian bounds
 			xLeft = -Infinity;
