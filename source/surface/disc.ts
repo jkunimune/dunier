@@ -98,6 +98,10 @@ export class Disc extends Surface {
 	isOnEdge(place: ΦΛPoint): boolean {
 		return place.φ === this.φMin;
 	}
+
+	isFlat(): boolean {
+		return true;
+	}
 	
 	computeEdgeVertexLocation(tileL: Tile, tileR: Tile): { pos: Vector; coordinates: ΦΛPoint } {
 		const x0 = (tileL.pos.x + tileR.pos.x)/2;

@@ -352,6 +352,11 @@ export abstract class Surface {
 	 * whether the point is exactly on the line between this surface's domain and oblivion
 	 */
 	abstract isOnEdge(place: ΦΛPoint): boolean;
+
+	/**
+	 * whether the curvature of this surface is globally 0
+	 */
+	abstract isFlat(): boolean;
 }
 
 

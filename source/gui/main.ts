@@ -59,8 +59,6 @@ let planetRendered = false;
 let inProgress: boolean = false; // TODO; I can't remember why this is here; if I click forward in the tabs while it's loading, does everything update?
 /** the planet on which the map is defined */
 let surface: Surface = null;
-/** the map projection to use for the terrain and history tabs */
-let defaultMapProjection: string = null;
 /** the list of continents with at least some land */
 let continents: Set<Tile>[] = null;
 /** the human world on that planet */
@@ -139,7 +137,6 @@ function applyPlanet() {
 	console.log("fina!");
 	lastUpdated = Layer.PLANET;
 	planetRendered = false;
-	defaultMapProjection = (planetType === 'plane') ? "orthographic" : "equal_earth";
 }
 
 
@@ -219,8 +216,9 @@ function applyTerrain(): void {
 		surface, rng); // create the terrain!
 
 	console.log("grafa...");
+	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
-		defaultMapProjection, surface, surface.tiles,
+		projection, surface, surface.tiles,
 		true, false);
 	mapper.depict(surface,
 	              null,
@@ -272,8 +270,9 @@ function applyHistory(): void {
 		rng); // create the terrain!
 
 	console.log("grafa...");
+	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
-		defaultMapProjection, surface, surface.tiles,
+		projection, surface, surface.tiles,
 		true, false);
 	mapper.depict(surface,
 	              world,
@@ -326,7 +325,7 @@ function applyMap(): void {
 		applyHistory();
 
 	console.log("grafa zemgrafe...");
-	const projectionName = DOM.val('map-projection');
+	const projectionName = surface.isFlat() ? "orthographic" : DOM.val('map-projection');
 	const northUp = (DOM.val('map-orientation') === 'north');
 	const rectangularBounds = (DOM.val('map-shape') === 'rectangle');
 	const focusSpecifier = DOM.val('map-jung');
@@ -481,15 +480,6 @@ for (const { layer, name } of tabs) {
 		}
 	});
 }
-
-
-/**
- * when the map projection changes, update the description.
- */
-DOM.elm('map-projection').addEventListener('change', () => {
-	DOM.elm('map-projection-description').innerHTML = format(
-		`parameter.map.type.${DOM.val('map-projection')}.description`);
-});
 
 
 /**

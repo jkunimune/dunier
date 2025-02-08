@@ -22,6 +22,25 @@
     $('#planet-day').prop('disabled', locked); // rotation period
     $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
   }
+
+  /** hide the map projection selection for flat geoids */
+  function hideProjectionSelection(type) {
+    const selection = $('#map-projection-form')[0];
+    if (type === 'plane')
+      selection.style.display = "none";
+    else
+      selection.style.display = "block";
+  }
+
+  /** show the description of the currently selected map projection */
+  function updateProjectionDescription(projection) {
+    for (const option of ["bonne", "conformal_conic", "equal_earth", "equirectangular"]) {
+      if (option === projection)
+        $('#map-' + option + '-description')[0].style.display = "block";
+      else
+        $('#map-' + option + '-description')[0].style.display = "none";
+    }
+  }
 </script>
 
 <div class="container-lg mt-3 mb-5">
@@ -54,7 +73,7 @@
           <form>
             <div class="form-group">
               <label for="planet-type">{parameter.planet.shape}</label>
-              <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value);">
+              <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value); hideProjectionSelection(this.value);">
                 <option selected value="spheroid">{parameter.planet.shape.spheroid}</option>
                 <option value="toroid">{parameter.planet.shape.toroid}</option>
                 <option value="plane">{parameter.planet.shape.plane}</option>
@@ -206,16 +225,27 @@
               </div>
               <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
                 <div class="card-body">
-                  <div class="form-group">
+                  <div class="form-group" id="map-projection-form">
                     <label for="map-projection">{parameter.map.type}</label>
-                    <select class="custom-select" id="map-projection">
-                      <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
+                    <select class="custom-select" id="map-projection" onchange="updateProjectionDescription(this.value);">
                       <option selected value="bonne">{parameter.map.type.bonne}</option>
+                      <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
                       <option value="equal_earth">{parameter.map.type.equal_earth}</option>
                       <option value="equirectangular">{parameter.map.type.equirectangular}</option>
                     </select>
                     <div id="map-projection-description">
-                      {parameter.map.type.bonne.description}
+                      <div id="map-bonne-description">
+                        {parameter.map.type.bonne.description}
+                      </div>
+                      <div id="map-conformal_conic-description" style="display:none">
+                        {parameter.map.type.conformal_conic.description}
+                      </div>
+                      <div id="map-equal_earth-description" style="display:none">
+                        {parameter.map.type.equal_earth.description}
+                      </div>
+                      <div id="map-equirectangular-description" style="display:none">
+                        {parameter.map.type.equirectangular.description}
+                      </div>
                     </div>
                   </div>
                   <div class="form-group">

@@ -172,4 +172,8 @@ export class Spheroid extends Surface {
 	isOnEdge(_: ΦΛPoint): boolean {
 		return false;
 	}
+
+	isFlat(): boolean {
+		return false;
+	}
 }
