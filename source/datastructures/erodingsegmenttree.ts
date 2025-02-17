@@ -3,14 +3,27 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 
+import {localizeInRange} from "../utilities/miscellaneus.js";
+
 /**
- * a data structure storing a series of nonintersecting line segments that shrink.
+ * a data structure describing a shrinking subset of a line segment.
+ * the idea here is that your domain is finite and one dimensional, and all points on the domain
+ * start as included in the subset.  however, points can be removed from the subset in two ways.
+ * you can call `remove()` to explicitly remove all points in a given interval.
+ * or you can call `erode()` to remove all points within a certain distance of points not in the subset.
+ * at any point, you can call `getCenter()` to find the point in the subset that is the farthest from any boundaries
+ * (i.e. the point that is the farthest from getting eroded, or the midpoint of the longest contained segment).
+ * you can also call `getClosest()` to find the point in the subset that is closest to a given point in the domain.
  */
 export class ErodingSegmentTree {
 	/** the remaining height it can erode before being empty (half-width of the largest empty interval) */
 	private radius: number;
 	/** the center of the largest empty interval */
 	private pole: number;
+	/** the lowest valid value (important for periodic center-finding) */
+	private readonly domainMinim: number;
+	/** the highest valid value (important for periodic center-finding) */
+	private readonly domainMaxim: number;
 	/** the link with the leftmost endpoint */
 	private minim: Link;
 	/** the link with the rightmost endpoint */
@@ -23,6 +36,8 @@ export class ErodingSegmentTree {
 	constructor(xMin: number, xMax: number) {
 		if (xMin > xMax)
 			throw RangeError("initial range must be positive!");
+		this.domainMinim = xMin;
+		this.domainMaxim = xMax;
 		this.minim = new Link(xMin, true, 0, null);
 		this.maxim = new Link(xMax, false, 1, this.minim, this.minim, null);
 		this.mul = this.minim;
@@ -227,19 +242,21 @@ export class ErodingSegmentTree {
 	}
 
 	/**
-	 * get the nearest point to value that is contained in one of the line segments.
+	 * get the nearest point to `value` that is contained in one of the line segments.
 	 * @param value
 	 */
 	public getClosest(value: number): number {
 		const left = this.search(value, this.mul);
-		if (left === null)
+		if (left === null) // if it's to the left of the leftmost segment, the closest value must be the leftmost node
 			return this.minim.val;
-		else if (left.bad === null)
+		else if (left.bad === null) // if it's to the right of the rightmost segment, the closest value must be the rightmost node
 			return this.maxim.val;
 		const rait = left.bad;
-		if (value - left.val < rait.val - value)
+		if (left.esaLeft) // if this is contained in one of the segmments, the closest value is itself
+			return value;
+		if (value - left.val < rait.val - value) // otherwise if it's closer to the node on its left, use that
 			return left.val;
-		else
+		else // otherwise it must be closer to the node on its right so use that
 			return rait.val;
 	}
 
@@ -252,21 +269,77 @@ export class ErodingSegmentTree {
 	}
 
 	/**
-	 * get the midpoint of the longest line segment, and half the length of the longest
+	 * get the midpoint of the longest contained line segment, and half the length of the longest
 	 * line segment.  return zero if there are no line segments left.
-	 * @param periodic whether we should treat it as an angular coordinate where -π is the
-	 *                 same as +π
+	 * @param periodic whether we should treat it as an angular coordinate where domainMinim is the
+	 *                 same as domainMaxim
 	 */
 	public getCenter(periodic: boolean = false): { location: number, radius: number } {
-		if (periodic && this.minim.val === -Math.PI && this.maxim.val === Math.PI) { // if it's periodic
+		if (periodic && this.minim.val === this.domainMinim && this.maxim.val === this.domainMaxim) { // if it's periodic and there are segments touching the domain bounds
 			const leftGap = this.minim.bad.val - this.minim.val; // you haff to check the outside
 			const riteGap = this.maxim.val - this.maxim.cen.val;
 			if (leftGap + riteGap > 2*this.radius) // to see if that's better
-				return { location: (leftGap - riteGap)/2 + Math.PI,
-						 radius: (leftGap + riteGap)/2 };
+				return {
+					location: localizeInRange(
+						this.minim.val + (leftGap - riteGap)/2,
+						this.domainMinim, this.domainMaxim),
+					radius: (leftGap + riteGap)/2 };
 		}
 		return { location: this.pole, radius: this.radius }; // otherwise it's just these instance variables of which you've kept track
 	}
+
+	/**
+	 * check that the tree topology is consistent with the linkedlist topology and throw an error if it isn't
+	 */
+	public validate() {
+		// traverse the tree from left to right
+		const linksInOrder = traverseTreeInOrder(this.mul);
+		if (this.minim !== linksInOrder[0])
+			throw new Error("the minimum doesn't appear to be the leftmost node.");
+		if (this.maxim !== linksInOrder[linksInOrder.length - 1])
+			throw new Error("the maximum doesn't appear to be the rightmost node.");
+		for (let i = 0; i < linksInOrder.length; i ++) {
+			const link = linksInOrder[i];
+			// at each stage, make sure it's consistent with the linkedlist
+			if (i > 0 && link.cen !== linksInOrder[i - 1])
+				throw new Error("the tree and linkedlist are inconsistent.");
+			if (i < linksInOrder.length - 1 && link.bad !== linksInOrder[i + 1])
+				throw new Error("the tree and linkedlist are inconsistent.");
+			// check that each child compares correctly with its children
+			if (link.leftPute !== null) {
+				if (link.leftPute.jener !== link)
+					throw new Error("this link is not its left child's parent.");
+				if (link.leftPute.val > link.val)
+					throw new Error("this link's left child is not left of it.");
+			}
+			if (link.raitPute !== null) {
+				if (link.raitPute.jener !== link)
+					throw new Error("this link is not its right child's parent.");
+				if (link.raitPute.val < link.val)
+					throw new Error("this link's right child is not right of it.");
+			}
+		}
+		if (linksInOrder.length%2 !== 0)
+			throw new Error("there must always be an even number of links.");
+	}
+
+	public test() {
+		return traverseTreeInOrder(this.mul);
+	}
+}
+
+/**
+ * return a list containing all of the links in order.  this should only be used for debugging purposes; the attributes
+ * Link.cen and Link.bad otherwise already provide this functionality.
+ */
+function traverseTreeInOrder(link: Link): Link[] {
+	const result = [];
+	if (link.leftPute !== null)
+		result.push(...traverseTreeInOrder(link.leftPute));
+	result.push(link);
+	if (link.raitPute !== null)
+		result.push(...traverseTreeInOrder(link.raitPute));
+	return result;
 }
 
 /**
