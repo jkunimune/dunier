@@ -1175,7 +1175,7 @@ describe("intersection", () => {
 describe("applyProjectionToPath", () => {
 	const surface = new LockedDisc(2);
 	surface.initialize();
-	const projection = MapProjection.conformalConic(surface, surface.φMin, 1, surface.φMax, 0);
+	const projection = MapProjection.orthographic(surface, surface.φMin, surface.φMax, 0);
 	test("points", () => {
 		const path = [
 			{type: 'M', args: [π/4, -π/2]},
