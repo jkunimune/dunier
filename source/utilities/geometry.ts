@@ -11,10 +11,7 @@ import {XYPoint} from "./coordinates.js";
  *           (meaning d is to the right of c for an observer facing from a to b);
  *         - a negative number if b is to the right of a for an observer at c facing d; or
  *         - 0 if ab and cd are collinear or either has zero magnitude.
- *         in a right-handed coordinate system:
- *         - a positive number of b is to the right of a for an observer at c facing d;
- *         - a negative number if b is to the left of a for an observer at c facing d; or
- *         - 0 if ab and cd are colinear or either has zero magnitude.
+ *         in a right-handed coordinate system: the reverse
  */
 export function crossingSign(a: XYPoint, b: XYPoint, c: XYPoint, d: XYPoint): number {
 	return (b.x - a.x)*(d.y - c.y) - (b.y - a.y)*(d.x - c.x);
@@ -22,9 +19,9 @@ export function crossingSign(a: XYPoint, b: XYPoint, c: XYPoint, d: XYPoint): nu
 
 
 /**
- * calculate the sign of this triangle in a right-handed coordinate system
- * @return a positive number if the triangle goes widdershins, a negative number if it
- *         goes clockwise, and zero if it is degenerate.  in actuality, this returns
+ * calculate the sign of this triangle in a left-handed coordinate system
+ * @return a positive number if the triangle goes clockwise, a negative number if it
+ *         goes widershins, and zero if it is degenerate.  in actuality, this returns
  *         two times the area of the triangle formed by these points, so if there is
  *         roundoff error, know that it will be of that order.
  */
@@ -41,14 +38,6 @@ export function angleSign(a: XYPoint, b: XYPoint, c: XYPoint): number {
  */
 export function passingSign(a: XYPoint, b: XYPoint, c: XYPoint, d: XYPoint): number {
 	return (b.x - a.x)*(d.x - c.x) + (b.y - a.y)*(d.y - c.y);
-}
-
-
-/**
- * determine whether the angle abc is acute or not
- */
-export function isAcute(a: XYPoint, b: XYPoint, c: XYPoint): boolean {
-	return passingSign(b, a, b, c) > 0;
 }
 
 
@@ -79,12 +68,13 @@ export function circumcenter(points: XYPoint[]): XYPoint {
  * @param a the first point on the circle
  * @param b the second point on the circle
  * @param r the radius of the circle
- * @param onTheLeft whether the center is on the left of the strait-line path from a to b
+ * @param onTheRight whether the center is on the right of the strait-line path from a to b in a left-handed
+ *                   coordinate system (for SVG arcs this is largeArcFlag!=sweepFlag)
  */
-export function arcCenter(a: XYPoint, b: XYPoint, r: number, onTheLeft: boolean): XYPoint {
+export function arcCenter(a: XYPoint, b: XYPoint, r: number, onTheRight: boolean): XYPoint {
 	const d = Math.hypot(b.x - a.x, b.y - a.y);
 	let l = Math.sqrt(r*r - d*d/4);
-	if (onTheLeft) l *= -1;
+	if (onTheRight) l *= -1;
 	const sin_θ =  (b.y - a.y)/d;
 	const cos_θ = -(b.x - a.x)/d;
 	return {
@@ -181,7 +171,11 @@ export function lineArcIntersections(
 					if (angleSign(q, p0, p1) === 0 && (t > vertex) === (passingSign(o, q, p0, p1) > 0))
 						x = q; // make it exactly equal to the endpoint if it seems like it should be
 				// and if it is between the arc endpoints
-				if (angleSign(q0, x, q1) >= 0)
+				const rightOfQ0 = angleSign(q0, o, x) < 0;
+				const leftOfQ1 = angleSign(x, o, q1) < 0;
+				const insideOut = angleSign(q0, o, q1) > 0;
+				const onArc = insideOut ? rightOfQ0 || leftOfQ1 : rightOfQ0 && leftOfQ1;
+				if (onArc)
 					crossings.push(x);
 			}
 		}

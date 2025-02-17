@@ -2,7 +2,13 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {angleSign, checkVoronoiPolygon, crossingSign, trajectoryIntersection} from "../source/utilities/geometry.js";
+import {
+	angleSign,
+	checkVoronoiPolygon,
+	crossingSign,
+	lineArcIntersections,
+	trajectoryIntersection
+} from "../source/utilities/geometry.js";
 
 describe("crossingSign()", () => {
 	test("positive", () => {
@@ -47,6 +53,38 @@ describe("trajectoryIntersection()", () => {
 	test("stationary", () => {
 		expect(() => trajectoryIntersection(
 			{x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 0}, {x: 0, y: 0})).toThrow();
+	});
+});
+
+describe("lineArcIntersections()", () => {
+	test("secant", () => {
+		const line = [{x: -1/2, y: 0}, {x: -1/2, y: 2}];
+		const center = {x: 0, y: 1};
+		const r = 1;
+		const q0 = {x: 0, y: 2};
+		const q1 = {x: 0, y: 0};
+		expect(lineArcIntersections(line[0], line[1], center, r, q0, q1)).toEqual([
+			{x: -1/2, y: 1 + Math.sqrt(3)/2},
+			{x: -1/2, y: 1 - Math.sqrt(3)/2},
+		]);
+	});
+	test("from inside to outside", () => {
+		const line = [{x: -1/2, y: 1}, {x: -1/2, y: 2}];
+		const center = {x: 0, y: 1};
+		const r = 1;
+		const q0 = {x: 0, y: 2};
+		const q1 = {x: 0, y: 0};
+		expect(lineArcIntersections(line[0], line[1], center, r, q0, q1)).toEqual([
+			{x: -1/2, y: 1 + Math.sqrt(3)/2},
+		]);
+	});
+	test("roundoff resistance", () => {
+		const line = [{x: -2068.1868751652805, y: -129.1815424610015}, {x: 2068.1868751652805, y: -129.1815424610015}];
+		const center = {x: 5.684341886080802e-14, y: -2.842170943040401e-14};
+		const r = 533.6225571525157;
+		const q0 = {x: -517.7500966580174, y: -129.18154246100173};
+		const q1 = {x: -496.36792052009014, y: -195.8875212476573};
+		expect(lineArcIntersections(line[0], line[1], center, r, q0, q1)).toEqual([]);
 	});
 });
 

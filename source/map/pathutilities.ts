@@ -14,7 +14,6 @@ import {
 import {
 	angleSign,
 	arcCenter,
-	isAcute,
 	lineArcIntersections,
 	lineLineIntersection
 } from "../utilities/geometry.js";
@@ -418,28 +417,24 @@ function spliceSegment(start: Point, segment: PathSegment, intersect0: Point, in
 		const a = assert_xy(start);
 		const b = assert_xy(intersect0);
 		const c = assert_xy(intersect1);
-		const [r1, r2, rot, oldLargeArc, sweepDirection, dx, dy] = segment.args;
+		const [r1, r2, rot, largeArcAD, sweepDirection, dx, dy] = segment.args;
 		const d = { x: dx, y: dy };
 		console.assert(r1 === r2);
 		console.assert(b.x === c.x && b.y === c.y);
 
-		const endpoints = [a, d];
-		let newLargeArc: number[] = []; // you haff to figure out whether to change the large arc flag for the children
-		for (let i = 0; i < 2; i ++) {
-			const acute = isAcute(
-				b, endpoints[1 - i], endpoints[i]); // luckily, this angle tells you whether the arc is big
-			newLargeArc.push(acute ? 0 : 1);
-			console.assert(newLargeArc[i] <= oldLargeArc);
-		}
+		const center = arcCenter(a, d, r1, largeArcAD !== sweepDirection);
+		const sign = (sweepDirection > 0) ? 1 : -1;
+		const largeArcAB = (sign*angleSign(a, center, b) > 0) ? 1 : 0; // you haff to figure out whether to change the large arc flag for the children
+		const largeArcCD = (sign*angleSign(c, center, d) > 0) ? 1 : 0; // you can do this by checking the new arcs' central angles
 		return [
 			{
 				type: 'A',
-				args: [r1, r2, rot, newLargeArc[0], sweepDirection, b.x, b.y],
+				args: [r1, r2, rot, largeArcAB, sweepDirection, b.x, b.y],
 			}, // the first segment
 			{ type: 'M', args: [c.x, c.y] }, //the jump
 			{
 				type: 'A',
-				args: [r1, r2, rot, newLargeArc[1], sweepDirection, d.x, d.y]
+				args: [r1, r2, rot, largeArcCD, sweepDirection, d.x, d.y]
 			}, // the twoth segment
 		];
 	}
