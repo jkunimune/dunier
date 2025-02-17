@@ -4,7 +4,7 @@
  */
 import {Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
 import {
-	filterSet,
+	filterSet, localizeInRange,
 	longestShortestPath,
 	pathToString,
 	Side
@@ -1085,31 +1085,55 @@ export class Chart {
 			throw new Error("I can't choose a map centering with an empty region of interest.");
 		const meanRadius = rSum/count;
 
-		// then do a periodic mean of the longitude of the land part of the region of interest
-		let xCenter = 0;
-		let yCenter = 0;
-		for (const tile of regionOfInterest) {
-			if (tile.biome !== Biome.OCEAN) {
-				xCenter += Math.cos(tile.λ);
-				yCenter += Math.sin(tile.λ);
+		// find the longitude with the most empty space on either side of it
+		const coastline = Chart.border(filterSet(regionOfInterest, tile => tile.biome !== Biome.OCEAN));
+		let centralMeridian;
+		const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
+		for (let i = 0; i < coastline.length; i ++) {
+			if (coastline[i].type !== 'M') {
+				const λ1 = coastline[i - 1].args[1];
+				const λ2 = coastline[i].args[1];
+				if (Math.abs(λ1 - λ2) < Math.PI) { // and then remove the space corresponding to each segment
+					emptyLongitudes.remove(Math.min(λ1, λ2), Math.max(λ1, λ2));
+				}
+				else {
+					emptyLongitudes.remove(Math.max(λ1, λ2), Math.PI);
+					emptyLongitudes.remove(-Math.PI, Math.min(λ1, λ2));
+				}
 			}
 		}
-		const centralMeridian = Math.atan2(yCenter, xCenter);
+		if (emptyLongitudes.getCenter(true).location !== null) {
+			centralMeridian = localizeInRange(
+				emptyLongitudes.getCenter(true).location + Math.PI,
+				-Math.PI, Math.PI);
+		}
+		else {
+			// if there are no empty longitudes, do a periodic mean over the land part of the region of interest
+			let xCenter = 0;
+			let yCenter = 0;
+			for (const tile of regionOfInterest) {
+				if (tile.biome !== Biome.OCEAN) {
+					xCenter += Math.cos(tile.λ);
+					yCenter += Math.sin(tile.λ);
+				}
+			}
+			centralMeridian = Math.atan2(yCenter, xCenter);
+		}
 
-		// do the same thing for parallel, with one exception
+		// find the average latitude of the region
 		let centralParallel;
 		if (regionOfInterest === surface.tiles && surface.φMax - surface.φMin < 2*Math.PI) {
 			// if it's a whole-world map and non-periodic in latitude, always use the equator
 			centralParallel = (surface.φMin + surface.φMax)/2;
 		}
 		else {
+			// otherwise do a periodic mean of latitude to get the standard parallel
 			let ξCenter = 0;
 			let υCenter = 0;
 			for (const tile of regionOfInterest) {
 				if (tile.biome !== Biome.OCEAN) {
-					const weit = surface.rz(tile.φ).r; // this time be sure to weit by radius
-					ξCenter += weit * Math.cos(tile.φ);
-					υCenter += weit * Math.sin(tile.φ);
+					ξCenter += Math.cos(tile.φ);
+					υCenter += Math.sin(tile.φ);
 				}
 			}
 			centralParallel = Math.atan2(υCenter, ξCenter);
@@ -1132,16 +1156,14 @@ export class Chart {
 	static chooseMapBounds(
 		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
 	): {φMin: number, φMax: number, λMin: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
-		// start by identifying the geographic extent of this thing
-		let regionBounds;
-		if (regionOfInterest.length > 0)
-			regionBounds = calculatePathBounds(regionOfInterest);
-		else
-			regionBounds = {sMin: projection.φMin, sMax: projection.φMax, tMin: -Math.PI, tMax: Math.PI};
+		// start by identifying the geographic and projected extent of this thing
+		const regionBounds = calculatePathBounds(regionOfInterest);
+		const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
+		const projectedBounds = calculatePathBounds(projectedRegion);
 
 		// first infer some things about this projection
-		const northPoleIsDistant = projection.differentiability(projection.φMax) < .7;
-		const southPoleIsDistant = projection.differentiability(projection.φMin) < .7;
+		const northPoleIsDistant = projection.differentiability(projection.φMax) < .5;
+		const southPoleIsDistant = projection.differentiability(projection.φMin) < .5;
 		const northPoleIsPoint = projection.projectPoint({φ: projection.φMax, λ: 1}).x === 0;
 		const southPoleIsPoint = projection.projectPoint({φ: projection.φMin, λ: 1}).x === 0;
 
@@ -1155,21 +1177,26 @@ export class Chart {
 			φMax = projection.φMax;
 			λMin = projection.λMin;
 			λMax = projection.λMax;
-			// and calculate the maximum extent of the projected region to get the Cartesian bounds
-			const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
-			const projectedBounds = calculatePathBounds(projectedRegion);
-			xLeft = 1.1*projectedBounds.sMin - 0.1*projectedBounds.sMax;
-			xRight = 1.1*projectedBounds.sMax - 0.1*projectedBounds.sMin;
-			yTop = 1.1*projectedBounds.tMin - 0.1*projectedBounds.tMax;
-			yBottom = 1.1*projectedBounds.tMax - 0.1*projectedBounds.tMin;
+			// spread the projected Cartesian bounds out a bit
+			const margin = 0.1*Math.sqrt(
+				(projectedBounds.sMax - projectedBounds.sMin)*
+				(projectedBounds.tMax - projectedBounds.tMin));
+			xLeft = projectedBounds.sMin - margin;
+			xRight = projectedBounds.sMax + margin;
+			yTop = projectedBounds.tMin - margin;
+			yBottom = projectedBounds.tMax + margin;
 			// but if the poles are super far away, put some global limits on the map extent
-			const globeWidth = 2*Math.PI*projection.surface.rz((projectedBounds.sMin + projectedBounds.sMax)/2).r;
+			const globeWidth = 2*Math.PI*projection.surface.rz((regionBounds.sMin + regionBounds.sMax)/2).r;
 			const maxHeight = globeWidth/Math.sqrt(2);
 			let yNorthCutoff = -Infinity, ySouthCutoff = Infinity;
 			if (northPoleIsDistant) {
 				if (southPoleIsDistant) {
-					yNorthCutoff = (yTop + yBottom)/2 - maxHeight/2;
-					ySouthCutoff = (yTop + yBottom)/2 + maxHeight/2;
+					const yCenter = projection.projectPoint({
+						φ: (regionBounds.sMin + regionBounds.sMax)/2,
+						λ: projection.λCenter,
+					}).y;
+					yNorthCutoff = yCenter - maxHeight/2;
+					ySouthCutoff = yCenter + maxHeight/2;
 				}
 				else
 					yNorthCutoff = yBottom - maxHeight;
@@ -1182,10 +1209,9 @@ export class Chart {
 		}
 		// if we want a wedge-shaped map
 		else {
-			// calculate the minimum and maximum latitude and longitude of the region of interest
+			// spread the regionBounds out a bit
 			const yMax = projection.projectPoint({φ: regionBounds.sMin, λ: projection.λCenter}).y;
 			const yMin = projection.projectPoint({φ: regionBounds.sMax, λ: projection.λCenter}).y;
-			// spread the limits out a bit to give a contextual view
 			const ySouthEdge = projection.projectPoint({φ: projection.φMin, λ: projection.λCenter}).y;
 			const yNorthEdge = projection.projectPoint({φ: projection.φMax, λ: projection.λCenter}).y;
 			φMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.1*yMin - 0.1*yMax, yNorthEdge)}).φ;
@@ -1199,11 +1225,11 @@ export class Chart {
 				φMax = Math.max(Math.min(φMax, projection.φMax - 10/180*Math.PI), φMin);
 			if (southPoleIsDistant || (southPoleIsPoint && !longitudesWrapAround))
 				φMin = Math.min(Math.max(φMin, projection.φMin + 10/180*Math.PI), φMax);
-			// and don't apply any Cartesian bounds
-			xLeft = -Infinity;
-			xRight = Infinity;
-			yTop = -Infinity;
-			yBottom = Infinity;
+			// apply some generous Cartesian bounds
+			xRight = Math.max(1.4*projectedBounds.sMax, -1.4*projectedBounds.sMin);
+			xLeft = -xRight;
+			yTop = 1.2*projectedBounds.tMin - 0.2*projectedBounds.tMax;
+			yBottom = 1.2*projectedBounds.tMax - 0.2*projectedBounds.tMin;
 		}
 
 		// the extent of the geographic region will always impose some Cartesian limits; compute those now.
