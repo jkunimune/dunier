@@ -756,8 +756,6 @@ export default {
 	"parameter.map.type.conformal_conic.description": "A conformal projection with straight meridians.  Identical to the Mercator projection for whole-world maps.  Shows angles accurately but distorts areas.",
 	"parameter.map.type.equal_earth": "Equal Earth",
 	"parameter.map.type.equal_earth.description": "A visually pleasing equal-area projection.  Good for whole-world maps.",
-	"parameter.map.type.equirectangular": "Equirectangular",
-	"parameter.map.type.equirectangular.description": "A direct mapping from latitude and longitude to Cartesian coordinates.  Useful if you want to do math to the map.",
 	"parameter.map.width": "Width",
 	"parameter.planet": "Planet",
 	"parameter.planet.circumference": "Circumference",

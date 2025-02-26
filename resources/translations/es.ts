@@ -749,8 +749,6 @@ export default {
 	"parameter.map.type.conformal_conic.description": "Proyección conforme con meridianos derechos.  Es igual con la proyección de Mercator en casos de mapas del mundo entero.  Representa los ángulos con exactitud pero distorsiona las áreas.",
 	"parameter.map.type.equal_earth": "Equal Earth",
 	"parameter.map.type.equal_earth.description": "Proyección de áreas iguales bonita.  Apropriada para mapas del mundo entero.",
-	"parameter.map.type.equirectangular": "Equirrectangular",
-	"parameter.map.type.equirectangular.description": "Mapeo directo de latitud y longitud a coordenadas cartesianas.  Apropriada si quiere hacer matemática con el mapa.",
 	"parameter.map.width": "Anchura",
 	"parameter.planet": "Planeta",
 	"parameter.planet.circumference": "Circunferencia",

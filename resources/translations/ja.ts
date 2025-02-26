@@ -747,8 +747,6 @@ export default {
 	"parameter.map.type.conformal_conic.description": "直線の経線を示す正角図法だ。全世界地図の場合はメルカトル図法になる。中世に流行ったが、面積を歪める傾向がある。",
 	"parameter.map.type.equal_earth": "イコール・アース",
 	"parameter.map.type.equal_earth.description": "きれいな正積図法だ。全世界地図によく似合う。",
-	"parameter.map.type.equirectangular": "方眼",
-	"parameter.map.type.equirectangular.description": "経緯から直交座標への簡単な転換だ。算数演算する場合に使用できる。",
 	"parameter.map.width": "幅",
 	"parameter.planet": "惑星",
 	"parameter.planet.circumference": "円周",

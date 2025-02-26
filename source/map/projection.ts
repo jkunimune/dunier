@@ -291,19 +291,6 @@ export class MapProjection {
 	}
 
 	/**
-	 * construct a plate carey projection.  this projection will <i>not</i> adjust based on the surface being
-	 * projected or the region being focused on; it will always linearly translate latitude to y and longitude to x.
-	 */
-	public static equirectangular(surface: Surface, φMin: number, φMax: number, λStd: number): MapProjection {
-		const scale = Math.sqrt(surface.area/(2*Math.PI*(φMax - φMin)));
-		return new MapProjection(
-			surface,
-			[φMin, φMax],
-			[-scale*φMin, -scale*φMax],
-			[scale, scale], Infinity, λStd);
-	}
-
-	/**
 	 * construct a Bonne projection with a standard parallel in the given range.  if the standard parallel is an equator,
 	 * this will resolve to the sinusoidal projection, and if it is a pole, this will resolve to the Stab-Werner projection.
 	 * @param surface the surface from which to project

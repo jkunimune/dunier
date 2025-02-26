@@ -138,7 +138,7 @@ export class Chart {
 
 	/**
 	 * build an object for visualizing geographic information in SVG.
-	 * @param projectionName the type of projection to choose – one of "equirectangular", "equal_earth", "bonne", "conformal_conic", or "orthographic"
+	 * @param projectionName the type of projection to choose – one of "equal_earth", "bonne", "conformal_conic", or "orthographic"
 	 * @param surface the Surface for which to design the projection
 	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
 	 * @param northUp whether the top of the map should ruffly correspond to North, rather than South
@@ -152,10 +152,7 @@ export class Chart {
 		const southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
 		const northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2*Math.PI);
 
-		if (projectionName === 'equirectangular')
-			this.projection = MapProjection.equirectangular(
-				surface, southLimitingParallel, northLimitingParallel, centralMeridian);
-		else if (projectionName === 'equal_earth')
+		if (projectionName === 'equal_earth')
 			this.projection = MapProjection.equalEarth(
 				surface, meanRadius, southLimitingParallel, northLimitingParallel, centralMeridian);
 		else if (projectionName === 'bonne')

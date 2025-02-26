@@ -34,7 +34,7 @@
 
   /** show the description of the currently selected map projection */
   function updateProjectionDescription(projection) {
-    for (const option of ["bonne", "conformal_conic", "equal_earth", "equirectangular"]) {
+    for (const option of ["bonne", "conformal_conic", "equal_earth"]) {
       if (option === projection)
         $('#map-' + option + '-description')[0].style.display = "block";
       else
@@ -231,7 +231,6 @@
                       <option selected value="bonne">{parameter.map.type.bonne}</option>
                       <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
                       <option value="equal_earth">{parameter.map.type.equal_earth}</option>
-                      <option value="equirectangular">{parameter.map.type.equirectangular}</option>
                     </select>
                     <div id="map-projection-description">
                       <div id="map-bonne-description">
@@ -242,9 +241,6 @@
                       </div>
                       <div id="map-equal_earth-description" style="display:none">
                         {parameter.map.type.equal_earth.description}
-                      </div>
-                      <div id="map-equirectangular-description" style="display:none">
-                        {parameter.map.type.equirectangular.description}
                       </div>
                     </div>
                   </div>
