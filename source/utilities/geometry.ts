@@ -171,9 +171,9 @@ export function lineArcIntersections(
 					if (angleSign(q, p0, p1) === 0 && (t > vertex) === (passingSign(o, q, p0, p1) > 0))
 						x = q; // make it exactly equal to the endpoint if it seems like it should be
 				// and if it is between the arc endpoints
-				const rightOfQ0 = angleSign(q0, o, x) < 0;
-				const leftOfQ1 = angleSign(x, o, q1) < 0;
-				const insideOut = angleSign(q0, o, q1) > 0;
+				const rightOfQ0 = angleSign(q0, o, x) <= 0;
+				const leftOfQ1 = angleSign(x, o, q1) <= 0;
+				const insideOut = angleSign(q0, o, q1) >= 0;
 				const onArc = insideOut ? rightOfQ0 || leftOfQ1 : rightOfQ0 && leftOfQ1;
 				if (onArc)
 					crossings.push(x);
