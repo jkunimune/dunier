@@ -656,7 +656,7 @@ describe("contains", () => {
 				.toBe(Side.OUT);
 		});
 	});
-	describe("region straddles domain boundary", () => {
+	describe("region straddles domain y-boundary", () => {
 		describe("rightside-in region", () => {
 			const region = [
 				{type: 'M', args: [0.3, 2]},
@@ -668,8 +668,12 @@ describe("contains", () => {
 				expect(contains(region, {s: 0.2, t: 3}, geoid))
 					.toBe(Side.IN);
 			});
-			test("outside", () => {
+			test("outside, between", () => {
 				expect(contains(region, {s: 0.2, t: 0}, geoid))
+					.toBe(Side.OUT);
+			});
+			test("outside, beside", () => {
+				expect(contains(region, {s: 0, t: 0}, geoid))
 					.toBe(Side.OUT);
 			});
 		});
@@ -706,6 +710,27 @@ describe("contains", () => {
 				expect(contains(region, {s: 3, t: 0}, geoid))
 					.toBe(Side.OUT);
 			});
+		});
+	});
+	describe("region straddles domain x-boundary", () => {
+		const region = [
+			{type: 'M', args: [-2, 0.3]},
+			{type: 'L', args: [-2, 0.1]},
+			{type: 'L', args: [2, 0.1]},
+			{type: 'L', args: [2, 0.3]},
+			{type: 'L', args: [-2, 0.3]},
+		];
+		test("inside", () => {
+			expect(contains(region, {s: -3, t: 0.2}, geoid))
+				.toBe(Side.IN);
+		});
+		test("outside, between", () => {
+			expect(contains(region, {s: 0, t: 0.2}, geoid))
+				.toBe(Side.OUT);
+		});
+		test("outside, beside", () => {
+			expect(contains(region, {s: 0, t: 0}, geoid))
+				.toBe(Side.OUT);
 		});
 	});
 	describe("region is domain boundary", () => {

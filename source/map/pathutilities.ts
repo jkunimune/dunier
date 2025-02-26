@@ -57,25 +57,8 @@ export function transformInput(projection: MapProjection, segments: PathSegment[
 export function transformOutput(northUp: boolean, segments: PathSegment[]): PathSegment[] {
 	if (northUp)
 		return segments;
-	else {
-		const output: PathSegment[] = [];
-		for (const segment of segments) {
-			let args;
-			switch (segment.type) {
-				case "A":
-					args = segment.args.slice(0, 5).concat([-segment.args[5], -segment.args[6]]);
-					break;
-				case "Z": case "H": case "V": case "M":
-				case "L": case "Q": case "C":
-					args = segment.args.map((arg) => -arg);
-					break;
-				default:
-					throw new Error(`I don't know how to rotate a ${segment.type} segment.`);
-			}
-			output.push({type: segment.type, args: args});
-		}
-		return output;
-	}
+	else
+		return rotatePath(segments, 180);
 }
 
 /**
@@ -624,26 +607,25 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, g
 	else {
 		if (garanteedToSucced)
 			throw new Error("but the sign said success was garanteed...");
-		// choose a new point known to be outside the polygon's bounding box to test if it's inside out or not
-		const {sMax, sMin} = calculatePathBounds(polygon);
-		const sOut = 2*sMax - sMin;
-		let tOut = null;
+		// choose a new point on the horizontal line you drew that's known to be in line with some of the polygon
+		let sNew = null;
 		for (let i = 1; i < polygon.length; i ++) {
 			if (polygon[i].type !== 'M') {
 				const start = endpoint(polygon[i-1]);
 				const end = endpoint(polygon[i]);
-				if (polygon[i].type === 'A' || start.t !== end.t) {
+				if (polygon[i].type === 'A' || start.s !== end.s) {
 					const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], domain);
-					if (knownPolygonPoint.s !== point.s) {
-						tOut = knownPolygonPoint.t;
-						break;
-					}
+					sNew = knownPolygonPoint.s;
+					break;
 				}
 			}
 		}
-		if (tOut === null)
+		if (sNew === null)
 			throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
-		return contains(polygon, {s: sOut, t: tOut}, domain, true);
+		// and rerun this algorithm with a vertical line thru that point instead of a horizontal one
+		return contains(
+			rotatePath(polygon, 90), {s: point.t, t: -sNew},
+			rotateDomain(domain, 90), true);
 	}
 }
 
@@ -888,23 +870,13 @@ function getGeoEdgeCrossing(
 
 	// the body of this function assumes the edge is a parallel going west.  if it isn't that, rotate 90° until it is.
 	else if (edge.type === 'Λ' || edgeEnd.λ > edgeStart.λ) {
-		const rotatedDomain = new Domain(
-			domain.tMin, domain.tMax, -domain.sMax, -domain.sMin,
-			(place) => domain.isOnEdge({s: -place.t, t: place.s}));
-		let newSegmentType;
-		if (segment.type === 'Φ')
-			newSegmentType = 'Λ';
-		else if (segment.type === 'Λ')
-			newSegmentType = 'Φ';
-		else
-			newSegmentType = segment.type;
-		const newEdgeType = (edge.type === 'Φ') ? 'Λ' : 'Φ';
+		const rotatedDomain = rotateDomain(domain, 90);
+		const rotatedSegment = rotatePath([segment], 90)[0];
+		const rotatedEdge = rotatePath([edge], 90)[0];
 		const crossing = getGeoEdgeCrossing(
 			{φ: segmentStart.λ, λ: -segmentStart.φ},
-			{type: newSegmentType, args: [segment.args[1], -segment.args[0]]}, // TODO this won't work for bezier curves
-			{φ: edgeStart.λ, λ: -edgeStart.φ},
-			{type: newEdgeType, args: [edge.args[1], -edge.args[0]]},
-			rotatedDomain,
+			rotatedSegment, {φ: edgeStart.λ, λ: -edgeStart.φ},
+			rotatedEdge, rotatedDomain,
 		);
 		if (crossing === null)
 			return null;
@@ -1068,4 +1040,60 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 		}
 	}
 	return true;
+}
+
+
+/**
+ * return a copy of this path that is rotated widershins about the origin
+ * @param segments the path to rotate
+ * @param angle the amount to rotate in degrees – must be 90 or 180
+ */
+function rotatePath(segments: PathSegment[], angle: number): PathSegment[] {
+	if (angle !== 90 && angle !== 180)
+		throw new Error(`unsupported rotation angle: ${angle}`);
+	const output: PathSegment[] = [];
+	for (const {type: oldType, args: oldArgs} of segments) {
+		let newType = oldType;
+		if (angle === 90) {
+			if (oldType === 'Φ')
+				newType = 'Λ';
+			else if (oldType === 'Λ')
+				newType = 'Φ';
+		}
+		let newArgs;
+		switch (oldType) {
+			case "A":
+				if (angle === 90)
+					newArgs = oldArgs.slice(0, 5).concat([oldArgs[6], -oldArgs[5]]);
+				else if (angle === 180)
+					newArgs = oldArgs.slice(0, 5).concat([-oldArgs[5], -oldArgs[6]]);
+				break;
+			case "Z": case "H": case "V": case "M": case "L":
+			case "Φ": case "Λ": case "Q": case "C":
+				if (angle === 90) {
+					newArgs = Array(oldArgs.length);
+					for (let i = 0; i < oldArgs.length; i += 2) {
+						newArgs[i] = oldArgs[i + 1];
+						newArgs[i + 1] = -oldArgs[i];
+					}
+				}
+				else if (angle === 180) {
+					newArgs = oldArgs.map((arg) => -arg);
+				}
+				break;
+			default:
+				throw new Error(`I don't know how to rotate a ${oldType} segment.`);
+		}
+		output.push({type: newType, args: newArgs});
+	}
+	return output;
+}
+
+
+function rotateDomain(domain: Domain, angle: number): Domain {
+	if (angle !== 90)
+		throw new Error(`this function only works for 90° rotations`);
+	return new Domain(
+		domain.tMin, domain.tMax, -domain.sMax, -domain.sMin,
+		(place) => domain.isOnEdge({s: -place.t, t: place.s}));
 }
