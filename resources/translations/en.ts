@@ -412,7 +412,6 @@ export default {
 	"factbook.geography.plains": "open grassland",
 	"factbook.geography.steamland": "steamland",
 	"factbook.geography.surround": "surrounded by {0}",
-	"factbook.geography.swamp": "wetland",
 	"factbook.geography.taiga": "boreal forest",
 	"factbook.geography.tundra": "tundra",
 	"factbook.geography.volcano_island": "{0} is an island by the sea, filled with volcanoes, and it's beautiful.  ",

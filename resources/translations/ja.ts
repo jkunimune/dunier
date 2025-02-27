@@ -408,7 +408,6 @@ export default {
 	"factbook.geography.plains": "草地",
 	"factbook.geography.steamland": "蒸地",
 	"factbook.geography.surround": "{0}の中に位置する",
-	"factbook.geography.swamp": "沼地",
 	"factbook.geography.taiga": "寒帯林",
 	"factbook.geography.tundra": "ツンドラ",
 	"factbook.geography.volcano_island": "{0}は海の横に位置して火山たっぷりで美しい島だ。",

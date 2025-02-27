@@ -46,7 +46,6 @@ const MAP_PRECISION = 5e-2;
 const BIOME_COLORS = new Map([
 	[Biome.OCEAN,     '#06267f'],
 	[Biome.LAKE,      '#06267f'],
-	[Biome.SWAMP,     '#444921'],
 	[Biome.JUNGLE,    '#176D0D'],
 	[Biome.FOREST,    '#647F45'],
 	[Biome.TAIGA,     '#4EA069'],

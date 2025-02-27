@@ -67,19 +67,17 @@ export enum Biome {
 	JUNGLE,
 	DESERT,
 	PLAINS,
-	SWAMP,
 	STEAMLAND,
 }
 
 /** keys used for referencing biomes in configuration files */
 export const BIOME_NAMES = [
 	"ocean", "lake", "ice", "tundra", "taiga", "forest",
-	"jungle", "desert", "plains", "swamp", "steamland"
+	"jungle", "desert", "plains", "steamland"
 ];
 
 export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.OCEAN,     0.1],
-	[Biome.SWAMP,     0.1],
 	[Biome.JUNGLE,    0.1],
 	[Biome.FOREST,    1.0],
 	[Biome.LAKE,      3.0],
@@ -92,7 +90,6 @@ export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 ]);
 export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
 	[Biome.OCEAN,     0.00],
-	[Biome.SWAMP,     0.03],
 	[Biome.JUNGLE,    0.30],
 	[Biome.FOREST,    1.00],
 	[Biome.LAKE,      0.00],
@@ -590,8 +587,6 @@ function setBiomes(surf: Surface): void {
 				tile.biome = Biome.STEAMLAND;
 			else if (tile.temperature > FOREST_SLOPE*tile.rainfall + FOREST_INTERCEPT)
 				tile.biome = Biome.PLAINS;
-			else if (tile.rainfall >= MARSH_THRESH && tile.height < CLOUD_HEIGHT && adjacentWater)
-				tile.biome = Biome.SWAMP;
 			else if (tile.temperature < TROPIC_TEMP)
 				tile.biome = Biome.FOREST;
 			else
