@@ -9,6 +9,10 @@ import re
 LANGUAGES = ['en', 'es', 'ja', 'pd']
 DEFAULT_LANGUAGE = 'pd'
 
+with open(f'../../package.json', 'r', encoding='utf8') as package_file:
+	package = json.loads(package_file.read())
+	version = package["version"]
+
 # load the base
 with open(f'../../templates/base.html', 'r', encoding='utf8') as base_file:
 	base = base_file.read()
@@ -24,8 +28,9 @@ for filename in os.listdir('../../templates/'):
 	with open(f'../../templates/{filename}.html', 'r', encoding='utf8') as page_file:
 		template = base.replace('{Content}', page_file.read())
 
-	# replace the special key
+	# replace the special keys
 	template = template.replace(f'{{.name}}', filename)
+	template = template.replace(f'{{.version}}', version)
 
 	# iterate thru the languages
 	for lang_code in LANGUAGES:
