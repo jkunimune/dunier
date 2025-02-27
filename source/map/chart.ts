@@ -126,7 +126,7 @@ enum Layer {
  */
 export class Chart {
 	private readonly projection: MapProjection;
-	private readonly northUp: boolean;
+	private readonly orientation: number;
 	private readonly geoEdges: PathSegment[];
 	private readonly mapEdges: PathSegment[];
 	public readonly dimensions: Dimensions;
@@ -141,12 +141,12 @@ export class Chart {
 	 * @param projectionName the type of projection to choose – one of "equal_earth", "bonne", "conformal_conic", or "orthographic"
 	 * @param surface the Surface for which to design the projection
 	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
-	 * @param northUp whether the top of the map should ruffly correspond to North, rather than South
+	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 */
 	constructor(
 		projectionName: string, surface: Surface, regionOfInterest: Iterable<Tile>,
-		northUp: boolean, rectangularBounds: boolean,
+		orientationName: string, rectangularBounds: boolean,
 	) {
 		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
 		const southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
@@ -167,7 +167,16 @@ export class Chart {
 		else
 			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 
-		this.northUp = northUp;
+		if (orientationName === 'north')
+			this.orientation = 0;
+		else if (orientationName === 'south')
+			this.orientation = 180;
+		else if (orientationName === 'east')
+			this.orientation = 90;
+		else if (orientationName === 'west')
+			this.orientation = 270;
+		else
+			throw new Error(`I don't recognize this direction: '${orientationName}'.`);
 
 		// establish the bounds of the map
 		const {φMin, φMax, λMin, λMax, xRight, xLeft, yBottom, yTop} =
@@ -182,10 +191,16 @@ export class Chart {
 		this.labelIndex = 0;
 
 		// flip them if it's a south-up map
-		if (this.northUp)
+		if (this.orientation === 0)
 			this.dimensions = new Dimensions(xLeft, xRight, yTop, yBottom);
-		else
+		else if (this.orientation === 90)
+			this.dimensions = new Dimensions(yTop, yBottom, -xRight, -xLeft);
+		else if (this.orientation === 180)
 			this.dimensions = new Dimensions(-xRight, -xLeft, -yBottom, -yTop);
+		else if (this.orientation === 270)
+			this.dimensions = new Dimensions(-yBottom, -yTop, xLeft, xRight);
+		else
+			throw new Error("bruh");
 
 		// calculate the map scale in map-widths per km
 		this.scale = 1/this.dimensions.diagonal;
@@ -817,7 +832,7 @@ export class Chart {
 			MAP_PRECISION*this.dimensions.diagonal,
 		);
 		const croppedToMapRegion = intersection(
-			transformOutput(this.northUp, projected),
+			transformOutput(this.orientation, projected),
 			this.mapEdges,
 			INFINITE_PLANE, closePath,
 		);

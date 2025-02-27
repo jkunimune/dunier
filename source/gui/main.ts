@@ -219,7 +219,7 @@ function applyTerrain(): void {
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
 		projection, surface, surface.tiles,
-		true, false);
+		"north", false);
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
@@ -273,7 +273,7 @@ function applyHistory(): void {
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
 		projection, surface, surface.tiles,
-		true, false);
+		"north", false);
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
@@ -326,7 +326,7 @@ function applyMap(): void {
 
 	console.log("grafa zemgrafe...");
 	const projectionName = surface.isFlat() ? "orthographic" : DOM.val('map-projection');
-	const northUp = (DOM.val('map-orientation') === 'north');
+	const orientation = DOM.val('map-orientation');
 	const rectangularBounds = (DOM.val('map-shape') === 'rectangle');
 	const focusSpecifier = DOM.val('map-jung');
 	let regionOfInterest: Iterable<Tile>;
@@ -341,7 +341,7 @@ function applyMap(): void {
 
 	const chart = new Chart(
 		projectionName, surface, regionOfInterest,
-		northUp, rectangularBounds);
+		orientation, rectangularBounds);
 	mappedCivs = chart.depict(
 		surface,
 		world,

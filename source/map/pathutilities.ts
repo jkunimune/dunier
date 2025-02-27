@@ -50,15 +50,12 @@ export function transformInput(projection: MapProjection, segments: PathSegment[
  * make any final transformations that don't depend on the type of map
  * projection.  this method accounts for south-up maps, and
  * should almost always be calld after project.
- * @param northUp whether to leave x and y signs the same (rather than flipping them)
+ * @param orientation the number of degrees to rotate the map widdershins
  * @param segments the Cartesian imputs in absolute coordinates
  * @returns the relative outputs in transformed coordinates
  */
-export function transformOutput(northUp: boolean, segments: PathSegment[]): PathSegment[] {
-	if (northUp)
-		return segments;
-	else
-		return rotatePath(segments, 180);
+export function transformOutput(orientation: number, segments: PathSegment[]): PathSegment[] {
+	return rotatePath(segments, orientation);
 }
 
 /**
@@ -1049,12 +1046,15 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
  * @param angle the amount to rotate in degrees – must be 90 or 180
  */
 function rotatePath(segments: PathSegment[], angle: number): PathSegment[] {
-	if (angle !== 90 && angle !== 180)
+	if (angle !== 0 && angle !== 90 && angle !== 180 && angle !== 270)
 		throw new Error(`unsupported rotation angle: ${angle}`);
+	if (angle === 0)
+		return segments;
+
 	const output: PathSegment[] = [];
 	for (const {type: oldType, args: oldArgs} of segments) {
 		let newType = oldType;
-		if (angle === 90) {
+		if (angle === 90 || angle === 270) {
 			if (oldType === 'Φ')
 				newType = 'Λ';
 			else if (oldType === 'Λ')
@@ -1067,6 +1067,8 @@ function rotatePath(segments: PathSegment[], angle: number): PathSegment[] {
 					newArgs = oldArgs.slice(0, 5).concat([oldArgs[6], -oldArgs[5]]);
 				else if (angle === 180)
 					newArgs = oldArgs.slice(0, 5).concat([-oldArgs[5], -oldArgs[6]]);
+				else if (angle === 270)
+					newArgs = oldArgs.slice(0, 5).concat([-oldArgs[6], oldArgs[5]]);
 				break;
 			case "Z": case "H": case "V": case "M": case "L":
 			case "Φ": case "Λ": case "Q": case "C":
@@ -1079,6 +1081,13 @@ function rotatePath(segments: PathSegment[], angle: number): PathSegment[] {
 				}
 				else if (angle === 180) {
 					newArgs = oldArgs.map((arg) => -arg);
+				}
+				else if (angle === 270) {
+					newArgs = Array(oldArgs.length);
+					for (let i = 0; i < oldArgs.length; i += 2) {
+						newArgs[i] = -oldArgs[i + 1];
+						newArgs[i + 1] = oldArgs[i];
+					}
 				}
 				break;
 			default:
