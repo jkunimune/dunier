@@ -375,7 +375,7 @@ export class MapProjection {
 			if (Number.isFinite(logR̃[i]))
 				y.push(Math.pow(surface.rz(φ[i]).r*Math.exp(logR̃[i]), Math.abs(n))); // limit the radii to finite values
 			else
-				y.push(1e19);
+				y.push(1e10);
 		}
 
 		// figure out what the scale needs to be set to
