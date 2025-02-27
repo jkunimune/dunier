@@ -417,7 +417,11 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 
 		// finally, capitalize
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('capitalization')) {
-			symbols = symbols[0].toUpperCase() + symbols.slice(1);
+			for (let i = 0; i < symbols.length; i ++)
+				if (symbols[i] !== symbols[i].toUpperCase()) {
+					symbols = symbols.slice(0, i) + symbols[i].toUpperCase() + symbols.slice(i + 1);
+					break;
+				}
 		}
 
 		// add it to the main output
