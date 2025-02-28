@@ -9,9 +9,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 N = 36
-min_L = 50
-max_L = 75
-r = 40
+min_L = 70
+max_L = 90
+r = 25
 ɸ = 0
 # Z_PERIOD = np.linspace(3, 9, 601)
 Z_PERIOD = [3.89]

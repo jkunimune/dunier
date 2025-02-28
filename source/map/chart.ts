@@ -43,67 +43,71 @@ const N_DEGREES = 6; // number of line segments into which to break one radian o
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 const MAP_PRECISION = 5e-2;
 
+const EGGSHELL = '#FAF2E4';
+const LIGHT_GRAY = '#d4cdbf';
+const DARK_GRAY = '#857f76';
+const CHARCOAL = '#302d28';
+
 const BIOME_COLORS = new Map([
-	[Biome.OCEAN,     '#06267f'],
-	[Biome.LAKE,      '#06267f'],
-	[Biome.JUNGLE,    '#176D0D'],
-	[Biome.FOREST,    '#647F45'],
-	[Biome.TAIGA,     '#4EA069'],
-	[Biome.STEAMLAND, '#DD9C6F'],
-	[Biome.PLAINS,    '#BED042'],
-	[Biome.DESERT,    '#F5E292'],
+	[Biome.OCEAN,     '#5A7ECA'],
+	[Biome.LAKE,      '#5A7ECA'],
+	[Biome.JUNGLE,    '#82C17A'],
+	[Biome.FOREST,    '#B0C797'],
+	[Biome.TAIGA,     '#9FE0B0'],
+	[Biome.STEAMLAND, '#A1A17E'],
+	[Biome.PLAINS,    '#D9E88A'],
+	[Biome.DESERT,    '#FCF0B7'],
 	[Biome.TUNDRA,    '#FFFFFF'],
 	[Biome.ICE,       '#FFFFFF'],
-	[null,            '#FAF2E4'],
 ]);
 
 const COUNTRY_COLORS = [
-	'rgb(199, 106, 138)',
-	'rgb(0, 169, 200)',
-	'rgb(193, 166, 96)',
-	'rgb(141, 107, 176)',
-	'rgb(35, 156, 124)',
-	'rgb(218, 130, 118)',
-	'rgb(105, 180, 242)',
-	'rgb(106, 131, 58)',
-	'rgb(193, 113, 165)',
-	'rgb(0, 175, 182)',
-	'rgb(218, 161, 108)',
-	'rgb(116, 120, 191)',
-	'rgb(78, 157, 104)',
-	'rgb(225, 129, 145)',
-	'rgb(73, 189, 235)',
-	'rgb(134, 128, 55)',
-	'rgb(179, 124, 190)',
-	'rgb(43, 179, 162)',
-	'rgb(237, 157, 127)',
-	'rgb(82, 132, 198)',
-	'rgb(112, 157, 88)',
-	'rgb(225, 133, 173)',
-	'rgb(53, 197, 220)',
-	'rgb(159, 124, 61)',
-	'rgb(158, 136, 209)',
-	'rgb(82, 182, 140)',
-	'rgb(250, 154, 153)',
-	'rgb(36, 142, 196)',
-	'rgb(142, 155, 79)',
-	'rgb(216, 142, 201)',
-	'rgb(62, 203, 201)',
-	'rgb(180, 119, 76)',
-	'rgb(129, 149, 221)',
-	'rgb(116, 183, 121)',
-	'rgb(254, 156, 181)',
-	'rgb(0, 150, 186)',
+	'rgb(230, 169, 187)',
+	'rgb(143, 211, 231)',
+	'rgb(232, 212, 167)',
+	'rgb(188, 165, 210)',
+	'rgb(137, 200, 178)',
+	'rgb(246, 187, 177)',
+	'rgb(181, 221, 261)',
+	'rgb(165, 180, 133)',
+	'rgb(226, 173, 206)',
+	'rgb(142, 216, 220)',
+	'rgb(249, 210, 175)',
+	'rgb(173, 173, 220)',
+	'rgb(154, 202, 166)',
+	'rgb(251, 188, 196)',
+	'rgb(169, 228, 257)',
+	'rgb(185, 179, 132)',
+	'rgb(217, 180, 223)',
+	'rgb(150, 220, 207)',
+	'rgb(262, 208, 188)',
+	'rgb(157, 181, 225)',
+	'rgb(173, 202, 157)',
+	'rgb(251, 191, 215)',
+	'rgb(163, 235, 249)',
+	'rgb(203, 177, 136)',
+	'rgb(204, 188, 236)',
+	'rgb(164, 222, 194)',
+	'rgb(271, 208, 205)',
+	'rgb(142, 189, 225)',
+	'rgb(194, 201, 152)',
+	'rgb(245, 197, 234)',
+	'rgb(165, 239, 237)',
+	'rgb(218, 175, 146)',
+	'rgb(188, 197, 244)',
+	'rgb(182, 223, 182)',
+	'rgb(274, 210, 224)',
+	'rgb(131, 196, 219)',
 ];
 
 const ALTITUDE_STEP = 0.5;
 const ALTITUDE_COLORS = [
-	'rgb(52, 103, 29)',
-	'rgb(96, 130, 6)',
-	'rgb(152, 152, 34)',
-	'rgb(203, 175, 78)',
-	'rgb(230, 212, 149)',
-	'rgb(254, 253, 220)',
+	'rgb(66, 115, 33)',
+	'rgb(112, 135, 42)',
+	'rgb(156, 155, 51)',
+	'rgb(195, 177, 87)',
+	'rgb(220, 207, 142)',
+	'rgb(247, 239, 197)',
 ];
 const DEPTH_STEP = 1.0;
 const DEPTH_COLORS = [
@@ -224,7 +228,6 @@ export class Chart {
 	 * @param svg the SVG element on which to draw everything
 	 * @param landColor the color scheme for the land areas
 	 * @param seaColor the color scheme for the ocean areas
-	 * @param filter the color filter to apply
 	 * @param rivers whether to add rivers
 	 * @param borders whether to add state borders
 	 * @param shading whether to add shaded relief
@@ -235,7 +238,7 @@ export class Chart {
 	 * @return the list of Civs that are shown in this map
 	 */
 	depict(surface: Surface, world: World | null, svg: SVGGElement,
-	       landColor: string, seaColor: string, filter: string,
+	       landColor: string, seaColor: string,
 		   rivers: boolean, borders: boolean, shading: boolean,
 		   civLabels: boolean, geoLabels: boolean,
 		   fontSize = 2, style: string = null): Civ[] {
@@ -266,7 +269,25 @@ export class Chart {
 		}
 
 		let riverColor = '#ff00ff'; // the river color will depend on the ocean color (by default make it this awful color so I can tell something's rong)
-		if (seaColor === 'blue') { // color the sea deep blue
+		if (seaColor === 'white') {
+			this.fill(
+				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
+				g, EGGSHELL, Layer.GEO);
+			riverColor = EGGSHELL;
+		}
+		else if (seaColor === 'gray') {
+			this.fill(
+				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
+				g, DARK_GRAY, Layer.GEO);
+			riverColor = DARK_GRAY;
+		}
+		else if (seaColor === 'black') {
+			this.fill(
+				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
+				g, CHARCOAL, Layer.GEO);
+			riverColor = CHARCOAL;
+		}
+		else if (seaColor === 'blue') { // color the sea deep blue
 			this.fill(
 				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
 				g, BIOME_COLORS.get(Biome.OCEAN), Layer.GEO);
@@ -283,7 +304,17 @@ export class Chart {
 			riverColor = DEPTH_COLORS[0]; // TODO: outline ocean + black rivers?
 		}
 
-		if (landColor === 'physical') { // draw the biomes
+		if (landColor === 'white') {
+			this.fill(
+				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
+				g, EGGSHELL, Layer.BIO);
+		}
+		else if (landColor === 'gray') {
+			this.fill(
+				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
+				g, LIGHT_GRAY, Layer.BIO);
+		}
+		else if (landColor === 'physical') { // draw the biomes
 			for (const biome of BIOME_COLORS.keys())
 				if (biome !== Biome.OCEAN)
 					this.fill(
@@ -295,7 +326,7 @@ export class Chart {
 				throw new Error("this Chart was asked to color land politicly but the provided World was null");
 			this.fill(
 				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
-				g, BIOME_COLORS.get(null), Layer.KULTUR);
+				g, EGGSHELL, Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
 			for (let i = 0; biggestCivs.length > 0; i++) {
 				const civ = biggestCivs.pop();
