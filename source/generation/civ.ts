@@ -181,7 +181,7 @@ export class Civ {
 		const invadee = this.world.currentRuler(end);
 		const momentum = this.getStrength(invadee, end);
 		const resistance = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
-		const distance = start.neighbors.get(end).getDistance();
+		const distance = end.getArea()/start.neighbors.get(end).getLength();
 		const elevation = start.height - end.height;
 		const distanceEff = Math.hypot(distance, SLOPE_FACTOR*elevation)/end.passability;
 		if (momentum > resistance) // this randomness ensures Civs can accomplish things over many timesteps

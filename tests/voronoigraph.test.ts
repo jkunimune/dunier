@@ -30,8 +30,8 @@ describe("Tile", () => {
 		});
 	});
 	describe("getArea()", () => {
-		test("external", () => {
-			expect(tiles[1].getArea()).toBeCloseTo(0.545415);
+		test("internal", () => {
+			expect(tiles[2].getArea()).toBeCloseTo(Math.sqrt(3)/4, 6);
 		});
 	});
 });

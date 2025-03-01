@@ -443,10 +443,13 @@ export class Tile {
 
 	getArea(): number {
 		if (this.area === null) {
-			let radius = 0;
-			for (const neibor of this.neighbors.keys())
-				radius += this.surface.distance(this, neibor)/2/this.neighbors.size;
-			this.area = Math.PI*radius*radius;
+			this.area = 0; // TODO: this underestimates the area of tiles on the edge (but who cares)
+			for (const edge of this.neighbors.values()) {
+				const a = this.pos;
+				const b = edge.vertex0.pos;
+				const c = edge.vertex1.pos;
+				this.area += 1/2*Math.sqrt(b.minus(a).cross(c.minus(b)).sqr());
+			}
 		}
 		return this.area;
 	}
