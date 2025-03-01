@@ -219,6 +219,15 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 				if (sounds[i].is(Quality.VOCOID) && sounds[i].is(Nosia.NASALIZED) && sounds[i + 1].is(Quality.NASAL)) // find nasalized vocoids followd by other nasal sounds
 					sounds[i] = new Klas([Nosia.ORAL]).apply(sounds[i]); // and change them to be not nasalized
 		}
+		if (ORTHOGRAPHIC_FLAGS.get(style).get('monosyllabic word as unstressed')) {
+			let syllables = [];
+			for (let i = 0; i < sounds.length; i ++)
+				if (sounds[i].is(Quality.SYLLABIC))
+					syllables.push(i)
+			if (syllables.length === 1)
+				for (const i of syllables)
+					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]);
+		}
 
 		// form the inicial spelling by reading the transcripcion out of the table
 		let symbols = "";

@@ -300,6 +300,8 @@ export default {
     { "name": "velar nasal as coronal",
       "values": [false, true, true, true, true, true, true, true, false, true, false] },
     { "name": "chain nasalized vocoids",
-      "values": [false, false, false, false, false, true, true, false, true, false, false] }
+      "values": [false, false, false, false, false, true, true, false, true, false, false] },
+    { "name": "monosyllabic word as unstressed",
+      "values": [true, false, true, false, true, false, false, false, false, true, false] }
   ]
 };
