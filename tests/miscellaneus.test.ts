@@ -137,7 +137,10 @@ describe("localizeInRange()", () => {
 	});
 	test("roundoff resistance", () => {
 		const x = -2/7; // an arbitrary number
-		expect(localizeInRange(x, x + 2*Math.PI, x + 4*Math.PI)).toBeCloseTo(x + 2*Math.PI);
+		expect(localizeInRange(x, x + 2*Math.PI, x + 4*Math.PI)).toEqual(x + 2*Math.PI);
+	});
+	test("more roundoff resistance", () => {
+		expect(localizeInRange(4.289922754764645, -1.9932625524149412, 4.289922754764645)).toEqual(-1.9932625524149412);
 	});
 });
 

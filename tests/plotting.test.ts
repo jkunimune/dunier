@@ -48,6 +48,16 @@ describe("isClosed", () => {
 		];
 		expect(isClosed(path, geoid)).toBe(true);
 	});
+	test("loop along the domain boundary", () => {
+		const path = [
+			{type: 'M', args: [π, π]},
+			{type: 'Φ', args: [π, -π]},
+			{type: 'Λ', args: [-π, -π]},
+			{type: 'Φ', args: [-π, π]},
+			{type: 'Λ', args: [π, π]},
+		];
+		expect(isClosed(path, geoid)).toBe(true);
+	});
 });
 
 describe("calculatePathBounds", () => {

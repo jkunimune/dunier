@@ -1022,10 +1022,10 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 			const end = endpoint(segments[i]);
 			// account for periodicity
 			if (domain.isPeriodic()) {
-				start.s = localizeInRange(start.s, -π, π);
-				start.t = localizeInRange(start.t, -π, π);
-				end.s = localizeInRange(end.s, -π, π);
-				end.t = localizeInRange(end.t, -π, π);
+				start.s = localizeInRange(start.s, domain.sMin, domain.sMax);
+				start.t = localizeInRange(start.t, domain.tMin, domain.tMax);
+				end.s = localizeInRange(end.s, domain.sMin, domain.sMax);
+				end.t = localizeInRange(end.t, domain.tMin, domain.tMax);
 			}
 			// if it doesn't end where it started
 			const endsOnStart = start.s === end.s && start.t === end.t;
