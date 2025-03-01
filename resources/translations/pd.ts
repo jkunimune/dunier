@@ -735,6 +735,7 @@ export default {
 	"parameter.map.spelling.la": "latini",
 	"parameter.map.spelling.modern": "novyangi",
 	"parameter.map.spelling.pd": "panduni",
+	"parameter.map.spelling.ru": "rusi",
 	"parameter.map.style.dots": "bindi",
 	"parameter.map.style.plain": "kali",
 	"parameter.map.style.textured": "grafi",

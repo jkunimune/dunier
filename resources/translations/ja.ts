@@ -734,6 +734,7 @@ export default {
 	"parameter.map.spelling.la": "ラテン語",
 	"parameter.map.spelling.modern": "現代",
 	"parameter.map.spelling.pd": "パンドゥニア",
+	"parameter.map.spelling.ru": "ロシア語",
 	"parameter.map.style.dots": "点",
 	"parameter.map.style.plain": "空",
 	"parameter.map.style.textured": "模様",

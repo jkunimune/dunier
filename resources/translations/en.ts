@@ -743,6 +743,7 @@ export default {
 	"parameter.map.spelling.la": "Latin",
 	"parameter.map.spelling.modern": "Modern",
 	"parameter.map.spelling.pd": "Pandunia",
+	"parameter.map.spelling.ru": "Russian",
 	"parameter.map.style.dots": "Dots",
 	"parameter.map.style.plain": "Plain",
 	"parameter.map.style.textured": "Textured",

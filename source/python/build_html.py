@@ -41,13 +41,20 @@ for filename in os.listdir('../../templates/'):
 		page = template
 		for key, value in lang.items():
 			page = page.replace(f'{{{key}}}', value)
-		remaining_keys = re.search(r'{([a-zA-Z0-9-.]+)}', page)
+		remaining_keys = re.search(r'{([a-z.][a-zA-Z0-9-.]+)}', page)
 		if remaining_keys:
 			raise KeyError(f"no jana cabe '{remaining_keys.group(1)}'!")
 
 		# resolve any if-statements
-		page = re.sub(fr'{{If"{filename}"([^}}]*)}}', '\\1', page)
-		page = re.sub(fr'{{If"[^"]*"[^}}]*}}', '', page)
+		for if_statement in reversed(list(re.finditer(fr'{{If ([^ }}]*) ([^ }}]*)}}([^}}]*){{EndIf}}', page))):
+			a, b, body = if_statement.groups()
+			if a == b:
+				page = page[:if_statement.start()] + body + page[if_statement.end():]
+			else:
+				page = page[:if_statement.start()] + page[if_statement.end():]
+		remaining_if_statements = re.search(fr'{{If([^}}]*)', page)
+		if remaining_if_statements:
+			raise ValueError(f"could not parse the if-statement {remaining_if_statements.group()}")
 
 		# save the result
 		os.makedirs(f"../../{lang_code}/", exist_ok=True)

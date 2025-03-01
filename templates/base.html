@@ -31,9 +31,9 @@
 
           <div class="collapse navbar-collapse" id="toggle-navbar">
             <div class="navbar-nav">
-              <a class="nav-item nav-link" href="./index.html">{menu.index}{If"index" <span class="sr-only">{menu.current}</span>}</a>
-              <a class="nav-item nav-link" href="./nam.html">{menu.nam}{If"nam" <span class="sr-only">{menu.current}</span>}</a>
-              <a class="nav-item nav-link" href="./tema.html">{menu.tema}{If"tema" <span class="sr-only">{menu.current}</span>}</a>
+              <a class="nav-item nav-link" href="./index.html">{menu.index}{If {.name} index}<span class="sr-only">{menu.current}</span>{EndIf}</a>
+              <a class="nav-item nav-link" href="./nam.html">{menu.nam}{If {.name} nam}<span class="sr-only">{menu.current}</span>{EndIf}</a>
+              <a class="nav-item nav-link" href="./tema.html">{menu.tema}{If {.name} tema}<span class="sr-only">{menu.current}</span>{EndIf}</a>
               <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">{menu.contact}</a>
             </div>
 

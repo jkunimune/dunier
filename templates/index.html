@@ -415,13 +415,13 @@
                   <div class="form-group">
                     <label for="map-spelling">{parameter.map.spelling}</label>
                     <select class="custom-select" id="map-spelling">
-                      <option selected value="null">{parameter.map.spelling.modern}</option>
+                      <option value="null" {If {.language} en} selected {EndIf} {If {.language} es} selected {EndIf}>{parameter.map.spelling.modern}</option>
                       <option value="en">{parameter.map.spelling.en}</option>
                       <option value="es">{parameter.map.spelling.es}</option>
                       <option value="la">{parameter.map.spelling.la}</option>
-                      <!--TODO it would be nice if it could automatically select the system that goes with the language-->
-                      <option value="ja">{parameter.map.spelling.ja}</option>
-                      <option value="pd">{parameter.map.spelling.pd}</option>
+                      <option value="ja" {If {.language} ja} selected {EndIf}>{parameter.map.spelling.ja}</option>
+                      <option value="ru">{parameter.map.spelling.ru}</option>
+                      <option value="pd" {If {.language} pd} selected {EndIf}>{parameter.map.spelling.pd}</option>
                     </select>
                   </div>
                   <div class="form-group">
