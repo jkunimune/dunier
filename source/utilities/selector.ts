@@ -31,8 +31,13 @@ export class Selector {
 	 */
 	val(id: string): string {
 		const element = this.elm(id);
-		if (element.tagName.toLowerCase() === 'input')
-			return (<HTMLInputElement> element).value;
+		if (element.tagName.toLowerCase() === 'input') {
+			const value = (<HTMLInputElement> element).value;
+			if (element.getAttribute('type') === 'number' && value === '')
+				return element.getAttribute('min');
+			else
+				return value;
+		}
 		else if (element.tagName.toLowerCase() === 'select')
 			return (<HTMLSelectElement> element).value;
 		else if (element.hasAttribute('value'))
