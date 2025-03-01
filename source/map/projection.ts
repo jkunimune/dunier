@@ -83,7 +83,10 @@ export class MapProjection {
 		if (isFinite(this.yCenter)) {
 			const r = this.y(point.φ) - this.yCenter;
 			if (r !== 0) {
-				const θ = this.dx_dλ(point.φ)*(point.λ - this.λCenter)/r;
+				let Δλ = point.λ - this.λCenter;
+				if (point.λ === this.λMin || point.λ === this.λMax)
+					Δλ = Math.sign(Δλ)*Math.PI; // set longitude to exactly ±π if it seems like it should be
+				const θ = this.dx_dλ(point.φ)*Δλ/r;
 				return this.convertPolarToCartesian({r: r, θ: θ});
 			}
 			else

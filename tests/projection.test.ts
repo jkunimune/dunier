@@ -241,20 +241,21 @@ describe("on a sphere", () => {
 describe("on a disc", () => {
 	const disc = new Disc(4, 0, false);
 
-	describe("azimuthal equidistant projection", () => {
-		const projection = MapProjection.orthographic(disc, disc.φMin, disc.φMax, 0);
+	describe("orthographic projection", () => {
+		const λStd = -2.7129579899822533;
+		const projection = MapProjection.orthographic(disc, disc.φMin, disc.φMax, λStd);
 		describe("projectPoint()", () => {
 			test("pole", () => {
 				expect(projection.projectPoint({φ: Math.PI/2, λ: 2})).toEqual(
 					{x: expect.closeTo(0), y: expect.closeTo(0)});
 			});
 			test("off pole", () => {
-				expect(projection.projectPoint({φ: Math.PI/4, λ: Math.PI/6})).toEqual(
+				expect(projection.projectPoint({φ: Math.PI/4, λ: λStd + Math.PI/6})).toEqual(
 					{x: expect.closeTo(1/2), y: expect.closeTo(Math.sqrt(3)/2)});
 			});
 			test("consistency of antimeridian", () => {
-				expect(projection.projectPoint({φ: 0.5, λ: Math.PI})).toEqual(
-					projection.projectPoint({φ: 0.5, λ: -Math.PI}));
+				expect(projection.projectPoint({φ: 0.5, λ: λStd - Math.PI})).toEqual(
+					projection.projectPoint({φ: 0.5, λ: λStd + Math.PI}));
 			});
 		});
 		test("wrapsAround()", () => {
