@@ -334,6 +334,7 @@ export class Chart {
 				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
 				g, EGGSHELL, Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
+			let numFilledCivs = 0;
 			for (let i = 0; biggestCivs.length > 0; i++) {
 				const civ = biggestCivs.pop();
 				let color;
@@ -344,13 +345,16 @@ export class Chart {
 						        `${Math.max(0, Math.min(210, Math.log(civ.technology)*128 - 180))})`;
 				}
 				else {
-					if (i >= COUNTRY_COLORS.length)
+					if (numFilledCivs >= COUNTRY_COLORS.length)
 						break;
-					color = COUNTRY_COLORS[i];
+					else
+						color = COUNTRY_COLORS[numFilledCivs];
 				}
-				this.fill(
+				const fill = this.fill(
 					filterSet(civ.tiles, n => n.biome !== Biome.OCEAN),
 					g, color, Layer.KULTUR);
+				if (fill.getAttribute("d").length > 0)
+					numFilledCivs ++;
 			}
 		}
 		else if (landColor === 'heightmap') { // color the sea by altitude
