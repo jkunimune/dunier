@@ -689,6 +689,7 @@ export default {
 	"parameter.history.year": "nen",
 	"parameter.map": "zemgraf",
 	"parameter.map.city_style": "rupe da site",
+	"parameter.map.color.azure": "samani",
 	"parameter.map.color.black": "siahi",
 	"parameter.map.color.blue": "nili",
 	"parameter.map.color.gray": "huyi",

@@ -47,9 +47,10 @@ const EGGSHELL = '#FAF2E4';
 const LIGHT_GRAY = '#d4cdbf';
 const DARK_GRAY = '#857f76';
 const CHARCOAL = '#302d28';
+const BLUE = '#5A7ECA';
+const AZURE = '#C6ECFF';
 
 const BIOME_COLORS = new Map([
-	[Biome.OCEAN,     '#5A7ECA'],
 	[Biome.LAKE,      '#5A7ECA'],
 	[Biome.JUNGLE,    '#82C17A'],
 	[Biome.FOREST,    '#B0C797'],
@@ -102,19 +103,19 @@ const COUNTRY_COLORS = [
 
 const ALTITUDE_STEP = 0.5;
 const ALTITUDE_COLORS = [
-	'rgb(66, 115, 33)',
-	'rgb(112, 135, 42)',
-	'rgb(156, 155, 51)',
-	'rgb(195, 177, 87)',
-	'rgb(220, 207, 142)',
-	'rgb(247, 239, 197)',
+	'rgb(114, 184, 91)',
+	'rgb(153, 192, 94)',
+	'rgb(187, 201, 96)',
+	'rgb(215, 210, 122)',
+	'rgb(229, 225, 162)',
+	'rgb(243, 240, 201)',
 ];
 const DEPTH_STEP = 1.0;
 const DEPTH_COLORS = [
-	'rgb(111, 209, 232)',
-	'rgb(57, 150, 197)',
-	'rgb(17, 94, 164)',
-	'rgb(23, 34, 118)',
+	'rgb(85, 165, 178)',
+	'rgb(37, 138, 178)',
+	'rgb(42, 106, 171)',
+	'rgb(59, 72, 151)',
 ];
 
 enum Layer {
@@ -268,30 +269,28 @@ export class Chart {
 			g.appendChild(rectangle);
 		}
 
-		let riverColor = '#ff00ff'; // the river color will depend on the ocean color (by default make it this awful color so I can tell something's rong)
+		// decide what color the rivers will be
+		let waterFill;
+		let waterStroke;
 		if (seaColor === 'white') {
-			this.fill(
-				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
-				g, EGGSHELL, Layer.GEO);
-			riverColor = EGGSHELL;
+			waterFill = EGGSHELL;
+			waterStroke = CHARCOAL;
 		}
 		else if (seaColor === 'gray') {
-			this.fill(
-				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
-				g, DARK_GRAY, Layer.GEO);
-			riverColor = DARK_GRAY;
+			waterFill = DARK_GRAY;
+			waterStroke = DARK_GRAY;
 		}
 		else if (seaColor === 'black') {
-			this.fill(
-				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
-				g, CHARCOAL, Layer.GEO);
-			riverColor = CHARCOAL;
+			waterFill = CHARCOAL;
+			waterStroke = CHARCOAL;
 		}
-		else if (seaColor === 'blue') { // color the sea deep blue
-			this.fill(
-				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
-				g, BIOME_COLORS.get(Biome.OCEAN), Layer.GEO);
-			riverColor = BIOME_COLORS.get(Biome.OCEAN);
+		else if (seaColor === 'blue') {
+			waterFill = BLUE;
+			waterStroke = BLUE;
+		}
+		else if (seaColor === 'azure') {
+			waterFill = AZURE;
+			waterStroke = BLUE;
 		}
 		else if (seaColor === 'heightmap') { // color the sea by altitude
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
@@ -301,9 +300,11 @@ export class Chart {
 					filterSet(surface.tiles, n => n.biome === Biome.OCEAN && -n.height >= min && -n.height < max),
 					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
 			}
-			riverColor = DEPTH_COLORS[0]; // TODO: outline ocean + black rivers?
+			waterFill = 'none';
+			waterStroke = DEPTH_COLORS[0];
 		}
 
+		// color in the land
 		if (landColor === 'white') {
 			this.fill(
 				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
@@ -315,11 +316,16 @@ export class Chart {
 				g, LIGHT_GRAY, Layer.BIO);
 		}
 		else if (landColor === 'physical') { // draw the biomes
-			for (const biome of BIOME_COLORS.keys())
-				if (biome !== Biome.OCEAN)
+			for (const biome of BIOME_COLORS.keys()) {
+				if (biome === Biome.LAKE)
+					this.fill(
+						filterSet(surface.tiles, n => n.biome === biome),
+						g, waterFill, Layer.BIO);
+				else if (biome !== Biome.OCEAN)
 					this.fill(
 						filterSet(surface.tiles, n => n.biome === biome),
 						g, BIOME_COLORS.get(biome), Layer.BIO);
+			}
 		}
 		else if (landColor === 'political') { // draw the countries
 			if (world === null)
@@ -361,8 +367,13 @@ export class Chart {
 		if (rivers) {
 			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR*this.dimensions.area;
 			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
-				g, riverColor, 1.5, Layer.GEO);
+				g, waterStroke, 1.4, Layer.GEO);
 		}
+
+		// color in the sea
+		this.fill(
+			filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
+			g, waterFill, Layer.GEO, waterStroke, 0.7);
 
 		// add borders with hovertext
 		if (borders) {
@@ -381,7 +392,7 @@ export class Chart {
 					this.fill(
 						filterSet(civ.tiles, n => n.biome !== Biome.OCEAN),
 						titledG,
-						'none', Layer.KULTUR, '#111', 0.7).setAttribute('pointer-events', 'all');
+						'none', Layer.KULTUR, CHARCOAL, 0.7).setAttribute('pointer-events', 'all');
 				// }
 			}
 		}

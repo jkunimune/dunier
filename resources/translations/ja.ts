@@ -688,6 +688,7 @@ export default {
 	"parameter.history.year": "時代",
 	"parameter.map": "地図",
 	"parameter.map.city_style": "市の様式",
+	"parameter.map.color.azure": "水色",
 	"parameter.map.color.black": "黒色",
 	"parameter.map.color.blue": "青色",
 	"parameter.map.color.gray": "灰色",

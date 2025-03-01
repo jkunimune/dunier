@@ -697,6 +697,7 @@ export default {
 	"parameter.history.year": "Year",
 	"parameter.map": "Map",
 	"parameter.map.city_style": "City style",
+	"parameter.map.color.azure": "Light blue",
 	"parameter.map.color.black": "Black",
 	"parameter.map.color.blue": "Blue",
 	"parameter.map.color.gray": "Gray",
