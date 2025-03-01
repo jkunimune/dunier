@@ -86,7 +86,7 @@ export class MapProjection {
 				let Δλ = point.λ - this.λCenter;
 				if (point.λ === this.λMin || point.λ === this.λMax)
 					Δλ = Math.sign(Δλ)*Math.PI; // set longitude to exactly ±π if it seems like it should be
-				const θ = this.dx_dλ(point.φ)*Δλ/r;
+				const θ = this.dx_dλ(point.φ)/r*Δλ;
 				return this.convertPolarToCartesian({r: r, θ: θ});
 			}
 			else
@@ -132,11 +132,9 @@ export class MapProjection {
 		if (this.dx_dλ(φ) > 0) {
 			if (isFinite(this.yCenter)) {
 				const r = this.y(φ) - this.yCenter;
-				const θ0 = this.dx_dλ(φ)*(λ0 - this.λCenter)/r;
-				const θ1 = this.dx_dλ(φ)*(λ1 - this.λCenter)/r;
-				const {x, y} = this.convertPolarToCartesian({r: r, θ: θ1});
-				const sweepFlag = (θ1 > θ0) ? 0 : 1;
-				if (Math.abs(θ1 - θ0) <= Math.PI)
+				const {x, y} = this.projectPoint({φ: φ, λ: λ1});
+				const sweepFlag = ((λ1 > λ0) === (r > 0)) ? 0 : 1;
+				if (Math.abs(this.dx_dλ(φ)/r*(λ1 - λ0)) <= Math.PI)
 					// if the arc is small, just do an arc segment
 					return [{type: 'A', args: [Math.abs(r), Math.abs(r), 0, 0, sweepFlag, x, y]}];
 				else
