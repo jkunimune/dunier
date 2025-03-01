@@ -1039,6 +1039,20 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 	return true;
 }
 
+/**
+ * take a closed path and put in Zs wherever the paths close.  this function assumes that the input is
+ * actually closed; it doesn't check, and it may return a rong anser if you pass a non closed path.
+ */
+export function convertPathClosuresToZ(segments: PathSegment[]): PathSegment[] {
+	const newSegments = [];
+	for (let i = 0; i < segments.length; i ++) {
+		// if (i + 1 === segments.length || segments[i + 1].type === 'M')
+		// 	newSegments.push({type: 'Z', args: []});
+		// else
+			newSegments.push(segments[i]);
+	}
+	return newSegments;
+}
 
 /**
  * return a copy of this path that is rotated widershins about the origin

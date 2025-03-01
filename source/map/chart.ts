@@ -20,7 +20,7 @@ import {arcCenter, Vector} from "../utilities/geometry.js";
 import {ARABILITY, Biome} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
-	contains,
+	contains, convertPathClosuresToZ,
 	intersection,
 	transformInput,
 	transformOutput
@@ -447,10 +447,8 @@ export class Chart {
 		 stroke = 'none', strokeWidth = 0): SVGPathElement {
 		if (tiles.size <= 0)
 			return this.draw([], svg);
-		const closePath = color !== 'none'; // leave the polygons open if we're not coloring them in
-		const segments = this.projectPath(
-			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.scale),
-			closePath);
+		const segments = convertPathClosuresToZ(this.projectPath(
+			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.scale), true));
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
