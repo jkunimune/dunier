@@ -5,7 +5,7 @@
 import Queue from '../datastructures/queue.js';
 import {Surface, Vertex, Tile, EmptySpace} from "../surface/surface.js";
 import {Random} from "../utilities/random.js";
-import {argmax, union} from "../utilities/miscellaneus.js";
+import {argmin, union} from "../utilities/miscellaneus.js";
 import {Vector} from "../utilities/geometry.js";
 
 
@@ -26,7 +26,6 @@ const FLASH_TEMP = +50; // °C
 const TROPIC_TEMP = +22; // °C
 const FOREST_INTERCEPT = -40; // °C
 const FOREST_SLOPE = 37; // °C/u
-const MARSH_THRESH = 3.5; // u
 
 const RIVER_THRESH = -25; // °C
 const RIVER_WIDTH = 10; // km
@@ -120,7 +119,7 @@ export function generateTerrain(numContinents: number, seaLevel: number, meanTem
 	movePlates(surf, rng);
 	fillOcean(seaLevel, surf);
 	rng = rng.reset();
-	generateClimate(meanTemperature, surf, rng); // TODO: I realy think I should have an avgRain parameter
+	generateClimate(meanTemperature, surf, rng); // TODO: I really think I should have an avgRain parameter
 	addRivers(surf);
 	setBiomes(surf);
 }
@@ -152,17 +151,10 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random): void
 			}
 			const options = (prefParents.length > 0) ? prefParents : tile.parents;
 			options.sort((a: Tile, b: Tile) => a.plateIndex%2 - b.plateIndex%2); // sort these by altitude to make the randomness more stable
-			tile.plateIndex = options[rng.discrete(0, options.length)].plateIndex; // in any case, just take the plate parent pseudorandomly
-		}
-	}
-
-	for (const tile of surf.tiles) { // refine the plate definitions
-		if (tile.plateIndex !== tile.index) {
-			const count = new Array(numPlates).fill(0);
-			for (const neighbor of tile.neighbors.keys())
-				count[neighbor.plateIndex] ++;
-			count[tile.plateIndex] += 0.5;
-			tile.plateIndex = argmax(count); // to smooth out the plate borders at the finest level
+			let distances = [];
+			for (const parent of options)
+				distances.push(surf.distance(tile, parent));
+			tile.plateIndex = options[argmin(distances)].plateIndex;
 		}
 	}
 

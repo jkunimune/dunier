@@ -22,6 +22,19 @@ export function argmax(arr: number[]): number {
 }
 
 /**
+ * index of the minimum
+ */
+export function argmin(arr: number[]): number {
+	if (arr.length === 0)
+		throw new Error("I cannot find the minimum of an empty array");
+	let maxIdx = null;
+	for (let i = 0; i < arr.length; i ++)
+		if (maxIdx === null || arr[i] < arr[maxIdx])
+			maxIdx = i;
+	return maxIdx;
+}
+
+/**
  * second Legendre polynomial.
  */
 export function legendreP2(y: number): number {

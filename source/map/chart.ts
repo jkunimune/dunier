@@ -29,7 +29,8 @@ import {
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
-const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than
+const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
+const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than categorical colors
 const SHOW_BACKGROUND = false; // have a big red rectangle under the map
 
 // OTHER FIXED DISPLAY OPTIONS
@@ -272,7 +273,11 @@ export class Chart {
 		// decide what color the rivers will be
 		let waterFill;
 		let waterStroke;
-		if (seaColor === 'white') {
+		if (COLOR_BY_PLATE) {
+			waterFill = 'none';
+			waterStroke = CHARCOAL;
+		}
+		else if (seaColor === 'white') {
 			waterFill = EGGSHELL;
 			waterStroke = CHARCOAL;
 		}
@@ -305,7 +310,14 @@ export class Chart {
 		}
 
 		// color in the land
-		if (landColor === 'white') {
+		if (COLOR_BY_PLATE) {
+			for (let i = 0; i < 14; i ++) {
+				this.fill(
+					filterSet(surface.tiles, n => n.plateIndex === i),
+					g, COUNTRY_COLORS[i], Layer.GEO);
+			}
+		}
+		else if (landColor === 'white') {
 			this.fill(
 				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
 				g, EGGSHELL, Layer.BIO);
