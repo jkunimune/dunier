@@ -75,5 +75,15 @@ export default [
   {"result": "sia#", "patterns": ["ja#"]},
   {"result": "tia#", "patterns": ["cha#"]},
   {"result": "oo", "patterns": ["ɯ–", "u*ɯ–"]},
-  {"result": "u*", "patterns": ["ɯ*", "u*u*", "ɯ*ɯ*"]}
+  {"result": "u*", "patterns": ["ɯ*", "u*u*", "ɯ*ɯ*"]},
+  {"result": "*cc#", "patterns": ["*c#"]},
+  {"result": "*ff#", "patterns": ["*f#"]},
+  {"result": "*ll#", "patterns": ["*l#"]},
+  {"result": "*ss#", "patterns": ["*s#"]},
+  {"result": "*zz#", "patterns": ["*z#"]},
+  {"result": "*cky#", "patterns": ["*cy#"]},
+  {"result": "*ffy#", "patterns": ["*fy#"]},
+  {"result": "*lly#", "patterns": ["*ly#"]},
+  {"result": "*ssy#", "patterns": ["*sy#"]},
+  {"result": "*zzy#", "patterns": ["*zy#"]}
 ];

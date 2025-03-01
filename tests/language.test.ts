@@ -133,24 +133,24 @@ describe("process", () => {
 });
 
 describe("script", () => {
-	const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ")];
+	const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ"), ipa("wiwiɡjaɡwaɡwiɡaɡiθaθikaki")];
 	words[0][0] = words[0][0].with(Nosia.NASALIZED).with(Mode.AFFRICATE);
 	words[2][0] = words[2][0].with(Nosia.NASALIZED);
 	words[2][1] = words[2][1].with(Nosia.NASALIZED);
 	test("ipa", () => {
-		expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwijən j̃ʊ̃ŋ");
+		expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwijən j̃ʊ̃ŋ wiwiɡjaɡwaɡwiɡaɡiθaθikaki");
 	});
 	test("en", () => {
-		expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung");
+		expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung Wewegiagwagwegageethathecacky");
 	});
 	test("ja", () => {
-		expect(transcribe(words, "ja")).toEqual("ンチタルク・グイヤン・ユング");
+		expect(transcribe(words, "ja")).toEqual("ンチタルク・グイヤン・ユング・ウィウィギャグワグイガギサシカキ");
 	});
 	test("es", () => {
-		expect(transcribe(words, "es")).toEqual("Nchtarc Nuiyen Yun");
+		expect(transcribe(words, "es")).toEqual("Nchtarc Nuiyen Yun Huihuiguiaguagüigaguizacicaqui");
 	});
 	test("ru", () => {
-		expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг");
+		expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Вивигягвагвигагифафикаки");
 	});
 });
 

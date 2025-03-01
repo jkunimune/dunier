@@ -736,7 +736,7 @@ export default {
 	"parameter.map.spelling.la": "Latina",
 	"parameter.map.spelling.modern": "Moderna",
 	"parameter.map.spelling.pd": "Pandunia",
-	"parameter.map.spelling.ru": "Ruso",
+	"parameter.map.spelling.ru": "Rusa",
 	"parameter.map.style.dots": "Puntos",
 	"parameter.map.style.plain": "Liso",
 	"parameter.map.style.textured": "Textura",

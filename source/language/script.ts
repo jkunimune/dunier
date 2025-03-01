@@ -223,7 +223,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			let syllables = [];
 			for (let i = 0; i < sounds.length; i ++)
 				if (sounds[i].is(Quality.SYLLABIC))
-					syllables.push(i)
+					syllables.push(i);
 			if (syllables.length === 1)
 				for (const i of syllables)
 					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]);
@@ -245,13 +245,42 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			symbols = symbols.replace(/[йь]ы/g, "и");
 			symbols = symbols.replace(/[йь]у/g, "ю");
 			// an и softens the following vowel (except э and ы)
-			symbols = symbols.replace(/иа/g, "ия");
-			symbols = symbols.replace(/ио/g, "иё");
-			symbols = symbols.replace(/иу/g, "ию");
+			symbols = symbols.replace(/и(́?)а/g, "и$1я");
+			symbols = symbols.replace(/и(́?)о/g, "и$1ё");
+			symbols = symbols.replace(/и(́?)у/g, "и$1ю");
 			// й must be adjacent to a vowel or becomes и
 			symbols = symbols.replace(/([^аеёиоуыэюя])й([^аеёиоуыэюя])/g, "$1и$2");
 			// э is only used at the starts of words
 			symbols = symbols.replace(/(.)э/, "$1е");
+		}
+		// apply spanish spelling rules
+		if (style === 'es') {
+			// change y to i adjacent to consonants
+			symbols = symbols.replace(/([^aeioú])y/g, "$1i");
+			symbols = symbols.replace(/y([^aeioú])/g, "i$1");
+			// remove duplicate letters
+			for (let i = symbols.length - 1; i >= 1; i --)
+				if (symbols[i - 1] === symbols[i])
+					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+			for (let i = symbols.length - 1; i >= 2; i --)
+				if (symbols[i - 1] === "́" && symbols[i - 2] === symbols[i]) // watch out for the combining diacritics
+					symbols = symbols.slice(0, i) + symbols.slice(i + 1);
+			// change combining diacritics to special characters (because ú should behave differently from u)
+			symbols = symbols.replace(/á/g, "á");
+			symbols = symbols.replace(/é/g, "é");
+			symbols = symbols.replace(/í/g, "í");
+			symbols = symbols.replace(/ó/g, "ó");
+			symbols = symbols.replace(/ú/g, "ú");
+			// add a consonant before prevocalic u and i
+			symbols = symbols.replace(/^([iu][aeiouáéíóú])/g, "h$1");
+			symbols = symbols.split("").reverse().join("")
+				.replace(/([aeiouáéíóú][iu])([aeiouáéíóú])/g, "$1h$2")
+				.split("").reverse().join(""); // (this part needs to be done back-to-front, hence the reversal)
+			// change gui to güi, gi to gui, ci to qui, and zi to ci
+			symbols = symbols.replace(/gu([ieíé])/g, "gü$1");
+			symbols = symbols.replace(/g([ieíé])/g, "gu$1");
+			symbols = symbols.replace(/c([ieíé])/g, "qu$1");
+			symbols = symbols.replace(/z([ieíé])/g, "c$1");
 		}
 		// apply english spelling rules
 		else if (style === 'en') {
@@ -318,6 +347,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			}
 			symbols = newSymbol;
 
+			// make some final replacements
 			for (const [ca, pa] of [[/cw/g, "qu"], [/[ck]s/g, "x"], [/yy/g, "y"], [/ww/g, "w"], [/sh[ck]/g, "sc"], [/ɦw/g, "wh"], [/ɦ/g, "h"]])
 				symbols = symbols.replace(ca, <string>pa);
 		}
