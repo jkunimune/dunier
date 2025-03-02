@@ -418,7 +418,7 @@ export class Chart {
 			this.shade(surface.vertices, g);
 		}
 
-		// finally, label everything
+		// label everything
 		if (civLabels) {
 			if (world === null)
 				throw new Error("this Chart was asked to label countries but the provided World was null");
@@ -430,6 +430,11 @@ export class Chart {
 						svg,
 						fontSize);
 		}
+
+		// add an outline to the whole thing
+		this.fill(
+			surface.tiles,
+			g, 'none', Layer.GEO, 'black', 1.4);
 
 		if (world !== null) {
 			// finally, check which Civs are on this map
