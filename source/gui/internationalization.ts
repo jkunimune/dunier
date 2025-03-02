@@ -12,12 +12,14 @@ import PD_STRINGS from "../../resources/translations/pd.js";
 
 
 let USER_STRINGS: { [index: string]: string };
+let SPECIAL_RULE_FOR_AND_BEFORE_I = false;
 switch (DOM.elm("bash").textContent) {
 	case "en":
 		USER_STRINGS = EN_STRINGS;
 		break;
 	case "es":
 		USER_STRINGS = ES_STRINGS;
+		SPECIAL_RULE_FOR_AND_BEFORE_I = true;
 		break;
 	case "ja":
 		USER_STRINGS = JA_STRINGS;
@@ -40,7 +42,7 @@ switch (DOM.elm("bash").textContent) {
 export function format(sentence: string, ...args: (string|number|Name|Name[])[]): string {
 	if (!USER_STRINGS.hasOwnProperty(sentence))
 		throw new Error(`Could not find user string in resource file for ${sentence}`);
-	let format = USER_STRINGS[sentence];
+	let output = USER_STRINGS[sentence];
 	for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
 		let convertedArg: string;
 		if (args[i] === null || args[i] === undefined) {
@@ -66,12 +68,32 @@ export function format(sentence: string, ...args: (string|number|Name|Name[])[])
 				convertedArg = convertedArg.split("").reverse().join(""); // reverse it back
 			}
 		}
+		// for an array, list them out using a language-specific separator
 		else if (args[i] instanceof Array) {
-			convertedArg = (<Name[]>args[i]).map((n: Name) => n.toString()).join(" and ");
+			const parts = (<Name[]>args[i]).map(n => n.toString());
+			if (parts.length === 0)
+				throw new Error(`this sentence needs to be rephrased if there are zero items: ${output.replace(`{${i}}`, "(none)")}`);
+			else if (parts.length === 1)
+				convertedArg = parts[0].toString();
+			else if (parts.length === 2) {
+				let and = format('grammar.and');
+				if (SPECIAL_RULE_FOR_AND_BEFORE_I && /^[iíïịɨиイ]/i.test(parts[1]))
+					and = and.replace("y", "e");
+				convertedArg = parts[0] + and + parts[1];
+			}
+			else {
+				const first_parts = parts.slice(0, parts.length - 1);
+				const first_separator = format('grammar.comma');
+				const last_part = parts[parts.length - 1];
+				let last_separator = format('grammar.comma_and');
+				if (SPECIAL_RULE_FOR_AND_BEFORE_I && /^[iíïịɨиイ]/i.test(parts[1]))
+					last_separator = last_separator.replace("y", "e");
+				convertedArg = first_parts.join(first_separator) + last_separator + last_part;
+			}
 		}
 		if (convertedArg === undefined) // do Javascript's job for it
 			throw new Error(`Could not find user string in resource file for ${args[i]}`);
-		format = format.replace(`{${i}}`, convertedArg); // then slot it in
+		output = output.replace(`{${i}}`, convertedArg); // then slot it in
 	}
-	return format;
+	return output;
 }
