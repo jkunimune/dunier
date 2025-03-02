@@ -9,6 +9,7 @@ export default {
 	"about.license.head": "halal",
 	"error.planet_too_fast": "The planet tore itself apart because it was spinning to fast.  Please choose a longer day length.",
 	"error.planet_too_slow": "The planet went unstable because it was too thin.  Please choose a shorter day length.",
+	"error.uncaught": "There was an unforeseen problem.  I'm so sorry, this shouldn't happen.  You could try refreshing, and/or maybe let me know what parameters you used.",
 	"factbook.art": "yamen su vide shutu be save ze a su {0}, e {1}.  ",
 	"factbook.art.style.bright_colors": "pul rang",
 	"factbook.art.style.circles": "poli gola e onda lin",

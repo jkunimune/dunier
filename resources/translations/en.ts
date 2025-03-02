@@ -9,6 +9,7 @@ export default {
 	"about.license.head": "License",
 	"error.planet_too_fast": "The planet tore itself apart because it was spinning to fast.  Please choose a longer day length.",
 	"error.planet_too_slow": "The planet went unstable because it was too thin.  Please choose a shorter day length.",
+	"error.uncaught": "There was an unforeseen problem.  I'm so sorry, this shouldn't happen.  You could try refreshing, and/or maybe let me know what parameters you used.",
 	"factbook.art": "Their visual art is recognizable for its {0}, and {1}.  ",
 	"factbook.art.style.bright_colors": "saturated colors",
 	"factbook.art.style.circles": "many circles and wavy lines",

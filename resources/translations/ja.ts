@@ -9,6 +9,7 @@ export default {
 	"about.license.head": "ライセンス",
 	"error.planet_too_fast": "惑星は回転速度が過ぎて、破裂してしまった。日間を永くしてください。",
 	"error.planet_too_slow": "惑星は薄すぎて、壊れてしまった。日間を短くしてください。",
+	"error.uncaught": "予想外なエラーが発生した。申し訳ない。こんなことあるはずはない。ページを再読み込んでみて下さい。それとも、よろしければ、私に連絡して、使った引数を伝えて下さい。",
 	"factbook.art": "美術は、{0}でも、{1}でも分けられる。",
 	"factbook.art.style.bright_colors": "鮮やかな色",
 	"factbook.art.style.circles": "多い丸と波線",
