@@ -17,7 +17,6 @@ import {Toroid} from "../surface/toroid.js";
 import {LockedDisc} from "../surface/lockeddisc.js";
 import {generateFactSheet} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
-import {PortableDocument} from "../utilities/portabledocument.js";
 import {Civ} from "../generation/civ.js";
 // @ts-ignore
 const Plotly = window.Plotly;
@@ -48,7 +47,7 @@ enum Layer {
 	TERRAIN,
 	HISTORY,
 	MAP,
-	PDF
+	FACTBOOK
 }
 
 /** which level of the model currently has all input changes applied */
@@ -363,20 +362,22 @@ function applyMap(): void {
 
 
 /**
- * Generate a final formatted map.
+ * Generate a nicely typeset document giving all the information about the mapped countries
  */
-function applyPdf(): void {
+function applyFactbook(): void {
 	if (lastUpdated < Layer.MAP)
 		applyMap();
 
-	console.log("jena pdf..."); // TODO: refactor map so that I can get this in a form that I can rite directly to the PDF.  I should probably also allow export as png somehow?
-	const doc = new PortableDocument(format('parameter.factbook'));
-	for (const civ of mappedCivs) // TODO: only civs on the map
+	console.log("jena factbook...");
+	const doc = document.implementation.createHTMLDocument(format('parameter.factbook'));
+	for (const civ of mappedCivs)
 		generateFactSheet(doc, civ);
-	DOM.elm('pdf-embed').setAttribute('src', doc.getUrl());
+	const serializer = new XMLSerializer();
+	const xmlString = serializer.serializeToString(doc);
+	DOM.elm('factbook-embed').setAttribute('srcdoc', xmlString);
 
 	console.log("fina!");
-	lastUpdated = Layer.PDF;
+	lastUpdated = Layer.FACTBOOK;
 }
 
 
@@ -422,7 +423,7 @@ for (const suffix of ['apply', 'tab']) {
 	});
 
 	/**
-	 * When the terrain button is clicked, do its thing
+	 * When the terrain tab or button is clicked, do its thing
 	 */
 	DOM.elm(`terrain-${suffix}`).addEventListener('click', () => {
 		if (lastUpdated < Layer.TERRAIN && !inProgress)
@@ -430,7 +431,7 @@ for (const suffix of ['apply', 'tab']) {
 	});
 
 	/**
-	 * When the history button is clicked, activate its purpose.
+	 * When the history tab or button is clicked, activate its purpose.
 	 */
 	DOM.elm(`history-${suffix}`).addEventListener('click', () => {
 		if (lastUpdated < Layer.HISTORY && !inProgress)
@@ -438,7 +439,7 @@ for (const suffix of ['apply', 'tab']) {
 	});
 
 	/**
-	 * When the map button is clicked, reveal its true form.
+	 * When the map tab or button is clicked, reveal its true form.
 	 */
 	DOM.elm(`map-${suffix}`).addEventListener('click', () => {
 		if (lastUpdated < Layer.MAP && !inProgress)
@@ -447,11 +448,19 @@ for (const suffix of ['apply', 'tab']) {
 }
 
 /**
- * When the pdf button is clicked, generate the PDF.
+ * When the factbook tab is clicked, generate the factbook.
  */
-DOM.elm('pdf-tab').addEventListener('click', () => {
-	if (lastUpdated < Layer.PDF && !inProgress)
-		disableButtonsAndDo(applyPdf);
+DOM.elm('factbook-tab').addEventListener('click', () => {
+	if (lastUpdated < Layer.FACTBOOK && !inProgress)
+		disableButtonsAndDo(applyFactbook);
+});
+
+
+/**
+ * When the print button is clicked, send the factbook to the browser's print window
+ */
+DOM.elm('factbook-print').addEventListener('click', () => {
+	(DOM.elm('factbook-embed') as HTMLIFrameElement).contentWindow.print();
 });
 
 
@@ -463,7 +472,7 @@ const tabs = [
 	{ layer: Layer.TERRAIN, name: 'terrain' },
 	{ layer: Layer.HISTORY, name: 'history' },
 	{ layer: Layer.MAP, name: 'map' },
-	{ layer: Layer.PDF, name: 'pdf' },
+	{ layer: Layer.FACTBOOK, name: 'factbook' },
 ];
 for (const { layer, name } of tabs) {
 	Selector.mapToAllChildren(DOM.elm(`${name}-panel`), (element) => {

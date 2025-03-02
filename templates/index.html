@@ -61,7 +61,7 @@
       <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">{parameter.map}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="pdf-tab" data-toggle="tab" href="#pdf-panel" role="tab" aria-controls="pdf-panel" aria-selected="true">{parameter.factbook}</a>
+      <a class="nav-link" id="factbook-tab" data-toggle="tab" href="#factbook-panel" role="tab" aria-controls="factbook-panel" aria-selected="true">{parameter.factbook}</a>
     </li>
   </ul>
 
@@ -448,7 +448,7 @@
                 {menu.loading}
               </span>
             </button>
-            <button type="button" class="btn btn-block btn-primary" id="map-download" disabled>
+            <button type="button" class="btn btn-block btn-primary" id="map-download">
               {menu.download}
             </button>
           </form>
@@ -462,10 +462,19 @@
       </div>
     </div>
 
-    <div class="tab-pane" id="pdf-panel" role="tabpanel" aria-labelledby="pdf-tab">
+    <div class="tab-pane" id="factbook-panel" role="tabpanel" aria-labelledby="factbook-factbook">
       <div class="row mt-2">
-        <div class="col-12">
-          <embed id="pdf-embed" type="application/pdf" width="100%" height="500px">
+        <div class="col-xs-12 col-md-5 col-lg-4 col-xl-3">
+          <form>
+            <button type="button" class="btn btn-block btn-primary" id="factbook-print">
+              {menu.print}
+            </button>
+          </form>
+        </div>
+
+        <div class="col-xs-12 col-md-7 col-lg-8 col-xl-9">
+          <iframe id="factbook-embed" style="width: 100%; height: 90vh;" title="{parameter.factbook}">
+          </iframe>
         </div>
       </div>
     </div>
