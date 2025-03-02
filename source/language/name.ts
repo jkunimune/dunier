@@ -9,7 +9,6 @@ import {transcribe} from "./script.js";
 export class Name {
 	public readonly parts: Sound[][];
 	public readonly language: Lect;
-	public readonly length: number;
 
 	constructor(parts: Sound[][], language: Lect) {
 		for (const part of parts)

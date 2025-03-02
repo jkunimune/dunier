@@ -37,7 +37,7 @@ switch (DOM.elm("bash").textContent) {
  * @param sentence the key for the encompassing phrase
  * @param args the key for the arguments to slot in
  */
-export function format(sentence: string, ...args: (string|number|Name)[]): string {
+export function format(sentence: string, ...args: (string|number|Name|Name[])[]): string {
 	if (!USER_STRINGS.hasOwnProperty(sentence))
 		throw new Error(`Could not find user string in resource file for ${sentence}`);
 	let format = USER_STRINGS[sentence];
@@ -65,6 +65,9 @@ export function format(sentence: string, ...args: (string|number|Name)[]): strin
 				convertedArg = convertedArg.replace(/(\d\d\d)(\d)/g, '$1 $2').replace(/,$/, ''); // add thousands separators
 				convertedArg = convertedArg.split("").reverse().join(""); // reverse it back
 			}
+		}
+		else if (args[i] instanceof Array) {
+			convertedArg = (<Name[]>args[i]).map((n: Name) => n.toString()).join(" and ");
 		}
 		if (convertedArg === undefined) // do Javascript's job for it
 			throw new Error(`Could not find user string in resource file for ${args[i]}`);

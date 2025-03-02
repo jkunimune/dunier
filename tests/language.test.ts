@@ -9,7 +9,7 @@ import {
 	Syllabicization,
 	WORD_PROCESS_OPTIONS
 } from "../source/language/process.js";
-import {ipa, transcribe} from "../source/language/script.js";
+import {compare, ipa, transcribe} from "../source/language/script.js";
 import {Klas, Loke, Mode, Nosia, Quality, Silabia, Sound, Voze} from "../source/language/sound.js";
 import {Random} from "../source/utilities/random.js";
 
@@ -133,24 +133,31 @@ describe("process", () => {
 });
 
 describe("script", () => {
-	const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ"), ipa("wiwiɡjaɡwaɡwiɡaɡiθaθikaki")];
-	words[0][0] = words[0][0].with(Nosia.NASALIZED).with(Mode.AFFRICATE);
-	words[2][0] = words[2][0].with(Nosia.NASALIZED);
-	words[2][1] = words[2][1].with(Nosia.NASALIZED);
-	test("ipa", () => {
-		expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwijən j̃ʊ̃ŋ wiwiɡjaɡwaɡwiɡaɡiθaθikaki");
+	test("compare", () => {
+		const words = ["ʻaʻu", "au", "aa", "ʻaʻa", "áu", "áa", "ゲン", "ケン", "ゲイ", "ケイ", "n̈a", "na", "n̈u", "nu"];
+		expect(words.sort((a, b) => compare(a, b, "en"))).toEqual(
+			["aa", "ʻaʻa", "áa", "ʻaʻu", "au", "áu", "n̈a", "na", "n̈u", "nu", "ケイ", "ゲイ", "ケン", "ゲン"]);
 	});
-	test("en", () => {
-		expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung Wewegiagwagwegageethathecacky");
-	});
-	test("ja", () => {
-		expect(transcribe(words, "ja")).toEqual("ンチタルク・グイヤン・ユング・ウィウィギャグワグイガギサシカキ");
-	});
-	test("es", () => {
-		expect(transcribe(words, "es")).toEqual("Nchtarc Nuiyen Yun Huihuiguiaguagüigaguizacicaqui");
-	});
-	test("ru", () => {
-		expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Вивигягвагвигагифафикаки");
+	describe("transcribe", () => {
+		const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ"), ipa("wiwiɡjaɡwaɡwiɡaɡiθaθikaki")];
+		words[0][0] = words[0][0].with(Nosia.NASALIZED).with(Mode.AFFRICATE);
+		words[2][0] = words[2][0].with(Nosia.NASALIZED);
+		words[2][1] = words[2][1].with(Nosia.NASALIZED);
+		test("ipa", () => {
+			expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwijən j̃ʊ̃ŋ wiwiɡjaɡwaɡwiɡaɡiθaθikaki");
+		});
+		test("en", () => {
+			expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung Wewegiagwagwegageethathecacky");
+		});
+		test("ja", () => {
+			expect(transcribe(words, "ja")).toEqual("ンチタルク・グイヤン・ユング・ウィウィギャグワグイガギサシカキ");
+		});
+		test("es", () => {
+			expect(transcribe(words, "es")).toEqual("Nchtarc Nuiyen Yun Huihuiguiaguagüigaguizacicaqui");
+		});
+		test("ru", () => {
+			expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Вивигягвагвигагифафикаки");
+		});
 	});
 });
 

@@ -469,3 +469,24 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 
 	return allSymbols.join(TO_TEXT.get(style).get("pause"));
 }
+
+
+/**
+ * determine which of these two phrases should come first in alphabetical order.
+ * this is meant to be used in Array.sort(), so it has the typical return value.
+ * it's similar to string.localeCompare(), but with some modifications to make it
+ * work better when there are loanwords from fictional languages in the mix.
+ * @return 1 if b should come before a, -1 if a should come before b, and 0 if they can go in either order
+ */
+export function compare(a: string, b: string, style: string): number {
+	a = a.replace(/[̴̨̣̰̄̈̃́̆ʻ’ʼ]/g, "");
+	b = b.replace(/[̴̨̣̰̄̈̃́̆ʻ’ʼ]/g, "");
+	let closestRealLocale;
+	if (style === "es" || style === "en" || style === "ru" || style === "ja")
+		closestRealLocale = style;
+	else if (style !== "ipa")
+		closestRealLocale = "en";
+	else
+		throw new Error("we don't alphabetically sort IPA in this house.  why would you even try?");
+	return a.localeCompare(b, closestRealLocale);
+}

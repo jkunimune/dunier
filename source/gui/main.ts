@@ -15,7 +15,7 @@ import {Sphere} from "../surface/sphere.js";
 import {Disc} from "../surface/disc.js";
 import {Toroid} from "../surface/toroid.js";
 import {LockedDisc} from "../surface/lockeddisc.js";
-import {generateFactSheet} from "../generation/factsheet.js";
+import {generateFactbook} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
 import {Civ} from "../generation/civ.js";
 // @ts-ignore
@@ -369,9 +369,13 @@ function applyFactbook(): void {
 		applyMap();
 
 	console.log("jena factbook...");
-	const doc = document.implementation.createHTMLDocument(format('parameter.factbook'));
-	for (const civ of mappedCivs)
-		generateFactSheet(doc, civ);
+	const doc = generateFactbook(
+		DOM.elm('map-map') as SVGSVGElement,
+		mappedCivs,
+		(DOM.val('map-spelling') === 'null') ?
+			null :
+			DOM.val('map-spelling')
+	);
 	const serializer = new XMLSerializer();
 	const xmlString = serializer.serializeToString(doc);
 	DOM.elm('factbook-embed').setAttribute('srcdoc', xmlString);
