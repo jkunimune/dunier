@@ -659,6 +659,7 @@ export default {
 	"factbook.tech.other.sundial": "日時計を使う",
 	"factbook.tech.other.telescope": "望遠鏡で空を眺める",
 	"factbook.tech.other.vr": "肉体的に歩き回れるVRトレッドミルMinecraftをやる",
+	"filename": "fantasy-map.svg",
 	"grammar.and": "と",
 	"grammar.comma": "、",
 	"grammar.comma_and": "、",

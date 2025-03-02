@@ -18,6 +18,7 @@ import {LockedDisc} from "../surface/lockeddisc.js";
 import {generateFactbook} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
 import {Civ} from "../generation/civ.js";
+import {convertSVGToBlob, download, serialize} from "./export.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -370,9 +371,7 @@ function applyFactbook(): void {
 			null :
 			DOM.val('map-spelling')
 	);
-	const serializer = new XMLSerializer();
-	const xmlString = serializer.serializeToString(doc);
-	DOM.elm('factbook-embed').setAttribute('srcdoc', xmlString);
+	DOM.elm('factbook-embed').setAttribute('srcdoc', serialize(doc));
 
 	console.log("fina!");
 	lastUpdated = Layer.FACTBOOK;
@@ -468,6 +467,14 @@ DOM.elm('factbook-tab').addEventListener('click', () => {
 		disableButtonsAndDo(applyFactbook);
 });
 
+/**
+ * When the download button is clicked, export and download the map as an SVG
+ */
+DOM.elm('map-download').addEventListener('click', () => {
+	download(
+		convertSVGToBlob(DOM.elm('map-map') as SVGSVGElement),
+		format(null, "filename"));
+});
 
 /**
  * When the print button is clicked, send the factbook to the browser's print window

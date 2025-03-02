@@ -661,6 +661,7 @@ export default {
 	"factbook.tech.other.sundial": "dicen la hora por relojes de sol",
 	"factbook.tech.other.telescope": "observan en el cielo por telescopio",
 	"factbook.tech.other.vr": "juegan Minecraft en cintas de correr de RV en que puede caminar en espacio físico",
+	"filename": "mapa-fantástico.svg",
 	"grammar.and": " y ",
 	"grammar.comma": ", ",
 	"grammar.comma_and": ", y ",

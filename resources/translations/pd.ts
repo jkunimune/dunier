@@ -660,6 +660,7 @@ export default {
 	"factbook.tech.other.sundial": "use sundials to tell time",
 	"factbook.tech.other.telescope": "watch the stars through telescopes",
 	"factbook.tech.other.vr": "play Minecraft on VR treadmills that let you physically walk around",
+	"filename": "fantazi-karte.svg",
 	"grammar.and": " e ",
 	"grammar.comma": ", e ",
 	"grammar.comma_and": ", e ",
