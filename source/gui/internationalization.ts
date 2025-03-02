@@ -38,8 +38,9 @@ switch (DOM.elm("bash").textContent) {
  * extracted from USER_STRINGS.
  * @param sentence the key for the encompassing phrase
  * @param args the key for the arguments to slot in
+ * @param transcriptionStyle the spelling style to use for any Names
  */
-export function format(sentence: string, ...args: (string|number|Name|Name[])[]): string {
+export function format(transcriptionStyle: string, sentence: string, ...args: (string|number|Name|Name[])[]): string {
 	if (!USER_STRINGS.hasOwnProperty(sentence))
 		throw new Error(`Could not find user string in resource file for ${sentence}`);
 	let output = USER_STRINGS[sentence];
@@ -51,7 +52,7 @@ export function format(sentence: string, ...args: (string|number|Name|Name[])[])
 			continue;
 		}
 		if (args[i] instanceof Name) {
-			convertedArg = (<Name>args[i]).toString(); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
+			convertedArg = (<Name>args[i]).toString(transcriptionStyle); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
 		}
 		else if (typeof args[i] === 'string') {
 			convertedArg = USER_STRINGS[<string>args[i]]; // look up strings in the resource file
@@ -70,23 +71,23 @@ export function format(sentence: string, ...args: (string|number|Name|Name[])[])
 		}
 		// for an array, list them out using a language-specific separator
 		else if (args[i] instanceof Array) {
-			const parts = (<Name[]>args[i]).map(n => n.toString());
+			const parts = (<Name[]>args[i]).map(n => n.toString(transcriptionStyle));
 			if (parts.length === 0)
 				throw new Error(`this sentence needs to be rephrased if there are zero items: ${output.replace(`{${i}}`, "(none)")}`);
 			else if (parts.length === 1)
 				convertedArg = parts[0].toString();
 			else if (parts.length === 2) {
-				let and = format('grammar.and');
+				let and = format(transcriptionStyle, 'grammar.and');
 				if (SPECIAL_RULE_FOR_AND_BEFORE_I && /^[iíïịɨиイ]/i.test(parts[1]))
 					and = and.replace("y", "e");
 				convertedArg = parts[0] + and + parts[1];
 			}
 			else {
 				const first_parts = parts.slice(0, parts.length - 1);
-				const first_separator = format('grammar.comma');
+				const first_separator = format(transcriptionStyle, 'grammar.comma');
 				const last_part = parts[parts.length - 1];
-				let last_separator = format('grammar.comma_and');
-				if (SPECIAL_RULE_FOR_AND_BEFORE_I && /^[iíïịɨиイ]/i.test(parts[1]))
+				let last_separator = format(transcriptionStyle, 'grammar.comma_and');
+				if (SPECIAL_RULE_FOR_AND_BEFORE_I && /^[iíïịɨиイ]/i.test(parts[parts.length - 1]))
 					last_separator = last_separator.replace("y", "e");
 				convertedArg = first_parts.join(first_separator) + last_separator + last_part;
 			}

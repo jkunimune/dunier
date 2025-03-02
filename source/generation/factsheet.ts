@@ -22,10 +22,11 @@ const PRINT_DEBUGGING_INFORMATION = false;
  */
 export function generateFactbook(map: SVGSVGElement, civs: Civ[], transcriptionStyle: string): Document {
 	const listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
-	const doc = document.implementation.createHTMLDocument(format('parameter.factbook'));
-	generateTitlePage(doc, map, listedCivs);
+	const doc = document.implementation.createHTMLDocument(format(
+		transcriptionStyle, 'parameter.factbook'));
+	generateTitlePage(doc, map, listedCivs, transcriptionStyle);
 	for (const civ of listedCivs)
-		generateFactSheet(doc, civ);
+		generateFactSheet(doc, civ, transcriptionStyle);
 	return doc;
 }
 
@@ -57,18 +58,19 @@ function chooseMostImportantCivs(civs: Civ[], transcriptionStyle: string): Civ[]
  * @param doc the document into which to write this page
  * @param map the complete SVG code of the map
  * @param civs the list of Civs that will be described later in the document
+ * @param transcriptionStyle the spelling style to use for the proper nouns
  */
-function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[]) {
+function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[], transcriptionStyle: string) {
 	const page = document.createElementNS('http://www.w3.org/2000/html', 'div') as HTMLDivElement;
 	page.setAttribute('style', 'break-after: page');
 	doc.body.appendChild(page);
 
 	addParagraph(
-		format('factbook.outline.title'),
+		format(transcriptionStyle, 'factbook.outline.title'),
 		page, 'h1');
 
 	addParagraph(
-		format('factbook.outline.lede', civs.length, civs.map(c => c.getName())),
+		format(transcriptionStyle, 'factbook.outline.lede', civs.length, civs.map(c => c.getName())),
 		page, 'p');
 
 	const importedMap = <SVGSVGElement>map.cloneNode(true);
@@ -82,46 +84,49 @@ function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[]) {
  * add a page to this document with all the interesting informacion about the given Civ
  * @param doc the document into which to write this page
  * @param topic the Civ being described on this page
+ * @param transcriptionStyle the spelling style to use for the loanwords
  */
-function generateFactSheet(doc: Document, topic: Civ) {
+function generateFactSheet(doc: Document, topic: Civ, transcriptionStyle: string) {
 	const page = document.createElementNS('http://www.w3.org/2000/html', 'div') as HTMLDivElement;
 	page.setAttribute('style', 'break-after: page');
 	doc.body.appendChild(page);
 
 	addParagraph(
-		format('factbook.outline.section_header',
+		format(transcriptionStyle, 'factbook.outline.section_header',
 			topic.getName(),
 			topic.getName().pronunciation()),
 		page, 'h2');
 
 	addParagraph(
-		format('factbook.stats',
+		format(transcriptionStyle, 'factbook.stats',
 			topic.getArea(),
 			topic.getPopulation()),
 		page, 'p');
 
 	addParagraph(
-		format('factbook.history'),
+		format(transcriptionStyle, 'factbook.history'),
 		page, 'h3');
 
 	addParagraph(
-		format('factbook.geography'),
+		format(transcriptionStyle, 'factbook.geography'),
 		page, 'h3');
 
 	addParagraph(
-		format('factbook.demography'),
+		format(transcriptionStyle, 'factbook.demography'),
 		page, 'h3');
 
 	for (const {culture, size} of topic.getCultures()) {
 		addParagraph(
-			format((size < 2/3) ?
+			format(
+				transcriptionStyle,
+					(size < 2/3) ?
 				       'factbook.demography.minority' :
 				       'factbook.demography.majority',
 			       culture.getName(),
 			       0,
 			       Math.round(size*100),
 			       topic.getName()) +
-			writeParagraphAbout(culture),
+			writeParagraphAbout(culture, transcriptionStyle),
 			page, 'p');
 
 		if (PRINT_DEBUGGING_INFORMATION)
@@ -135,7 +140,7 @@ function generateFactSheet(doc: Document, topic: Civ) {
 /**
  * format this Culture as a nice short paragraff
  */
-function writeParagraphAbout(culture: Culture): string {
+function writeParagraphAbout(culture: Culture, transcriptionStyle: string): string {
 	let str = "";
 	for (let i = 0; i < culture.featureLists.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
 		const featureList = culture.featureLists[i];
@@ -149,7 +154,7 @@ function writeParagraphAbout(culture: Culture): string {
 			const keys: string[] = [];
 			for (let j = 0; j < culture.featureLists[i].length; j ++)
 				keys.push(`factbook.${KULTUR_ASPECTS[i].key}.${KULTUR_ASPECTS[i].features[j].key}.${featureList[j].key}`);
-			str += format(`factbook.${KULTUR_ASPECTS[i].key}`,
+			str += format(transcriptionStyle, `factbook.${KULTUR_ASPECTS[i].key}`,
 				...keys, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
 		}
 	}

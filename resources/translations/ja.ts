@@ -509,7 +509,7 @@ export default {
 	"factbook.music.type.string": "弦楽器",
 	"factbook.music.type.vocals": "歌手",
 	"factbook.music.type.wind": "管楽器",
-	"factbook.outline.lede": "このドキュメントは地図上の国の歴史、地理、文化特質をざっくり伝える。以降の{0}ヶ国が含まれる：{1}",
+	"factbook.outline.lede": "このドキュメントは地図上の国の歴史、地理、文化特質をざっくり伝える。以降の{0}ヶ国が含まれる：{1}。",
 	"factbook.outline.section_header": "{0}（土語発音：{1}）",
 	"factbook.outline.title": "世界インフォブック",
 	"factbook.skill": "{0}ので有名だ。",

@@ -117,9 +117,9 @@ function applyPlanet() {
 		if (err instanceof RangeError) {
 			let message: string;
 			if (err.message.startsWith("Too fast"))
-				message = format("error.planet_too_fast"); // TODO: it should automaticly bound the day-length at stable values
+				message = format(null, "error.planet_too_fast"); // TODO: it should automaticly bound the day-length at stable values
 			else if (err.message.startsWith("Too slow"))
-				message = format("error.planet_too_slow");
+				message = format(null, "error.planet_too_slow");
 			DOM.elm('alert-box').innerHTML +=
 				"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
 				`  ${message}\n` +
@@ -290,14 +290,14 @@ function applyHistory(): void {
 	// show the whole world
 	const option = document.createElement('option');
 	option.setAttribute('value', 'world');
-	option.textContent = format("parameter.map.focus.whole_world");
+	option.textContent = format(null, "parameter.map.focus.whole_world");
 	picker.appendChild(option);
 	// show a single continent
 	for (let i = 0; i < continents.length; i ++) {
 		const option = document.createElement('option');
 		option.selected = (i === 0);
 		option.setAttribute('value', `continent${i}`);
-		option.textContent = format("parameter.map.focus.continent", i + 1);
+		option.textContent = format(null, "parameter.map.focus.continent", i + 1);
 		picker.appendChild(option);
 	}
 	// or show a single country
