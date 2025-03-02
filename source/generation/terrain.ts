@@ -150,7 +150,6 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random): void
 				}
 			}
 			const options = (prefParents.length > 0) ? prefParents : tile.parents;
-			options.sort((a: Tile, b: Tile) => a.plateIndex%2 - b.plateIndex%2); // sort these by altitude to make the randomness more stable
 			let distances = [];
 			for (const parent of options)
 				distances.push(surf.distance(tile, parent));
