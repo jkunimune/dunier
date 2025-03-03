@@ -18,7 +18,7 @@ import {LockedDisc} from "../surface/lockeddisc.js";
 import {generateFactbook} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
 import {Civ} from "../generation/civ.js";
-import {convertSVGToBlob, download, serialize} from "./export.js";
+import {convertSVGToBlob, convertSVGToPNGAndThenDownloadIt, download, serialize} from "./export.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -470,10 +470,19 @@ DOM.elm('factbook-tab').addEventListener('click', () => {
 /**
  * When the download button is clicked, export and download the map as an SVG
  */
-DOM.elm('map-download').addEventListener('click', () => {
+DOM.elm('map-download-svg').addEventListener('click', () => {
 	download(
 		convertSVGToBlob(DOM.elm('map-map') as SVGSVGElement),
-		format(null, "filename"));
+		format(null, "filename") + ".svg");
+});
+
+/**
+ * When the download button is clicked, export and download the map as a PNG
+ */
+DOM.elm('map-download-png').addEventListener('click', () => {
+	convertSVGToPNGAndThenDownloadIt(
+		convertSVGToBlob(DOM.elm('map-map') as SVGSVGElement),
+		format(null, "filename") + ".png");
 });
 
 /**
