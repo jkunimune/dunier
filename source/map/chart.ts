@@ -247,7 +247,14 @@ export class Chart {
 		const bbox = this.dimensions;
 		svg.setAttribute('viewBox',
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
-		svg.textContent = ''; // clear the layer
+		svg.textContent = ''; // clear the image
+
+		// set the basic overarching styles
+		const styleSheet = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+		styleSheet.innerHTML = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; alignment-baseline: middle; }';
+		svg.appendChild(styleSheet);
+
+		// add a layer for all the map data
 		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
 		g.setAttribute('id', 'generated-map');
 		svg.appendChild(g);

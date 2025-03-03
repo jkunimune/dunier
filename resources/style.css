@@ -22,16 +22,6 @@ header, footer {
     padding-bottom: 1em;
 }
 
-.map {
-    width: 100%;
-}
-
-.map-label {
-    font-family: "Noto Serif", "Times New Roman", "Times", serif;
-    text-anchor: middle;
-    alignment-baseline: middle;
-}
-
 .card-header {
     padding: .2rem;
 }
@@ -46,4 +36,3 @@ header, footer {
         height: 75vh;
     }
 }
-
