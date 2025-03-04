@@ -8,6 +8,8 @@ import {WordType} from "../language/lect.js";
 import {Culture, KULTUR_ASPECTS} from "./culture.js";
 import {argmax} from "../utilities/miscellaneus.js";
 import {compare} from "../language/script.js";
+import {Tile} from "../surface/surface.js";
+import {Vector} from "../utilities/geometry.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
@@ -70,7 +72,9 @@ function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[], trans
 		page, 'h1');
 
 	addParagraph(
-		format(transcriptionStyle, 'factbook.outline.lede', civs.length, civs.map(c => c.getName())),
+		format(
+			transcriptionStyle, 'factbook.outline.lede',
+			civs.length, civs.map(c => c.getName().toString(transcriptionStyle))),
 		page, 'p');
 
 	const importedMap = <SVGSVGElement>map.cloneNode(true);
@@ -99,18 +103,146 @@ function generateFactSheet(doc: Document, topic: Civ, transcriptionStyle: string
 
 	addParagraph(
 		format(transcriptionStyle, 'factbook.stats',
-			topic.getArea(),
+			topic.getLandArea(),
 			topic.getPopulation()),
 		page, 'p');
 
+	addHistorySection(page, topic, transcriptionStyle);
+
+	addGeographySection(page, topic, transcriptionStyle);
+
+	addDemographicsSection(page, topic, transcriptionStyle);
+}
+
+
+/**
+ * add some paragraphs to this page recounting the history of the given country
+ */
+function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
 	addParagraph(
 		format(transcriptionStyle, 'factbook.history'),
 		page, 'h3');
+}
 
+
+/**
+ * add some paragraphs to this page detailing the geography of the given country
+ */
+function addGeographySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
 	addParagraph(
 		format(transcriptionStyle, 'factbook.geography'),
 		page, 'h3');
 
+	// look at every tile adjacent to this country
+	const adjacentLand: Set<Tile> = new Set();
+	const adjacentWater: Set<Tile> = new Set();
+	for (const borderTile of topic.border.keys()) {
+		for (const adjacentTile of topic.border.get(borderTile)) {
+			if (borderTile.isWater() || adjacentTile.isWater())
+				adjacentWater.add(adjacentTile);
+			else
+				adjacentLand.add(adjacentTile);
+		}
+	}
+	const numLandBorders = adjacentLand.size;
+	const numWaterBorders = adjacentWater.size;
+
+	// group them by polity
+	const adjacentCivs: Map<Civ, Set<Tile>> = new Map();
+	for (const adjacentTile of adjacentLand) {
+		let adjacentCiv;
+		if (topic.world.politicalMap.has(adjacentTile)) {
+			adjacentCiv = topic.world.politicalMap.get(adjacentTile);
+			if (!adjacentCivs.has(adjacentCiv))
+				adjacentCivs.set(adjacentCiv, new Set());
+			adjacentCivs.get(adjacentCiv).add(adjacentTile);
+		}
+ 	}
+
+	// decide how to describe the border
+	let borderSpecifier;
+	if (adjacentCivs.size === 0) {
+		// if there's noting there, say so
+		borderSpecifier = 'factbook.geography.nothing';
+	}
+	else if (adjacentCivs.size === 1) {
+		// if there's one civ, get its name out of the Map and use just that
+		for (const neighboringCiv of adjacentCivs.keys())
+			borderSpecifier = neighboringCiv.getName();
+	}
+	else {
+		// otherwise, ascertain the average direction to each adjacent polity
+		const borders: Map<string, Civ[]> = new Map();
+		for (const neighboringCiv of adjacentCivs.keys()) {
+			const borderLength = adjacentCivs.get(neighboringCiv).size;
+			let borderCentroid = new Vector(0, 0, 0);
+			for (const adjacentTile of adjacentCivs.get(neighboringCiv))
+				borderCentroid = borderCentroid.plus(adjacentTile.pos);
+			borderCentroid = borderCentroid.over(borderLength);
+			const offset = borderCentroid.minus(topic.capital.pos);
+			const easting = offset.dot(topic.capital.east);
+			const northing = offset.dot(topic.capital.north);
+			const bearing = Math.atan2(northing, easting);
+			let direction;
+			if (Math.abs(bearing) > 3*Math.PI/4)
+				direction = "west";
+			else if (bearing > Math.PI/4)
+				direction = "north";
+			else if (bearing > -Math.PI/4)
+				direction = "east";
+			else
+				direction = "south";
+			if (!borders.has(direction))
+				borders.set(direction, []);
+			borders.get(direction).push(neighboringCiv);
+		}
+
+		const borderDescriptions = [];
+		for (const direction of borders.keys()) {
+			const neighborNames = [];
+			for (const neighbor of borders.get(direction))
+				neighborNames.push(neighbor.getName().toString(transcriptionStyle));
+			neighborNames.sort((a, b) => compare(a, b, transcriptionStyle));
+			borderDescriptions.push(format(
+				transcriptionStyle, 'factbook.geography.neibor_direction',
+				neighborNames, `factbook.direction.${direction}`));
+		}
+
+		borderSpecifier = borderDescriptions;
+	}
+
+	const landArea = topic.getLandArea();
+	const waterArea = topic.getTotalArea() - topic.getLandArea();
+
+	// decide which sentence to usefor its geography
+	let type;
+	if (numWaterBorders === 0)
+		type = 'landlock';
+	else if (numLandBorders === 0) {
+		if (landArea > 1000000)
+			type = 'continent';
+		else
+			type = 'island';
+	}
+	else if (waterArea > landArea && landArea > 200000)
+		type = 'oceanic';
+	else if (numWaterBorders > numLandBorders)
+		type = 'coastal';
+	else
+		type = 'generic';
+
+	addParagraph(
+		format(
+			transcriptionStyle, `factbook.geography.${type}`,
+			topic.getName(), borderSpecifier),
+		page, 'p');
+}
+
+
+/**
+ * add some paragraphs to this page listing and describing the peoples of the given country
+ */
+function addDemographicsSection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
 	addParagraph(
 		format(transcriptionStyle, 'factbook.demography'),
 		page, 'h3');
@@ -119,14 +251,14 @@ function generateFactSheet(doc: Document, topic: Civ, transcriptionStyle: string
 		addParagraph(
 			format(
 				transcriptionStyle,
-					(size < 2/3) ?
-				       'factbook.demography.minority' :
-				       'factbook.demography.majority',
-			       culture.getName(),
-			       0,
-			       Math.round(size*100),
-			       topic.getName()) +
-			writeParagraphAbout(culture, transcriptionStyle),
+				(size < 2/3) ?
+					'factbook.demography.minority' :
+					'factbook.demography.majority',
+				culture.getName(),
+				0,
+				Math.round(size*100),
+				topic.getName()) +
+			describe(culture, transcriptionStyle),
 			page, 'p');
 
 		if (PRINT_DEBUGGING_INFORMATION)
@@ -140,7 +272,7 @@ function generateFactSheet(doc: Document, topic: Civ, transcriptionStyle: string
 /**
  * format this Culture as a nice short paragraff
  */
-function writeParagraphAbout(culture: Culture, transcriptionStyle: string): string {
+function describe(culture: Culture, transcriptionStyle: string): string {
 	let str = "";
 	for (let i = 0; i < culture.featureLists.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
 		const featureList = culture.featureLists[i];

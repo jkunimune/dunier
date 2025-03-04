@@ -37,10 +37,14 @@ switch (DOM.elm("bash").textContent) {
  * the given format in place of '{0}', '{1}', etc.  output will all ultimately be
  * extracted from USER_STRINGS.
  * @param sentence the key for the encompassing phrase
- * @param args the key for the arguments to slot in
+ * @param args the data to fill into the template.  there are a few different data types that get formatted differently.
+ *               - strings will be treated as translation keys; the corresponding value from the translation file will be added.
+ *               - numbers will be displayed as nice integers
+ *               - Names will be transcribed using the given style
+ *               - lists of strings will get concatenated with commas and "and"s between them
  * @param transcriptionStyle the spelling style to use for any Names
  */
-export function format(transcriptionStyle: string, sentence: string, ...args: (string|number|Name|Name[])[]): string {
+export function format(transcriptionStyle: string, sentence: string, ...args: (string|number|Name|string[])[]): string {
 	if (!USER_STRINGS.hasOwnProperty(sentence))
 		throw new Error(`Could not find user string in resource file for ${sentence}`);
 	let output = USER_STRINGS[sentence];
@@ -71,7 +75,7 @@ export function format(transcriptionStyle: string, sentence: string, ...args: (s
 		}
 		// for an array, list them out using a language-specific separator
 		else if (args[i] instanceof Array) {
-			const parts = (<Name[]>args[i]).map(n => n.toString(transcriptionStyle));
+			const parts = <string[]>args[i];
 			if (parts.length === 0)
 				throw new Error(`this sentence needs to be rephrased if there are zero items: ${output.replace(`{${i}}`, "(none)")}`);
 			else if (parts.length === 1)

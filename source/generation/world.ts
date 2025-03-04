@@ -188,7 +188,7 @@ export class World {
 		for (const civ of this.civs)
 			output.push(civ);
 		if (sorted)
-			output.sort((a, b) => b.getArea() - a.getArea());
+			output.sort((a, b) => b.getLandArea() - a.getLandArea());
 		if (minSize > 0)
 			output = output.filter((c) => c.tiles.size() >= minSize);
 		return output;

@@ -30,7 +30,7 @@ export class Civ {
 	public readonly tiles: TreeMap<Tile>; // the tiles it owns and the order in which it acquired them (also stores the normalized population)
 	public readonly sortedTiles: Queue<Tile>; // the tiles it owns (maybe some it doesn't) from least to most densely populated
 	public readonly border: Map<Tile, Set<Tile>>; // the set of tiles it owns that are adjacent to tiles it doesn't
-	private readonly world: World;
+	public readonly world: World;
 
 	public militarism: number; // base military strength
 	public technology: number; // technological military modifier
@@ -210,9 +210,19 @@ export class Civ {
 	}
 
 	/**
-	 * get the total controlld area.  careful; this is an O(n) operation.
+	 * get the total controlld area, including ocean.  careful; this is an O(n) operation.
 	 */
-	getArea(): number {
+	getTotalArea(): number {
+		let area = 0;
+		for (const tile of this.tiles) // TODO: save this in a dynamically updating variable like the arable area
+			area += tile.getArea();
+		return area;
+	}
+
+	/**
+	 * get the total controlld land area, other than ocean.  careful; this is an O(n) operation.
+	 */
+	getLandArea(): number {
 		let area = 0;
 		for (const tile of this.tiles)
 			if (tile.biome !== Biome.OCEAN) // TODO: save this in a dynamically updating variable like the arable area
