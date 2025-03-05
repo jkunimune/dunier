@@ -1046,9 +1046,9 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 export function convertPathClosuresToZ(segments: PathSegment[]): PathSegment[] {
 	const newSegments = [];
 	for (let i = 0; i < segments.length; i ++) {
-		// if (i + 1 === segments.length || segments[i + 1].type === 'M')
-		// 	newSegments.push({type: 'Z', args: []});
-		// else
+		if (i + 1 === segments.length || segments[i + 1].type === 'M')
+			newSegments.push({type: 'Z', args: []});
+		else
 			newSegments.push(segments[i]);
 	}
 	return newSegments;
