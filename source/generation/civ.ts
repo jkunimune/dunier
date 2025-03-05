@@ -231,27 +231,34 @@ export class Civ {
 	}
 
 	/**
-	 * list the cultures present in this country, along with each's share of the
-	 * population, starting with the ruling class and then in descending order by pop.
+	 * list the cultures present in this country, along with the set of tiles occupied by each's share of the
+	 * population and the tiles occupied by each, starting with the ruling class and then in descending
+	 * order by pop.
 	 */
-	getCultures(): { culture: Culture, size: number }[] {
+	getCultures(): { culture: Culture, populationFraction: number, inhabitedTiles: Set<Tile> }[] {
 		// count up the population fraccion of each culture
-		const cultureSizes = new Map<Culture, number>();
+		const cultureMap = new Map<Culture, {population: number, tiles: Set<Tile>}>();
 		for (const tile of this.tiles) {
-			const cultureSize = cultureSizes.has(tile.culture) ?
-				cultureSizes.get(tile.culture) : 0;
-			cultureSizes.set(tile.culture, cultureSize + tile.arableArea/this.arableArea);
+			if (!cultureMap.has(tile.culture))
+				cultureMap.set(tile.culture, {population: 0, tiles: new Set()});
+			cultureMap.get(tile.culture).population += tile.arableArea;
+			cultureMap.get(tile.culture).tiles.add(tile);
 		}
 		// convert to list and sort
-		const cultureList = [...cultureSizes.keys()];
-		cultureList.sort((a, b) => cultureSizes.get(b) - cultureSizes.get(a));
+		const cultureList = [...cultureMap.keys()];
+		cultureList.sort((a, b) => cultureMap.get(b).population - cultureMap.get(a).population);
 		// then move the capital culture to the top
 		cultureList.splice(cultureList.indexOf(this.capital.culture), 1);
 		cultureList.splice(0, 0, this.capital.culture);
 		// finally, bild the output object
 		const output = [];
-		for (const culture of cultureList)
-			output.push({ culture: culture, size: cultureSizes.get(culture) });
+		for (const culture of cultureList) {
+			const {population, tiles} = cultureMap.get(culture);
+			output.push({
+				culture: culture,
+				populationFraction: population/this.arableArea,
+				inhabitedTiles: tiles});
+		}
 		return output;
 	}
 

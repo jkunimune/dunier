@@ -182,13 +182,13 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, transcriptionStyl
 			const offset = borderCentroid.minus(topic.capital.pos);
 			const easting = offset.dot(topic.capital.east);
 			const northing = offset.dot(topic.capital.north);
-			const bearing = Math.atan2(northing, easting);
+			const bearing = Math.atan2(northing, easting)*180/Math.PI;
 			let direction;
-			if (Math.abs(bearing) > 3*Math.PI/4)
+			if (Math.abs(bearing) > 135)
 				direction = "west";
-			else if (bearing > Math.PI/4)
+			else if (bearing > 45)
 				direction = "north";
-			else if (bearing > -Math.PI/4)
+			else if (bearing > -45)
 				direction = "east";
 			else
 				direction = "south";
@@ -247,16 +247,63 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, transcriptionS
 		format(transcriptionStyle, 'factbook.demography'),
 		page, 'h3');
 
-	for (const {culture, size} of topic.getCultures()) {
+	// calculate the centroid of the whole country
+	let civCentroid = new Vector(0, 0, 0);
+	for (const tile of topic.tiles)
+		civCentroid = civCentroid.plus(tile.pos);
+	civCentroid = civCentroid.over(topic.tiles.size());
+
+	// for each culture in this civ
+	console.log(topic.getName().toString());
+	for (const {culture, populationFraction, inhabitedTiles} of topic.getCultures()) {
+		// find its geographic center of mass and the country's moment of inertia about it
+		let centroid = new Vector(0, 0, 0);
+		for (const tile of inhabitedTiles)
+			centroid = centroid.plus(tile.pos);
+		centroid = centroid.over(inhabitedTiles.size);
+		let scale = 0;
+		for (const tile of inhabitedTiles)
+			scale += tile.pos.minus(centroid).sqr();
+		scale /= inhabitedTiles.size;
+		// thus describe the region where they live
+		const offset = centroid.minus(civCentroid);
+		let region;
+		if (offset.sqr() < scale/8)
+			region = "center";
+		else {
+			const easting = offset.dot(topic.capital.east);
+			const northing = offset.dot(topic.capital.north);
+			const bearing = Math.atan2(northing, easting)*180/Math.PI;
+			if (Math.abs(bearing) > 157.5)
+				region = "west";
+			else if (bearing > 112.5)
+				region = "northwest";
+			else if (bearing > 67.5)
+				region = "north";
+			else if (bearing > 22.5)
+				region = "northeast";
+			else if (bearing > -22.5)
+				region = "east";
+			else if (bearing > -67.5)
+				region = "southeast";
+			else if (bearing > -112.5)
+				region = "south";
+			else
+				region = "southwest";
+		}
+
 		addParagraph(
 			format(
 				transcriptionStyle,
-				(size < 2/3) ?
+				(populationFraction < 2/3) ?
 					'factbook.demography.minority' :
 					'factbook.demography.majority',
 				culture.getName(),
-				0,
-				Math.round(size*100),
+				(inhabitedTiles.size <= topic.tiles.size()/2) ?
+					`factbook.demography.part` :
+					`factbook.demography.whole`,
+				`factbook.direction.${region}`,
+				Math.round(populationFraction*100),
 				topic.getName()) +
 			describe(culture, transcriptionStyle),
 			page, 'p');
