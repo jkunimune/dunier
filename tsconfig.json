@@ -3,7 +3,7 @@
     "target": "es5",
     "module": "ES6",
     "sourceMap": true,
-    "lib": ["es2016", "DOM"],
+    "lib": ["es2021", "DOM"],
     "outDir": "./",
     "skipLibCheck": true,
     "downlevelIteration": true,

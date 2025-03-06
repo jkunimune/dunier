@@ -254,7 +254,6 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, transcriptionS
 	civCentroid = civCentroid.over(topic.tileTree.size);
 
 	// for each culture in this civ
-	console.log(topic.getName().toString());
 	for (const {culture, populationFraction, inhabitedTiles} of topic.getCultures()) {
 		// find its geographic center of mass and the country's moment of inertia about it
 		let centroid = new Vector(0, 0, 0);

@@ -98,7 +98,7 @@ export function format(transcriptionStyle: string, sentence: string, ...args: (s
 		}
 		if (convertedArg === undefined) // do Javascript's job for it
 			throw new Error(`Could not find user string in resource file for ${args[i]}`);
-		output = output.replace(`{${i}}`, convertedArg); // then slot it in
+		output = output.replaceAll(`{${i}}`, convertedArg); // then slot it in
 	}
 	return output;
 }

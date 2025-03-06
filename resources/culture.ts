@@ -376,7 +376,6 @@ export default [
           { "key": "dragons", "klas": "none", "conditions": [] },
           { "key": "flowers", "klas": "none", "conditions": [] },
           { "key": "trees", "klas": "none", "conditions": ["-desert", "-tundra", "-plains"] },
-          { "key": "fossils", "klas": "none", "conditions": [] },
           { "key": "rivers", "klas": "none", "conditions": [] },
           { "key": "stars", "klas": "none", "conditions": ["+day_night_cycle"] },
           { "key": "sun", "klas": "none", "conditions": [] },
@@ -433,14 +432,12 @@ export default [
           { "key": "fractal", "klas": "none", "conditions": [] },
           { "key": "faces", "klas": "none", "conditions": [] },
           { "key": "cats", "klas": "none", "conditions": [] },
-          { "key": "buddha", "klas": "none", "conditions": [] },
           { "key": "fraternity", "klas": "none", "conditions": [] },
           { "key": "mortality", "klas": "none", "conditions": [] },
           { "key": "fertility", "klas": "none", "conditions": [] },
           { "key": "piety", "klas": "none", "conditions": [] },
           { "key": "jihad", "klas": "none", "conditions": [] },
           { "key": "nature", "klas": "none", "conditions": ["-humancentric_art"] },
-          { "key": "technology", "klas": "none", "conditions": [] },
           { "key": "sex", "klas": "none", "conditions": [] },
           { "key": "romance", "klas": "none", "conditions": [] }
         ]
@@ -652,7 +649,6 @@ export default [
           { "key": "anticle", "klas": "none", "conditions": [] },
           { "key": "creche", "klas": "none", "conditions": [] },
           { "key": "adults", "klas": "none", "conditions": [] },
-          { "key": "language", "klas": "none", "conditions": [] },
           { "key": "geophagy", "klas": "none", "conditions": ["-desert"] },
           { "key": "eat_sand", "klas": "none", "conditions": ["+desert"] },
           { "key": "weekday", "klas": "none", "conditions": ["-colored_clothes"] }

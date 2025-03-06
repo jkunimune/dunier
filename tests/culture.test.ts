@@ -15,7 +15,7 @@ import TECHNOLOGIES from "../resources/tech_tree.js";
 
 const USER_STRING_SETS = [EN_STRINGS, ES_STRINGS, JA_STRINGS, PD_STRINGS];
 describe("culture.json", () => {
-	describe("keys are all inlized", () => {
+	describe("keys are all inatlized", () => {
 		for (const aspect of UNPARSED_KULTUR_ASPECTS)
 			for (const feature of aspect.features)
 				for (const value of feature.values)
@@ -64,7 +64,7 @@ describe("culture.json", () => {
 describe("tech_tree.ts", () => {
 	for (const technology of TECHNOLOGIES) {
 		for (const strings of USER_STRING_SETS)
-			test(`${technology.key} is inlized in ${strings[".language"]}`, () => {
+			test(`${technology.key} is inatlized in ${strings[".language"]}`, () => {
 				expect(strings.hasOwnProperty(`factbook.tech.${technology.type}.${technology.key}`)).toBe(true);
 			});
 	}
