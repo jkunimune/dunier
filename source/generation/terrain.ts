@@ -602,8 +602,6 @@ function setBiomes(surf: Surface): void {
 /**
  * fill all tiles that are connected to start by a chain of Tiles that are at or below level with ocean. then, return
  * the number of tiles that could be flooded this way.
- * @param start
- * @param level
  */
 function floodFrom(start: Tile, level: number): number {
 	let numFilled = 0;

@@ -223,7 +223,6 @@ export class Sound {
 
 	/**
 	 * does this fone have the given feature?
-	 * @param feature
 	 */
 	is(feature: Feature): boolean {
 		if (this.loke === null || this.mode === null || this.voze === null)
@@ -319,7 +318,6 @@ export class Sound {
 
 	/**
 	 * return a fone that is identical to this, except that it has the given feature
-	 * @param feature
 	 */
 	with(feature: Feature): Sound {
 		if (!this.is(feature))
@@ -383,7 +381,6 @@ export class Klas {
 
 	/**
 	 * does sound have all of the properties of this class?
-	 * @param sound
 	 */
 	matches(sound: Sound): boolean {
 		for (const feature of this.required)

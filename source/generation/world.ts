@@ -27,7 +27,8 @@ export const SLOPE_FACTOR = 100; // [] multiplier on vertical distances TODO: us
  * collection of civilizations and languages that goes on a planet
  */
 export class World {
-	public readonly cataclysms: number; // [1/y] the rate at which the apocalypse happens
+	/** [1/y] the rate at which the apocalypse happens */
+	public readonly cataclysms: number;
 	public planet: Surface;
 	public readonly politicalMap: Map<Tile, Civ>;
 	private readonly civs: Set<Civ>;
@@ -153,7 +154,6 @@ export class World {
 	/**
 	 * devastate the entire world. the details of how are fuzzy, but in a nutshell half of all people die (well, more
 	 * accurately, half of all provinces are depopulated, and half of all technologies are lost.
-	 * @param rng
 	 */
 	haveCataclysm(rng: Random) {
 		for (const civ of this.civs) {
@@ -196,7 +196,6 @@ export class World {
 
 	/**
 	 * get the Civ from this set that has this ID
-	 * @param id
 	 */
 	getCiv(id: number): Civ {
 		for (const civ of this.civs)

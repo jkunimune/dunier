@@ -218,7 +218,6 @@ export function checkVoronoiPolygon(vertexes: XYPoint[]): XYPoint[] {
 
 /**
  * exchange x and y for this point
- * @param p
  */
 function transpose(p: XYPoint): XYPoint {
 	if (p === null)

@@ -59,8 +59,6 @@ export class Selector {
 
 	/**
 	 * applies a function recursively to this element and all elements downstream
-	 * @param root
-	 * @param func
 	 */
 	static mapToAllChildren(root: Element, func: (elm: Element) => void): void {
 		func(root);

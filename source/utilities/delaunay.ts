@@ -250,7 +250,6 @@ export function flipEdges(queue: DelaunayEdge[], triangles: DelaunayTriangle[],
 
 /**
  * Average the normal vectors of the given nodes and project them into the plane perpendicular to that normal.
- * @param nodes
  */
 export function flatten(...nodes: DelaunayNodo[]) {
 	let n = new Vector(0, 0, 0);
@@ -353,8 +352,6 @@ function contains(triangle: DelaunayTriangle, p: DelaunayNodo): boolean {
 
 /**
  * compute the square of the minimum distance from this triangle to this Nodo.
- * @param triangle
- * @param p
  */
 function distanceSqr(triangle: DelaunayTriangle, p: DelaunayNodo): number {
 	for (let i = 0; i < 3; i ++) { // for each edge
@@ -383,8 +380,6 @@ function distanceSqr(triangle: DelaunayTriangle, p: DelaunayNodo): number {
 
 /**
  * find the Nodo that appears after node on this triangle.
- * @param node
- * @param triangle
  */
 function widershinsOf(node: DelaunayNodo, triangle: DelaunayTriangle) {
 	for (let i = 0; i < 3; i ++)
@@ -395,8 +390,6 @@ function widershinsOf(node: DelaunayNodo, triangle: DelaunayTriangle) {
 
 /**
  * find the Nodo that appears previous to node on this triangle.
- * @param node
- * @param triangle
  */
 function clockwiseOf(node: DelaunayNodo, triangle: DelaunayTriangle) {
 	for (let i = 0; i < 3; i ++)
@@ -417,8 +410,6 @@ function triangleOf(a: DelaunayNodo, b: DelaunayNodo) {
 
 /**
  * is there an edge between these two nodes?
- * @param a
- * @param b
  */
 function isAdjacentTo(a: DelaunayNodo, b: DelaunayNodo) {
 	for (const triangle of a.triangles)
@@ -431,12 +422,18 @@ function isAdjacentTo(a: DelaunayNodo, b: DelaunayNodo) {
  * a delaunay node (voronoi polygon)
  */
 export class DelaunayNodo {
-	public i: number; // index
-	public r: Vector; // position
-	public n: Vector; // normal vector
-	public triangles: Set<DelaunayTriangle>; // attached triangles
-	public parents: DelaunayNodo[]; // parent nodes
-	public between: DelaunayNodo[][]; // parent nodes it separates
+	/** index */
+	public i: number;
+	/** position */
+	public r: Vector;
+	/** normal vector */
+	public n: Vector;
+	/** attached triangles */
+	public triangles: Set<DelaunayTriangle>;
+	/** parent nodes */
+	public parents: DelaunayNodo[];
+	/** parent nodes it separates */
+	public between: DelaunayNodo[][];
 
 	constructor(i: number, r: Vector, n: Vector) {
 		this.i = i;
@@ -479,4 +476,3 @@ class DelaunayEdge {
 		this.b = (a.i < b.i) ? b : a;
 	}
 }
-

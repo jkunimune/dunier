@@ -171,15 +171,17 @@ export class Harmony implements WordProcess {
  * a process that places syllables according to the sonority sequencing constraint
  */
 export class Syllabicization implements WordProcess {
-	private readonly bias: number; // amount to prefer earlier or later syllables
-	private readonly minSonority: number; // minimum allowable sonority of a nucleus
+	/** amount to prefer earlier or later syllables */
+	private readonly bias: number;
+	/** minimum allowable sonority of a nucleus */
+	private readonly minSonority: number;
 
 	/**
 	 * set up a new syllable placement system
 	 * @param bias a positive number indicates that /iuiu/ is [juju], negative indicates [iwiw],
-	 * and zero indicates [iuiu]
+	 *             and zero indicates [iuiu]
 	 * @param minSonority the sonority of the most sordid allowable nucleus; if a peak is too sordid,
-	 * a schwa will be inserted
+	 *                    a schwa will be inserted
 	 */
 	constructor(bias: number, minSonority: number) {
 		this.bias = bias;
@@ -246,11 +248,16 @@ export class Syllabicization implements WordProcess {
  * a process that places stress according to certain rules
  */
 export class StressPlacement implements WordProcess {
-	private readonly reverse: boolean; // whether the primary stress is on the right
-	private readonly headSize: number; // the number of unstressed syllables to put between the word edge and the initial stress
-	private readonly attractors: number; // the minimum weight that attracts stress
-	private readonly tailMode: string; // ['lapse', 'clash', 'none'] how to handle stress at the tail end when the syllables ar odd
-	private readonly lengthen: boolean; // whether to lengthen stressed open syllables
+	/** whether the primary stress is on the right */
+	private readonly reverse: boolean;
+	/** the number of unstressed syllables to put between the word edge and the initial stress */
+	private readonly headSize: number;
+	/** the minimum weight that attracts stress */
+	private readonly attractors: number;
+	/** ['lapse', 'clash', 'none'] how to handle stress at the tail end when the syllables ar odd */
+	private readonly tailMode: string;
+	/** whether to lengthen stressed open syllables */
+	private readonly lengthen: boolean;
 
 	/**
 	 * create a new stress system given some simplified parameters

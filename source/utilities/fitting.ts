@@ -216,8 +216,6 @@ export function isConverged(lastValue: number, nextValue: number,
 
 /**
  * solve for the vector x such that vec = mat*x
- * @param mat
- * @param vec
  */
 export function solveLinearSystem(mat: number[][], vec: number[]): number[] {
 	const A = new Matrix(mat);

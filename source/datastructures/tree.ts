@@ -8,16 +8,17 @@
  * that is faster than a TreeMap
  */
 export class Tree<Type> {
-	public parent: Tree<Type>; // anything above it
-	public readonly leftChild: Tree<Type>; // the 1st level child on the left
-	public readonly riteChild: Tree<Type>; // the 1st level child on the rite
-	public readonly value: Type; // the root value
+	/** anything above it */
+	public parent: Tree<Type>;
+	/** the 1st level child on the left */
+	public readonly leftChild: Tree<Type>;
+	/** the 1st level child on the rite */
+	public readonly riteChild: Tree<Type>;
+	/** the root value */
+	public readonly value: Type;
 
 	/**
 	 * make a new Tree, optionally providing smaller trees with which to fill it
-	 * @param value
-	 * @param leftChild
-	 * @param riteChild
 	 */
 	constructor(value: Type, leftChild: Tree<Type> = null, riteChild: Tree<Type> = null) {
 		this.value = value;

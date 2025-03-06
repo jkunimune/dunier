@@ -42,9 +42,12 @@ export class WordType extends Enumify {
  * a collection of similar words.
  */
 export abstract class Lect {
-	public readonly defaultStyle: string; // this language's preferd romanization style
-	public readonly prefixing: boolean; // whether this language prefers prefixen
-	public macrolanguage: Lect; // the proto-language for the set of lects intelligible to this one
+	/** this language's preferd romanization style */
+	public readonly defaultStyle: string;
+	/** whether this language prefers prefixen */
+	public readonly prefixing: boolean;
+	/** the proto-language for the set of lects intelligible to this one */
+	public macrolanguage: Lect;
 
 	protected constructor(defaultStyle: string, rightBranching: boolean) {
 		this.defaultStyle = defaultStyle;
@@ -66,7 +69,6 @@ export abstract class Lect {
 
 	/**
 	 * is this language actually a dialect of lang?
-	 * @param lang
 	 */
 	isIntelligible(lang: Lect): boolean {
 		return this.macrolanguage === lang.macrolanguage;
@@ -84,14 +86,22 @@ export class ProtoLang extends Lect {
 	private static P_NUCLEUS = 2.0;
 	private static P_CODA = 0.4;
 
-	private readonly diversity: number; // the typical number of lexical suffixes used for one type of word
-	private readonly nConson: number; // the number of consonants in this language
-	private readonly nVowel: number; // the number of vowels in this langugage
-	private readonly nMedial: number; // the numer of medials in this language
-	private readonly complexity: number; // the approximate amount of information in one syllable
-	private readonly name: Map<WordType, Map<string, Name>>; // the word references of each type
-	private readonly classifiers: Map<WordType, Sound[][]>; // the noun classifiers
-	private readonly fin: Sound[][]; // the noun endings
+	/** the typical number of lexical suffixes used for one type of word */
+	private readonly diversity: number;
+	/** the number of consonants in this language */
+	private readonly nConson: number;
+	/** the number of vowels in this langugage */
+	private readonly nVowel: number;
+	/** the numer of medials in this language */
+	private readonly nMedial: number;
+	/** the approximate amount of information in one syllable */
+	private readonly complexity: number;
+	/** the word references of each type */
+	private readonly name: Map<WordType, Map<string, Name>>;
+	/** the noun classifiers */
+	private readonly classifiers: Map<WordType, Sound[][]>;
+	/** the noun endings */
+	private readonly fin: Sound[][];
 
 	constructor(rng: Random) {
 		super(

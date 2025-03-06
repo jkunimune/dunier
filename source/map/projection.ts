@@ -259,7 +259,6 @@ export class MapProjection {
 	 * calculate the latitude of the point on the central meridian at the given latitude
 	 * @param y the y coordinate in kilometers
 	 * @return the latitude in radians
-	 * @param y
 	 * @private
 	 */
 	private φ(y: number): number {

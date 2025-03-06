@@ -71,7 +71,6 @@ export function endpoint(segment: PathSegment): Point {
 /**
  * rename this point's coordinates from s and t to x and y, so that it can be passed to
  * cartesian-specific functions
- * @param location
  */
 export function assert_xy(location: Point): XYPoint {
 	return { x: location.s, y: location.t };
@@ -80,7 +79,6 @@ export function assert_xy(location: Point): XYPoint {
 /**
  * rename this point's coordinates from s and t to φ and λ, so that it can be passed to
  * geographic functions
- * @param location
  */
 export function assert_φλ(location: Point): ΦΛPoint {
 	return { φ: location.s, λ: location.t };

@@ -365,8 +365,8 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], doma
 /**
  * convert a continuous path segment to an equivalent list of path segments that are
  * careful to step over the intersection point (which should be on the input segment)
- * @param start
- * @param segment
+ * @param start the cursor position at the start of the segment
+ * @param segment the path command representing the segment to splice
  * @param intersect0 the intersection point. in the event that the coordinate system
  *                   is not 1:1, this will be on the side corresponding to start.
  * @param intersect1 the intersection point. in the event that the coordinate system

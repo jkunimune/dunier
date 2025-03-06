@@ -58,7 +58,8 @@ export abstract class Surface {
 	public vertices: Set<Vertex>;
 	public rivers: Set<(Tile | Vertex)[]>;
 	public area: number;
-	public axis: Vector; // orientation of geodetic coordinate system
+	/** orientation of geodetic coordinate system */
+	public axis: Vector;
 	public edge: Map<Tile, {prev: Tile, next: Tile}>;
 	public readonly φMin: number;
 	public readonly φMax: number;
@@ -511,7 +512,8 @@ export class Vertex {
 	public edges: (Edge | null)[];
 	public neighbors: Map<Vertex, Edge>;
 	public surface: Surface;
-	public pos: Vector; // location in 3D Cartesian
+	/** location in 3D Cartesian */
+	public pos: Vector;
 
 	public height: number;
 	public flow: number;
@@ -622,18 +624,26 @@ export class Edge {
 
 	public flow: number;
 
-	private readonly distance: number; // distance between the centers of the Tiles this separates
-	private length: number; // distance between the Vertices this connects
-	public rightBoundCartesian: Vector[]; // these borders are the limits of the greebling
+	/** distance between the centers of the Tiles this separates */
+	private readonly distance: number;
+	/** distance between the Vertices this connects */
+	private length: number;
+	/** these borders are the limits of the greebling */
+	public rightBoundCartesian: Vector[];
 	public leftBoundCartesian: Vector[];
 	private bounds: XYPoint[];
-	private currentResolution: number; // this number keeps of track of how much greebling we have resolved so far
-	private readonly rng: Random; // this Random number generator is used exclusively for greebling
-	private readonly paths: {resolution: number, points: ΦΛPoint[]}[]; // this path can be resolved at a variety of scales
+	/** this number keeps of track of how much greebling we have resolved so far */
+	private currentResolution: number;
+	/** this Random number generator is used exclusively for greebling */
+	private readonly rng: Random;
+	/** this path can be resolved at a variety of scales */
+	private readonly paths: {resolution: number, points: ΦΛPoint[]}[];
 	private finestPathPointsInEdgeCoords: XYPoint[];
 
-	private i: Vector; // the s unit-vector of this edge's coordinate system
-	private j: Vector; // the t unit-vector of this edge's coordinate system
+	/** the s unit-vector of this edge's coordinate system */
+	private i: Vector;
+	/** the t unit-vector of this edge's coordinate system */
+	private j: Vector;
 
 	constructor(tileL: Tile, vertex0: Vertex, tileR: Tile, vertex1: Vertex | null, distance: number) {
 		this.tileL = tileL; // save these new values for the edge

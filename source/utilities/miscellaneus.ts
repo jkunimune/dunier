@@ -119,14 +119,11 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 /**
  * shift a number by hole multiples of (max - min) to put it in the range [min, max),
  * assuming max > min.  if not, it will automatically reverse them.
- * @param value
- * @param min
- * @param max
  */
 export function localizeInRange(value: number, min: number, max: number): number {
 	const anser = value - Math.floor((value - min)/(max - min))*(max - min);
 	if (Math.abs(anser - max)%(max - min) < 2*Number.EPSILON*(max - min))
-		return min;  // this is to make it resistant to roundoff error
+		return min; // this is to make it resistant to roundoff error
 	else
 		return anser;
 }
@@ -217,8 +214,6 @@ export function union(a: Iterable<any>, b: Iterable<any>): Iterable<any> {
 
 /**
  * it's like the built-in filter funccion for arrays, but it works on other iterables.
- * @param set
- * @param condition
  */
 export function filterSet<T>(set: Iterable<T>, condition: (item: T) => boolean): Set<T> {
 	const output = new Set<T>();
@@ -231,7 +226,6 @@ export function filterSet<T>(set: Iterable<T>, condition: (item: T) => boolean):
 
 /**
  * there will be some overflow here, but I don't mind as I'm only using this for random seeds
- * @param string
  */
 export function decodeBase37(string: string): number {
 	let totalValue = 0;
@@ -254,7 +248,6 @@ export function decodeBase37(string: string): number {
 
 /**
  * convert a path to an SVG path string that can be input to an SVG file
- * @param path
  */
 export function pathToString(path: PathSegment[]): string {
 	let str = ''; // create the d string

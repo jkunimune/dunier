@@ -381,7 +381,6 @@ function applyFactbook(): void {
 /**
  * disable all the buttons, turn on the loading icon, call the funccion, wait, then set
  * everything back to how it was before.
- * @param func
  */
 function disableButtonsAndDo(func: () => void): void {
 	inProgress = true;

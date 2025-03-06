@@ -159,8 +159,6 @@ export class Spheroid extends Surface {
 
 	/**
 	 * from Alice Nadeau and Richard McGehee, J. Math. Anal. Appl. (2021)
-	 * @param obliquity
-	 * @param latitude
 	 */
 	static annualInsolationFunction(obliquity: number, latitude: number) {
 		return 1 -

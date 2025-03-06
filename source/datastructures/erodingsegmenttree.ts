@@ -81,7 +81,6 @@ export class ErodingSegmentTree {
 
 	/**
 	 * shorten all line segments by t at each end.
-	 * @param t
 	 */
 	public erode(t: number): void {
 		let link = this.minim;
@@ -102,7 +101,6 @@ export class ErodingSegmentTree {
 
 	/**
 	 * is this value on one of the line segments?
-	 * @param value
 	 */
 	public contains(value: number): boolean {
 		const left = this.search(value, this.mul);
@@ -111,9 +109,6 @@ export class ErodingSegmentTree {
 
 	/**
 	 * insert a new value, with it's esaLeft parameter, in the proper place
-	 * @param value
-	 * @param left
-	 * @param start
 	 */
 	private insert(value: number, left: boolean, start: Link): Link {
 		if (start.val <= value) {
@@ -132,8 +127,6 @@ export class ErodingSegmentTree {
 
 	/**
 	 * search for the last element e in the subtree from start, such that e.val <= value
-	 * @param value
-	 * @param start
 	 */
 	private search(value: number, start: Link): Link {
 		if (start.val <= value) { // if it could be start
@@ -155,8 +148,8 @@ export class ErodingSegmentTree {
 
 	/**
 	 * delete all Links between these two, excluding these two
-	 * @param left
-	 * @param rait
+	 * @param left the last node on the left to keep
+	 * @param rait first node on the right to keep
 	 * @param start the root of the subtree where we're doing
 	 */
 	private deleteBetween(left: Link, rait: Link, start: Link): void { // TODO how will this work with identical leaves?
@@ -204,7 +197,6 @@ export class ErodingSegmentTree {
 
 	/**
 	 * remove a single node from the tree, keeping its children
-	 * @param link
 	 */
 	private delete(link: Link) {
 		if (link.leftPute === null) {
@@ -243,7 +235,6 @@ export class ErodingSegmentTree {
 
 	/**
 	 * get the nearest point to `value` that is contained in one of the line segments.
-	 * @param value
 	 */
 	public getClosest(value: number): number {
 		const left = this.search(value, this.mul);

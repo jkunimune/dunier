@@ -26,15 +26,22 @@ import {Dequeue} from "../datastructures/dequeue.js";
  */
 export class Civ {
 	public readonly id: number;
-	public readonly capital: Tile; // the capital city
-	public readonly tileTree: Map<Tile, {parent: Tile | null, children: Set<Tile>}>; // the tiles it owns and the order in which it acquired them (also stores the normalized population)
-	public readonly sortedTiles: Queue<Tile>; // the tiles it owns (maybe some it doesn't) from least to most densely populated
-	public readonly border: Map<Tile, Set<Tile>>; // the set of tiles it owns that are adjacent to tiles it doesn't
+	/** the capital city */
+	public readonly capital: Tile;
+	/** the tiles it owns and the order in which it acquired them (also stores the normalized population) */
+	public readonly tileTree: Map<Tile, {parent: Tile | null, children: Set<Tile>}>;
+	/** the tiles it owns (maybe some it doesn't) from least to most densely populated */
+	public readonly sortedTiles: Queue<Tile>;
+	/** the set of tiles it owns that are adjacent to tiles it doesn't */
+	public readonly border: Map<Tile, Set<Tile>>;
 	public readonly world: World;
 
-	public militarism: number; // base military strength
-	public technology: number; // technological military modifier
-	private arableArea: number; // population multiplier (km^2)
+	/** base military strength */
+	public militarism: number;
+	/** technological military modifier */
+	public technology: number;
+	/** population multiplier (km^2) */
+	private arableArea: number;
 
 	/**
 	 * create a new civilization
@@ -42,7 +49,7 @@ export class Civ {
 	 * @param id a nonnegative integer unique to this civ
 	 * @param world the world in which this civ lives
 	 * @param rng th random number generator to use to set Civ properties
-	 * @param technology
+	 * @param technology the starting technological multiplier
 	 */
 	constructor(capital: Tile, id: number, world: World, rng: Random, technology: number = 1) {
 		this.world = world;
@@ -94,9 +101,6 @@ export class Civ {
 
 	/**
 	 * do all the parts of conquer that happen recursively
-	 * @param tile
-	 * @param from
-	 * @param loser
 	 */
 	_conquer(tile: Tile, from: Tile | null, loser: Civ) {
 		this.world.politicalMap.set(tile, this);

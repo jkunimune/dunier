@@ -104,8 +104,6 @@ export class Random {
 	/**
 	 * return a pseudorandom number drawn from a Binomial distribution (approximates with normal for expectations/
 	 * antiexpectations over 36).
-	 * @param num
-	 * @param prob
 	 */
 	binomial(num: number, prob: number): number {
 		if (num === 0 || prob === 0) {

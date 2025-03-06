@@ -135,7 +135,8 @@ export class Chart {
 	private readonly geoEdges: PathSegment[];
 	private readonly mapEdges: PathSegment[];
 	public readonly dimensions: Dimensions;
-	public readonly scale: number; // the map scale in map-widths per km
+	/** the map scale in map-widths per km */
+	public readonly scale: number;
 	private testText: SVGTextElement;
 	private testTextSize: number;
 	private labelIndex: number;
@@ -866,8 +867,6 @@ export class Chart {
 
 	/**
 	 * convert the series of segments to an HTML path element and add it to the Element
-	 * @param segments
-	 * @param svg
 	 */
 	draw(segments: PathSegment[], svg: Element): SVGPathElement {
 		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
