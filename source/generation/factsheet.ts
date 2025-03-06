@@ -119,9 +119,6 @@ function generateFactSheet(doc: Document, topic: Civ, transcriptionStyle: string
  * add some paragraphs to this page recounting the history of the given country
  */
 function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
-	addParagraph(
-		format(transcriptionStyle, 'factbook.history'),
-		page, 'h3');
 }
 
 
@@ -129,10 +126,6 @@ function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle:
  * add some paragraphs to this page detailing the geography of the given country
  */
 function addGeographySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
-	addParagraph(
-		format(transcriptionStyle, 'factbook.geography'),
-		page, 'h3');
-
 	// look at every tile adjacent to this country
 	const adjacentLand: Set<Tile> = new Set();
 	const adjacentWater: Set<Tile> = new Set();
@@ -243,10 +236,6 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, transcriptionStyl
  * add some paragraphs to this page listing and describing the peoples of the given country
  */
 function addDemographicsSection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
-	addParagraph(
-		format(transcriptionStyle, 'factbook.demography'),
-		page, 'h3');
-
 	// calculate the centroid of the whole country
 	let civCentroid = new Vector(0, 0, 0);
 	for (const tile of topic.tileTree.keys())
