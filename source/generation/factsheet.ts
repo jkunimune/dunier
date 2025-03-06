@@ -249,9 +249,9 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, transcriptionS
 
 	// calculate the centroid of the whole country
 	let civCentroid = new Vector(0, 0, 0);
-	for (const tile of topic.tiles)
+	for (const tile of topic.tileTree.keys())
 		civCentroid = civCentroid.plus(tile.pos);
-	civCentroid = civCentroid.over(topic.tiles.size());
+	civCentroid = civCentroid.over(topic.tileTree.size);
 
 	// for each culture in this civ
 	console.log(topic.getName().toString());
@@ -299,7 +299,7 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, transcriptionS
 					'factbook.demography.minority' :
 					'factbook.demography.majority',
 				culture.getName(),
-				(inhabitedTiles.size <= topic.tiles.size()/2) ?
+				(inhabitedTiles.size <= topic.tileTree.size/2) ?
 					`factbook.demography.part` :
 					`factbook.demography.whole`,
 				`factbook.direction.${region}`,

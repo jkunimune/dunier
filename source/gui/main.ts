@@ -327,7 +327,7 @@ function applyMap(): void {
 	else if (focusSpecifier.startsWith("continent"))
 		regionOfInterest = continents[Number.parseInt(focusSpecifier.slice(9))];
 	else if (focusSpecifier.startsWith("country"))
-		regionOfInterest = world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tiles;
+		regionOfInterest = world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tileTree.keys();
 	else
 		throw new Error(`invalid focusSpecifier: '${focusSpecifier}'`);
 

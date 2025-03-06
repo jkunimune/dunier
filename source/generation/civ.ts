@@ -16,9 +16,9 @@ import {
 } from "./world.js";
 import {Culture} from "./culture.js";
 import {Name} from "../language/name.js";
-import {TreeMap} from "../datastructures/treemap.js";
 import {Biome} from "./terrain.js";
 import Queue from "../datastructures/queue.js";
+import {Dequeue} from "../datastructures/dequeue.js";
 
 
 /**
@@ -27,7 +27,7 @@ import Queue from "../datastructures/queue.js";
 export class Civ {
 	public readonly id: number;
 	public readonly capital: Tile; // the capital city
-	public readonly tiles: TreeMap<Tile>; // the tiles it owns and the order in which it acquired them (also stores the normalized population)
+	public readonly tileTree: Map<Tile, {parent: Tile | null, children: Set<Tile>}>; // the tiles it owns and the order in which it acquired them (also stores the normalized population)
 	public readonly sortedTiles: Queue<Tile>; // the tiles it owns (maybe some it doesn't) from least to most densely populated
 	public readonly border: Map<Tile, Set<Tile>>; // the set of tiles it owns that are adjacent to tiles it doesn't
 	public readonly world: World;
@@ -47,7 +47,7 @@ export class Civ {
 	constructor(capital: Tile, id: number, world: World, rng: Random, technology: number = 1) {
 		this.world = world;
 		this.id = id;
-		this.tiles = new TreeMap<Tile>();
+		this.tileTree = new Map<Tile, {parent: Tile | null, children: Set<Tile>}>();
 		this.sortedTiles = new Queue<Tile>(
 			[], (a, b) => b.arableArea - a.arableArea);
 		this.border = new Map<Tile, Set<Tile>>();
@@ -68,7 +68,7 @@ export class Civ {
 	 * @param tile the land being acquired
 	 * @param from the place from which it was acquired
 	 */
-	conquer(tile: Tile, from: Tile) {
+	conquer(tile: Tile, from: Tile | null) {
 		const loser = this.world.currentRuler(tile);
 
 		this._conquer(tile, from, loser);
@@ -76,14 +76,14 @@ export class Civ {
 		if (loser !== null)
 			loser.lose(tile); // do the opposite upkeep for the other gy
 
-		for (const newLand of this.tiles.getAllChildren(tile)) {
+		for (const newLand of this.getAllChildrenOf(tile)) {
 			for (const neighbor of newLand.neighbors.keys()) {
 				if (this.border.has(neighbor) && this.border.get(neighbor).has(newLand)) {
 					this.border.get(neighbor).delete(newLand);
 					if (this.border.get(neighbor).size === 0)
 						this.border.delete(neighbor);
 				}
-				else if (!this.tiles.has(neighbor)) {
+				else if (!this.tileTree.has(neighbor)) {
 					if (!this.border.has(newLand))
 						this.border.set(newLand, new Set<Tile>()); // finally, adjust the border map as necessary
 					this.border.get(newLand).add(neighbor);
@@ -98,14 +98,16 @@ export class Civ {
 	 * @param from
 	 * @param loser
 	 */
-	_conquer(tile: Tile, from: Tile, loser: Civ) {
+	_conquer(tile: Tile, from: Tile | null, loser: Civ) {
 		this.world.politicalMap.set(tile, this);
-		this.tiles.add(tile, from); // add it to this.tiles
+		this.tileTree.set(tile, {parent: from, children: new Set()}); // add it to this.tileTree
+		if (from !== null)
+			this.tileTree.get(from).children.add(tile); // add it to from's children
 		this.sortedTiles.push(tile);
 		this.arableArea += tile.arableArea;
 
 		if (loser !== null) {
-			for (const child of loser.tiles.getChildren(tile)) // then recurse
+			for (const child of loser.tileTree.get(tile).children) // then recurse
 				if (child.arableArea > 0)
 					this._conquer(child, tile, loser);
 		}
@@ -119,13 +121,13 @@ export class Civ {
 	 * @param tile the land being taken
 	 */
 	lose(tile: Tile) {
-		if (!this.tiles.has(tile))
+		if (!this.tileTree.has(tile))
 			throw new Error("You tried to make a Civ lose a tile that it does not have.");
-		for (const lostLand of this.tiles.getAllChildren(tile)) { // start by going thru and updating the border map
+		for (const lostLand of this.getAllChildrenOf(tile)) { // start by going thru and updating the border map
 			if (this === this.world.politicalMap.get(lostLand)) // and update the global political map
 				this.world.politicalMap.delete(lostLand);
 		}
-		for (const lostLand of this.tiles.getAllChildren(tile)) { // adjust the border map
+		for (const lostLand of this.getAllChildrenOf(tile)) { // adjust the border map
 			for (const neighbor of lostLand.neighbors.keys()) {
 				if (this === this.world.politicalMap.get(neighbor)) {
 					if (!this.border.has(neighbor))
@@ -136,13 +138,25 @@ export class Civ {
 			this.border.delete(lostLand);
 		}
 
-		this.tiles.delete(tile); // remove it and all its children from this.tiles
-		while (!this.sortedTiles.empty() && !this.tiles.has(this.sortedTiles.peek()))
+		this._lose(tile); // remove it and all its children from this.tiles
+		while (!this.sortedTiles.empty() && !this.tileTree.has(this.sortedTiles.peek()))
 			this.sortedTiles.pop(); // remove it from this.sortedTiles as well if it happens to be on top
-		if (this.tiles.size() > 0)
-			this.arableArea -= tile.arableArea; // TODO: make sure you delete area from child Tiles also
-		else
+		if (this.tileTree.size === 0)
 			this.arableArea = 0;
+	}
+
+	/**
+	 * do all the parts of lose that happen recursively
+	 */
+	_lose(tile: Tile) {
+		const {parent, children} = this.tileTree.get(tile);
+		for (const child of children)
+			this._lose(child);
+		if (parent !== null)
+			this.tileTree.get(parent).children.delete(tile);
+		this.tileTree.delete(tile);
+
+		this.arableArea -= tile.arableArea;
 	}
 
 	/**
@@ -154,7 +168,7 @@ export class Civ {
 		newKultur.set(
 			this.capital.culture.lect.macrolanguage,
 			new Culture(this.capital.culture, this.capital, this, rng.next())); // start by updating the capital, tying it to the new homeland
-		for (const tile of this.tiles) { // update the culture of each tile in the empire in turn
+		for (const tile of this.tileTree.keys()) { // update the culture of each tile in the empire in turn
 			if (rng.probability(TIME_STEP/MEAN_ASSIMILATION_TIME)) { // if the province fails its heritage saving throw
 				tile.culture = this.capital.culture; // its culture gets overritten
 			}
@@ -198,6 +212,32 @@ export class Civ {
 	}
 
 	/**
+	 * get all of the tiles that fall anywhere below this one on the tile tree.
+	 * if this tile falls, all of these children will fall with it.
+	 */
+	getAllChildrenOf(tile: Tile): Iterable<Tile> {
+		const tileTree = this.tileTree;
+		return {
+			[Symbol.iterator]: function(): Iterator<Tile> {
+				const cue = new Dequeue<Tile>([tile]);
+				return {
+					next: function() {
+						if (cue.isEmpty()) {
+							return {done: true, value: null};
+						}
+						else {
+							const next = cue.pop();
+							for (const child of tileTree.get(next).children)
+								cue.push(child);
+							return {done: false, value: next};
+						}
+					}
+				};
+			}
+		};
+	}
+
+	/**
 	 * how strong the Civ's military is in this particular context
 	 * @param kontra the opponent
 	 * @param sa the location
@@ -214,7 +254,7 @@ export class Civ {
 	 */
 	getTotalArea(): number {
 		let area = 0;
-		for (const tile of this.tiles) // TODO: save this in a dynamically updating variable like the arable area
+		for (const tile of this.tileTree.keys())
 			area += tile.getArea();
 		return area;
 	}
@@ -224,8 +264,8 @@ export class Civ {
 	 */
 	getLandArea(): number {
 		let area = 0;
-		for (const tile of this.tiles)
-			if (tile.biome !== Biome.OCEAN) // TODO: save this in a dynamically updating variable like the arable area
+		for (const tile of this.tileTree.keys())
+			if (tile.biome !== Biome.OCEAN)
 				area += tile.getArea();
 		return area;
 	}
@@ -238,7 +278,7 @@ export class Civ {
 	getCultures(): { culture: Culture, populationFraction: number, inhabitedTiles: Set<Tile> }[] {
 		// count up the population fraccion of each culture
 		const cultureMap = new Map<Culture, {population: number, tiles: Set<Tile>}>();
-		for (const tile of this.tiles) {
+		for (const tile of this.tileTree.keys()) {
 			if (!cultureMap.has(tile.culture))
 				cultureMap.set(tile.culture, {population: 0, tiles: new Set()});
 			cultureMap.get(tile.culture).population += tile.arableArea;

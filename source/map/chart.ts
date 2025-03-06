@@ -370,7 +370,7 @@ export class Chart {
 						color = COUNTRY_COLORS[numFilledCivs];
 				}
 				const fill = this.fill(
-					filterSet(civ.tiles, n => n.biome !== Biome.OCEAN),
+					filterSet(civ.tileTree.keys(), n => n.biome !== Biome.OCEAN),
 					g, color, Layer.KULTUR);
 				if (fill.getAttribute("d").length > 0)
 					numFilledCivs ++;
@@ -413,7 +413,7 @@ export class Chart {
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
 					this.fill(
-						filterSet(civ.tiles, n => n.biome !== Biome.OCEAN),
+						filterSet(civ.tileTree.keys(), n => n.biome !== Biome.OCEAN),
 						titledG,
 						'none', Layer.KULTUR, CHARCOAL, 0.7).setAttribute('pointer-events', 'all');
 				// }
@@ -432,7 +432,7 @@ export class Chart {
 			for (const civ of world.getCivs()) // TODO: the hover text should go on this
 				if (civ.getPopulation() > 0)
 					this.label(
-						[...civ.tiles].filter(n => !n.isWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
+						[...civ.tileTree.keys()].filter(n => !n.isWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
 						civ.getName().toString(style),
 						svg,
 						fontSize);
@@ -450,7 +450,7 @@ export class Chart {
 			for (const civ of world.getCivs(true))
 				if (this.projectPath(
 					Chart.convertToGreebledPath(
-						Chart.outline([...civ.tiles].filter(n => !n.isWater())),
+						Chart.outline([...civ.tileTree.keys()].filter(n => !n.isWater())),
 						Layer.KULTUR, this.scale),
 					true).length > 0)
 					visible.push(civ);

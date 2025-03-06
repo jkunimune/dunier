@@ -50,7 +50,7 @@ export class World {
 	generateHistory(year: number, rng: Random) {
 		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
 			for (const civ of this.civs)
-				if (civ.tiles.size() > 0)
+				if (civ.tileTree.size > 0)
 					civ.update(rng);
 			this.spawnCivs(rng); // TODO: build cities
 			this.spreadCivs(rng);
@@ -106,12 +106,12 @@ export class World {
 			const invadee = this.currentRuler(end);
 			const invaderStrength = invader.getStrength(invadee, end);
 			const invadeeStrength = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
-			if (invader.tiles.has(start) && !invader.tiles.has(end) &&
+			if (invader.tileTree.has(start) && !invader.tileTree.has(end) &&
 					invaderStrength > invadeeStrength) { // check that they're still doable
 				invader.conquer(end, start); // update the game state
-				for (const conquerdLand of invader.tiles.getAllChildren(end)) { // and set up new invasions that bild off of it
+				for (const conquerdLand of invader.getAllChildrenOf(end)) { // and set up new invasions that bild off of it
 					for (const neighbor of conquerdLand.neighbors.keys()) {
-						if (!invader.tiles.has(neighbor)) {
+						if (!invader.tileTree.has(neighbor)) {
 							time = time + rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
 							if (time <= TIME_STEP) {
 								invasions.push({time: time, invader: invader, start: end, end: neighbor});
@@ -157,8 +157,8 @@ export class World {
 	 */
 	haveCataclysm(rng: Random) {
 		for (const civ of this.civs) {
-			for (const tile of [...civ.tiles])
-				if (civ.tiles.has(tile) && !rng.probability(APOCALYPSE_SURVIVAL_RATE))
+			for (const tile of [...civ.tileTree.keys()])
+				if (civ.tileTree.has(tile) && !rng.probability(APOCALYPSE_SURVIVAL_RATE))
 					civ.lose(tile);
 			civ.technology *= rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE)*2, 1);
 		}
@@ -190,7 +190,7 @@ export class World {
 		if (sorted)
 			output.sort((a, b) => b.getLandArea() - a.getLandArea());
 		if (minSize > 0)
-			output = output.filter((c) => c.tiles.size() >= minSize);
+			output = output.filter((c) => c.tileTree.size >= minSize);
 		return output;
 	}
 
