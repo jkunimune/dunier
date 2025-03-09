@@ -41,7 +41,7 @@ for filename in os.listdir('../../templates/'):
 		page = template
 		for key, value in lang.items():
 			page = page.replace(f'{{{key}}}', value)
-		remaining_keys = re.search(r'{([a-z.][a-zA-Z0-9-.]+)}', page)
+		remaining_keys = re.search(r'{([a-z.][a-zA-Z0-9-._]+)}', page)
 		if remaining_keys:
 			raise KeyError(f"no jana cabe '{remaining_keys.group(1)}'!")
 
