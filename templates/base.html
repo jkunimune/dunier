@@ -5,9 +5,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="/resources/bootstrap-4.6.2-dist/css/bootstrap.min.css" crossorigin="anonymous">
-
     <link rel="stylesheet" href="/resources/style.css">
 
     <title>{title.{.name}}</title>
@@ -17,7 +14,7 @@
 
   <body>
     <header>
-      <nav class="navbar navbar-expand-lg navbar-light">
+      <nav class="navbar navbar-expand-md">
         <div class="container-lg">
 
           <a class="navbar-brand" href="#">
@@ -25,7 +22,7 @@
             dunier<sup class="text-secondary">{.version}</sup>
           </a>
 
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="{menu.toggle_navbar}">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="{menu.toggle_navbar}" onclick="document.getElementById('toggle-navbar').classList.toggle('show');">
             <span class="navbar-toggler-icon"></span>
           </button>
 
@@ -39,29 +36,14 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="lang-dropdown" role="button" data-toggle="dropdown" aria-expanded="false" aria-label="{menu.language}">
-                  <svg class="bi" width="20" viewBox="-38 -38 76 86" stroke="currentColor" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="none" stroke-width="4" d="M0,-36 A36,36,0,0,0,0,36 A18,36,0,0,0,0,-36 A18,36,0,0,0,0,36 A36,36,0,0,0,0,-36 L0,36 M-36,0 L36,0 M-25.5,25.5 A36,36,0,0,1,25.5,25.5 M-25.5,-25.5 A36,36,0,0,0,25.5,-25.5"/>
-                  </svg>
-                </a>
-                <div class="dropdown-menu dropdown-menu-right" role="menu" aria-orientation="vertical">
-                  <a class="dropdown-item" href="/en/{.name}.html" role="menuitem">
-                    <img src="/resources/images/gb-eng.svg" width="20" height="20" alt="">&nbsp;
-                    English
-                  </a>
-                  <a class="dropdown-item" href="/es/{.name}.html" role="menuitem">
-                    <img src="/resources/images/es.svg" width="20" height="20" alt="">&nbsp;
-                    español
-                  </a>
-                  <a class="dropdown-item" href="/ja/{.name}.html" role="menuitem">
-                    <img src="/resources/images/ja.svg" width="20" height="20" alt="">&nbsp;
-                    日本語
-                  </a>
-                  <a class="dropdown-item" href="/pd/{.name}.html" role="menuitem">
-                    <img src="/resources/images/pandunia.svg" width="20" height="20" alt="">&nbsp;
-                    pandunia
-                  </a>
-                </div>
+                <label class="sr-only" for="lang-dropdown">{menu.language}</label>
+                <select id="lang-dropdown" class="lang-dropdown" onchange="window.location = `/${this.value}/{.name}.html`;">
+                  <option hidden></option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                  <option value="pd">🟰 pandunia</option>
+                </select>
               </div>
             </div>
           </div>
@@ -75,21 +57,23 @@
 
     <footer>
       <div class="container-lg">
-        <div class="row justify-content-center">
+        <div class="row">
 
-          <div class="col-12 col-sm-10 col-md-6">
+          <div class="col-lg">
             <p>
               {menu.copyright.0}<!--
-           --><a href="https://creativecommons.org/publicdomain/zero/1.0/deed.{.language.fallback}" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
-                CC0 1.0<!--
-             --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="(Creative Commons logo)"><!--
-             --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="">
-              </a><!--
-           -->{menu.copyright.1}
+           --><span style="white-space: nowrap">
+                <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.{.language.fallback}" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
+                  CC0 1.0<!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="(Creative Commons logo)"><!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="">
+                </a><!--
+             -->{menu.copyright.1}
+              </span>
             </p>
           </div>
 
-          <div class="col-6 col-sm-5 col-md-3">
+          <div class="col-sm">
             <h5>{menu.pages}</h5>
             <ul class="list-unstyled text-small">
               <li><a class="text-muted" href="./index.html">{menu.index}</a></li>
@@ -99,7 +83,7 @@
             </ul>
           </div>
 
-          <div class="col-6 col-sm-5 col-md-3">
+          <div class="col-sm">
             <h5>{menu.languages}</h5>
             <ul class="list-unstyled text-small">
               <li lang="en"><a class="text-muted" href="/en/{.name}.html">English</a></li>
@@ -115,14 +99,16 @@
 
     <div id="bash" style="display: none;">{.language}</div>
 
-    <!-- rendering scripts: JQuery, Bootstrap, Bootstrap Input Spinner -->
+    <!-- rendering scripts: Bootstrap Input Spinner -->
     <script src="/source/libraries/jquery.min.js" crossorigin="anonymous"></script>
-    <script src="/source/libraries/popper.min.js" crossorigin="anonymous"></script>
-    <script src="/resources/bootstrap-4.6.2-dist/js/bootstrap.min.js" crossorigin="anonymous"></script>
     <script src="/source/libraries/bootstrap-input-spinner.js"></script>
     <script>
+      // apply the bootstrap-input-spinner script to every input spinner
       // noinspection JSUnresolvedReference
       $("input[type='number']").inputSpinner();
+      // fix bootstrap-input-spinner's erroneous use of hyphens in place of minus signs
+      for (const element of $(".input-group-prepend strong"))
+        element.innerHTML = "−";
     </script>
   </body>
 </html>

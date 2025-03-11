@@ -47,7 +47,6 @@ This repository contains the following files and directories, among others.
   - `tech_tree.txt` – a list of technologies and dates used to qualitatively describe technological advancement
   - `translations/` – the lists of translated GUI strings used to build the localized HTML
   - `images/` – all images used in the webpage (mostly flags for the language selector)
-  - `fonts/` – the fonts used in the generated PDFs
 - `tests/` – the Jest test scripts
 
 You'll note that the HTML files are absent.

@@ -43,25 +43,25 @@
   }
 </script>
 
-<div class="container-lg mt-3 mb-5">
+<div class="container-lg mt-3 mb-3">
   <div id="alert-box">
   </div>
 
-  <ul class="nav nav-tabs" id="myTab" role="tablist">
+  <ul class="nav nav-tabs" role="tablist">
     <li class="nav-item">
-      <a class="nav-link" id="planet-tab" data-toggle="tab" href="#planet-panel" role="tab" aria-controls="planet-panel" aria-selected="false">{parameter.planet}</a>
+      <a class="nav-link" id="planet-tab" data-toggle="tab" href="#" role="tab" aria-controls="planet-panel" aria-selected="false">{parameter.planet}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#terrain-panel" role="tab" aria-controls="terrain-panel" aria-selected="false">{parameter.terrain}</a>
+      <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#" role="tab" aria-controls="terrain-panel" aria-selected="false">{parameter.terrain}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="history-tab" data-toggle="tab" href="#history-panel" role="tab" aria-controls="history-panel" aria-selected="false">{parameter.history}</a>
+      <a class="nav-link" id="history-tab" data-toggle="tab" href="#" role="tab" aria-controls="history-panel" aria-selected="false">{parameter.history}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link active" id="map-tab" data-toggle="tab" href="#map-panel" role="tab" aria-controls="map-panel" aria-selected="false">{parameter.map}</a>
+      <a class="nav-link active" id="map-tab" data-toggle="tab" href="#" role="tab" aria-controls="map-panel" aria-selected="false">{parameter.map}</a>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="factbook-tab" data-toggle="tab" href="#factbook-panel" role="tab" aria-controls="factbook-panel" aria-selected="true">{parameter.factbook}</a>
+      <a class="nav-link" id="factbook-tab" data-toggle="tab" href="#" role="tab" aria-controls="factbook-panel" aria-selected="true">{parameter.factbook}</a>
     </li>
   </ul>
 
@@ -69,20 +69,20 @@
 
     <div class="tab-pane" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
       <div class="row mt-2">
-        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+        <div class="scrolling-sidebar">
           <form>
             <div class="form-group">
               <label for="planet-type">{parameter.planet.shape}</label>
-              <select class="custom-select" id="planet-type" onchange="disableTidalLocking(this.value); hideProjectionSelection(this.value);">
+              <select id="planet-type" onchange="disableTidalLocking(this.value); hideProjectionSelection(this.value);">
                 <option selected value="spheroid">{parameter.planet.shape.spheroid}</option>
                 <option value="toroid">{parameter.planet.shape.toroid}</option>
                 <option value="plane">{parameter.planet.shape.plane}</option>
               </select>
             </div>
             <div class="form-group">
-              <div class="custom-control custom-checkbox">
+              <div class="custom-checkbox">
                 <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked);">
-                <label class="custom-control-label" for="planet-locked">{parameter.planet.tidal_lock}</label>
+                <label for="planet-locked">{parameter.planet.tidal_lock}</label>
               </div>
             </div>
             <div class="form-group">
@@ -113,14 +113,14 @@
           </form>
         </div>
 
-        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9" id="planet-map">
+        <div class="map" id="planet-map">
         </div>
       </div>
     </div>
 
     <div class="tab-pane" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
       <div class="row mt-2">
-        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+        <div class="scrolling-sidebar">
           <form>
             <div class="form-group">
               <label for="terrain-seed">{parameter.seed}</label>
@@ -132,7 +132,7 @@
             </div>
             <div class="form-group">
               <label for="terrain-sea-level">{parameter.terrain.sea_level}</label>
-              <select class="custom-select" id="terrain-sea-level">
+              <select id="terrain-sea-level">
                 <option value="4">{parameter.terrain.sea_level.3}</option>
                 <option value="3">{parameter.terrain.sea_level.2}</option>
                 <option value="2">{parameter.terrain.sea_level.1}</option>
@@ -144,7 +144,7 @@
             </div>
             <div class="form-group">
               <label for="terrain-temperature">{parameter.terrain.temperature}</label>
-              <select class="custom-select" id="terrain-temperature">
+              <select id="terrain-temperature">
                 <option value="308">{parameter.terrain.temperature.1}</option>
                 <option selected value="288">{parameter.terrain.temperature.0}</option>
                 <option value="268">{parameter.terrain.temperature.-1}</option>
@@ -162,7 +162,7 @@
           </form>
         </div>
 
-        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
+        <div class="map">
           <svg xmlns="http://www.w3.org/2000/svg"
                viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
           </svg>
@@ -172,7 +172,7 @@
 
     <div class="tab-pane" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
       <div class="row mt-2">
-        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+        <div class="scrolling-sidebar">
           <form>
             <div class="form-group">
               <label for="history-seed">{parameter.seed}</label>
@@ -184,7 +184,7 @@
             </div>
             <div class="form-group">
               <label for="history-meteors">{parameter.history.meteors}</label>
-              <select class="custom-select" id="history-meteors">
+              <select id="history-meteors">
                 <option selected value="0">{parameter.history.meteors.none}</option>
                 <option value="1e-4">{parameter.history.meteors.once}</option>
                 <option value="1e-3">{parameter.history.meteors.millennial}</option>
@@ -203,7 +203,7 @@
           </form>
         </div>
 
-        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
+        <div class="map">
           <svg xmlns="http://www.w3.org/2000/svg"
                viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
           </svg>
@@ -211,23 +211,23 @@
       </div>
     </div>
 
-    <div class="tab-pane show active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
+    <div class="tab-pane active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
       <div class="row mt-2">
-        <div class="scrolling-sidebar col-xs-12 col-md-5 col-lg-4 col-xl-3">
+        <div class="scrolling-sidebar">
           <form id="accordion">
             <div class="card">
-              <div class="card-header" id="headingOne">
+              <div class="card-header">
                 <h5 class="mb-0">
-                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                  <a href="#" id="map-projection-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
                     {parameter.map.projection}
-                  </button>
+                  </a>
                 </h5>
               </div>
-              <div id="collapseOne" class="collapse" aria-labelledby="headingOne" data-parent="#accordion">
+              <div id="map-projection-collapse" class="collapse" aria-labelledby="map-projection-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group" id="map-projection-form">
                     <label for="map-projection">{parameter.map.type}</label>
-                    <select class="custom-select" id="map-projection" onchange="updateProjectionDescription(this.value);">
+                    <select id="map-projection" onchange="updateProjectionDescription(this.value);">
                       <option selected value="bonne">{parameter.map.type.bonne}</option>
                       <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
                       <option value="equal_earth">{parameter.map.type.equal_earth}</option>
@@ -246,14 +246,14 @@
                   </div>
                   <div class="form-group">
                     <label for="map-shape">{parameter.map.shape}</label>
-                    <select class="custom-select" id="map-shape">
+                    <select id="map-shape">
                       <option selected value="rectangle">{parameter.map.shape.rectangle}</option>
                       <option value="sector">{parameter.map.shape.sector}</option>
                     </select>
                   </div>
                   <div class="form-group">
                     <label for="map-orientation">{parameter.map.orientation}</label>
-                    <select class="custom-select" id="map-orientation">
+                    <select id="map-orientation">
                       <option selected value="north">{parameter.map.orientation.north}</option>
                       <option value="south">{parameter.map.orientation.south}</option>
                       <option value="east">{parameter.map.orientation.east}</option>
@@ -262,7 +262,7 @@
                   </div>
                   <div class="form-group">
                     <label for="map-jung">{parameter.map.focus}</label>
-                    <select class="custom-select" id="map-jung">
+                    <select id="map-jung">
                       <option selected value="0">United States of America</option>
                       <option value="1">China</option>
                     </select>
@@ -271,18 +271,18 @@
               </div>
             </div>
             <div class="card">
-              <div class="card-header" id="headingTwo">
+              <div class="card-header">
                 <h5 class="mb-0">
-                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                  <a href="#" id="map-colors-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-colors-collapse">
                     {parameter.map.colors}
-                  </button>
+                  </a>
                 </h5>
               </div>
-              <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+              <div id="map-colors-collapse" class="collapse" aria-labelledby="map-colors-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
                     <label for="map-land-color">{parameter.map.land_color}</label>
-                    <select class="custom-select" id="map-land-color">
+                    <select id="map-land-color">
                       <option value="white">{parameter.map.color.white}</option>
                       <option value="gray">{parameter.map.color.gray}</option>
                       <option selected value="physical">{parameter.map.color.physical}</option>
@@ -292,7 +292,7 @@
                   </div>
                   <div class="form-group">
                     <label for="map-sea-color">{parameter.map.sea_color}</label>
-                    <select class="custom-select" id="map-sea-color">
+                    <select id="map-sea-color">
                       <option value="white">{parameter.map.color.white}</option>
                       <option value="gray">{parameter.map.color.gray}</option>
                       <option selected value="blue">{parameter.map.color.blue}</option>
@@ -302,119 +302,100 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <h6>{parameter.map.land_style}</h6>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="land-style" id="map-land-plain" value="plain" checked>
-                      <label class="form-check-label" for="map-land-plain">{parameter.map.style.plain}</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="land-style" id="map-land-textured" value="textured">
-                      <label class="form-check-label" for="map-land-textured">{parameter.map.style.textured}</label>
+                    <div class="custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-land-texture" value="none">
+                      <label for="map-land-texture">{parameter.map.land_texture}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <h6>{parameter.map.sea_style}</h6>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="sea-style" id="map-sea-plain" value="plain" checked>
-                      <label class="form-check-label" for="map-sea-plain">{parameter.map.style.plain}</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="sea-style" id="map-sea-textured" value="textured">
-                      <label class="form-check-label" for="map-sea-textured">{parameter.map.style.textured}</label>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <h6>{parameter.map.city_style}</h6>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="city-style" id="map-city-none" value="none" checked>
-                      <label class="form-check-label" for="map-city-none">{parameter.map.style.plain}</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="city-style" id="map-city-dots" value="dots">
-                      <label class="form-check-label" for="map-city-dots">{parameter.map.style.dots}</label>
-                    </div>
-                    <div class="form-check">
-                      <input class="form-check-input" type="radio" name="city-style" id="map-city-textured" value="textured">
-                      <label class="form-check-label" for="map-city-textured">{parameter.map.style.textured}</label>
+                    <div class="custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-sea-texture" value="none">
+                      <label for="map-sea-texture">{parameter.map.sea_texture}</label>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             <div class="card">
-              <div class="card-header" id="headingThree">
+              <div class="card-header">
                 <h5 class="mb-0">
-                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                  <a href="#" id="map-features-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-features-collapse">
                     {parameter.map.features}
-                  </button>
+                  </a>
                 </h5>
               </div>
-              <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+              <div id="map-features-collapse" class="collapse" aria-labelledby="map-features-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <div class="custom-control custom-checkbox">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" class="custom-control-input" id="map-cities" value="none">
+                      <label for="map-cities">{parameter.map.features.cities}</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-rivers">
-                      <label class="custom-control-label" for="map-rivers">{parameter.map.features.rivers}</label>
+                      <label for="map-rivers">{parameter.map.features.rivers}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <div class="custom-control custom-checkbox">
+                    <div class="custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-borders" checked>
-                      <label class="custom-control-label" for="map-borders">{parameter.map.features.borders}</label>
+                      <label for="map-borders">{parameter.map.features.borders}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <div class="custom-control custom-checkbox">
+                    <div class="custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-shading">
-                      <label class="custom-control-label" for="map-shading">{parameter.map.features.shading}</label>
+                      <label for="map-shading">{parameter.map.features.shading}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <div class="custom-control custom-checkbox">
+                    <div class="custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-graticule">
-                      <label class="custom-control-label" for="map-graticule">{parameter.map.features.graticule}</label>
+                      <label for="map-graticule">{parameter.map.features.graticule}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <div class="custom-control custom-checkbox">
+                    <div class="custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-rhumb-net">
-                      <label class="custom-control-label" for="map-rhumb-net">{parameter.map.features.rhumb_net}</label>
+                      <label for="map-rhumb-net">{parameter.map.features.rhumb_net}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <div class="custom-control custom-checkbox">
+                    <div class="custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-windrose">
-                      <label class="custom-control-label" for="map-windrose">{parameter.map.features.windrose}</label>
+                      <label for="map-windrose">{parameter.map.features.windrose}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <div class="custom-control custom-checkbox">
+                    <div class="custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-political-labels" checked>
-                      <label class="custom-control-label" for="map-political-labels">{parameter.map.features.political_labels}</label>
+                      <label for="map-political-labels">{parameter.map.features.political_labels}</label>
                     </div>
                   </div>
                   <div class="form-group">
-                    <div class="custom-control custom-checkbox">
+                    <div class="custom-checkbox">
                       <input type="checkbox" class="custom-control-input" id="map-physical-labels">
-                      <label class="custom-control-label" for="map-physical-labels">{parameter.map.features.physical_labels}</label>
+                      <label for="map-physical-labels">{parameter.map.features.physical_labels}</label>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             <div class="card">
-              <div class="card-header" id="headingFour">
+              <div class="card-header">
                 <h5 class="mb-0">
-                  <button type="button" class="btn btn-link collapsed" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                  <a href="#" id="map-formatting-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-formatting-collapse">
                     {parameter.map.formatting}
-                  </button>
+                  </a>
                 </h5>
               </div>
-              <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
+              <div id="map-formatting-collapse" class="collapse" aria-labelledby="map-formatting-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
                     <label for="map-spelling">{parameter.map.spelling}</label>
-                    <select class="custom-select" id="map-spelling">
+                    <select id="map-spelling">
                       <option value="null" {If {.language} en} selected {EndIf} {If {.language} es} selected {EndIf}>{parameter.map.spelling.modern}</option>
                       <option value="en">{parameter.map.spelling.en}</option>
                       <option value="es">{parameter.map.spelling.es}</option>
@@ -448,16 +429,16 @@
                 {menu.loading}
               </span>
             </button>
-            <button type="button" class="btn btn-block btn-primary" id="map-download-png">
+            <button type="button" class="btn btn-block btn-secondary" id="map-download-png">
               {menu.download.png}
             </button>
-            <button type="button" class="btn btn-block btn-primary" id="map-download-svg">
+            <button type="button" class="btn btn-block btn-secondary" id="map-download-svg">
               {menu.download.svg}
             </button>
           </form>
         </div>
 
-        <div class="map col-xs-12 col-md-7 col-lg-8 col-xl-9">
+        <div class="map">
           <svg xmlns="http://www.w3.org/2000/svg"
                viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
           </svg>
@@ -467,7 +448,7 @@
 
     <div class="tab-pane" id="factbook-panel" role="tabpanel" aria-labelledby="factbook-factbook">
       <div class="row mt-2">
-        <div class="col-xs-12 col-md-5 col-lg-4 col-xl-3">
+        <div class="scrolling-sidebar">
           <form>
             <button type="button" class="btn btn-block btn-primary" id="factbook-print">
               {menu.print}
@@ -475,8 +456,8 @@
           </form>
         </div>
 
-        <div class="col-xs-12 col-md-7 col-lg-8 col-xl-9">
-          <iframe id="factbook-embed" style="width: 100%; height: 90vh;" title="{parameter.factbook}">
+        <div class="map justify-content-center">
+          <iframe id="factbook-embed" title="{parameter.factbook}">
           </iframe>
         </div>
       </div>

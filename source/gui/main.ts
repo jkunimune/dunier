@@ -413,12 +413,51 @@ function disableButtonsAndDo(func: () => void): void {
  */
 function postErrorAlert(message: string): void {
 	DOM.elm('alert-box').innerHTML +=
-		"<div class='alert alert-danger alert-dismissible fade show' role='alert'>\n" +
+		"<div class='alert fade show' role='alert'>\n" +
 		`  ${message}\n` +
 		"  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>\n" +
 		"    <span aria-hidden='true'>&times;</span>\n" +
 		"  </button>\n" +
 		"</div>";
+}
+
+
+for (const prefix of ['projection', 'colors', 'features', 'formatting']) {
+	/** when the user clicks on a card header, toggle whether it is shown and hide all the others */
+	DOM.elm(`map-${prefix}-heading`).addEventListener('click', () => {
+		for (const otherPrefix of ['projection', 'colors', 'features', 'formatting']) {
+			const heading = DOM.elm(`map-${otherPrefix}-heading`);
+			const collapse = DOM.elm(`map-${otherPrefix}-collapse`);
+			let nowShown: boolean;
+			if (otherPrefix === prefix) // toggle the selected header
+				nowShown = collapse.classList.toggle("show");
+			else // hide all other headers
+				nowShown = collapse.classList.toggle("show", false);
+			heading.setAttribute("aria-expanded", nowShown.toString());
+		}
+	});
+}
+
+
+for (const prefix of ['planet', 'terrain', 'history', 'map', 'factbook']) {
+	/** when the user clicks on a tab, show its panel and hide all others */
+	DOM.elm(`${prefix}-tab`).addEventListener('click', () => {
+		console.log(`activating the ${prefix} tab`);
+		for (const otherPrefix of ['planet', 'terrain', 'history', 'map', 'factbook']) {
+			const tab = DOM.elm(`${otherPrefix}-tab`);
+			const panel = DOM.elm(`${otherPrefix}-panel`);
+			if (otherPrefix === prefix) {
+				tab.setAttribute("aria-selected", "true");
+				tab.classList.add("active");
+				panel.classList.add("active");
+			}
+			else {
+				tab.setAttribute("aria-selected", "false");
+				tab.classList.remove("active");
+				panel.classList.remove("active");
+			}
+		}
+	});
 }
 
 
