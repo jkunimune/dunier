@@ -11,22 +11,16 @@
         checkbox.click();
         disableRotationParams(checkbox.checked);
       }
-      checkbox.setAttribute('disabled', ""); // and disable it
+      checkbox.toggleAttribute('disabled', true); // and disable it
     } else { // if it's anything else
-      checkbox.removeAttribute('disabled'); // enable it
+      checkbox.toggleAttribute('disabled', false); // enable it
     }
   }
 
   /** grey out the day length and obliquity when the planet is tidally locked */
   function disableRotationParams(locked) {
-    if (locked) {
-      document.getElementById('planet-day').setAttribute('disabled', ""); // rotation period
-      document.getElementById('planet-tilt').setAttribute('disabled', ""); // and obliquity are both irrelevant
-    }
-    else {
-      document.getElementById('planet-day').removeAttribute('disabled'); // rotation period
-      document.getElementById('planet-tilt').removeAttribute('disabled'); // and obliquity are both irrelevant
-    }
+    document.getElementById('planet-day').toggleAttribute('disabled', locked); // rotation period
+    document.getElementById('planet-tilt').toggleAttribute('disabled', locked); // and obliquity are both irrelevant
   }
 
   /** hide the map projection selection for flat geoids */
@@ -91,7 +85,7 @@
             </div>
             <div class="form-group">
               <div class="custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="planet-locked" onchange="disableRotationParams(this.checked);">
+                <input type="checkbox" id="planet-locked" onchange="disableRotationParams(this.checked);">
                 <label for="planet-locked">{parameter.planet.tidal_lock}</label>
               </div>
             </div>
@@ -306,13 +300,13 @@
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-land-texture" value="none">
+                      <input type="checkbox" id="map-land-texture" value="none">
                       <label for="map-land-texture">{parameter.map.land_texture}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-sea-texture" value="none">
+                      <input type="checkbox" id="map-sea-texture" value="none">
                       <label for="map-sea-texture">{parameter.map.sea_texture}</label>
                     </div>
                   </div>
@@ -331,55 +325,55 @@
                 <div class="card-body">
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-cities" value="none">
+                      <input type="checkbox" id="map-cities" value="none">
                       <label for="map-cities">{parameter.map.features.cities}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-rivers">
+                      <input type="checkbox" id="map-rivers">
                       <label for="map-rivers">{parameter.map.features.rivers}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-borders" checked>
+                      <input type="checkbox" id="map-borders" checked>
                       <label for="map-borders">{parameter.map.features.borders}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-shading">
+                      <input type="checkbox" id="map-shading">
                       <label for="map-shading">{parameter.map.features.shading}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-graticule">
+                      <input type="checkbox" id="map-graticule">
                       <label for="map-graticule">{parameter.map.features.graticule}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-rhumb-net">
+                      <input type="checkbox" id="map-rhumb-net">
                       <label for="map-rhumb-net">{parameter.map.features.rhumb_net}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-windrose">
+                      <input type="checkbox" id="map-windrose">
                       <label for="map-windrose">{parameter.map.features.windrose}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-political-labels" checked>
+                      <input type="checkbox" id="map-political-labels" checked>
                       <label for="map-political-labels">{parameter.map.features.political_labels}</label>
                     </div>
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" class="custom-control-input" id="map-physical-labels">
+                      <input type="checkbox" id="map-physical-labels">
                       <label for="map-physical-labels">{parameter.map.features.physical_labels}</label>
                     </div>
                   </div>

@@ -161,6 +161,15 @@ function activateInputSpinner(inputGroup, options) {
     }
 
     function updateAttributes() {
+        // propagate disability to the increment and decrement buttons
+        var disabled = input.hasAttribute("disabled")
+        var readonly = input.hasAttribute("readonly")
+        buttonIncrement.toggleAttribute("disabled", disabled || readonly)
+        buttonDecrement.toggleAttribute("disabled", disabled || readonly)
+        if (disabled || readonly) {
+            resetTimer()
+        }
+
         // update the main attributes
         min = parseFloat(input.getAttribute("min")) || 0
         max = parseFloat(input.getAttribute("max"))

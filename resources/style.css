@@ -81,6 +81,9 @@ input:focus, select:focus {
     outline: 0;
     box-shadow: 0 0 0 .2rem rgba(0,123,255,.25);
 }
+input:disabled {
+    background-color: #e9ecef;
+}
 
 [type="button"]:not(:disabled) {
     cursor: pointer;
@@ -580,6 +583,10 @@ a.btn.disabled {
     margin-left: 0.25rem;
     margin-bottom: 0;
     vertical-align: top;
+}
+
+input[type="checkbox"]:disabled ~ label {
+    color: #6c757d;
 }
 
 .alert .close {

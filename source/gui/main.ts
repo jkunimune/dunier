@@ -387,7 +387,7 @@ function applyFactbook(): void {
 function disableButtonsAndDo(func: () => void): void {
 	inProgress = true;
 	for (const tab of ['planet', 'terrain', 'history', 'map']) {
-		DOM.elm(`${tab}-apply`).setAttribute('disabled', '');
+		DOM.elm(`${tab}-apply`).toggleAttribute('disabled', true);
 		DOM.elm(`${tab}-ready`).style.display = 'none';
 		DOM.elm(`${tab}-loading`).style.display = null;
 	}
@@ -402,7 +402,7 @@ function disableButtonsAndDo(func: () => void): void {
 
 		inProgress = false;
 		for (const tab of ['planet', 'terrain', 'history', 'map']) {
-			DOM.elm(`${tab}-apply`).removeAttribute('disabled');
+			DOM.elm(`${tab}-apply`).toggleAttribute('disabled', false);
 			DOM.elm(`${tab}-ready`).style.display = null;
 			DOM.elm(`${tab}-loading`).style.display = 'none';
 		}
