@@ -65,6 +65,8 @@ let continents: Set<Tile>[] = null;
 let world: World = null;
 /** the list of countries on the current map */
 let mappedCivs: Civ[] = null;
+/** the number of alerts that have been posted */
+let alertCounter: number = 0;
 
 
 /**
@@ -412,10 +414,12 @@ function disableButtonsAndDo(func: () => void): void {
  * create a red alert box across the top of the screen with some message
  */
 function postErrorAlert(message: string): void {
+	const id = `alert-${alertCounter}`;
+	alertCounter ++;
 	DOM.elm('alert-box').innerHTML +=
-		"<div class='alert fade show' role='alert'>\n" +
+		`<div class='alert fade show' role='alert' id='${id}'>\n` +
 		`  ${message}\n` +
-		"  <button type='button' class='close' data-dismiss='alert' aria-label='Close'>\n" +
+		`  <button type='button' class='close' data-dismiss='alert' aria-label='Close' onclick='document.getElementById("${id}").remove();'>\n` +
 		"    <span aria-hidden='true'>&times;</span>\n" +
 		"  </button>\n" +
 		"</div>";

@@ -19,7 +19,7 @@
 
           <a class="navbar-brand" href="#">
             <img src="/resources/images/logo.svg" width="32" height="32" alt="">
-            dunier<sup class="text-secondary">{.version}</sup>
+            dunier<sup class="text-muted">{.version}</sup>
           </a>
 
           <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="{menu.toggle_navbar}" onclick="document.getElementById('toggle-navbar').classList.toggle('show');">
@@ -36,8 +36,7 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <label class="sr-only" for="lang-dropdown">{menu.language}</label>
-                <select id="lang-dropdown" class="lang-dropdown" onchange="window.location = `/${this.value}/{.name}.html`;">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="{menu.language}" onchange="window.location = `/${this.value}/{.name}.html`;">
                   <option hidden></option>
                   <option value="en">🇬🇧 English</option>
                   <option value="es">🇪🇸 español</option>
