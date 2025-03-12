@@ -5,27 +5,33 @@
 <script>
   /** grey out tidal locking for toroidal planets */
   function disableTidalLocking(type) {
-    const checkbox = $('#planet-locked');
+    const checkbox = document.getElementById('planet-locked');
     if (type === 'toroid') { // if it's toroidal now
-      if (checkbox.prop('checked')) { // uncheck tidal locking if we need to
+      if (checkbox.checked) { // uncheck tidal locking if we need to
         checkbox.click();
-        disableRotationParams(checkbox.prop('checked'));
+        disableRotationParams(checkbox.checked);
       }
-      checkbox.prop('disabled', true); // and disable it
+      checkbox.setAttribute('disabled', ""); // and disable it
     } else { // if it's anything else
-      checkbox.prop('disabled', false); // enable it
+      checkbox.removeAttribute('disabled'); // enable it
     }
   }
 
   /** grey out the day length and obliquity when the planet is tidally locked */
   function disableRotationParams(locked) {
-    $('#planet-day').prop('disabled', locked); // rotation period
-    $('#planet-tilt').prop('disabled', locked); // and obliquity are both irrelevant
+    if (locked) {
+      document.getElementById('planet-day').setAttribute('disabled', ""); // rotation period
+      document.getElementById('planet-tilt').setAttribute('disabled', ""); // and obliquity are both irrelevant
+    }
+    else {
+      document.getElementById('planet-day').removeAttribute('disabled'); // rotation period
+      document.getElementById('planet-tilt').removeAttribute('disabled'); // and obliquity are both irrelevant
+    }
   }
 
   /** hide the map projection selection for flat geoids */
   function hideProjectionSelection(type) {
-    const selection = $('#map-projection-form')[0];
+    const selection = document.getElementById('map-projection-form');
     if (type === 'plane')
       selection.style.display = "none";
     else
@@ -36,9 +42,9 @@
   function updateProjectionDescription(projection) {
     for (const option of ["bonne", "conformal_conic", "equal_earth"]) {
       if (option === projection)
-        $('#map-' + option + '-description')[0].style.display = "block";
+        document.getElementById('#map-' + option + '-description').style.display = "block";
       else
-        $('#map-' + option + '-description')[0].style.display = "none";
+        document.getElementById('#map-' + option + '-description').style.display = "none";
     }
   }
 </script>
@@ -87,19 +93,19 @@
             </div>
             <div class="form-group">
               <label for="planet-size">{parameter.planet.circumference}</label>
-              <input type="number" value="20000" data-decimals="0" min="1000" max="80000" step="1000" data-suffix="km" id="planet-size"/>
+              {Build type="spinner" value="20000" decimals="0" min="1000" max="80000" step="1000" suffix="km" id="planet-size"}
             </div>
             <div class="form-group">
               <label for="planet-gravity">{parameter.planet.gravity}</label>
-              <input type="number" value="1.0" data-decimals="2" min=".1" max="10" step=".1" data-suffix="<i>g</i>" id="planet-gravity"/>
+              {Build type="spinner" value="1.0" decimals="2" min=".1" max="10" step=".1" suffix="<i>g</i>" id="planet-gravity"}
             </div>
             <div class="form-group">
               <label for="planet-day">{parameter.planet.day}</label>
-              <input type="number" value="24" data-decimals="2" min="1" max="100" step="1" data-suffix="{unit.hour}" id="planet-day"/>
+              {Build type="spinner" value="24" decimals="2" min="1" max="100" step="1" suffix="{unit.hour}" id="planet-day"}
             </div>
             <div class="form-group">
               <label for="planet-tilt">{parameter.planet.tilt}</label>
-              <input type="number" value="23.5" data-decimals="1" min="0" max="90" step="5" data-suffix="°" id="planet-tilt"/>
+              {Build type="spinner" value="23.5" decimals="1" min="0" max="90" step="5" suffix="°" id="planet-tilt"}
             </div>
             <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
               <span id="planet-ready" style="display: none">
@@ -124,11 +130,11 @@
           <form>
             <div class="form-group">
               <label for="terrain-seed">{parameter.seed}</label>
-              <input type="number" value="0" min="0" max="99999999" step="1" id="terrain-seed"/>
+              {Build type="spinner" value="0" min="0" max="99999999" step="1" id="terrain-seed"}
             </div>
             <div class="form-group">
               <label for="terrain-continents">{parameter.terrain.continents}</label>
-              <input type="number" value="3" data-decimals="0" min="1" max="20" step="1" id="terrain-continents"/>
+              {Build type="spinner" value="3" decimals="0" min="1" max="20" step="1" id="terrain-continents"}
             </div>
             <div class="form-group">
               <label for="terrain-sea-level">{parameter.terrain.sea_level}</label>
@@ -176,11 +182,11 @@
           <form>
             <div class="form-group">
               <label for="history-seed">{parameter.seed}</label>
-              <input type="number" value="0" min="0" max="99999999" step="1" id="history-seed"/>
+              {Build type="spinner" value="0" min="0" max="99999999" step="1" id="history-seed"}
             </div>
             <div class="form-group">
               <label for="history-year">{parameter.history.year}</label>
-              <input type="number" value="1000" min="-3000" max="1500" step="100" data-suffix="{unit.year}" id="history-year"/>
+              {Build type="spinner" value="1000" min="-3000" max="1500" step="100" suffix="{unit.year}" id="history-year"}
             </div>
             <div class="form-group">
               <label for="history-meteors">{parameter.history.meteors}</label>
@@ -407,15 +413,15 @@
                   </div>
                   <div class="form-group">
                     <label for="map-width">{parameter.map.width}</label>
-                    <input type="number" value="28" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-width"/>
+                    {Build type="spinner" value="28" decimals="1" min="10" max="60" step="1" suffix="cm" id="map-width"}
                   </div>
                   <div class="form-group">
                     <label for="map-height">{parameter.map.height}</label>
-                    <input type="number" value="19" data-decimals="1" min="10" max="60" step="1" data-suffix="cm" id="map-height"/>
+                    {Build type="spinner" value="19" decimals="1" min="10" max="60" step="1" suffix="cm" id="map-height"}
                   </div>
                   <div class="form-group">
                     <label for="map-resolution">{parameter.map.resolution}</label>
-                    <input type="number" value="150" data-decimals="0" min="72" max="1200" step="50" data-suffix="DPI" id="map-resolution"/>
+                    {Build type="spinner" value="150" decimals="0" min="72" max="1200" step="50" suffix="DPI" id="map-resolution"}
                   </div>
                 </div>
               </div>

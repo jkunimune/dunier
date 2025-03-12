@@ -90,6 +90,16 @@ input[type="checkbox"] {
     padding: 0;
 }
 
+/* hide the default arrow buttons on Chrome, Safari, Edge, and Opera */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+/* hide the default arrow buttons on Firefox */
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 select {
     transition: background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
     display: inline-block;

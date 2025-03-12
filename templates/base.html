@@ -99,15 +99,12 @@
     <div id="bash" style="display: none;">{.language}</div>
 
     <!-- rendering scripts: Bootstrap Input Spinner -->
-    <script src="/source/libraries/jquery.min.js" crossorigin="anonymous"></script>
     <script src="/source/libraries/bootstrap-input-spinner.js"></script>
     <script>
       // apply the bootstrap-input-spinner script to every input spinner
-      // noinspection JSUnresolvedReference
-      $("input[type='number']").inputSpinner();
-      // fix bootstrap-input-spinner's erroneous use of hyphens in place of minus signs
-      for (const element of $(".input-group-prepend strong"))
-        element.innerHTML = "−";
+      for (const spinner of document.querySelectorAll(".fancy-spinner"))
+        // noinspection JSUnresolvedReference
+        activateInputSpinner(spinner);
     </script>
   </body>
 </html>
