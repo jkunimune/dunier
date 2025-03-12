@@ -621,6 +621,34 @@ button.close {
     border-radius: .25rem;
 }
 
+.info-icon {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: rgba(0, 0, 0, 0.5);
+    padding-right: 0;
+}
+.info-icon:hover, .info-icon:focus {
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.tooltip {
+    display: none;
+    position: absolute;
+    width: 15rem;
+    color: #fff;
+    padding: .5rem;
+    background-color: #212529;
+    border-radius: .25rem;
+    font-size: 0.875rem;
+    margin-top: 2.25rem;
+}
+.info-icon:hover + .tooltip,
+.info-icon:focus + .tooltip,
+.tooltip:hover {
+    display: block;
+}
+
 .fade {
     transition: opacity .15s linear;
 }

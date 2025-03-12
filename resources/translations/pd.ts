@@ -665,6 +665,7 @@ export default {
 	"menu.copyright.1": ".",
 	"menu.current": "(zay)",
 	"menu.dark_mode": "oskuri mode",
+	"menu.description": "detal sif",
 	"menu.download.png": "sekura PNG",
 	"menu.download.svg": "sekura SVG",
 	"menu.generate": "jena",

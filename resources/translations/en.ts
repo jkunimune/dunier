@@ -671,6 +671,7 @@ export default {
 	"menu.copyright.1": ".",
 	"menu.current": "(current)",
 	"menu.dark_mode": "Dark mode",
+	"menu.description": "Detailed description",
 	"menu.download.png": "Download PNG",
 	"menu.download.svg": "Download SVG",
 	"menu.generate": "Generate",

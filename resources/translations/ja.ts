@@ -666,6 +666,7 @@ export default {
 	"menu.copyright.1": " マークだ。",
 	"menu.current": "（現行）",
 	"menu.dark_mode": "ダークテーマ",
+	"menu.description": "説明",
 	"menu.download.png": "PNGダウンロード",
 	"menu.download.svg": "SVGダウンロード",
 	"menu.generate": "生成",

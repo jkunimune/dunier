@@ -40,11 +40,15 @@
 
   /** show the description of the currently selected map projection */
   function updateProjectionDescription(projection) {
-    for (const option of ["bonne", "conformal_conic", "equal_earth"]) {
-      if (option === projection)
-        document.getElementById('#map-' + option + '-description').style.display = "block";
-      else
-        document.getElementById('#map-' + option + '-description').style.display = "none";
+    if (projection === "bonne")
+      document.getElementById('map-projection-description').innerHTML = "{parameter.map.type.bonne.description}";
+    else if (projection === "conformal_conic")
+      document.getElementById('map-projection-description').innerHTML = "{parameter.map.type.conformal_conic.description}";
+    else if (projection === "equal_earth")
+      document.getElementById('map-projection-description').innerHTML = "{parameter.map.type.equal_earth.description}";
+    else {
+      document.getElementById('map-projection-description').innerHTML = "?????";
+      console.error(`unrecognized map projeccion: '${projection}'`);
     }
   }
 </script>
@@ -233,21 +237,14 @@
                 <div class="card-body">
                   <div class="form-group" id="map-projection-form">
                     <label for="map-projection">{parameter.map.type}</label>
-                    <select id="map-projection" onchange="updateProjectionDescription(this.value);">
-                      <option selected value="bonne">{parameter.map.type.bonne}</option>
-                      <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
-                      <option value="equal_earth">{parameter.map.type.equal_earth}</option>
-                    </select>
-                    <div id="map-projection-description">
-                      <div id="map-bonne-description">
-                        {parameter.map.type.bonne.description}
-                      </div>
-                      <div id="map-conformal_conic-description" style="display:none">
-                        {parameter.map.type.conformal_conic.description}
-                      </div>
-                      <div id="map-equal_earth-description" style="display:none">
-                        {parameter.map.type.equal_earth.description}
-                      </div>
+                    <div class="input-group">
+                      <select id="map-projection" class="form-control" onchange="updateProjectionDescription(this.value);">
+                        <option selected value="bonne" aria-description="{parameter.map.type.bonne.description}">{parameter.map.type.bonne}</option>
+                        <option value="conformal_conic" aria-description="{parameter.map.type.conformal_conic.description}">{parameter.map.type.conformal_conic}</option>
+                        <option value="equal_earth" aria-description="{parameter.map.type.equal_earth.description}">{parameter.map.type.equal_earth}</option>
+                      </select>
+                      <button type="button" class="info-icon" id="map-projection-description-icon" aria-label="{menu.description}" aria-description="{parameter.map.type.bonne.description}">🛈</button>
+                      <div class="tooltip" role="tooltip" id="map-projection-description">{parameter.map.type.bonne.description}</div>
                     </div>
                   </div>
                   <div class="form-group">
