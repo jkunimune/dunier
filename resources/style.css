@@ -640,20 +640,16 @@ button.close {
 }
 
 .tooltip {
-    display: none;
-    position: absolute;
+    opacity: 0;
+    position: fixed;
+    top: 100%;
+    left: 100%;
     width: 15rem;
     color: #fff;
     padding: .5rem;
     background-color: #212529;
     border-radius: .25rem;
     font-size: 0.875rem;
-    margin-top: 2.25rem;
-}
-.info-icon:hover + .tooltip,
-.info-icon:focus + .tooltip,
-.tooltip:hover {
-    display: block;
 }
 
 .fade {
