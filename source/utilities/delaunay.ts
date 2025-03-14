@@ -100,7 +100,10 @@ export function delaunayTriangulate(points: Vector[],
  * @return array of new Triangles
  */
 function removeNode(node: DelaunayNodo): DelaunayTriangle[] {
-	const oldTriangles: DelaunayTriangle[] = [[...node.triangles].filter((t: DelaunayTriangle) => t.children === null)[0]]; // starting with an arbitrary neighboring triangle
+	const allOldTriangles = [...node.triangles].filter((t: DelaunayTriangle) => t.children === null);
+	if (allOldTriangles.length === 0)
+		throw new Error("this triangle doesn't seem to be _in_ the network.  like… it makes my job easier but I don't think that should be possible.");
+	const oldTriangles: DelaunayTriangle[] = [allOldTriangles[0]]; // starting with an arbitrary neighboring triangle
 	while (true) { // trace the graph to find the surrounding triangles in widershins order
 		let prev = oldTriangles[oldTriangles.length - 1];
 		let med = clockwiseOf(node, prev);

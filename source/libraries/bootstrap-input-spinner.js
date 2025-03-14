@@ -42,7 +42,7 @@ function activateInputSpinner(inputGroup, options) {
         config[option] = options[option]
     }
 
-    var locale = navigator.language || "en-US"
+    var locale = "en-US" // spinners in some browsers only work with US-style numbers
 
     var autoDelayHandler = null
     var autoIntervalHandler = null
