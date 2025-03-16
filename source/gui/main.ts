@@ -454,11 +454,13 @@ for (const prefix of ['planet', 'terrain', 'history', 'map', 'factbook']) {
 				tab.setAttribute("aria-selected", "true");
 				tab.classList.add("active");
 				panel.classList.add("active");
+				panel.toggleAttribute("hidden", false);
 			}
 			else {
 				tab.setAttribute("aria-selected", "false");
 				tab.classList.remove("active");
 				panel.classList.remove("active");
+				panel.toggleAttribute("hidden", true);
 			}
 		}
 	});

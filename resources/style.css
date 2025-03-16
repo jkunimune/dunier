@@ -53,7 +53,6 @@ a {
     color: #007bff;
     text-decoration: none;
 }
-
 a:hover {
     color: #0056b3;
     text-decoration: underline;
@@ -72,21 +71,21 @@ button, input, select {
     margin: 0;
 }
 
+button:not(:disabled) {
+    cursor: pointer;
+}
+
 input {
     margin: 0;
     overflow: visible;
 }
-input:focus, select:focus {
+button:focus, input:focus, select:focus {
     border-color: #80bdff;
     outline: 0;
     box-shadow: 0 0 0 .2rem rgba(0,123,255,.25);
 }
 input:disabled {
     background-color: #e9ecef;
-}
-
-[type="button"]:not(:disabled) {
-    cursor: pointer;
 }
 
 input[type="checkbox"] {
@@ -322,13 +321,12 @@ iframe {
 
 .nav-tabs .nav-link {
     margin-bottom: -1px;
+    background-color: transparent;
     border: 1px solid transparent;
-    border-top-left-radius: 0.25rem;
-    border-top-right-radius: 0.25rem;
+    border-radius: 0.25rem 0.25rem 0 0;
 }
 .nav-tabs .nav-link.active {
     color: #495057;
-    background-color: #fff;
     border-color: #dee2e6 #dee2e6 #fff;
 }
 
@@ -592,6 +590,8 @@ a.btn.disabled {
 .card {
     border: 1px solid rgba(0,0,0,.125);
     border-radius: .25rem;
+    margin-bottom: 0.25rem;
+    margin-top: 0.5rem;
 }
 
 .card-header {
@@ -602,8 +602,13 @@ a.btn.disabled {
     border-bottom: 1px solid rgba(0,0,0,.125);
 }
 
+.card-header .btn {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
 .card-body {
-    padding: 1.25rem;
+    padding: 0.75rem 0.75rem 0;
 }
 
 .collapse:not(.show) {

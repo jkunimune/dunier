@@ -68,19 +68,19 @@
 
   <ul class="nav nav-tabs" role="tablist">
     <li class="nav-item">
-      <a class="nav-link" id="planet-tab" data-toggle="tab" href="#" role="tab" aria-controls="planet-panel" aria-selected="false">{parameter.planet}</a>
+      <button type="button" class="btn btn-link nav-link" id="planet-tab" data-toggle="tab" role="tab" aria-controls="planet-panel" aria-selected="false">{parameter.planet}</button>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="terrain-tab" data-toggle="tab" href="#" role="tab" aria-controls="terrain-panel" aria-selected="false">{parameter.terrain}</a>
+      <button type="button" class="btn btn-link nav-link" id="terrain-tab" data-toggle="tab" role="tab" aria-controls="terrain-panel" aria-selected="false">{parameter.terrain}</button>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="history-tab" data-toggle="tab" href="#" role="tab" aria-controls="history-panel" aria-selected="false">{parameter.history}</a>
+      <button type="button" class="btn btn-link nav-link" id="history-tab" data-toggle="tab" role="tab" aria-controls="history-panel" aria-selected="false">{parameter.history}</button>
     </li>
     <li class="nav-item">
-      <a class="nav-link active" id="map-tab" data-toggle="tab" href="#" role="tab" aria-controls="map-panel" aria-selected="false">{parameter.map}</a>
+      <button type="button" class="btn btn-link nav-link active" id="map-tab" data-toggle="tab" role="tab" aria-controls="map-panel" aria-selected="true">{parameter.map}</button>
     </li>
     <li class="nav-item">
-      <a class="nav-link" id="factbook-tab" data-toggle="tab" href="#" role="tab" aria-controls="factbook-panel" aria-selected="true">{parameter.factbook}</a>
+      <button type="button" class="btn btn-link nav-link" id="factbook-tab" data-toggle="tab" role="tab" aria-controls="factbook-panel" aria-selected="false">{parameter.factbook}</button>
     </li>
   </ul>
 
@@ -237,9 +237,9 @@
             <div class="card">
               <div class="card-header">
                 <h5 class="mb-0">
-                  <a href="#" id="map-projection-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
+                  <button type="button" id="map-projection-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
                     {parameter.map.projection}
-                  </a>
+                  </button>
                 </h5>
               </div>
               <div id="map-projection-collapse" class="collapse" aria-labelledby="map-projection-heading" data-parent="#accordion">
@@ -248,9 +248,9 @@
                     <label for="map-projection">{parameter.map.type}</label>
                     <div class="input-group">
                       <select id="map-projection" class="form-control" onchange="updateProjectionDescription(this.value);">
-                        <option selected value="bonne" aria-description="{parameter.map.type.bonne.description}">{parameter.map.type.bonne}</option>
-                        <option value="conformal_conic" aria-description="{parameter.map.type.conformal_conic.description}">{parameter.map.type.conformal_conic}</option>
-                        <option value="equal_earth" aria-description="{parameter.map.type.equal_earth.description}">{parameter.map.type.equal_earth}</option>
+                        <option selected value="bonne">{parameter.map.type.bonne}</option>
+                        <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
+                        <option value="equal_earth">{parameter.map.type.equal_earth}</option>
                       </select>
                       <button type="button" class="info-icon" id="map-projection-description-icon" aria-label="{menu.description}" aria-describedby="map-projection-description" onfocus="toggleTooltip('map-projection-description');" onblur="toggleTooltip('map-projection-description');" onmouseenter="toggleTooltip('map-projection-description');" onmouseleave="toggleTooltip('map-projection-description');">🛈</button>
                     </div>
@@ -284,9 +284,9 @@
             <div class="card">
               <div class="card-header">
                 <h5 class="mb-0">
-                  <a href="#" id="map-colors-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-colors-collapse">
+                  <button type="button" id="map-colors-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-colors-collapse">
                     {parameter.map.colors}
-                  </a>
+                  </button>
                 </h5>
               </div>
               <div id="map-colors-collapse" class="collapse" aria-labelledby="map-colors-heading" data-parent="#accordion">
@@ -330,9 +330,9 @@
             <div class="card">
               <div class="card-header">
                 <h5 class="mb-0">
-                  <a href="#" id="map-features-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-features-collapse">
+                  <button type="button" id="map-features-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-features-collapse">
                     {parameter.map.features}
-                  </a>
+                  </button>
                 </h5>
               </div>
               <div id="map-features-collapse" class="collapse" aria-labelledby="map-features-heading" data-parent="#accordion">
@@ -397,9 +397,9 @@
             <div class="card">
               <div class="card-header">
                 <h5 class="mb-0">
-                  <a href="#" id="map-formatting-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-formatting-collapse">
+                  <button type="button" id="map-formatting-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-formatting-collapse">
                     {parameter.map.formatting}
-                  </a>
+                  </button>
                 </h5>
               </div>
               <div id="map-formatting-collapse" class="collapse" aria-labelledby="map-formatting-heading" data-parent="#accordion">
