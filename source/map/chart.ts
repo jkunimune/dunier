@@ -21,9 +21,8 @@ import {ARABILITY, Biome} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
 	contains, convertPathClosuresToZ,
-	intersection,
+	intersection, rotatePath, scalePath,
 	transformInput,
-	transformOutput
 } from "./pathutilities.js";
 
 // DEBUG OPTIONS
@@ -34,15 +33,15 @@ const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological 
 const SHOW_BACKGROUND = false; // have a big red rectangle under the map
 
 // OTHER FIXED DISPLAY OPTIONS
-const GREEBLE_FACTOR = 1e-2; // the smallest edge lengths to show relative to the map size
+const GREEBLE_SCALE = 1; // the smallest edge lengths to show (mm)
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
-const RIVER_DISPLAY_FACTOR = 6e-2; // the watershed area relative to the map area needed to display a river
+const RIVER_DISPLAY_FACTOR = 6000; // the average scaled watershed area needed to display a river (mm²)
 const BORDER_SPECIFY_THRESHOLD = 0.51;
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const N_DEGREES = 6; // number of line segments into which to break one radian of arc
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
-const MAP_PRECISION = 5e-2;
+const MAP_PRECISION = 10; // max segment length in mm
 
 const EGGSHELL = '#FAF2E4';
 const LIGHT_GRAY = '#d4cdbf';
@@ -135,7 +134,7 @@ export class Chart {
 	private readonly geoEdges: PathSegment[];
 	private readonly mapEdges: PathSegment[];
 	public readonly dimensions: Dimensions;
-	/** the map scale in map-widths per km */
+	/** the map scale in mm/km */
 	public readonly scale: number;
 	private testText: SVGTextElement;
 	private testTextSize: number;
@@ -208,8 +207,14 @@ export class Chart {
 		else
 			throw new Error("bruh");
 
-		// calculate the map scale in map-widths per km
-		this.scale = 1/this.dimensions.diagonal;
+		// determine the appropriate scale to make this 630cm² TODO: use the user-requested area
+		this.scale = Math.sqrt(63000/this.dimensions.area);
+		this.dimensions = new Dimensions(
+			this.scale*this.dimensions.left,
+			this.scale*this.dimensions.right,
+			this.scale*this.dimensions.top,
+			this.scale*this.dimensions.bottom,
+		);
 
 		// set the geographic and Cartesian limits of the mapped area
 		if (λMax - λMin === 2*Math.PI && this.projection.wrapsAround())
@@ -236,7 +241,7 @@ export class Chart {
 	 * @param shading whether to add shaded relief
 	 * @param civLabels whether to label countries
 	 * @param geoLabels whether to label mountain ranges and seas
-	 * @param fontSize the size of city labels and minimum size of country and biome labels [pt]
+	 * @param fontSize the size of city labels and minimum size of country and biome labels (mm)
 	 * @param style the transliteration convention to use for them
 	 * @return the list of Civs that are shown in this map
 	 */
@@ -244,7 +249,7 @@ export class Chart {
 	       landColor: string, seaColor: string,
 		   rivers: boolean, borders: boolean, shading: boolean,
 		   civLabels: boolean, geoLabels: boolean,
-		   fontSize = 2, style: string = null): Civ[] {
+		   fontSize = 3, style: string = null): Civ[] {
 		const bbox = this.dimensions;
 		svg.setAttribute('viewBox',
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
@@ -260,12 +265,10 @@ export class Chart {
 		g.setAttribute('id', 'generated-map');
 		svg.appendChild(g);
 
-		this.testTextSize = Math.min(
-			(bbox.width)/18,
-			bbox.height);
+		this.testTextSize = 5; // mm
 		this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 		this.testText.setAttribute('class', 'map-label');
-		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`);
+		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`); // in SVG, using the unit 'px' causes the measurement to be interpreted as millimeters.
 		svg.appendChild(this.testText);
 
 		if (SHOW_BACKGROUND) {
@@ -389,7 +392,7 @@ export class Chart {
 
 		// add rivers
 		if (rivers) {
-			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR*this.dimensions.area;
+			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR/this.scale**2;
 			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
 				g, waterStroke, 1.4, Layer.GEO);
 		}
@@ -430,7 +433,7 @@ export class Chart {
 		if (civLabels) {
 			if (world === null)
 				throw new Error("this Chart was asked to label countries but the provided World was null");
-			for (const civ of world.getCivs()) // TODO: the hover text should go on this
+			for (const civ of world.getCivs())
 				if (civ.getPopulation() > 0)
 					this.label(
 						[...civ.tileTree.keys()].filter(n => !n.isWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
@@ -522,7 +525,7 @@ export class Chart {
 			for (const node of t.tiles) {
 				if (node instanceof EmptySpace)
 					continue triangleSearch;
-				const {x, y} = this.projection.projectPoint(node);
+				const {x, y} = this.projection.projectPoint(node); // TODO: account for map orientation so it's not always north that's lit
 				const z = Math.max(0, node.height);
 				p.push(new Vector(x, -y, z));
 			}
@@ -559,7 +562,7 @@ export class Chart {
 	 * @param tiles the Nodos that comprise the region to be labelled.
 	 * @param label the text to place.
 	 * @param svg the SVG object on which to write the label.
-	 * @param minFontSize the smallest the label can be. if the label cannot fit inside
+	 * @param minFontSize the smallest allowable font size, in mm. if the label cannot fit inside
 	 *                    the region with this font size, no label will be placed and it
 	 *                    will return null.
 	 */
@@ -567,11 +570,10 @@ export class Chart {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
 		this.testText.textContent = '..'+label+'..';
-		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
+		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the label's aspect ratio, measure the dimensions of some test text
 		this.testText.textContent = '';
-		const mapScale = svg.clientWidth/this.dimensions.width; // and also the current size of the map in px for reference
-		const aspect = boundBox.width/(this.testTextSize*mapScale);
-		minFontSize = minFontSize/mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
+		const lengthPerSize = boundBox.width/this.testTextSize;
+		const heightPerSize = boundBox.height/this.testTextSize;
 
 		const path = this.projectPath( // do the projection
 			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.scale),
@@ -700,7 +702,7 @@ export class Chart {
 		let minClearance = centers[argmax].r;
 		while (candidates.length < RALF_NUM_CANDIDATES && minClearance >= minFontSize) {
 			minClearance /= 1.4; // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
-			const minLength = minClearance*aspect;
+			const minLength = minClearance*lengthPerSize/heightPerSize;
 			const usedPoints = new Set<number>();
 			while (usedPoints.size < centers.length) {
 				const newEndpoint = longestShortestPath(
@@ -723,7 +725,7 @@ export class Chart {
 			return null;
 
 		let axisValue = -Infinity;
-		let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisH = null;
+		let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisFontSize = null;
 		for (const candidate of candidates) { // for each candidate label axis
 			if (candidate.length < 3) continue; // with at least three points
 			const {R, cx, cy} = circularRegression(candidate.map((i: number) => centers[i]));
@@ -739,8 +741,9 @@ export class Chart {
 				circularPoints.push({x: xp, y: yp});
 			}
 
+			// convert edges into wedge-shaped no-label zones
 			let xMin = -Math.PI*R, xMax = Math.PI*R; // TODO: move more of this into separate funccions
-			const wedges: {xL: number, xR: number, y: number}[] = []; // get wedges from edges
+			const wedges: {xL: number, xR: number, y: number}[] = [];
 			for (let i = 0; i < points.length; i ++) { // there's a wedge associated with each pair of points
 				const p0 = circularPoints[i];
 				const p1 = circularPoints[(i + 1) % circularPoints.length];
@@ -765,8 +768,8 @@ export class Chart {
 					}
 					else { // otherwise, add a floating wedge
 						wedges.push({
-							xL: Math.min(x0, x1) - y*aspect,
-							xR: Math.max(x0, x1) + y*aspect,
+							xL: Math.min(x0, x1) - y*lengthPerSize/heightPerSize,
+							xR: Math.max(x0, x1) + y*lengthPerSize/heightPerSize,
 							y: y,
 						});
 					}
@@ -776,20 +779,25 @@ export class Chart {
 				continue; // just skip them
 			wedges.sort((a: {y: number}, b: {y: number}) => b.y - a.y); // TODO it would be slightly more efficient if I can merge wedges that share a min vertex
 
-			let {location, halfHeight} = Chart.findOpenSpotOnArc(xMin, xMax, aspect, wedges);
+			let {location, halfHeight} = Chart.findOpenSpotOnArc(
+				xMin, xMax, lengthPerSize/heightPerSize, wedges);
 
+			const fontSize = Math.abs(2*halfHeight/heightPerSize);
+			if (fontSize < minFontSize)
+				continue; // also skip any candidates that are too small
 			const area = halfHeight*halfHeight, bendRatio = halfHeight/R, horizontality = -Math.sin(θ0);
 			if (horizontality < 0) // if it's going to be upside down
 				halfHeight *= -1; // flip it around
-			const value = Math.log(area) - bendRatio/(1 - bendRatio) + Math.pow(horizontality, 2); // choose the axis with the biggest area and smallest curvature
+			// choose the axis with the biggest area and smallest curvature
+			const value = Math.log(area) - bendRatio/(1 - bendRatio) + Math.pow(horizontality, 2);
 			if (value > axisValue) {
 				axisValue = value;
 				axisR = R;
 				axisCx = cx;
 				axisCy = cy;
-				axisΘL = θ0 + location/R - halfHeight*aspect/R;
-				axisΘR = θ0 + location/R + halfHeight*aspect/R;
-				axisH = 2*Math.abs(halfHeight); // TODO: enforce font size limit
+				axisΘL = θ0 + location/R - halfHeight*lengthPerSize/heightPerSize/R;
+				axisΘR = θ0 + location/R + halfHeight*lengthPerSize/heightPerSize/R;
+				axisFontSize = fontSize;
 			}
 		}
 		if (axisR === null) {
@@ -818,7 +826,7 @@ export class Chart {
 		arc.setAttribute('id', `labelArc${this.labelIndex}`);
 		// svg.appendChild(arc);
 		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
-		textGroup.setAttribute('style', `font-size: ${axisH}px`);
+		textGroup.setAttribute('style', `font-size: ${axisFontSize}px`);
 		svg.appendChild(textGroup);
 		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
 		textPath.setAttribute('class', 'map-label');
@@ -895,10 +903,10 @@ export class Chart {
 		const projected = applyProjectionToPath(
 			this.projection,
 			croppedToGeoRegion,
-			MAP_PRECISION*this.dimensions.diagonal,
+			MAP_PRECISION/this.scale,
 		);
 		const croppedToMapRegion = intersection(
-			transformOutput(this.orientation, projected),
+			scalePath(rotatePath(projected, this.orientation), this.scale),
 			this.mapEdges,
 			INFINITE_PLANE, closePath,
 		);
@@ -928,7 +936,7 @@ export class Chart {
 	static outline(tiles: Tile[] | Set<Tile>): ΦΛPoint[][] {
 		const tileSet = new Set(tiles);
 		const accountedFor = new Set(); // keep track of which Edge have been done
-		const output: ΦΛPoint[][] = []; // TODO: will this thro an error if I try to outline the entire surface?
+		const output: ΦΛPoint[][] = [];
 		for (let inTile of tileSet) { // look at every included tile
 			for (let outTile of inTile.neighbors.keys()) { // and every tile adjacent to an included one
 				if (tileSet.has(outTile))
@@ -1078,7 +1086,7 @@ export class Chart {
 	 * between them as appropriate.
 	 * @param points each Place[] is a polygonal path thru geographic space
 	 * @param greeble what kinds of connections these are for the purposes of greebling
-	 * @param scale the map scale at which to greeble in map-widths per km
+	 * @param scale the map scale at which to greeble in mm/km
 	 */
 	static convertToGreebledPath(points: Iterable<ΦΛPoint[]>, greeble: Layer, scale: number): PathSegment[] {
 		let path = [];
@@ -1099,7 +1107,7 @@ export class Chart {
 				let step: ΦΛPoint[];
 				// if there is an edge and it should be greebled, greeble it
 				if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
-					const path = edge.getPath(GREEBLE_FACTOR/scale);
+					const path = edge.getPath(GREEBLE_SCALE/scale);
 					if (edge.vertex0 === start)
 						step = path.slice(1);
 					else

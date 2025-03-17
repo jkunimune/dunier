@@ -515,8 +515,12 @@ DOM.elm('factbook-tab').addEventListener('click', () => {
  * When the download button is clicked, export and download the map as an SVG
  */
 DOM.elm('map-download-svg').addEventListener('click', () => {
+	const printscaleMap = DOM.elm('map-map').cloneNode(true) as SVGSVGElement;
+	const [, , width, height] = printscaleMap.getAttribute("viewBox").split(" ");
+	printscaleMap.setAttribute("width", `${width}mm`);
+	printscaleMap.setAttribute("height", `${height}mm`);
 	download(
-		convertSVGToBlob(DOM.elm('map-map') as SVGSVGElement),
+		convertSVGToBlob(printscaleMap),
 		format(null, "filename") + ".svg");
 });
 

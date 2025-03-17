@@ -12,12 +12,14 @@ import {binarySearch, cumulativeIntegral, linterp, localizeInRange} from "../uti
 
 
 /**
- * a class to manage the plotting of points from a Surface onto a plane.
+ * a class to manage the plotting of points from a Surface onto a true-scale plane.
  * this class generalizes all supported map projections to a lookup-table-based pseudoconic projection.
  * that is, the parallels will always be either parallel straight lines or concentric arcs, the prime meridian will
  * always be a straight vertical line, and scale along any given parallel will always be constant.  the equations
  * governing how parallels are spaced and how scale varies between parallels will be evaluated once when the projection
  * is instantiated and saved as lookup tables, from which they will thence be linearly interpolated.
+ * the map will have a scale of 1 along the standard parallel.  additional scaling must be applied if you want the
+ * map to have a reasonable physical size.
  */
 export class MapProjection {
 	public readonly surface: Surface;
