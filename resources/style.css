@@ -686,6 +686,7 @@ button.close {
     top: 100%;
     left: 100%;
     width: 15rem;
+    max-width: 100vw;
     color: #fff;
     padding: .5rem;
     background-color: #212529;

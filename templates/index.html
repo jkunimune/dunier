@@ -51,13 +51,24 @@
     const tooltip = document.getElementById(id);
     const tippedTool = document.getElementById(id + "-icon");
     if (tippedTool.matches(":hover") || tippedTool.matches(":focus") || (tooltip.style.opacity > 0 && tooltip.matches(":hover"))) {
+      // make it visible
       tooltip.style.opacity = "1";
+      tooltip.style.pointerEvents = "auto";
+      // locate it at the (i) icon
       const toolLocation = tippedTool.getBoundingClientRect();
       tooltip.style.top = `${(toolLocation.top + toolLocation.bottom)/2}px`;
       tooltip.style.left = `${toolLocation.right}px`;
+      // adjust its location to keep it from clipping off the right edge of the screen
+      const tooltipDimensions = tooltip.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      if (tooltipDimensions.right > screenWidth) {
+        tooltip.style.left = `${screenWidth - tooltipDimensions.width}px`;
+      }
     }
     else {
+      // make it invisible
       tooltip.style.opacity = "0";
+      tooltip.style.pointerEvents = "none";
     }
   }
 </script>
