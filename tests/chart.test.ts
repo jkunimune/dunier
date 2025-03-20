@@ -22,7 +22,8 @@ describe("all together", () => {
 	globe.populateWith(globe.randomlySubdivide(new Random(0)));
 	test("full world Equal Earth", () => {
 		const chart = new Chart(
-			"equal_earth", globe, globe.tiles, "north", true);
+			"equal_earth", globe, globe.tiles,
+			"north", true, 14.3861);
 		expect(chart.dimensions).toEqual(expect.objectContaining({
 			left: expect.closeTo(-2.7893, 1), right: expect.closeTo(2.7893, 1),
 			bottom: 0, top: expect.closeTo(-2.5788, 1),

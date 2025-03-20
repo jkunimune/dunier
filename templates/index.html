@@ -417,16 +417,20 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-width">{parameter.map.width}</label>
-                    {Build type="spinner" value="28" decimals="1" min="10" max="60" step="1" suffix="cm" id="map-width"}
+                    <label for="map-width-mm">{parameter.map.width}</label>
+                    {Build type="spinner" value="210" decimals="0" min="20" max="1200" step="10" suffix="mm" id="map-width-mm"}
                   </div>
                   <div class="form-group">
-                    <label for="map-height">{parameter.map.height}</label>
-                    {Build type="spinner" value="19" decimals="1" min="10" max="60" step="1" suffix="cm" id="map-height"}
+                    <label for="map-height-mm">{parameter.map.height}</label>
+                    {Build type="spinner" value="148" decimals="0" min="20" max="1200" step="10" suffix="mm" id="map-height-mm"}
                   </div>
                   <div class="form-group">
-                    <label for="map-resolution">{parameter.map.resolution}</label>
-                    {Build type="spinner" value="150" decimals="0" min="72" max="1200" step="50" suffix="DPI" id="map-resolution"}
+                    <label for="map-width-px">{parameter.map.width.px}</label>
+                    {Build type="spinner" value="1260" decimals="0" min="64" max="12000" step="50" suffix="px" id="map-width-px"}
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-px">{parameter.map.height.px}</label>
+                    {Build type="spinner" value="888" decimals="0" min="64" max="12000" step="50" suffix="px" id="map-height-px"}
                   </div>
                 </div>
               </div>

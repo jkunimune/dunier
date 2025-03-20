@@ -63,6 +63,8 @@ let surface: Surface = null;
 let continents: Set<Tile>[] = null;
 /** the human world on that planet */
 let world: World = null;
+/** the Chart representing the main map */
+let chart: Chart = null;
 /** the list of countries on the current map */
 let mappedCivs: Civ[] = null;
 /** the number of alerts that have been posted */
@@ -215,7 +217,7 @@ function applyTerrain(): void {
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
 		projection, surface, surface.tiles,
-		"north", false);
+		"north", false, 62500);
 	mapper.depict(surface,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
@@ -268,7 +270,7 @@ function applyHistory(): void {
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
 		projection, surface, surface.tiles,
-		"north", false);
+		"north", false, 62500);
 	mapper.depict(surface,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
@@ -322,6 +324,8 @@ function applyMap(): void {
 	const projectionName = surface.isFlat() ? "orthographic" : DOM.val('map-projection');
 	const orientation = DOM.val('map-orientation');
 	const rectangularBounds = (DOM.val('map-shape') === 'rectangle');
+	const width = Number.parseFloat(DOM.val('map-width-mm'));
+	const height = Number.parseFloat(DOM.val('map-height-mm'));
 	const focusSpecifier = DOM.val('map-jung');
 	let regionOfInterest: Iterable<Tile>;
 	if (focusSpecifier === "world")
@@ -333,9 +337,9 @@ function applyMap(): void {
 	else
 		throw new Error(`invalid focusSpecifier: '${focusSpecifier}'`);
 
-	const chart = new Chart(
+	chart = new Chart(
 		projectionName, surface, regionOfInterest,
-		orientation, rectangularBounds);
+		orientation, rectangularBounds, width*height);
 	mappedCivs = chart.depict(
 		surface,
 		world,
@@ -352,6 +356,10 @@ function applyMap(): void {
 			null :
 			DOM.val('map-spelling')
 	);
+
+	// adjust the height and width options to reflect the new aspect ratio
+	enforceAspectRatio("neither", "mm");
+	enforceAspectRatio("neither", "px");
 
 	console.log("fina!");
 	lastUpdated = Layer.MAP;
@@ -423,6 +431,30 @@ function postErrorAlert(message: string): void {
 		"    <span aria-hidden='true'>&times;</span>\n" +
 		"  </button>\n" +
 		"</div>";
+}
+
+
+/**
+ * when the map aspect ratio changes or one of the map size input spinners change,
+ * make sure they're all consistent.
+ */
+function enforceAspectRatio(fixed: string, unit: string) {
+	const aspectRatio = chart.dimensions.width/chart.dimensions.height;
+	const widthSpinner = DOM.elm(`map-width-${unit}`) as HTMLInputElement;
+	const heightSpinner = DOM.elm(`map-height-${unit}`) as HTMLInputElement;
+	if (fixed === "width") {
+		const width = Number.parseFloat(widthSpinner.value);
+		heightSpinner.value = (Math.round(width/aspectRatio)).toString();
+	}
+	else if (fixed === "height") {
+		const height = Number.parseFloat(heightSpinner.value);
+		widthSpinner.value = (Math.round(height*aspectRatio)).toString();
+	}
+	else {
+		const area = Number.parseFloat(widthSpinner.value)*Number.parseFloat(heightSpinner.value);
+		widthSpinner.value = (Math.round(Math.sqrt(area*aspectRatio))).toString();
+		heightSpinner.value = (Math.round(Math.sqrt(area/aspectRatio))).toString();
+	}
 }
 
 
@@ -530,6 +562,8 @@ DOM.elm('map-download-svg').addEventListener('click', () => {
 DOM.elm('map-download-png').addEventListener('click', () => {
 	convertSVGToPNGAndThenDownloadIt(
 		convertSVGToBlob(DOM.elm('map-map') as SVGSVGElement),
+		Number.parseInt(DOM.val('map-width-px')),
+		Number.parseInt(DOM.val('map-height-px')),
 		format(null, "filename") + ".png");
 });
 
@@ -540,6 +574,13 @@ DOM.elm('factbook-print').addEventListener('click', () => {
 	(DOM.elm('factbook-embed') as HTMLIFrameElement).contentWindow.print();
 });
 
+/**
+ * When one of the map size inputs change, change its counterpart to match
+ */
+DOM.elm('map-width-mm').addEventListener('change', () => enforceAspectRatio('width', 'mm'));
+DOM.elm('map-height-mm').addEventListener('change', () => enforceAspectRatio('height', 'mm'));
+DOM.elm('map-width-px').addEventListener('change', () => enforceAspectRatio('width', 'px'));
+DOM.elm('map-height-px').addEventListener('change', () => enforceAspectRatio('height', 'px'));
 
 /**
  * when the inputs change, forget what we know

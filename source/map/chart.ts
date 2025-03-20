@@ -148,10 +148,11 @@ export class Chart {
 	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
 	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
+	 * @param area the desired bounding box area in mm²
 	 */
 	constructor(
 		projectionName: string, surface: Surface, regionOfInterest: Iterable<Tile>,
-		orientationName: string, rectangularBounds: boolean,
+		orientationName: string, rectangularBounds: boolean, area: number,
 	) {
 		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
 		const southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
@@ -208,7 +209,7 @@ export class Chart {
 			throw new Error("bruh");
 
 		// determine the appropriate scale to make this 630cm² TODO: use the user-requested area
-		this.scale = Math.sqrt(63000/this.dimensions.area);
+		this.scale = Math.sqrt(area/this.dimensions.area);
 		this.dimensions = new Dimensions(
 			this.scale*this.dimensions.left,
 			this.scale*this.dimensions.right,
