@@ -131,8 +131,11 @@ enum Layer {
 export class Chart {
 	private readonly projection: MapProjection;
 	private readonly orientation: number;
+	/** maximum extent of the mapped region (radians) */
 	private readonly geoEdges: PathSegment[];
+	/** maximum extent of the unrotated and unscaled map area (km) */
 	private readonly mapEdges: PathSegment[];
+	/** maximum extent of the map, including margins (mm) */
 	public readonly dimensions: Dimensions;
 	/** the map scale in mm/km */
 	public readonly scale: number;
@@ -208,13 +211,21 @@ export class Chart {
 		else
 			throw new Error("bruh");
 
-		// determine the appropriate scale to make this 630cm² TODO: use the user-requested area
+		// determine the appropriate scale to make this have the correct area
 		this.scale = Math.sqrt(area/this.dimensions.area);
 		this.dimensions = new Dimensions(
 			this.scale*this.dimensions.left,
 			this.scale*this.dimensions.right,
 			this.scale*this.dimensions.top,
 			this.scale*this.dimensions.bottom,
+		);
+		// expand the Chart dimensions by half a millimeter on each side to give the edge some breathing room
+		const margin = Math.max(0.5, this.dimensions.diagonal/100);
+		this.dimensions = new Dimensions(
+			this.dimensions.left - margin,
+			this.dimensions.right + margin,
+			this.dimensions.top - margin,
+			this.dimensions.bottom + margin,
 		);
 
 		// set the geographic and Cartesian limits of the mapped area
@@ -227,7 +238,7 @@ export class Chart {
 			];
 		else
 			this.geoEdges = Chart.rectangle(φMax, λMax, φMin, λMin, true);
-		this.mapEdges = Chart.rectangle(this.dimensions.left, this.dimensions.top, this.dimensions.right, this.dimensions.bottom, false);
+		this.mapEdges = Chart.rectangle(xLeft, yTop, xRight, yBottom, false);
 	}
 
 	/**
@@ -907,11 +918,11 @@ export class Chart {
 			MAP_PRECISION/this.scale,
 		);
 		const croppedToMapRegion = intersection(
-			scalePath(rotatePath(projected, this.orientation), this.scale),
+			projected,
 			this.mapEdges,
 			INFINITE_PLANE, closePath,
 		);
-		return croppedToMapRegion;
+		return scalePath(rotatePath(croppedToMapRegion, this.orientation), this.scale);
 	}
 
 
