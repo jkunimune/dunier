@@ -43,12 +43,20 @@ const N_DEGREES = 6; // number of line segments into which to break one radian o
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 const MAP_PRECISION = 10; // max segment length in mm
 
+const WHITE = '#FFFFFF';
 const EGGSHELL = '#FAF2E4';
 const LIGHT_GRAY = '#d4cdbf';
-const DARK_GRAY = '#857f76';
+const DARK_GRAY = '#4c473f';
 const CHARCOAL = '#302d28';
+const BLACK = '#000000';
 const BLUE = '#5A7ECA';
-const AZURE = '#C6ECFF';
+const AZURE = '#cceeff';
+const YELLOW = '#fff9e2';
+// const BEIGE = '#E9CFAA';
+const CREAM = '#F9E7D0';
+const TAN = '#E9CFAA';
+const RUSSET = '#321000';
+const FUCHSIA = '#FF00FF';
 
 const BIOME_COLORS = new Map([
 	[Biome.LAKE,      '#5A7ECA'],
@@ -246,8 +254,7 @@ export class Chart {
 	 * @param surface the surface that we're mapping
 	 * @param world the world on that surface, if we're mapping human features
 	 * @param svg the SVG element on which to draw everything
-	 * @param landColor the color scheme for the land areas
-	 * @param seaColor the color scheme for the ocean areas
+	 * @param color the color scheme
 	 * @param rivers whether to add rivers
 	 * @param borders whether to add state borders
 	 * @param shading whether to add shaded relief
@@ -258,7 +265,7 @@ export class Chart {
 	 * @return the list of Civs that are shown in this map
 	 */
 	depict(surface: Surface, world: World | null, svg: SVGGElement,
-	       landColor: string, seaColor: string,
+	       color: string,
 		   rivers: boolean, borders: boolean, shading: boolean,
 		   civLabels: boolean, geoLabels: boolean,
 		   fontSize = 3, style: string = null): Civ[] {
@@ -294,63 +301,76 @@ export class Chart {
 		}
 
 		// decide what color the rivers will be
+		let landFill;
 		let waterFill;
 		let waterStroke;
+		let borderStroke;
 		if (COLOR_BY_PLATE) {
+			landFill = FUCHSIA;
 			waterFill = 'none';
 			waterStroke = CHARCOAL;
+			borderStroke = CHARCOAL;
 		}
-		else if (seaColor === 'white') {
-			waterFill = EGGSHELL;
+		else if (color === 'white') {
+			landFill = WHITE;
+			waterFill = WHITE;
 			waterStroke = CHARCOAL;
+			borderStroke = CHARCOAL;
 		}
-		else if (seaColor === 'gray') {
-			waterFill = DARK_GRAY;
+		else if (color === 'gray') {
+			landFill = EGGSHELL;
+			waterFill = LIGHT_GRAY;
 			waterStroke = DARK_GRAY;
+			borderStroke = CHARCOAL;
 		}
-		else if (seaColor === 'black') {
+		else if (color === 'black') {
+			landFill = EGGSHELL;
 			waterFill = CHARCOAL;
 			waterStroke = CHARCOAL;
+			borderStroke = BLACK;
 		}
-		else if (seaColor === 'blue') {
-			waterFill = BLUE;
-			waterStroke = BLUE;
+		else if (color === 'sepia') {
+			landFill = CREAM;
+			waterFill = TAN;
+			waterStroke = RUSSET;
+			borderStroke = RUSSET;
 		}
-		else if (seaColor === 'azure') {
+		else if (color === 'wikipedia') {
+			landFill = YELLOW;
 			waterFill = AZURE;
 			waterStroke = BLUE;
+			borderStroke = DARK_GRAY;
 		}
-		else if (seaColor === 'heightmap') { // color the sea by altitude
-			for (let i = 0; i < DEPTH_COLORS.length; i++) {
-				const min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
-				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
-				this.fill(
-					filterSet(surface.tiles, n => n.biome === Biome.OCEAN && -n.height >= min && -n.height < max),
-					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
-			}
-			waterFill = 'none';
+		else if (color === 'political') {
+			landFill = EGGSHELL;
+			waterFill = AZURE;
+			waterStroke = BLUE;
+			borderStroke = DARK_GRAY;
+		}
+		else if (color === 'physical') {
+			landFill = FUCHSIA;
+			waterFill = BLUE;
+			waterStroke = BLUE;
+			borderStroke = CHARCOAL;
+		}
+		else if (color === 'heightmap') {
+			landFill = FUCHSIA;
+			waterFill = FUCHSIA;
 			waterStroke = DEPTH_COLORS[0];
+			borderStroke = CHARCOAL;
 		}
 
 		// color in the land
 		if (COLOR_BY_PLATE) {
+			// color the land (and the sea (don't worry, we'll still trace coastlines later)) by plate index
 			for (let i = 0; i < 14; i ++) {
 				this.fill(
 					filterSet(surface.tiles, n => n.plateIndex === i),
 					g, COUNTRY_COLORS[i], Layer.GEO);
 			}
 		}
-		else if (landColor === 'white') {
-			this.fill(
-				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
-				g, EGGSHELL, Layer.BIO);
-		}
-		else if (landColor === 'gray') {
-			this.fill(
-				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
-				g, LIGHT_GRAY, Layer.BIO);
-		}
-		else if (landColor === 'physical') { // draw the biomes
+		else if (color === 'physical') {
+			// color the land by biome
 			for (const biome of BIOME_COLORS.keys()) {
 				if (biome === Biome.LAKE)
 					this.fill(
@@ -362,7 +382,8 @@ export class Chart {
 						g, BIOME_COLORS.get(biome), Layer.BIO);
 			}
 		}
-		else if (landColor === 'political') { // draw the countries
+		else if (color === 'political') {
+			// color the land by country
 			if (world === null)
 				throw new Error("this Chart was asked to color land politicly but the provided World was null");
 			this.fill(
@@ -392,7 +413,8 @@ export class Chart {
 					numFilledCivs ++;
 			}
 		}
-		else if (landColor === 'heightmap') { // color the sea by altitude
+		else if (color === 'heightmap') {
+			// color the land by altitude
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : -Infinity;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Infinity;
@@ -400,6 +422,12 @@ export class Chart {
 					filterSet(surface.tiles, n => n.biome !== Biome.OCEAN && n.height >= min && n.height < max),
 					g, ALTITUDE_COLORS[i], Layer.GEO);
 			}
+		}
+		else {
+			// color in the land with a uniform color
+			this.fill(
+				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
+				g, landFill, Layer.BIO);
 		}
 
 		// add rivers
@@ -410,9 +438,22 @@ export class Chart {
 		}
 
 		// color in the sea
-		this.fill(
-			filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
-			g, waterFill, Layer.GEO, waterStroke, 0.7);
+		if (color === 'heightmap') {
+			// color in the sea by altitude
+			for (let i = 0; i < DEPTH_COLORS.length; i++) {
+				const min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
+				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
+				this.fill(
+					filterSet(surface.tiles, n => n.biome === Biome.OCEAN && -n.height >= min && -n.height < max),
+					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
+			}
+		}
+		else {
+			// color in the sea with a uniform color
+			this.fill(
+				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
+				g, waterFill, Layer.GEO, waterStroke, 0.7);
+		}
 
 		// add borders with hovertext
 		if (borders) {
@@ -431,7 +472,7 @@ export class Chart {
 					this.fill(
 						filterSet(civ.tileTree.keys(), n => n.biome !== Biome.OCEAN),
 						titledG,
-						'none', Layer.KULTUR, CHARCOAL, 0.7).setAttribute('pointer-events', 'all');
+						'none', Layer.KULTUR, borderStroke, 0.7).setAttribute('pointer-events', 'all');
 				// }
 			}
 		}
