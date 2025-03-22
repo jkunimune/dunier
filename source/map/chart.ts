@@ -55,7 +55,7 @@ const YELLOW = '#fff9e2';
 // const BEIGE = '#E9CFAA';
 const CREAM = '#F9E7D0';
 const TAN = '#E9CFAA';
-const RUSSET = '#321000';
+const RUSSET = '#361907';
 const FUCHSIA = '#FF00FF';
 
 const BIOME_COLORS = new Map([
@@ -451,8 +451,8 @@ export class Chart {
 		else {
 			// color in the sea with a uniform color
 			this.fill(
-				filterSet(surface.tiles, n => n.biome === Biome.OCEAN),
-				g, waterFill, Layer.GEO, waterStroke, 0.7);
+				filterSet(surface.tiles, n => n.isWater()),
+				g, waterFill, Layer.GEO);
 		}
 
 		// add borders with hovertext
@@ -476,6 +476,11 @@ export class Chart {
 				// }
 			}
 		}
+
+		// trace the coasts
+		this.fill(
+			filterSet(surface.tiles, n => n.isWater()),
+			g, 'none', Layer.GEO, waterStroke, 0.7);
 
 		// add relief shadows
 		if (shading) {
