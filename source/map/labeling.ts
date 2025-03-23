@@ -7,7 +7,7 @@ import {arcCenter, Vector} from "../utilities/geometry.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {contains} from "./pathutilities.js";
 import {INFINITE_PLANE} from "../surface/surface.js";
-import {longestShortestPath, pathToString, Side} from "../utilities/miscellaneus.js";
+import {localizeInRange, longestShortestPath, pathToString, Side} from "../utilities/miscellaneus.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 
@@ -63,6 +63,7 @@ interface Circumcenter {
  * @param aspectRatio the ratio of the length of the text to be written to its height
  * @param minHeight the text height below which you shouldn't bother placing a label
  * @return the label location defined by the arc start point, the PathSegment describing its curvature and endpoint, and the allowable height of the label
+ * @throws Error if it can't find any adequate place for this label
  */
 export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, minHeight: number): {start: XYPoint, arc: PathSegment, height: number} {
 	path = resamplePath(path);
@@ -108,7 +109,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 		throw new Error("no acceptable label candidates were found");
 
 	let axisValue = -Infinity;
-	let axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisHeight = null;
+	let bestAxis: {start: XYPoint, arc: PathSegment, height: number} = null;
 	for (const candidate of candidates) { // for each candidate label axis
 		if (candidate.length < 3) continue; // with at least three points
 		const {R, cx, cy} = circularRegression(candidate.map((i: number) => centers[i]));
@@ -117,7 +118,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 		// convert path segments into wedge-shaped no-label zones
 		const θ0 = Math.atan2(midpoint.y - cy, midpoint.x - cx);
 		const {xMin, xMax, wedges} = mapPointsToArcCoordinates(R, cx, cy, θ0, path, aspectRatio);
-		if (xMin > xMax) // occasionally we get these really terrible candidates
+		if (xMin > xMax) // occasionally we get these really terrible candidates TODO I think this means I did something rong.
 			continue; // just skip them
 		wedges.sort((a: { y: number }, b: { y: number }) => b.y - a.y); // TODO it would be slightly more efficient if I can merge wedges that share a min vertex
 
@@ -126,35 +127,32 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 
 		if (2*halfHeight < minHeight)
 			continue; // also skip any candidates that are too small
+
+		const θC = θ0 + location/R;
 		const area = halfHeight*halfHeight, bendRatio = halfHeight/R, horizontality = -Math.sin(θ0);
 		if (horizontality < 0) // if it's going to be upside down
 			halfHeight *= -1; // flip it around
 		// choose the axis with the biggest area and smallest curvature
 		const value = Math.log(area) - bendRatio/(1 - bendRatio) + Math.pow(horizontality, 2);
 		if (value > axisValue) {
-			axisValue = value; // TODO it's a pain to set all these variables.  it would be better to consolidate them into a returnable form here so you only need to store three variables
-			axisR = R;
-			axisCx = cx;
-			axisCy = cy;
-			axisΘL = θ0 + location/R - halfHeight*aspectRatio/R;
-			axisΘR = θ0 + location/R + halfHeight*aspectRatio/R;
-			axisHeight = 2*halfHeight;
+			axisValue = value;
+			const θL = θC - halfHeight*aspectRatio/R;
+			const θR = θC + halfHeight*aspectRatio/R;
+			bestAxis = {
+				start: {x: cx + R*Math.cos(θL), y: cy + R*Math.sin(θL)},
+				arc: {type: 'A', args: [
+						R, R, 0,
+						(Math.abs(θR - θL) < Math.PI) ? 0 : 1,
+						(θR < θL) ? 0 : 1,
+						cx + R*Math.cos(θR), cy + R*Math.sin(θR)
+					]},
+				height: 2*halfHeight,
+			};
 		}
 	}
-	if (axisR === null) {
+	if (bestAxis === null)
 		throw new Error(`all ${candidates.length} candidates were somehow incredible garbage`);
-	}
-
-	return {
-		start: {x: axisCx + axisR*Math.cos(axisΘL), y: -(axisCy + axisR*Math.sin(axisΘL))}, // don't forget to reverse the sign back
-		arc: {type: 'A', args: [
-				axisR, axisR, 0,
-				(Math.abs(axisΘR - axisΘL) < Math.PI) ? 0 : 1,
-				(axisΘR > axisΘL) ? 0 : 1,
-				axisCx + axisR*Math.cos(axisΘR), -(axisCy + axisR*Math.sin(axisΘR))
-		]},
-		height: axisHeight,
-	};
+	return bestAxis;
 }
 
 
@@ -229,7 +227,7 @@ function estimateSkeleton(path: PathSegment[]) { // TODO why not calculate the e
 	for (const segment of path) {
 		if (segment.type === 'L') {
 			const {x, y} = assert_xy(endpoint(segment));
-			points.push(new Vector(x, -y, 0)); // note the minus sign: all calculations will be done with a sensibly oriented y axis TODO it would be better to be consistent
+			points.push(new Vector(x, y, 0));
 		}
 	}
 	const triangulation = delaunayTriangulate(points); // start with a Delaunay triangulation of the border
@@ -247,7 +245,7 @@ function estimateSkeleton(path: PathSegment[]) { // TODO why not calculate the e
 		});
 		centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
 		centers[i].isContained = contains( // build a graph out of the contained centers
-			path, {s: centers[i].x, t: -centers[i].y}, INFINITE_PLANE,
+			path, {s: centers[i].x, t: centers[i].y}, INFINITE_PLANE,
 		) !== Side.OUT; // (we're counting "borderline" as in)
 		if (centers[i].isContained) {
 			for (let j = 0; j < i; j++) {
@@ -300,54 +298,48 @@ function estimateSkeleton(path: PathSegment[]) { // TODO why not calculate the e
 function mapPointsToArcCoordinates(
 	R: number, cx: number, cy: number, θ0: number, path: PathSegment[], aspectRatio: number
 ): {xMin: number, xMax: number, wedges: Wedge[]} {
-	const cartesianPoints: XYPoint[] = [];
+	const polarPath: PathSegment[] = []; // get polygon segments in circular coordinates
 	for (const segment of path) {
-		if (segment.type === 'L') {
-			const {x, y} = assert_xy(endpoint(segment));
-			cartesianPoints.push({x: x, y: -y}); // note the minus sign: all calculations will be done with a sensibly oriented y axis
-		}
-	}
-
-	const circularPoints: XYPoint[] = []; // get polygon segments in circular coordinates
-	for (let i = 0; i < cartesianPoints.length; i++) {
-		const {x, y} = cartesianPoints[i];
-		const θ = (Math.atan2(y - cy, x - cx) - θ0 + 3*Math.PI)%(2*Math.PI) - Math.PI;
+		const [x, y] = segment.args;
+		const θ = localizeInRange(Math.atan2(y - cy, x - cx) - θ0, -Math.PI, Math.PI);
 		const r = Math.hypot(x - cx, y - cy);
 		const xp = R*θ, yp = R - r;
-		circularPoints.push({x: xp, y: yp});
+		polarPath.push({type: segment.type, args: [xp, yp]});
 	}
 
 	let xMin = -Math.PI*R, xMax = Math.PI*R;
 	const wedges: Wedge[] = [];
-	for (let i = 0; i < circularPoints.length; i++) { // there's a wedge associated with each pair of points
-		const p0 = circularPoints[i];
-		const p1 = circularPoints[(i + 1)%circularPoints.length];
-		const height = (p0.y < 0 === p1.y < 0) ? Math.min(Math.abs(p0.y), Math.abs(p1.y)) : 0;
-		const interpretations = [];
-		if (Math.abs(p1.x - p0.x) < Math.PI*R) {
-			interpretations.push([p0.x, p1.x, height]); // well, usually there's just one
-		}
-		else {
-			interpretations.push([p0.x, p1.x + 2*Math.PI*R*Math.sign(p0.x), height]); // but sometimes there's clipping on the periodic boundary condition...
-			interpretations.push([p0.x + 2*Math.PI*R*Math.sign(p1.x), p1.x, height]); // so you have to try wrapping p0 over to p1, and also p1 over to p0
-		}
-
-		for (const [x0, x1, y] of interpretations) {
-			if (height === 0) { // if this crosses the baseline, adjust the total bounds TODO wouldn't it be simpler to simply put a Wedge there with y=0?
-				if (x0 < 0 || x1 < 0)
-					if (Math.max(x0, x1) > xMin)
-						xMin = Math.max(x0, x1);
-				if (x0 > 0 || x1 > 0)
-					if (Math.min(x0, x1) < xMax)
-						xMax = Math.min(x0, x1);
+	for (let i = 1; i < polarPath.length; i ++) { // there's a wedge associated with each pair of points
+		if (polarPath[i].type === 'L') {
+			const p0 = assert_xy(endpoint(polarPath[i - 1]));
+			const p1 = assert_xy(endpoint(polarPath[i]));
+			const height = (p0.y < 0 === p1.y < 0) ? Math.min(Math.abs(p0.y), Math.abs(p1.y)) : 0;
+			const interpretations = [];
+			if (Math.abs(p1.x - p0.x) < Math.PI*R) {
+				interpretations.push([p0.x, p1.x, height]); // well, usually there's just one
 			}
-			else { // otherwise, add a floating wedge
-				wedges.push({
-					xL: Math.min(x0, x1) - y*aspectRatio,
-					xR: Math.max(x0, x1) + y*aspectRatio,
-					y: y,
-					slope: 1/aspectRatio,
-				});
+			else {
+				interpretations.push([p0.x, p1.x + 2*Math.PI*R*Math.sign(p0.x), height]); // but sometimes there's clipping on the periodic boundary condition...
+				interpretations.push([p0.x + 2*Math.PI*R*Math.sign(p1.x), p1.x, height]); // so you have to try wrapping p0 over to p1, and also p1 over to p0
+			}
+
+			for (const [x0, x1, y] of interpretations) {
+				if (height === 0) { // if this crosses the baseline, adjust the total bounds TODO wouldn't it be simpler to simply put a Wedge there with y=0?
+					if (x0 < 0 || x1 < 0)
+						if (Math.max(x0, x1) > xMin)
+							xMin = Math.max(x0, x1);
+					if (x0 > 0 || x1 > 0)
+						if (Math.min(x0, x1) < xMax)
+							xMax = Math.min(x0, x1);
+				}
+				else { // otherwise, add a floating wedge
+					wedges.push({
+						xL: Math.min(x0, x1) - y*aspectRatio,
+						xR: Math.max(x0, x1) + y*aspectRatio,
+						y: y,
+						slope: 1/aspectRatio,
+					});
+				}
 			}
 		}
 	}
