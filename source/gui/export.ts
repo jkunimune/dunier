@@ -31,7 +31,7 @@ export function convertSVGToPNGAndThenDownloadIt(svg: Blob, width: number, heigh
 		canvas.toBlob(function (pngBlob) {
 			download(pngBlob, filename);
 		});
-	}
+	};
 }
 
 /**
