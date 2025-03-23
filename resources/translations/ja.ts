@@ -5,7 +5,7 @@ export default {
 	"about.credits.head": "クレジット",
 	"about.lead.body": "<p>dunier（ドゥニアー）は作家やゲームマスターや言語を作る人の創作を振るれる迫真な世界を作り上げるのを手伝うツールだ。擬似乱数列の初期値と他の色々なパラメタを入って、それから世界地図と年表とすべての国と言語のインフォがあるページが出る。算譜はすべてのワールドビルジンぐの喜びの創造的な工程に取って代われないけど、dunierは何人か出来ないまたはしたくないことを営める。</p> <p>dunierは<a href=\\\"https://azgaar.github.io/Fantasy-Map-Generator\\\">アズガアルさんの物</a>とか前のファンタジーマップ生成器がきっかけを与えたが、dunierは写実を強める。dunierは他のものほど対話的ではなくて鉱山の位置とか外交関係とか小さい詳細を作らないけど。でも、惑星曲率とかプレートテクトニクスとか言語変化とか巨視的な特徴を汲む。</p><p>dunierのソースコードは<a href=\\\"https://github.com/jkunimune/dunier\\\">github.com/jkunimune/dunier</a>で提供された。</p>",
 	"about.lead.head": "dunierについて",
-	"about.license.body": "<p>dunierのことは<a href=\"https://creativecommons.org/publicdomain/zero/1.0/en\">CC0 1.0</a>一般ライセンスでパブリックドメインに提供される。コピーし、変更し、共有しても、業務用でも、いつもよろしい。dunierを使いながら作った地図の場合は法律上の詳細をよく知らない。しかしあなたの知的財産のように扱っても私が構わないから、好きにしてください。</p>",
+	"about.license.body": "<p>dunierのことは<a href=\"https://creativecommons.org/publicdomain/zero/1.0/en\">CC0 1.0</a>一般ライセンスでパブリックドメインに提供される。dunierを使いながら作った地図は真実にプログラムが著作したもので、著作権を有する人間がいなくて、パブリックドメインにある。だから、ソースも地図もコピーし、変更し、共有しても、業務用でも、いつもよろしい。</p>",
 	"about.license.head": "ライセンス",
 	"error.planet_too_fast": "惑星は回転速度が過ぎて、破裂してしまいました。日間を永くしてください。",
 	"error.planet_too_slow": "惑星は薄すぎて、壊れてしまいました。日間を短くしてください。",
