@@ -27,6 +27,7 @@ const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than categorical colors
+const SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
 const SHOW_BACKGROUND = false; // have a big red rectangle under the map
 
 // OTHER FIXED DISPLAY OPTIONS
@@ -611,10 +612,9 @@ export class Chart {
 	 * @param label the text to place.
 	 * @param svg the SVG object on which to write the label.
 	 * @param minFontSize the smallest allowable font size, in mm. if the label cannot fit inside
-	 *                    the region with this font size, no label will be placed and it
-	 *                    will return null.
+	 *                    the region with this font size, no label will be placed.
 	 */
-	label(tiles: Tile[], label: string, svg: SVGElement, minFontSize: number): SVGTextElement {
+	label(tiles: Tile[], label: string, svg: SVGElement, minFontSize: number) {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
 		this.testText.textContent = '..'+label+'..';
@@ -628,7 +628,7 @@ export class Chart {
 			true
 		);
 		if (path.length === 0)
-			return null;
+			return;
 
 		// choose the best location for the text
 		let location;
@@ -637,7 +637,7 @@ export class Chart {
 				path, lengthPerSize/heightPerSize, minFontSize*heightPerSize);
 		} catch (e) {
 			console.error(e);
-			return null;
+			return;
 		}
 
 		// const axos = [];
@@ -647,24 +647,26 @@ export class Chart {
 		// const drawing = this.draw(axos, svg);
 		// drawing.setAttribute('style', 'stroke-width:.5px; fill:none; stroke:#004;');
 
-		const arc = this.draw([{type: 'M', args: [location.start.x, location.start.y]}, location.arc], svg); // make the arc in the SVG
+		const arc = this.draw(location.arc, svg); // make the arc in the SVG
 		// arc.setAttribute('style', `fill: none; stroke: #400; stroke-width: .5px;`);
-		arc.setAttribute('style', `fill: none; stroke: none;`);
-		arc.setAttribute('id', `labelArc${this.labelIndex}`);
-		// svg.appendChild(arc);
-		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
-		textGroup.setAttribute('style', `font-size: ${location.height/heightPerSize}px`);
-		svg.appendChild(textGroup);
-		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
-		textPath.setAttribute('class', 'map-label');
-		textPath.setAttribute('startOffset', '50%');
-		textPath.setAttribute('href', `#labelArc${this.labelIndex}`);
-		textGroup.appendChild(textPath);
-		textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
+		if (SHOW_LABEL_PATHS) {
+			arc.setAttribute('style', 'fill: none; stroke: #770000;');
+		}
+		else {
+			arc.setAttribute('style', 'fill: none; stroke: none;');
+			arc.setAttribute('id', `labelArc${this.labelIndex}`);
+			const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
+			textGroup.setAttribute('style', `font-size: ${location.height/heightPerSize}px`);
+			svg.appendChild(textGroup);
+			const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
+			textPath.setAttribute('class', 'map-label');
+			textPath.setAttribute('startOffset', '50%');
+			textPath.setAttribute('href', `#labelArc${this.labelIndex}`);
+			textGroup.appendChild(textPath);
+			textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
+		}
 
 		this.labelIndex += 1;
-
-		return textGroup;
 	}
 
 	/**

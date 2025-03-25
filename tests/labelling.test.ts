@@ -15,15 +15,19 @@ describe("chooseLabelLocation", () => {
 	];
 	test("width-limited", () => {
 		expect(chooseLabelLocation(shape, 10, 0.1)).toEqual({
-			start: {x: -0.5, y: 0.866},
-			arc: {type: 'A', args: [1.0, 1.0, 0, 0, 0, 0.50, 0.866]},
+			arc: [
+				{type: 'M', args: [ -0.5, 0.866]},
+				{type: 'A', args: [1.0, 1.0, 0, 0, 0, 0.50, 0.866]},
+			],
 			height: Math.PI/30,
 		});
 	});
 	test("height-limited", () => {
 		expect(chooseLabelLocation(shape, 1, 0.1)).toEqual({
-			start: {x: Math.sin(-0.1), y: Math.cos(-0.1)},
-			arc: {type: 'A', args: [1.0, 1.0, 0, 0, 0, Math.sin(0.1), Math.cos(0.1)]},
+			arc: [
+				{type: 'M', args: [Math.sin(-0.1), Math.cos(-0.1)]},
+				{type: 'A', args: [1.0, 1.0, 0, 0, 0, Math.sin(0.1), Math.cos(0.1)]},
+			],
 			height: 0.2,
 		});
 	});

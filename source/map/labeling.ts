@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {assert_xy, endpoint, PathSegment, XYPoint} from "../utilities/coordinates.js";
+import {assert_xy, endpoint, PathSegment} from "../utilities/coordinates.js";
 import {arcCenter, Vector} from "../utilities/geometry.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {contains} from "./pathutilities.js";
@@ -15,6 +15,8 @@ import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
 const ARC_SEGMENTATION = 6; // number of line segments into which to break one radian of arc
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
+
+const DEBUG_MODE = false; // return skeletons instead of usable arcs
 
 
 /**
@@ -60,10 +62,10 @@ interface Circumcenter {
  * @param path the shape into which the label must fit
  * @param aspectRatio the ratio of the length of the text to be written to its height
  * @param minHeight the text height below which you shouldn't bother placing a label
- * @return the label location defined by the arc start point, the PathSegment describing its curvature and endpoint, and the allowable height of the label
+ * @return the label location defined as an SVG path, and the allowable height of the label
  * @throws Error if it can't find any adequate place for this label
  */
-export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, minHeight: number): {start: XYPoint, arc: PathSegment, height: number} {
+export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, minHeight: number): {arc: PathSegment[], height: number} {
 	path = resamplePath(path);
 
 	// estimate the topological skeleton
@@ -107,7 +109,8 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 		throw new Error("no acceptable label candidates were found");
 
 	let axisValue = -Infinity;
-	let bestAxis: {start: XYPoint, arc: PathSegment, height: number} = null;
+	let bestAxis: PathSegment[] = null;
+	let bestHeight = -Infinity;
 	for (const candidate of candidates) { // for each candidate label axis
 		if (candidate.length < 3) continue; // with at least three points
 		const {R, cx, cy} = circularRegression(candidate.map((i: number) => centers[i]));
@@ -136,21 +139,33 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 			axisValue = value;
 			const θL = θC - halfWidth/R;
 			const θR = θC + halfWidth/R;
-			bestAxis = {
-				start: {x: cx + R*Math.cos(θL), y: cy + R*Math.sin(θL)},
-				arc: {type: 'A', args: [
+			bestAxis = [
+				{type: 'M', args: [
+						cx + R*Math.cos(θL), cy + R*Math.sin(θL)
+					]},
+				{type: 'A', args: [
 						R, R, 0,
 						(Math.abs(θR - θL) < Math.PI) ? 0 : 1,
 						(θR < θL) ? 0 : 1,
 						cx + R*Math.cos(θR), cy + R*Math.sin(θR)
 					]},
-				height: height,
-			};
+			];
+			bestHeight = height;
 		}
 	}
 	if (bestAxis === null)
 		throw new Error(`all ${candidates.length} candidates were somehow incredible garbage`);
-	return bestAxis;
+	if (!DEBUG_MODE)
+		return {arc: bestAxis, height: bestHeight};
+	else {
+		// in debug mode, return the skeleton itself as a path so that it can be displayed on the other side
+		const skeleton: PathSegment[] = [];
+		for (let i = 0; i < centers.length; i ++)
+			for (let j = 0; j < i; j ++)
+				if (centers[i].edges[j] !== null)
+					skeleton.push({type: 'M', args: [centers[i].x, centers[i].y]}, {type: 'L', args: [centers[j].x, centers[j].y]});
+		return {arc: skeleton, height: 0};
+	}
 }
 
 
@@ -216,9 +231,9 @@ export function resamplePath(path: PathSegment[]): PathSegment[] {
 				const midpoints: PathSegment[] = [];
 				for (let i = 1; i < numSubdivisions; i ++)
 					midpoints.push({type: 'L', args: [
-						start.s + (end.s - start.s)*i/numSubdivisions,
-						start.t + (end.t - start.t)*i/numSubdivisions,
-					]});
+							start.s + (end.s - start.s)*i/numSubdivisions,
+							start.t + (end.t - start.t)*i/numSubdivisions,
+						]});
 				path.splice(i + 1, 0, ...midpoints);
 			}
 		}
