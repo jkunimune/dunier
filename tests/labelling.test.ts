@@ -80,11 +80,16 @@ describe("resamplePath", () => {
 	});
 	test("myriagon", () => {
 		const shape = [];
-		for (let i = 0; i <= 144; i ++)
-			shape.push({type: (i === 0) ? 'M' : 'L', args: [Math.sin(Math.PI*i/72), Math.cos(Math.PI*i/72)]});
-		// it should simply remove half the vertices (ideally every other, but this algorithm isn't that smart)
+		for (let i = 0; i <= 108; i ++)
+			shape.push({type: (i === 0) ? 'M' : 'L', args: [Math.sin(Math.PI*i/54), Math.cos(Math.PI*i/54)]});
+		// it should simply remove every other vertex
 		const resampledShape = resamplePath(shape);
-		expect(resampledShape.length).toEqual(73);
+		expect(resampledShape.length).toEqual(55);
+		for (let i = 0; i <= 54; i ++)
+			expect(endpoint(resampledShape[i])).toEqual({
+				s: expect.closeTo(Math.sin(Math.PI*i/27)),
+				t: expect.closeTo(Math.cos(Math.PI*i/27)),
+			});
 	});
 });
 

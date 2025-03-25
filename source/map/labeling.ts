@@ -95,7 +95,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 				minClearance).points[0]; // find the point farthest from the paths you have checked TODO expand on this argmax thing to make sure check every exclave fore we start reducing the minimum
 			if (usedPoints.has(newEndpoint)) break;
 			const newShortestPath = longestShortestPath(
-				centers, new Set([newEndpoint]), minClearance); // find a new diverse longest shortest path with that as endpoin
+				centers, new Set([newEndpoint]), minClearance); // find a new diverse longest shortest path with that as endpoint
 			if (newShortestPath.length >= minLength) { // if the label will fit,
 				candidates.push(newShortestPath.points); // take it
 				for (const point of newShortestPath.points)
@@ -199,26 +199,36 @@ export function resamplePath(path: PathSegment[]): PathSegment[] {
 		}
 	}
 
-	while (path.length > SIMPLE_PATH_LENGTH + 1) { // simplify path
-		let shortI = -1, minL = Infinity; // TODO: this is n^2... there's probably a better way
-		for (let i = 1; i < path.length-1; i ++) {
-			if (path[i].type === 'L' && path[i+1].type === 'L') {
-				let l = Math.hypot(
-					path[i+1].args[0] - path[i-1].args[0], path[i+1].args[1] - path[i-1].args[1]);
-				if (l < minL) { // find the vertex whose removal results in the shortest line segment
-					minL = l;
-					shortI = i;
-				}
+	// calculate the perimeter of the shape
+	const segmentLengths = [];
+	for (let i = 0; i < path.length - 1; i ++)
+		if (path[i + 1].type === 'L')
+			segmentLengths.push(Math.hypot(
+				path[i + 1].args[0] - path[i].args[0], path[i + 1].args[1] - path[i].args[1]));
+	const perimeter = segmentLengths.reduce((a, b, _) => a + b);
+
+	// if the path is too long, simplify it
+	if (path.length > SIMPLE_PATH_LENGTH + 1) {
+		// determine how long you want each segment to be
+		const desiredSegmentLength = perimeter/SIMPLE_PATH_LENGTH;
+		let i = path.length - 1;
+		while (i > 0) {
+			// then go thru and delete series of points to make it so
+			let cumulLength = 0;
+			let j = i - 1;
+			while (true) {
+				cumulLength += segmentLengths[j];
+				if (cumulLength >= desiredSegmentLength || path[j].type === 'M')
+					break;
+				else
+					j --; // step backwards until you've covered enuff distance or hit the start of the section
 			}
+			path.splice(j + 1, i - j - 1); // then delete all intermediate vertices
+			i = j;
 		}
-		path.splice(shortI, 1); // and remove it
 	}
-	if (path.length < SIMPLE_PATH_LENGTH/2 + 1) { // complicate path
-		const segmentLengths = [];
-		for (let i = 0; i < path.length - 1; i ++)
-			if (path[i + 1].type === 'L')
-				segmentLengths.push(Math.hypot(
-					path[i + 1].args[0] - path[i].args[0], path[i + 1].args[1] - path[i].args[1]));
+	// if the path is very short, complicate it
+	if (path.length < SIMPLE_PATH_LENGTH/2 + 1) {
 		const perimeter = segmentLengths.reduce((a, b, _) => a + b);
 		// determine how long you want each segment to be
 		const desiredSegmentLength = perimeter/(SIMPLE_PATH_LENGTH/2);
@@ -229,11 +239,11 @@ export function resamplePath(path: PathSegment[]): PathSegment[] {
 				// and divide each segment accordingly
 				const numSubdivisions = Math.ceil(segmentLengths[i]/desiredSegmentLength);
 				const midpoints: PathSegment[] = [];
-				for (let i = 1; i < numSubdivisions; i ++)
+				for (let j = 1; j < numSubdivisions; j ++)
 					midpoints.push({type: 'L', args: [
-							start.s + (end.s - start.s)*i/numSubdivisions,
-							start.t + (end.t - start.t)*i/numSubdivisions,
-						]});
+						start.s + (end.s - start.s)*j/numSubdivisions,
+						start.t + (end.t - start.t)*j/numSubdivisions,
+					]});
 				path.splice(i + 1, 0, ...midpoints);
 			}
 		}
