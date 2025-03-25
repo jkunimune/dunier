@@ -13,23 +13,21 @@ import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 
 
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
-const N_DEGREES = 6; // number of line segments into which to break one radian of arc
+const ARC_SEGMENTATION = 6; // number of line segments into which to break one radian of arc
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 
 
 /**
- * a function comprising a diagonal line down from infinity,
- * a horizontal line, and a diagonal line up to infinity
+ * a function comprising a 45° line down from infinity,
+ * a horizontal line, and a 45° line up to infinity
  */
 interface Wedge {
 	/** the x-coordinate of the transition from decreasing to constant */
 	xL: number;
 	/** the x-coordinate of the transition from constant to increasing */
 	xR: number;
-	/** the height of the horizontal pant */
+	/** the y-coordinate of the horizontal part */
 	y: number;
-	/** the absolute value of the slopes of the diagonal parts */
-	slope: number;
 }
 
 /** a node in the skeleton graph */
@@ -120,24 +118,24 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 		const {xMin, xMax, wedges} = mapPointsToArcCoordinates(R, cx, cy, θ0, path, aspectRatio);
 		if (xMin > xMax) // occasionally we get these really terrible candidates TODO I think this means I did something rong.
 			continue; // just skip them
-		wedges.sort((a: { y: number }, b: { y: number }) => b.y - a.y); // TODO it would be slightly more efficient if I can merge wedges that share a min vertex
 
-		let {location, halfHeight} = findOpenSpotOnArc(
+		let {location, halfWidth} = findOpenSpotOnArc(
 			xMin, xMax, wedges);
+		const height = 2*halfWidth/aspectRatio;
 
-		if (2*halfHeight < minHeight)
+		if (height < minHeight)
 			continue; // also skip any candidates that are too small
 
 		const θC = θ0 + location/R;
-		const area = halfHeight*halfHeight, bendRatio = halfHeight/R, horizontality = -Math.sin(θ0);
+		const area = height*height, bendRatio = height/2/R, horizontality = -Math.sin(θ0);
 		if (horizontality < 0) // if it's going to be upside down
-			halfHeight *= -1; // flip it around
+			halfWidth *= -1; // flip it around
 		// choose the axis with the biggest area and smallest curvature
 		const value = Math.log(area) - bendRatio/(1 - bendRatio) + Math.pow(horizontality, 2);
 		if (value > axisValue) {
 			axisValue = value;
-			const θL = θC - halfHeight*aspectRatio/R;
-			const θR = θC + halfHeight*aspectRatio/R;
+			const θL = θC - halfWidth/R;
+			const θR = θC + halfWidth/R;
 			bestAxis = {
 				start: {x: cx + R*Math.cos(θL), y: cy + R*Math.sin(θL)},
 				arc: {type: 'A', args: [
@@ -146,7 +144,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 						(θR < θL) ? 0 : 1,
 						cx + R*Math.cos(θR), cy + R*Math.sin(θR)
 					]},
-				height: 2*halfHeight,
+				height: height,
 			};
 		}
 	}
@@ -158,10 +156,10 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 
 /**
  * add redundant vertices and delete shorter segments in an attempt to make the vertices of this shape
- * evenly spaced, and to make it have around `SIMPLE_PATH_LENGTH` vertices in total.
+ * evenly spaced, and to make it have between `SIMPLE_PATH_LENGTH/2` and `SIMPLE_PATH_LENGTH` vertices in total.
  * @param path the shape to resample
  */
-function resamplePath(path: PathSegment[]): PathSegment[] {
+export function resamplePath(path: PathSegment[]): PathSegment[] {
 	// first, copy the input so you don't modify it
 	path = path.slice();
 
@@ -169,13 +167,14 @@ function resamplePath(path: PathSegment[]): PathSegment[] {
 		if (path[i].type === 'A') { // turn arcs into triscadecagons TODO: find out if this can create coincident nodes and thereby Delaunay Triangulation to fail
 			const start = assert_xy(endpoint(path[i-1]));
 			const end = assert_xy(endpoint(path[i]));
+			const [r1, r2, , largeArcFlag, sweepFlag, , ] = path[i].args;
 			const l = Math.hypot(end.x - start.x, end.y - start.y);
-			const r = Math.abs(path[i].args[0] + path[i].args[1])/2;
+			const r = (r1 + r2)/2;
 			const c = arcCenter(start, end, r,
-				path[i].args[3] === path[i].args[4]);
-			const Δθ = 2*Math.asin(l/(2*r));
+				largeArcFlag !== sweepFlag);
+			const Δθ = 2*Math.asin(l/(2*r)) * ((sweepFlag === 1) ? 1 : -1);
 			const θ0 = Math.atan2(start.y - c.y, start.x - c.x);
-			const nSegments = Math.ceil(N_DEGREES*Δθ);
+			const nSegments = Math.ceil(ARC_SEGMENTATION*Math.abs(Δθ));
 			const lineApprox = [];
 			for (let j = 1; j <= nSegments; j ++)
 				lineApprox.push({type: 'L', args: [ // TODO why not use arc segments here?
@@ -185,8 +184,8 @@ function resamplePath(path: PathSegment[]): PathSegment[] {
 		}
 	}
 
-	while (path.length > SIMPLE_PATH_LENGTH) { // simplify path
-		let shortI = -1, minL = Infinity;
+	while (path.length > SIMPLE_PATH_LENGTH + 1) { // simplify path
+		let shortI = -1, minL = Infinity; // TODO: this is n^2... there's probably a better way
 		for (let i = 1; i < path.length-1; i ++) {
 			if (path[i].type === 'L' && path[i+1].type === 'L') {
 				let l = Math.hypot(
@@ -198,24 +197,31 @@ function resamplePath(path: PathSegment[]): PathSegment[] {
 			}
 		}
 		path.splice(shortI, 1); // and remove it
-	} // TODO this only ever upsamples or downsamples, but sometimes it may be necessary to do both to get an even edge length
-	while (path.length < SIMPLE_PATH_LENGTH/2) { // complicate path
-		let longI = -1, maxL = -Infinity;
-		for (let i = 1; i < path.length; i ++) {
-			if (path[i].type === 'L') {
-				let l = Math.hypot(
-					path[i].args[0] - path[i-1].args[0], path[i].args[1] - path[i-1].args[1]);
-				if (l > maxL) { // find the longest line segment
-					maxL = l;
-					longI = i; // TODO it seems inefficient to do this every time rather than resampling all paths the desired degree
-				}
+	}
+	if (path.length < SIMPLE_PATH_LENGTH/2 + 1) { // complicate path
+		const segmentLengths = [];
+		for (let i = 0; i < path.length - 1; i ++)
+			if (path[i + 1].type === 'L')
+				segmentLengths.push(Math.hypot(
+					path[i + 1].args[0] - path[i].args[0], path[i + 1].args[1] - path[i].args[1]));
+		const perimeter = segmentLengths.reduce((a, b, _) => a + b);
+		// determine how long you want each segment to be
+		const desiredSegmentLength = perimeter/(SIMPLE_PATH_LENGTH/2);
+		for (let i = path.length - 2; i >= 0; i --) {
+			const start = endpoint(path[i]);
+			const end = endpoint(path[i + 1]);
+			if (path[i + 1].type === 'L') {
+				// and divide each segment accordingly
+				const numSubdivisions = Math.ceil(segmentLengths[i]/desiredSegmentLength);
+				const midpoints: PathSegment[] = [];
+				for (let i = 1; i < numSubdivisions; i ++)
+					midpoints.push({type: 'L', args: [
+						start.s + (end.s - start.s)*i/numSubdivisions,
+						start.t + (end.t - start.t)*i/numSubdivisions,
+					]});
+				path.splice(i + 1, 0, ...midpoints);
 			}
 		}
-		console.assert(longI >= 0, path);
-		path.splice(longI, 0, { // and split it
-			type: 'L',
-			args: [(path[longI].args[0] + path[longI-1].args[0])/2, (path[longI].args[1] + path[longI-1].args[1])/2]
-		});
 	}
 
 	return path;
@@ -281,9 +287,9 @@ function estimateSkeleton(path: PathSegment[]) { // TODO why not calculate the e
 /**
  * take an arc and a bunch of points in Cartesian coordinates, and calculate how much space is
  * available for a label of a given aspect ratio at each location.  this result will be expressed as
- * the label half-height (y) as a function of the arc-distance from `midpoint` to the label center (x).
+ * the label half-width (y) as a function of the arc-distance from `midpoint` to the label center (x).
  * that function will be expressed a a bunch of `Wedge` functions; at a given center location,
- * the maximum allowable half-height is the minimum of all the `Wedge`s evaluated at that x-value,
+ * the maximum allowable half-width is the minimum of all the `Wedge`s evaluated at that x-value,
  * where x represents distance along the
  * @param R the radius of the arc
  * @param cx the Cartesian x-coordinate of the arc center
@@ -336,8 +342,7 @@ function mapPointsToArcCoordinates(
 					wedges.push({
 						xL: Math.min(x0, x1) - y*aspectRatio,
 						xR: Math.max(x0, x1) + y*aspectRatio,
-						y: y,
-						slope: 1/aspectRatio,
+						y: y*aspectRatio,
 					});
 				}
 			}
@@ -354,36 +359,36 @@ function mapPointsToArcCoordinates(
  * @param max the absolute maximum acceptable circular x-coordinate
  * @param wedges the set of `Wedge` functions that define the feasible space
  * @return location – the circular x-coordinate of the optimal point
- * @return halfHeight – the circular y-coordinate of the optimal point
+ * @return spotSize – the minimum value of the `Wedge` functions at the optimal point
  */
-function findOpenSpotOnArc(min: number, max: number, wedges: Wedge[]): { location: number, halfHeight: number } {
-	const slope = wedges[0].slope; // assume all wedges have the same slope
+export function findOpenSpotOnArc(min: number, max: number, wedges: Wedge[]): { location: number, halfWidth: number } {
+	wedges.sort((a: { y: number }, b: { y: number }) => b.y - a.y); // TODO it would be slightly more efficient if I can merge wedges that share a min vertex
 
 	const validRegion = new ErodingSegmentTree(min, max); // construct segment tree
 	let y = 0; // iterate height upward until no segments are left
 	while (true) {
+		const pole = validRegion.getCenter();
 		if (wedges.length > 0) {
-			const pole = validRegion.getCenter();
 			const next = wedges.pop();
-			if (next.y < y + pole.radius*slope) { // if the next wedge comes before we run out of space
-				validRegion.erode((next.y - y)/slope); // go up to it
+			if (next.y < y + pole.radius) { // if the next wedge comes before we run out of space
+				validRegion.erode((next.y - y)); // go up to it
 				y = next.y;
 				if (validRegion.getMinim() >= next.xL && validRegion.getMaxim() <= next.xR) { // if it obstructs the entire remaining area
 					if (validRegion.contains(0)) // pick a remaining spot and return the current heit
-						return {halfHeight: y, location: 0};
+						return {halfWidth: y, location: 0};
 					else
-						return {halfHeight: y, location: validRegion.getClosest(0)}; // TODO I don't need this if-statement; getClosest already does that check
+						return {halfWidth: y, location: validRegion.getClosest(0)}; // TODO I don't need this if-statement; getClosest already does that check
 				}
 				else {
 					validRegion.remove(next.xL, next.xR); // or just cover up whatever area it obstructs
 				}
 			}
-			else { // if the next wedge comes to late, find the last remaining point
-				return {location: pole.location, halfHeight: pole.radius*slope};
+			else { // if the next wedge comes too late, find the last remaining point
+				return {location: pole.location, halfWidth: y + pole.radius};
 			}
 		}
-		else {
-			throw new Error("The algorithm that finds the optimal place on an arc to place a label failed.");
+		else { // if there are no more wedges coming, find the last remaining point
+			return {location: pole.location, halfWidth: y + pole.radius};
 		}
 	}
 }
