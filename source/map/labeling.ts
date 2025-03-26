@@ -141,6 +141,8 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 
 		const θC = θ0 + location/R;
 		const area = height*height, bendRatio = height/2/R, horizontality = -Math.sin(θ0);
+		if (bendRatio > 1)
+			continue; // bendRatio above 1 means this is useless garbage that shouldn't even be considered
 		if (horizontality < 0) // if it's going to be upside down
 			halfWidth *= -1; // flip it around
 		// choose the axis with the biggest area and smallest curvature
