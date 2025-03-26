@@ -46,17 +46,17 @@ describe("resamplePath", () => {
 			{type: 'L', args: [1, 0]},
 			{type: 'L', args: [0, 0]},
 		];
-		// to hit 36 segments exactly, it should break each segment up into 9
+		// to hit 72 segments exactly, it should break each segment up into 18
 		const resampledShape = resamplePath(shape);
-		expect(resampledShape.length).toEqual(37);
-		for (let i = 0; i < 9; i ++)
-			expect(endpoint(resampledShape[i])).toEqual({s: 0, t: i/9});
-		for (let i = 9; i < 18; i ++)
-			expect(endpoint(resampledShape[i])).toEqual({s: (i - 9)/9, t: 1});
-		for (let i = 18; i < 27; i ++)
-			expect(endpoint(resampledShape[i])).toEqual({s: 1, t: 1 - (i - 18)/9});
-		for (let i = 27; i <= 36; i ++)
-			expect(endpoint(resampledShape[i])).toEqual({s: 1 - (i - 27)/9, t: 0});
+		expect(resampledShape.length).toEqual(73);
+		for (let i = 0; i < 18; i ++)
+			expect(endpoint(resampledShape[i])).toEqual({s: 0, t: i/18});
+		for (let i = 18; i < 36; i ++)
+			expect(endpoint(resampledShape[i])).toEqual({s: (i - 18)/18, t: 1});
+		for (let i = 36; i < 54; i ++)
+			expect(endpoint(resampledShape[i])).toEqual({s: 1, t: 1 - (i - 36)/18});
+		for (let i = 54; i <= 72; i ++)
+			expect(endpoint(resampledShape[i])).toEqual({s: 1 - (i - 54)/18, t: 0});
 	});
 	test("semicircle", () => {
 		const shape = [
@@ -66,29 +66,29 @@ describe("resamplePath", () => {
 		];
 		// it will break the arc into 19 parts
 		const resampledShape = resamplePath(shape);
-		// to get above 36, it should bisect each arc piece and split the line in 15
-		expect(resampledShape.length).toEqual(54);
+		// each arc part will be split in two, and the line in 28, for a total of 66
+		expect(resampledShape.length).toEqual(67);
 		for (let i = 0; i < 38; i ++) {
 			expect(endpoint(resampledShape[i])).toEqual({
 				s: expect.closeTo(Math.sin(Math.PI*i/38)),
 				t: expect.closeTo(Math.cos(Math.PI*i/38)),
 			});
 		}
-		for (let i = 38; i <= 53; i ++)
+		for (let i = 38; i <= 66; i ++)
 			expect(endpoint(resampledShape[i])).toEqual({
-				s: expect.closeTo(0), t: expect.closeTo(-1 + (i - 38)/15*2)});
+				s: expect.closeTo(0), t: expect.closeTo(-1 + (i - 38)/28*2)});
 	});
 	test("myriagon", () => {
 		const shape = [];
-		for (let i = 0; i <= 108; i ++)
-			shape.push({type: (i === 0) ? 'M' : 'L', args: [Math.sin(Math.PI*i/54), Math.cos(Math.PI*i/54)]});
+		for (let i = 0; i <= 180; i ++)
+			shape.push({type: (i === 0) ? 'M' : 'L', args: [Math.sin(Math.PI*i/90), Math.cos(Math.PI*i/90)]});
 		// it should simply remove every other vertex
 		const resampledShape = resamplePath(shape);
-		expect(resampledShape.length).toEqual(55);
-		for (let i = 0; i <= 54; i ++)
+		expect(resampledShape.length).toEqual(91);
+		for (let i = 0; i <= 90; i ++)
 			expect(endpoint(resampledShape[i])).toEqual({
-				s: expect.closeTo(Math.sin(Math.PI*i/27)),
-				t: expect.closeTo(Math.cos(Math.PI*i/27)),
+				s: expect.closeTo(Math.sin(Math.PI*i/45)),
+				t: expect.closeTo(Math.cos(Math.PI*i/45)),
 			});
 	});
 });

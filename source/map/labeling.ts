@@ -16,7 +16,8 @@ const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating medi
 const ARC_SEGMENTATION = 6; // number of line segments into which to break one radian of arc
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 
-const DEBUG_MODE = false; // return skeletons instead of usable arcs
+const DEBUG_FULL_SKELETON = false; // return skeletons instead of usable arcs
+const DEBUG_UNFIT_AXIS = false; // return the raw medial axis rather than the arc fit to it
 
 
 /**
@@ -70,6 +71,15 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 
 	// estimate the topological skeleton
 	const centers = estimateSkeleton(path);
+
+	if (DEBUG_FULL_SKELETON) {
+		const skeleton: PathSegment[] = [];
+		for (let i = 0; i < centers.length; i ++)
+			for (let j = 0; j < i; j ++)
+				if (centers[i].edges[j] !== null)
+					skeleton.push({type: 'M', args: [centers[i].x, centers[i].y]}, {type: 'L', args: [centers[j].x, centers[j].y]});
+		return {arc: skeleton, height: 0};
+	}
 
 	let argmax = -1;
 	for (let i = 0; i < centers.length; i++) { // find the circumcenter with the greatest clearance
@@ -137,35 +147,37 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 		const value = Math.log(area) - bendRatio/(1 - bendRatio) + Math.pow(horizontality, 2);
 		if (value > axisValue) {
 			axisValue = value;
-			const θL = θC - halfWidth/R;
-			const θR = θC + halfWidth/R;
-			bestAxis = [
-				{type: 'M', args: [
+			bestHeight = height;
+			if (!DEBUG_UNFIT_AXIS) {
+				const θL = θC - halfWidth/R;
+				const θR = θC + halfWidth/R;
+				bestAxis = [
+					{type: 'M', args: [
 						cx + R*Math.cos(θL), cy + R*Math.sin(θL)
 					]},
-				{type: 'A', args: [
+					{type: 'A', args: [
 						R, R, 0,
 						(Math.abs(θR - θL) < Math.PI) ? 0 : 1,
 						(θR < θL) ? 0 : 1,
 						cx + R*Math.cos(θR), cy + R*Math.sin(θR)
 					]},
-			];
-			bestHeight = height;
+				];
+			}
+			else {
+				// in this debug mode, return the raw candidate rather than the arc you found
+				bestAxis = [];
+				for (const i of candidate)
+					bestAxis.push({
+						type: (bestAxis.length === 0) ? 'M' : 'L',
+						args: [centers[i].x, centers[i].y],
+					});
+			}
 		}
 	}
 	if (bestAxis === null)
 		throw new Error(`all ${candidates.length} candidates were somehow incredible garbage`);
-	if (!DEBUG_MODE)
+	else
 		return {arc: bestAxis, height: bestHeight};
-	else {
-		// in debug mode, return the skeleton itself as a path so that it can be displayed on the other side
-		const skeleton: PathSegment[] = [];
-		for (let i = 0; i < centers.length; i ++)
-			for (let j = 0; j < i; j ++)
-				if (centers[i].edges[j] !== null)
-					skeleton.push({type: 'M', args: [centers[i].x, centers[i].y]}, {type: 'L', args: [centers[j].x, centers[j].y]});
-		return {arc: skeleton, height: 0};
-	}
 }
 
 
@@ -175,11 +187,15 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
  * @param path the shape to resample
  */
 export function resamplePath(path: PathSegment[]): PathSegment[] {
+	// first, you have to do this check because violations can cause an infinite loop
+	if (path[0].type !== 'M')
+		throw new Error(`all paths must start with M; what is ${pathToString(path)}??`);
+
 	// first, copy the input so you don't modify it
 	path = path.slice();
 
 	for (let i = path.length - 1; i >= 1; i --) { // convert it into a simplified polygon
-		if (path[i].type === 'A') { // turn arcs into triscadecagons TODO: find out if this can create coincident nodes and thereby Delaunay Triangulation to fail
+		if (path[i].type === 'A') { // turn arcs into triscadecagons
 			const start = assert_xy(endpoint(path[i-1]));
 			const end = assert_xy(endpoint(path[i]));
 			const [r1, r2, , largeArcFlag, sweepFlag, , ] = path[i].args;
@@ -201,51 +217,56 @@ export function resamplePath(path: PathSegment[]): PathSegment[] {
 
 	// calculate the perimeter of the shape
 	const segmentLengths = [];
-	for (let i = 0; i < path.length - 1; i ++)
+	for (let i = 0; i < path.length - 1; i ++) {
 		if (path[i + 1].type === 'L')
 			segmentLengths.push(Math.hypot(
 				path[i + 1].args[0] - path[i].args[0], path[i + 1].args[1] - path[i].args[1]));
-	const perimeter = segmentLengths.reduce((a, b, _) => a + b);
-
-	// if the path is too long, simplify it
-	if (path.length > SIMPLE_PATH_LENGTH + 1) {
-		// determine how long you want each segment to be
-		const desiredSegmentLength = perimeter/SIMPLE_PATH_LENGTH;
-		let i = path.length - 1;
-		while (i > 0) {
-			// then go thru and delete series of points to make it so
-			let cumulLength = 0;
-			let j = i - 1;
-			while (true) {
-				cumulLength += segmentLengths[j];
-				if (cumulLength >= desiredSegmentLength || path[j].type === 'M')
-					break;
-				else
-					j --; // step backwards until you've covered enuff distance or hit the start of the section
-			}
-			path.splice(j + 1, i - j - 1); // then delete all intermediate vertices
-			i = j;
-		}
+		else
+			segmentLengths.push(0);
 	}
-	// if the path is very short, complicate it
-	if (path.length < SIMPLE_PATH_LENGTH/2 + 1) {
-		const perimeter = segmentLengths.reduce((a, b, _) => a + b);
-		// determine how long you want each segment to be
-		const desiredSegmentLength = perimeter/(SIMPLE_PATH_LENGTH/2);
-		for (let i = path.length - 2; i >= 0; i --) {
-			const start = endpoint(path[i]);
-			const end = endpoint(path[i + 1]);
-			if (path[i + 1].type === 'L') {
-				// and divide each segment accordingly
-				const numSubdivisions = Math.ceil(segmentLengths[i]/desiredSegmentLength);
-				const midpoints: PathSegment[] = [];
-				for (let j = 1; j < numSubdivisions; j ++)
-					midpoints.push({type: 'L', args: [
-						start.s + (end.s - start.s)*j/numSubdivisions,
-						start.t + (end.t - start.t)*j/numSubdivisions,
-					]});
-				path.splice(i + 1, 0, ...midpoints);
+	const perimeter = segmentLengths.reduce((a, b, _) => a + b);
+	// determine how long you want each segment to be
+	const targetSegmentLength = perimeter/SIMPLE_PATH_LENGTH;
+
+	// go through each segment and adjust as necessary
+	let i = path.length - 1;
+	while (i > 0) {
+		if (path[i].type === 'L') {
+			if (segmentLengths[i - 1] <= targetSegmentLength) {
+				// if it's too short, step thru and see with how many preceding segments you can combine it
+				let cumulLength = 0;
+				let j = i;
+				while (true) {
+					if (cumulLength + segmentLengths[j - 1] <= targetSegmentLength && path[j].type === 'L') {
+						j --; // step back as far as you can while keeping cumulLength from surpassing targetSegmentLength
+						cumulLength += segmentLengths[j];
+					}
+					else {
+						break; // stop when you would surpass the target or hit an 'M'
+					}
+				}
+				path.splice(j + 1, i - j - 1); // then delete all intermediate vertices
+				i = j;
 			}
+			else {
+				// if it's too long, subdivide it as much as possible
+				const start = endpoint(path[i - 1]);
+				const end = endpoint(path[i]);
+				const numSubdivisions = Math.floor(segmentLengths[i - 1]/targetSegmentLength);
+				for (let j = 1; j < numSubdivisions; j ++)
+					path.splice(
+						i - 1 + j, 0,
+						{type: 'L', args: [
+							start.s + (end.s - start.s)*j/numSubdivisions,
+							start.t + (end.t - start.t)*j/numSubdivisions,
+						]},
+					);
+				i --; // step to the next segment
+			}
+		}
+		else {
+			// if this is an 'M', just leave it
+			i --;
 		}
 	}
 
