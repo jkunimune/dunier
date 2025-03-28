@@ -62,11 +62,10 @@ interface Circumcenter {
  *     https://arxiv.org/abs/2001.02938 TODO: try horizontal labels: https://github.com/mapbox/polylabel
  * @param path the shape into which the label must fit
  * @param aspectRatio the ratio of the length of the text to be written to its height
- * @param minHeight the text height below which you shouldn't bother placing a label
  * @return the label location defined as an SVG path, and the allowable height of the label
  * @throws Error if it can't find any adequate place for this label
  */
-export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, minHeight: number): {arc: PathSegment[], height: number} {
+export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {arc: PathSegment[], height: number} {
 	path = resamplePath(path);
 
 	// estimate the topological skeleton
@@ -94,7 +93,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 
 	const candidates: number[][] = []; // next collect candidate paths along which you might fit labels
 	let minClearance = centers[argmax].r;
-	while (candidates.length < RALF_NUM_CANDIDATES && minClearance >= minHeight) {
+	while (candidates.length < RALF_NUM_CANDIDATES) {
 		minClearance /= 1.4; // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
 		const minLength = minClearance*aspectRatio;
 		const usedPoints = new Set<number>();
@@ -106,10 +105,12 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 			if (usedPoints.has(newEndpoint)) break;
 			const newShortestPath = longestShortestPath(
 				centers, new Set([newEndpoint]), minClearance); // find a new diverse longest shortest path with that as endpoint
-			if (newShortestPath.length >= minLength) { // if the label will fit,
+			if (newShortestPath.length >= minLength && newShortestPath.points.length > 3) { // if the label will fit,
 				candidates.push(newShortestPath.points); // take it
+				if (candidates.length >= RALF_NUM_CANDIDATES)
+					break; // if we have enough, quit now
 				for (const point of newShortestPath.points)
-					usedPoints.add(point); // and look for a different one
+					usedPoints.add(point); // otherwise, look for a different one
 			}
 			else // if it won't
 				break; // reduce the required clearance and try again
@@ -122,7 +123,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 	let bestAxis: PathSegment[] = null;
 	let bestHeight = -Infinity;
 	for (const candidate of candidates) { // for each candidate label axis
-		if (candidate.length < 3) continue; // with at least three points
+		// fit an arc thru it
 		const {R, cx, cy} = circularRegression(candidate.map((i: number) => centers[i]));
 		const midpoint = centers[candidate[Math.trunc(candidate.length/2)]];
 
@@ -136,9 +137,6 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 			xMin, xMax, wedges);
 		const height = 2*halfWidth/aspectRatio;
 
-		if (height < minHeight)
-			continue; // also skip any candidates that are too small
-
 		const θC = θ0 + location/R;
 		const area = height*height, bendRatio = height/2/R, horizontality = -Math.sin(θ0);
 		if (bendRatio > 1)
@@ -146,7 +144,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, mi
 		if (horizontality < 0) // if it's going to be upside down
 			halfWidth *= -1; // flip it around
 		// choose the axis with the biggest area and smallest curvature
-		const value = Math.log(area) - bendRatio/(1 - bendRatio) + Math.pow(horizontality, 2);
+		const value = Math.log(area) - 2*bendRatio/(1 - bendRatio) + 1/2*Math.pow(horizontality, 2);
 		if (value > axisValue) {
 			axisValue = value;
 			bestHeight = height;

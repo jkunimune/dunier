@@ -637,18 +637,15 @@ export class Chart {
 		let location;
 		try {
 			location = chooseLabelLocation(
-				path, aspectRatio, minFontSize*heightPerSize);
+				path, aspectRatio);
 		} catch (e) {
 			console.error(e);
 			return;
 		}
 
-		// const axos = [];
-		// for (const i of axis)
-		// 	axos.push({type:'L', args:[centers[i].x, -centers[i].y]});
-		// axos[0].type = 'M';
-		// const drawing = this.draw(axos, svg);
-		// drawing.setAttribute('style', 'stroke-width:.5px; fill:none; stroke:#004;');
+		const fontSize = location.height/heightPerSize;
+		if (fontSize < minFontSize)
+			return;
 
 		const arc = this.draw(location.arc, svg); // make the arc in the SVG
 		// arc.setAttribute('style', `fill: none; stroke: #400; stroke-width: .5px;`);
@@ -658,7 +655,7 @@ export class Chart {
 			arc.setAttribute('style', 'fill: none; stroke: none;');
 		arc.setAttribute('id', `labelArc${this.labelIndex}`);
 		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
-		textGroup.setAttribute('style', `font-size: ${location.height/heightPerSize}px`);
+		textGroup.setAttribute('style', `font-size: ${fontSize}px`);
 		svg.appendChild(textGroup);
 		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
 		textPath.setAttribute('class', 'map-label');
