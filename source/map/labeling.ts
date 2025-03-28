@@ -62,10 +62,10 @@ interface Circumcenter {
  *     https://arxiv.org/abs/2001.02938 TODO: try horizontal labels: https://github.com/mapbox/polylabel
  * @param path the shape into which the label must fit
  * @param aspectRatio the ratio of the length of the text to be written to its height
- * @return the label location defined as an SVG path, and the allowable height of the label
+ * @return the label location defined as an SVG path, the allowable height of the label, and how much the letter spacing must be adjusted
  * @throws Error if it can't find any adequate place for this label
  */
-export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {arc: PathSegment[], height: number} {
+export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {arc: PathSegment[], height: number, letterSpacing: number} {
 	path = resamplePath(path);
 
 	// estimate the topological skeleton
@@ -77,7 +77,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 			for (let j = 0; j < i; j ++)
 				if (centers[i].edges[j] !== null)
 					skeleton.push({type: 'M', args: [centers[i].x, centers[i].y]}, {type: 'L', args: [centers[j].x, centers[j].y]});
-		return {arc: skeleton, height: 0};
+		return {arc: skeleton, height: 0, letterSpacing: 0};
 	}
 
 	let argmax = -1;
@@ -120,8 +120,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 		throw new Error("no acceptable label candidates were found");
 
 	let axisValue = -Infinity;
-	let bestAxis: PathSegment[] = null;
-	let bestHeight = -Infinity;
+	let bestAxis: {arc: PathSegment[], height: number, letterSpacing: number} = null;
 	for (const candidate of candidates) { // for each candidate label axis
 		// fit an arc thru it
 		const {R, cx, cy} = circularRegression(candidate.map((i: number) => centers[i]));
@@ -147,28 +146,32 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 		const value = Math.log(area) - 2*bendRatio/(1 - bendRatio) + 1/2*Math.pow(horizontality, 2);
 		if (value > axisValue) {
 			axisValue = value;
-			bestHeight = height;
 			if (!DEBUG_UNFIT_AXIS) {
 				const θL = θC - halfWidth/R;
 				const θR = θC + halfWidth/R;
-				bestAxis = [
-					{type: 'M', args: [
-						cx + R*Math.cos(θL), cy + R*Math.sin(θL)
-					]},
-					{type: 'A', args: [
-						R, R, 0,
-						(Math.abs(θR - θL) < Math.PI) ? 0 : 1,
-						(θR < θL) ? 0 : 1,
-						cx + R*Math.cos(θR), cy + R*Math.sin(θR)
-					]},
-				];
+				const rBaseline = (θR < θL) ? R + height/2 : R - height/2;
+				bestAxis = {
+					height: height,
+					letterSpacing: rBaseline/R - 1,
+					arc: [
+						{type: 'M', args: [
+							cx + rBaseline*Math.cos(θL), cy + rBaseline*Math.sin(θL)
+						]},
+						{type: 'A', args: [
+							rBaseline, rBaseline, 0,
+							(Math.abs(θR - θL) < Math.PI) ? 0 : 1,
+							(θR < θL) ? 0 : 1,
+							cx + rBaseline*Math.cos(θR), cy + rBaseline*Math.sin(θR)
+						]},
+					]
+				};
 			}
 			else {
 				// in this debug mode, return the raw candidate rather than the arc you found
-				bestAxis = [];
+				bestAxis = {height: height, letterSpacing: 0, arc: []};
 				for (const i of candidate)
-					bestAxis.push({
-						type: (bestAxis.length === 0) ? 'M' : 'L',
+					bestAxis.arc.push({
+						type: (bestAxis.arc.length === 0) ? 'M' : 'L',
 						args: [centers[i].x, centers[i].y],
 					});
 			}
@@ -177,7 +180,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 	if (bestAxis === null)
 		throw new Error(`all ${candidates.length} candidates were somehow incredible garbage`);
 	else
-		return {arc: bestAxis, height: bestHeight};
+		return bestAxis;
 }
 
 

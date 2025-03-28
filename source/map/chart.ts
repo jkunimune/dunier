@@ -271,7 +271,7 @@ export class Chart {
 
 		// set the basic overarching styles
 		const styleSheet = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-		styleSheet.innerHTML = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; alignment-baseline: middle; }'; // TODO this doesn't work; you have to just offset the path
+		styleSheet.innerHTML = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; }';
 		svg.appendChild(styleSheet);
 
 		// add a layer for all the map data
@@ -655,7 +655,7 @@ export class Chart {
 			arc.setAttribute('style', 'fill: none; stroke: none;');
 		arc.setAttribute('id', `labelArc${this.labelIndex}`);
 		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
-		textGroup.setAttribute('style', `font-size: ${fontSize}px`);
+		textGroup.setAttribute('style', `font-size: ${fontSize}px; letter-spacing: ${location.letterSpacing*.5}em;`); // this .5em is just a guess at the average letter width
 		svg.appendChild(textGroup);
 		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
 		textPath.setAttribute('class', 'map-label');
