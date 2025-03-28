@@ -498,7 +498,7 @@ export class Chart {
 		// add an outline to the whole thing
 		this.fill(
 			surface.tiles,
-			g, 'none', Layer.GEO, 'black', 1.4);
+			g, 'none', Layer.GEO, 'black', 1.4, 'miter');
 
 		if (world !== null) {
 			// finally, check which Civs are on this map
@@ -526,17 +526,18 @@ export class Chart {
 	 * @param greeble what kind of edge it is for the purposes of greebling
 	 * @param stroke color of the outline.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
+	 * @param strokeLinejoin the line joint style to use
 	 * @return the newly created element encompassing these tiles.
 	 */
 	fill(tiles: Set<Tile>, svg: SVGGElement, color: string, greeble: Layer,
-		 stroke = 'none', strokeWidth = 0): SVGPathElement {
+		 stroke = 'none', strokeWidth = 0, strokeLinejoin = 'round'): SVGPathElement {
 		if (tiles.size <= 0)
 			return this.draw([], svg);
 		const segments = convertPathClosuresToZ(this.projectPath(
 			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.scale), true));
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
-			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: round;`);
+			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin};`);
 		return path;
 	}
 
@@ -547,17 +548,18 @@ export class Chart {
 	 * @param color String that HTML can interpret as a color.
 	 * @param width the width of the stroke
 	 * @param greeble what kind of edge it is for the purposes of greebling
+	 * @param strokeLinejoin the stroke joint style to use
 	 * @returns the newly created element comprising all these lines
 	 */
 	stroke(strokes: Iterable<ΦΛPoint[]>, svg: SVGGElement,
-	       color: string, width: number, greeble: Layer): SVGPathElement {
+	       color: string, width: number, greeble: Layer, strokeLinejoin = 'round'): SVGPathElement {
 		let segments = this.projectPath(
 			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.scale), false);
 		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
-			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: round; stroke-linecap: round;`);
+			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: round;`);
 		return path;
 	}
 
