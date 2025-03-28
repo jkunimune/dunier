@@ -41,6 +41,7 @@ const TERRAIN_COLORMAP = [
 
 const MIN_SIZE_TO_LIST = 6;
 const MAX_COUNTRIES_TO_LIST = 20;
+const FONT_SIZE = 8; // pt
 
 enum Layer {
 	NONE,
@@ -348,7 +349,7 @@ function applyMap(): void {
 		DOM.checked('map-shading'),
 		DOM.checked('map-political-labels'),
 		DOM.checked('map-physical-labels'),
-		6,
+		FONT_SIZE*0.35, // convert to mm
 		(DOM.val('map-spelling') === 'null') ?
 			null :
 			DOM.val('map-spelling')

@@ -279,7 +279,7 @@ export class Chart {
 		g.setAttribute('id', 'generated-map');
 		svg.appendChild(g);
 
-		this.testTextSize = 5; // mm
+		this.testTextSize = this.dimensions.diagonal/50; // mm
 		this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 		this.testText.setAttribute('class', 'map-label');
 		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`); // in SVG, using the unit 'px' causes the measurement to be interpreted as millimeters.
@@ -491,7 +491,7 @@ export class Chart {
 					this.label(
 						[...civ.tileTree.keys()].filter(n => !n.isWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
 						civ.getName().toString(style),
-						svg,
+						g,
 						fontSize);
 		}
 
@@ -614,14 +614,15 @@ export class Chart {
 	 * @param minFontSize the smallest allowable font size, in mm. if the label cannot fit inside
 	 *                    the region with this font size, no label will be placed.
 	 */
-	label(tiles: Tile[], label: string, svg: SVGElement, minFontSize: number) {
+	label(tiles: Tile[], label: string, svg: SVGGElement, minFontSize: number) {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
 		this.testText.textContent = '..'+label+'..';
-		const boundBox = this.testText.getBoundingClientRect(); // to calibrate the label's aspect ratio, measure the dimensions of some test text
-		this.testText.textContent = '';
-		const lengthPerSize = boundBox.width/this.testTextSize;
-		const heightPerSize = boundBox.height/this.testTextSize;
+		const testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
+		const svgScale = this.dimensions.width/svg.getBoundingClientRect().width;
+		const lengthPerSize = testTextLength*svgScale/this.testTextSize;
+		const heightPerSize = 0.72; // this number was measured for Noto Sans
+		const aspectRatio = lengthPerSize/heightPerSize;
 
 		const path = this.projectPath( // do the projection
 			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.scale),
@@ -634,7 +635,7 @@ export class Chart {
 		let location;
 		try {
 			location = chooseLabelLocation(
-				path, lengthPerSize/heightPerSize, minFontSize*heightPerSize);
+				path, aspectRatio, minFontSize*heightPerSize);
 		} catch (e) {
 			console.error(e);
 			return;
@@ -649,22 +650,20 @@ export class Chart {
 
 		const arc = this.draw(location.arc, svg); // make the arc in the SVG
 		// arc.setAttribute('style', `fill: none; stroke: #400; stroke-width: .5px;`);
-		if (SHOW_LABEL_PATHS) {
-			arc.setAttribute('style', 'fill: none; stroke: #770000;');
-		}
-		else {
+		if (SHOW_LABEL_PATHS)
+			arc.setAttribute('style', `fill: none; stroke: #770000; stroke-width: ${location.height}`);
+		else
 			arc.setAttribute('style', 'fill: none; stroke: none;');
-			arc.setAttribute('id', `labelArc${this.labelIndex}`);
-			const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
-			textGroup.setAttribute('style', `font-size: ${location.height/heightPerSize}px`);
-			svg.appendChild(textGroup);
-			const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
-			textPath.setAttribute('class', 'map-label');
-			textPath.setAttribute('startOffset', '50%');
-			textPath.setAttribute('href', `#labelArc${this.labelIndex}`);
-			textGroup.appendChild(textPath);
-			textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
-		}
+		arc.setAttribute('id', `labelArc${this.labelIndex}`);
+		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
+		textGroup.setAttribute('style', `font-size: ${location.height/heightPerSize}px`);
+		svg.appendChild(textGroup);
+		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
+		textPath.setAttribute('class', 'map-label');
+		textPath.setAttribute('startOffset', '50%');
+		textPath.setAttribute('href', `#labelArc${this.labelIndex}`);
+		textGroup.appendChild(textPath);
+		textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
 
 		this.labelIndex += 1;
 	}
@@ -675,7 +674,6 @@ export class Chart {
 	draw(segments: PathSegment[], svg: Element): SVGPathElement {
 		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 		path.setAttribute('d', pathToString(segments));
-		path.setAttribute('vector-effect', 'non-scaling-stroke');
 		return svg.appendChild(path); // put it in the SVG
 	}
 
