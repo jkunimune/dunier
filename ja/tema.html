@@ -36,12 +36,12 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <select id="lang-dropdown" class="lang-dropdown" aria-label="言語" onchange="this.value = 'none';">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="言語" onchange="if (this.value !== 'ja') window.location = `/${this.value}/tema.html`; else this.value = 'none';">
                   <option value="none" disabled selected></option>
-                  <option onclick="window.location = '/en/tema.html';">🇬🇧 English</option>
-                  <option onclick="window.location = '/es/tema.html';">🇪🇸 español</option>
-                  <option onclick="window.location = '/ja/tema.html';">🇯🇵 日本語</option>
-                  <option onclick="window.location = '/pd/tema.html';">🟰 pandunia</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                  <option value="pd">🟰 pandunia</option>
                 </select>
               </div>
             </div>
@@ -57,7 +57,7 @@
 	<h3>クレジット</h3>
 	<p>dunierはウィキペディア編集者と言語学愛好者の国宗ジャスティンの作品だ。アズガールの<a href="https://azgaar.github.io/Fantasy-Map-Generator">Fantasy Map Generator</a>にたくさんのアイデアを捕った。そのうえ、アガフォルキン・ヴラディミルの<a href="https://github.com/mourner/tinyqueue">Tinyqueue</a>、ハーク・ステファンの<a href="https://github.com/shaack/bootstrap-input-spinner">Bootstrap Input Spinner</a>、ラウッハマイェル・アクセルの<a href="https://2ality.com/2020/01/enum-pattern.html">Enumify</a>、ホール・ジェームズの<a href="https://parall.ax/products/jspdf">JSPDF</a>、<a href="https://plotly.com">Plotly</a>、<a href="https://getbootstrap.com">Bootstrap</a>を使用する。</p>
 	<h3>ライセンス</h3>
-	<p>dunierのことは<a href="https://creativecommons.org/publicdomain/zero/1.0/en">CC0 1.0</a>一般ライセンスでパブリックドメインに提供される。コピーし、変更し、共有しても、業務用でも、いつもよろしい。dunierを使いながら作った地図の場合は法律上の詳細をよく知らない。しかしあなたの知的財産のように扱っても私が構わないから、好きにしてください。</p>
+	<p>dunierのことは<a href="https://creativecommons.org/publicdomain/zero/1.0/en">CC0 1.0</a>一般ライセンスでパブリックドメインに提供される。dunierを使いながら作った地図は真実にプログラムが著作したもので、著作権を有する人間がいなくて、パブリックドメインにある。だから、ソースも地図もコピーし、変更し、共有しても、業務用でも、いつもよろしい。</p>
 </div>
 
     </main>
@@ -75,7 +75,7 @@
                --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="(Creative Commons logo)"><!--
                --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="">
                 </a><!--
-             --> マークだ。
+             --> マークである。
               </span>
             </p>
           </div>

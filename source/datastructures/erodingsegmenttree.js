@@ -303,8 +303,14 @@ var ErodingSegmentTree = /** @class */ (function () {
         if (linksInOrder.length % 2 !== 0)
             throw new Error("there must always be an even number of links.");
     };
-    ErodingSegmentTree.prototype.test = function () {
-        return traverseTreeInOrder(this.mul);
+    ErodingSegmentTree.prototype.toString = function () {
+        var links = traverseTreeInOrder(this.mul);
+        if (links.length % 2 !== 0)
+            throw new Error("there must be an even number of links.");
+        var subintervalStrings = [];
+        for (var i = 0; i < links.length; i += 2)
+            subintervalStrings.push("[".concat(links[i].val, ", ").concat(links[i + 1].val, "]"));
+        return "ErodingSegmentTree(".concat(subintervalStrings.join(" ∪ "), ")");
     };
     return ErodingSegmentTree;
 }());

@@ -9,6 +9,22 @@ var __values = (this && this.__values) || function(o) {
     };
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
 var e_1, _a, e_2, _b, e_3, _c, e_4, _d;
 /**
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
@@ -48,6 +64,7 @@ var TERRAIN_COLORMAP = [
 ];
 var MIN_SIZE_TO_LIST = 6;
 var MAX_COUNTRIES_TO_LIST = 20;
+var FONT_SIZE = 8; // pt
 var Layer;
 (function (Layer) {
     Layer[Layer["NONE"] = 0] = "NONE";
@@ -69,6 +86,8 @@ var surface = null;
 var continents = null;
 /** the human world on that planet */
 var world = null;
+/** the Chart representing the main map */
+var chart = null;
 /** the list of countries on the current map */
 var mappedCivs = null;
 /** the number of alerts that have been posted */
@@ -189,8 +208,8 @@ function applyTerrain() {
     generateTerrain(Number(DOM.val('terrain-continents')) * 2, Number(DOM.val('terrain-sea-level')), Number(DOM.val('terrain-temperature')), surface, rng); // create the terrain!
     console.log("grafa...");
     var projection = surface.isFlat() ? "orthographic" : "equal_earth";
-    var mapper = new Chart(projection, surface, surface.tiles, "north", false);
-    mapper.depict(surface, null, DOM.elm('terrain-map'), 'physical', 'blue', true, false, false, false, false);
+    var mapper = new Chart(projection, surface, surface.tiles, "north", false, 62500);
+    mapper.depict(surface, null, DOM.elm('terrain-map'), 'physical', true, false, false, false, false);
     // save the continents in an easily accessible form
     continents = [];
     try {
@@ -232,8 +251,8 @@ function applyHistory() {
     world.generateHistory(Number(DOM.val('history-year')), rng); // create the terrain!
     console.log("grafa...");
     var projection = surface.isFlat() ? "orthographic" : "equal_earth";
-    var mapper = new Chart(projection, surface, surface.tiles, "north", false);
-    mapper.depict(surface, world, DOM.elm('history-map'), 'political', 'blue', false, true, false, false, false);
+    var mapper = new Chart(projection, surface, surface.tiles, "north", false, 62500);
+    mapper.depict(surface, world, DOM.elm('history-map'), 'political', false, true, false, false, false);
     // now set up the "focus" options for the map tab:
     console.log("mute ba chuze bil...");
     var picker = document.getElementById('map-jung');
@@ -282,6 +301,8 @@ function applyMap() {
     var projectionName = surface.isFlat() ? "orthographic" : DOM.val('map-projection');
     var orientation = DOM.val('map-orientation');
     var rectangularBounds = (DOM.val('map-shape') === 'rectangle');
+    var width = Number.parseFloat(DOM.val('map-width-mm'));
+    var height = Number.parseFloat(DOM.val('map-height-mm'));
     var focusSpecifier = DOM.val('map-jung');
     var regionOfInterest;
     if (focusSpecifier === "world")
@@ -292,10 +313,14 @@ function applyMap() {
         regionOfInterest = world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tileTree.keys();
     else
         throw new Error("invalid focusSpecifier: '".concat(focusSpecifier, "'"));
-    var chart = new Chart(projectionName, surface, regionOfInterest, orientation, rectangularBounds);
-    mappedCivs = chart.depict(surface, world, DOM.elm('map-map'), DOM.val('map-land-color'), DOM.val('map-sea-color'), DOM.checked('map-rivers'), DOM.checked('map-borders'), DOM.checked('map-shading'), DOM.checked('map-political-labels'), DOM.checked('map-physical-labels'), 6, (DOM.val('map-spelling') === 'null') ?
+    chart = new Chart(projectionName, surface, regionOfInterest, orientation, rectangularBounds, width * height);
+    mappedCivs = chart.depict(surface, world, DOM.elm('map-map'), DOM.val('map-color'), DOM.checked('map-rivers'), DOM.checked('map-borders'), DOM.checked('map-shading'), DOM.checked('map-political-labels'), DOM.checked('map-physical-labels'), FONT_SIZE * 0.35, // convert to mm
+    (DOM.val('map-spelling') === 'null') ?
         null :
         DOM.val('map-spelling'));
+    // adjust the height and width options to reflect the new aspect ratio
+    enforceAspectRatio("neither", "mm");
+    enforceAspectRatio("neither", "px");
     console.log("fina!");
     lastUpdated = Layer.MAP;
 }
@@ -375,6 +400,28 @@ function postErrorAlert(message) {
             "    <span aria-hidden='true'>&times;</span>\n" +
             "  </button>\n" +
             "</div>";
+}
+/**
+ * when the map aspect ratio changes or one of the map size input spinners change,
+ * make sure they're all consistent.
+ */
+function enforceAspectRatio(fixed, unit) {
+    var aspectRatio = chart.dimensions.width / chart.dimensions.height;
+    var widthSpinner = DOM.elm("map-width-".concat(unit));
+    var heightSpinner = DOM.elm("map-height-".concat(unit));
+    if (fixed === "width") {
+        var width = Number.parseFloat(widthSpinner.value);
+        heightSpinner.value = (Math.round(width / aspectRatio)).toString();
+    }
+    else if (fixed === "height") {
+        var height = Number.parseFloat(heightSpinner.value);
+        widthSpinner.value = (Math.round(height * aspectRatio)).toString();
+    }
+    else {
+        var area = Number.parseFloat(widthSpinner.value) * Number.parseFloat(heightSpinner.value);
+        widthSpinner.value = (Math.round(Math.sqrt(area * aspectRatio))).toString();
+        heightSpinner.value = (Math.round(Math.sqrt(area / aspectRatio))).toString();
+    }
 }
 var _loop_1 = function (prefix) {
     /** when the user clicks on a card header, toggle whether it is shown and hide all the others */
@@ -514,13 +561,17 @@ DOM.elm('factbook-tab').addEventListener('click', function () {
  * When the download button is clicked, export and download the map as an SVG
  */
 DOM.elm('map-download-svg').addEventListener('click', function () {
-    download(convertSVGToBlob(DOM.elm('map-map')), format(null, "filename") + ".svg");
+    var printscaleMap = DOM.elm('map-map').cloneNode(true);
+    var _a = __read(printscaleMap.getAttribute("viewBox").split(" "), 4), width = _a[2], height = _a[3];
+    printscaleMap.setAttribute("width", "".concat(width, "mm"));
+    printscaleMap.setAttribute("height", "".concat(height, "mm"));
+    download(convertSVGToBlob(printscaleMap), format(null, "filename") + ".svg");
 });
 /**
  * When the download button is clicked, export and download the map as a PNG
  */
 DOM.elm('map-download-png').addEventListener('click', function () {
-    convertSVGToPNGAndThenDownloadIt(convertSVGToBlob(DOM.elm('map-map')), format(null, "filename") + ".png");
+    convertSVGToPNGAndThenDownloadIt(convertSVGToBlob(DOM.elm('map-map')), Number.parseInt(DOM.val('map-width-px')), Number.parseInt(DOM.val('map-height-px')), format(null, "filename") + ".png");
 });
 /**
  * When the print button is clicked, send the factbook to the browser's print window
@@ -528,6 +579,13 @@ DOM.elm('map-download-png').addEventListener('click', function () {
 DOM.elm('factbook-print').addEventListener('click', function () {
     DOM.elm('factbook-embed').contentWindow.print();
 });
+/**
+ * When one of the map size inputs change, change its counterpart to match
+ */
+DOM.elm('map-width-mm').addEventListener('change', function () { return enforceAspectRatio('width', 'mm'); });
+DOM.elm('map-height-mm').addEventListener('change', function () { return enforceAspectRatio('height', 'mm'); });
+DOM.elm('map-width-px').addEventListener('change', function () { return enforceAspectRatio('width', 'px'); });
+DOM.elm('map-height-px').addEventListener('change', function () { return enforceAspectRatio('height', 'px'); });
 /**
  * when the inputs change, forget what we know
  */

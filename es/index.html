@@ -36,12 +36,12 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <select id="lang-dropdown" class="lang-dropdown" aria-label="Idioma" onchange="this.value = 'none';">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="Idioma" onchange="if (this.value !== 'es') window.location = `/${this.value}/index.html`; else this.value = 'none';">
                   <option value="none" disabled selected></option>
-                  <option onclick="window.location = '/en/index.html';">🇬🇧 English</option>
-                  <option onclick="window.location = '/es/index.html';">🇪🇸 español</option>
-                  <option onclick="window.location = '/ja/index.html';">🇯🇵 日本語</option>
-                  <option onclick="window.location = '/pd/index.html';">🟰 pandunia</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                  <option value="pd">🟰 pandunia</option>
                 </select>
               </div>
             </div>
@@ -92,7 +92,7 @@
     else if (projection === "conformal_conic")
       document.getElementById('map-projection-description').innerHTML = "Proyección conforme con meridianos derechos.  Es igual con la proyección de Mercator en casos de mapas del mundo entero.  Representa los ángulos con exactitud pero distorsiona las áreas.";
     else if (projection === "equal_earth")
-      document.getElementById('map-projection-description').innerHTML = "Proyección de áreas iguales bonita.  Apropriada para mapas del mundo entero.";
+      document.getElementById('map-projection-description').innerHTML = "Proyección de áreas iguales bonita.  Apropiada para mapas del mundo entero.";
     else {
       document.getElementById('map-projection-description').innerHTML = "?????";
       console.error(`unrecognized map projeccion: '${projection}'`);
@@ -104,13 +104,24 @@
     const tooltip = document.getElementById(id);
     const tippedTool = document.getElementById(id + "-icon");
     if (tippedTool.matches(":hover") || tippedTool.matches(":focus") || (tooltip.style.opacity > 0 && tooltip.matches(":hover"))) {
+      // make it visible
       tooltip.style.opacity = "1";
+      tooltip.style.pointerEvents = "auto";
+      // locate it at the (i) icon
       const toolLocation = tippedTool.getBoundingClientRect();
       tooltip.style.top = `${(toolLocation.top + toolLocation.bottom)/2}px`;
       tooltip.style.left = `${toolLocation.right}px`;
+      // adjust its location to keep it from clipping off the right edge of the screen
+      const tooltipDimensions = tooltip.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      if (tooltipDimensions.right > screenWidth) {
+        tooltip.style.left = `${screenWidth - tooltipDimensions.width}px`;
+      }
     }
     else {
+      // make it invisible
       tooltip.style.opacity = "0";
+      tooltip.style.pointerEvents = "none";
     }
   }
 </script>
@@ -437,23 +448,15 @@
               <div id="map-colors-collapse" class="collapse" aria-labelledby="map-colors-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-land-color">Color del tierra</label>
-                    <select id="map-land-color">
+                    <label for="map-color">Color</label>
+                    <select id="map-color">
                       <option value="white">Blanco</option>
-                      <option value="gray">Gris</option>
+                      <option value="gray">Gris y blanco</option>
+                      <option value="black">Negro y blanco</option>
+                      <option value="wikipedia">Azul y amarillo</option>
+                      <option value="sepia">Sepia</option>
                       <option selected value="physical">Biomas</option>
                       <option value="political">Naciones</option>
-                      <option value="heightmap">Altitudes</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="map-sea-color">Color del mar</label>
-                    <select id="map-sea-color">
-                      <option value="white">Blanco</option>
-                      <option value="gray">Gris</option>
-                      <option selected value="blue">Azul</option>
-                      <option value="azure">Celeste</option>
-                      <option value="black">Negro</option>
                       <option value="heightmap">Altitudes</option>
                     </select>
                   </div>
@@ -562,15 +565,15 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-width">Anchura</label>
+                    <label for="map-width-mm">Anchura</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width" value="28.0" data-decimals="1" min="10.0" max="60.0" step="1.0"/>
-  <div class="input-group-append">    <span class="input-group-text">cm</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-mm" value="210.0" data-decimals="0" min="20.0" max="1200.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>
@@ -578,15 +581,15 @@
 </div>
                   </div>
                   <div class="form-group">
-                    <label for="map-height">Altura</label>
+                    <label for="map-height-mm">Altura</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height" value="19.0" data-decimals="1" min="10.0" max="60.0" step="1.0"/>
-  <div class="input-group-append">    <span class="input-group-text">cm</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-mm" value="148.0" data-decimals="0" min="20.0" max="1200.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>
@@ -594,15 +597,31 @@
 </div>
                   </div>
                   <div class="form-group">
-                    <label for="map-resolution">Resolución</label>
+                    <label for="map-width-px">Anchura de PNG</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-resolution" value="150.0" data-decimals="0" min="72.0" max="1200.0" step="50.0"/>
-  <div class="input-group-append">    <span class="input-group-text">DPI</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-px" value="1260.0" data-decimals="0" min="64.0" max="12000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-px">Altura de PNG</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-px" value="888.0" data-decimals="0" min="64.0" max="12000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>

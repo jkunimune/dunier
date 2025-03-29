@@ -36,12 +36,12 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <select id="lang-dropdown" class="lang-dropdown" aria-label="Language" onchange="this.value = 'none';">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="Language" onchange="if (this.value !== 'en') window.location = `/${this.value}/index.html`; else this.value = 'none';">
                   <option value="none" disabled selected></option>
-                  <option onclick="window.location = '/en/index.html';">🇬🇧 English</option>
-                  <option onclick="window.location = '/es/index.html';">🇪🇸 español</option>
-                  <option onclick="window.location = '/ja/index.html';">🇯🇵 日本語</option>
-                  <option onclick="window.location = '/pd/index.html';">🟰 pandunia</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                  <option value="pd">🟰 pandunia</option>
                 </select>
               </div>
             </div>
@@ -104,13 +104,24 @@
     const tooltip = document.getElementById(id);
     const tippedTool = document.getElementById(id + "-icon");
     if (tippedTool.matches(":hover") || tippedTool.matches(":focus") || (tooltip.style.opacity > 0 && tooltip.matches(":hover"))) {
+      // make it visible
       tooltip.style.opacity = "1";
+      tooltip.style.pointerEvents = "auto";
+      // locate it at the (i) icon
       const toolLocation = tippedTool.getBoundingClientRect();
       tooltip.style.top = `${(toolLocation.top + toolLocation.bottom)/2}px`;
       tooltip.style.left = `${toolLocation.right}px`;
+      // adjust its location to keep it from clipping off the right edge of the screen
+      const tooltipDimensions = tooltip.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      if (tooltipDimensions.right > screenWidth) {
+        tooltip.style.left = `${screenWidth - tooltipDimensions.width}px`;
+      }
     }
     else {
+      // make it invisible
       tooltip.style.opacity = "0";
+      tooltip.style.pointerEvents = "none";
     }
   }
 </script>
@@ -351,7 +362,7 @@
               <select id="history-meteors">
                 <option selected value="0">None</option>
                 <option value="1e-4">One</option>
-                <option value="1e-3">Once per millenium</option>
+                <option value="1e-3">Once per millennium</option>
                 <option value="1e-2">Once per century</option>
               </select>
             </div>
@@ -437,23 +448,15 @@
               <div id="map-colors-collapse" class="collapse" aria-labelledby="map-colors-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-land-color">Terrain color</label>
-                    <select id="map-land-color">
+                    <label for="map-color">Color</label>
+                    <select id="map-color">
                       <option value="white">White</option>
-                      <option value="gray">Gray</option>
+                      <option value="gray">Gray and white</option>
+                      <option value="black">Black and white</option>
+                      <option value="wikipedia">Blue and yellow</option>
+                      <option value="sepia">Sepia</option>
                       <option selected value="physical">Physical</option>
                       <option value="political">Political</option>
-                      <option value="heightmap">Heightmap</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="map-sea-color">Sea color</label>
-                    <select id="map-sea-color">
-                      <option value="white">White</option>
-                      <option value="gray">Gray</option>
-                      <option selected value="blue">Blue</option>
-                      <option value="azure">Light blue</option>
-                      <option value="black">Black</option>
                       <option value="heightmap">Heightmap</option>
                     </select>
                   </div>
@@ -562,15 +565,15 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-width">Width</label>
+                    <label for="map-width-mm">Width</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width" value="28.0" data-decimals="1" min="10.0" max="60.0" step="1.0"/>
-  <div class="input-group-append">    <span class="input-group-text">cm</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-mm" value="210.0" data-decimals="0" min="20.0" max="1200.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>
@@ -578,15 +581,15 @@
 </div>
                   </div>
                   <div class="form-group">
-                    <label for="map-height">Height</label>
+                    <label for="map-height-mm">Height</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height" value="19.0" data-decimals="1" min="10.0" max="60.0" step="1.0"/>
-  <div class="input-group-append">    <span class="input-group-text">cm</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-mm" value="148.0" data-decimals="0" min="20.0" max="1200.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>
@@ -594,15 +597,31 @@
 </div>
                   </div>
                   <div class="form-group">
-                    <label for="map-resolution">Resolution</label>
+                    <label for="map-width-px">PNG width</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-resolution" value="150.0" data-decimals="0" min="72.0" max="1200.0" step="50.0"/>
-  <div class="input-group-append">    <span class="input-group-text">DPI</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-px" value="1260.0" data-decimals="0" min="64.0" max="12000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-px">PNG height</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-px" value="888.0" data-decimals="0" min="64.0" max="12000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>

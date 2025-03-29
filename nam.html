@@ -36,12 +36,12 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <select id="lang-dropdown" class="lang-dropdown" aria-label="bash" onchange="this.value = 'none';">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="bash" onchange="if (this.value !== 'pd') window.location = `/${this.value}/nam.html`; else this.value = 'none';">
                   <option value="none" disabled selected></option>
-                  <option onclick="window.location = '/en/nam.html';">🇬🇧 English</option>
-                  <option onclick="window.location = '/es/nam.html';">🇪🇸 español</option>
-                  <option onclick="window.location = '/ja/nam.html';">🇯🇵 日本語</option>
-                  <option onclick="window.location = '/pd/nam.html';">🟰 pandunia</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                  <option value="pd">🟰 pandunia</option>
                 </select>
               </div>
             </div>

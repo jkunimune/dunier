@@ -75,21 +75,10 @@ export function transformInput(projection, segments) {
     return output;
 }
 /**
- * make any final transformations that don't depend on the type of map
- * projection.  this method accounts for south-up maps, and
- * should almost always be calld after project.
- * @param orientation the number of degrees to rotate the map widdershins
- * @param segments the Cartesian imputs in absolute coordinates
- * @returns the relative outputs in transformed coordinates
- */
-export function transformOutput(orientation, segments) {
-    return rotatePath(segments, orientation);
-}
-/**
  * project a list of SVG paths in latitude-longitude coordinates representing a series of closed paths.
  * @param projection the projection to use for each point
- * @param inPoints ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
- * @param precision the maximum permissible line segment length (anything longer will be broken up to make sure the projection isn't too degraded)
+ * @param inPoints ordered Iterator of segments, which each have attributes .type (str) and .args ([double]) (km)
+ * @param precision the maximum permissible line segment length (anything longer will be broken up to make sure the projection isn't too degraded) (km)
  * @return SVG.Path object
  */
 export function applyProjectionToPath(projection, inPoints, precision) {
@@ -1126,20 +1115,45 @@ export function convertPathClosuresToZ(segments) {
     return newSegments;
 }
 /**
- * return a copy of this path that is rotated widershins about the origin
+ * return a copy of this path that is isotropically scaled toward or from the origin
+ * @param segments the path to scale
+ * @param scale the desired dimensionless scale factor
+ */
+export function scalePath(segments, scale) {
+    var e_13, _a;
+    var output = [];
+    try {
+        for (var segments_2 = __values(segments), segments_2_1 = segments_2.next(); !segments_2_1.done; segments_2_1 = segments_2.next()) {
+            var _b = segments_2_1.value, type = _b.type, oldArgs = _b.args;
+            var newArgs = oldArgs.map(function (x) { return x * scale; });
+            output.push({ type: type, args: newArgs });
+        }
+    }
+    catch (e_13_1) { e_13 = { error: e_13_1 }; }
+    finally {
+        try {
+            if (segments_2_1 && !segments_2_1.done && (_a = segments_2.return)) _a.call(segments_2);
+        }
+        finally { if (e_13) throw e_13.error; }
+    }
+    return output;
+}
+/**
+ * return a path that is like this one but rotated widershins about the origin.
+ * the old path will not be modified.
  * @param segments the path to rotate
  * @param angle the amount to rotate in degrees – must be 90 or 180
  */
-function rotatePath(segments, angle) {
-    var e_13, _a;
+export function rotatePath(segments, angle) {
+    var e_14, _a;
     if (angle !== 0 && angle !== 90 && angle !== 180 && angle !== 270)
         throw new Error("unsupported rotation angle: ".concat(angle));
     if (angle === 0)
         return segments;
     var output = [];
     try {
-        for (var segments_2 = __values(segments), segments_2_1 = segments_2.next(); !segments_2_1.done; segments_2_1 = segments_2.next()) {
-            var _b = segments_2_1.value, oldType = _b.type, oldArgs = _b.args;
+        for (var segments_3 = __values(segments), segments_3_1 = segments_3.next(); !segments_3_1.done; segments_3_1 = segments_3.next()) {
+            var _b = segments_3_1.value, oldType = _b.type, oldArgs = _b.args;
             var newType = oldType;
             if (angle === 90 || angle === 270) {
                 if (oldType === 'Φ')
@@ -1190,12 +1204,12 @@ function rotatePath(segments, angle) {
             output.push({ type: newType, args: newArgs });
         }
     }
-    catch (e_13_1) { e_13 = { error: e_13_1 }; }
+    catch (e_14_1) { e_14 = { error: e_14_1 }; }
     finally {
         try {
-            if (segments_2_1 && !segments_2_1.done && (_a = segments_2.return)) _a.call(segments_2);
+            if (segments_3_1 && !segments_3_1.done && (_a = segments_3.return)) _a.call(segments_3);
         }
-        finally { if (e_13) throw e_13.error; }
+        finally { if (e_14) throw e_14.error; }
     }
     return output;
 }

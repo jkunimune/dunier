@@ -17,11 +17,11 @@ export function download(blob, filename) {
 /**
  * take a Blob containing an SVG and turn it into a PNG, and queue up a callback that will call download() on it when it finishes.
  */
-export function convertSVGToPNGAndThenDownloadIt(svg, filename) {
+export function convertSVGToPNGAndThenDownloadIt(svg, width, height, filename) {
     var canvas = document.createElement("canvas");
     var context = canvas.getContext("2d");
-    canvas.width = 800;
-    canvas.height = 800;
+    canvas.width = width;
+    canvas.height = height;
     var image = new Image();
     image.src = window.URL.createObjectURL(svg);
     image.onload = function () {

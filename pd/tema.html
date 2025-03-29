@@ -36,12 +36,12 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <select id="lang-dropdown" class="lang-dropdown" aria-label="bash" onchange="this.value = 'none';">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="bash" onchange="if (this.value !== 'pd') window.location = `/${this.value}/tema.html`; else this.value = 'none';">
                   <option value="none" disabled selected></option>
-                  <option onclick="window.location = '/en/tema.html';">🇬🇧 English</option>
-                  <option onclick="window.location = '/es/tema.html';">🇪🇸 español</option>
-                  <option onclick="window.location = '/ja/tema.html';">🇯🇵 日本語</option>
-                  <option onclick="window.location = '/pd/tema.html';">🟰 pandunia</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                  <option value="pd">🟰 pandunia</option>
                 </select>
               </div>
             </div>
@@ -57,7 +57,7 @@
 	<h3>sabeteze</h3>
 	<p>Dunier is made by Justin Kunimune, a Wikipedia editor and linguistics enthusiast.  It is heavily inspired by Azgaar's <a href="https://azgaar.github.io/Fantasy-Map-Generator">Fantasy Map Generator</a>.  It makes use of Vladimir Agaforkin's <a href="https://github.com/mourner/tinyqueue">Tinyqueue</a>, Stefan Haack's <a href="https://github.com/shaack/bootstrap-input-spinner">Bootstrap Input Spinner</a>, Axel Rauchmayer's <a href="https://2ality.com/2020/01/enum-pattern.html">Enumify</a>, and James Hall's <a href="https://parall.ax/products/jspdf">JSPDF</a>, as well as <a href="https://plotly.com">Plotly</a> and <a href="https://getbootstrap.com">Bootstrap</a>.</p>
 	<h3>halal</h3>
-	<p>dunier itself is marked as dedicated to the public domain via the <a href="https://creativecommons.org/publicdomain/zero/1.0/en">CC0 1.0 Universal license</a>.  You may copy, modify, and distribute it, even for commercial purposes, all without asking permission.  As for maps generated using Dunier, I'm not exactly sure how that works legally, but I don't have a problem with you treating it as your own intellectual property, so please use it however you like.</p>
+	<p>Dunier itself is marked as dedicated to the public domain via the <a href="https://creativecommons.org/publicdomain/zero/1.0/en">CC0 1.0 Universal license</a>.  Maps generated using Dunier are in the public domain because they are created by a computer algorithm and don't contain enough human authorship for a copyright claim.  Thus, you may copy, modify, and distribute both – even for commercial purposes – without asking permission.</p>
 </div>
 
     </main>

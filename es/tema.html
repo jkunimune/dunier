@@ -36,12 +36,12 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <select id="lang-dropdown" class="lang-dropdown" aria-label="Idioma" onchange="this.value = 'none';">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="Idioma" onchange="if (this.value !== 'es') window.location = `/${this.value}/tema.html`; else this.value = 'none';">
                   <option value="none" disabled selected></option>
-                  <option onclick="window.location = '/en/tema.html';">🇬🇧 English</option>
-                  <option onclick="window.location = '/es/tema.html';">🇪🇸 español</option>
-                  <option onclick="window.location = '/ja/tema.html';">🇯🇵 日本語</option>
-                  <option onclick="window.location = '/pd/tema.html';">🟰 pandunia</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                  <option value="pd">🟰 pandunia</option>
                 </select>
               </div>
             </div>
@@ -57,7 +57,7 @@
 	<h3>Créditos</h3>
 	<p>Dunier se hace por Justin Kunimune, un editor de Wikipedia y entusiasta de la lingüística.  Se deja inspirar mucho por <a href="https://azgaar.github.io/Fantasy-Map-Generator">Fantasy Map Generator</a> de Azgaar.  En adición, usa <a href="https://github.com/mourner/tinyqueue">Tinyqueue</a> de Vladimir Agaforkin, <a href="https://github.com/shaack/bootstrap-input-spinner">Bootstrap Input Spinner</a> de Stefan Haack, <a href="https://2ality.com/2020/01/enum-pattern.html">Enumify</a> de Axel Rauchmayer, <a href="https://parall.ax/products/jspdf">JSPDF</a> de James Hall, <a href="https://plotly.com">Plotly</a>, y <a href="https://getbootstrap.com">Bootstrap</a>.</p>
 	<h3>Licencia</h3>
-	<p>Dunier en sí se dedica al dominio público por la licencia <a href="https://creativecommons.org/publicdomain/zero/1.0/en">CC0 1.0 Universal</a>.  Se lo permite copiar, modificar, y distribuir, también para fines comerciales, sin pedirme permisión.  En el caso de mapas que cree con Dunier, en realidad no sé cómo funciona legalmente. Pero no tengo ningún problema si los trata como su propia propiedad intelectual, así que por favor úselos como quiera.</p>
+	<p>Dunier en sí se dedica al dominio público por la licencia <a href="https://creativecommons.org/publicdomain/zero/1.0/en">CC0 1.0 Universal</a>.  Los mapas que cree con Dunier ya están en el dominio público porque se crearon por un programa informático y no tienen bastante autoría humana.  Por lo tanto, se los permite copiar, modificar, y distribuir ambos – también para fines comerciales – sin pedirme permisión.</p>
 </div>
 
     </main>

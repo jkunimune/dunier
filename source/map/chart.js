@@ -39,37 +39,41 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import { EmptySpace, INFINITE_PLANE } from "../surface/surface.js";
-import { filterSet, localizeInRange, longestShortestPath, pathToString, Side } from "../utilities/miscellaneus.js";
+import { filterSet, localizeInRange, pathToString, } from "../utilities/miscellaneus.js";
 import { MapProjection } from "./projection.js";
-import { delaunayTriangulate } from "../utilities/delaunay.js";
-import { circularRegression } from "../utilities/fitting.js";
 import { ErodingSegmentTree } from "../datastructures/erodingsegmenttree.js";
-import { assert_xy, endpoint } from "../utilities/coordinates.js";
-import { arcCenter, Vector } from "../utilities/geometry.js";
+import { Vector } from "../utilities/geometry.js";
 import { ARABILITY, Biome } from "../generation/terrain.js";
-import { applyProjectionToPath, calculatePathBounds, contains, convertPathClosuresToZ, intersection, transformInput, transformOutput } from "./pathutilities.js";
+import { applyProjectionToPath, calculatePathBounds, convertPathClosuresToZ, intersection, rotatePath, scalePath, transformInput, } from "./pathutilities.js";
+import { chooseLabelLocation } from "./labeling.js";
 // DEBUG OPTIONS
 var DISABLE_GREEBLING = false; // make all lines as simple as possible
 var SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 var COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 var COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than categorical colors
+var SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
 var SHOW_BACKGROUND = false; // have a big red rectangle under the map
 // OTHER FIXED DISPLAY OPTIONS
-var GREEBLE_FACTOR = 1e-2; // the smallest edge lengths to show relative to the map size
+var GREEBLE_SCALE = 1; // the smallest edge lengths to show (mm)
 var SUN_ELEVATION = 60 / 180 * Math.PI;
 var AMBIENT_LIGHT = 0.2;
-var RIVER_DISPLAY_FACTOR = 6e-2; // the watershed area relative to the map area needed to display a river
+var RIVER_DISPLAY_FACTOR = 6000; // the average scaled watershed area needed to display a river (mm²)
 var BORDER_SPECIFY_THRESHOLD = 0.51;
-var SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
-var N_DEGREES = 6; // number of line segments into which to break one radian of arc
-var RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
-var MAP_PRECISION = 5e-2;
+var MAP_PRECISION = 10; // max segment length in mm
+var WHITE = '#FFFFFF';
 var EGGSHELL = '#FAF2E4';
 var LIGHT_GRAY = '#d4cdbf';
-var DARK_GRAY = '#857f76';
+var DARK_GRAY = '#4c473f';
 var CHARCOAL = '#302d28';
+var BLACK = '#000000';
 var BLUE = '#5A7ECA';
-var AZURE = '#C6ECFF';
+var AZURE = '#cceeff';
+var YELLOW = '#fff9e2';
+// const BEIGE = '#E9CFAA';
+var CREAM = '#F9E7D0';
+var TAN = '#E9CFAA';
+var RUSSET = '#361907';
+var FUCHSIA = '#FF00FF';
 var BIOME_COLORS = new Map([
     [Biome.LAKE, '#5A7ECA'],
     [Biome.JUNGLE, '#82C17A'],
@@ -152,8 +156,9 @@ var Chart = /** @class */ (function () {
      * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
      * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
      * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
+     * @param area the desired bounding box area in mm²
      */
-    function Chart(projectionName, surface, regionOfInterest, orientationName, rectangularBounds) {
+    function Chart(projectionName, surface, regionOfInterest, orientationName, rectangularBounds, area) {
         var _a = Chart.chooseMapCentering(regionOfInterest, surface), centralMeridian = _a.centralMeridian, centralParallel = _a.centralParallel, meanRadius = _a.meanRadius;
         var southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
         var northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2 * Math.PI);
@@ -191,8 +196,12 @@ var Chart = /** @class */ (function () {
             this.dimensions = new Dimensions(-yBottom, -yTop, xLeft, xRight);
         else
             throw new Error("bruh");
-        // calculate the map scale in map-widths per km
-        this.scale = 1 / this.dimensions.diagonal;
+        // determine the appropriate scale to make this have the correct area
+        this.scale = Math.sqrt(area / this.dimensions.area);
+        this.dimensions = new Dimensions(this.scale * this.dimensions.left, this.scale * this.dimensions.right, this.scale * this.dimensions.top, this.scale * this.dimensions.bottom);
+        // expand the Chart dimensions by half a millimeter on each side to give the edge some breathing room
+        var margin = Math.max(0.5, this.dimensions.diagonal / 100);
+        this.dimensions = new Dimensions(this.dimensions.left - margin, this.dimensions.right + margin, this.dimensions.top - margin, this.dimensions.bottom + margin);
         // set the geographic and Cartesian limits of the mapped area
         if (λMax - λMin === 2 * Math.PI && this.projection.wrapsAround())
             this.geoEdges = [
@@ -203,43 +212,42 @@ var Chart = /** @class */ (function () {
             ];
         else
             this.geoEdges = Chart.rectangle(φMax, λMax, φMin, λMin, true);
-        this.mapEdges = Chart.rectangle(this.dimensions.left, this.dimensions.top, this.dimensions.right, this.dimensions.bottom, false);
+        this.mapEdges = Chart.rectangle(xLeft, yTop, xRight, yBottom, false);
     }
     /**
      * do your thing
      * @param surface the surface that we're mapping
      * @param world the world on that surface, if we're mapping human features
      * @param svg the SVG element on which to draw everything
-     * @param landColor the color scheme for the land areas
-     * @param seaColor the color scheme for the ocean areas
+     * @param color the color scheme
      * @param rivers whether to add rivers
      * @param borders whether to add state borders
      * @param shading whether to add shaded relief
      * @param civLabels whether to label countries
      * @param geoLabels whether to label mountain ranges and seas
-     * @param fontSize the size of city labels and minimum size of country and biome labels [pt]
+     * @param fontSize the size of city labels and minimum size of country and biome labels (mm)
      * @param style the transliteration convention to use for them
      * @return the list of Civs that are shown in this map
      */
-    Chart.prototype.depict = function (surface, world, svg, landColor, seaColor, rivers, borders, shading, civLabels, geoLabels, fontSize, style) {
+    Chart.prototype.depict = function (surface, world, svg, color, rivers, borders, shading, civLabels, geoLabels, fontSize, style) {
         var e_1, _a, e_2, _b, e_3, _c, e_4, _d;
-        if (fontSize === void 0) { fontSize = 2; }
+        if (fontSize === void 0) { fontSize = 3; }
         if (style === void 0) { style = null; }
         var bbox = this.dimensions;
         svg.setAttribute('viewBox', "".concat(bbox.left, " ").concat(bbox.top, " ").concat(bbox.width, " ").concat(bbox.height));
         svg.textContent = ''; // clear the image
         // set the basic overarching styles
         var styleSheet = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-        styleSheet.innerHTML = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; alignment-baseline: middle; }';
+        styleSheet.innerHTML = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; }';
         svg.appendChild(styleSheet);
         // add a layer for all the map data
         var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         g.setAttribute('id', 'generated-map');
         svg.appendChild(g);
-        this.testTextSize = Math.min((bbox.width) / 18, bbox.height);
+        this.testTextSize = this.dimensions.diagonal / 50; // mm
         this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         this.testText.setAttribute('class', 'map-label');
-        this.testText.setAttribute('style', "font-size: ".concat(this.testTextSize, "px;"));
+        this.testText.setAttribute('style', "font-size: ".concat(this.testTextSize, "px;")); // in SVG, using the unit 'px' causes the measurement to be interpreted as millimeters.
         svg.appendChild(this.testText);
         if (SHOW_BACKGROUND) {
             var rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -251,73 +259,88 @@ var Chart = /** @class */ (function () {
             g.appendChild(rectangle);
         }
         // decide what color the rivers will be
+        var landFill;
         var waterFill;
         var waterStroke;
+        var borderStroke;
         if (COLOR_BY_PLATE) {
+            landFill = FUCHSIA;
             waterFill = 'none';
             waterStroke = CHARCOAL;
+            borderStroke = CHARCOAL;
         }
-        else if (seaColor === 'white') {
-            waterFill = EGGSHELL;
+        else if (color === 'white') {
+            landFill = WHITE;
+            waterFill = WHITE;
             waterStroke = CHARCOAL;
+            borderStroke = CHARCOAL;
         }
-        else if (seaColor === 'gray') {
-            waterFill = DARK_GRAY;
+        else if (color === 'gray') {
+            landFill = EGGSHELL;
+            waterFill = LIGHT_GRAY;
             waterStroke = DARK_GRAY;
+            borderStroke = CHARCOAL;
         }
-        else if (seaColor === 'black') {
+        else if (color === 'black') {
+            landFill = EGGSHELL;
             waterFill = CHARCOAL;
             waterStroke = CHARCOAL;
+            borderStroke = BLACK;
         }
-        else if (seaColor === 'blue') {
-            waterFill = BLUE;
-            waterStroke = BLUE;
+        else if (color === 'sepia') {
+            landFill = CREAM;
+            waterFill = TAN;
+            waterStroke = RUSSET;
+            borderStroke = RUSSET;
         }
-        else if (seaColor === 'azure') {
+        else if (color === 'wikipedia') {
+            landFill = YELLOW;
             waterFill = AZURE;
             waterStroke = BLUE;
+            borderStroke = DARK_GRAY;
         }
-        else if (seaColor === 'heightmap') { // color the sea by altitude
-            var _loop_1 = function (i) {
-                var min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
-                var max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
-                this_1.fill(filterSet(surface.tiles, function (n) { return n.biome === Biome.OCEAN && -n.height >= min && -n.height < max; }), g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
-            };
-            var this_1 = this;
-            for (var i = 0; i < DEPTH_COLORS.length; i++) {
-                _loop_1(i);
-            }
-            waterFill = 'none';
+        else if (color === 'political') {
+            landFill = EGGSHELL;
+            waterFill = AZURE;
+            waterStroke = BLUE;
+            borderStroke = DARK_GRAY;
+        }
+        else if (color === 'physical') {
+            landFill = FUCHSIA;
+            waterFill = BLUE;
+            waterStroke = BLUE;
+            borderStroke = CHARCOAL;
+        }
+        else if (color === 'heightmap') {
+            landFill = FUCHSIA;
+            waterFill = FUCHSIA;
             waterStroke = DEPTH_COLORS[0];
+            borderStroke = CHARCOAL;
         }
         // color in the land
         if (COLOR_BY_PLATE) {
-            var _loop_2 = function (i) {
-                this_2.fill(filterSet(surface.tiles, function (n) { return n.plateIndex === i; }), g, COUNTRY_COLORS[i], Layer.GEO);
+            var _loop_1 = function (i) {
+                this_1.fill(filterSet(surface.tiles, function (n) { return n.plateIndex === i; }), g, COUNTRY_COLORS[i], Layer.GEO);
             };
-            var this_2 = this;
+            var this_1 = this;
+            // color the land (and the sea (don't worry, we'll still trace coastlines later)) by plate index
             for (var i = 0; i < 14; i++) {
-                _loop_2(i);
+                _loop_1(i);
             }
         }
-        else if (landColor === 'white') {
-            this.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN; }), g, EGGSHELL, Layer.BIO);
-        }
-        else if (landColor === 'gray') {
-            this.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN; }), g, LIGHT_GRAY, Layer.BIO);
-        }
-        else if (landColor === 'physical') { // draw the biomes
-            var _loop_3 = function (biome) {
+        else if (color === 'physical') {
+            var _loop_2 = function (biome) {
                 if (biome === Biome.LAKE)
-                    this_3.fill(filterSet(surface.tiles, function (n) { return n.biome === biome; }), g, waterFill, Layer.BIO);
+                    this_2.fill(filterSet(surface.tiles, function (n) { return n.biome === biome; }), g, waterFill, Layer.BIO);
                 else if (biome !== Biome.OCEAN)
-                    this_3.fill(filterSet(surface.tiles, function (n) { return n.biome === biome; }), g, BIOME_COLORS.get(biome), Layer.BIO);
+                    this_2.fill(filterSet(surface.tiles, function (n) { return n.biome === biome; }), g, BIOME_COLORS.get(biome), Layer.BIO);
             };
-            var this_3 = this;
+            var this_2 = this;
             try {
+                // color the land by biome
                 for (var _e = __values(BIOME_COLORS.keys()), _f = _e.next(); !_f.done; _f = _e.next()) {
                     var biome = _f.value;
-                    _loop_3(biome);
+                    _loop_2(biome);
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -328,7 +351,8 @@ var Chart = /** @class */ (function () {
                 finally { if (e_1) throw e_1.error; }
             }
         }
-        else if (landColor === 'political') { // draw the countries
+        else if (color === 'political') {
+            // color the land by country
             if (world === null)
                 throw new Error("this Chart was asked to color land politicly but the provided World was null");
             this.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN; }), g, EGGSHELL, Layer.KULTUR);
@@ -336,10 +360,10 @@ var Chart = /** @class */ (function () {
             var numFilledCivs = 0;
             for (var i = 0; biggestCivs.length > 0; i++) {
                 var civ = biggestCivs.pop();
-                var color = void 0;
+                var color_1 = void 0;
                 if (COLOR_BY_TECHNOLOGY) {
                     console.log("".concat(civ.getName().toString(), " has advanced to ").concat(civ.technology.toFixed(1)));
-                    color = "rgb(".concat(Math.max(0, Math.min(210, Math.log(civ.technology) * 128 - 360)), ", ") +
+                    color_1 = "rgb(".concat(Math.max(0, Math.min(210, Math.log(civ.technology) * 128 - 360)), ", ") +
                         "".concat(Math.max(0, Math.min(210, Math.log(civ.technology) * 128)), ", ") +
                         "".concat(Math.max(0, Math.min(210, Math.log(civ.technology) * 128 - 180)), ")");
                 }
@@ -347,31 +371,51 @@ var Chart = /** @class */ (function () {
                     if (numFilledCivs >= COUNTRY_COLORS.length)
                         break;
                     else
-                        color = COUNTRY_COLORS[numFilledCivs];
+                        color_1 = COUNTRY_COLORS[numFilledCivs];
                 }
-                var fill = this.fill(filterSet(civ.tileTree.keys(), function (n) { return n.biome !== Biome.OCEAN; }), g, color, Layer.KULTUR);
+                var fill = this.fill(filterSet(civ.tileTree.keys(), function (n) { return n.biome !== Biome.OCEAN; }), g, color_1, Layer.KULTUR);
                 if (fill.getAttribute("d").length > 0)
                     numFilledCivs++;
             }
         }
-        else if (landColor === 'heightmap') { // color the sea by altitude
-            var _loop_4 = function (i) {
+        else if (color === 'heightmap') {
+            var _loop_3 = function (i) {
                 var min = (i !== 0) ? i * ALTITUDE_STEP : -Infinity;
                 var max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Infinity;
-                this_4.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN && n.height >= min && n.height < max; }), g, ALTITUDE_COLORS[i], Layer.GEO);
+                this_3.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN && n.height >= min && n.height < max; }), g, ALTITUDE_COLORS[i], Layer.GEO);
             };
-            var this_4 = this;
+            var this_3 = this;
+            // color the land by altitude
             for (var i = 0; i < ALTITUDE_COLORS.length; i++) {
-                _loop_4(i);
+                _loop_3(i);
             }
+        }
+        else {
+            // color in the land with a uniform color
+            this.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN; }), g, landFill, Layer.BIO);
         }
         // add rivers
         if (rivers) {
-            var riverDisplayThreshold_1 = RIVER_DISPLAY_FACTOR * this.dimensions.area;
+            var riverDisplayThreshold_1 = RIVER_DISPLAY_FACTOR / Math.pow(this.scale, 2);
             this.stroke(__spreadArray([], __read(surface.rivers), false).filter(function (ud) { return ud[0].flow >= riverDisplayThreshold_1; }), g, waterStroke, 1.4, Layer.GEO);
         }
         // color in the sea
-        this.fill(filterSet(surface.tiles, function (n) { return n.biome === Biome.OCEAN; }), g, waterFill, Layer.GEO, waterStroke, 0.7);
+        if (color === 'heightmap') {
+            var _loop_4 = function (i) {
+                var min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
+                var max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
+                this_4.fill(filterSet(surface.tiles, function (n) { return n.biome === Biome.OCEAN && -n.height >= min && -n.height < max; }), g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
+            };
+            var this_4 = this;
+            // color in the sea by altitude
+            for (var i = 0; i < DEPTH_COLORS.length; i++) {
+                _loop_4(i);
+            }
+        }
+        else {
+            // color in the sea with a uniform color
+            this.fill(filterSet(surface.tiles, function (n) { return n.isWater(); }), g, waterFill, Layer.GEO);
+        }
         // add borders with hovertext
         if (borders) {
             if (world === null)
@@ -387,7 +431,7 @@ var Chart = /** @class */ (function () {
                     hover.appendChild(text);
                     titledG.appendChild(hover);
                     g.appendChild(titledG);
-                    this.fill(filterSet(civ.tileTree.keys(), function (n) { return n.biome !== Biome.OCEAN; }), titledG, 'none', Layer.KULTUR, CHARCOAL, 0.7).setAttribute('pointer-events', 'all');
+                    this.fill(filterSet(civ.tileTree.keys(), function (n) { return n.biome !== Biome.OCEAN; }), titledG, 'none', Layer.KULTUR, borderStroke, 0.7).setAttribute('pointer-events', 'all');
                     // }
                 }
             }
@@ -399,6 +443,8 @@ var Chart = /** @class */ (function () {
                 finally { if (e_2) throw e_2.error; }
             }
         }
+        // trace the coasts
+        this.fill(filterSet(surface.tiles, function (n) { return n.isWater(); }), g, 'none', Layer.GEO, waterStroke, 0.7);
         // add relief shadows
         if (shading) {
             this.shade(surface.vertices, g);
@@ -412,7 +458,7 @@ var Chart = /** @class */ (function () {
                     var civ = _k.value;
                     if (civ.getPopulation() > 0)
                         this.label(__spreadArray([], __read(civ.tileTree.keys()), false).filter(function (n) { return !n.isWater(); }), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
-                        civ.getName().toString(style), svg, fontSize);
+                        civ.getName().toString(style), g, fontSize);
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
@@ -424,7 +470,7 @@ var Chart = /** @class */ (function () {
             }
         }
         // add an outline to the whole thing
-        this.fill(surface.tiles, g, 'none', Layer.GEO, 'black', 1.4);
+        this.fill(surface.tiles, g, 'none', Layer.GEO, 'black', 1.4, 'miter');
         if (world !== null) {
             // finally, check which Civs are on this map
             // (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
@@ -457,16 +503,18 @@ var Chart = /** @class */ (function () {
      * @param greeble what kind of edge it is for the purposes of greebling
      * @param stroke color of the outline.
      * @param strokeWidth the width of the outline to put around it (will match fill color).
+     * @param strokeLinejoin the line joint style to use
      * @return the newly created element encompassing these tiles.
      */
-    Chart.prototype.fill = function (tiles, svg, color, greeble, stroke, strokeWidth) {
+    Chart.prototype.fill = function (tiles, svg, color, greeble, stroke, strokeWidth, strokeLinejoin) {
         if (stroke === void 0) { stroke = 'none'; }
         if (strokeWidth === void 0) { strokeWidth = 0; }
+        if (strokeLinejoin === void 0) { strokeLinejoin = 'round'; }
         if (tiles.size <= 0)
             return this.draw([], svg);
         var segments = convertPathClosuresToZ(this.projectPath(Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.scale), true));
         var path = this.draw(segments, svg);
-        path.setAttribute('style', "fill: ".concat(color, "; stroke: ").concat(stroke, "; stroke-width: ").concat(strokeWidth, "; stroke-linejoin: round;"));
+        path.setAttribute('style', "fill: ".concat(color, "; stroke: ").concat(stroke, "; stroke-width: ").concat(strokeWidth, "; stroke-linejoin: ").concat(strokeLinejoin, ";"));
         return path;
     };
     /**
@@ -476,14 +524,16 @@ var Chart = /** @class */ (function () {
      * @param color String that HTML can interpret as a color.
      * @param width the width of the stroke
      * @param greeble what kind of edge it is for the purposes of greebling
+     * @param strokeLinejoin the stroke joint style to use
      * @returns the newly created element comprising all these lines
      */
-    Chart.prototype.stroke = function (strokes, svg, color, width, greeble) {
+    Chart.prototype.stroke = function (strokes, svg, color, width, greeble, strokeLinejoin) {
+        if (strokeLinejoin === void 0) { strokeLinejoin = 'round'; }
         var segments = this.projectPath(Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.scale), false);
         if (SMOOTH_RIVERS)
             segments = Chart.smooth(segments);
         var path = this.draw(segments, svg);
-        path.setAttribute('style', "fill: none; stroke: ".concat(color, "; stroke-width: ").concat(width, "; stroke-linejoin: round; stroke-linecap: round;"));
+        path.setAttribute('style', "fill: none; stroke: ".concat(color, "; stroke-width: ").concat(width, "; stroke-linejoin: ").concat(strokeLinejoin, "; stroke-linecap: round;"));
         return path;
     };
     /**
@@ -506,7 +556,7 @@ var Chart = /** @class */ (function () {
                         var node = _f.value;
                         if (node instanceof EmptySpace)
                             continue triangleSearch;
-                        var _g = this.projection.projectPoint(node), x = _g.x, y = _g.y;
+                        var _g = this.projection.projectPoint(node), x = _g.x, y = _g.y; // TODO: account for map orientation so it's not always north that's lit
                         var z = Math.max(0, node.height);
                         p.push(new Vector(x, -y, z));
                     }
@@ -566,293 +616,47 @@ var Chart = /** @class */ (function () {
         }
     };
     /**
-     * add some text to this region using a simplified form of the RALF labelling
-     * algorithm, described in
-     *     Krumpe, F. and Mendel, T. (2020) "Computing Curved Area Labels in Near-Real Time"
-     *     (Doctoral dissertation). University of Stuttgart, Stuttgart, Germany.
-     *     https://arxiv.org/abs/2001.02938 TODO: try horizontal labels: https://github.com/mapbox/polylabel
+     * add some text to this region on each of the
      * @param tiles the Nodos that comprise the region to be labelled.
      * @param label the text to place.
      * @param svg the SVG object on which to write the label.
-     * @param minFontSize the smallest the label can be. if the label cannot fit inside
-     *                    the region with this font size, no label will be placed and it
-     *                    will return null.
+     * @param minFontSize the smallest allowable font size, in mm. if the label cannot fit inside
+     *                    the region with this font size, no label will be placed.
      */
     Chart.prototype.label = function (tiles, label, svg, minFontSize) {
-        var e_9, _a, e_10, _b, e_11, _c, e_12, _d;
         if (tiles.length === 0)
             throw new Error("there must be at least one tile to label");
         this.testText.textContent = '..' + label + '..';
-        var boundBox = this.testText.getBoundingClientRect(); // to calibrate the font sizes, measure the size of some test text in px
-        this.testText.textContent = '';
-        var mapScale = svg.clientWidth / this.dimensions.width; // and also the current size of the map in px for reference
-        var aspect = boundBox.width / (this.testTextSize * mapScale);
-        minFontSize = minFontSize / mapScale; // TODO: at some point, I probably have to grapple with the printed width of the map.
+        var testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
+        var svgScale = this.dimensions.width / svg.getBoundingClientRect().width;
+        var lengthPerSize = testTextLength * svgScale / this.testTextSize;
+        var heightPerSize = 0.72; // this number was measured for Noto Sans
+        var aspectRatio = lengthPerSize / heightPerSize;
         var path = this.projectPath(// do the projection
         Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.scale), true);
         if (path.length === 0)
-            return null;
-        for (var i = path.length - 1; i >= 1; i--) { // convert it into a simplified polygon
-            if (path[i].type === 'A') { // turn arcs into triscadecagons TODO: find out if this can create coincident nodes and thereby Delaunay Triangulation to fail
-                var start = assert_xy(endpoint(path[i - 1]));
-                var end = assert_xy(endpoint(path[i]));
-                var l = Math.hypot(end.x - start.x, end.y - start.y);
-                var r = Math.abs(path[i].args[0] + path[i].args[1]) / 2;
-                var c = arcCenter(start, end, r, path[i].args[3] === path[i].args[4]);
-                var Δθ = 2 * Math.asin(l / (2 * r));
-                var θ0 = Math.atan2(start.y - c.y, start.x - c.x);
-                var nSegments = Math.ceil(N_DEGREES * Δθ);
-                var lineApprox = [];
-                for (var j = 1; j <= nSegments; j++)
-                    lineApprox.push({ type: 'L', args: [
-                            c.x + r * Math.cos(θ0 + Δθ * j / nSegments),
-                            c.y + r * Math.sin(θ0 + Δθ * j / nSegments)
-                        ] });
-                path.splice.apply(path, __spreadArray([i, 1], __read(lineApprox), false));
-            }
-        }
-        while (path.length > SIMPLE_PATH_LENGTH) { // simplify path
-            var shortI = -1, minL = Infinity;
-            for (var i = 1; i < path.length - 1; i++) {
-                if (path[i].type === 'L' && path[i + 1].type === 'L') {
-                    var l = Math.hypot(path[i + 1].args[0] - path[i - 1].args[0], path[i + 1].args[1] - path[i - 1].args[1]);
-                    if (l < minL) { // find the vertex whose removal results in the shortest line segment
-                        minL = l;
-                        shortI = i;
-                    }
-                }
-            }
-            path.splice(shortI, 1); // and remove it
-        }
-        while (path.length < SIMPLE_PATH_LENGTH / 2) { // complicate path
-            var longI = -1, maxL = -Infinity;
-            for (var i = 1; i < path.length; i++) {
-                if (path[i].type === 'L') {
-                    var l = Math.hypot(path[i].args[0] - path[i - 1].args[0], path[i].args[1] - path[i - 1].args[1]);
-                    if (l > maxL) { // find the longest line segment
-                        maxL = l;
-                        longI = i;
-                    }
-                }
-            }
-            console.assert(longI >= 0, path);
-            path.splice(longI, 0, {
-                type: 'L',
-                args: [(path[longI].args[0] + path[longI - 1].args[0]) / 2, (path[longI].args[1] + path[longI - 1].args[1]) / 2]
-            });
-        }
-        // estimate skeleton
-        var points = [];
+            return;
+        // choose the best location for the text
+        var location;
         try {
-            for (var path_1 = __values(path), path_1_1 = path_1.next(); !path_1_1.done; path_1_1 = path_1.next()) {
-                var segment = path_1_1.value;
-                if (segment.type === 'L')
-                    points.push(new Vector(segment.args[0], -segment.args[1], 0));
-            } // note the minus sign: all calculations will be done with a sensibly oriented y axis
+            location = chooseLabelLocation(path, aspectRatio);
         }
-        catch (e_9_1) { e_9 = { error: e_9_1 }; }
-        finally {
-            try {
-                if (path_1_1 && !path_1_1.done && (_a = path_1.return)) _a.call(path_1);
-            }
-            finally { if (e_9) throw e_9.error; }
+        catch (e) {
+            console.error(e);
+            return;
         }
-        var triangulation = delaunayTriangulate(points); // start with a Delaunay triangulation of the border
-        var centers = [];
-        for (var i = 0; i < triangulation.triangles.length; i++) { // then convert that into a voronoi graph
-            var abc = triangulation.triangles[i];
-            var a = points[abc[0]];
-            var b = points[abc[1]];
-            var c = points[abc[2]];
-            var D = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y));
-            centers.push({
-                x: (a.sqr() * (b.y - c.y) + b.sqr() * (c.y - a.y) + c.sqr() * (a.y - b.y)) / D, // calculating the circumcenters
-                y: (a.sqr() * (c.x - b.x) + b.sqr() * (a.x - c.x) + c.sqr() * (b.x - a.x)) / D,
-                r: 0, isContained: false, edges: new Array(triangulation.triangles.length).fill(null),
-            });
-            centers[i].r = Math.hypot(a.x - centers[i].x, a.y - centers[i].y);
-            centers[i].isContained = contains(// build a graph out of the contained centers
-            path, { s: centers[i].x, t: -centers[i].y }, INFINITE_PLANE) !== Side.OUT; // (we're counting "borderline" as in)
-            if (centers[i].isContained) {
-                for (var j = 0; j < i; j++) {
-                    if (centers[j].isContained) {
-                        var def = triangulation.triangles[j]; // and recording adjacency
-                        triangleFit: // TODO: what is this code doing? add better comments, and see if it can be made more efficient.
-                         for (var k = 0; k < 3; k++) {
-                            for (var l = 0; l < 3; l++) {
-                                if (abc[k] === def[(l + 1) % 3] && abc[(k + 1) % 3] === def[l]) {
-                                    var a_1 = new Vector(centers[i].x, centers[i].y, 0);
-                                    var c_1 = new Vector(centers[j].x, centers[j].y, 0);
-                                    var b_1 = points[abc[k]], d = points[abc[(k + 1) % 3]];
-                                    var length_1 = Math.sqrt(a_1.minus(c_1).sqr()); // compute the length of this edge
-                                    var clearance = // estimate of minimum space around this edge
-                                     void 0; // estimate of minimum space around this edge
-                                    var mid = b_1.plus(d).over(2);
-                                    if (a_1.minus(mid).dot(c_1.minus(mid)) < 0)
-                                        clearance = Math.sqrt(b_1.minus(d).sqr()) / 2;
-                                    else
-                                        clearance = Math.min(centers[i].r, centers[j].r);
-                                    centers[i].edges[j] = centers[j].edges[i] = { length: length_1, clearance: clearance };
-                                    break triangleFit;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        var argmax = -1;
-        for (var i = 0; i < centers.length; i++) { // find the circumcenter with the greatest clearance
-            if (centers[i].isContained && (argmax < 0 || centers[i].r > centers[argmax].r))
-                argmax = i;
-        }
-        console.assert(argmax >= 0, label, points, centers);
-        var candidates = []; // next collect candidate paths along which you might fit labels
-        var minClearance = centers[argmax].r;
-        while (candidates.length < RALF_NUM_CANDIDATES && minClearance >= minFontSize) {
-            minClearance /= 1.4; // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
-            var minLength = minClearance * aspect;
-            var usedPoints = new Set();
-            while (usedPoints.size < centers.length) {
-                var newEndpoint = longestShortestPath(centers, (usedPoints.size > 0) ? usedPoints : new Set([argmax]), minClearance).points[0]; // find the point farthest from the paths you have checked TODO expand on this argmax thing to make sure check every exclave fore we start reducing the minimum
-                if (usedPoints.has(newEndpoint))
-                    break;
-                var newShortestPath = longestShortestPath(centers, new Set([newEndpoint]), minClearance); // find a new diverse longest shortest path with that as endpoin
-                if (newShortestPath.length >= minLength) { // if the label will fit,
-                    candidates.push(newShortestPath.points); // take it
-                    try {
-                        for (var _e = (e_10 = void 0, __values(newShortestPath.points)), _f = _e.next(); !_f.done; _f = _e.next()) {
-                            var point = _f.value;
-                            usedPoints.add(point);
-                        } // and look for a different one
-                    }
-                    catch (e_10_1) { e_10 = { error: e_10_1 }; }
-                    finally {
-                        try {
-                            if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
-                        }
-                        finally { if (e_10) throw e_10.error; }
-                    }
-                }
-                else // if it won't
-                    break; // reduce the required clearance and try again
-            }
-        }
-        if (candidates.length === 0)
-            return null;
-        var axisValue = -Infinity;
-        var axisR = null, axisCx = null, axisCy = null, axisΘL = null, axisΘR = null, axisH = null;
-        try {
-            for (var candidates_1 = __values(candidates), candidates_1_1 = candidates_1.next(); !candidates_1_1.done; candidates_1_1 = candidates_1.next()) { // for each candidate label axis
-                var candidate = candidates_1_1.value;
-                if (candidate.length < 3)
-                    continue; // with at least three points
-                var _g = circularRegression(candidate.map(function (i) { return centers[i]; })), R = _g.R, cx = _g.cx, cy = _g.cy;
-                var midpoint = centers[candidate[Math.trunc(candidate.length / 2)]];
-                var circularPoints = []; // get polygon segments in circular coordinates
-                var θ0 = Math.atan2(midpoint.y - cy, midpoint.x - cx);
-                for (var i = 0; i < points.length; i++) {
-                    var _h = points[i], x = _h.x, y = _h.y;
-                    var θ = (Math.atan2(y - cy, x - cx) - θ0 + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
-                    var r = Math.hypot(x - cx, y - cy);
-                    var xp = R * θ, yp = R - r;
-                    circularPoints.push({ x: xp, y: yp });
-                }
-                var xMin = -Math.PI * R, xMax = Math.PI * R; // TODO: move more of this into separate funccions
-                var wedges = []; // get wedges from edges
-                for (var i = 0; i < points.length; i++) { // there's a wedge associated with each pair of points
-                    var p0 = circularPoints[i];
-                    var p1 = circularPoints[(i + 1) % circularPoints.length];
-                    var height = (p0.y < 0 === p1.y < 0) ? Math.min(Math.abs(p0.y), Math.abs(p1.y)) : 0;
-                    var interpretations = [];
-                    if (Math.abs(p1.x - p0.x) < Math.PI * R) {
-                        interpretations.push([p0.x, p1.x, height]); // well, usually there's just one
-                    }
-                    else {
-                        interpretations.push([p0.x, p1.x + 2 * Math.PI * R * Math.sign(p0.x), height]); // but sometimes there's clipping on the periodic boundary condition...
-                        interpretations.push([p0.x + 2 * Math.PI * R * Math.sign(p1.x), p1.x, height]); // so you have to try wrapping p0 over to p1, and also p1 over to p0
-                    }
-                    try {
-                        for (var interpretations_1 = (e_12 = void 0, __values(interpretations)), interpretations_1_1 = interpretations_1.next(); !interpretations_1_1.done; interpretations_1_1 = interpretations_1.next()) {
-                            var _j = __read(interpretations_1_1.value, 3), x0 = _j[0], x1 = _j[1], y = _j[2];
-                            if (height === 0) { // if this crosses the baseline, adjust the total bounds
-                                if (x0 < 0 || x1 < 0)
-                                    if (Math.max(x0, x1) > xMin)
-                                        xMin = Math.max(x0, x1);
-                                if (x0 > 0 || x1 > 0)
-                                    if (Math.min(x0, x1) < xMax)
-                                        xMax = Math.min(x0, x1);
-                            }
-                            else { // otherwise, add a floating wedge
-                                wedges.push({
-                                    xL: Math.min(x0, x1) - y * aspect,
-                                    xR: Math.max(x0, x1) + y * aspect,
-                                    y: y,
-                                });
-                            }
-                        }
-                    }
-                    catch (e_12_1) { e_12 = { error: e_12_1 }; }
-                    finally {
-                        try {
-                            if (interpretations_1_1 && !interpretations_1_1.done && (_d = interpretations_1.return)) _d.call(interpretations_1);
-                        }
-                        finally { if (e_12) throw e_12.error; }
-                    }
-                }
-                if (xMin > xMax) // occasionally we get these really terrible candidates
-                    continue; // just skip them
-                wedges.sort(function (a, b) { return b.y - a.y; }); // TODO it would be slightly more efficient if I can merge wedges that share a min vertex
-                var _k = Chart.findOpenSpotOnArc(xMin, xMax, aspect, wedges), location_1 = _k.location, halfHeight = _k.halfHeight;
-                var area = halfHeight * halfHeight, bendRatio = halfHeight / R, horizontality = -Math.sin(θ0);
-                if (horizontality < 0) // if it's going to be upside down
-                    halfHeight *= -1; // flip it around
-                var value = Math.log(area) - bendRatio / (1 - bendRatio) + Math.pow(horizontality, 2); // choose the axis with the biggest area and smallest curvature
-                if (value > axisValue) {
-                    axisValue = value;
-                    axisR = R;
-                    axisCx = cx;
-                    axisCy = cy;
-                    axisΘL = θ0 + location_1 / R - halfHeight * aspect / R;
-                    axisΘR = θ0 + location_1 / R + halfHeight * aspect / R;
-                    axisH = 2 * Math.abs(halfHeight); // TODO: enforce font size limit
-                }
-            }
-        }
-        catch (e_11_1) { e_11 = { error: e_11_1 }; }
-        finally {
-            try {
-                if (candidates_1_1 && !candidates_1_1.done && (_c = candidates_1.return)) _c.call(candidates_1);
-            }
-            finally { if (e_11) throw e_11.error; }
-        }
-        if (axisR === null) {
-            console.error("all ".concat(candidates.length, " candidates were somehow incredible garbage"));
-            return null;
-        }
-        // const axos = [];
-        // for (const i of axis)
-        // 	axos.push({type:'L', args:[centers[i].x, -centers[i].y]});
-        // axos[0].type = 'M';
-        // const drawing = this.draw(axos, svg);
-        // drawing.setAttribute('style', 'stroke-width:.5px; fill:none; stroke:#004;');
-        var arc = this.draw([
-            { type: 'M', args: [
-                    axisCx + axisR * Math.cos(axisΘL), -(axisCy + axisR * Math.sin(axisΘL))
-                ] },
-            { type: 'A', args: [
-                    axisR, axisR, 0,
-                    (Math.abs(axisΘR - axisΘL) < Math.PI) ? 0 : 1,
-                    (axisΘR > axisΘL) ? 0 : 1,
-                    axisCx + axisR * Math.cos(axisΘR), -(axisCy + axisR * Math.sin(axisΘR))
-                ] },
-        ], svg);
+        var fontSize = location.height / heightPerSize;
+        if (fontSize < minFontSize)
+            return;
+        var arc = this.draw(location.arc, svg); // make the arc in the SVG
         // arc.setAttribute('style', `fill: none; stroke: #400; stroke-width: .5px;`);
-        arc.setAttribute('style', "fill: none; stroke: none;");
+        if (SHOW_LABEL_PATHS)
+            arc.setAttribute('style', "fill: none; stroke: #770000; stroke-width: ".concat(location.height));
+        else
+            arc.setAttribute('style', 'fill: none; stroke: none;');
         arc.setAttribute('id', "labelArc".concat(this.labelIndex));
-        // svg.appendChild(arc);
         var textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
-        textGroup.setAttribute('style', "font-size: ".concat(axisH, "px"));
+        textGroup.setAttribute('style', "font-size: ".concat(fontSize, "px; letter-spacing: ").concat(location.letterSpacing * .5, "em;")); // this .5em is just a guess at the average letter width
         svg.appendChild(textGroup);
         var textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
         textPath.setAttribute('class', 'map-label');
@@ -861,36 +665,6 @@ var Chart = /** @class */ (function () {
         textGroup.appendChild(textPath);
         textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
         this.labelIndex += 1;
-        return textGroup;
-    };
-    Chart.findOpenSpotOnArc = function (min, max, aspect, wedges) {
-        var validRegion = new ErodingSegmentTree(min, max); // construct segment tree
-        var y = 0; // iterate height upward until no segments are left
-        while (true) {
-            if (wedges.length > 0) {
-                var pole = validRegion.getCenter();
-                var next = wedges.pop();
-                if (next.y < y + pole.radius / aspect) { // if the next wedge comes before we run out of space
-                    validRegion.erode((next.y - y) * aspect); // go up to it
-                    y = next.y;
-                    if (validRegion.getMinim() >= next.xL && validRegion.getMaxim() <= next.xR) { // if it obstructs the entire remaining area
-                        if (validRegion.contains(0)) // pick a remaining spot and return the current heit
-                            return { halfHeight: y, location: 0 };
-                        else
-                            return { halfHeight: y, location: validRegion.getClosest(0) };
-                    }
-                    else {
-                        validRegion.remove(next.xL, next.xR); // or just cover up whatever area it obstructs
-                    }
-                }
-                else { // if the next wedge comes to late, find the last remaining point
-                    return { location: pole.location, halfHeight: pole.radius / aspect };
-                }
-            }
-            else {
-                throw new Error("The algorithm that finds the optimal place on an arc to place a label failed.");
-            }
-        }
     };
     /**
      * convert the series of segments to an HTML path element and add it to the Element
@@ -898,7 +672,6 @@ var Chart = /** @class */ (function () {
     Chart.prototype.draw = function (segments, svg) {
         var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         path.setAttribute('d', pathToString(segments));
-        path.setAttribute('vector-effect', 'non-scaling-stroke');
         return svg.appendChild(path); // put it in the SVG
     };
     /**
@@ -913,9 +686,9 @@ var Chart = /** @class */ (function () {
         var croppedToGeoRegion = intersection(transformInput(this.projection, segments), this.geoEdges, this.projection.domain, closePath);
         if (croppedToGeoRegion.length === 0)
             return [];
-        var projected = applyProjectionToPath(this.projection, croppedToGeoRegion, MAP_PRECISION * this.dimensions.diagonal);
-        var croppedToMapRegion = intersection(transformOutput(this.orientation, projected), this.mapEdges, INFINITE_PLANE, closePath);
-        return croppedToMapRegion;
+        var projected = applyProjectionToPath(this.projection, croppedToGeoRegion, MAP_PRECISION / this.scale);
+        var croppedToMapRegion = intersection(projected, this.mapEdges, INFINITE_PLANE, closePath);
+        return scalePath(rotatePath(croppedToMapRegion, this.orientation), this.scale);
     };
     /**
      * create a path that forms the border of this set of Tiles.  this will only include the interface between included
@@ -935,15 +708,15 @@ var Chart = /** @class */ (function () {
      * @return Array of loops, each loop being an Array of Vertexes or plain coordinate pairs
      */
     Chart.outline = function (tiles) {
-        var e_13, _a, e_14, _b;
+        var e_9, _a, e_10, _b;
         var tileSet = new Set(tiles);
         var accountedFor = new Set(); // keep track of which Edge have been done
-        var output = []; // TODO: will this thro an error if I try to outline the entire surface?
+        var output = [];
         try {
             for (var tileSet_1 = __values(tileSet), tileSet_1_1 = tileSet_1.next(); !tileSet_1_1.done; tileSet_1_1 = tileSet_1.next()) { // look at every included tile
                 var inTile = tileSet_1_1.value;
                 try {
-                    for (var _c = (e_14 = void 0, __values(inTile.neighbors.keys())), _d = _c.next(); !_d.done; _d = _c.next()) { // and every tile adjacent to an included one
+                    for (var _c = (e_10 = void 0, __values(inTile.neighbors.keys())), _d = _c.next(); !_d.done; _d = _c.next()) { // and every tile adjacent to an included one
                         var outTile = _d.value;
                         if (tileSet.has(outTile))
                             continue; // (we only care if that adjacent tile is excluded)
@@ -991,21 +764,21 @@ var Chart = /** @class */ (function () {
                         }
                     }
                 }
-                catch (e_14_1) { e_14 = { error: e_14_1 }; }
+                catch (e_10_1) { e_10 = { error: e_10_1 }; }
                 finally {
                     try {
                         if (_d && !_d.done && (_b = _c.return)) _b.call(_c);
                     }
-                    finally { if (e_14) throw e_14.error; }
+                    finally { if (e_10) throw e_10.error; }
                 }
             }
         }
-        catch (e_13_1) { e_13 = { error: e_13_1 }; }
+        catch (e_9_1) { e_9 = { error: e_9_1 }; }
         finally {
             try {
                 if (tileSet_1_1 && !tileSet_1_1.done && (_a = tileSet_1.return)) _a.call(tileSet_1);
             }
-            finally { if (e_13) throw e_13.error; }
+            finally { if (e_9) throw e_9.error; }
         }
         return output;
     };
@@ -1016,7 +789,7 @@ var Chart = /** @class */ (function () {
      * @param lines Set of lists of points to be combined and pathified.
      */
     Chart.aggregate = function (lines) {
-        var e_15, _a, e_16, _b, e_17, _c, e_18, _d;
+        var e_11, _a, e_12, _b, e_13, _c, e_14, _d;
         var queue = __spreadArray([], __read(lines), false);
         var consolidated = new Set(); // first, consolidate
         var heads = new Map(); // map from points to [lines beginning with endpoint]
@@ -1024,7 +797,7 @@ var Chart = /** @class */ (function () {
         var torsos = new Map(); // map from midpoints to line containing midpoint
         while (queue.length > 0) {
             try {
-                for (var consolidated_1 = (e_15 = void 0, __values(consolidated)), consolidated_1_1 = consolidated_1.next(); !consolidated_1_1.done; consolidated_1_1 = consolidated_1.next()) {
+                for (var consolidated_1 = (e_11 = void 0, __values(consolidated)), consolidated_1_1 = consolidated_1.next(); !consolidated_1_1.done; consolidated_1_1 = consolidated_1.next()) {
                     var l = consolidated_1_1.value;
                     if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
                         throw Error("up top!");
@@ -1032,12 +805,12 @@ var Chart = /** @class */ (function () {
                         throw Error("up slightly lower!");
                 }
             }
-            catch (e_15_1) { e_15 = { error: e_15_1 }; }
+            catch (e_11_1) { e_11 = { error: e_11_1 }; }
             finally {
                 try {
                     if (consolidated_1_1 && !consolidated_1_1.done && (_a = consolidated_1.return)) _a.call(consolidated_1);
                 }
-                finally { if (e_15) throw e_15.error; }
+                finally { if (e_11) throw e_11.error; }
             }
             var line = __spreadArray([], __read(queue.pop()), false); // check each given line (we've only shallow-copied until now, so make sure you don't alter the input lines themselves)
             var head = line[0], tail = line[line.length - 1];
@@ -1051,49 +824,49 @@ var Chart = /** @class */ (function () {
             for (var i = 1; i < line.length - 1; i++)
                 torsos.set(line[i], { containing: line, index: i });
             try {
-                for (var consolidated_2 = (e_16 = void 0, __values(consolidated)), consolidated_2_1 = consolidated_2.next(); !consolidated_2_1.done; consolidated_2_1 = consolidated_2.next()) {
+                for (var consolidated_2 = (e_12 = void 0, __values(consolidated)), consolidated_2_1 = consolidated_2.next(); !consolidated_2_1.done; consolidated_2_1 = consolidated_2.next()) {
                     var l = consolidated_2_1.value;
                     if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
                         throw Error("that was quick.");
                 }
             }
-            catch (e_16_1) { e_16 = { error: e_16_1 }; }
+            catch (e_12_1) { e_12 = { error: e_12_1 }; }
             finally {
                 try {
                     if (consolidated_2_1 && !consolidated_2_1.done && (_b = consolidated_2.return)) _b.call(consolidated_2);
                 }
-                finally { if (e_16) throw e_16.error; }
+                finally { if (e_12) throw e_12.error; }
             }
             try {
-                for (var _e = (e_17 = void 0, __values([head, tail])), _f = _e.next(); !_f.done; _f = _e.next()) { // first, on either end...
-                    var endpoint_1 = _f.value;
-                    if (torsos.has(endpoint_1)) { // does it run into the middle of another?
-                        var _g = torsos.get(endpoint_1), containing = _g.containing, index = _g.index; // then that one must be cut in half
+                for (var _e = (e_13 = void 0, __values([head, tail])), _f = _e.next(); !_f.done; _f = _e.next()) { // first, on either end...
+                    var endpoint = _f.value;
+                    if (torsos.has(endpoint)) { // does it run into the middle of another?
+                        var _g = torsos.get(endpoint), containing = _g.containing, index = _g.index; // then that one must be cut in half
                         var fragment = containing.slice(index);
                         containing.splice(index + 1);
                         consolidated.add(fragment);
-                        if (endpoint_1 === head)
-                            tails.set(endpoint_1, []);
+                        if (endpoint === head)
+                            tails.set(endpoint, []);
                         else
-                            heads.set(endpoint_1, []);
-                        heads.get(endpoint_1).push(fragment);
-                        tails.get(endpoint_1).push(containing);
+                            heads.set(endpoint, []);
+                        heads.get(endpoint).push(fragment);
+                        tails.get(endpoint).push(containing);
                         tails.get(fragment[fragment.length - 1])[tails.get(fragment[fragment.length - 1]).indexOf(containing)] = fragment;
-                        torsos.delete(endpoint_1);
+                        torsos.delete(endpoint);
                         for (var i = 1; i < fragment.length - 1; i++)
                             torsos.set(fragment[i], { containing: fragment, index: i });
                     }
                 }
             }
-            catch (e_17_1) { e_17 = { error: e_17_1 }; }
+            catch (e_13_1) { e_13 = { error: e_13_1 }; }
             finally {
                 try {
                     if (_f && !_f.done && (_c = _e.return)) _c.call(_e);
                 }
-                finally { if (e_17) throw e_17.error; }
+                finally { if (e_13) throw e_13.error; }
             }
             try {
-                for (var consolidated_3 = (e_18 = void 0, __values(consolidated)), consolidated_3_1 = consolidated_3.next(); !consolidated_3_1.done; consolidated_3_1 = consolidated_3.next()) {
+                for (var consolidated_3 = (e_14 = void 0, __values(consolidated)), consolidated_3_1 = consolidated_3.next(); !consolidated_3_1.done; consolidated_3_1 = consolidated_3.next()) {
                     var l = consolidated_3_1.value;
                     if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
                         throw Error("i broke it ".concat(l[0].φ, " -> ").concat(l[l.length - 1].φ));
@@ -1101,12 +874,12 @@ var Chart = /** @class */ (function () {
                         throw Error("yoo broke it! ".concat(l[0].φ, " -> ").concat(l[l.length - 1].φ));
                 }
             }
-            catch (e_18_1) { e_18 = { error: e_18_1 }; }
+            catch (e_14_1) { e_14 = { error: e_14_1 }; }
             finally {
                 try {
                     if (consolidated_3_1 && !consolidated_3_1.done && (_d = consolidated_3.return)) _d.call(consolidated_3);
                 }
-                finally { if (e_18) throw e_18.error; }
+                finally { if (e_14) throw e_14.error; }
             }
             if (tails.has(head)) { // does its beginning connect to another?
                 if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
@@ -1137,10 +910,10 @@ var Chart = /** @class */ (function () {
      * between them as appropriate.
      * @param points each Place[] is a polygonal path thru geographic space
      * @param greeble what kinds of connections these are for the purposes of greebling
-     * @param scale the map scale at which to greeble in map-widths per km
+     * @param scale the map scale at which to greeble in mm/km
      */
     Chart.convertToGreebledPath = function (points, greeble, scale) {
-        var e_19, _a, e_20, _b;
+        var e_15, _a, e_16, _b;
         var path = [];
         try {
             for (var points_1 = __values(points), points_1_1 = points_1.next(); !points_1_1.done; points_1_1 = points_1.next()) { // then do the conversion
@@ -1160,11 +933,11 @@ var Chart = /** @class */ (function () {
                     var step = void 0;
                     // if there is an edge and it should be greebled, greeble it
                     if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
-                        var path_2 = edge.getPath(GREEBLE_FACTOR / scale);
+                        var path_1 = edge.getPath(GREEBLE_SCALE / scale);
                         if (edge.vertex0 === start)
-                            step = path_2.slice(1);
+                            step = path_1.slice(1);
                         else
-                            step = path_2.slice(0, path_2.length - 1).reverse();
+                            step = path_1.slice(0, path_1.length - 1).reverse();
                     }
                     // otherwise, draw a strait line
                     else {
@@ -1172,27 +945,27 @@ var Chart = /** @class */ (function () {
                     }
                     console.assert(step[step.length - 1].φ === end.φ && step[step.length - 1].λ === end.λ, step, "did not end at", end);
                     try {
-                        for (var step_1 = (e_20 = void 0, __values(step)), step_1_1 = step_1.next(); !step_1_1.done; step_1_1 = step_1.next()) {
+                        for (var step_1 = (e_16 = void 0, __values(step)), step_1_1 = step_1.next(); !step_1_1.done; step_1_1 = step_1.next()) {
                             var place = step_1_1.value;
                             path.push({ type: 'L', args: [place.φ, place.λ] });
                         }
                     }
-                    catch (e_20_1) { e_20 = { error: e_20_1 }; }
+                    catch (e_16_1) { e_16 = { error: e_16_1 }; }
                     finally {
                         try {
                             if (step_1_1 && !step_1_1.done && (_b = step_1.return)) _b.call(step_1);
                         }
-                        finally { if (e_20) throw e_20.error; }
+                        finally { if (e_16) throw e_16.error; }
                     }
                 }
             }
         }
-        catch (e_19_1) { e_19 = { error: e_19_1 }; }
+        catch (e_15_1) { e_15 = { error: e_15_1 }; }
         finally {
             try {
                 if (points_1_1 && !points_1_1.done && (_a = points_1.return)) _a.call(points_1);
             }
-            finally { if (e_19) throw e_19.error; }
+            finally { if (e_15) throw e_15.error; }
         }
         return path;
     };
@@ -1229,7 +1002,7 @@ var Chart = /** @class */ (function () {
      * identify the meridian that is the farthest from this path on the globe
      */
     Chart.chooseMapCentering = function (regionOfInterest, surface) {
-        var e_21, _a, e_22, _b, e_23, _c;
+        var e_17, _a, e_18, _b, e_19, _c;
         // start by calculating the mean radius of the region, for pseudocylindrical standard parallels
         var rSum = 0;
         var count = 0;
@@ -1240,12 +1013,12 @@ var Chart = /** @class */ (function () {
                 count += 1;
             }
         }
-        catch (e_21_1) { e_21 = { error: e_21_1 }; }
+        catch (e_17_1) { e_17 = { error: e_17_1 }; }
         finally {
             try {
                 if (regionOfInterest_1_1 && !regionOfInterest_1_1.done && (_a = regionOfInterest_1.return)) _a.call(regionOfInterest_1);
             }
-            finally { if (e_21) throw e_21.error; }
+            finally { if (e_17) throw e_17.error; }
         }
         if (count === 0)
             throw new Error("I can't choose a map centering with an empty region of interest.");
@@ -1283,12 +1056,12 @@ var Chart = /** @class */ (function () {
                     }
                 }
             }
-            catch (e_22_1) { e_22 = { error: e_22_1 }; }
+            catch (e_18_1) { e_18 = { error: e_18_1 }; }
             finally {
                 try {
                     if (regionOfInterest_2_1 && !regionOfInterest_2_1.done && (_b = regionOfInterest_2.return)) _b.call(regionOfInterest_2);
                 }
-                finally { if (e_22) throw e_22.error; }
+                finally { if (e_18) throw e_18.error; }
             }
             centralMeridian = Math.atan2(yCenter, xCenter);
         }
@@ -1311,12 +1084,12 @@ var Chart = /** @class */ (function () {
                     }
                 }
             }
-            catch (e_23_1) { e_23 = { error: e_23_1 }; }
+            catch (e_19_1) { e_19 = { error: e_19_1 }; }
             finally {
                 try {
                     if (regionOfInterest_3_1 && !regionOfInterest_3_1.done && (_c = regionOfInterest_3.return)) _c.call(regionOfInterest_3);
                 }
-                finally { if (e_23) throw e_23.error; }
+                finally { if (e_19) throw e_19.error; }
             }
             centralParallel = Math.atan2(υCenter, ξCenter);
         }

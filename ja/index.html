@@ -36,12 +36,12 @@
 
             <div class="navbar-nav ml-auto">
               <div class="nav-item dropdown">
-                <select id="lang-dropdown" class="lang-dropdown" aria-label="言語" onchange="this.value = 'none';">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="言語" onchange="if (this.value !== 'ja') window.location = `/${this.value}/index.html`; else this.value = 'none';">
                   <option value="none" disabled selected></option>
-                  <option onclick="window.location = '/en/index.html';">🇬🇧 English</option>
-                  <option onclick="window.location = '/es/index.html';">🇪🇸 español</option>
-                  <option onclick="window.location = '/ja/index.html';">🇯🇵 日本語</option>
-                  <option onclick="window.location = '/pd/index.html';">🟰 pandunia</option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                  <option value="pd">🟰 pandunia</option>
                 </select>
               </div>
             </div>
@@ -88,11 +88,11 @@
   /** change the description of the currently selected map projection */
   function updateProjectionDescription(projection) {
     if (projection === "bonne")
-      document.getElementById('map-projection-description').innerHTML = "同心円の緯線を示す正積図法だ。全世界地図の場合はサンソン図法になる。プトレマイオス的、昔風な感じだ。";
+      document.getElementById('map-projection-description').innerHTML = "同心円の緯線を示す正積図法である。全世界地図の場合はサンソン図法になる。プトレマイオス的、昔風な感じである。";
     else if (projection === "conformal_conic")
-      document.getElementById('map-projection-description').innerHTML = "直線の経線を示す正角図法だ。全世界地図の場合はメルカトル図法になる。中世に流行ったが、面積を歪める傾向がある。";
+      document.getElementById('map-projection-description').innerHTML = "直線の経線を示す正角図法である。全世界地図の場合はメルカトル図法になる。中世に流行ったが、面積を歪める傾向がある。";
     else if (projection === "equal_earth")
-      document.getElementById('map-projection-description').innerHTML = "きれいな正積図法だ。全世界地図によく似合う。";
+      document.getElementById('map-projection-description').innerHTML = "きれいな正積図法である。全世界地図によく似合う。";
     else {
       document.getElementById('map-projection-description').innerHTML = "?????";
       console.error(`unrecognized map projeccion: '${projection}'`);
@@ -104,13 +104,24 @@
     const tooltip = document.getElementById(id);
     const tippedTool = document.getElementById(id + "-icon");
     if (tippedTool.matches(":hover") || tippedTool.matches(":focus") || (tooltip.style.opacity > 0 && tooltip.matches(":hover"))) {
+      // make it visible
       tooltip.style.opacity = "1";
+      tooltip.style.pointerEvents = "auto";
+      // locate it at the (i) icon
       const toolLocation = tippedTool.getBoundingClientRect();
       tooltip.style.top = `${(toolLocation.top + toolLocation.bottom)/2}px`;
       tooltip.style.left = `${toolLocation.right}px`;
+      // adjust its location to keep it from clipping off the right edge of the screen
+      const tooltipDimensions = tooltip.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      if (tooltipDimensions.right > screenWidth) {
+        tooltip.style.left = `${screenWidth - tooltipDimensions.width}px`;
+      }
     }
     else {
+      // make it invisible
       tooltip.style.opacity = "0";
+      tooltip.style.pointerEvents = "none";
     }
   }
 </script>
@@ -438,23 +449,15 @@
               <div id="map-colors-collapse" class="collapse" aria-labelledby="map-colors-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-land-color">地の色</label>
-                    <select id="map-land-color">
+                    <label for="map-color">色彩</label>
+                    <select id="map-color">
                       <option value="white">白色</option>
-                      <option value="gray">灰色</option>
+                      <option value="gray">白色と灰色</option>
+                      <option value="black">白色と黒色</option>
+                      <option value="wikipedia">黄色と水色</option>
+                      <option value="sepia">セピア色</option>
                       <option selected value="physical">物理</option>
                       <option value="political">政治</option>
-                      <option value="heightmap">高度</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="map-sea-color">海の色</label>
-                    <select id="map-sea-color">
-                      <option value="white">白色</option>
-                      <option value="gray">灰色</option>
-                      <option selected value="blue">青色</option>
-                      <option value="azure">水色</option>
-                      <option value="black">黒色</option>
                       <option value="heightmap">高度</option>
                     </select>
                   </div>
@@ -563,15 +566,15 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-width">幅</label>
+                    <label for="map-width-mm">地図の幅</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width" value="28.0" data-decimals="1" min="10.0" max="60.0" step="1.0"/>
-  <div class="input-group-append">    <span class="input-group-text">cm</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-mm" value="210.0" data-decimals="0" min="20.0" max="1200.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>
@@ -579,15 +582,15 @@
 </div>
                   </div>
                   <div class="form-group">
-                    <label for="map-height">高さ</label>
+                    <label for="map-height-mm">地図の高さ</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height" value="19.0" data-decimals="1" min="10.0" max="60.0" step="1.0"/>
-  <div class="input-group-append">    <span class="input-group-text">cm</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-mm" value="148.0" data-decimals="0" min="20.0" max="1200.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>
@@ -595,15 +598,31 @@
 </div>
                   </div>
                   <div class="form-group">
-                    <label for="map-resolution">解像度</label>
+                    <label for="map-width-px">PNGの幅</label>
                     <div class="input-group fancy-spinner">
   <div class="input-group-prepend">
     <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
       <strong>&minus;</strong>
     </button>
   </div>
-  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-resolution" value="150.0" data-decimals="0" min="72.0" max="1200.0" step="50.0"/>
-  <div class="input-group-append">    <span class="input-group-text">DPI</span>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-px" value="1260.0" data-decimals="0" min="64.0" max="12000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-px">PNGの高さ</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-px" value="888.0" data-decimals="0" min="64.0" max="12000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
     <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
       <strong>&plus;</strong>
     </button>
@@ -658,7 +677,7 @@
   </div>
 </div>
 
-<div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">同心円の緯線を示す正積図法だ。全世界地図の場合はサンソン図法になる。プトレマイオス的、昔風な感じだ。</div>
+<div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">同心円の緯線を示す正積図法である。全世界地図の場合はサンソン図法になる。プトレマイオス的、昔風な感じである。</div>
 
     </main>
 
@@ -675,7 +694,7 @@
                --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="(Creative Commons logo)"><!--
                --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="">
                 </a><!--
-             --> マークだ。
+             --> マークである。
               </span>
             </p>
           </div>
