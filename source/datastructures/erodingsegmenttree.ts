@@ -314,8 +314,14 @@ export class ErodingSegmentTree {
 			throw new Error("there must always be an even number of links.");
 	}
 
-	public test() {
-		return traverseTreeInOrder(this.mul);
+	public toString() {
+		const links = traverseTreeInOrder(this.mul);
+		if (links.length%2 !== 0)
+			throw new Error("there must be an even number of links.");
+		let subintervalStrings = [];
+		for (let i = 0; i < links.length; i += 2)
+			subintervalStrings.push(`[${links[i].val}, ${links[i + 1].val}]`);
+		return `ErodingSegmentTree(${subintervalStrings.join(" ∪ ")})`;
 	}
 }
 

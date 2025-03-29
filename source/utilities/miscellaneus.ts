@@ -357,8 +357,8 @@ export function noisyProfile(initialProfile: XYPoint[], resolution: number, rng:
 			confirmd.push(pending.pop()); // confirm it
 		}
 
-		if (confirmd.length + pending.length > 1000) {
-			console.error("I think something went rong??");
+		if (confirmd.length + pending.length > 10000) {
+			console.error("it seems like the greebling algorithm has entered an infinite loop somehow.");
 			return confirmd.concat(pending.slice().reverse());
 		}
 	}

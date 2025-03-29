@@ -51,13 +51,24 @@
     const tooltip = document.getElementById(id);
     const tippedTool = document.getElementById(id + "-icon");
     if (tippedTool.matches(":hover") || tippedTool.matches(":focus") || (tooltip.style.opacity > 0 && tooltip.matches(":hover"))) {
+      // make it visible
       tooltip.style.opacity = "1";
+      tooltip.style.pointerEvents = "auto";
+      // locate it at the (i) icon
       const toolLocation = tippedTool.getBoundingClientRect();
       tooltip.style.top = `${(toolLocation.top + toolLocation.bottom)/2}px`;
       tooltip.style.left = `${toolLocation.right}px`;
+      // adjust its location to keep it from clipping off the right edge of the screen
+      const tooltipDimensions = tooltip.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      if (tooltipDimensions.right > screenWidth) {
+        tooltip.style.left = `${screenWidth - tooltipDimensions.width}px`;
+      }
     }
     else {
+      // make it invisible
       tooltip.style.opacity = "0";
+      tooltip.style.pointerEvents = "none";
     }
   }
 </script>
@@ -292,23 +303,15 @@
               <div id="map-colors-collapse" class="collapse" aria-labelledby="map-colors-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
-                    <label for="map-land-color">{parameter.map.land_color}</label>
-                    <select id="map-land-color">
+                    <label for="map-color">{parameter.map.color}</label>
+                    <select id="map-color">
                       <option value="white">{parameter.map.color.white}</option>
                       <option value="gray">{parameter.map.color.gray}</option>
+                      <option value="black">{parameter.map.color.black}</option>
+                      <option value="wikipedia">{parameter.map.color.wikipedia}</option>
+                      <option value="sepia">{parameter.map.color.sepia}</option>
                       <option selected value="physical">{parameter.map.color.physical}</option>
                       <option value="political">{parameter.map.color.political}</option>
-                      <option value="heightmap">{parameter.map.color.heightmap}</option>
-                    </select>
-                  </div>
-                  <div class="form-group">
-                    <label for="map-sea-color">{parameter.map.sea_color}</label>
-                    <select id="map-sea-color">
-                      <option value="white">{parameter.map.color.white}</option>
-                      <option value="gray">{parameter.map.color.gray}</option>
-                      <option selected value="blue">{parameter.map.color.blue}</option>
-                      <option value="azure">{parameter.map.color.azure}</option>
-                      <option value="black">{parameter.map.color.black}</option>
                       <option value="heightmap">{parameter.map.color.heightmap}</option>
                     </select>
                   </div>
@@ -417,16 +420,20 @@
                     </select>
                   </div>
                   <div class="form-group">
-                    <label for="map-width">{parameter.map.width}</label>
-                    {Build type="spinner" value="28" decimals="1" min="10" max="60" step="1" suffix="cm" id="map-width"}
+                    <label for="map-width-mm">{parameter.map.width}</label>
+                    {Build type="spinner" value="210" decimals="0" min="20" max="1200" step="10" suffix="mm" id="map-width-mm"}
                   </div>
                   <div class="form-group">
-                    <label for="map-height">{parameter.map.height}</label>
-                    {Build type="spinner" value="19" decimals="1" min="10" max="60" step="1" suffix="cm" id="map-height"}
+                    <label for="map-height-mm">{parameter.map.height}</label>
+                    {Build type="spinner" value="148" decimals="0" min="20" max="1200" step="10" suffix="mm" id="map-height-mm"}
                   </div>
                   <div class="form-group">
-                    <label for="map-resolution">{parameter.map.resolution}</label>
-                    {Build type="spinner" value="150" decimals="0" min="72" max="1200" step="50" suffix="DPI" id="map-resolution"}
+                    <label for="map-width-px">{parameter.map.width.px}</label>
+                    {Build type="spinner" value="1260" decimals="0" min="64" max="12000" step="50" suffix="px" id="map-width-px"}
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-px">{parameter.map.height.px}</label>
+                    {Build type="spinner" value="888" decimals="0" min="64" max="12000" step="50" suffix="px" id="map-height-px"}
                   </div>
                 </div>
               </div>

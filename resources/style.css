@@ -355,19 +355,19 @@ iframe {
     overflow: auto;
     padding-bottom: 1em;
     width: 100%;
-    height: calc(100vh - 8rem);
 }
 .map {
     width: 100%;
-    height: calc(100vh - 8rem);
 }
 
 @media screen and (min-width: 36rem) {
     .scrolling-sidebar {
         width: 18rem;
+        height: calc(100vh - 8rem);
     }
     .map {
         width: calc(100% - 18rem);
+        height: calc(100vh - 8rem);
         padding-left: 0;
     }
 }
@@ -686,6 +686,7 @@ button.close {
     top: 100%;
     left: 100%;
     width: 15rem;
+    max-width: 100vw;
     color: #fff;
     padding: .5rem;
     background-color: #212529;

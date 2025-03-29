@@ -5,7 +5,6 @@
 
 /**
  * a data structure to keep track of a set of elements with a tree-shaped hierarchy
- * that is faster than a TreeMap
  */
 export class Tree<Type> {
 	/** anything above it */
