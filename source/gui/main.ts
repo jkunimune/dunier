@@ -456,10 +456,10 @@ function enforceAspectRatio(fixed: string, unit: string) {
 }
 
 
-for (const prefix of ['projection', 'colors', 'features', 'formatting']) {
+for (const prefix of ['content', 'style', 'formatting']) {
 	/** when the user clicks on a card header, toggle whether it is shown and hide all the others */
 	DOM.elm(`map-${prefix}-heading`).addEventListener('click', () => {
-		for (const otherPrefix of ['projection', 'colors', 'features', 'formatting']) {
+		for (const otherPrefix of ['content', 'style', 'formatting']) {
 			const heading = DOM.elm(`map-${otherPrefix}-heading`);
 			const collapse = DOM.elm(`map-${otherPrefix}-collapse`);
 			let nowShown: boolean;
