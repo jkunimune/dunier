@@ -621,6 +621,7 @@ export class Chart {
 			throw new Error("there must be at least one tile to label");
 		this.testText.textContent = '..'+label+'..';
 		const testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
+		this.testText.textContent = '';
 		const svgScale = this.dimensions.width/svg.getBoundingClientRect().width;
 		const lengthPerSize = testTextLength*svgScale/this.testTextSize;
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
