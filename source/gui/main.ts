@@ -19,6 +19,7 @@ import {generateFactbook} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
 import {Civ} from "../generation/civ.js";
 import {convertSVGToBlob, convertSVGToPNGAndThenDownloadIt, download, serialize} from "./export.js";
+import {filterSet} from "../utilities/miscellaneus.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -303,7 +304,7 @@ function applyHistory(): void {
 	for (const country of countries.slice(0, MAX_COUNTRIES_TO_LIST)) {
 		const option = document.createElement('option');
 		option.setAttribute('value', `country${country.id}`);
-		option.textContent = country.getName().toString();
+		option.textContent = country.getName().toString(DOM.val("map-spelling"));
 		picker.appendChild(option);
 	}
 
@@ -326,13 +327,15 @@ function applyMap(): void {
 	const width = Number.parseFloat(DOM.val('map-width-mm'));
 	const height = Number.parseFloat(DOM.val('map-height-mm'));
 	const focusSpecifier = DOM.val('map-jung');
-	let regionOfInterest: Iterable<Tile>;
+	let regionOfInterest: Set<Tile>;
 	if (focusSpecifier === "world")
 		regionOfInterest = surface.tiles;
 	else if (focusSpecifier.startsWith("continent"))
 		regionOfInterest = continents[Number.parseInt(focusSpecifier.slice(9))];
-	else if (focusSpecifier.startsWith("country"))
-		regionOfInterest = world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tileTree.keys();
+	else if (focusSpecifier.startsWith("country")) {
+		const civ = world.getCiv(Number.parseInt(focusSpecifier.slice(7)));
+		regionOfInterest = filterSet(civ.tileTree.keys(), tile => !tile.isWater());
+	}
 	else
 		throw new Error(`invalid focusSpecifier: '${focusSpecifier}'`);
 
@@ -476,7 +479,6 @@ for (const prefix of ['content', 'style', 'formatting']) {
 for (const prefix of ['planet', 'terrain', 'history', 'map', 'factbook']) {
 	/** when the user clicks on a tab, show its panel and hide all others */
 	DOM.elm(`${prefix}-tab`).addEventListener('click', () => {
-		console.log(`activating the ${prefix} tab`);
 		for (const otherPrefix of ['planet', 'terrain', 'history', 'map', 'factbook']) {
 			const tab = DOM.elm(`${otherPrefix}-tab`);
 			const panel = DOM.elm(`${otherPrefix}-panel`);

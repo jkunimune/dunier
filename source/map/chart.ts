@@ -157,7 +157,7 @@ export class Chart {
 	 * @param area the desired bounding box area in mm²
 	 */
 	constructor(
-		projectionName: string, surface: Surface, regionOfInterest: Iterable<Tile>,
+		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
 		orientationName: string, rectangularBounds: boolean, area: number,
 	) {
 		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
