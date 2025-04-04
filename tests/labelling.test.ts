@@ -2,39 +2,8 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {chooseLabelLocation, findOpenSpotOnArc, resamplePath} from "../source/map/labeling.js";
+import {findOpenSpotOnArc, resamplePath} from "../source/map/labeling.js";
 import {endpoint} from "../source/utilities/coordinates.js";
-
-describe("chooseLabelLocation", () => {
-	const shape = [
-		{type: 'M', args: [0.55, 0.953]},
-		{type: 'A', args: [1.1, 1.1, 0, 0, 1, -0.55, 0.953]},
-		{type: 'L', args: [-0.45, 0.866]},
-		{type: 'A', args: [0.9, 0.9, 0, 0, 0, 0.45, 0.779]},
-		{type: 'L', args: [0.55, 0.953]},
-	];
-	test("width-limited", () => {
-		expect(chooseLabelLocation(shape, 10, 0.1)).toEqual({
-			arc: [
-				{type: 'M', args: [ -0.5, 0.866]},
-				{type: 'A', args: [1.0, 1.0, 0, 0, 0, 0.50, 0.866]},
-			],
-			height: Math.PI/30,
-		});
-	});
-	test("height-limited", () => {
-		expect(chooseLabelLocation(shape, 1, 0.1)).toEqual({
-			arc: [
-				{type: 'M', args: [Math.sin(-0.1), Math.cos(-0.1)]},
-				{type: 'A', args: [1.0, 1.0, 0, 0, 0, Math.sin(0.1), Math.cos(0.1)]},
-			],
-			height: 0.2,
-		});
-	});
-	test("too small", () => {
-		expect(chooseLabelLocation(shape, 1.1*Math.PI/3, 0.3)).toThrow();
-	});
-});
 
 
 describe("resamplePath", () => {

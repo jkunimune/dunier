@@ -461,6 +461,17 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], domai
  *         and BORDERLINE if it's on the polygon's edge.
  */
 export function contains(polygon: PathSegment[], point: Point, domain: Domain, garanteedToSucced=false): Side {
+	for (let i = 3; i < polygon.length; i ++) {
+		if (polygon[i].type === 'M') {
+			for (let j = i - 3; j < i; j ++) {
+				if (polygon[j].type === 'M') {
+					console.error(pathToString(polygon));
+					throw new Error(`this polygon is ill-posed because the section that starts at ${j} is only ${i - j} long so I'm not doing it.`);
+				}
+			}
+		}
+	}
+	
 	if (polygon.length === 0)
 		return Side.IN;
 

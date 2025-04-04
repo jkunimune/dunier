@@ -67,6 +67,8 @@ interface Circumcenter {
  */
 export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {arc: PathSegment[], height: number, letterSpacing: number} {
 	path = resamplePath(path);
+	if (path.length === 0)
+		throw Error("after resampling there was no path left");
 
 	// estimate the topological skeleton
 	const centers = estimateSkeleton(path);
@@ -187,6 +189,8 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 /**
  * add redundant vertices and delete shorter segments in an attempt to make the vertices of this shape
  * evenly spaced, and to make it have between `SIMPLE_PATH_LENGTH/2` and `SIMPLE_PATH_LENGTH` vertices in total.
+ * I make no garantees about the return value of this function.  it might be empty or self-intersecting.
+ * well, I can at least garantee it won't be degenerate.
  * @param path the shape to resample
  */
 export function resamplePath(path: PathSegment[]): PathSegment[] {
@@ -273,6 +277,15 @@ export function resamplePath(path: PathSegment[]): PathSegment[] {
 		}
 	}
 
+	// now purge any degenerate sections
+	for (let i = path.length - 1; i >= 3; i --) {
+		for (let j = i - 1; j >= i - 3; j --) {
+			if (path[i].type === 'M' && path[j].type === 'M') {
+				path.splice(j, i - j);
+				break;
+			}
+		}
+	}
 	return path;
 }
 
