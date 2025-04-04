@@ -1051,7 +1051,12 @@ export function convertPathClosuresToZ(segments: PathSegment[]): PathSegment[] {
 export function scalePath(segments: PathSegment[], scale: number): PathSegment[] {
 	const output: PathSegment[] = [];
 	for (const {type, args: oldArgs} of segments) {
-		const newArgs = oldArgs.map((x) => x*scale);
+		let newArgs = oldArgs.map((x) => x*scale);
+		if (type === 'A') {
+			newArgs[2] = oldArgs[2];
+			newArgs[3] = oldArgs[3];
+			newArgs[4] = oldArgs[4];
+		}
 		output.push({type: type, args: newArgs});
 	}
 	return output;
