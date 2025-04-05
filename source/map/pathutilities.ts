@@ -214,7 +214,7 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], doma
 			}
 		}
 		iterations ++;
-		if (iterations > 100000)
+		if (iterations > 1_000_000)
 			throw new Error(`*Someone* (not pointing any fingers) messd up an interruption between ${pathToString([currentSection.pop()])} and ${pathToString([thisSegment])}.`);
 	}
 
