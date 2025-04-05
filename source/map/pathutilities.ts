@@ -214,7 +214,7 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], doma
 			}
 		}
 		iterations ++;
-		if (iterations > 100000)
+		if (iterations > 1_000_000)
 			throw new Error(`*Someone* (not pointing any fingers) messd up an interruption between ${pathToString([currentSection.pop()])} and ${pathToString([thisSegment])}.`);
 	}
 
@@ -461,6 +461,17 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], domai
  *         and BORDERLINE if it's on the polygon's edge.
  */
 export function contains(polygon: PathSegment[], point: Point, domain: Domain, garanteedToSucced=false): Side {
+	for (let i = 3; i < polygon.length; i ++) {
+		if (polygon[i].type === 'M') {
+			for (let j = i - 3; j < i; j ++) {
+				if (polygon[j].type === 'M') {
+					console.error(pathToString(polygon));
+					throw new Error(`this polygon is ill-posed because the section that starts at ${j} is only ${i - j} long so I'm not doing it.`);
+				}
+			}
+		}
+	}
+	
 	if (polygon.length === 0)
 		return Side.IN;
 
@@ -1051,7 +1062,12 @@ export function convertPathClosuresToZ(segments: PathSegment[]): PathSegment[] {
 export function scalePath(segments: PathSegment[], scale: number): PathSegment[] {
 	const output: PathSegment[] = [];
 	for (const {type, args: oldArgs} of segments) {
-		const newArgs = oldArgs.map((x) => x*scale);
+		let newArgs = oldArgs.map((x) => x*scale);
+		if (type === 'A') {
+			newArgs[2] = oldArgs[2];
+			newArgs[3] = oldArgs[3];
+			newArgs[4] = oldArgs[4];
+		}
 		output.push({type: type, args: newArgs});
 	}
 	return output;

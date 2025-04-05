@@ -157,7 +157,7 @@ export class Chart {
 	 * @param area the desired bounding box area in mm²
 	 */
 	constructor(
-		projectionName: string, surface: Surface, regionOfInterest: Iterable<Tile>,
+		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
 		orientationName: string, rectangularBounds: boolean, area: number,
 	) {
 		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
@@ -621,6 +621,7 @@ export class Chart {
 			throw new Error("there must be at least one tile to label");
 		this.testText.textContent = '..'+label+'..';
 		const testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
+		this.testText.textContent = '';
 		const svgScale = this.dimensions.width/svg.getBoundingClientRect().width;
 		const lengthPerSize = testTextLength*svgScale/this.testTextSize;
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
