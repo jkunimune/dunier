@@ -394,13 +394,20 @@
             <div class="card">
               <div class="card-header">
                 <h5 class="mb-0">
-                  <button type="button" id="map-projection-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
-                    投影
+                  <button type="button" id="map-content-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
+                    内容
                   </button>
                 </h5>
               </div>
-              <div id="map-projection-collapse" class="collapse" aria-labelledby="map-projection-heading" data-parent="#accordion">
+              <div id="map-content-collapse" class="collapse" aria-labelledby="map-content-heading" data-parent="#accordion">
                 <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-jung">中心</label>
+                    <select id="map-jung">
+                      <option selected value="0">United States of America</option>
+                      <option value="1">China</option>
+                    </select>
+                  </div>
                   <div class="form-group" id="map-projection-form">
                     <label for="map-projection">図法</label>
                     <div class="input-group">
@@ -428,25 +435,18 @@
                       <option value="west">西は上</option>
                     </select>
                   </div>
-                  <div class="form-group">
-                    <label for="map-jung">中心</label>
-                    <select id="map-jung">
-                      <option selected value="0">United States of America</option>
-                      <option value="1">China</option>
-                    </select>
-                  </div>
                 </div>
               </div>
             </div>
             <div class="card">
               <div class="card-header">
                 <h5 class="mb-0">
-                  <button type="button" id="map-colors-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-colors-collapse">
-                    色と様式
+                  <button type="button" id="map-style-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-style-collapse">
+                    様式
                   </button>
                 </h5>
               </div>
-              <div id="map-colors-collapse" class="collapse" aria-labelledby="map-colors-heading" data-parent="#accordion">
+              <div id="map-style-collapse" class="collapse" aria-labelledby="map-style-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
                     <label for="map-color">色彩</label>
@@ -473,19 +473,12 @@
                       <label for="map-sea-texture">海の模様</label>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <h5 class="mb-0">
-                  <button type="button" id="map-features-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-features-collapse">
-                    特徴
-                  </button>
-                </h5>
-              </div>
-              <div id="map-features-collapse" class="collapse" aria-labelledby="map-features-heading" data-parent="#accordion">
-                <div class="card-body">
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-shading">
+                      <label for="map-shading">地形の影</label>
+                    </div>
+                  </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
                       <input type="checkbox" id="map-cities" value="none">
@@ -502,12 +495,6 @@
                     <div class="custom-checkbox">
                       <input type="checkbox" id="map-borders" checked>
                       <label for="map-borders">国境</label>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <div class="custom-checkbox">
-                      <input type="checkbox" id="map-shading">
-                      <label for="map-shading">地形の影</label>
                     </div>
                   </div>
                   <div class="form-group">

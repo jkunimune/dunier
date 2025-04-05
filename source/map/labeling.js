@@ -65,6 +65,8 @@ var DEBUG_UNFIT_AXIS = false; // return the raw medial axis rather than the arc 
 export function chooseLabelLocation(path, aspectRatio) {
     var e_1, _a, e_2, _b, e_3, _c;
     path = resamplePath(path);
+    if (path.length === 0)
+        throw Error("after resampling there was no path left");
     // estimate the topological skeleton
     var centers = estimateSkeleton(path);
     if (DEBUG_FULL_SKELETON) {
@@ -203,6 +205,8 @@ export function chooseLabelLocation(path, aspectRatio) {
 /**
  * add redundant vertices and delete shorter segments in an attempt to make the vertices of this shape
  * evenly spaced, and to make it have between `SIMPLE_PATH_LENGTH/2` and `SIMPLE_PATH_LENGTH` vertices in total.
+ * I make no garantees about the return value of this function.  it might be empty or self-intersecting.
+ * well, I can at least garantee it won't be degenerate.
  * @param path the shape to resample
  */
 export function resamplePath(path) {
@@ -278,6 +282,15 @@ export function resamplePath(path) {
         else {
             // if this is an 'M', just leave it
             i--;
+        }
+    }
+    // now purge any degenerate sections
+    for (var i_3 = path.length - 1; i_3 >= 3; i_3--) {
+        for (var j = i_3 - 1; j >= i_3 - 3; j--) {
+            if (path[i_3].type === 'M' && path[j].type === 'M') {
+                path.splice(j, i_3 - j);
+                break;
+            }
         }
     }
     return path;

@@ -45,6 +45,7 @@ import { LockedDisc } from "../surface/lockeddisc.js";
 import { generateFactbook } from "../generation/factsheet.js";
 import { Selector } from "../utilities/selector.js";
 import { convertSVGToBlob, convertSVGToPNGAndThenDownloadIt, download, serialize } from "./export.js";
+import { filterSet } from "../utilities/miscellaneus.js";
 // @ts-ignore
 var Plotly = window.Plotly;
 var TERRAIN_COLORMAP = [
@@ -277,7 +278,7 @@ function applyHistory() {
             var country = _c.value;
             var option_2 = document.createElement('option');
             option_2.setAttribute('value', "country".concat(country.id));
-            option_2.textContent = country.getName().toString();
+            option_2.textContent = country.getName().toString(DOM.val("map-spelling"));
             picker.appendChild(option_2);
         }
     }
@@ -309,8 +310,10 @@ function applyMap() {
         regionOfInterest = surface.tiles;
     else if (focusSpecifier.startsWith("continent"))
         regionOfInterest = continents[Number.parseInt(focusSpecifier.slice(9))];
-    else if (focusSpecifier.startsWith("country"))
-        regionOfInterest = world.getCiv(Number.parseInt(focusSpecifier.slice(7))).tileTree.keys();
+    else if (focusSpecifier.startsWith("country")) {
+        var civ = world.getCiv(Number.parseInt(focusSpecifier.slice(7)));
+        regionOfInterest = filterSet(civ.tileTree.keys(), function (tile) { return !tile.isWater(); });
+    }
     else
         throw new Error("invalid focusSpecifier: '".concat(focusSpecifier, "'"));
     chart = new Chart(projectionName, surface, regionOfInterest, orientation, rectangularBounds, width * height);
@@ -428,7 +431,7 @@ var _loop_1 = function (prefix) {
     DOM.elm("map-".concat(prefix, "-heading")).addEventListener('click', function () {
         var e_9, _a;
         try {
-            for (var _b = (e_9 = void 0, __values(['projection', 'colors', 'features', 'formatting'])), _c = _b.next(); !_c.done; _c = _b.next()) {
+            for (var _b = (e_9 = void 0, __values(['content', 'style', 'formatting'])), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var otherPrefix = _c.value;
                 var heading = DOM.elm("map-".concat(otherPrefix, "-heading"));
                 var collapse = DOM.elm("map-".concat(otherPrefix, "-collapse"));
@@ -450,7 +453,7 @@ var _loop_1 = function (prefix) {
     });
 };
 try {
-    for (var _e = __values(['projection', 'colors', 'features', 'formatting']), _f = _e.next(); !_f.done; _f = _e.next()) {
+    for (var _e = __values(['content', 'style', 'formatting']), _f = _e.next(); !_f.done; _f = _e.next()) {
         var prefix = _f.value;
         _loop_1(prefix);
     }
@@ -466,7 +469,6 @@ var _loop_2 = function (prefix) {
     /** when the user clicks on a tab, show its panel and hide all others */
     DOM.elm("".concat(prefix, "-tab")).addEventListener('click', function () {
         var e_10, _a;
-        console.log("activating the ".concat(prefix, " tab"));
         try {
             for (var _b = (e_10 = void 0, __values(['planet', 'terrain', 'history', 'map', 'factbook'])), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var otherPrefix = _c.value;

@@ -280,7 +280,7 @@ export function intersection(segments, edges, domain, closePath) {
             }
         }
         iterations++;
-        if (iterations > 100000)
+        if (iterations > 1000000)
             throw new Error("*Someone* (not pointing any fingers) messd up an interruption between ".concat(pathToString([currentSection.pop()]), " and ").concat(pathToString([thisSegment]), "."));
     }
     var startPositions = [];
@@ -527,6 +527,16 @@ export function encompasses(polygon, points, domain) {
 export function contains(polygon, point, domain, garanteedToSucced) {
     var e_9, _a, e_10, _b;
     if (garanteedToSucced === void 0) { garanteedToSucced = false; }
+    for (var i = 3; i < polygon.length; i++) {
+        if (polygon[i].type === 'M') {
+            for (var j = i - 3; j < i; j++) {
+                if (polygon[j].type === 'M') {
+                    console.error(pathToString(polygon));
+                    throw new Error("this polygon is ill-posed because the section that starts at ".concat(j, " is only ").concat(i - j, " long so I'm not doing it."));
+                }
+            }
+        }
+    }
     if (polygon.length === 0)
         return Side.IN;
     // manually check for the most common forms of coincidences
@@ -1126,6 +1136,11 @@ export function scalePath(segments, scale) {
         for (var segments_2 = __values(segments), segments_2_1 = segments_2.next(); !segments_2_1.done; segments_2_1 = segments_2.next()) {
             var _b = segments_2_1.value, type = _b.type, oldArgs = _b.args;
             var newArgs = oldArgs.map(function (x) { return x * scale; });
+            if (type === 'A') {
+                newArgs[2] = oldArgs[2];
+                newArgs[3] = oldArgs[3];
+                newArgs[4] = oldArgs[4];
+            }
             output.push({ type: type, args: newArgs });
         }
     }

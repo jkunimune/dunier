@@ -393,13 +393,20 @@
             <div class="card">
               <div class="card-header">
                 <h5 class="mb-0">
-                  <button type="button" id="map-projection-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
-                    graflance
+                  <button type="button" id="map-content-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
+                    kontenit
                   </button>
                 </h5>
               </div>
-              <div id="map-projection-collapse" class="collapse" aria-labelledby="map-projection-heading" data-parent="#accordion">
+              <div id="map-content-collapse" class="collapse" aria-labelledby="map-content-heading" data-parent="#accordion">
                 <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-jung">fokus</label>
+                    <select id="map-jung">
+                      <option selected value="0">United States of America</option>
+                      <option value="1">China</option>
+                    </select>
+                  </div>
                   <div class="form-group" id="map-projection-form">
                     <label for="map-projection">Projection</label>
                     <div class="input-group">
@@ -427,25 +434,18 @@
                       <option value="west">veste gawi</option>
                     </select>
                   </div>
-                  <div class="form-group">
-                    <label for="map-jung">fokus</label>
-                    <select id="map-jung">
-                      <option selected value="0">United States of America</option>
-                      <option value="1">China</option>
-                    </select>
-                  </div>
                 </div>
               </div>
             </div>
             <div class="card">
               <div class="card-header">
                 <h5 class="mb-0">
-                  <button type="button" id="map-colors-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-colors-collapse">
-                    rang e rupe
+                  <button type="button" id="map-style-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-style-collapse">
+                    rupe
                   </button>
                 </h5>
               </div>
-              <div id="map-colors-collapse" class="collapse" aria-labelledby="map-colors-heading" data-parent="#accordion">
+              <div id="map-style-collapse" class="collapse" aria-labelledby="map-style-heading" data-parent="#accordion">
                 <div class="card-body">
                   <div class="form-group">
                     <label for="map-color">rang</label>
@@ -472,19 +472,12 @@
                       <label for="map-sea-texture">fasgrafi da hay</label>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <h5 class="mb-0">
-                  <button type="button" id="map-features-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-features-collapse">
-                    sif
-                  </button>
-                </h5>
-              </div>
-              <div id="map-features-collapse" class="collapse" aria-labelledby="map-features-heading" data-parent="#accordion">
-                <div class="card-body">
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-shading">
+                      <label for="map-shading">xani say</label>
+                    </div>
+                  </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
                       <input type="checkbox" id="map-cities" value="none">
@@ -501,12 +494,6 @@
                     <div class="custom-checkbox">
                       <input type="checkbox" id="map-borders" checked>
                       <label for="map-borders">deshi kenar</label>
-                    </div>
-                  </div>
-                  <div class="form-group">
-                    <div class="custom-checkbox">
-                      <input type="checkbox" id="map-shading">
-                      <label for="map-shading">xani say</label>
                     </div>
                   </div>
                   <div class="form-group">
