@@ -27,17 +27,18 @@ const Plotly = window.Plotly;
 const TERRAIN_COLORMAP = [
 	[0.00, 'rgb(251, 254, 248)'],
 	[0.08, 'rgb(216, 231, 245)'],
-	[0.17, 'rgb(164, 215, 237)'],
-	[0.25, 'rgb(104, 203, 206)'],
-	[0.33, 'rgb( 68, 185, 156)'],
-	[0.42, 'rgb( 54, 167, 105)'],
-	[0.50, 'rgb( 64, 145,  47)'],
-	[0.58, 'rgb( 92, 116,  11)'],
-	[0.67, 'rgb(100,  89,   5)'],
-	[0.75, 'rgb( 99,  62,   1)'],
-	[0.83, 'rgb( 91,  33,   1)'],
-	[0.92, 'rgb( 75,   2,   6)'],
-	[1.00, 'rgb( 41,   4,   5)'],
+	[0.15, 'rgb(164, 215, 237)'],
+	[0.23, 'rgb(104, 203, 206)'],
+	[0.31, 'rgb( 68, 185, 156)'],
+	[0.38, 'rgb( 54, 167, 105)'],
+	[0.46, 'rgb( 64, 145,  47)'],
+	[0.54, 'rgb( 92, 116,  11)'],
+	[0.62, 'rgb(100,  89,   5)'],
+	[0.69, 'rgb( 99,  62,   1)'],
+	[0.77, 'rgb( 91,  33,   1)'],
+	[0.85, 'rgb( 75,   2,   6)'],
+	[0.92, 'rgb( 41,   4,   5)'],
+	[1.00, 'rgb(  7,   0,   0)'],
 ];
 
 const MIN_SIZE_TO_LIST = 6;
@@ -148,6 +149,15 @@ function renderPlanet() {
 	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
 
 	const {x, y, z, I} = surface.parameterize(18);
+
+	// apply a smotherstep normalization to the insolation
+	const color = [];
+	for (let i = 0; i < I.length; i ++) {
+		color.push([]);
+		for (let j = 0; j < I[i].length; j ++)
+			color[i].push(Math.pow(I[i][j], 3)*(3*I[i][j]*I[i][j] - 15*I[i][j] + 20)/8);
+	}
+
 	Plotly.react(
 		DOM.elm('planet-map'),
 		[{
@@ -155,7 +165,7 @@ function renderPlanet() {
 			x: x,
 			y: y,
 			z: z,
-			surfacecolor: I,
+			surfacecolor: color,
 			cmin: 0.,
 			cmax: 2.,
 			colorscale: TERRAIN_COLORMAP,
