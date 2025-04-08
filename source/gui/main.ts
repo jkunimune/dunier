@@ -363,9 +363,7 @@ function applyMap(): void {
 		DOM.checked('map-political-labels'),
 		DOM.checked('map-physical-labels'),
 		FONT_SIZE*0.35, // convert to mm
-		(DOM.val('map-spelling') === 'null') ?
-			null :
-			DOM.val('map-spelling')
+		DOM.val('map-spelling'),
 	);
 
 	// adjust the height and width options to reflect the new aspect ratio
@@ -388,9 +386,7 @@ function applyFactbook(): void {
 	const doc = generateFactbook(
 		DOM.elm('map-map') as SVGSVGElement,
 		mappedCivs,
-		(DOM.val('map-spelling') === 'null') ?
-			null :
-			DOM.val('map-spelling')
+		DOM.val('map-spelling'),
 	);
 	DOM.elm('factbook-embed').setAttribute('srcdoc', serialize(doc));
 

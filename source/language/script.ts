@@ -190,8 +190,9 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
 
 /**
  * convert a phonetic word to a unicode string somehow.
- * @param allSounds the array of sound-strings
- * @param style the transcription style to use
+ * @param allSounds the array of sound-strings.
+ * @param style the transcription style to use.
+ *              don't pass "(default)" for native spelling; that won't work.  you need to call Name.toString for that.
  */
 export function transcribe(allSounds: Sound[][], style: string): string {
 	if (!ORTHOGRAPHIC_FLAGS.has(style))
