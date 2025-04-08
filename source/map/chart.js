@@ -232,7 +232,7 @@ var Chart = /** @class */ (function () {
     Chart.prototype.depict = function (surface, world, svg, color, rivers, borders, shading, civLabels, geoLabels, fontSize, style) {
         var e_1, _a, e_2, _b, e_3, _c, e_4, _d;
         if (fontSize === void 0) { fontSize = 3; }
-        if (style === void 0) { style = null; }
+        if (style === void 0) { style = '(default)'; }
         var bbox = this.dimensions;
         svg.setAttribute('viewBox', "".concat(bbox.left, " ").concat(bbox.top, " ").concat(bbox.width, " ").concat(bbox.height));
         svg.textContent = ''; // clear the image

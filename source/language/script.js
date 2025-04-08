@@ -299,8 +299,9 @@ function lookUp(sound, style, level) {
 }
 /**
  * convert a phonetic word to a unicode string somehow.
- * @param allSounds the array of sound-strings
- * @param style the transcription style to use
+ * @param allSounds the array of sound-strings.
+ * @param style the transcription style to use.
+ *              don't pass "(default)" for native spelling; that won't work.  you need to call Name.toString for that.
  */
 export function transcribe(allSounds, style) {
     var e_11, _a, e_12, _b, e_13, _c, e_14, _d, e_15, _e, e_16, _f;

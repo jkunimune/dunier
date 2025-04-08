@@ -51,17 +51,18 @@ var Plotly = window.Plotly;
 var TERRAIN_COLORMAP = [
     [0.00, 'rgb(251, 254, 248)'],
     [0.08, 'rgb(216, 231, 245)'],
-    [0.17, 'rgb(164, 215, 237)'],
-    [0.25, 'rgb(104, 203, 206)'],
-    [0.33, 'rgb( 68, 185, 156)'],
-    [0.42, 'rgb( 54, 167, 105)'],
-    [0.50, 'rgb( 64, 145,  47)'],
-    [0.58, 'rgb( 92, 116,  11)'],
-    [0.67, 'rgb(100,  89,   5)'],
-    [0.75, 'rgb( 99,  62,   1)'],
-    [0.83, 'rgb( 91,  33,   1)'],
-    [0.92, 'rgb( 75,   2,   6)'],
-    [1.00, 'rgb( 41,   4,   5)'],
+    [0.15, 'rgb(164, 215, 237)'],
+    [0.23, 'rgb(104, 203, 206)'],
+    [0.31, 'rgb( 68, 185, 156)'],
+    [0.38, 'rgb( 54, 167, 105)'],
+    [0.46, 'rgb( 64, 145,  47)'],
+    [0.54, 'rgb( 92, 116,  11)'],
+    [0.62, 'rgb(100,  89,   5)'],
+    [0.69, 'rgb( 99,  62,   1)'],
+    [0.77, 'rgb( 91,  33,   1)'],
+    [0.85, 'rgb( 75,   2,   6)'],
+    [0.92, 'rgb( 41,   4,   5)'],
+    [1.00, 'rgb(  7,   0,   0)'],
 ];
 var MIN_SIZE_TO_LIST = 6;
 var MAX_COUNTRIES_TO_LIST = 20;
@@ -153,12 +154,19 @@ function renderPlanet() {
     console.log("grafa planete...");
     var radius = Number(DOM.val('planet-size')) / (2 * Math.PI);
     var _a = surface.parameterize(18), x = _a.x, y = _a.y, z = _a.z, I = _a.I;
+    // apply a smotherstep normalization to the insolation
+    var color = [];
+    for (var i = 0; i < I.length; i++) {
+        color.push([]);
+        for (var j = 0; j < I[i].length; j++)
+            color[i].push(Math.pow(I[i][j], 3) * (3 * I[i][j] * I[i][j] - 15 * I[i][j] + 20) / 8);
+    }
     Plotly.react(DOM.elm('planet-map'), [{
             type: 'surface',
             x: x,
             y: y,
             z: z,
-            surfacecolor: I,
+            surfacecolor: color,
             cmin: 0.,
             cmax: 2.,
             colorscale: TERRAIN_COLORMAP,
@@ -318,9 +326,7 @@ function applyMap() {
         throw new Error("invalid focusSpecifier: '".concat(focusSpecifier, "'"));
     chart = new Chart(projectionName, surface, regionOfInterest, orientation, rectangularBounds, width * height);
     mappedCivs = chart.depict(surface, world, DOM.elm('map-map'), DOM.val('map-color'), DOM.checked('map-rivers'), DOM.checked('map-borders'), DOM.checked('map-shading'), DOM.checked('map-political-labels'), DOM.checked('map-physical-labels'), FONT_SIZE * 0.35, // convert to mm
-    (DOM.val('map-spelling') === 'null') ?
-        null :
-        DOM.val('map-spelling'));
+    DOM.val('map-spelling'));
     // adjust the height and width options to reflect the new aspect ratio
     enforceAspectRatio("neither", "mm");
     enforceAspectRatio("neither", "px");
@@ -334,9 +340,7 @@ function applyFactbook() {
     if (lastUpdated < Layer.MAP)
         applyMap();
     console.log("jena factbook...");
-    var doc = generateFactbook(DOM.elm('map-map'), mappedCivs, (DOM.val('map-spelling') === 'null') ?
-        null :
-        DOM.val('map-spelling'));
+    var doc = generateFactbook(DOM.elm('map-map'), mappedCivs, DOM.val('map-spelling'));
     DOM.elm('factbook-embed').setAttribute('srcdoc', serialize(doc));
     console.log("fina!");
     lastUpdated = Layer.FACTBOOK;

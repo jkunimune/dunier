@@ -39,16 +39,19 @@ var Name = /** @class */ (function () {
     };
     /**
      * transcribe this in the given orthographick style, or its native romanizacion
-     * system if none is specified
+     * system if the style is '(default)'
      */
     Name.prototype.toString = function (style) {
-        if (style === void 0) { style = null; }
-        if (this.language === null) // if language is null, this is just phonetick informacion and should be put in phonetick notacion regardless of the specified Style
-            return transcribe(this.parts, 'ipa');
-        else if (style !== null) // otherwise, use the specified style
-            return transcribe(this.parts, style);
-        else // otherwise, use the native style of this word's language
-            return transcribe(this.parts, this.language.defaultStyle);
+        if (style === void 0) { style = '(default)'; }
+        if (style === '(default)') {
+            // query the language for the default spelling style
+            if (this.language !== null)
+                style = this.language.defaultStyle;
+            // for raw phonetic information, the default spelling is the IPA
+            else
+                style = 'ipa';
+        }
+        return transcribe(this.parts, style);
     };
     return Name;
 }());
