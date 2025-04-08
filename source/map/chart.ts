@@ -263,7 +263,7 @@ export class Chart {
 	       color: string,
 		   rivers: boolean, borders: boolean, shading: boolean,
 		   civLabels: boolean, geoLabels: boolean,
-		   fontSize = 3, style: string = null): Civ[] {
+		   fontSize = 3, style: string = '(default)'): Civ[] {
 		const bbox = this.dimensions;
 		svg.setAttribute('viewBox',
 			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
