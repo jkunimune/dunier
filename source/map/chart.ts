@@ -386,7 +386,7 @@ export class Chart {
 			if (world === null)
 				throw new Error("this Chart was asked to color land politicly but the provided World was null");
 			this.fill(
-				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
+				filterSet(surface.tiles, n => !n.isWater()),
 				g, EGGSHELL, Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
 			let numFilledCivs = 0;
@@ -406,7 +406,7 @@ export class Chart {
 						color = COUNTRY_COLORS[numFilledCivs];
 				}
 				const fill = this.fill(
-					filterSet(civ.tileTree.keys(), n => n.biome !== Biome.OCEAN),
+					filterSet(civ.tileTree.keys(), n => !n.isWater()),
 					g, color, Layer.KULTUR);
 				if (fill.getAttribute("d").length > 0)
 					numFilledCivs ++;
@@ -418,14 +418,14 @@ export class Chart {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : -Infinity;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Infinity;
 				this.fill(
-					filterSet(surface.tiles, n => n.biome !== Biome.OCEAN && n.height >= min && n.height < max),
+					filterSet(surface.tiles, n => !n.isWater() && n.height >= min && n.height < max),
 					g, ALTITUDE_COLORS[i], Layer.GEO);
 			}
 		}
 		else {
 			// color in the land with a uniform color
 			this.fill(
-				filterSet(surface.tiles, n => n.biome !== Biome.OCEAN),
+				filterSet(surface.tiles, n => !n.isWater()),
 				g, landFill, Layer.BIO);
 		}
 
@@ -443,7 +443,7 @@ export class Chart {
 				const min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
 				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
 				this.fill(
-					filterSet(surface.tiles, n => n.biome === Biome.OCEAN && -n.height >= min && -n.height < max),
+					filterSet(surface.tiles, n => n.isWater() && -n.height >= min && -n.height < max),
 					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
 			}
 		}
@@ -469,7 +469,7 @@ export class Chart {
 					titledG.appendChild(hover);
 					g.appendChild(titledG);
 					this.fill(
-						filterSet(civ.tileTree.keys(), n => n.biome !== Biome.OCEAN),
+						filterSet(civ.tileTree.keys(), n => !n.isWater()),
 						titledG,
 						'none', Layer.KULTUR, borderStroke, 0.7).setAttribute('pointer-events', 'all');
 				// }
@@ -991,7 +991,7 @@ export class Chart {
 		const meanRadius = rSum/count;
 
 		// find the longitude with the most empty space on either side of it
-		const coastline = Chart.border(filterSet(regionOfInterest, tile => tile.biome !== Biome.OCEAN));
+		const coastline = Chart.border(filterSet(regionOfInterest, tile => !tile.isWater()));
 		let centralMeridian;
 		const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
 		for (let i = 0; i < coastline.length; i ++) {
@@ -1017,7 +1017,7 @@ export class Chart {
 			let xCenter = 0;
 			let yCenter = 0;
 			for (const tile of regionOfInterest) {
-				if (tile.biome !== Biome.OCEAN) {
+				if (!tile.isWater()) {
 					xCenter += Math.cos(tile.λ);
 					yCenter += Math.sin(tile.λ);
 				}
@@ -1036,7 +1036,7 @@ export class Chart {
 			let ξCenter = 0;
 			let υCenter = 0;
 			for (const tile of regionOfInterest) {
-				if (tile.biome !== Biome.OCEAN) {
+				if (!tile.isWater()) {
 					ξCenter += Math.cos(tile.φ);
 					υCenter += Math.sin(tile.φ);
 				}
