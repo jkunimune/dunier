@@ -234,11 +234,7 @@ function applyTerrain(): void {
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
 	              'physical',
-	              true,
-	              false,
-	              false,
-	              false,
-	              false);
+	              true, false, true);
 
 	// save the continents in an easily accessible form
 	continents = [];
@@ -286,11 +282,7 @@ function applyHistory(): void {
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
 	              'political',
-	              false,
-	              true,
-	              false,
-	              false,
-	              false);
+	              false, true, false);
 
 	// now set up the "focus" options for the map tab:
 	console.log("mute ba chuze bil...");
@@ -359,6 +351,8 @@ function applyMap(): void {
 		DOM.val('map-color'),
 		DOM.checked('map-rivers'),
 		DOM.checked('map-borders'),
+		DOM.checked('map-graticule'),
+		DOM.checked('map-windrose'),
 		DOM.checked('map-shading'),
 		DOM.checked('map-political-labels'),
 		DOM.checked('map-physical-labels'),

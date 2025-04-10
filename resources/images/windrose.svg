@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="-26 -26 52 52">
+  <path fill="white" stroke="none" stroke-width="1" d="M0,26 A26,26,0,0,0,0,-26 A26,26,0,0,0,0,26 Z" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(0.0)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(11.25)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(22.5)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(33.75)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(45.0)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(56.25)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(67.5)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(78.75)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(90.0)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(101.25)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(112.5)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(123.75)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(135.0)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(146.25)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(157.5)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(168.75)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(180.0)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(191.25)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(202.5)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(213.75)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(225.0)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(236.25)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(247.5)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(258.75)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(270.0)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(281.25)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(292.5)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(303.75)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(315.0)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(326.25)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(337.5)" d="M0,25 V-25" />
+  <path fill="none" stroke="lightgray" stroke-width="0.5" transform="rotate(348.75)" d="M0,25 V-25" />
+  <path fill="gray" stroke="gray" stroke-width="0.01" transform="rotate(0.0)" d="M0,-23 Q-2.1205380358083596,-10.81021570977446,-3.710218818418422,-4.715323564661688 A6,6,0,0,1,0,-6 Z" />
+  <path fill="dimgray" stroke="dimgray" stroke-width="0.01" transform="rotate(0.0)" d="M0,-23 Q2.1205380358083596,-10.81021570977446,3.710218818418422,-4.715323564661688 A6,6,0,0,0,0,-6 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(22.5)" d="M0,-23 Q-1.444772921473467,-19.37158769134004,-3.9671593822102005,-17.557381537010055 A18,18,0,0,1,0,-18 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(22.5)" d="M0,-23 Q1.444772921473467,-19.37158769134004,3.9671593822102005,-17.557381537010055 A18,18,0,0,0,0,-18 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(22.5)" d="M0,-12 Q-1.4421287694263774,-15.02105258177339,-3.963193154139566,-16.531578872660084 A17,17,0,0,1,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(22.5)" d="M0,-12 Q1.4421287694263774,-15.02105258177339,3.963193154139566,-16.531578872660084 A17,17,0,0,0,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(45.0)" d="M0,-23 Q-2.0721030289146722,-15.226322237184569,-3.9263363615538265,-11.339483355776853 A12,12,0,0,1,0,-12 Z" />
+  <path fill="gray" stroke="gray" stroke-width="0.01" transform="rotate(45.0)" d="M0,-23 Q2.0721030289146722,-15.226322237184569,3.9263363615538265,-11.339483355776853 A12,12,0,0,0,0,-12 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(45.0)" d="M0,-6 Q-1.4082844910359025,-8.853804038021465,-3.912426736553854,-10.2807060570322 A11,11,0,0,1,0,-11 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(45.0)" d="M0,-6 Q1.4082844910359025,-8.853804038021465,3.912426736553854,-10.2807060570322 A11,11,0,0,0,0,-11 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(67.5)" d="M0,-23 Q-1.444772921473467,-19.37158769134004,-3.9671593822102005,-17.557381537010055 A18,18,0,0,1,0,-18 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(67.5)" d="M0,-23 Q1.444772921473467,-19.37158769134004,3.9671593822102005,-17.557381537010055 A18,18,0,0,0,0,-18 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(67.5)" d="M0,-12 Q-1.4421287694263774,-15.02105258177339,-3.963193154139566,-16.531578872660084 A17,17,0,0,1,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(67.5)" d="M0,-12 Q1.4421287694263774,-15.02105258177339,3.963193154139566,-16.531578872660084 A17,17,0,0,0,0,-17 Z" />
+  <path fill="gray" stroke="gray" stroke-width="0.01" transform="rotate(90.0)" d="M0,-23 Q-2.1205380358083596,-10.81021570977446,-3.710218818418422,-4.715323564661688 A6,6,0,0,1,0,-6 Z" />
+  <path fill="dimgray" stroke="dimgray" stroke-width="0.01" transform="rotate(90.0)" d="M0,-23 Q2.1205380358083596,-10.81021570977446,3.710218818418422,-4.715323564661688 A6,6,0,0,0,0,-6 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(112.5)" d="M0,-23 Q-1.444772921473467,-19.37158769134004,-3.9671593822102005,-17.557381537010055 A18,18,0,0,1,0,-18 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(112.5)" d="M0,-23 Q1.444772921473467,-19.37158769134004,3.9671593822102005,-17.557381537010055 A18,18,0,0,0,0,-18 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(112.5)" d="M0,-12 Q-1.4421287694263774,-15.02105258177339,-3.963193154139566,-16.531578872660084 A17,17,0,0,1,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(112.5)" d="M0,-12 Q1.4421287694263774,-15.02105258177339,3.963193154139566,-16.531578872660084 A17,17,0,0,0,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(135.0)" d="M0,-23 Q-2.0721030289146722,-15.226322237184569,-3.9263363615538265,-11.339483355776853 A12,12,0,0,1,0,-12 Z" />
+  <path fill="gray" stroke="gray" stroke-width="0.01" transform="rotate(135.0)" d="M0,-23 Q2.0721030289146722,-15.226322237184569,3.9263363615538265,-11.339483355776853 A12,12,0,0,0,0,-12 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(135.0)" d="M0,-6 Q-1.4082844910359025,-8.853804038021465,-3.912426736553854,-10.2807060570322 A11,11,0,0,1,0,-11 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(135.0)" d="M0,-6 Q1.4082844910359025,-8.853804038021465,3.912426736553854,-10.2807060570322 A11,11,0,0,0,0,-11 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(157.5)" d="M0,-23 Q-1.444772921473467,-19.37158769134004,-3.9671593822102005,-17.557381537010055 A18,18,0,0,1,0,-18 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(157.5)" d="M0,-23 Q1.444772921473467,-19.37158769134004,3.9671593822102005,-17.557381537010055 A18,18,0,0,0,0,-18 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(157.5)" d="M0,-12 Q-1.4421287694263774,-15.02105258177339,-3.963193154139566,-16.531578872660084 A17,17,0,0,1,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(157.5)" d="M0,-12 Q1.4421287694263774,-15.02105258177339,3.963193154139566,-16.531578872660084 A17,17,0,0,0,0,-17 Z" />
+  <path fill="gray" stroke="gray" stroke-width="0.01" transform="rotate(180.0)" d="M0,-23 Q2.1205380358083596,-10.81021570977446,3.710218818418422,-4.715323564661688 A6,6,0,0,0,0,-6 Z" />
+  <path fill="dimgray" stroke="dimgray" stroke-width="0.01" transform="rotate(180.0)" d="M0,-23 Q-2.1205380358083596,-10.81021570977446,-3.710218818418422,-4.715323564661688 A6,6,0,0,1,0,-6 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(202.5)" d="M0,-23 Q1.444772921473467,-19.37158769134004,3.9671593822102005,-17.557381537010055 A18,18,0,0,0,0,-18 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(202.5)" d="M0,-23 Q-1.444772921473467,-19.37158769134004,-3.9671593822102005,-17.557381537010055 A18,18,0,0,1,0,-18 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(202.5)" d="M0,-12 Q1.4421287694263774,-15.02105258177339,3.963193154139566,-16.531578872660084 A17,17,0,0,0,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(202.5)" d="M0,-12 Q-1.4421287694263774,-15.02105258177339,-3.963193154139566,-16.531578872660084 A17,17,0,0,1,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(225.0)" d="M0,-23 Q2.0721030289146722,-15.226322237184569,3.9263363615538265,-11.339483355776853 A12,12,0,0,0,0,-12 Z" />
+  <path fill="gray" stroke="gray" stroke-width="0.01" transform="rotate(225.0)" d="M0,-23 Q-2.0721030289146722,-15.226322237184569,-3.9263363615538265,-11.339483355776853 A12,12,0,0,1,0,-12 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(225.0)" d="M0,-6 Q1.4082844910359025,-8.853804038021465,3.912426736553854,-10.2807060570322 A11,11,0,0,0,0,-11 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(225.0)" d="M0,-6 Q-1.4082844910359025,-8.853804038021465,-3.912426736553854,-10.2807060570322 A11,11,0,0,1,0,-11 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(247.5)" d="M0,-23 Q1.444772921473467,-19.37158769134004,3.9671593822102005,-17.557381537010055 A18,18,0,0,0,0,-18 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(247.5)" d="M0,-23 Q-1.444772921473467,-19.37158769134004,-3.9671593822102005,-17.557381537010055 A18,18,0,0,1,0,-18 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(247.5)" d="M0,-12 Q1.4421287694263774,-15.02105258177339,3.963193154139566,-16.531578872660084 A17,17,0,0,0,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(247.5)" d="M0,-12 Q-1.4421287694263774,-15.02105258177339,-3.963193154139566,-16.531578872660084 A17,17,0,0,1,0,-17 Z" />
+  <path fill="gray" stroke="gray" stroke-width="0.01" transform="rotate(270.0)" d="M0,-23 Q2.1205380358083596,-10.81021570977446,3.710218818418422,-4.715323564661688 A6,6,0,0,0,0,-6 Z" />
+  <path fill="dimgray" stroke="dimgray" stroke-width="0.01" transform="rotate(270.0)" d="M0,-23 Q-2.1205380358083596,-10.81021570977446,-3.710218818418422,-4.715323564661688 A6,6,0,0,1,0,-6 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(292.5)" d="M0,-23 Q1.444772921473467,-19.37158769134004,3.9671593822102005,-17.557381537010055 A18,18,0,0,0,0,-18 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(292.5)" d="M0,-23 Q-1.444772921473467,-19.37158769134004,-3.9671593822102005,-17.557381537010055 A18,18,0,0,1,0,-18 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(292.5)" d="M0,-12 Q1.4421287694263774,-15.02105258177339,3.963193154139566,-16.531578872660084 A17,17,0,0,0,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(292.5)" d="M0,-12 Q-1.4421287694263774,-15.02105258177339,-3.963193154139566,-16.531578872660084 A17,17,0,0,1,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(315.0)" d="M0,-23 Q2.0721030289146722,-15.226322237184569,3.9263363615538265,-11.339483355776853 A12,12,0,0,0,0,-12 Z" />
+  <path fill="gray" stroke="gray" stroke-width="0.01" transform="rotate(315.0)" d="M0,-23 Q-2.0721030289146722,-15.226322237184569,-3.9263363615538265,-11.339483355776853 A12,12,0,0,1,0,-12 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(315.0)" d="M0,-6 Q1.4082844910359025,-8.853804038021465,3.912426736553854,-10.2807060570322 A11,11,0,0,0,0,-11 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(315.0)" d="M0,-6 Q-1.4082844910359025,-8.853804038021465,-3.912426736553854,-10.2807060570322 A11,11,0,0,1,0,-11 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(337.5)" d="M0,-23 Q1.444772921473467,-19.37158769134004,3.9671593822102005,-17.557381537010055 A18,18,0,0,0,0,-18 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(337.5)" d="M0,-23 Q-1.444772921473467,-19.37158769134004,-3.9671593822102005,-17.557381537010055 A18,18,0,0,1,0,-18 Z" />
+  <path fill="lightgray" stroke="lightgray" stroke-width="0.01" transform="rotate(337.5)" d="M0,-12 Q1.4421287694263774,-15.02105258177339,3.963193154139566,-16.531578872660084 A17,17,0,0,0,0,-17 Z" />
+  <path fill="darkgray" stroke="darkgray" stroke-width="0.01" transform="rotate(337.5)" d="M0,-12 Q-1.4421287694263774,-15.02105258177339,-3.963193154139566,-16.531578872660084 A17,17,0,0,1,0,-17 Z" />
+  <path fill="none" stroke="lightgray" stroke-width="1" d="M0,23.5 A23.5,23.5,0,0,0,0,-23.5 A23.5,23.5,0,0,0,0,23.5 Z" />
+  <path fill="none" stroke="lightgray" stroke-width="1" d="M0,25.5 A25.5,25.5,0,0,0,0,-25.5 A25.5,25.5,0,0,0,0,25.5 Z" />
+  <path fill="gray" stroke="none" stroke-width="1" d="M0,5 A5,5,0,0,0,0,-5 A5,5,0,0,0,0,5 Z" />
+  <path fill="darkgray" stroke="none" stroke-width="0" d="M0.0,-5.0 L1.4142135623730951,-1.4142135623730951 L5.0,-3.061616997868383e-16 L1.4142135623730951,1.414213562373095 L6.123233995736766e-16,5.0 L-1.414213562373095,1.4142135623730954 L-5.0,9.184850993605148e-16 L-1.4142135623730954,-1.4142135623730947 Z" />
+  <path fill="darkgray" stroke="none" stroke-width="0" d="M0.0,-4.0 L0.9567085809127245,-2.309698831278217 L2.8284271247461903,-2.8284271247461903 L2.309698831278217,-0.9567085809127246 L4.0,-2.4492935982947064e-16 L2.309698831278217,0.9567085809127243 L2.8284271247461903,2.82842712474619 L0.9567085809127247,2.309698831278217 L4.898587196589413e-16,4.0 L-0.9567085809127241,2.309698831278217 L-2.82842712474619,2.8284271247461907 L-2.309698831278217,0.9567085809127238 L-4.0,7.347880794884119e-16 L-2.3096988312782165,-0.956708580912725 L-2.8284271247461907,-2.8284271247461894 L-0.9567085809127239,-2.309698831278217 Z" />
+</svg>

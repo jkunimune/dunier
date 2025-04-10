@@ -255,14 +255,18 @@ export class Chart {
 	 * @param shading whether to add shaded relief
 	 * @param civLabels whether to label countries
 	 * @param geoLabels whether to label mountain ranges and seas
+	 * @param graticule whether to draw a graticule
+	 * @param windrose whether to add a compass rose
 	 * @param fontSize the size of city labels and minimum size of country and biome labels (mm)
 	 * @param style the transliteration convention to use for them
 	 * @return the list of Civs that are shown in this map
 	 */
 	depict(surface: Surface, world: World | null, svg: SVGGElement,
 	       color: string,
-		   rivers: boolean, borders: boolean, shading: boolean,
-		   civLabels: boolean, geoLabels: boolean,
+		   rivers: boolean, borders: boolean,
+		   graticule = false, windrose = false,
+		   shading = false,
+		   civLabels = false, geoLabels = false,
 		   fontSize = 3, style: string = '(default)'): Civ[] {
 		const bbox = this.dimensions;
 		svg.setAttribute('viewBox',
@@ -499,6 +503,27 @@ export class Chart {
 		this.fill(
 			surface.tiles,
 			g, 'none', Layer.GEO, 'black', 1.4, 'miter');
+
+		// add the windrose
+		if (windrose) {
+			const windrose = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+			windrose.setAttribute('id', 'generated-map');
+			g.appendChild(windrose);
+
+			// decide where to put it
+			const radius = Math.min(25, 0.2*Math.min(this.dimensions.width, this.dimensions.height));
+			const x = this.dimensions.left + 1.2*radius;
+			const y = this.dimensions.top + 1.2*radius;
+			windrose.setAttribute("transform", `translate(${x}, ${y}) scale(${radius/26})`);
+
+			// load the content from windrose.svg
+			fetch('../../resources/images/windrose.svg')
+				.then(response => response.text())
+				.then(svgText => {
+					const innerSVG = svgText.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s)[1];
+					windrose.innerHTML = innerSVG;
+				});
+		}
 
 		if (world !== null) {
 			// finally, check which Civs are on this map
