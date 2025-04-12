@@ -70,7 +70,7 @@ export class MapProjection {
 		this.φMin = this.φRef[0];
 		this.φMax = this.φRef[this.φRef.length - 1];
 		this.λMin = this.λCenter - Math.PI;
-		this.λMax = this.λCenter + Math.PI;
+		this.λMax = this.λMin + 2*Math.PI;
 		this.domain = new Domain(
 			this.φMin, this.φMin + 2*Math.PI, this.λMin, this.λMax,
 			(point) => this.surface.isOnEdge(assert_φλ(point)));

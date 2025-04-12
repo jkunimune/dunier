@@ -18,7 +18,7 @@ import {
 	applyProjectionToPath, calculatePathBounds,
 	convertPathClosuresToZ,
 	intersection, rotatePath, scalePath,
-	transformInput,
+	adjustInputToDomain,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
 
@@ -160,24 +160,9 @@ export class Chart {
 		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
 		orientationName: string, rectangularBounds: boolean, area: number,
 	) {
-		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
-		const southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
-		const northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2*Math.PI);
-
-		if (projectionName === 'equal_earth')
-			this.projection = MapProjection.equalEarth(
-				surface, meanRadius, southLimitingParallel, northLimitingParallel, centralMeridian);
-		else if (projectionName === 'bonne')
-			this.projection = MapProjection.bonne(
-				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
-		else if (projectionName === 'conformal_conic')
-			this.projection = MapProjection.conformalConic(
-				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
-		else if (projectionName === 'orthographic')
-			this.projection = MapProjection.orthographic(
-				surface, southLimitingParallel, northLimitingParallel, centralMeridian);
-		else
-			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
+		const {projection, φMin, φMax, λMin, λMax, xLeft, xRight, yTop, yBottom} =
+			Chart.chooseMapProjectionAndBounds(projectionName, surface, regionOfInterest, rectangularBounds);
+		this.projection = projection;
 
 		if (orientationName === 'north')
 			this.orientation = 0;
@@ -189,18 +174,6 @@ export class Chart {
 			this.orientation = 270;
 		else
 			throw new Error(`I don't recognize this direction: '${orientationName}'.`);
-
-		// establish the bounds of the map
-		const {φMin, φMax, λMin, λMax, xRight, xLeft, yBottom, yTop} =
-			Chart.chooseMapBounds(
-				intersection(
-					transformInput(this.projection, Chart.border(regionOfInterest)),
-					Chart.rectangle(
-						this.projection.φMax, this.projection.λMax,
-						this.projection.φMin, this.projection.λMin, true),
-					this.projection.domain, true),
-				this.projection, rectangularBounds);
-		this.labelIndex = 0;
 
 		// flip them if it's a south-up map
 		if (this.orientation === 0)
@@ -242,6 +215,8 @@ export class Chart {
 		else
 			this.geoEdges = Chart.rectangle(φMax, λMax, φMin, λMin, true);
 		this.mapEdges = Chart.rectangle(xLeft, yTop, xRight, yBottom, false);
+
+		this.labelIndex = 0;
 	}
 
 	/**
@@ -511,7 +486,7 @@ export class Chart {
 			g.appendChild(windrose);
 
 			// decide where to put it
-			const radius = Math.min(25, 0.2*Math.min(this.dimensions.width, this.dimensions.height));
+			const radius = Math.min(26, 0.2*Math.min(this.dimensions.width, this.dimensions.height));
 			const x = this.dimensions.left + 1.2*radius;
 			const y = this.dimensions.top + 1.2*radius;
 			windrose.setAttribute("transform", `translate(${x}, ${y}) scale(${radius/26})`);
@@ -713,7 +688,7 @@ export class Chart {
 	 */
 	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
 		const croppedToGeoRegion = intersection(
-			transformInput(this.projection, segments),
+			adjustInputToDomain(this.projection.φMin, this.projection.λMin, segments),
 			this.geoEdges,
 			this.projection.domain, closePath,
 		);
@@ -1052,19 +1027,50 @@ export class Chart {
 
 
 	/**
-	 * determine the coordinate bounds of this region –
-	 * both its geographical coordinates on the Surface and its Cartesian coordinates on the map.
+	 * determine the geographical coordinate bounds of this region on the Surface.
+	 * @param projectionName the type of projection to choose – one of "equal_earth", "bonne", "conformal_conic", or "orthographic"
+	 * @param surface the Surface for which to design the projection
 	 * @param regionOfInterest the region that must be enclosed entirely within the returned bounding box
-	 * @param projection the projection being used to map this region from a Surface to the plane
-	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
+	 * @param rectangularBounds whether we want the map's bounding box to be as rectangular as possible, rather than having it conform to the graticule
 	 */
-	static chooseMapBounds(
-		regionOfInterest: PathSegment[], projection: MapProjection, rectangularBounds: boolean,
-	): {φMin: number, φMax: number, λMin: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
+	static chooseMapProjectionAndBounds(
+		projectionName: string, surface: Surface,
+		regionOfInterest: Set<Tile>, rectangularBounds: boolean,
+	): {projection: MapProjection, φMin: number, φMax: number, λMin: number, λMax: number, xLeft: number, xRight: number, yTop: number, yBottom: number} {
+		const {centralMeridian, centralParallel, meanRadius} = Chart.chooseMapCentering(regionOfInterest, surface);
+
+		const southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
+		const northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2*Math.PI);
+
+		let projection: MapProjection;
+		if (projectionName === 'equal_earth')
+			projection = MapProjection.equalEarth(
+				surface, meanRadius, southLimitingParallel, northLimitingParallel, centralMeridian);
+		else if (projectionName === 'bonne')
+			projection = MapProjection.bonne(
+				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
+		else if (projectionName === 'conformal_conic')
+			projection = MapProjection.conformalConic(
+				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
+		else if (projectionName === 'orthographic')
+			projection = MapProjection.orthographic(
+				surface, southLimitingParallel, northLimitingParallel, centralMeridian);
+		else
+			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
+
+		const polygonOfInterest = intersection(
+			adjustInputToDomain(
+				projection.φMin, projection.λMin,
+				Chart.border(regionOfInterest)),
+			Chart.rectangle(
+				projection.φMax, projection.λMax,
+				projection.φMin, projection.λMin, true),
+			projection.domain, true);
+
 		// start by identifying the geographic and projected extent of this thing
-		const regionBounds = calculatePathBounds(regionOfInterest);
-		const projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
-		const projectedBounds = calculatePathBounds(projectedRegion);
+		const regionBounds = calculatePathBounds(polygonOfInterest);
+		const projectedPolygon = applyProjectionToPath(projection, polygonOfInterest, Infinity);
+		const projectedBounds = calculatePathBounds(projectedPolygon);
 
 		// first infer some things about this projection
 		const northPoleIsDistant = projection.differentiability(projection.φMax) < .5;
@@ -1148,6 +1154,7 @@ export class Chart {
 		];
 		const mapBounds = calculatePathBounds(edges);
 		return {
+			projection: projection,
 			φMin: φMin, φMax: φMax, λMin: λMin, λMax: λMax,
 			xLeft: Math.max(xLeft, mapBounds.sMin),
 			xRight: Math.min(xRight, mapBounds.sMax),
