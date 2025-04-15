@@ -236,8 +236,10 @@ export class Chart {
 			this.geoEdges = [
 				{type: 'M', args: [φMax, λMax]},
 				{type: 'Φ', args: [φMax, λMin]},
+				{type: 'L', args: [φMax, λMax]},
 				{type: 'M', args: [φMin, λMin]},
 				{type: 'Φ', args: [φMin, λMax]},
+				{type: 'L', args: [φMin, λMin]},
 			];
 		else
 			this.geoEdges = Chart.rectangle(φMax, λMax, φMin, λMin, true);

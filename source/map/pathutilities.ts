@@ -455,21 +455,24 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], domai
  *                is undefined.
  * @param point the point that may or may not be in the region
  * @param domain the topology of the space on which these points' coordinates are defined
- * @param garanteedToSucced if this is false and our line fails to conclusively determine containment, we might choose a
- *                          new point and recurse this function.  if it's true and that happens we'll just give up.
+ * @param tryNumber how many times this algorithm was previously run on this polygon/point pair.  sometimes you have to
+ *                  do it up to four times with rotation and/or translation.  if it takes more than that, know that
+ *                  you're in an infinite loop and something is rong.
  * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Point, domain: Domain, garanteedToSucced=false): Side {
-	for (let i = 3; i < polygon.length; i ++) {
-		if (polygon[i].type === 'M') {
-			for (let j = i - 3; j < i; j ++) {
-				if (polygon[j].type === 'M') {
-					console.error(pathToString(polygon));
-					throw new Error(`this polygon is ill-posed because the section that starts at ${j} is only ${i - j} long so I'm not doing it.`);
-				}
-			}
+export function contains(polygon: PathSegment[], point: Point, domain: Domain, tryNumber=0): Side {
+	let lastM = -Infinity;
+	let lastCurve = -Infinity;
+	for (let i = 0; i < polygon.length; i ++) {
+		if (polygon[i].type === 'M' && lastM >= i - 3 && lastCurve < lastM) {
+			console.error(pathToString(polygon));
+			throw new Error(`this polygon is ill-posed because the section that starts at ${lastM} is only ${i - lastM} long so I'm not doing it.`);
 		}
+		if (polygon[i].type === 'M')
+			lastM = i;
+		else if (polygon[i].type !== 'L')
+			lastCurve = i;
 	}
 	
 	if (polygon.length === 0)
@@ -522,7 +525,7 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, g
 		else if (polygon[i].type === 'Λ')
 			intersections = [];
 		else if (polygon[i].type === 'Φ') {
-			const crosses = (start.t < point.t) !== (end.t < point.t);
+			let crosses = (start.t < point.t) !== (end.t < point.t);
 			if (crosses)
 				intersections = [{s: end.s, goingEast: end.t > start.t}];
 			else
@@ -541,8 +544,13 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, g
 				end.s = localizeInRange(end.s, start.s - π, start.s + π);
 			}
 			if (crosses) {
-				const startWeight = (end.t - point.t)/(end.t - start.t);
-				let s = startWeight*start.s + (1 - startWeight)*end.s;
+				let s;
+				if (end.s === start.s)
+					s = end.s;
+				else {
+					const startWeight = (end.t - point.t)/(end.t - start.t);
+					s = startWeight*start.s + (1 - startWeight)*end.s;
+				}
 				if (domain.isPeriodic())
 					s = localizeInRange(s, start.s - π, start.s + π);
 				intersections = [{s: s, goingEast: goingRight}];
@@ -601,8 +609,8 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, g
 
 	// if you didn't hit any lines or you hit some but they were indeterminate
 	else {
-		if (garanteedToSucced)
-			throw new Error("but the sign said success was garanteed...");
+		if (tryNumber === 1 || tryNumber === 3)
+			throw new Error(`this algorithm should be guaranteed to get an answer after translation + rotation.  something must be rong.  the path is "${pathToString(polygon)}".`);
 		// choose a new point on the horizontal line you drew that's known to be in line with some of the polygon
 		let sNew = null;
 		for (let i = 1; i < polygon.length; i ++) {
@@ -619,9 +627,23 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, g
 		if (sNew === null)
 			throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
 		// and rerun this algorithm with a vertical line thru that point instead of a horizontal one
-		return contains(
+		const result = contains(
 			rotatePath(polygon, 90), {s: point.t, t: -sNew},
-			rotateDomain(domain, 90), true);
+			rotateDomain(domain, 90), tryNumber + 1);
+		if (result !== Side.BORDERLINE)
+			return result;
+		// be careful; if it returns BORDERLINE this time, that means the _new_ point is BORDERLINE,
+		// but does not reflect the status of our OG point.  try rotating again, but without changing points this time.
+		else {
+			if (tryNumber >= 2)
+				throw new Error(
+					`I don't think this point is BORDERLINE because we got an inconclusive anser the first time we ` +
+					`did it.  so I don't think it shuold be possible to get BORDERLINE with a simple rotation.  ` +
+					`something must be rong.  the path is "${pathToString(polygon)}".`);
+			return contains(
+				rotatePath(polygon, 90), {s: point.t, t: -point.s},
+				rotateDomain(domain, 90), tryNumber + 2);
+		}
 	}
 }
 
@@ -861,8 +883,18 @@ function getGeoEdgeCrossing(
 ): { place0: ΦΛPoint, place1: ΦΛPoint } | null {
 	const edgeEnd = assert_φλ(endpoint(edge));
 
-	if (edge.type !== 'Φ' && edge.type !== 'Λ')
+	// some lines are allowed, but they have to have zero length, and will thus never count for crossings
+	if (edge.type === 'L') {
+		if (localizeInRange(edgeStart.φ, domain.sMin, domain.sMax) !== localizeInRange(edge.args[0], domain.sMin, domain.sMax) ||
+		    localizeInRange(edgeStart.λ, domain.tMin, domain.tMax) !== localizeInRange(edge.args[1], domain.tMin, domain.tMax))
+			throw new Error("'L' segments are only allowed in geoEdges for loop-closing purposes; this seems to have actual length, which is a no-no.");
+		return null;
+	}
+
+	// other non-graticule segment types are absolutely NG
+	else if (edge.type !== 'Λ' && edge.type !== 'Φ') {
 		throw new Error(`I don't think you're allowd to use ${edge.type} here`);
+	}
 
 	// the body of this function assumes the edge is a parallel going west.  if it isn't that, rotate 90° until it is.
 	else if (edge.type === 'Λ' || edgeEnd.λ > edgeStart.λ) {
@@ -1019,13 +1051,6 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 			if (start === null)
 				throw new Error(`path must begin with a moveto, not ${segments[0].type}`);
 			const end = endpoint(segments[i]);
-			// account for periodicity
-			if (domain.isPeriodic()) {
-				start.s = localizeInRange(start.s, domain.sMin, domain.sMax);
-				start.t = localizeInRange(start.t, domain.tMin, domain.tMax);
-				end.s = localizeInRange(end.s, domain.sMin, domain.sMax);
-				end.t = localizeInRange(end.t, domain.tMin, domain.tMax);
-			}
 			// if it doesn't end where it started
 			const endsOnStart = start.s === end.s && start.t === end.t;
 			// and it doesn't start and end on edges
