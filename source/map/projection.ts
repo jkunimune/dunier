@@ -420,11 +420,11 @@ export class MapProjection {
 		const y = [];
 		for (let i = southernΦ.length - 1; i > 0; i --) {
 			φ.push(southernΦ[i]);
-			y.push(Math.min(southernY[i], dx_dλ*1e19)); // make sure to clip them to finite values
+			y.push(Math.min(southernY[i], dx_dλ*1e10)); // make sure to clip them to finite values
 		}
 		for (let i = 0; i < northernΦ.length; i ++) {
 			φ.push(northernΦ[i]);
-			y.push(Math.max(northernY[i], -dx_dλ*1e19));
+			y.push(Math.max(northernY[i], -dx_dλ*1e10));
 		}
 		return new MapProjection(surface, φ, y, Array(φ.length).fill(dx_dλ), Infinity, λStd);
 	}
