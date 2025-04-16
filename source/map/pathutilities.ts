@@ -31,16 +31,17 @@ const π = Math.PI;
  * it just shifts them to and fro by multiples of 2π to put them in the right range.
  * this function can't go in MapProjection.projectPoint because it often must be called
  * before the path is intersected with the geoEdges.
- * @param projection the projection whose domain we're trying to match
+ * @param φMin the lower bound defining the range of latitudes to use
+ * @param λMin the western bound defining the range of longitudes to use
  * @param segments the jeograffickal imputs in absolute coordinates
  * @returns the relative outputs in transformed coordinates
  */
-export function transformInput(projection: MapProjection, segments: PathSegment[]): PathSegment[] {
+export function transformInput(φMin: number, λMin: number, segments: PathSegment[]): PathSegment[] {
 	const output: PathSegment[] = [];
 	for (const segment of segments) {
 		let [φ, λ] = segment.args;
-		φ = localizeInRange(φ, projection.φMin, projection.φMin + 2*π); // snap the latitude into the right domain
-		λ = localizeInRange(λ, projection.λMin, projection.λMin + 2*π); // snap the longitude into the right domain
+		φ = localizeInRange(φ, φMin, φMin + 2*π); // snap the latitude into the right domain
+		λ = localizeInRange(λ, λMin, λMin + 2*π); // snap the longitude into the right domain
 		output.push({type: segment.type, args: [φ, λ]});
 	}
 	return output;

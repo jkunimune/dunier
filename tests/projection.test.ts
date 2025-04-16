@@ -12,7 +12,7 @@ describe("on a sphere", () => {
 	const sphere = new Spheroid(1, 1, 0, 0);
 
 	describe("sinusoidal projection", () => {
-		const projection = MapProjection.bonne(sphere, -Math.PI/2, 0, Math.PI/2, 0);
+		const projection = MapProjection.bonne(sphere, -Math.PI/2, 0, Math.PI/2, 0, 2*Math.PI);
 		test("projectPoint()", () => {
 			expect(projection.projectPoint({φ: 1, λ: -1})).toEqual(
 				{x: expect.closeTo(-Math.cos(1)), y: expect.closeTo(-Math.PI/2 - 1)});

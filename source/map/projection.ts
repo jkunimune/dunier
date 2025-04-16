@@ -70,7 +70,7 @@ export class MapProjection {
 		this.φMin = this.φRef[0];
 		this.φMax = this.φRef[this.φRef.length - 1];
 		this.λMin = this.λCenter - Math.PI;
-		this.λMax = this.λCenter + Math.PI;
+		this.λMax = this.λMin + 2*Math.PI;
 		this.domain = new Domain(
 			this.φMin, this.φMin + 2*Math.PI, this.λMin, this.λMax,
 			(point) => this.surface.isOnEdge(assert_φλ(point)));
@@ -234,6 +234,21 @@ export class MapProjection {
 	}
 
 	/**
+	 * the curvature of this parallel, defined as change in map angle per change in longitude –
+	 * positive for meridians that hang down in the middle and stick up at the ends,
+	 * and negative for parallels that arch up in the middle and droop down at the ends.
+	 * when the parallels come together at the circumcenter, this returns 0 curvature.
+	 * @param φ the latitude in radians
+	 * @return the signed dimensionless curvature number
+	 */
+	parallelCurvature(φ: number): number {
+		if (this.dx_dλ(φ) === 0 && this.y(φ) === this.yCenter)
+			return 0;
+		else
+			return this.dx_dλ(φ)/(this.y(φ) - this.yCenter);
+	}
+
+	/**
 	 * convert an r and θ to Cartesian x and y, where θ is in radians and is defined such that, for positive r,
 	 * θ = 0 is maximum y (the bottom of the circle) and increases as you go counterclockwise.  negative r is
 	 * permitted and will reverse all points about the origin such that θ = 0 is minimum y (the top of the circle)
@@ -298,10 +313,11 @@ export class MapProjection {
 	 * @param surface the surface from which to project
 	 * @param φMin the southernmost parallel in radians
 	 * @param φStd the standard parallel in radians
-	 * @param φMax the northernmost parallel in radians	 * @param λStd the central meridian
+	 * @param φMax the northernmost parallel in radians
 	 * @param λStd the central meridian in radians
+	 * @param Δλ the maximum meridian length you must accommodate (this is important for preventing self-intersection)
 	 */
-	public static bonne(surface: Surface, φMin: number, φStd: number, φMax: number, λStd: number): MapProjection {
+	public static bonne(surface: Surface, φMin: number, φStd: number, φMax: number, λStd: number, Δλ: number): MapProjection {
 		if (!(φStd >= surface.φMin && φStd <= surface.φMax))
 			throw new Error(`${φStd} is not a valid standard latitude`);
 		const [φRef, yRef] = cumulativeIntegral(
@@ -319,6 +335,13 @@ export class MapProjection {
 			else
 				yCenter = yRef[yRef.length - 1];
 		}
+		// adjust the center location to prevent self-intersection
+		for (let i = 0; i < φRef.length; i ++) {
+			const meridianLength = Δλ*dx_dλRef[i];
+			const circumference = 2*Math.PI*Math.abs(yRef[i] - yCenter);
+			if (meridianLength > circumference)
+				yCenter = yRef[i] + (yCenter - yRef[i])*meridianLength/circumference;
+		}
 		return new MapProjection(surface, φRef, yRef, dx_dλRef, yCenter, λStd);
 	}
 
@@ -329,7 +352,7 @@ export class MapProjection {
 	 * @param surface the surface from which to project
 	 * @param φMin the southernmost parallel in radians
 	 * @param φStd the standard parallel in radians
-	 * @param φMax the northernmost parallel in radians	 * @param λStd the central meridian
+	 * @param φMax the northernmost parallel in radians
 	 * @param λStd the central meridian in radians
 	 */
 	public static conformalConic(surface: Surface, φMin: number, φStd: number, φMax: number, λStd: number): MapProjection {
@@ -405,7 +428,6 @@ export class MapProjection {
 	 * @param φMin the southernmost parallel in radians
 	 * @param φStd the standard parallel in radians
 	 * @param φMax the northernmost parallel in radians
-	 * @param λStd the central meridian
 	 * @param λStd the central meridian in radians
 	 */
 	public static mercator(surface: Surface, φMin: number, φStd: number, φMax: number, λStd: number): MapProjection {
