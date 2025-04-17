@@ -210,16 +210,7 @@ export class Chart {
 			this.projection);
 		// if we want a rectangular map
 		if (rectangularBounds) {
-			// expand the longitude bounds as much as possible without self-intersection, assuming no latitude bounds
-			let limitingΔλ = Infinity;
-			for (let i = 0; i <= 50; i ++) {
-				const φ = this.projection.φMin + i/50*(this.projection.φMax - this.projection.φMin);
-				const parallelCurvature = this.projection.parallelCurvature(φ);
-				limitingΔλ = Math.min(limitingΔλ, 2*Math.PI/Math.abs(parallelCurvature));
-			}
-			λMin = Math.max(Math.min(λMin, centralMeridian - limitingΔλ/2), this.projection.λMin);
-			λMax = Math.min(Math.max(λMax, centralMeridian + limitingΔλ/2), this.projection.λMax);
-			// then expand the latitude bounds as much as possible without self-intersection
+			// expand the latitude bounds as much as possible without self-intersection, assuming no latitude bounds
 			for (let i = 0; i <= 50; i ++) {
 				const φ = this.projection.φMin + i/50*(this.projection.φMax - this.projection.φMin);
 				if (Math.abs(this.projection.parallelCurvature(φ)) <= 1) {
@@ -227,6 +218,15 @@ export class Chart {
 					φMin = Math.min(φMin, φ);
 				}
 			}
+			// then expand the longitude bounds as much as possible without self-intersection
+			let limitingΔλ = Infinity;
+			for (let i = 0; i <= 50; i ++) {
+				const φ = φMin + i/50*(φMax - φMin);
+				const parallelCurvature = this.projection.parallelCurvature(φ);
+				limitingΔλ = Math.min(limitingΔλ, 2*Math.PI/Math.abs(parallelCurvature));
+			}
+			λMin = Math.max(Math.min(λMin, centralMeridian - limitingΔλ/2), this.projection.λMin);
+			λMax = Math.min(Math.max(λMax, centralMeridian + limitingΔλ/2), this.projection.λMax);
 		}
 
 		// if it's a Bonne projection, re-generate it with these new bounds in case you need to adjust the curvature
