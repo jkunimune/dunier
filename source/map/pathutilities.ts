@@ -141,7 +141,7 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], doma
 	for (let i = 1; i < edges.length; i ++) {
 		const {s, t} = endpoint(edges[i]);
 		if (s < domain.sMin || s > domain.sMax || t < domain.tMin || t > domain.tMax)
-			throw new Error(`these edges go out to s=${s},t=${t}, which is not contained in the domain [${domain.sMin}, ${domain.sMax}), [${domain.tMin}, ${domain.tMax})`);
+			throw new Error(`these edges go out to s=${s},t=${t}, which is not contained in the domain [${domain.sMin}, ${domain.sMax}], [${domain.tMin}, ${domain.tMax}]`);
 	}
 
 	// start by breaking the edges up into separate loops

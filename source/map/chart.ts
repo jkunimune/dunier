@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
+import {Domain, Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
 import {
 	filterSet, localizeInRange,
 	pathToString,
@@ -1050,7 +1050,11 @@ export class Chart {
 		const meanRadius = rSum/count;
 
 		// find the longitude with the most empty space on either side of it
-		const coastline = Chart.border(filterSet(regionOfInterest, tile => !tile.isWater()));
+		const coastline = intersection(
+			Chart.border(filterSet(regionOfInterest, tile => !tile.isWater())),
+			Chart.rectangle(-Math.PI, -Math.PI, Math.PI, Math.PI, true),
+			new Domain(-Math.PI, Math.PI, -Math.PI, Math.PI, (_) => false), true,
+		);
 		let centralMeridian;
 		const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
 		for (let i = 0; i < coastline.length; i ++) {
