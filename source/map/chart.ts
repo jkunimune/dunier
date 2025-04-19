@@ -17,7 +17,7 @@ import {ARABILITY, Biome} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
 	convertPathClosuresToZ,
-	intersection, rotatePath, scalePath,
+	intersection, removeLoosePoints, rotatePath, scalePath,
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
@@ -784,7 +784,7 @@ export class Chart {
 			MAP_PRECISION/this.scale,
 		);
 		const croppedToMapRegion = intersection(
-			projected,
+			removeLoosePoints(projected),
 			this.mapEdges,
 			INFINITE_PLANE, closePath,
 		);

@@ -1368,4 +1368,15 @@ describe("applyProjectionToPath", () => {
 			]},
 		]);
 	});
+	test("points that are actually coincident", () => {
+		const path = [
+			{type: 'M', args: [π/2, -π]},
+			{type: 'Φ', args: [π/2, π]},
+			{type: 'L', args: [π/2, -π]},
+		];
+		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
+			{type: 'M', args: [0, 0]},
+		]);
+	});
+
 });

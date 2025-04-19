@@ -93,7 +93,10 @@ export function applyProjectionToPath(
 				const nextOutPoint = projection.projectPoint(nextInPoint); // project it
 				const lastInPoint = completedInPoints[completedInPoints.length - 1];
 				const lastOutPoint = assert_xy(endpoint(outPoints[outPoints.length - 1])); // check the map distance between here and the last point
-				if (Math.hypot(nextOutPoint.x - lastOutPoint.x, nextOutPoint.y - lastOutPoint.y) < precision) { // if it's short enuff
+				if (nextOutPoint.x === lastOutPoint.x && nextOutPoint.y === lastOutPoint.y) { // if this segment ended up being redundant
+					completedInPoints.push(nextInPoint); // mark it as done but don't bother adding it to outPoints
+				}
+				else if (Math.hypot(nextOutPoint.x - lastOutPoint.x, nextOutPoint.y - lastOutPoint.y) < precision) { // if it's short and finite
 					completedInPoints.push(nextInPoint); // unpend it
 					outPoints.push({type: 'L', args: [nextOutPoint.x, nextOutPoint.y]});
 				}
@@ -1066,6 +1069,17 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 		}
 	}
 	return true;
+}
+
+/**
+ * remove any isolated movetos, that don't have any segments connected to them
+ */
+export function removeLoosePoints(segments: PathSegment[]): PathSegment[] {
+	const newSegments = [];
+	for (let i = 0; i < segments.length; i ++)
+		if (segments[i].type !== 'M' || (i + 1 < segments.length && segments[i + 1].type !== 'M'))
+			newSegments.push(segments[i]);
+	return newSegments;
 }
 
 /**
