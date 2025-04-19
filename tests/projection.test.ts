@@ -246,27 +246,27 @@ describe("on a disc", () => {
 		const projection = MapProjection.orthographic(disc, disc.φMin, disc.φMax, λStd);
 		describe("projectPoint()", () => {
 			test("pole", () => {
-				expect(projection.projectPoint({φ: Math.PI/2, λ: 2})).toEqual(
+				expect(projection.projectPoint({φ: -Math.PI/2, λ: 2})).toEqual(
 					{x: expect.closeTo(0), y: expect.closeTo(0)});
 			});
 			test("off pole", () => {
-				expect(projection.projectPoint({φ: Math.PI/4, λ: λStd + Math.PI/6})).toEqual(
-					{x: expect.closeTo(1/2), y: expect.closeTo(Math.sqrt(3)/2)});
+				expect(projection.projectPoint({φ: -Math.PI/4, λ: λStd + Math.PI/6})).toEqual(
+					{x: expect.closeTo(1/2), y: expect.closeTo(-Math.sqrt(3)/2)});
 			});
 			test("consistency of antimeridian", () => {
-				expect(projection.projectPoint({φ: 0.5, λ: λStd - Math.PI})).toEqual(
-					projection.projectPoint({φ: 0.5, λ: λStd + Math.PI}));
+				expect(projection.projectPoint({φ: -0.5, λ: λStd - Math.PI})).toEqual(
+					projection.projectPoint({φ: -0.5, λ: λStd + Math.PI}));
 			});
 		});
 		test("wrapsAround()", () => {
 			expect(projection.wrapsAround()).toEqual(true);
 		});
 		describe("differentiability()", () => {
-			test("north pole", () => {
-				expect(projection.differentiability(Math.PI/2)).toBeCloseTo(1, 1);
+			test("south pole", () => {
+				expect(projection.differentiability(-Math.PI/2)).toBeCloseTo(1, 1);
 			});
 			test("edge", () => {
-				expect(projection.differentiability(disc.φMin)).toBeCloseTo(1, .5); // this one should be equal to 1, but the rim is so nonlinear that the error is over 10%
+				expect(projection.differentiability(disc.φMax)).toBeCloseTo(1, .5); // this one should be equal to 1, but the rim is so nonlinear that the error is over 10%
 			});
 		});
 	});

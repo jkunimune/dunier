@@ -6,13 +6,14 @@ import {EmptySpace, Tile} from "../source/surface/surface.js";
 import {Disc} from "../source/surface/disc.js";
 import {Vector} from "../source/utilities/geometry.js";
 
+// remember: the surface's normal vector points in the negative z direction, so you're looking at this plane from underneath
 const surface = new Disc(Math.sqrt(7)/2, 0, false);
 surface.initialize();
 const tiles = [
 	new Tile(0, surface.φλ(new Vector(-Math.sqrt(3)/2, 0, 0)), surface),
-	new Tile(1, surface.φλ(new Vector(0, -1/2, 0)), surface),
+	new Tile(1, surface.φλ(new Vector(0, 1/2, 0)), surface),
 	new Tile(2, surface.φλ(new Vector(0, 0, 0)), surface),
-	new Tile(3, surface.φλ(new Vector(0, 1/2, 0)), surface),
+	new Tile(3, surface.φλ(new Vector(0, -1/2, 0)), surface),
 	new Tile(4, surface.φλ(new Vector(Math.sqrt(3)/2, 0, 0)), surface),
 ];
 surface.populateWith(tiles);
@@ -44,13 +45,13 @@ describe("Vertex", () => {
 		test ("internal", () => {
 			expect(innerVertex.pos).toEqual(new Vector(
 				expect.closeTo(-Math.sqrt(3)/4),
-				expect.closeTo(-1/4),
+				expect.closeTo(1/4),
 				expect.closeTo(0)));
 		});
 		test ("external", () => {
 			expect(outerVertex.pos).toEqual(expect.objectContaining({
 				x: expect.closeTo(-Math.sqrt(3)/2),
-				y: expect.closeTo(-1),
+				y: expect.closeTo(1),
 				z: expect.closeTo(0),
 			}));
 		});
@@ -85,8 +86,8 @@ describe("Edge", () => {
 		});
 		test("leftBound", () => {
 			expect(edge.leftBoundCartesian).toEqual([
-				expect.objectContaining({x: expect.closeTo(-3*Math.sqrt(3)/8), y: expect.closeTo(-1/4 + Math.sqrt(3)/8*Math.tan(15/180*Math.PI))}),
 				expect.objectContaining({x: expect.closeTo(-3*Math.sqrt(3)/8), y: expect.closeTo(1/4 - Math.sqrt(3)/8*Math.tan(15/180*Math.PI))}),
+				expect.objectContaining({x: expect.closeTo(-3*Math.sqrt(3)/8), y: expect.closeTo(-1/4 + Math.sqrt(3)/8*Math.tan(15/180*Math.PI))}),
 			]);
 		});
 		test("rightBound", () => {

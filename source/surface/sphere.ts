@@ -7,8 +7,8 @@ import {Vector} from "../utilities/geometry.js";
 import {ΦΛPoint} from "../utilities/coordinates.js";
 
 /**
- * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the y direction
- * rather than the z.
+ * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the -y direction
+ * rather than the +z.
  */
 export class Sphere extends Spheroid {
 	/**
@@ -20,7 +20,7 @@ export class Sphere extends Spheroid {
 	}
 
 	insolation(φ: number): number {
-		return 2.0*Math.max(0, Math.sin(φ));
+		return 2.0*Math.max(0, -Math.sin(φ)); // note: the sun is at the minimum latitude, so that maps by default point away from the sun
 	}
 
 	hasSeasons(_: number): boolean {
@@ -28,24 +28,24 @@ export class Sphere extends Spheroid {
 	}
 
 	windConvergence(φ: number): number {
-		return Math.pow((Math.sin(φ) + 1)/2, 2);
+		return Math.pow((1 - Math.sin(φ))/2, 2);
 	}
 
 	windVelocity(φ: number): {north: number, east: number} {
-		return {north: ((Math.sin(φ) + 1)/2)*Math.cos(φ), east: 0};
+		return {north: ((1 - Math.sin(φ))/2)*Math.cos(φ), east: 0};
 	}
 
 	xyz(place: ΦΛPoint): Vector { // rotate the surface in 3-space so the planet plot is more intuitive
 		const {x, y, z} = super.xyz(place);
-		return new Vector(x, z, -y);
+		return new Vector(x, -z, y);
 	}
 
 	normal(place: ΦΛPoint): Vector { // rotate the normal vectors too to match the xyz
 		const {x, y, z} = super.normal(place);
-		return new Vector(x, z, -y);
+		return new Vector(x, -z, y);
 	}
 
 	φλ(point: Vector): ΦΛPoint {
-		return super.φλ(new Vector(point.x, -point.z, point.y));
+		return super.φλ(new Vector(point.x, point.z, -point.y));
 	}
 }

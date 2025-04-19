@@ -301,10 +301,10 @@ export class MapProjection {
 		const φ = [];
 		const R = [];
 		for (let i = 0; i <= resolution; i ++) {
-			φ.push(φMin + i/resolution*(φMax - φMin));
+			φ.push((i < resolution) ? φMin + i/resolution*(φMax - φMin) : φMax);
 			R.push(surface.rz(φ[i]).r);
 		}
-		return new MapProjection(surface, φ, R, R, 0, λStd);
+		return new MapProjection(surface, φ, R.map((x) => -x), R, 0, λStd);
 	}
 
 	/**

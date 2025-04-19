@@ -1293,8 +1293,8 @@ describe("applyProjectionToPath", () => {
 	const projection = MapProjection.orthographic(surface, surface.φMin, surface.φMax, 0);
 	test("points", () => {
 		const path = [
-			{type: 'M', args: [π/4, -π/2]},
-			{type: 'M', args: [π/4, π/2]},
+			{type: 'M', args: [-π/4, -π/2]},
+			{type: 'M', args: [-π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
@@ -1309,8 +1309,8 @@ describe("applyProjectionToPath", () => {
 	});
 	test("line", () => {
 		const path = [
-			{type: 'M', args: [π/2, 0]},
-			{type: 'L', args: [π/4, π/2]},
+			{type: 'M', args: [-π/2, 0]},
+			{type: 'L', args: [-π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
@@ -1325,8 +1325,8 @@ describe("applyProjectionToPath", () => {
 	});
 	test("long line", () => {
 		const path = [
-			{type: 'M', args: [π/4, -π/2]},
-			{type: 'L', args: [π/4, π/2]},
+			{type: 'M', args: [-π/4, -π/2]},
+			{type: 'L', args: [-π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
@@ -1335,15 +1335,15 @@ describe("applyProjectionToPath", () => {
 			]},
 			{type: 'L', args: [
 				expect.closeTo(-Math.sqrt(2)/2),
-				expect.closeTo(Math.sqrt(2)/2),
+				expect.closeTo(-Math.sqrt(2)/2),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(0),
-				expect.closeTo(1),
+				expect.closeTo(-1),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(Math.sqrt(2)/2),
-				expect.closeTo(Math.sqrt(2)/2),
+				expect.closeTo(-Math.sqrt(2)/2),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(1),
@@ -1353,8 +1353,8 @@ describe("applyProjectionToPath", () => {
 	});
 	test("parallel", () => {
 		const path = [
-			{type: 'M', args: [π/4, -π/2]},
-			{type: 'Φ', args: [π/4, π/2]},
+			{type: 'M', args: [-π/4, -π/2]},
+			{type: 'Φ', args: [-π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
@@ -1363,16 +1363,16 @@ describe("applyProjectionToPath", () => {
 			]},
 			{type: 'A', args: [
 				expect.closeTo(1), expect.closeTo(1),
-				0, expect.anything(), 0,
+				0, expect.anything(), 1,
 				expect.closeTo(1), expect.closeTo(0),
 			]},
 		]);
 	});
 	test("points that are actually coincident", () => {
 		const path = [
-			{type: 'M', args: [π/2, -π]},
-			{type: 'Φ', args: [π/2, π]},
-			{type: 'L', args: [π/2, -π]},
+			{type: 'M', args: [-π/2, -π]},
+			{type: 'Φ', args: [-π/2, π]},
+			{type: 'L', args: [-π/2, -π]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [0, 0]},
