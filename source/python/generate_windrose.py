@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from numpy import sin, cos, arange, pi, radians, sqrt
+from numpy import sin, cos, arange, pi, radians
 
 LAYER_HEIGHT = 6
 INNER_RADIUS = 4*LAYER_HEIGHT - 1
@@ -46,9 +46,9 @@ def generate_windrose():
 
 	paths.append(circle(INNER_RADIUS + 0.5, "none", "lightgray"))
 	paths.append(circle(INNER_RADIUS + 2.5, "none", "lightgray"))
-	paths.append(circle(LAYER_HEIGHT - 1, "gray", "none"))
-	paths.append(star(LAYER_HEIGHT - 1, (LAYER_HEIGHT - 1)*.4, 4, "darkgray"))
-	paths.append(star((LAYER_HEIGHT - 1)*.8, (LAYER_HEIGHT - 1)*.5, 8, "darkgray"))
+	paths.append(circle(LAYER_HEIGHT - 1, "dimgray", "none"))
+	paths.append(star(LAYER_HEIGHT - 1, (LAYER_HEIGHT - 1)*.4, 4, "gray"))
+	paths.append(star((LAYER_HEIGHT - 1)*.8, (LAYER_HEIGHT - 1)*.45, 8, "gray"))
 
 	save_windrose(paths)
 
@@ -70,7 +70,7 @@ def point(θ: float, r0: float, r1: float, left: bool, color: str) -> Path:
 def ray(θ: float, color: str) -> Path:
 	return Path(
 		d=f"M0,{INNER_RADIUS + 2} V{-(INNER_RADIUS + 2)}",
-		fill="none", stroke=color, stroke_width=0.5, transform=f"rotate({θ})")
+		fill="none", stroke=color, stroke_width=0.35, transform=f"rotate({θ})")
 
 
 def circle(r: float, fill: str, stroke: str) -> Path:
