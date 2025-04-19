@@ -607,6 +607,18 @@ describe("contains", () => {
 				.toBe(Side.OUT);
 		});
 	});
+	test("collinear in two directions", () => {
+		const region: PathSegment[] = [
+			{type: 'M', args: [0.0, 0.0]},
+			{type: 'L', args: [0.0, 1.0]},
+			{type: 'L', args: [1.0, 1.0]},
+			{type: 'L', args: [1.0, 0.1]},
+			{type: 'L', args: [0.9, 0.0]},
+			{type: 'L', args: [0.0, 0.0]},
+		];
+		expect(contains(region, {s: 1.0, t: 0.0}, plane))
+			.toBe(Side.OUT);
+	});
 	test("circular region", () => {
 		const segments = [
 			{type: 'M', args: [0.5, 0.0]},

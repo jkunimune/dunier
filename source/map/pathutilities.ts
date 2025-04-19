@@ -456,13 +456,12 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], domai
  *                is undefined.
  * @param point the point that may or may not be in the region
  * @param domain the topology of the space on which these points' coordinates are defined
- * @param tryNumber how many times this algorithm was previously run on this polygon/point pair.  sometimes you have to
- *                  do it up to four times with rotation and/or translation.  if it takes more than that, know that
- *                  you're in an infinite loop and something is rong.
+ * @param successGuaranteed if this is false and our line fails to conclusively determine containment, we might choose a
+ *                          new point and recurse this function.  if it's true and that happens we'll just give up.
  * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Point, domain: Domain, tryNumber=0): Side {
+export function contains(polygon: PathSegment[], point: Point, domain: Domain, successGuaranteed=false): Side {
 	let lastM = -Infinity;
 	let lastCurve = -Infinity;
 	for (let i = 0; i < polygon.length; i ++) {
@@ -610,8 +609,9 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, t
 
 	// if you didn't hit any lines or you hit some but they were indeterminate
 	else {
-		if (tryNumber === 1 || tryNumber === 3)
-			throw new Error(`this algorithm should be guaranteed to get an answer after translation + rotation.  something must be rong.  the path is "${pathToString(polygon)}".`);
+		if (successGuaranteed)
+			throw new Error(`this algorithm should be guaranteed to get an answer at this point, even if that answer is BORDERLINE.  ` +
+			                `something must be rong.  the path is "${pathToString(polygon)}".`);
 		// choose a new point on the horizontal line you drew that's known to be in line with some of the polygon
 		let sNew = null;
 		for (let i = 1; i < polygon.length; i ++) {
@@ -630,20 +630,24 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, t
 		// and rerun this algorithm with a vertical line thru that point instead of a horizontal one
 		const result = contains(
 			rotatePath(polygon, 90), {s: point.t, t: -sNew},
-			rotateDomain(domain, 90), tryNumber + 1);
+			rotateDomain(domain, 90), true);
+
 		if (result !== Side.BORDERLINE)
 			return result;
 		// be careful; if it returns BORDERLINE this time, that means the _new_ point is BORDERLINE,
-		// but does not reflect the status of our OG point.  try rotating again, but without changing points this time.
+		// but does not reflect the status of our OG point.
 		else {
-			if (tryNumber >= 2)
-				throw new Error(
-					`I don't think this point is BORDERLINE because we got an inconclusive anser the first time we ` +
-					`did it.  so I don't think it shuold be possible to get BORDERLINE with a simple rotation.  ` +
-					`something must be rong.  the path is "${pathToString(polygon)}".`);
-			return contains(
-				rotatePath(polygon, 90), {s: point.t, t: -point.s},
-				rotateDomain(domain, 90), tryNumber + 2);
+			// if you reflect about t=point.t, because of the way crossings are defined, that should clear things up
+			const result = contains(
+				reflectPath(polygon), {s: point.s, t: -point.t},
+				reflectDomain(domain), true);
+			if (result === Side.IN)
+				return Side.OUT; // just remember that, since these polygons are signed, reflecting inverts the result
+			else if (result === Side.OUT)
+				return Side.IN;
+			else
+				throw new Error(`I don't think this can be BORDERLINE because the anser was indeterminate when we did it reflected about the s-axis.  ` +
+				                `something must be rong.  the path is ${pathToString(polygon)}`);
 		}
 	}
 }
@@ -1130,7 +1134,7 @@ export function rotatePath(segments: PathSegment[], angle: number): PathSegment[
 				else if (angle === 270)
 					newArgs = oldArgs.slice(0, 5).concat([-oldArgs[6], oldArgs[5]]);
 				break;
-			case "Z": case "H": case "V": case "M": case "L":
+			case "Z": case "M": case "L":
 			case "Φ": case "Λ": case "Q": case "C":
 				if (angle === 90) {
 					newArgs = Array(oldArgs.length);
@@ -1159,10 +1163,48 @@ export function rotatePath(segments: PathSegment[], angle: number): PathSegment[
 }
 
 
+/**
+ * return a path that is like this one but reflected about the s-axis.
+ * the old path will not be modified.
+ * @param segments the path to rotate
+ */
+function reflectPath(segments: PathSegment[]): PathSegment[] {
+	const output: PathSegment[] = [];
+	for (const {type, args: oldArgs} of segments) {
+		let newArgs;
+		switch (type) {
+			case "A":
+				const [rx, ry, rotation, largeArcFlag, sweepFlag, x, y] = oldArgs;
+				newArgs = [rx, ry, rotation, largeArcFlag, 1 - sweepFlag, x, -y];
+				break;
+			case "Z": case "M": case "L":
+			case "Φ": case "Λ": case "Q": case "C":
+				newArgs = Array(oldArgs.length);
+				for (let i = 0; i < oldArgs.length; i += 2) {
+					newArgs[i] = oldArgs[i];
+					newArgs[i + 1] = -oldArgs[i + 1];
+				}
+				break;
+			default:
+				throw new Error(`I don't know how to flip a ${type} segment.`);
+		}
+		output.push({type: type, args: newArgs});
+	}
+	return output;
+}
+
+
 function rotateDomain(domain: Domain, angle: number): Domain {
 	if (angle !== 90)
 		throw new Error(`this function only works for 90° rotations`);
 	return new Domain(
 		domain.tMin, domain.tMax, -domain.sMax, -domain.sMin,
 		(place) => domain.isOnEdge({s: -place.t, t: place.s}));
+}
+
+
+function reflectDomain(domain: Domain): Domain {
+	return new Domain(
+		domain.sMin, domain.sMax, -domain.tMax, -domain.tMin,
+		(place) => domain.isOnEdge({s: place.s, t: -place.t}));
 }
