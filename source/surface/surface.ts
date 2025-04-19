@@ -397,11 +397,14 @@ export class Tile {
 		this.index = index;
 		this.φ = position.φ;
 		this.λ = position.λ;
+
 		this.pos = surface.xyz(this);
-		const basis = orthogonalBasis(surface.normal(this), true, surface.axis, this.pos.times(-1));
-		this.normal = basis.n;
-		this.north = basis.v;
-		this.east = basis.u;
+		this.normal = surface.normal(this);
+		const northCylindrical = surface.tangent(this.φ);
+		const rHat = this.pos.minus(surface.axis.times(this.pos.dot(surface.axis))).normalized(); // the direction away from the planet's axis
+		const zHat = surface.axis;
+		this.north = rHat.times(northCylindrical.r).plus(zHat.times(northCylindrical.z));
+		this.east = this.north.cross(this.normal);
 
 		this.neighbors = new Map();
 		this.parents = [];

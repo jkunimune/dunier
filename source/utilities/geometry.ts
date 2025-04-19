@@ -231,23 +231,15 @@ function transpose(p: XYPoint): XYPoint {
  * generate a set of three mutually orthogonal Vectors
  * @param n the direction of the n vector
  * @param normalize whether to normalize the three vectors before returning them
- * @param axis v will be chosen to be coplanar with axis and n
- * @param bias if axis and n are parallel, v will be chosen to be coplanar with axis, n, and bias
  * @returns three vectors, u, v, and n.  if they are normalized, u×v=n, v×n=u, and n×u=v.  if they aren’t then the
- * magnitudes will be whatever.  also, u will always be orthogonal to axis.  if there is an opcion,
+ * magnitudes will be whatever.  also, u will always be orthogonal to the z-axis.
  */
-export function orthogonalBasis(n: Vector, normalize = false, axis = new Vector(0, 0, 1), bias = new Vector(1, 0, 0)): {u: Vector, v: Vector, n: Vector} {
-	if (axis.cross(n).sqr() === 0) {
-		axis = bias;
-		if (bias.cross(n).sqr() === 0) {
-			if (n.y !== 0)
-				axis = new Vector(0, 0, 1);
-			else
-				axis = new Vector(0, 1, 0);
-		}
-	}
+export function orthogonalBasis(n: Vector, normalize = false): {u: Vector, v: Vector, n: Vector} {
+	let bias = new Vector(0, 0, 1);
+	if (bias.cross(n).sqr() === 0)
+		bias = new Vector(1, 0, 0);
 
-	let u = axis.cross(n);
+	let u = bias.cross(n);
 	let v = n.cross(u);
 
 	if (normalize) {
