@@ -45,8 +45,16 @@ describe("isClosed", () => {
 		const path = [
 			{type: 'M', args: [1, -π]},
 			{type: 'Φ', args: [1, π]},
+			{type: 'L', args: [1, -π]},
 		];
 		expect(isClosed(path, geoid)).toBe(true);
+	});
+	test("loop around the antimeridian without the required connecting segment", () => {
+		const path = [
+			{type: 'M', args: [1, -π]},
+			{type: 'Φ', args: [1, π]},
+		];
+		expect(isClosed(path, geoid)).toBe(false);
 	});
 	test("loop along the domain boundary", () => {
 		const path = [
@@ -57,6 +65,15 @@ describe("isClosed", () => {
 			{type: 'Λ', args: [π, π]},
 		];
 		expect(isClosed(path, geoid)).toBe(true);
+	});
+	test("open loop on edge", () => {
+		const disc = new Domain(-Math.PI/2, -0.1, -Math.PI, Math.PI, (p) => p.s === -0.1);
+		const path = [
+			{type: 'M', args: [-0.1, 0.3]},
+			{type: 'L', args: [-0.2, 0.4]},
+			{type: 'L', args: [-0.1, 0.5]},
+		];
+		expect(isClosed(path, disc)).toBe(true);
 	});
 });
 
@@ -599,6 +616,18 @@ describe("contains", () => {
 				.toBe(Side.OUT);
 		});
 	});
+	test("collinear in two directions", () => {
+		const region: PathSegment[] = [
+			{type: 'M', args: [0.0, 0.0]},
+			{type: 'L', args: [0.0, 1.0]},
+			{type: 'L', args: [1.0, 1.0]},
+			{type: 'L', args: [1.0, 0.1]},
+			{type: 'L', args: [0.9, 0.0]},
+			{type: 'L', args: [0.0, 0.0]},
+		];
+		expect(contains(region, {s: 1.0, t: 0.0}, plane))
+			.toBe(Side.OUT);
+	});
 	test("circular region", () => {
 		const segments = [
 			{type: 'M', args: [0.5, 0.0]},
@@ -648,6 +677,7 @@ describe("contains", () => {
 		const region = [
 			{type: 'M', args: [.5, π]},
 			{type: 'Φ', args: [.5, -π]},
+			{type: 'L', args: [.5, π]},
 		];
 		test("inside", () => {
 			expect(contains(region, {s: 0, t: 2}, geoid))
@@ -658,11 +688,46 @@ describe("contains", () => {
 				.toBe(Side.OUT);
 		});
 		test("inside on the antimeridian", () => {
-			expect(contains(region, {s: 0, t: π}, geoid))
+			expect(contains(region, {s: 0, t: -π}, geoid))
 				.toBe(Side.IN);
 		});
 		test("outside on the antimeridian", () => {
-			expect(contains(region, {s: 1, t: π}, geoid))
+			expect(contains(region, {s: 1, t: -π}, geoid))
+				.toBe(Side.OUT);
+		});
+	});
+	describe("compound region", () => {
+		const region = [
+			{type: 'M', args: [.5, π]},
+			{type: 'Φ', args: [.5, -π]},
+			{type: 'Λ', args: [.2, -π]},
+			{type: 'L', args: [.1, -π/3]},
+			{type: 'L', args: [.3, π/3]},
+			{type: 'L', args: [.2, π]},
+			{type: 'Λ', args: [.5, π]},
+		];
+		test("inside", () => {
+			expect(contains(region, {s: .4, t: 2}, geoid))
+				.toBe(Side.IN);
+		});
+		test("outside, north", () => {
+			expect(contains(region, {s: .6, t: 2}, geoid))
+				.toBe(Side.OUT);
+		});
+		test("outside, south", () => {
+			expect(contains(region, {s: .0, t: 2}, geoid))
+				.toBe(Side.OUT);
+		});
+		test("inside on the antimeridian", () => {
+			expect(contains(region, {s: .4, t: -π}, geoid))
+				.toBe(Side.BORDERLINE);
+		});
+		test("outside, north, on the antimeridian", () => {
+			expect(contains(region, {s: .6, t: -π}, geoid))
+				.toBe(Side.OUT);
+		});
+		test("outside, south, on the antimeridian", () => {
+			expect(contains(region, {s: .0, t: -π}, geoid))
 				.toBe(Side.OUT);
 		});
 	});
@@ -711,6 +776,7 @@ describe("contains", () => {
 				{type: 'L', args: [2, -2]},
 				{type: 'M', args: [0, π]},
 				{type: 'Φ', args: [0, -π]},
+				{type: 'L', args: [0, π]},
 			];
 			test("inside", () => {
 				expect(contains(region, {s: -1, t: 0}, geoid))
@@ -767,6 +833,27 @@ describe("contains", () => {
 	test("null region", () => {
 		const region: PathSegment[] = [];
 		expect(contains(region, {s: 9000, t: 9001}, plane)).toBe(Side.IN);
+	});
+	test("degenerate region (just a point)", () => {
+		const region: PathSegment[] = [
+			{type: 'M', args: [0, 0]},
+		];
+		expect(() => contains(region, {s: 9000, t: 9001}, plane)).toThrow();
+	});
+	test("degenerate region (one segment)", () => {
+		const region: PathSegment[] = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [0, 0]},
+		];
+		expect(() => contains(region, {s: 9000, t: 9001}, plane)).toThrow();
+	});
+	test("degenerate region (two segments)", () => {
+		const region: PathSegment[] = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 1]},
+			{type: 'L', args: [0, 0]},
+		];
+		expect(() => contains(region, {s: 9000, t: 9001}, plane)).toThrow();
 	});
 });
 
@@ -1192,8 +1279,10 @@ describe("intersection", () => {
 		const edges = [
 			{type: 'M', args: [-π/2, -π]},
 			{type: 'Φ', args: [-π/2, π]},
+			{type: 'L', args: [-π/2, -π]},
 			{type: 'M', args: [π/2, π]},
 			{type: 'Φ', args: [π/2, -π]},
+			{type: 'L', args: [π/2, π]},
 		];
 		const segments = [
 			{type: 'M', args: [1.5, -0.5]},
@@ -1203,7 +1292,7 @@ describe("intersection", () => {
 		];
 		expect(intersection(
 			segments, edges, geoid, true,
-		)).toEqual(segments.concat(edges.slice(2, 4)));
+		)).toEqual(segments.concat(edges.slice(3, 6)));
 	});
 });
 
@@ -1213,8 +1302,8 @@ describe("applyProjectionToPath", () => {
 	const projection = MapProjection.orthographic(surface, surface.φMin, surface.φMax, 0);
 	test("points", () => {
 		const path = [
-			{type: 'M', args: [π/4, -π/2]},
-			{type: 'M', args: [π/4, π/2]},
+			{type: 'M', args: [-π/4, -π/2]},
+			{type: 'M', args: [-π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
@@ -1229,8 +1318,8 @@ describe("applyProjectionToPath", () => {
 	});
 	test("line", () => {
 		const path = [
-			{type: 'M', args: [π/2, 0]},
-			{type: 'L', args: [π/4, π/2]},
+			{type: 'M', args: [-π/2, 0]},
+			{type: 'L', args: [-π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
@@ -1245,8 +1334,8 @@ describe("applyProjectionToPath", () => {
 	});
 	test("long line", () => {
 		const path = [
-			{type: 'M', args: [π/4, -π/2]},
-			{type: 'L', args: [π/4, π/2]},
+			{type: 'M', args: [-π/4, -π/2]},
+			{type: 'L', args: [-π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
@@ -1255,15 +1344,15 @@ describe("applyProjectionToPath", () => {
 			]},
 			{type: 'L', args: [
 				expect.closeTo(-Math.sqrt(2)/2),
-				expect.closeTo(Math.sqrt(2)/2),
+				expect.closeTo(-Math.sqrt(2)/2),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(0),
-				expect.closeTo(1),
+				expect.closeTo(-1),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(Math.sqrt(2)/2),
-				expect.closeTo(Math.sqrt(2)/2),
+				expect.closeTo(-Math.sqrt(2)/2),
 			]},
 			{type: 'L', args: [
 				expect.closeTo(1),
@@ -1273,8 +1362,8 @@ describe("applyProjectionToPath", () => {
 	});
 	test("parallel", () => {
 		const path = [
-			{type: 'M', args: [π/4, -π/2]},
-			{type: 'Φ', args: [π/4, π/2]},
+			{type: 'M', args: [-π/4, -π/2]},
+			{type: 'Φ', args: [-π/4, π/2]},
 		];
 		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
 			{type: 'M', args: [
@@ -1283,9 +1372,20 @@ describe("applyProjectionToPath", () => {
 			]},
 			{type: 'A', args: [
 				expect.closeTo(1), expect.closeTo(1),
-				0, expect.anything(), 0,
+				0, expect.anything(), 1,
 				expect.closeTo(1), expect.closeTo(0),
 			]},
 		]);
 	});
+	test("points that are actually coincident", () => {
+		const path = [
+			{type: 'M', args: [-π/2, -π]},
+			{type: 'Φ', args: [-π/2, π]},
+			{type: 'L', args: [-π/2, -π]},
+		];
+		expect(applyProjectionToPath(projection, path, 1.1)).toEqual([
+			{type: 'M', args: [0, 0]},
+		]);
+	});
+
 });

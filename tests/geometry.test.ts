@@ -6,8 +6,8 @@ import {
 	angleSign,
 	checkVoronoiPolygon,
 	crossingSign,
-	lineArcIntersections,
-	trajectoryIntersection
+	lineArcIntersections, orthogonalBasis,
+	trajectoryIntersection, Vector
 } from "../source/utilities/geometry.js";
 
 describe("crossingSign()", () => {
@@ -85,6 +85,29 @@ describe("lineArcIntersections()", () => {
 		const q0 = {x: -517.7500966580174, y: -129.18154246100173};
 		const q1 = {x: -496.36792052009014, y: -195.8875212476573};
 		expect(lineArcIntersections(line[0], line[1], center, r, q0, q1)).toEqual([]);
+	});
+});
+
+describe("orthogonalBasis()", () => {
+	test("Cartesian", () => {
+		const {u, v, n} = orthogonalBasis(new Vector(0, 0, 1), true);
+		expect(u.sqr()).toBeCloseTo(1);
+		expect(v.sqr()).toBeCloseTo(1);
+		expect(n).toEqual(expect.objectContaining({
+			x: 0, y: 0, z: 1}));
+		expect(u.dot(v)).toBeCloseTo(0);
+		expect(v.dot(n)).toBeCloseTo(0);
+		expect(n.dot(u)).toBeCloseTo(0);
+	});
+	test("random", () => {
+		const {u, v, n} = orthogonalBasis(new Vector(2, -3, 6), true);
+		expect(u.sqr()).toBeCloseTo(1);
+		expect(v.sqr()).toBeCloseTo(1);
+		expect(n).toEqual(expect.objectContaining({
+			x: expect.closeTo(2/7), y: expect.closeTo(-3/7), z: expect.closeTo(6/7)}));
+		expect(u.dot(v)).toBeCloseTo(0);
+		expect(v.dot(n)).toBeCloseTo(0);
+		expect(n.dot(u)).toBeCloseTo(0);
 	});
 });
 

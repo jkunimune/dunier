@@ -85,10 +85,6 @@ python source/python/build_html.py
 The JavaScript has some dependencies, but I just put them all in the Git repository
 (I had to manually modify some of them to work so it seemed the safest option)
 so you shouldn't have to think about them.
-You will need to install Bootstrap.
-Download the [compiled Bootstrap CSS and JavaScript](https://getbootstrap.com/docs/4.6/getting-started/download/)
-(version 4.5 or 4.6 or so), and put the whole folder in `resources/`,
-and rename it to `bootstrap-4.6.2-dist` if it's not already named that.
 
 ## Credits
 
@@ -96,16 +92,13 @@ This project draws heavy inspiration from
 Azgaar's [Fantasy Map Generator](https://azgaar.github.io/Fantasy-Map-Generator/).
 
 The slick aesthetic comes courtesy of
-[Bootstrap](https://getbootstrap.com/) and [HatScripts' circular flag collection](https://github.com/HatScripts/circle-flags).
+[Bootstrap](https://getbootstrap.com/).
 
 External source libraries used by Dunier include
 Vladimir Agaforkin's [Tinyqueue](https://github.com/mourner/tinyqueue),
 Stefan Haack's [Bootstrap Input Spinner](https://github.com/shaack/bootstrap-input-spinner),
 Axel Rauschmayer's [Enumify](https://2ality.com/2020/01/enum-pattern.html), and
-James Hall's and yWorks GmbH's [JSPDF](https://parall.ax/products/jspdf), as well as
-[Popper](https://popper.js.org/docs/v2/),
-[Plotly](https://plotly.com/), and
-[JQuery](https://jquery.com/),
+[Plotly](https://plotly.com/),
 all of which are released under the MIT license by their respective authors.
 
 ## License

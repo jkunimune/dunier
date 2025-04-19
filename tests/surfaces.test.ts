@@ -248,45 +248,45 @@ describe("Disc", () => {
 	const firmamentHeight = 5000;
 	const surface = new Disc(radius, Math.PI/4, true);
 	describe("ds_dφ()", () => {
-		test("Boston", () => {
-			expect(surface.ds_dφ(Math.PI/4)).toBeCloseTo(2*firmamentHeight);
+		test("Comodoro Rivadavia", () => {
+			expect(surface.ds_dφ(-Math.PI/4)).toBeCloseTo(2*firmamentHeight);
 		});
 		test("pole", () => {
-			expect(surface.ds_dφ(Math.PI/2)).toBeCloseTo(firmamentHeight);
+			expect(surface.ds_dφ(-Math.PI/2)).toBeCloseTo(firmamentHeight);
 		});
 	});
 	describe("φλ()", () => {
-		test("Boston", () => {
+		test("Comodoro Rivadavia", () => {
 			expect(surface.φλ(new Vector(firmamentHeight/2, -firmamentHeight*Math.sqrt(3)/2, 10))).toEqual(expect.objectContaining(
-				{φ: Math.PI/4, λ: Math.PI/6}));
+				{φ: -Math.PI/4, λ: Math.PI/6}));
 		});
 		test("pole", () => {
 			expect(surface.φλ(new Vector(0, 0, 10))).toEqual(expect.objectContaining(
-				{φ: Math.PI/2}));
+				{φ: -Math.PI/2}));
 		});
 	});
 	describe("xyz()", () => {
-		test("Boston", () => {
-			expect(surface.xyz({φ: Math.PI/4, λ: Math.PI/6})).toEqual(expect.objectContaining(
+		test("Comodoro Rivadavia", () => {
+			expect(surface.xyz({φ: -Math.PI/4, λ: Math.PI/6})).toEqual(expect.objectContaining(
 				{x: expect.closeTo(firmamentHeight/2), y: expect.closeTo(-firmamentHeight*Math.sqrt(3)/2), z: 0}));
 		});
 		test("pole", () => {
-			expect(surface.xyz({φ: Math.PI/2, λ: Math.PI/6})).toEqual(expect.objectContaining(
+			expect(surface.xyz({φ: -Math.PI/2, λ: Math.PI/6})).toEqual(expect.objectContaining(
 				{x: expect.closeTo(0), y: expect.closeTo(0), z: 0}));
 		});
 	});
 	describe("normal()", () => {
-		test("Boston", () => {
-			expect(surface.normal({φ: Math.PI/4, λ: Math.PI/6})).toEqual(expect.objectContaining(
-				{x: expect.closeTo(0), y: expect.closeTo(0), z: expect.closeTo(1)}));
+		test("Comodoro Rivadavia", () => {
+			expect(surface.normal({φ: -Math.PI/4, λ: Math.PI/6})).toEqual(expect.objectContaining(
+				{x: expect.closeTo(0), y: expect.closeTo(0), z: expect.closeTo(-1)}));
 		});
 		test("pole", () => {
-			expect(surface.normal({φ: Math.PI/4, λ: Math.PI/6})).toEqual(expect.objectContaining(
-				{x: expect.closeTo(0), y: expect.closeTo(0), z: expect.closeTo(1)}));
+			expect(surface.normal({φ: -Math.PI/4, λ: Math.PI/6})).toEqual(expect.objectContaining(
+				{x: expect.closeTo(0), y: expect.closeTo(0), z: expect.closeTo(-1)}));
 		});
 	});
 	test("consistency between rz() and tangent()", () => {
-		const φ = 1;
+		const φ = -1;
 		const dφ = 1e-4;
 		const point0 = surface.rz(φ);
 		const point1 = surface.rz(φ + dφ);
@@ -297,18 +297,18 @@ describe("Disc", () => {
 	});
 	describe("isOnEdge()", () => {
 		test("edge", () => {
-			expect(surface.isOnEdge({φ: Math.atan(firmamentHeight/radius), λ: 0})).toBe(true);
+			expect(surface.isOnEdge({φ: -Math.atan(firmamentHeight/radius), λ: 0})).toBe(true);
 		});
 		test("pole", () => {
-			expect(surface.isOnEdge({φ: Math.PI/2, λ: 0})).toBe(false);
+			expect(surface.isOnEdge({φ: -Math.PI/2, λ: 0})).toBe(false);
 		});
 	});
 	describe("hasSeasons()", () => {
 		test("tropics", () => {
-			expect(surface.hasSeasons(Math.atan(firmamentHeight/(.749*radius)))).toBe(false);
+			expect(surface.hasSeasons(-Math.atan(firmamentHeight/(.749*radius)))).toBe(false);
 		});
 		test("southern temperates", () => {
-			expect(surface.hasSeasons(Math.atan(firmamentHeight/(.751*radius)))).toBe(true);
+			expect(surface.hasSeasons(-Math.atan(firmamentHeight/(.751*radius)))).toBe(true);
 		});
 	});
 	test("area", () => {
@@ -317,8 +317,8 @@ describe("Disc", () => {
 	});
 	test("distance()", () => {
 		expect(surface.distance(
-			{φ: Math.atan(firmamentHeight/3000), λ: Math.PI/2},
-			{φ: Math.atan(firmamentHeight/4000), λ: Math.PI}))
+			{φ: -Math.atan(firmamentHeight/3000), λ: Math.PI/2},
+			{φ: -Math.atan(firmamentHeight/4000), λ: Math.PI}))
 			.toBeCloseTo(5000);
 	});
 });
