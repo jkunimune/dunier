@@ -750,7 +750,7 @@ export default {
 	"parameter.map.type.conformal_conic": "Lambert conformal conic",
 	"parameter.map.type.conformal_conic.description": "A conformal projection with straight meridians.  Identical to the Mercator projection for whole-world maps.  Shows angles accurately but distorts areas.",
 	"parameter.map.type.equal_earth": "Equal Earth",
-	"parameter.map.type.equal_earth.description": "A visually pleasing equal-area projection.  Good for whole-world maps.",
+	"parameter.map.type.equal_earth.description": "An equal-area projection with straight parallels.  Good for whole-world maps.",
 	"parameter.map.width": "Width",
 	"parameter.map.width.px": "PNG width",
 	"parameter.planet": "Planet",

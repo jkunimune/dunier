@@ -745,7 +745,7 @@ export default {
 	"parameter.map.type.conformal_conic": "ランベルト正角円錐",
 	"parameter.map.type.conformal_conic.description": "直線の経線を示す正角図法である。全世界地図の場合はメルカトル図法になる。中世に流行ったが、面積を歪める傾向がある。",
 	"parameter.map.type.equal_earth": "イコール・アース",
-	"parameter.map.type.equal_earth.description": "きれいな正積図法である。全世界地図によく似合う。",
+	"parameter.map.type.equal_earth.description": "真直な緯線を示す正積図法である。全世界地図によく似合う。",
 	"parameter.map.width": "地図の幅",
 	"parameter.map.width.px": "PNGの幅",
 	"parameter.planet": "惑星",
