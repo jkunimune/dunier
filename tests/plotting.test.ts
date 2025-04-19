@@ -66,6 +66,15 @@ describe("isClosed", () => {
 		];
 		expect(isClosed(path, geoid)).toBe(true);
 	});
+	test("open loop on edge", () => {
+		const disc = new Domain(-Math.PI/2, -0.1, -Math.PI, Math.PI, (p) => p.s === -0.1);
+		const path = [
+			{type: 'M', args: [-0.1, 0.3]},
+			{type: 'L', args: [-0.2, 0.4]},
+			{type: 'L', args: [-0.1, 0.5]},
+		];
+		expect(isClosed(path, disc)).toBe(true);
+	});
 });
 
 describe("calculatePathBounds", () => {

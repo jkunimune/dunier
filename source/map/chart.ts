@@ -11,7 +11,7 @@ import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
-import {PathSegment, ΦΛPoint} from "../utilities/coordinates.js";
+import {assert_φλ, PathSegment, ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
 import {ARABILITY, Biome} from "../generation/terrain.js";
 import {
@@ -813,7 +813,7 @@ export class Chart {
 	 */
 	static outline(tiles: Tile[] | Set<Tile>): ΦΛPoint[][] {
 		const tileSet = new Set(tiles);
-		const accountedFor = new Set(); // keep track of which Edge have been done
+		const accountedFor = new Set(); // keep track of which Edges have been done
 		const output: ΦΛPoint[][] = [];
 		for (let inTile of tileSet) { // look at every included tile
 			for (let outTile of inTile.neighbors.keys()) { // and every tile adjacent to an included one
@@ -827,13 +827,13 @@ export class Chart {
 				let currentSection: Vertex[] = [inTile.rightOf(outTile)]; // keep track of each continuus section of this loop
 
 				do {
+					const edge = inTile.neighbors.get(outTile); // pick out the edge between them
+					accountedFor.add(edge); // check this edge off
+
 					const vertex = inTile.leftOf(outTile); // look for the next Vertex, going widdershins
 
 					// add the next Vertex to the complete Path
 					currentSection.push(vertex);
-
-					const edge = inTile.neighbors.get(outTile); // pick out the edge between them
-					accountedFor.add(edge); // check this edge off
 
 					// now, advance to the next Tile(s)
 					const nextTile = vertex.widershinsOf(outTile);
@@ -1052,8 +1052,10 @@ export class Chart {
 		// find the longitude with the most empty space on either side of it
 		const coastline = intersection(
 			Chart.border(filterSet(regionOfInterest, tile => !tile.isWater())),
-			Chart.rectangle(-Math.PI, -Math.PI, Math.PI, Math.PI, true),
-			new Domain(-Math.PI, Math.PI, -Math.PI, Math.PI, (_) => false), true,
+			Chart.rectangle(surface.φMin, -Math.PI, surface.φMax, Math.PI, true),
+			new Domain(surface.φMin, surface.φMax, -Math.PI, Math.PI,
+			           (point) => surface.isOnEdge(assert_φλ(point))),
+			true,
 		);
 		let centralMeridian;
 		const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
