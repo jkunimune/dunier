@@ -74,6 +74,20 @@
   function disableRotationParams(locked) {
     document.getElementById('planet-day').toggleAttribute('disabled', locked); // rotation period
     document.getElementById('planet-tilt').toggleAttribute('disabled', locked); // and obliquity are both irrelevant
+
+    // also change the labels in the orientation window
+    if (locked)
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">Night-up</option>\n' +
+              '<option value="south">Day-up</option>\n' +
+              '<option value="east">Deasil-up</option>\n' +
+              '<option value="west">Widdershins-up</option>\n';
+    else
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">North-up</option>\n' +
+              '<option value="south">South-up</option>\n' +
+              '<option value="east">East-up</option>\n' +
+              '<option value="west">West-up</option>\n';
   }
 
   /** hide the map projection selection for flat geoids */
@@ -92,7 +106,7 @@
     else if (projection === "conformal_conic")
       document.getElementById('map-projection-description').innerHTML = "A conformal projection with straight meridians.  Identical to the Mercator projection for whole-world maps.  Shows angles accurately but distorts areas.";
     else if (projection === "equal_earth")
-      document.getElementById('map-projection-description').innerHTML = "A visually pleasing equal-area projection.  Good for whole-world maps.";
+      document.getElementById('map-projection-description').innerHTML = "An equal-area projection with straight parallels.  Good for whole-world maps.";
     else {
       document.getElementById('map-projection-description').innerHTML = "?????";
       console.error(`unrecognized map projeccion: '${projection}'`);

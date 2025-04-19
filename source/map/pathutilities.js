@@ -49,19 +49,20 @@ var π = Math.PI;
  * it just shifts them to and fro by multiples of 2π to put them in the right range.
  * this function can't go in MapProjection.projectPoint because it often must be called
  * before the path is intersected with the geoEdges.
- * @param projection the projection whose domain we're trying to match
+ * @param φMin the lower bound defining the range of latitudes to use
+ * @param λMin the western bound defining the range of longitudes to use
  * @param segments the jeograffickal imputs in absolute coordinates
  * @returns the relative outputs in transformed coordinates
  */
-export function transformInput(projection, segments) {
+export function transformInput(φMin, λMin, segments) {
     var e_1, _a;
     var output = [];
     try {
         for (var segments_1 = __values(segments), segments_1_1 = segments_1.next(); !segments_1_1.done; segments_1_1 = segments_1.next()) {
             var segment = segments_1_1.value;
             var _b = __read(segment.args, 2), φ = _b[0], λ = _b[1];
-            φ = localizeInRange(φ, projection.φMin, projection.φMin + 2 * π); // snap the latitude into the right domain
-            λ = localizeInRange(λ, projection.λMin, projection.λMin + 2 * π); // snap the longitude into the right domain
+            φ = localizeInRange(φ, φMin, φMin + 2 * π); // snap the latitude into the right domain
+            λ = localizeInRange(λ, λMin, λMin + 2 * π); // snap the longitude into the right domain
             output.push({ type: segment.type, args: [φ, λ] });
         }
     }
@@ -141,7 +142,10 @@ export function applyProjectionToPath(projection, inPoints, precision) {
                 var nextOutPoint = projection.projectPoint(nextInPoint); // project it
                 var lastInPoint = completedInPoints[completedInPoints.length - 1];
                 var lastOutPoint = assert_xy(endpoint(outPoints[outPoints.length - 1])); // check the map distance between here and the last point
-                if (Math.hypot(nextOutPoint.x - lastOutPoint.x, nextOutPoint.y - lastOutPoint.y) < precision) { // if it's short enuff
+                if (nextOutPoint.x === lastOutPoint.x && nextOutPoint.y === lastOutPoint.y) { // if this segment ended up being redundant
+                    completedInPoints.push(nextInPoint); // mark it as done but don't bother adding it to outPoints
+                }
+                else if (Math.hypot(nextOutPoint.x - lastOutPoint.x, nextOutPoint.y - lastOutPoint.y) < precision) { // if it's short and finite
                     completedInPoints.push(nextInPoint); // unpend it
                     outPoints.push({ type: 'L', args: [nextOutPoint.x, nextOutPoint.y] });
                 }
@@ -207,7 +211,7 @@ export function intersection(segments, edges, domain, closePath) {
     for (var i = 1; i < edges.length; i++) {
         var _d = endpoint(edges[i]), s = _d.s, t = _d.t;
         if (s < domain.sMin || s > domain.sMax || t < domain.tMin || t > domain.tMax)
-            throw new Error("these edges go out to s=".concat(s, ",t=").concat(t, ", which is not contained in the domain [").concat(domain.sMin, ", ").concat(domain.sMax, "), [").concat(domain.tMin, ", ").concat(domain.tMax, ")"));
+            throw new Error("these edges go out to s=".concat(s, ",t=").concat(t, ", which is not contained in the domain [").concat(domain.sMin, ", ").concat(domain.sMax, "], [").concat(domain.tMin, ", ").concat(domain.tMax, "]"));
     }
     // start by breaking the edges up into separate loops
     var edgeLoops = [];
@@ -519,23 +523,25 @@ export function encompasses(polygon, points, domain) {
  *                is undefined.
  * @param point the point that may or may not be in the region
  * @param domain the topology of the space on which these points' coordinates are defined
- * @param garanteedToSucced if this is false and our line fails to conclusively determine containment, we might choose a
+ * @param successGuaranteed if this is false and our line fails to conclusively determine containment, we might choose a
  *                          new point and recurse this function.  if it's true and that happens we'll just give up.
  * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon, point, domain, garanteedToSucced) {
+export function contains(polygon, point, domain, successGuaranteed) {
     var e_9, _a, e_10, _b;
-    if (garanteedToSucced === void 0) { garanteedToSucced = false; }
-    for (var i = 3; i < polygon.length; i++) {
-        if (polygon[i].type === 'M') {
-            for (var j = i - 3; j < i; j++) {
-                if (polygon[j].type === 'M') {
-                    console.error(pathToString(polygon));
-                    throw new Error("this polygon is ill-posed because the section that starts at ".concat(j, " is only ").concat(i - j, " long so I'm not doing it."));
-                }
-            }
+    if (successGuaranteed === void 0) { successGuaranteed = false; }
+    var lastM = -Infinity;
+    var lastCurve = -Infinity;
+    for (var i = 0; i < polygon.length; i++) {
+        if (polygon[i].type === 'M' && lastM >= i - 3 && lastCurve < lastM) {
+            console.error(pathToString(polygon));
+            throw new Error("this polygon is ill-posed because the section that starts at ".concat(lastM, " is only ").concat(i - lastM, " long so I'm not doing it."));
         }
+        if (polygon[i].type === 'M')
+            lastM = i;
+        else if (polygon[i].type !== 'L')
+            lastCurve = i;
     }
     if (polygon.length === 0)
         return Side.IN;
@@ -604,8 +610,13 @@ export function contains(polygon, point, domain, garanteedToSucced) {
                 end.s = localizeInRange(end.s, start.s - π, start.s + π);
             }
             if (crosses) {
-                var startWeight = (end.t - point.t) / (end.t - start.t);
-                var s = startWeight * start.s + (1 - startWeight) * end.s;
+                var s = void 0;
+                if (end.s === start.s)
+                    s = end.s;
+                else {
+                    var startWeight = (end.t - point.t) / (end.t - start.t);
+                    s = startWeight * start.s + (1 - startWeight) * end.s;
+                }
                 if (domain.isPeriodic())
                     s = localizeInRange(s, start.s - π, start.s + π);
                 intersections = [{ s: s, goingEast: goingRight }];
@@ -682,8 +693,9 @@ export function contains(polygon, point, domain, garanteedToSucced) {
         return Side.OUT;
     // if you didn't hit any lines or you hit some but they were indeterminate
     else {
-        if (garanteedToSucced)
-            throw new Error("but the sign said success was garanteed...");
+        if (successGuaranteed)
+            throw new Error("this algorithm should be guaranteed to get an answer at this point, even if that answer is BORDERLINE.  " +
+                "something must be rong.  the path is \"".concat(pathToString(polygon), "\"."));
         // choose a new point on the horizontal line you drew that's known to be in line with some of the polygon
         var sNew = null;
         for (var i = 1; i < polygon.length; i++) {
@@ -700,7 +712,22 @@ export function contains(polygon, point, domain, garanteedToSucced) {
         if (sNew === null)
             throw new Error("this polygon didn't seem to have any segments: ".concat(pathToString(polygon)));
         // and rerun this algorithm with a vertical line thru that point instead of a horizontal one
-        return contains(rotatePath(polygon, 90), { s: point.t, t: -sNew }, rotateDomain(domain, 90), true);
+        var result = contains(rotatePath(polygon, 90), { s: point.t, t: -sNew }, rotateDomain(domain, 90), true);
+        if (result !== Side.BORDERLINE)
+            return result;
+        // be careful; if it returns BORDERLINE this time, that means the _new_ point is BORDERLINE,
+        // but does not reflect the status of our OG point.
+        else {
+            // if you reflect about t=point.t, because of the way crossings are defined, that should clear things up
+            var result_1 = contains(reflectPath(polygon), { s: point.s, t: -point.t }, reflectDomain(domain), true);
+            if (result_1 === Side.IN)
+                return Side.OUT; // just remember that, since these polygons are signed, reflecting inverts the result
+            else if (result_1 === Side.OUT)
+                return Side.IN;
+            else
+                throw new Error("I don't think this can be BORDERLINE because the anser was indeterminate when we did it reflected about the s-axis.  " +
+                    "something must be rong.  the path is ".concat(pathToString(polygon)));
+        }
     }
 }
 /**
@@ -951,8 +978,17 @@ function getMapEdgeCrossings(segmentStart, segment, edgeStart, edge) {
  */
 function getGeoEdgeCrossing(segmentStart, segment, edgeStart, edge, domain) {
     var edgeEnd = assert_φλ(endpoint(edge));
-    if (edge.type !== 'Φ' && edge.type !== 'Λ')
+    // some lines are allowed, but they have to have zero length, and will thus never count for crossings
+    if (edge.type === 'L') {
+        if (localizeInRange(edgeStart.φ, domain.sMin, domain.sMax) !== localizeInRange(edge.args[0], domain.sMin, domain.sMax) ||
+            localizeInRange(edgeStart.λ, domain.tMin, domain.tMax) !== localizeInRange(edge.args[1], domain.tMin, domain.tMax))
+            throw new Error("'L' segments are only allowed in geoEdges for loop-closing purposes; this seems to have actual length, which is a no-no.");
+        return null;
+    }
+    // other non-graticule segment types are absolutely NG
+    else if (edge.type !== 'Λ' && edge.type !== 'Φ') {
         throw new Error("I don't think you're allowd to use ".concat(edge.type, " here"));
+    }
     // the body of this function assumes the edge is a parallel going west.  if it isn't that, rotate 90° until it is.
     else if (edge.type === 'Λ' || edgeEnd.λ > edgeStart.λ) {
         var rotatedDomain = rotateDomain(domain, 90);
@@ -1092,13 +1128,6 @@ export function isClosed(segments, domain) {
             if (start === null)
                 throw new Error("path must begin with a moveto, not ".concat(segments[0].type));
             var end = endpoint(segments[i]);
-            // account for periodicity
-            if (domain.isPeriodic()) {
-                start.s = localizeInRange(start.s, domain.sMin, domain.sMax);
-                start.t = localizeInRange(start.t, domain.tMin, domain.tMax);
-                end.s = localizeInRange(end.s, domain.sMin, domain.sMax);
-                end.t = localizeInRange(end.t, domain.tMin, domain.tMax);
-            }
             // if it doesn't end where it started
             var endsOnStart = start.s === end.s && start.t === end.t;
             // and it doesn't start and end on edges
@@ -1111,16 +1140,25 @@ export function isClosed(segments, domain) {
     return true;
 }
 /**
+ * remove any isolated movetos, that don't have any segments connected to them
+ */
+export function removeLoosePoints(segments) {
+    var newSegments = [];
+    for (var i = 0; i < segments.length; i++)
+        if (segments[i].type !== 'M' || (i + 1 < segments.length && segments[i + 1].type !== 'M'))
+            newSegments.push(segments[i]);
+    return newSegments;
+}
+/**
  * take a closed path and put in Zs wherever the paths close.  this function assumes that the input is
  * actually closed; it doesn't check, and it may return a rong anser if you pass a non closed path.
  */
 export function convertPathClosuresToZ(segments) {
     var newSegments = [];
     for (var i = 0; i < segments.length; i++) {
+        newSegments.push(segments[i]);
         if (i + 1 === segments.length || segments[i + 1].type === 'M')
             newSegments.push({ type: 'Z', args: [] });
-        else
-            newSegments.push(segments[i]);
     }
     return newSegments;
 }
@@ -1187,8 +1225,6 @@ export function rotatePath(segments, angle) {
                         newArgs = oldArgs.slice(0, 5).concat([-oldArgs[6], oldArgs[5]]);
                     break;
                 case "Z":
-                case "H":
-                case "V":
                 case "M":
                 case "L":
                 case "Φ":
@@ -1228,9 +1264,57 @@ export function rotatePath(segments, angle) {
     }
     return output;
 }
+/**
+ * return a path that is like this one but reflected about the s-axis.
+ * the old path will not be modified.
+ * @param segments the path to rotate
+ */
+function reflectPath(segments) {
+    var e_15, _a;
+    var output = [];
+    try {
+        for (var segments_4 = __values(segments), segments_4_1 = segments_4.next(); !segments_4_1.done; segments_4_1 = segments_4.next()) {
+            var _b = segments_4_1.value, type = _b.type, oldArgs = _b.args;
+            var newArgs = void 0;
+            switch (type) {
+                case "A":
+                    var _c = __read(oldArgs, 7), rx = _c[0], ry = _c[1], rotation = _c[2], largeArcFlag = _c[3], sweepFlag = _c[4], x = _c[5], y = _c[6];
+                    newArgs = [rx, ry, rotation, largeArcFlag, 1 - sweepFlag, x, -y];
+                    break;
+                case "Z":
+                case "M":
+                case "L":
+                case "Φ":
+                case "Λ":
+                case "Q":
+                case "C":
+                    newArgs = Array(oldArgs.length);
+                    for (var i = 0; i < oldArgs.length; i += 2) {
+                        newArgs[i] = oldArgs[i];
+                        newArgs[i + 1] = -oldArgs[i + 1];
+                    }
+                    break;
+                default:
+                    throw new Error("I don't know how to flip a ".concat(type, " segment."));
+            }
+            output.push({ type: type, args: newArgs });
+        }
+    }
+    catch (e_15_1) { e_15 = { error: e_15_1 }; }
+    finally {
+        try {
+            if (segments_4_1 && !segments_4_1.done && (_a = segments_4.return)) _a.call(segments_4);
+        }
+        finally { if (e_15) throw e_15.error; }
+    }
+    return output;
+}
 function rotateDomain(domain, angle) {
     if (angle !== 90)
         throw new Error("this function only works for 90\u00B0 rotations");
     return new Domain(domain.tMin, domain.tMax, -domain.sMax, -domain.sMin, function (place) { return domain.isOnEdge({ s: -place.t, t: place.s }); });
+}
+function reflectDomain(domain) {
+    return new Domain(domain.sMin, domain.sMax, -domain.tMax, -domain.tMin, function (place) { return domain.isOnEdge({ s: place.s, t: -place.t }); });
 }
 //# sourceMappingURL=pathutilities.js.map

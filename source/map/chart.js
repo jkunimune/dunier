@@ -38,13 +38,14 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import { EmptySpace, INFINITE_PLANE } from "../surface/surface.js";
+import { Domain, EmptySpace, INFINITE_PLANE } from "../surface/surface.js";
 import { filterSet, localizeInRange, pathToString, } from "../utilities/miscellaneus.js";
 import { MapProjection } from "./projection.js";
 import { ErodingSegmentTree } from "../datastructures/erodingsegmenttree.js";
+import { assert_φλ } from "../utilities/coordinates.js";
 import { Vector } from "../utilities/geometry.js";
 import { ARABILITY, Biome } from "../generation/terrain.js";
-import { applyProjectionToPath, calculatePathBounds, convertPathClosuresToZ, intersection, rotatePath, scalePath, transformInput, } from "./pathutilities.js";
+import { applyProjectionToPath, calculatePathBounds, convertPathClosuresToZ, intersection, removeLoosePoints, rotatePath, scalePath, transformInput, } from "./pathutilities.js";
 import { chooseLabelLocation } from "./labeling.js";
 // DEBUG OPTIONS
 var DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -159,19 +160,7 @@ var Chart = /** @class */ (function () {
      * @param area the desired bounding box area in mm²
      */
     function Chart(projectionName, surface, regionOfInterest, orientationName, rectangularBounds, area) {
-        var _a = Chart.chooseMapCentering(regionOfInterest, surface), centralMeridian = _a.centralMeridian, centralParallel = _a.centralParallel, meanRadius = _a.meanRadius;
-        var southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
-        var northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2 * Math.PI);
-        if (projectionName === 'equal_earth')
-            this.projection = MapProjection.equalEarth(surface, meanRadius, southLimitingParallel, northLimitingParallel, centralMeridian);
-        else if (projectionName === 'bonne')
-            this.projection = MapProjection.bonne(surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
-        else if (projectionName === 'conformal_conic')
-            this.projection = MapProjection.conformalConic(surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
-        else if (projectionName === 'orthographic')
-            this.projection = MapProjection.orthographic(surface, southLimitingParallel, northLimitingParallel, centralMeridian);
-        else
-            throw new Error("no jana metode da graflance: '".concat(projectionName, "'."));
+        // convert the orientation name into a number of degrees
         if (orientationName === 'north')
             this.orientation = 0;
         else if (orientationName === 'south')
@@ -182,9 +171,79 @@ var Chart = /** @class */ (function () {
             this.orientation = 270;
         else
             throw new Error("I don't recognize this direction: '".concat(orientationName, "'."));
+        // determine the central coordinates and thus domain of the map projection
+        var _a = Chart.chooseMapCentering(regionOfInterest, surface), centralMeridian = _a.centralMeridian, centralParallel = _a.centralParallel, meanRadius = _a.meanRadius;
+        var southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
+        var northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2 * Math.PI);
+        // construct the map projection
+        if (projectionName === 'equal_earth')
+            this.projection = MapProjection.equalEarth(surface, meanRadius, southLimitingParallel, northLimitingParallel, centralMeridian);
+        else if (projectionName === 'bonne')
+            this.projection = MapProjection.bonne(surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian, 0); // we'll revisit the longitude bounds later so leave them at 0 for now
+        else if (projectionName === 'conformal_conic')
+            this.projection = MapProjection.conformalConic(surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
+        else if (projectionName === 'orthographic')
+            this.projection = MapProjection.orthographic(surface, southLimitingParallel, northLimitingParallel, centralMeridian);
+        else
+            throw new Error("no jana metode da graflance: '".concat(projectionName, "'."));
+        // put the region of interest in the correct coordinate system
+        var transformedRegionOfInterest = intersection(transformInput(this.projection.φMin, this.projection.λMin, Chart.border(regionOfInterest)), Chart.rectangle(this.projection.φMax, this.projection.λMax, this.projection.φMin, this.projection.λMin, true), this.projection.domain, true);
+        // establish the geographic bounds of the region
+        var _b = Chart.chooseGeoBounds(transformedRegionOfInterest, this.projection), φMin = _b.φMin, φMax = _b.φMax, λMin = _b.λMin, λMax = _b.λMax;
+        // if we want a rectangular map
+        if (rectangularBounds) {
+            // expand the latitude bounds as much as possible without self-intersection, assuming no latitude bounds
+            for (var i = 0; i <= 50; i++) {
+                var φ = this.projection.φMin + i / 50 * (this.projection.φMax - this.projection.φMin);
+                if (Math.abs(this.projection.parallelCurvature(φ)) <= 1) {
+                    φMax = Math.max(φMax, φ);
+                    φMin = Math.min(φMin, φ);
+                }
+            }
+            // then expand the longitude bounds as much as possible without self-intersection
+            var limitingΔλ = Infinity;
+            for (var i = 0; i <= 50; i++) {
+                var φ = φMin + i / 50 * (φMax - φMin);
+                var parallelCurvature = this.projection.parallelCurvature(φ);
+                limitingΔλ = Math.min(limitingΔλ, 2 * Math.PI / Math.abs(parallelCurvature));
+            }
+            λMin = Math.max(Math.min(λMin, centralMeridian - limitingΔλ / 2), this.projection.λMin);
+            λMax = Math.min(Math.max(λMax, centralMeridian + limitingΔλ / 2), this.projection.λMax);
+        }
+        // if it's a Bonne projection, re-generate it with these new bounds in case you need to adjust the curvature
+        if (projectionName === 'bonne')
+            this.projection = MapProjection.bonne(surface, φMin, centralParallel, φMax, centralMeridian, λMax - λMin);
         // establish the bounds of the map
-        var _b = Chart.chooseMapBounds(intersection(transformInput(this.projection, Chart.border(regionOfInterest)), Chart.rectangle(this.projection.φMax, this.projection.λMax, this.projection.φMin, this.projection.λMin, true), this.projection.domain, true), this.projection, rectangularBounds), φMin = _b.φMin, φMax = _b.φMax, λMin = _b.λMin, λMax = _b.λMax, xRight = _b.xRight, xLeft = _b.xLeft, yBottom = _b.yBottom, yTop = _b.yTop;
-        this.labelIndex = 0;
+        var _c = Chart.chooseMapBounds(transformedRegionOfInterest, this.projection), xRight = _c.xRight, xLeft = _c.xLeft, yBottom = _c.yBottom, yTop = _c.yTop;
+        // if we want a wedge-shaped map
+        if (!rectangularBounds) {
+            // expand the cartesian bounds – ideally we shouldn't see them
+            xRight = Math.max(1.4 * xRight, -1.4 * xLeft);
+            xLeft = -xRight;
+            var yMargin = 0.2 * (yBottom - yTop);
+            yTop = yTop - yMargin;
+            yBottom = yBottom + yMargin;
+        }
+        // set the geographic limits of the mapped area
+        if (λMax - λMin === 2 * Math.PI && this.projection.wrapsAround())
+            this.geoEdges = [
+                { type: 'M', args: [φMax, λMax] },
+                { type: 'Φ', args: [φMax, λMin] },
+                { type: 'L', args: [φMax, λMax] },
+                { type: 'M', args: [φMin, λMin] },
+                { type: 'Φ', args: [φMin, λMax] },
+                { type: 'L', args: [φMin, λMin] },
+            ];
+        else
+            this.geoEdges = Chart.rectangle(φMax, λMax, φMin, λMin, true);
+        // the extent of the geographic region will always impose some Cartesian limits; compute those now.
+        var mapBounds = calculatePathBounds(applyProjectionToPath(this.projection, this.geoEdges, Infinity));
+        xLeft = Math.max(xLeft, mapBounds.sMin);
+        xRight = Math.min(xRight, mapBounds.sMax);
+        yTop = Math.max(yTop, mapBounds.tMin);
+        yBottom = Math.min(yBottom, mapBounds.tMax);
+        // set the Cartesian limits of the mapped area
+        this.mapEdges = Chart.rectangle(xLeft, yTop, xRight, yBottom, false);
         // flip them if it's a south-up map
         if (this.orientation === 0)
             this.dimensions = new Dimensions(xLeft, xRight, yTop, yBottom);
@@ -202,17 +261,7 @@ var Chart = /** @class */ (function () {
         // expand the Chart dimensions by half a millimeter on each side to give the edge some breathing room
         var margin = Math.max(0.5, this.dimensions.diagonal / 100);
         this.dimensions = new Dimensions(this.dimensions.left - margin, this.dimensions.right + margin, this.dimensions.top - margin, this.dimensions.bottom + margin);
-        // set the geographic and Cartesian limits of the mapped area
-        if (λMax - λMin === 2 * Math.PI && this.projection.wrapsAround())
-            this.geoEdges = [
-                { type: 'M', args: [φMax, λMax] },
-                { type: 'Φ', args: [φMax, λMin] },
-                { type: 'M', args: [φMin, λMin] },
-                { type: 'Φ', args: [φMin, λMax] },
-            ];
-        else
-            this.geoEdges = Chart.rectangle(φMax, λMax, φMin, λMin, true);
-        this.mapEdges = Chart.rectangle(xLeft, yTop, xRight, yBottom, false);
+        this.labelIndex = 0;
     }
     /**
      * do your thing
@@ -225,12 +274,19 @@ var Chart = /** @class */ (function () {
      * @param shading whether to add shaded relief
      * @param civLabels whether to label countries
      * @param geoLabels whether to label mountain ranges and seas
+     * @param graticule whether to draw a graticule
+     * @param windrose whether to add a compass rose
      * @param fontSize the size of city labels and minimum size of country and biome labels (mm)
      * @param style the transliteration convention to use for them
      * @return the list of Civs that are shown in this map
      */
-    Chart.prototype.depict = function (surface, world, svg, color, rivers, borders, shading, civLabels, geoLabels, fontSize, style) {
+    Chart.prototype.depict = function (surface, world, svg, color, rivers, borders, graticule, windrose, shading, civLabels, geoLabels, fontSize, style) {
         var e_1, _a, e_2, _b, e_3, _c, e_4, _d;
+        if (graticule === void 0) { graticule = false; }
+        if (windrose === void 0) { windrose = false; }
+        if (shading === void 0) { shading = false; }
+        if (civLabels === void 0) { civLabels = false; }
+        if (geoLabels === void 0) { geoLabels = false; }
         if (fontSize === void 0) { fontSize = 3; }
         if (style === void 0) { style = '(default)'; }
         var bbox = this.dimensions;
@@ -355,7 +411,7 @@ var Chart = /** @class */ (function () {
             // color the land by country
             if (world === null)
                 throw new Error("this Chart was asked to color land politicly but the provided World was null");
-            this.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN; }), g, EGGSHELL, Layer.KULTUR);
+            this.fill(filterSet(surface.tiles, function (n) { return !n.isWater(); }), g, EGGSHELL, Layer.KULTUR);
             var biggestCivs = world.getCivs(true).reverse();
             var numFilledCivs = 0;
             for (var i = 0; biggestCivs.length > 0; i++) {
@@ -373,7 +429,7 @@ var Chart = /** @class */ (function () {
                     else
                         color_1 = COUNTRY_COLORS[numFilledCivs];
                 }
-                var fill = this.fill(filterSet(civ.tileTree.keys(), function (n) { return n.biome !== Biome.OCEAN; }), g, color_1, Layer.KULTUR);
+                var fill = this.fill(filterSet(civ.tileTree.keys(), function (n) { return !n.isWater(); }), g, color_1, Layer.KULTUR);
                 if (fill.getAttribute("d").length > 0)
                     numFilledCivs++;
             }
@@ -382,7 +438,7 @@ var Chart = /** @class */ (function () {
             var _loop_3 = function (i) {
                 var min = (i !== 0) ? i * ALTITUDE_STEP : -Infinity;
                 var max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Infinity;
-                this_3.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN && n.height >= min && n.height < max; }), g, ALTITUDE_COLORS[i], Layer.GEO);
+                this_3.fill(filterSet(surface.tiles, function (n) { return !n.isWater() && n.height >= min && n.height < max; }), g, ALTITUDE_COLORS[i], Layer.GEO);
             };
             var this_3 = this;
             // color the land by altitude
@@ -392,7 +448,7 @@ var Chart = /** @class */ (function () {
         }
         else {
             // color in the land with a uniform color
-            this.fill(filterSet(surface.tiles, function (n) { return n.biome !== Biome.OCEAN; }), g, landFill, Layer.BIO);
+            this.fill(filterSet(surface.tiles, function (n) { return !n.isWater(); }), g, landFill, Layer.BIO);
         }
         // add rivers
         if (rivers) {
@@ -404,7 +460,7 @@ var Chart = /** @class */ (function () {
             var _loop_4 = function (i) {
                 var min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
                 var max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
-                this_4.fill(filterSet(surface.tiles, function (n) { return n.biome === Biome.OCEAN && -n.height >= min && -n.height < max; }), g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
+                this_4.fill(filterSet(surface.tiles, function (n) { return n.isWater() && -n.height >= min && -n.height < max; }), g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
             };
             var this_4 = this;
             // color in the sea by altitude
@@ -431,7 +487,7 @@ var Chart = /** @class */ (function () {
                     hover.appendChild(text);
                     titledG.appendChild(hover);
                     g.appendChild(titledG);
-                    this.fill(filterSet(civ.tileTree.keys(), function (n) { return n.biome !== Biome.OCEAN; }), titledG, 'none', Layer.KULTUR, borderStroke, 0.7).setAttribute('pointer-events', 'all');
+                    this.fill(filterSet(civ.tileTree.keys(), function (n) { return !n.isWater(); }), titledG, 'none', Layer.KULTUR, borderStroke, 0.7).setAttribute('pointer-events', 'all');
                     // }
                 }
             }
@@ -471,6 +527,24 @@ var Chart = /** @class */ (function () {
         }
         // add an outline to the whole thing
         this.fill(surface.tiles, g, 'none', Layer.GEO, 'black', 1.4, 'miter');
+        // add the windrose
+        if (windrose) {
+            var windrose_1 = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            windrose_1.setAttribute('id', 'generated-map');
+            g.appendChild(windrose_1);
+            // decide where to put it
+            var radius = Math.min(25, 0.2 * Math.min(this.dimensions.width, this.dimensions.height));
+            var x = this.dimensions.left + 1.2 * radius;
+            var y = this.dimensions.top + 1.2 * radius;
+            windrose_1.setAttribute("transform", "translate(".concat(x, ", ").concat(y, ") scale(").concat(radius / 26, ")"));
+            // load the content from windrose.svg
+            fetch('../../resources/images/windrose.svg')
+                .then(function (response) { return response.text(); })
+                .then(function (svgText) {
+                var innerSVG = svgText.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s)[1];
+                windrose_1.innerHTML = innerSVG;
+            });
+        }
         if (world !== null) {
             // finally, check which Civs are on this map
             // (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
@@ -684,11 +758,11 @@ var Chart = /** @class */ (function () {
      * @return SVG.Path object in Cartesian coordinates
      */
     Chart.prototype.projectPath = function (segments, closePath) {
-        var croppedToGeoRegion = intersection(transformInput(this.projection, segments), this.geoEdges, this.projection.domain, closePath);
+        var croppedToGeoRegion = intersection(transformInput(this.projection.φMin, this.projection.λMin, segments), this.geoEdges, this.projection.domain, closePath);
         if (croppedToGeoRegion.length === 0)
             return [];
         var projected = applyProjectionToPath(this.projection, croppedToGeoRegion, MAP_PRECISION / this.scale);
-        var croppedToMapRegion = intersection(projected, this.mapEdges, INFINITE_PLANE, closePath);
+        var croppedToMapRegion = intersection(removeLoosePoints(projected), this.mapEdges, INFINITE_PLANE, closePath);
         return scalePath(rotatePath(croppedToMapRegion, this.orientation), this.scale);
     };
     /**
@@ -711,7 +785,7 @@ var Chart = /** @class */ (function () {
     Chart.outline = function (tiles) {
         var e_9, _a, e_10, _b;
         var tileSet = new Set(tiles);
-        var accountedFor = new Set(); // keep track of which Edge have been done
+        var accountedFor = new Set(); // keep track of which Edges have been done
         var output = [];
         try {
             for (var tileSet_1 = __values(tileSet), tileSet_1_1 = tileSet_1.next(); !tileSet_1_1.done; tileSet_1_1 = tileSet_1.next()) { // look at every included tile
@@ -727,11 +801,11 @@ var Chart = /** @class */ (function () {
                         var currentLoop = []; // if we've found a new edge, start going around it
                         var currentSection = [inTile.rightOf(outTile)]; // keep track of each continuus section of this loop
                         do {
+                            var edge = inTile.neighbors.get(outTile); // pick out the edge between them
+                            accountedFor.add(edge); // check this edge off
                             var vertex = inTile.leftOf(outTile); // look for the next Vertex, going widdershins
                             // add the next Vertex to the complete Path
                             currentSection.push(vertex);
-                            var edge = inTile.neighbors.get(outTile); // pick out the edge between them
-                            accountedFor.add(edge); // check this edge off
                             // now, advance to the next Tile(s)
                             var nextTile = vertex.widershinsOf(outTile);
                             if (nextTile instanceof EmptySpace) {
@@ -1025,7 +1099,7 @@ var Chart = /** @class */ (function () {
             throw new Error("I can't choose a map centering with an empty region of interest.");
         var meanRadius = rSum / count;
         // find the longitude with the most empty space on either side of it
-        var coastline = Chart.border(filterSet(regionOfInterest, function (tile) { return tile.biome !== Biome.OCEAN; }));
+        var coastline = intersection(Chart.border(filterSet(regionOfInterest, function (tile) { return !tile.isWater(); })), Chart.rectangle(surface.φMin, -Math.PI, surface.φMax, Math.PI, true), new Domain(surface.φMin, surface.φMax, -Math.PI, Math.PI, function (point) { return surface.isOnEdge(assert_φλ(point)); }), true);
         var centralMeridian;
         var emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
         for (var i = 0; i < coastline.length; i++) {
@@ -1051,7 +1125,7 @@ var Chart = /** @class */ (function () {
             try {
                 for (var regionOfInterest_2 = __values(regionOfInterest), regionOfInterest_2_1 = regionOfInterest_2.next(); !regionOfInterest_2_1.done; regionOfInterest_2_1 = regionOfInterest_2.next()) {
                     var tile = regionOfInterest_2_1.value;
-                    if (tile.biome !== Biome.OCEAN) {
+                    if (!tile.isWater()) {
                         xCenter += Math.cos(tile.λ);
                         yCenter += Math.sin(tile.λ);
                     }
@@ -1079,7 +1153,7 @@ var Chart = /** @class */ (function () {
             try {
                 for (var regionOfInterest_3 = __values(regionOfInterest), regionOfInterest_3_1 = regionOfInterest_3.next(); !regionOfInterest_3_1.done; regionOfInterest_3_1 = regionOfInterest_3.next()) {
                     var tile = regionOfInterest_3_1.value;
-                    if (tile.biome !== Biome.OCEAN) {
+                    if (!tile.isWater()) {
                         ξCenter += Math.cos(tile.φ);
                         υCenter += Math.sin(tile.φ);
                     }
@@ -1101,13 +1175,11 @@ var Chart = /** @class */ (function () {
         };
     };
     /**
-     * determine the coordinate bounds of this region –
-     * both its geographical coordinates on the Surface and its Cartesian coordinates on the map.
+     * determine the Cartesian coordinate bounds of this region on the map.
      * @param regionOfInterest the region that must be enclosed entirely within the returned bounding box
      * @param projection the projection being used to map this region from a Surface to the plane
-     * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
      */
-    Chart.chooseMapBounds = function (regionOfInterest, projection, rectangularBounds) {
+    Chart.chooseMapBounds = function (regionOfInterest, projection) {
         // start by identifying the geographic and projected extent of this thing
         var regionBounds = calculatePathBounds(regionOfInterest);
         var projectedRegion = applyProjectionToPath(projection, regionOfInterest, Infinity);
@@ -1115,84 +1187,68 @@ var Chart = /** @class */ (function () {
         // first infer some things about this projection
         var northPoleIsDistant = projection.differentiability(projection.φMax) < .5;
         var southPoleIsDistant = projection.differentiability(projection.φMin) < .5;
+        // calculate the Cartesian bounds, with some margin
+        var margin = 0.1 * Math.sqrt((projectedBounds.sMax - projectedBounds.sMin) *
+            (projectedBounds.tMax - projectedBounds.tMin));
+        var xLeft = projectedBounds.sMin - margin;
+        var xRight = projectedBounds.sMax + margin;
+        var yTop = projectedBounds.tMin - margin;
+        var yBottom = projectedBounds.tMax + margin;
+        // but if the poles are super far away, put some global limits on the map extent
+        var globeWidth = 2 * Math.PI * projection.surface.rz((regionBounds.sMin + regionBounds.sMax) / 2).r;
+        var maxHeight = globeWidth / Math.sqrt(2);
+        var yNorthCutoff = -Infinity, ySouthCutoff = Infinity;
+        if (northPoleIsDistant) {
+            if (southPoleIsDistant) {
+                var yCenter = projection.projectPoint({
+                    φ: (regionBounds.sMin + regionBounds.sMax) / 2,
+                    λ: projection.λCenter,
+                }).y;
+                yNorthCutoff = yCenter - maxHeight / 2;
+                ySouthCutoff = yCenter + maxHeight / 2;
+            }
+            else
+                yNorthCutoff = yBottom - maxHeight;
+        }
+        else if (southPoleIsDistant)
+            ySouthCutoff = yTop + maxHeight;
+        // apply those limits
+        yTop = Math.max(yTop, yNorthCutoff);
+        yBottom = Math.min(yBottom, ySouthCutoff);
+        return { xLeft: xLeft, xRight: xRight, yTop: yTop, yBottom: yBottom };
+    };
+    /**
+     * determine the geographical coordinate bounds of this region on its Surface.
+     * @param regionOfInterest the region that must be enclosed entirely within the returned bounding box
+     * @param projection the projection being used, for the purposes of calculating the size of the margin.
+     *                   strictly speaking we only need the scale along the central meridian and along the parallels
+     *                   to be correct; parallel curvature doesn't come into play in this function.
+     */
+    Chart.chooseGeoBounds = function (regionOfInterest, projection) {
+        // start by identifying the geographic and projected extent of this thing
+        var regionBounds = calculatePathBounds(regionOfInterest);
+        // first infer some things about this projection
+        var northPoleIsDistant = projection.differentiability(projection.φMax) < .5;
+        var southPoleIsDistant = projection.differentiability(projection.φMin) < .5;
         var northPoleIsPoint = projection.projectPoint({ φ: projection.φMax, λ: 1 }).x === 0;
         var southPoleIsPoint = projection.projectPoint({ φ: projection.φMin, λ: 1 }).x === 0;
-        // now to choose those bounds
-        var φMin, φMax, λMin, λMax;
-        var xLeft, xRight, yTop, yBottom;
-        // if we want a rectangular map
-        if (rectangularBounds) {
-            // don't apply any geographic bounds
-            φMin = projection.φMin;
-            φMax = projection.φMax;
-            λMin = projection.λMin;
-            λMax = projection.λMax;
-            // spread the projected Cartesian bounds out a bit
-            var margin = 0.1 * Math.sqrt((projectedBounds.sMax - projectedBounds.sMin) *
-                (projectedBounds.tMax - projectedBounds.tMin));
-            xLeft = projectedBounds.sMin - margin;
-            xRight = projectedBounds.sMax + margin;
-            yTop = projectedBounds.tMin - margin;
-            yBottom = projectedBounds.tMax + margin;
-            // but if the poles are super far away, put some global limits on the map extent
-            var globeWidth = 2 * Math.PI * projection.surface.rz((regionBounds.sMin + regionBounds.sMax) / 2).r;
-            var maxHeight = globeWidth / Math.sqrt(2);
-            var yNorthCutoff = -Infinity, ySouthCutoff = Infinity;
-            if (northPoleIsDistant) {
-                if (southPoleIsDistant) {
-                    var yCenter = projection.projectPoint({
-                        φ: (regionBounds.sMin + regionBounds.sMax) / 2,
-                        λ: projection.λCenter,
-                    }).y;
-                    yNorthCutoff = yCenter - maxHeight / 2;
-                    ySouthCutoff = yCenter + maxHeight / 2;
-                }
-                else
-                    yNorthCutoff = yBottom - maxHeight;
-            }
-            else if (southPoleIsDistant)
-                ySouthCutoff = yTop + maxHeight;
-            // apply those limits
-            yTop = Math.max(yTop, yNorthCutoff);
-            yBottom = Math.min(yBottom, ySouthCutoff);
-        }
-        // if we want a wedge-shaped map
-        else {
-            // spread the regionBounds out a bit
-            var yMax = projection.projectPoint({ φ: regionBounds.sMin, λ: projection.λCenter }).y;
-            var yMin = projection.projectPoint({ φ: regionBounds.sMax, λ: projection.λCenter }).y;
-            var ySouthEdge = projection.projectPoint({ φ: projection.φMin, λ: projection.λCenter }).y;
-            var yNorthEdge = projection.projectPoint({ φ: projection.φMax, λ: projection.λCenter }).y;
-            φMax = projection.inverseProjectPoint({ x: 0, y: Math.max(1.1 * yMin - 0.1 * yMax, yNorthEdge) }).φ;
-            φMin = projection.inverseProjectPoint({ x: 0, y: Math.min(1.1 * yMax - 0.1 * yMin, ySouthEdge) }).φ;
-            var ds_dλ = projection.surface.rz((φMin + φMax) / 2).r;
-            λMin = Math.max(projection.λMin, regionBounds.tMin - 0.1 * (yMax - yMin) / ds_dλ);
-            λMax = Math.min(projection.λMax, regionBounds.tMax + 0.1 * (yMax - yMin) / ds_dλ);
-            // cut out the poles if desired
-            var longitudesWrapAround = projection.wrapsAround() && λMax - λMin === 2 * Math.PI;
-            if (northPoleIsDistant || (northPoleIsPoint && !longitudesWrapAround))
-                φMax = Math.max(Math.min(φMax, projection.φMax - 10 / 180 * Math.PI), φMin);
-            if (southPoleIsDistant || (southPoleIsPoint && !longitudesWrapAround))
-                φMin = Math.min(Math.max(φMin, projection.φMin + 10 / 180 * Math.PI), φMax);
-            // apply some generous Cartesian bounds
-            xRight = Math.max(1.4 * projectedBounds.sMax, -1.4 * projectedBounds.sMin);
-            xLeft = -xRight;
-            yTop = 1.2 * projectedBounds.tMin - 0.2 * projectedBounds.tMax;
-            yBottom = 1.2 * projectedBounds.tMax - 0.2 * projectedBounds.tMin;
-        }
-        // the extent of the geographic region will always impose some Cartesian limits; compute those now.
-        var start = projection.projectPoint({ φ: φMin, λ: λMin });
-        var edges = __spreadArray(__spreadArray(__spreadArray(__spreadArray([
-            { type: 'M', args: [start.x, start.y] }
-        ], __read(projection.projectParallel(λMin, λMax, φMin)), false), __read(projection.projectMeridian(φMin, φMax, λMax)), false), __read(projection.projectParallel(λMax, λMin, φMax)), false), __read(projection.projectMeridian(φMax, φMin, λMin)), false);
-        var mapBounds = calculatePathBounds(edges);
-        return {
-            φMin: φMin, φMax: φMax, λMin: λMin, λMax: λMax,
-            xLeft: Math.max(xLeft, mapBounds.sMin),
-            xRight: Math.min(xRight, mapBounds.sMax),
-            yTop: Math.max(yTop, mapBounds.tMin),
-            yBottom: Math.min(yBottom, mapBounds.tMax)
-        };
+        // calculate the geographic bounds, with some margin
+        var yMax = projection.projectPoint({ φ: regionBounds.sMin, λ: projection.λCenter }).y;
+        var yMin = projection.projectPoint({ φ: regionBounds.sMax, λ: projection.λCenter }).y;
+        var ySouthEdge = projection.projectPoint({ φ: projection.φMin, λ: projection.λCenter }).y;
+        var yNorthEdge = projection.projectPoint({ φ: projection.φMax, λ: projection.λCenter }).y;
+        var φMax = projection.inverseProjectPoint({ x: 0, y: Math.max(1.1 * yMin - 0.1 * yMax, yNorthEdge) }).φ;
+        var φMin = projection.inverseProjectPoint({ x: 0, y: Math.min(1.1 * yMax - 0.1 * yMin, ySouthEdge) }).φ;
+        var ds_dλ = projection.surface.rz((φMin + φMax) / 2).r;
+        var λMin = Math.max(projection.λMin, regionBounds.tMin - 0.1 * (yMax - yMin) / ds_dλ);
+        var λMax = Math.min(projection.λMax, regionBounds.tMax + 0.1 * (yMax - yMin) / ds_dλ);
+        // cut out the poles if desired
+        var longitudesWrapAround = projection.wrapsAround() && λMax - λMin === 2 * Math.PI;
+        if (northPoleIsDistant || (northPoleIsPoint && !longitudesWrapAround))
+            φMax = Math.max(Math.min(φMax, projection.φMax - 10 / 180 * Math.PI), φMin);
+        if (southPoleIsDistant || (southPoleIsPoint && !longitudesWrapAround))
+            φMin = Math.min(Math.max(φMin, projection.φMin + 10 / 180 * Math.PI), φMax);
+        return { φMin: φMin, φMax: φMax, λMin: λMin, λMax: λMax };
     };
     /**
      * create a Path that delineate a rectangular region in either Cartesian or latitude/longitude space

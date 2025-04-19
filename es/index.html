@@ -74,6 +74,20 @@
   function disableRotationParams(locked) {
     document.getElementById('planet-day').toggleAttribute('disabled', locked); // rotation period
     document.getElementById('planet-tilt').toggleAttribute('disabled', locked); // and obliquity are both irrelevant
+
+    // also change the labels in the orientation window
+    if (locked)
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">Con el noche arriba</option>\n' +
+              '<option value="south">Con el día arriba</option>\n' +
+              '<option value="east">Con la diestra arriba</option>\n' +
+              '<option value="west">Con la siniestra arriba</option>\n';
+    else
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">Con el norte arriba</option>\n' +
+              '<option value="south">Con el sur arriba</option>\n' +
+              '<option value="east">Con el este arriba</option>\n' +
+              '<option value="west">Con el oeste arriba</option>\n';
   }
 
   /** hide the map projection selection for flat geoids */
@@ -88,11 +102,11 @@
   /** change the description of the currently selected map projection */
   function updateProjectionDescription(projection) {
     if (projection === "bonne")
-      document.getElementById('map-projection-description').innerHTML = "Proyección de áreas iguales con paralelos de latitud concéntricos.  Es igual con la proyección sinusoidal en casos de mapas del mundo entero.  Apropiada para vibra antigua y pseudo-ptolemaica.";
+      document.getElementById('map-projection-description').innerHTML = "Proyección de áreas iguales con paralelos concéntricos.  Es igual con la proyección sinusoidal en casos de mapas del mundo entero.  Apropiada para vibra antigua y pseudo-ptolemaica.";
     else if (projection === "conformal_conic")
       document.getElementById('map-projection-description').innerHTML = "Proyección conforme con meridianos derechos.  Es igual con la proyección de Mercator en casos de mapas del mundo entero.  Representa los ángulos con exactitud pero distorsiona las áreas.";
     else if (projection === "equal_earth")
-      document.getElementById('map-projection-description').innerHTML = "Proyección de áreas iguales bonita.  Apropiada para mapas del mundo entero.";
+      document.getElementById('map-projection-description').innerHTML = "Proyección de áreas iguales con paralelos derechos.  Apropiada para mapas del mundo entero.";
     else {
       document.getElementById('map-projection-description').innerHTML = "?????";
       console.error(`unrecognized map projeccion: '${projection}'`);
@@ -663,7 +677,7 @@
   </div>
 </div>
 
-<div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">Proyección de áreas iguales con paralelos de latitud concéntricos.  Es igual con la proyección sinusoidal en casos de mapas del mundo entero.  Apropiada para vibra antigua y pseudo-ptolemaica.</div>
+<div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">Proyección de áreas iguales con paralelos concéntricos.  Es igual con la proyección sinusoidal en casos de mapas del mundo entero.  Apropiada para vibra antigua y pseudo-ptolemaica.</div>
 
     </main>
 

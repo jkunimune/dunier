@@ -236,25 +236,15 @@ function transpose(p) {
  * generate a set of three mutually orthogonal Vectors
  * @param n the direction of the n vector
  * @param normalize whether to normalize the three vectors before returning them
- * @param axis v will be chosen to be coplanar with axis and n
- * @param bias if axis and n are parallel, v will be chosen to be coplanar with axis, n, and bias
  * @returns three vectors, u, v, and n.  if they are normalized, u×v=n, v×n=u, and n×u=v.  if they aren’t then the
- * magnitudes will be whatever.  also, u will always be orthogonal to axis.  if there is an opcion,
+ * magnitudes will be whatever.  also, u will always be orthogonal to the z-axis.
  */
-export function orthogonalBasis(n, normalize, axis, bias) {
+export function orthogonalBasis(n, normalize) {
     if (normalize === void 0) { normalize = false; }
-    if (axis === void 0) { axis = new Vector(0, 0, 1); }
-    if (bias === void 0) { bias = new Vector(1, 0, 0); }
-    if (axis.cross(n).sqr() === 0) {
-        axis = bias;
-        if (bias.cross(n).sqr() === 0) {
-            if (n.y !== 0)
-                axis = new Vector(0, 0, 1);
-            else
-                axis = new Vector(0, 1, 0);
-        }
-    }
-    var u = axis.cross(n);
+    var bias = new Vector(0, 0, 1);
+    if (bias.cross(n).sqr() === 0)
+        bias = new Vector(1, 0, 0);
+    var u = bias.cross(n);
     var v = n.cross(u);
     if (normalize) {
         u = u.normalized();

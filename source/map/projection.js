@@ -101,7 +101,7 @@ var MapProjection = /** @class */ (function () {
         this.φMin = this.φRef[0];
         this.φMax = this.φRef[this.φRef.length - 1];
         this.λMin = this.λCenter - Math.PI;
-        this.λMax = this.λCenter + Math.PI;
+        this.λMax = this.λMin + 2 * Math.PI;
         this.domain = new Domain(this.φMin, this.φMin + 2 * Math.PI, this.λMin, this.λMax, function (point) { return _this.surface.isOnEdge(assert_φλ(point)); });
     }
     /**
@@ -256,6 +256,20 @@ var MapProjection = /** @class */ (function () {
         return Math.log(innerΔy / outerΔy) / Math.log(innerΔs / outerΔs);
     };
     /**
+     * the curvature of this parallel, defined as change in map angle per change in longitude –
+     * positive for meridians that hang down in the middle and stick up at the ends,
+     * and negative for parallels that arch up in the middle and droop down at the ends.
+     * when the parallels come together at the circumcenter, this returns 0 curvature.
+     * @param φ the latitude in radians
+     * @return the signed dimensionless curvature number
+     */
+    MapProjection.prototype.parallelCurvature = function (φ) {
+        if (this.dx_dλ(φ) === 0 && this.y(φ) === this.yCenter)
+            return 0;
+        else
+            return this.dx_dλ(φ) / (this.y(φ) - this.yCenter);
+    };
+    /**
      * convert an r and θ to Cartesian x and y, where θ is in radians and is defined such that, for positive r,
      * θ = 0 is maximum y (the bottom of the circle) and increases as you go counterclockwise.  negative r is
      * permitted and will reverse all points about the origin such that θ = 0 is minimum y (the top of the circle)
@@ -304,10 +318,10 @@ var MapProjection = /** @class */ (function () {
         var φ = [];
         var R = [];
         for (var i = 0; i <= resolution; i++) {
-            φ.push(φMin + i / resolution * (φMax - φMin));
+            φ.push((i < resolution) ? φMin + i / resolution * (φMax - φMin) : φMax);
             R.push(surface.rz(φ[i]).r);
         }
-        return new MapProjection(surface, φ, R, R, 0, λStd);
+        return new MapProjection(surface, φ, R.map(function (x) { return -x; }), R, 0, λStd);
     };
     /**
      * construct a Bonne projection with a standard parallel in the given range.  if the standard parallel is an equator,
@@ -315,10 +329,11 @@ var MapProjection = /** @class */ (function () {
      * @param surface the surface from which to project
      * @param φMin the southernmost parallel in radians
      * @param φStd the standard parallel in radians
-     * @param φMax the northernmost parallel in radians	 * @param λStd the central meridian
+     * @param φMax the northernmost parallel in radians
      * @param λStd the central meridian in radians
+     * @param Δλ the maximum meridian length you must accommodate (this is important for preventing self-intersection)
      */
-    MapProjection.bonne = function (surface, φMin, φStd, φMax, λStd) {
+    MapProjection.bonne = function (surface, φMin, φStd, φMax, λStd, Δλ) {
         if (!(φStd >= surface.φMin && φStd <= surface.φMax))
             throw new Error("".concat(φStd, " is not a valid standard latitude"));
         var _a = __read(cumulativeIntegral(function (x) { return -surface.ds_dφ(x); }, φMin, φMax, 0.2, 0.02, 1e-3), 2), φRef = _a[0], yRef = _a[1]; // do the necessary integrals to get the y positions of the prime meridian
@@ -335,6 +350,13 @@ var MapProjection = /** @class */ (function () {
             else
                 yCenter = yRef[yRef.length - 1];
         }
+        // adjust the center location to prevent self-intersection
+        for (var i = 0; i < φRef.length; i++) {
+            var meridianLength = Δλ * dx_dλRef[i];
+            var circumference = 2 * Math.PI * Math.abs(yRef[i] - yCenter);
+            if (meridianLength > circumference)
+                yCenter = yRef[i] + (yCenter - yRef[i]) * meridianLength / circumference;
+        }
         return new MapProjection(surface, φRef, yRef, dx_dλRef, yCenter, λStd);
     };
     /**
@@ -344,7 +366,7 @@ var MapProjection = /** @class */ (function () {
      * @param surface the surface from which to project
      * @param φMin the southernmost parallel in radians
      * @param φStd the standard parallel in radians
-     * @param φMax the northernmost parallel in radians	 * @param λStd the central meridian
+     * @param φMax the northernmost parallel in radians
      * @param λStd the central meridian in radians
      */
     MapProjection.conformalConic = function (surface, φMin, φStd, φMax, λStd) {
@@ -411,7 +433,6 @@ var MapProjection = /** @class */ (function () {
      * @param φMin the southernmost parallel in radians
      * @param φStd the standard parallel in radians
      * @param φMax the northernmost parallel in radians
-     * @param λStd the central meridian
      * @param λStd the central meridian in radians
      */
     MapProjection.mercator = function (surface, φMin, φStd, φMax, λStd) {
@@ -422,11 +443,11 @@ var MapProjection = /** @class */ (function () {
         var y = [];
         for (var i = southernΦ.length - 1; i > 0; i--) {
             φ.push(southernΦ[i]);
-            y.push(Math.min(southernY[i], dx_dλ * 1e19)); // make sure to clip them to finite values
+            y.push(Math.min(southernY[i], dx_dλ * 1e10)); // make sure to clip them to finite values
         }
         for (var i = 0; i < northernΦ.length; i++) {
             φ.push(northernΦ[i]);
-            y.push(Math.max(northernY[i], -dx_dλ * 1e19));
+            y.push(Math.max(northernY[i], -dx_dλ * 1e10));
         }
         return new MapProjection(surface, φ, y, Array(φ.length).fill(dx_dλ), Infinity, λStd);
     };

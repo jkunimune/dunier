@@ -74,6 +74,20 @@
   function disableRotationParams(locked) {
     document.getElementById('planet-day').toggleAttribute('disabled', locked); // rotation period
     document.getElementById('planet-tilt').toggleAttribute('disabled', locked); // and obliquity are both irrelevant
+
+    // also change the labels in the orientation window
+    if (locked)
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">夜が上</option>\n' +
+              '<option value="south">昼が上</option>\n' +
+              '<option value="east">右が上</option>\n' +
+              '<option value="west">左が上</option>\n';
+    else
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">北が上</option>\n' +
+              '<option value="south">南が上</option>\n' +
+              '<option value="east">東が上</option>\n' +
+              '<option value="west">西が上</option>\n';
   }
 
   /** hide the map projection selection for flat geoids */
@@ -92,7 +106,7 @@
     else if (projection === "conformal_conic")
       document.getElementById('map-projection-description').innerHTML = "直線の経線を示す正角図法である。全世界地図の場合はメルカトル図法になる。中世に流行ったが、面積を歪める傾向がある。";
     else if (projection === "equal_earth")
-      document.getElementById('map-projection-description').innerHTML = "きれいな正積図法である。全世界地図によく似合う。";
+      document.getElementById('map-projection-description').innerHTML = "真直な緯線を示す正積図法である。全世界地図によく似合う。";
     else {
       document.getElementById('map-projection-description').innerHTML = "?????";
       console.error(`unrecognized map projeccion: '${projection}'`);
@@ -429,10 +443,10 @@
                   <div class="form-group">
                     <label for="map-orientation">方向</label>
                     <select id="map-orientation">
-                      <option selected value="north">北は上</option>
-                      <option value="south">南は上</option>
-                      <option value="east">東は上</option>
-                      <option value="west">西は上</option>
+                      <option selected value="north">北が上</option>
+                      <option value="south">南が上</option>
+                      <option value="east">東が上</option>
+                      <option value="west">西が上</option>
                     </select>
                   </div>
                 </div>

@@ -46,9 +46,10 @@ var PRINT_DEBUGGING_INFORMATION = false;
  * initialize an HTML document and fill it out with a comprehensive description
  * @param map the complete SVG code of the map
  * @param civs the list of Civs that will be described later in the document
+ * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
  * @param transcriptionStyle the spelling style to use for the proper nouns
  */
-export function generateFactbook(map, civs, transcriptionStyle) {
+export function generateFactbook(map, civs, tidalLock, transcriptionStyle) {
     var e_1, _a;
     var listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
     var doc = document.implementation.createHTMLDocument(format(transcriptionStyle, 'parameter.factbook'));
@@ -56,7 +57,7 @@ export function generateFactbook(map, civs, transcriptionStyle) {
     try {
         for (var listedCivs_1 = __values(listedCivs), listedCivs_1_1 = listedCivs_1.next(); !listedCivs_1_1.done; listedCivs_1_1 = listedCivs_1.next()) {
             var civ = listedCivs_1_1.value;
-            generateFactSheet(doc, civ, transcriptionStyle);
+            generateFactSheet(doc, civ, tidalLock, transcriptionStyle);
         }
     }
     catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -72,6 +73,8 @@ export function generateFactbook(map, civs, transcriptionStyle) {
  * decide which civs are going to be included in the fact sheet and in what order
  */
 function chooseMostImportantCivs(civs, transcriptionStyle) {
+    if (civs.length === 0)
+        return [];
     var listedCivs = [];
     var unlistedCivs = civs.slice();
     // make sure we include the Civ with the most advanced technology
@@ -97,7 +100,10 @@ function generateTitlePage(doc, map, civs, transcriptionStyle) {
     page.setAttribute('style', 'break-after: page');
     doc.body.appendChild(page);
     addParagraph(format(transcriptionStyle, 'factbook.outline.title'), page, 'h1');
-    addParagraph(format(transcriptionStyle, 'factbook.outline.lede', civs.length, civs.map(function (c) { return c.getName().toString(transcriptionStyle); })), page, 'p');
+    if (civs.length > 0)
+        addParagraph(format(transcriptionStyle, 'factbook.outline.lede.some', civs.length, civs.map(function (c) { return c.getName().toString(transcriptionStyle); })), page, 'p');
+    else
+        addParagraph(format(transcriptionStyle, 'factbook.outline.lede.none'), page, 'p');
     var importedMap = map.cloneNode(true);
     importedMap.setAttribute("width", "100%");
     importedMap.setAttribute("height", "6.5in");
@@ -107,17 +113,18 @@ function generateTitlePage(doc, map, civs, transcriptionStyle) {
  * add a page to this document with all the interesting informacion about the given Civ
  * @param doc the document into which to write this page
  * @param topic the Civ being described on this page
+ * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
  * @param transcriptionStyle the spelling style to use for the loanwords
  */
-function generateFactSheet(doc, topic, transcriptionStyle) {
+function generateFactSheet(doc, topic, tidalLock, transcriptionStyle) {
     var page = document.createElementNS('http://www.w3.org/2000/html', 'div');
     page.setAttribute('style', 'break-after: page');
     doc.body.appendChild(page);
     addParagraph(format(transcriptionStyle, 'factbook.outline.section_header', topic.getName(), topic.getName().pronunciation()), page, 'h2');
     addParagraph(format(transcriptionStyle, 'factbook.stats', topic.getLandArea(), topic.getPopulation()), page, 'p');
     addHistorySection(page, topic, transcriptionStyle);
-    addGeographySection(page, topic, transcriptionStyle);
-    addDemographicsSection(page, topic, transcriptionStyle);
+    addGeographySection(page, topic, tidalLock, transcriptionStyle);
+    addDemographicsSection(page, topic, tidalLock, transcriptionStyle);
 }
 /**
  * add some paragraphs to this page recounting the history of the given country
@@ -127,7 +134,7 @@ function addHistorySection(page, topic, transcriptionStyle) {
 /**
  * add some paragraphs to this page detailing the geography of the given country
  */
-function addGeographySection(page, topic, transcriptionStyle) {
+function addGeographySection(page, topic, tidalLock, transcriptionStyle) {
     var e_2, _a, e_3, _b, e_4, _c, e_5, _d, e_6, _e, e_7, _f, e_8, _g, e_9, _h;
     // look at every tile adjacent to this country
     var adjacentLand = new Set();
@@ -230,16 +237,17 @@ function addGeographySection(page, topic, transcriptionStyle) {
                 var offset = borderCentroid.minus(topic.capital.pos);
                 var easting = offset.dot(topic.capital.east);
                 var northing = offset.dot(topic.capital.north);
+                console.log("for a Tile located at <".concat(topic.capital.pos.x, ", ").concat(topic.capital.pos.y, ", ").concat(topic.capital.pos.z));
                 var bearing = Math.atan2(northing, easting) * 180 / Math.PI;
                 var direction = void 0;
                 if (Math.abs(bearing) > 135)
-                    direction = "west";
+                    direction = tidalLock ? "left" : "west";
                 else if (bearing > 45)
-                    direction = "north";
+                    direction = tidalLock ? "night" : "north";
                 else if (bearing > -45)
-                    direction = "east";
+                    direction = tidalLock ? "right" : "east";
                 else
-                    direction = "south";
+                    direction = tidalLock ? "day" : "south";
                 if (!borders.has(direction))
                     borders.set(direction, []);
                 borders.get(direction).push(neighboringCiv);
@@ -306,7 +314,7 @@ function addGeographySection(page, topic, transcriptionStyle) {
 /**
  * add some paragraphs to this page listing and describing the peoples of the given country
  */
-function addDemographicsSection(page, topic, transcriptionStyle) {
+function addDemographicsSection(page, topic, tidalLock, transcriptionStyle) {
     var e_10, _a, e_11, _b, e_12, _c, e_13, _d;
     // calculate the centroid of the whole country
     var civCentroid = new Vector(0, 0, 0);
@@ -369,21 +377,21 @@ function addDemographicsSection(page, topic, transcriptionStyle) {
                 var northing = offset.dot(topic.capital.north);
                 var bearing = Math.atan2(northing, easting) * 180 / Math.PI;
                 if (Math.abs(bearing) > 157.5)
-                    region = "west";
+                    region = tidalLock ? "left" : "west";
                 else if (bearing > 112.5)
-                    region = "northwest";
+                    region = tidalLock ? "nightleft" : "northwest";
                 else if (bearing > 67.5)
-                    region = "north";
+                    region = tidalLock ? "night" : "north";
                 else if (bearing > 22.5)
-                    region = "northeast";
+                    region = tidalLock ? "nightright" : "northeast";
                 else if (bearing > -22.5)
-                    region = "east";
+                    region = tidalLock ? "right" : "east";
                 else if (bearing > -67.5)
-                    region = "southeast";
+                    region = tidalLock ? "dayleft" : "southeast";
                 else if (bearing > -112.5)
-                    region = "south";
+                    region = tidalLock ? "day" : "south";
                 else
-                    region = "southwest";
+                    region = tidalLock ? "dayleft" : "southwest";
             }
             addParagraph(format(transcriptionStyle, (populationFraction < 2 / 3) ?
                 'factbook.demography.minority' :

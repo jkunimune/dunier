@@ -20,8 +20,8 @@ var __extends = (this && this.__extends) || (function () {
 import { Spheroid } from "./spheroid.js";
 import { Vector } from "../utilities/geometry.js";
 /**
- * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the y direction
- * rather than the z.
+ * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the -y direction
+ * rather than the +z.
  */
 var Sphere = /** @class */ (function (_super) {
     __extends(Sphere, _super);
@@ -33,27 +33,27 @@ var Sphere = /** @class */ (function (_super) {
         return _super.call(this, radius, 1, 0, NaN) || this;
     }
     Sphere.prototype.insolation = function (φ) {
-        return 2.0 * Math.max(0, Math.sin(φ));
+        return 2.0 * Math.max(0, -Math.sin(φ)); // note: the sun is at the minimum latitude, so that maps by default point away from the sun
     };
     Sphere.prototype.hasSeasons = function (_) {
         return false;
     };
     Sphere.prototype.windConvergence = function (φ) {
-        return Math.pow((Math.sin(φ) + 1) / 2, 2);
+        return Math.pow((1 - Math.sin(φ)) / 2, 2);
     };
     Sphere.prototype.windVelocity = function (φ) {
-        return { north: ((Math.sin(φ) + 1) / 2) * Math.cos(φ), east: 0 };
+        return { north: ((1 - Math.sin(φ)) / 2) * Math.cos(φ), east: 0 };
     };
     Sphere.prototype.xyz = function (place) {
         var _a = _super.prototype.xyz.call(this, place), x = _a.x, y = _a.y, z = _a.z;
-        return new Vector(x, z, -y);
+        return new Vector(x, -z, y);
     };
     Sphere.prototype.normal = function (place) {
         var _a = _super.prototype.normal.call(this, place), x = _a.x, y = _a.y, z = _a.z;
-        return new Vector(x, z, -y);
+        return new Vector(x, -z, y);
     };
     Sphere.prototype.φλ = function (point) {
-        return _super.prototype.φλ.call(this, new Vector(point.x, -point.z, point.y));
+        return _super.prototype.φλ.call(this, new Vector(point.x, point.z, -point.y));
     };
     return Sphere;
 }(Spheroid));

@@ -218,7 +218,7 @@ function applyTerrain() {
     console.log("grafa...");
     var projection = surface.isFlat() ? "orthographic" : "equal_earth";
     var mapper = new Chart(projection, surface, surface.tiles, "north", false, 62500);
-    mapper.depict(surface, null, DOM.elm('terrain-map'), 'physical', true, false, false, false, false);
+    mapper.depict(surface, null, DOM.elm('terrain-map'), 'physical', true, false, true);
     // save the continents in an easily accessible form
     continents = [];
     try {
@@ -261,7 +261,7 @@ function applyHistory() {
     console.log("grafa...");
     var projection = surface.isFlat() ? "orthographic" : "equal_earth";
     var mapper = new Chart(projection, surface, surface.tiles, "north", false, 62500);
-    mapper.depict(surface, world, DOM.elm('history-map'), 'political', false, true, false, false, false);
+    mapper.depict(surface, world, DOM.elm('history-map'), 'political', false, true, false);
     // now set up the "focus" options for the map tab:
     console.log("mute ba chuze bil...");
     var picker = document.getElementById('map-jung');
@@ -325,7 +325,7 @@ function applyMap() {
     else
         throw new Error("invalid focusSpecifier: '".concat(focusSpecifier, "'"));
     chart = new Chart(projectionName, surface, regionOfInterest, orientation, rectangularBounds, width * height);
-    mappedCivs = chart.depict(surface, world, DOM.elm('map-map'), DOM.val('map-color'), DOM.checked('map-rivers'), DOM.checked('map-borders'), DOM.checked('map-shading'), DOM.checked('map-political-labels'), DOM.checked('map-physical-labels'), FONT_SIZE * 0.35, // convert to mm
+    mappedCivs = chart.depict(surface, world, DOM.elm('map-map'), DOM.val('map-color'), DOM.checked('map-rivers'), DOM.checked('map-borders'), DOM.checked('map-graticule'), DOM.checked('map-windrose'), DOM.checked('map-shading'), DOM.checked('map-political-labels'), DOM.checked('map-physical-labels'), FONT_SIZE * 0.35, // convert to mm
     DOM.val('map-spelling'));
     // adjust the height and width options to reflect the new aspect ratio
     enforceAspectRatio("neither", "mm");
@@ -340,7 +340,7 @@ function applyFactbook() {
     if (lastUpdated < Layer.MAP)
         applyMap();
     console.log("jena factbook...");
-    var doc = generateFactbook(DOM.elm('map-map'), mappedCivs, DOM.val('map-spelling'));
+    var doc = generateFactbook(DOM.elm('map-map'), mappedCivs, DOM.checked('planet-locked'), DOM.val('map-spelling'));
     DOM.elm('factbook-embed').setAttribute('srcdoc', serialize(doc));
     console.log("fina!");
     lastUpdated = Layer.FACTBOOK;
