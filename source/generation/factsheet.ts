@@ -20,15 +20,16 @@ const PRINT_DEBUGGING_INFORMATION = false;
  * initialize an HTML document and fill it out with a comprehensive description
  * @param map the complete SVG code of the map
  * @param civs the list of Civs that will be described later in the document
+ * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
  * @param transcriptionStyle the spelling style to use for the proper nouns
  */
-export function generateFactbook(map: SVGSVGElement, civs: Civ[], transcriptionStyle: string): Document {
+export function generateFactbook(map: SVGSVGElement, civs: Civ[], tidalLock: boolean, transcriptionStyle: string): Document {
 	const listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
 	const doc = document.implementation.createHTMLDocument(format(
 		transcriptionStyle, 'parameter.factbook'));
 	generateTitlePage(doc, map, listedCivs, transcriptionStyle);
 	for (const civ of listedCivs)
-		generateFactSheet(doc, civ, transcriptionStyle);
+		generateFactSheet(doc, civ, tidalLock, transcriptionStyle);
 	return doc;
 }
 
@@ -88,9 +89,10 @@ function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[], trans
  * add a page to this document with all the interesting informacion about the given Civ
  * @param doc the document into which to write this page
  * @param topic the Civ being described on this page
+ * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
  * @param transcriptionStyle the spelling style to use for the loanwords
  */
-function generateFactSheet(doc: Document, topic: Civ, transcriptionStyle: string) {
+function generateFactSheet(doc: Document, topic: Civ, tidalLock: boolean, transcriptionStyle: string) {
 	const page = document.createElementNS('http://www.w3.org/2000/html', 'div') as HTMLDivElement;
 	page.setAttribute('style', 'break-after: page');
 	doc.body.appendChild(page);
@@ -109,9 +111,9 @@ function generateFactSheet(doc: Document, topic: Civ, transcriptionStyle: string
 
 	addHistorySection(page, topic, transcriptionStyle);
 
-	addGeographySection(page, topic, transcriptionStyle);
+	addGeographySection(page, topic, tidalLock, transcriptionStyle);
 
-	addDemographicsSection(page, topic, transcriptionStyle);
+	addDemographicsSection(page, topic, tidalLock, transcriptionStyle);
 }
 
 
@@ -125,7 +127,7 @@ function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle:
 /**
  * add some paragraphs to this page detailing the geography of the given country
  */
-function addGeographySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
+function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolean, transcriptionStyle: string) {
 	// look at every tile adjacent to this country
 	const adjacentLand: Set<Tile> = new Set();
 	const adjacentWater: Set<Tile> = new Set();
@@ -175,16 +177,17 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, transcriptionStyl
 			const offset = borderCentroid.minus(topic.capital.pos);
 			const easting = offset.dot(topic.capital.east);
 			const northing = offset.dot(topic.capital.north);
+			console.log(`for a Tile located at <${topic.capital.pos.x}, ${topic.capital.pos.y}, ${topic.capital.pos.z}`)
 			const bearing = Math.atan2(northing, easting)*180/Math.PI;
 			let direction;
 			if (Math.abs(bearing) > 135)
-				direction = "west";
+				direction = tidalLock ? "left" : "west";
 			else if (bearing > 45)
-				direction = "north";
+				direction = tidalLock ? "night" : "north";
 			else if (bearing > -45)
-				direction = "east";
+				direction = tidalLock ? "right" : "east";
 			else
-				direction = "south";
+				direction = tidalLock ? "day" : "south";
 			if (!borders.has(direction))
 				borders.set(direction, []);
 			borders.get(direction).push(neighboringCiv);
@@ -235,7 +238,7 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, transcriptionStyl
 /**
  * add some paragraphs to this page listing and describing the peoples of the given country
  */
-function addDemographicsSection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
+function addDemographicsSection(page: HTMLDivElement, topic: Civ, tidalLock: boolean, transcriptionStyle: string) {
 	// calculate the centroid of the whole country
 	let civCentroid = new Vector(0, 0, 0);
 	for (const tile of topic.tileTree.keys())
@@ -263,21 +266,21 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, transcriptionS
 			const northing = offset.dot(topic.capital.north);
 			const bearing = Math.atan2(northing, easting)*180/Math.PI;
 			if (Math.abs(bearing) > 157.5)
-				region = "west";
+				region = tidalLock ? "left": "west";
 			else if (bearing > 112.5)
-				region = "northwest";
+				region = tidalLock ? "nightleft": "northwest";
 			else if (bearing > 67.5)
-				region = "north";
+				region = tidalLock ? "night" : "north";
 			else if (bearing > 22.5)
-				region = "northeast";
+				region = tidalLock ? "nightright" : "northeast";
 			else if (bearing > -22.5)
-				region = "east";
+				region = tidalLock ? "right" : "east";
 			else if (bearing > -67.5)
-				region = "southeast";
+				region = tidalLock ? "dayleft" : "southeast";
 			else if (bearing > -112.5)
-				region = "south";
+				region = tidalLock ? "day" : "south";
 			else
-				region = "southwest";
+				region = tidalLock ? "dayleft" : "southwest";
 		}
 
 		addParagraph(

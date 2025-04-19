@@ -380,6 +380,7 @@ function applyFactbook(): void {
 	const doc = generateFactbook(
 		DOM.elm('map-map') as SVGSVGElement,
 		mappedCivs,
+		DOM.checked('planet-locked'),
 		DOM.val('map-spelling'),
 	);
 	DOM.elm('factbook-embed').setAttribute('srcdoc', serialize(doc));

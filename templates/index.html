@@ -21,6 +21,20 @@
   function disableRotationParams(locked) {
     document.getElementById('planet-day').toggleAttribute('disabled', locked); // rotation period
     document.getElementById('planet-tilt').toggleAttribute('disabled', locked); // and obliquity are both irrelevant
+
+    // also change the labels in the orientation window
+    if (locked)
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">{parameter.map.orientation.night}</option>\n' +
+              '<option value="south">{parameter.map.orientation.day}</option>\n' +
+              '<option value="east">{parameter.map.orientation.right}</option>\n' +
+              '<option value="west">{parameter.map.orientation.left}</option>\n';
+    else
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">{parameter.map.orientation.north}</option>\n' +
+              '<option value="south">{parameter.map.orientation.south}</option>\n' +
+              '<option value="east">{parameter.map.orientation.east}</option>\n' +
+              '<option value="west">{parameter.map.orientation.west}</option>\n';
   }
 
   /** hide the map projection selection for flat geoids */
