@@ -38,6 +38,8 @@ export function generateFactbook(map: SVGSVGElement, civs: Civ[], tidalLock: boo
  * decide which civs are going to be included in the fact sheet and in what order
  */
 function chooseMostImportantCivs(civs: Civ[], transcriptionStyle: string): Civ[] {
+	if (civs.length === 0)
+		return [];
 	const listedCivs = [];
 	const unlistedCivs = civs.slice();
 	// make sure we include the Civ with the most advanced technology
@@ -72,11 +74,16 @@ function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[], trans
 		format(transcriptionStyle, 'factbook.outline.title'),
 		page, 'h1');
 
-	addParagraph(
-		format(
-			transcriptionStyle, 'factbook.outline.lede',
-			civs.length, civs.map(c => c.getName().toString(transcriptionStyle))),
-		page, 'p');
+	if (civs.length > 0)
+		addParagraph(
+			format(
+				transcriptionStyle, 'factbook.outline.lede.some',
+				civs.length, civs.map(c => c.getName().toString(transcriptionStyle))),
+			page, 'p');
+	else
+		addParagraph(
+			format(transcriptionStyle, 'factbook.outline.lede.none'),
+			page, 'p');
 
 	const importedMap = <SVGSVGElement>map.cloneNode(true);
 	importedMap.setAttribute("width", "100%");
