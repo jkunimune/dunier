@@ -343,7 +343,8 @@ function applyMap(): void {
 
 	chart = new Chart(
 		projectionName, surface, regionOfInterest,
-		orientation, rectangularBounds, width*height);
+		orientation, rectangularBounds, width*height,
+		DOM.elm('test-text') as HTMLDivElement);
 	mappedCivs = chart.depict(
 		surface,
 		world,
