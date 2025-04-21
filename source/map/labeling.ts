@@ -66,10 +66,20 @@ interface Circumcenter {
  * @throws Error if it can't find any adequate place for this label
  */
 export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {arc: PathSegment[], height: number, letterSpacing: number} {
+	if (aspectRatio < 0)
+		throw Error("the aspect ratio can't be negative, dummy.");
+	if (aspectRatio === 0)
+		throw Error(
+			"this function does not work for zero-width labels.  in theory I could make it work, but I would have to " +
+			"change my whole parameterization for part of it and like why would I do that for a label that's just noting?");
+	if (!Number.isFinite(aspectRatio))
+		throw Error(
+			"this function does not work for zero-height labels.  in theory I could make it work, but I would have to " +
+			"change my whole parameterization for part of it and like why would I do that for a label that's just noting?");
+
 	path = resamplePath(path);
 	if (path.length === 0)
 		throw Error("after resampling there was no path left");
-
 	// estimate the topological skeleton
 	const centers = estimateSkeleton(path);
 
@@ -82,22 +92,32 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 		return {arc: skeleton, height: 0, letterSpacing: 0};
 	}
 
-	let argmax = -1;
-	for (let i = 0; i < centers.length; i++) { // find the circumcenter with the greatest clearance
-		if (centers[i].isContained && (argmax < 0 || centers[i].r > centers[argmax].r))
-			argmax = i;
+	let argmin = 0;
+	let argmax = 0;
+	for (let i = 1; i < centers.length; i ++) { // find the circumcenters with the greatest and least clearance
+		if (centers[i].isContained) {
+			if (centers[i].r < centers[argmin].r)
+				argmin = i;
+			if (centers[i].r > centers[argmax].r)
+				argmax = i;
+		}
 	}
-	if (argmax === -1) {
+
+	let anyContained = false;
+	for (const center of centers)
+		anyContained ||= center.isContained;
+	if (!anyContained) {
 		console.log(pathToString(path));
 		console.log(centers);
 		throw new Error(`none of these circumcenters are contained in the polygon.  how is that possible?`);
 	}
 
+	let iterations = 0;
 	const candidates: number[][] = []; // next collect candidate paths along which you might fit labels
 	let minClearance = centers[argmax].r;
 	while (candidates.length < RALF_NUM_CANDIDATES) {
 		minClearance /= 1.4; // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
-		const minLength = minClearance*aspectRatio;
+		const minLength = 2*minClearance*aspectRatio;
 		const usedPoints = new Set<number>();
 		while (usedPoints.size < centers.length) {
 			const newEndpoint = longestShortestPath(
@@ -116,6 +136,11 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 			}
 			else // if it won't
 				break; // reduce the required clearance and try again
+		}
+		iterations ++;
+		if (iterations > 1000) {
+			console.error(pathToString(path));
+			throw new Error("this has gone on too long.  something's messed up about this polygon and I can't label it.");
 		}
 	}
 	if (candidates.length === 0)

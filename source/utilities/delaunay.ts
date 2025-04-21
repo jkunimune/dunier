@@ -22,6 +22,9 @@ export function delaunayTriangulate(points: Vector[],
 									sampleNormals = [new Vector(0, 0, 1)],
 									partition: number[][] = []
 ): {triangles: number[][], parentage: number[][], between: number[][][]} {
+	if (points.length === 0)
+		return {triangles: [], parentage: [], between: []};
+
 	if (partition.length === 0) { // start by creating a partition if we have none
 		let xMax = -Infinity, xMin = Infinity;
 		let yMax = -Infinity, yMin = Infinity;

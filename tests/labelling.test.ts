@@ -2,8 +2,22 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {findOpenSpotOnArc, resamplePath} from "../source/map/labeling.js";
+import {chooseLabelLocation, findOpenSpotOnArc, resamplePath} from "../source/map/labeling.js";
 import {endpoint} from "../source/utilities/coordinates.js";
+
+
+describe("chooseLabelLocation", () => {
+	const shape = [
+		{type: 'M', args: [0, 0]},
+		{type: 'L', args: [0, 1]},
+		{type: 'L', args: [10, 1]},
+		{type: 'L', args: [10, 0]},
+		{type: 'L', args: [0, 0]},
+	];
+	test("normal", () => {
+		expect(() => chooseLabelLocation(shape, 10)).not.toThrow();
+	});
+});
 
 
 describe("resamplePath", () => {
