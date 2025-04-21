@@ -337,11 +337,6 @@ export class Chart {
 		styleSheet.innerHTML = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; }';
 		svg.appendChild(styleSheet);
 
-		// add a layer for all the map data
-		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-		g.setAttribute('id', 'generated-map');
-		svg.appendChild(g);
-
 		this.testTextSize = this.dimensions.diagonal/50; // mm
 		this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 		this.testText.setAttribute('class', 'map-label');
@@ -355,7 +350,7 @@ export class Chart {
 			rectangle.setAttribute('width', `${this.dimensions.width}`);
 			rectangle.setAttribute('height', `${this.dimensions.height}`);
 			rectangle.setAttribute('style', 'fill: red; stroke: black; stroke-width: 10px');
-			g.appendChild(rectangle);
+			svg.appendChild(rectangle);
 		}
 
 		// decide what color the rivers will be
@@ -424,11 +419,12 @@ export class Chart {
 			for (let i = 0; i < 14; i ++) {
 				this.fill(
 					filterSet(surface.tiles, n => n.plateIndex === i),
-					g, COUNTRY_COLORS[i], Layer.GEO);
+					svg, COUNTRY_COLORS[i], Layer.GEO);
 			}
 		}
 		else if (color === 'physical') {
 			// color the land by biome
+			const g = Chart.createSVGGroup(svg, "biomes");
 			for (const biome of BIOME_COLORS.keys()) {
 				if (biome === Biome.LAKE)
 					this.fill(
@@ -444,6 +440,7 @@ export class Chart {
 			// color the land by country
 			if (world === null)
 				throw new Error("this Chart was asked to color land politicly but the provided World was null");
+			const g = Chart.createSVGGroup(svg, "countries");
 			this.fill(
 				filterSet(surface.tiles, n => !n.isWater()),
 				g, EGGSHELL, Layer.KULTUR);
@@ -473,6 +470,7 @@ export class Chart {
 		}
 		else if (color === 'heightmap') {
 			// color the land by altitude
+			const g = Chart.createSVGGroup(svg, "land-contours");
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : -Infinity;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Infinity;
@@ -485,19 +483,20 @@ export class Chart {
 			// color in the land with a uniform color
 			this.fill(
 				filterSet(surface.tiles, n => !n.isWater()),
-				g, landFill, Layer.BIO);
+				svg, landFill, Layer.BIO);
 		}
 
 		// add rivers
 		if (rivers) {
 			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR/this.scale**2;
 			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
-				g, waterStroke, 1.4, Layer.GEO);
+				svg, waterStroke, 1.4, Layer.GEO);
 		}
 
 		// color in the sea
 		if (color === 'heightmap') {
 			// color in the sea by altitude
+			const g = Chart.createSVGGroup(svg, "sea-contours");
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
 				const min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
 				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
@@ -510,13 +509,14 @@ export class Chart {
 			// color in the sea with a uniform color
 			this.fill(
 				filterSet(surface.tiles, n => n.isWater()),
-				g, waterFill, Layer.GEO);
+				svg, waterFill, Layer.GEO);
 		}
 
 		// add borders with hovertext
 		if (borders) {
 			if (world === null)
 				throw new Error("this Chart was asked to draw political borders but the provided World was null");
+			const g = Chart.createSVGGroup(svg, "borders");
 			for (const civ of world.getCivs()) {
 				// if (civ.getPopulation() > 0) {
 					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -538,10 +538,11 @@ export class Chart {
 		// trace the coasts
 		this.fill(
 			filterSet(surface.tiles, n => n.isWater()),
-			g, 'none', Layer.GEO, waterStroke, 0.7);
+			svg, 'none', Layer.GEO, waterStroke, 0.7);
 
 		// add relief shadows
 		if (shading) {
+			const g = Chart.createSVGGroup(svg, "shading");
 			this.shade(surface.vertices, g);
 		}
 
@@ -549,6 +550,7 @@ export class Chart {
 		if (civLabels) {
 			if (world === null)
 				throw new Error("this Chart was asked to label countries but the provided World was null");
+			const g = Chart.createSVGGroup(svg, "labels");
 			for (const civ of world.getCivs())
 				if (civ.getPopulation() > 0)
 					this.label(
@@ -561,13 +563,11 @@ export class Chart {
 		// add an outline to the whole thing
 		this.fill(
 			surface.tiles,
-			g, 'none', Layer.GEO, 'black', 1.4, 'miter');
+			svg, 'none', Layer.GEO, 'black', 1.4, 'miter');
 
 		// add the windrose
 		if (windrose) {
-			const windrose = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-			windrose.setAttribute('id', 'generated-map');
-			g.appendChild(windrose);
+			const windrose = Chart.createSVGGroup(svg, "compass-rose");
 
 			// decide where to put it
 			const radius = Math.min(25, 0.2*Math.min(this.dimensions.width, this.dimensions.height));
@@ -1225,6 +1225,16 @@ export class Chart {
 				{type: 'Φ', args: [s2, t0]},
 				{type: 'Λ', args: [s0, t0]},
 			];
+	}
+
+	/**
+	 * create a new <g> element under the given parent
+	 */
+	static createSVGGroup(parent: SVGElement, id: string): SVGGElement {
+		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		g.setAttribute('id', id);
+		parent.appendChild(g);
+		return g;
 	}
 }
 
