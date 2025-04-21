@@ -59,21 +59,21 @@ function activateInputSpinner(inputGroup, options) {
     var stepMax = null
     var decimals = null
     var numberFormat = null
+    var defaultValue = input.value
 
     // collect the attributes from the input element
     updateAttributes()
 
-    var value = parseFloat(input.getAttribute("value"))
     var boostStepsCount = 0
 
     // add a listener so that the attributes get updated on mutation
     var observer = new MutationObserver(function () {
         updateAttributes()
-        setValue(value)
+        setValue(input.value)
     })
     observer.observe(input, {attributes: true})
 
-    setValue(value)
+    setValue(input.value)
 
     // add listeners so that the value gets reformatted every time the user defocuses it
     input.addEventListener("change", function (event) {
@@ -93,13 +93,12 @@ function activateInputSpinner(inputGroup, options) {
 
     function setValue(newValue) {
         if (isNaN(newValue) || newValue === "") {
-            newValue = min
+            newValue = defaultValue
         }
         newValue = parseFloat(newValue)
         newValue = Math.min(Math.max(newValue, min), max)
         newValue = Math.round(newValue * Math.pow(10, decimals)) / Math.pow(10, decimals)
         input.value = numberFormat.format(newValue)
-        value = newValue
     }
 
     function dispatchEvent(element, type) {
@@ -145,10 +144,10 @@ function activateInputSpinner(inputGroup, options) {
     }
 
     function calcStep(step) {
-        if (isNaN(value)) {
-            value = 0
+        if (isNaN(input.value)) {
+            input.value = defaultValue
         }
-        setValue(Math.round(value / step) * step + step)
+        setValue(Math.round(input.value / step) * step + step)
         dispatchEvent(input, "input")
         dispatchEvent(input, "change")
     }
