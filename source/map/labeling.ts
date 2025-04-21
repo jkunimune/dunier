@@ -115,7 +115,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 	let iterations = 0;
 	const candidates: number[][] = []; // next collect candidate paths along which you might fit labels
 	let minClearance = centers[argmax].r;
-	while (candidates.length < RALF_NUM_CANDIDATES) {
+	while (candidates.length < RALF_NUM_CANDIDATES && minClearance >= centers[argmin].r) {
 		minClearance /= 1.4; // gradually loosen a minimum clearance filter, until it is slitely smaller than the smallest font size
 		const minLength = 2*minClearance*aspectRatio;
 		const usedPoints = new Set<number>();
@@ -138,7 +138,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 				break; // reduce the required clearance and try again
 		}
 		iterations ++;
-		if (iterations > 1000) {
+		if (iterations > 200) {
 			console.error(pathToString(path));
 			throw new Error("this has gone on too long.  something's messed up about this polygon and I can't label it.");
 		}
