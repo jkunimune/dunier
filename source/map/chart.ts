@@ -142,8 +142,7 @@ export class Chart {
 	public readonly dimensions: Dimensions;
 	/** the map scale in mm/km */
 	public readonly scale: number;
-	private testText: SVGTextElement;
-	private testTextSize: number;
+	private readonly testText: HTMLDivElement;
 	private labelIndex: number;
 
 
@@ -155,10 +154,12 @@ export class Chart {
 	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 * @param area the desired bounding box area in mm²
+	 * @param testText an invisible element that can be used to measure string lengths
 	 */
 	constructor(
 		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
 		orientationName: string, rectangularBounds: boolean, area: number,
+		testText: HTMLDivElement=null,
 	) {
 		// convert the orientation name into a number of degrees
 		if (orientationName === 'north')
@@ -300,6 +301,7 @@ export class Chart {
 			this.dimensions.bottom + margin,
 		);
 
+		this.testText = testText;
 		this.labelIndex = 0;
 	}
 
@@ -336,12 +338,6 @@ export class Chart {
 		const styleSheet = document.createElementNS('http://www.w3.org/2000/svg', 'style');
 		styleSheet.innerHTML = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; }';
 		svg.appendChild(styleSheet);
-
-		this.testTextSize = this.dimensions.diagonal/50; // mm
-		this.testText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-		this.testText.setAttribute('class', 'map-label');
-		this.testText.setAttribute('style', `font-size: ${this.testTextSize}px;`); // in SVG, using the unit 'px' causes the measurement to be interpreted as millimeters.
-		svg.appendChild(this.testText);
 
 		if (SHOW_BACKGROUND) {
 			const rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -701,13 +697,14 @@ export class Chart {
 	 *                    the region with this font size, no label will be placed.
 	 */
 	label(tiles: Tile[], label: string, svg: SVGGElement, minFontSize: number) {
+		if (this.testText === null)
+			throw new Error("you never passed me the test text element so how am I supposed to calibrate labels?");
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
-		this.testText.textContent = '..'+label+'..';
+		this.testText.innerHTML = '..'+label+'..';
 		const testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
-		this.testText.textContent = '';
-		const svgScale = this.dimensions.width/svg.getBoundingClientRect().width;
-		const lengthPerSize = testTextLength*svgScale/this.testTextSize;
+		this.testText.innerHTML = '';
+		const lengthPerSize = testTextLength/20;
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
 		const aspectRatio = lengthPerSize/heightPerSize;
 
