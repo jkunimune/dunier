@@ -40,8 +40,8 @@ export function transformInput(φMin: number, λMin: number, segments: PathSegme
 	const output: PathSegment[] = [];
 	for (const segment of segments) {
 		let [φ, λ] = segment.args;
-		φ = localizeInRange(φ, φMin, φMin + 2*π); // snap the latitude into the right domain
-		λ = localizeInRange(λ, λMin, λMin + 2*π); // snap the longitude into the right domain
+		φ = localizeInRange(φ, φMin, φMin + 2*π, true); // snap the latitude into the right domain
+		λ = localizeInRange(λ, λMin, λMin + 2*π, true); // snap the longitude into the right domain
 		output.push({type: segment.type, args: [φ, λ]});
 	}
 	return output;

@@ -11,7 +11,7 @@ import {
 	legendreP6,
 	linterp,
 	localizeInRange, longestShortestPath, Matrix, pathToString,
-	tanh, union
+	tanh, union, weightedAverage
 } from "../source/utilities/miscellaneus.js";
 
 describe("argmax()", () => {
@@ -202,6 +202,19 @@ describe("cumulativeIntegral()", () => {
 		const [x, y] = cumulativeIntegral((_) => 10, 1, 1, 1, .01, 1e-17);
 		expect(x).toEqual([1]);
 		expect(y).toEqual([0]);
+	});
+});
+
+describe("weightedAverage()", () => {
+	test("uniform weight", () => {
+		expect(
+			weightedAverage((x) => x, (_) => 10, 1, 3, .1, .01, 1e-17)
+		).toBeCloseTo(2);
+	});
+	test("step weight", () => {
+		expect(
+			weightedAverage((x) => x, (x) => x < 2 ? 0 : 10, 1, 3, .1, .01, 1e-17)
+		).toBeCloseTo(2.5);
 	});
 });
 

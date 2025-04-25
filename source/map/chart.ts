@@ -5,7 +5,7 @@
 import {Domain, Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
 import {
 	filterSet, localizeInRange,
-	pathToString,
+	pathToString, weightedAverage,
 } from "../utilities/miscellaneus.js";
 import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
@@ -37,6 +37,7 @@ const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_FACTOR = 6000; // the average scaled watershed area needed to display a river (mm²)
 const BORDER_SPECIFY_THRESHOLD = 0.51;
 const MAP_PRECISION = 10; // max segment length in mm
+const GRATICULE_SPACING = 50; // typical spacing between lines of latitude or longitude in mm
 
 const WHITE = '#FFFFFF';
 const EGGSHELL = '#FAF2E4';
@@ -134,14 +135,22 @@ enum Layer {
 export class Chart {
 	private readonly projection: MapProjection;
 	private readonly orientation: number;
-	/** maximum extent of the mapped region (radians) */
+	private readonly φMin: number;
+	private readonly φMax: number;
+	private readonly λMin: number;
+	private readonly λMax: number;
+	/** bounding box of the mapped region (radians) */
 	private readonly geoEdges: PathSegment[];
-	/** maximum extent of the unrotated and unscaled map area (km) */
+	/** bounding box of the unrotated and unscaled map area (km) */
 	private readonly mapEdges: PathSegment[];
 	/** maximum extent of the map, including margins (mm) */
 	public readonly dimensions: Dimensions;
-	/** the map scale in mm/km */
+	/** the average map scale in mm/km */
 	public readonly scale: number;
+	/** the average spacing between parallels in mm/radian */
+	public readonly latitudeScale: number;
+	/** the average spacing between meridians in mm/radian */
+	public readonly longitudeScale: number;
 	private readonly testText: HTMLDivElement;
 	private labelIndex: number;
 
@@ -209,6 +218,17 @@ export class Chart {
 		let {φMin, φMax, λMin, λMax} = Chart.chooseGeoBounds(
 			transformedRegionOfInterest,
 			this.projection);
+
+		// use those bounds to calculate the average scale
+		this.latitudeScale = weightedAverage(
+			φ => surface.ds_dφ(φ),
+			φ => surface.ds_dφ(φ)*surface.rz(φ).r,
+			φMin, φMax, 1, .01, 1e-2);
+		this.longitudeScale = weightedAverage(
+			φ => surface.rz(φ).r,
+			φ => surface.ds_dφ(φ)*surface.rz(φ).r,
+			φMin, φMax, 1, .01, 1e-2);
+
 		// if we want a rectangular map
 		if (rectangularBounds) {
 			// expand the latitude bounds as much as possible without self-intersection, assuming no latitude bounds
@@ -233,21 +253,13 @@ export class Chart {
 		// if it's a Bonne projection, re-generate it with these new bounds in case you need to adjust the curvature
 		if (projectionName === 'bonne')
 			this.projection = MapProjection.bonne(
-				surface, φMin, centralParallel, φMax, centralMeridian, λMax - λMin);
+				surface, φMin, centralParallel, φMax, centralMeridian, λMax - λMin); // the only thing that changes here is projection.yCenter
 
-		// establish the bounds of the map
-		let {xRight, xLeft, yBottom, yTop} = Chart.chooseMapBounds(
-			transformedRegionOfInterest,
-			this.projection);
-		// if we want a wedge-shaped map
-		if (!rectangularBounds) {
-			// expand the cartesian bounds – ideally we shouldn't see them
-			xRight = Math.max(1.4*xRight, -1.4*xLeft);
-			xLeft = -xRight;
-			const yMargin = 0.2*(yBottom - yTop);
-			yTop = yTop - yMargin;
-			yBottom = yBottom + yMargin;
-		}
+		// save the geographic bounds to this object
+		this.φMin = φMin;
+		this.φMax = φMax;
+		this.λMin = λMin;
+		this.λMax = λMax;
 
 		// set the geographic limits of the mapped area
 		if (λMax - λMin === 2*Math.PI && this.projection.wrapsAround())
@@ -261,6 +273,21 @@ export class Chart {
 			];
 		else
 			this.geoEdges = Chart.rectangle(φMax, λMax, φMin, λMin, true);
+
+		// establish the Cartesian bounds of the map
+		let {xRight, xLeft, yBottom, yTop} = Chart.chooseMapBounds(
+			transformedRegionOfInterest,
+			this.projection);
+
+		// if we want a wedge-shaped map
+		if (!rectangularBounds) {
+			// expand the cartesian bounds – ideally we shouldn't see them
+			xRight = Math.max(1.4*xRight, -1.4*xLeft);
+			xLeft = -xRight;
+			const yMargin = 0.2*(yBottom - yTop);
+			yTop = yTop - yMargin;
+			yBottom = yBottom + yMargin;
+		}
 
 		// the extent of the geographic region will always impose some Cartesian limits; compute those now.
 		const mapBounds = calculatePathBounds(applyProjectionToPath(this.projection, this.geoEdges, Infinity));
@@ -286,6 +313,8 @@ export class Chart {
 
 		// determine the appropriate scale to make this have the correct area
 		this.scale = Math.sqrt(area/this.dimensions.area);
+		this.longitudeScale *= this.scale;
+		this.latitudeScale *= this.scale;
 		this.dimensions = new Dimensions(
 			this.scale*this.dimensions.left,
 			this.scale*this.dimensions.right,
@@ -540,6 +569,31 @@ export class Chart {
 		if (shading) {
 			const g = Chart.createSVGGroup(svg, "shading");
 			this.shade(surface.vertices, g);
+		}
+
+		// add the graticule
+		if (graticule) {
+			const graticule = Chart.createSVGGroup(svg, "graticule");
+			graticule.style.fill = "none";
+			graticule.style.stroke = borderStroke;
+			graticule.style.strokeWidth = "0.35";
+			let Δφ = GRATICULE_SPACING/this.latitudeScale;
+			Δφ = Math.PI/2/Math.max(1, Math.round(Math.PI/2/Δφ));
+			const φInit = Math.ceil(this.φMin/Δφ)*Δφ;
+			for (let φ = φInit; φ <= this.φMax; φ += Δφ) {
+				this.draw(this.projectPath([
+					{type: 'M', args: [φ, this.λMin]},
+					{type: 'Φ', args: [φ, this.λMax]},
+				], false), graticule);
+			}
+			let Δλ = GRATICULE_SPACING/this.longitudeScale;
+			Δλ = Math.PI/2/Math.max(1, Math.round(Math.PI/2/Δλ));
+			const λInit = Math.ceil((this.λMin - this.projection.λCenter)/Δλ)*Δλ + this.projection.λCenter;
+			for (let λ = λInit; λ <= this.λMax; λ += Δλ)
+				this.draw(this.projectPath([
+					{type: 'M', args: [this.φMin, λ]},
+					{type: 'Λ', args: [this.φMax, λ]},
+				], false), graticule);
 		}
 
 		// label everything

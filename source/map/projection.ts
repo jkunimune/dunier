@@ -28,6 +28,7 @@ export class MapProjection {
 	private readonly dx_dλRef: number[];
 	private readonly yCenter: number;
 	public readonly λCenter: number;
+	public readonly φStandard: number;
 	public readonly φMin: number;
 	public readonly φMax: number;
 	public readonly λMin: number;
@@ -37,13 +38,14 @@ export class MapProjection {
 	/**
 	 * define a pseudoconic map projection with lookup tables for the y coordinate and x scale along the prime meridian.
 	 * @param surface the surface on which points exist before we project them
+	 * @param φStandard a representative latitude that appears near the middle of this map
 	 * @param φRef the latitudes at which y and dx/dλ are defined (must be evenly spaced)
 	 * @param yRef the y coordinate of the prime meridian at each reference latitude (must all be finite)
 	 * @param dx_dλRef the horizontal scale along each reference latitude (equal to the parallel's length divided by 2π)
 	 * @param yCenter the center of the parallels if the parallels are concentric arcs, or ±Infinity if the parallels are straight lines
 	 * @param λCenter the central meridian
 	 */
-	private constructor(surface: Surface, φRef: number[], yRef: number[], dx_dλRef: number[], yCenter: number, λCenter: number) {
+	private constructor(surface: Surface, φStandard: number, φRef: number[], yRef: number[], dx_dλRef: number[], yCenter: number, λCenter: number) {
 		// check the inputs
 		if (φRef.length !== yRef.length || yRef.length !== dx_dλRef.length)
 			throw new Error("these inputs' lengths don't match.");
@@ -66,6 +68,7 @@ export class MapProjection {
 		this.dx_dλRef = dx_dλRef;
 		this.yCenter = yCenter;
 		this.λCenter = λCenter;
+		this.φStandard = φStandard;
 
 		this.φMin = this.φRef[0];
 		this.φMax = this.φRef[this.φRef.length - 1];
@@ -304,7 +307,7 @@ export class MapProjection {
 			φ.push((i < resolution) ? φMin + i/resolution*(φMax - φMin) : φMax);
 			R.push(surface.rz(φ[i]).r);
 		}
-		return new MapProjection(surface, φ, R.map((x) => -x), R, 0, λStd);
+		return new MapProjection(surface, (φMin + φMax)/2, φ, R.map((x) => -x), R, 0, λStd);
 	}
 
 	/**
@@ -342,7 +345,7 @@ export class MapProjection {
 			if (meridianLength > circumference)
 				yCenter = yRef[i] + (yCenter - yRef[i])*meridianLength/circumference;
 		}
-		return new MapProjection(surface, φRef, yRef, dx_dλRef, yCenter, λStd);
+		return new MapProjection(surface, φStd, φRef, yRef, dx_dλRef, yCenter, λStd);
 	}
 
 	/**
@@ -419,7 +422,7 @@ export class MapProjection {
 		for (let i = 0; i < φ.length; i ++)
 			dx_dλRef.push(y[i]*n);
 
-		return new MapProjection(surface, φ, y, dx_dλRef, 0, λStd);
+		return new MapProjection(surface, φStd, φ, y, dx_dλRef, 0, λStd);
 	}
 
 	/**
@@ -448,7 +451,7 @@ export class MapProjection {
 			φ.push(northernΦ[i]);
 			y.push(Math.max(northernY[i], -dx_dλ*1e10));
 		}
-		return new MapProjection(surface, φ, y, Array(φ.length).fill(dx_dλ), Infinity, λStd);
+		return new MapProjection(surface, φStd, φ, y, Array(φ.length).fill(dx_dλ), Infinity, λStd);
 	}
 
 	/**
@@ -475,7 +478,7 @@ export class MapProjection {
 		const xRef = [];
 		for (let i = 0; i < φRef.length; i ++)
 			xRef.push(x(φRef[i]));
-		return new MapProjection(surface, φRef, yRef, xRef, Infinity, λStd);
+		return new MapProjection(surface, (φMin + φMax)/2, φRef, yRef, xRef, Infinity, λStd);
 	}
 
 	/**

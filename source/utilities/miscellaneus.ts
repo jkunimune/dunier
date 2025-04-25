@@ -118,12 +118,23 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 
 /**
  * shift a number by hole multiples of (max - min) to put it in the range [min, max),
- * assuming max > min.  if not, it will automatically reverse them.
+ * assuming max > min.
+ * @param value the number, which may or may not be in range
+ * @param min one end of the range (always inclusive)
+ * @param max the other end of the range (only inclusive if you pass inclusive: true)
+ * @param inclusive if this is true, it will put it in the range [min, max].
+ *                  that is, multiples of the boundary on the high side will return max, not min.
  */
-export function localizeInRange(value: number, min: number, max: number): number {
+export function localizeInRange(value: number, min: number, max: number, inclusive=false): number {
+	if (max <= min)
+		throw new Error(`you can't localize into this range because its invalid because ${min} should be less than ${max}.`);
 	const anser = value - Math.floor((value - min)/(max - min))*(max - min);
-	if (Math.abs(anser - max)%(max - min) < 2*Number.EPSILON*(max - min))
-		return min; // this is to make it resistant to roundoff error
+	if (Math.abs(anser - max)%(max - min) < 2*Number.EPSILON*(max - min)) { // this is to make it resistant to roundoff error
+		if (inclusive && value > (min + max)/2)
+			return max;
+		else
+			return min;
+	}
 	else
 		return anser;
 }
@@ -144,8 +155,8 @@ export function isBetween(value: number, a: number, b: number): boolean {
 /**
  * find the antiderivative of the given function
  * @param f the function to integrate
- * @param xStart the starting value for the dependent variable
- * @param xEnd the value of the dependent variable at which to stop
+ * @param xStart the starting value for the independent variable
+ * @param xEnd the value of the independent variable at which to stop
  * @param maxStepSize the initial step size and largest allowable spacing between returned values
  * @param minStepSize the smallest allowable spacing between returned values
  * @param relTolerance the largest permissible estimated error to the slope at any given step
@@ -201,6 +212,28 @@ export function cumulativeIntegral(
 	}
 	// return the arrays when you're completely done
 	return [xFinalized, yFinalized];
+}
+
+/**
+ * find the average value of value(), weighted by weight(), over the interval [xStart, xEnd].
+ * @param value the function to integrate
+ * @param weight the function with which to weight the average
+ * @param xStart the starting value for the independent variable
+ * @param xEnd the value of the independent variable at which to stop
+ * @param maxStepSize the initial step size and largest allowable spacing between returned values
+ * @param minStepSize the smallest allowable spacing between returned values
+ * @param relTolerance the largest permissible estimated error to the slope at any given step
+ */
+export function weightedAverage(
+	value: (x: number) => number, weight: (x: number) => number, xStart: number, xEnd: number,
+	maxStepSize: number, minStepSize: number, relTolerance: number): number {
+	const numerator = cumulativeIntegral(
+		x => value(x)*weight(x), xStart, xEnd,
+		maxStepSize, minStepSize, relTolerance)[1];
+	const denominator = cumulativeIntegral(
+		x => weight(x), xStart, xEnd,
+		maxStepSize, minStepSize, relTolerance)[1];
+	return numerator[numerator.length - 1]/denominator[denominator.length - 1];
 }
 
 /**
