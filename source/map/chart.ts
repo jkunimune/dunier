@@ -13,7 +13,7 @@ import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
 import {assert_φλ, PathSegment, ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
-import {ARABILITY, Biome} from "../generation/terrain.js";
+import {Biome} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
 	convertPathClosuresToZ,
@@ -35,7 +35,7 @@ const GREEBLE_SCALE = 1; // the smallest edge lengths to show (mm)
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_FACTOR = 6000; // the average scaled watershed area needed to display a river (mm²)
-const BORDER_SPECIFY_THRESHOLD = 0.51;
+const BORDER_SPECIFY_THRESHOLD = 0.29;
 const MAP_PRECISION = 10; // max segment length in mm
 const GRATICULE_SPACING = 50; // typical spacing between lines of latitude or longitude in mm
 
@@ -1080,7 +1080,7 @@ export class Chart {
 			return true;
 		else if (layer === Layer.BIO)
 			return false;
-		else if (ARABILITY.get(edge.tileL.biome) + ARABILITY.get(edge.tileR.biome) < BORDER_SPECIFY_THRESHOLD)
+		else if (edge.tileL.arableArea/edge.tileL.getArea() + edge.tileR.arableArea/edge.tileR.getArea() < BORDER_SPECIFY_THRESHOLD)
 			return false;
 		else
 			return true;
