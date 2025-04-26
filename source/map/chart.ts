@@ -63,6 +63,7 @@ const BIOME_COLORS = new Map([
 	[Biome.PLAINS,    '#D9E88A'],
 	[Biome.DESERT,    '#FCF0B7'],
 	[Biome.TUNDRA,    '#FFFFFF'],
+	[Biome.DRY_TUNDRA,'#FFFFFF'],
 	[Biome.ICE,       '#FFFFFF'],
 ]);
 

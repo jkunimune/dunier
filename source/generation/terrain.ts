@@ -60,6 +60,7 @@ export enum Biome {
 	OCEAN,
 	LAKE,
 	ICE,
+	DRY_TUNDRA,
 	TUNDRA,
 	TAIGA,
 	FOREST,
@@ -85,6 +86,7 @@ export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.PLAINS,    3.0],
 	[Biome.DESERT,    0.1],
 	[Biome.TUNDRA,    0.3],
+	[Biome.DRY_TUNDRA, 0.1],
 	[Biome.ICE,       0.1],
 ]);
 export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
@@ -97,6 +99,7 @@ export const ARABILITY = new Map([ // terrain modifiers for civ spawning and pop
 	[Biome.PLAINS,    0.30],
 	[Biome.DESERT,    0.00],
 	[Biome.TUNDRA,    0.03],
+	[Biome.DRY_TUNDRA, 0.00],
 	[Biome.ICE,       0.00],
 ]);
 export const RIVER_UTILITY_THRESHOLD = 1e6; // [km^2] size of watershed needed to produce a river that supports large cities
@@ -568,10 +571,14 @@ function setBiomes(surf: Surface): void {
 		else if (tile.biome === null) {
 			if (tile.temperature < RIVER_THRESH)
 				tile.biome = Biome.ICE;
+			else if (tile.temperature > DESERT_SLOPE*tile.rainfall + DESERT_INTERCEPT) {
+				if (tile.temperature < TUNDRA_TEMP)
+					tile.biome = Biome.DRY_TUNDRA;
+				else
+					tile.biome = Biome.DESERT;
+			}
 			else if (tile.temperature < TUNDRA_TEMP)
 				tile.biome = Biome.TUNDRA;
-			else if (tile.temperature > DESERT_SLOPE*tile.rainfall + DESERT_INTERCEPT)
-				tile.biome = Biome.DESERT;
 			else if (tile.temperature < TAIGA_TEMP)
 				tile.biome = Biome.TAIGA;
 			else if (tile.temperature > FLASH_TEMP)
