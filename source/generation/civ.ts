@@ -64,7 +64,7 @@ export class Civ {
 		this.arableArea = 0;
 
 		this.capital = capital;
-		if (world.currentRuler(capital) === null) // if this is a wholly new civilization
+		if (capital.government === null) // if this is a wholly new civilization
 			capital.culture = new Culture(null, capital, this, rng.next() + 1); // make up a proto-culture (offset the seed to increase variability)
 		this.conquer(capital, null);
 	}
@@ -76,7 +76,7 @@ export class Civ {
 	 * @param from the place from which it was acquired
 	 */
 	conquer(tile: Tile, from: Tile | null) {
-		const loser = this.world.currentRuler(tile);
+		const loser = tile.government;
 
 		this._conquer(tile, from, loser);
 
@@ -103,7 +103,7 @@ export class Civ {
 	 * do all the parts of conquer that happen recursively
 	 */
 	_conquer(tile: Tile, from: Tile | null, loser: Civ) {
-		this.world.politicalMap.set(tile, this);
+		tile.government = this;
 		this.tileTree.set(tile, {parent: from, children: new Set()}); // add it to this.tileTree
 		if (from !== null)
 			this.tileTree.get(from).children.add(tile); // add it to from's children
@@ -128,12 +128,12 @@ export class Civ {
 		if (!this.tileTree.has(tile))
 			throw new Error("You tried to make a Civ lose a tile that it does not have.");
 		for (const lostLand of this.getAllChildrenOf(tile)) { // start by going thru and updating the border map
-			if (this === this.world.politicalMap.get(lostLand)) // and update the global political map
-				this.world.politicalMap.delete(lostLand);
+			if (this === lostLand.government) // and update the global political map
+				lostLand.government = null;
 		}
 		for (const lostLand of this.getAllChildrenOf(tile)) { // adjust the border map
 			for (const neighbor of lostLand.neighbors.keys()) {
-				if (this === this.world.politicalMap.get(neighbor)) {
+				if (this === neighbor.government) {
 					if (!this.border.has(neighbor))
 						this.border.set(neighbor, new Set<Tile>());
 					this.border.get(neighbor).add(lostLand);
@@ -196,7 +196,7 @@ export class Civ {
 	 * @param end the place being invaded
 	 */
 	estimateInvasionTime(start: Tile, end: Tile) {
-		const invadee = this.world.currentRuler(end);
+		const invadee = end.government;
 		const momentum = this.getStrength(invadee, end);
 		const resistance = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
 		const distance = end.getArea()/start.neighbors.get(end).getLength();

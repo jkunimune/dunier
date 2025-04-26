@@ -10,6 +10,7 @@ import {ΦΛPoint, XYPoint, Point} from "../utilities/coordinates.js";
 import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../utilities/geometry.js";
 import {straightSkeleton} from "../utilities/straightskeleton.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
+import {Civ} from "../generation/civ.js";
 
 
 const TILE_AREA = 30000; // target area of a tile in km^2
@@ -384,13 +385,14 @@ export class Tile {
 	public biome: Biome;
 	public arableArea: number;
 	public passability: number;
-	public culture: Culture;
 	public plateIndex: number;
 	public windVelocity: Vector;
 	public downwind: Tile[];
 	public flow: number;
 	public flag: boolean;
 	private area: number;
+	public government: Civ | null;
+	public culture: Culture | null;
 
 	constructor(index: number, position: ΦΛPoint, surface: Surface) {
 		this.surface = surface;
@@ -415,6 +417,8 @@ export class Tile {
 		this.height = 0;
 		this.biome = null;
 		this.area = null;
+		this.government = null;
+		this.culture = null;
 	}
 
 	/**
@@ -456,6 +460,17 @@ export class Tile {
 			}
 		}
 		return this.area;
+	}
+
+	/**
+	 * calculate the population of this Tile.  for encapsulation purposes, I don't really want to include the
+	 * POPULATION_DENSITY prefactor, but it doesn't matter as long as you're only comparing.
+	 */
+	getNormalizedPopulation(): number {
+		if (this.government === null)
+			return 0;
+		else
+			return this.government.technology*this.arableArea;
 	}
 
 	/**

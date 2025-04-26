@@ -152,9 +152,8 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolea
 	// group them by polity
 	const adjacentCivs: Map<Civ, Set<Tile>> = new Map();
 	for (const adjacentTile of adjacentLand) {
-		let adjacentCiv;
-		if (topic.world.politicalMap.has(adjacentTile)) {
-			adjacentCiv = topic.world.politicalMap.get(adjacentTile);
+		if (adjacentTile.government !== null) {
+			const adjacentCiv = adjacentTile.government;
 			if (!adjacentCivs.has(adjacentCiv))
 				adjacentCivs.set(adjacentCiv, new Set());
 			adjacentCivs.get(adjacentCiv).add(adjacentTile);

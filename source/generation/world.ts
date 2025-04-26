@@ -30,7 +30,6 @@ export class World {
 	/** [1/y] the rate at which the apocalypse happens */
 	public readonly cataclysms: number;
 	public planet: Surface;
-	public readonly politicalMap: Map<Tile, Civ>;
 	private readonly civs: Set<Civ>;
 	private nextID: number;
 
@@ -40,7 +39,12 @@ export class World {
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
 		this.nextID = 0;
-		this.politicalMap = new Map();
+
+		// clear these variables, which may be carried over from previous Worlds
+		for (const tile of planet.tiles) {
+			tile.culture = null;
+			tile.government = null;
+		}
 	}
 
 	/**
@@ -68,7 +72,7 @@ export class World {
 	spawnCivs(rng: Random) {
 		for (const tile of this.planet.tiles) {
 			const demomultia = POPULATION_DENSITY*tile.arableArea; // TODO: implement nomads, city state leagues, and federal states.
-			const ruler = this.currentRuler(tile);
+			const ruler = tile.government;
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(CIVILIZATION_RATE*TIME_STEP*demomultia))
 					this.civs.add(new Civ(tile, this.nextID, this, rng));
@@ -104,7 +108,7 @@ export class World {
 		}
 		while (!invasions.empty()) {
 			let {time, invader, start, end} = invasions.pop(); // as invasions finish
-			const invadee = this.currentRuler(end);
+			const invadee = end.government;
 			const invaderStrength = invader.getStrength(invadee, end);
 			const invadeeStrength = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
 			if (invader.tileTree.has(start) && !invader.tileTree.has(end) &&
@@ -137,7 +141,7 @@ export class World {
 			visibleTechnology.set(civ, civ.technology); // well, any technology they _have_, for one
 			for (const tiles of civ.border.values()) { // check our borders
 				for (const tile of tiles) {
-					const other = this.currentRuler(tile);
+					const other = tile.government;
 					if (other !== null && other.technology > visibleTechnology.get(civ)) { // if they have something we don't
 						visibleTechnology.set(civ, other.technology); // if so, we can access their technology
 					}
@@ -166,16 +170,6 @@ export class World {
 			if (civ.isDead())
 				this.civs.delete(civ); // clear out any Civs that no longer exist
 
-	}
-
-	/**
-	 * determine the current Civ of this tile
-	 */
-	currentRuler(tile: Tile): Civ {
-		if (this.politicalMap.has(tile))
-			return this.politicalMap.get(tile);
-		else
-			return null;
 	}
 
 	/**
