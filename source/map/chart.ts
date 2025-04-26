@@ -538,26 +538,15 @@ export class Chart {
 				svg, waterFill, Layer.GEO);
 		}
 
-		// add borders with hovertext
+		// add borders
 		if (borders) {
 			if (world === null)
 				throw new Error("this Chart was asked to draw political borders but the provided World was null");
 			const g = Chart.createSVGGroup(svg, "borders");
 			for (const civ of world.getCivs()) {
-				// if (civ.getPopulation() > 0) {
-					const titledG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-					const hover = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-					const text = document.createTextNode(
-						`${civ.getName().toString(style)}\n` +
-						`[${civ.getName().toString('ipa')}]`);
-					hover.appendChild(text);
-					titledG.appendChild(hover);
-					g.appendChild(titledG);
-					this.fill(
-						filterSet(civ.tileTree.keys(), n => !n.isWater()),
-						titledG,
-						'none', Layer.KULTUR, borderStroke, 0.7).setAttribute('pointer-events', 'all');
-				// }
+				this.fill(
+					filterSet(civ.tileTree.keys(), n => !n.isWater()),
+					g, 'none', Layer.KULTUR, borderStroke, 0.7).setAttribute('pointer-events', 'all');
 			}
 		}
 
