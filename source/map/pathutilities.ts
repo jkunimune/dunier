@@ -313,7 +313,12 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], doma
 					}
 				}
 				if (sectionIndex === null) { // there really should be exactly one that picks up from here
-					throw new Error(`I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`);
+					if (domain.isOnEdge(sectionEnd))
+						throw new Error(`a path section left off on the surface edge at [${sectionEnd.s}, ${sectionEnd.t}], ` +
+						                `but there's no edge here along which for it to continue.  if the surface edge is ` +
+						                `included in the edges, it _must_ be coincident with an edge.`);
+					else
+						throw new Error(`I was left hanging at [${sectionEnd.s}, ${sectionEnd.t}]`);
 				}
 				if (weHaveDrawn[sectionIndex]) // if that one has already been drawn
 					throw new Error(`how has the section starting at [${sectionEnd.s}, ${sectionEnd.t}] already been drawn? I'm on a supersection that started at ${supersectionStart.s}, ${supersectionStart.t}`); // we're done; move on randomly

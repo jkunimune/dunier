@@ -1100,14 +1100,17 @@ export class Chart {
 			throw new Error("I can't choose a map centering with an empty region of interest.");
 		const meanRadius = rSum/count;
 
-		// find the longitude with the most empty space on either side of it
+		// turn the region into a proper closed polygon in the [-π, π) domain
 		const coastline = intersection(
 			Chart.border(filterSet(regionOfInterest, tile => !tile.isWater())),
-			Chart.rectangle(surface.φMin, -Math.PI, surface.φMax, Math.PI, true),
-			new Domain(surface.φMin, surface.φMax, -Math.PI, Math.PI,
+			Chart.rectangle(
+				Math.max(surface.φMin, -Math.PI), -Math.PI,
+				Math.min(surface.φMax, Math.PI), Math.PI, true),
+			new Domain(-Math.PI, Math.PI, -Math.PI, Math.PI,
 			           (point) => surface.isOnEdge(assert_φλ(point))),
 			true,
 		);
+		// find the longitude with the most empty space on either side of it
 		let centralMeridian;
 		const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
 		for (let i = 0; i < coastline.length; i ++) {
