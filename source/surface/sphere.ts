@@ -45,6 +45,11 @@ export class Sphere extends Spheroid {
 		return new Vector(x, -z, y);
 	}
 
+	north(place: ΦΛPoint): Vector { // rotate the tangent vectors too to match the new normal
+		const {x, y, z} = super.north(place);
+		return new Vector(x, -z, y);
+	}
+
 	φλ(point: Vector): ΦΛPoint {
 		return super.φλ(new Vector(point.x, point.z, -point.y));
 	}

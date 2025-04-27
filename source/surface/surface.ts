@@ -282,6 +282,7 @@ export abstract class Surface {
 	/**
 	 * return the normalized vector pointing outward at this location. the location may be assumed
 	 * to be on this Surface.
+	 * this implementation assumes this.axis = <0, 0, 1>.  make sure you overwrite it for any other axis.
 	 */
 	normal(place: ΦΛPoint): Vector {
 		const tangent = this.tangent(place.φ);
@@ -289,6 +290,19 @@ export abstract class Surface {
 			tangent.z*Math.sin(place.λ),
 			-tangent.z*Math.cos(place.λ),
 			-tangent.r);
+	}
+
+	/**
+	 * return the normalized vector pointing along the meridian at this location. the location may be assumed
+	 * to be on this Surface.
+	 * this implementation assumes this.axis = <0, 0, 1>.  make sure you overwrite it for any other axis.
+	 */
+	north(place: ΦΛPoint): Vector {
+		const tangent = this.tangent(place.φ);
+		return new Vector(
+			tangent.r*Math.sin(place.λ),
+			-tangent.r*Math.cos(place.λ),
+			tangent.z);
 	}
 
 	/**
@@ -403,10 +417,7 @@ export class Tile {
 
 		this.pos = surface.xyz(this);
 		this.normal = surface.normal(this);
-		const northCylindrical = surface.tangent(this.φ);
-		const rHat = this.pos.minus(surface.axis.times(this.pos.dot(surface.axis))).normalized(); // the direction away from the planet's axis
-		const zHat = surface.axis;
-		this.north = rHat.times(northCylindrical.r).plus(zHat.times(northCylindrical.z));
+		this.north = surface.north(this);
 		this.east = this.north.cross(this.normal);
 
 		this.neighbors = new Map();
