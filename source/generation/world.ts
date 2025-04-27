@@ -54,14 +54,14 @@ export class World {
 	 */
 	generateHistory(year: number, rng: Random) {
 		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
-			for (const civ of this.civs)
-				if (civ.tileTree.size > 0)
-					civ.update(rng);
 			this.spawnCivs(rng); // TODO: build cities
 			this.spreadCivs(rng);
 			this.spreadIdeas();
 			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
 				this.haveCataclysm(rng);
+			for (const civ of this.civs)
+				if (civ.tileTree.size > 0)
+					civ.update(rng);
 		}
 	}
 

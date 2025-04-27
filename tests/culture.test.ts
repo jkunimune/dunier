@@ -3,8 +3,6 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 
-import {BIOME_NAMES} from "../source/generation/terrain.js";
-
 import UNPARSED_KULTUR_ASPECTS from "../resources/culture.js";
 import EN_STRINGS from "../resources/translations/en.js";
 import ES_STRINGS from "../resources/translations/es.js";
@@ -26,8 +24,8 @@ describe("culture.json", () => {
 	});
 	describe("condition classes are all defined", () => {
 		const definedClasses = [
-			"day_night_cycle", "four_seasons", "nation_state", "nomadic", "sedentary",
-			"coastal", "mountainous", ...BIOME_NAMES];
+			"day_night_cycle", "four_seasons", "nation_state", "free",
+			"coastal", "mountainous", "hot", "cold", "humid", "dry", "plains", "barren", "sandy"];
 		for (const aspect of UNPARSED_KULTUR_ASPECTS) {
 			for (const feature of aspect.features) {
 				for (const value of feature.values) {

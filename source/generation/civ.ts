@@ -65,7 +65,7 @@ export class Civ {
 
 		this.capital = capital;
 		if (capital.government === null) // if this is a wholly new civilization
-			capital.culture = new Culture(null, capital, this, rng.next() + 1); // make up a proto-culture (offset the seed to increase variability)
+			capital.culture = new Culture(null, capital, null, technology, rng.next() + 1); // make up a proto-culture (offset the seed to increase variability)
 		this.conquer(capital, null);
 	}
 
@@ -168,19 +168,22 @@ export class Civ {
 	 * @param rng the random number generator to use for the update
 	 */
 	update(rng: Random) {
+		const rulingCulture = new Culture(this.capital.culture, this.capital, null, this.technology, rng.next()); // start by updating the capital, tying it to the new homeland
 		const newKultur: Map<Lect, Culture> = new Map();
 		newKultur.set(
 			this.capital.culture.lect.macrolanguage,
-			new Culture(this.capital.culture, this.capital, this, rng.next())); // start by updating the capital, tying it to the new homeland
+			rulingCulture);
 		for (const tile of this.tileTree.keys()) { // update the culture of each tile in the empire in turn
 			if (rng.probability(TIME_STEP/MEAN_ASSIMILATION_TIME)) { // if the province fails its heritage saving throw
-				tile.culture = this.capital.culture; // its culture gets overritten
+				tile.culture = rulingCulture; // its culture gets overritten
 			}
 			else { // otherwise update it normally
-				if (!newKultur.has(tile.culture.lect.macrolanguage)) // if anyone isn't already in the thing
+				if (!newKultur.has(tile.culture.lect.macrolanguage)) { // if you encounter a culture that hasn't been updated and added to the Map yet
+					const updatedCulture = new Culture(tile.culture, tile.culture.homeland, rulingCulture, this.technology, rng.next() + 1);
 					newKultur.set(
 						tile.culture.lect.macrolanguage,
-						new Culture(tile.culture, tile.culture.homeland, this, rng.next() + 1)); // update that culture, treating it as a diaspora
+						updatedCulture); // update that culture, treating it as a diaspora
+				}
 				tile.culture = newKultur.get(tile.culture.lect.macrolanguage); // then make the assinement
 			}
 		}

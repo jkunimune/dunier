@@ -5,9 +5,8 @@
 import {Random} from "../utilities/random.js";
 import {Dialect, Lect, WordType, ProtoLang} from "../language/lect.js";
 import {Tile} from "../surface/surface.js";
-import {Civ} from "./civ.js";
 import {Name} from "../language/name.js";
-import {Biome, BIOME_NAMES} from "./terrain.js";
+import {Biome} from "./terrain.js";
 
 import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";
 
@@ -40,7 +39,7 @@ for (const {key, chance, features} of UNPARSED_KULTUR_ASPECTS) {
 		}
 		for (const {key, klas, conditions} of values) {
 			const possibleValue: FeatureValue = {
-				key: key, klas: (klas !== "none") ? klas : key, conditions: [] as Condition[],
+				key: key, klas: klas, conditions: [] as Condition[],
 			};
 			for (const conditionString of conditions) {
 				let condition; // and parse every requirement, checking if it starts with "+", "-", or "tech>"
@@ -72,44 +71,59 @@ export class Culture {
 	public readonly featureLists: (FeatureValue[] | null)[];
 	public readonly klas: Set<string>;
 	public readonly homeland: Tile;
-	public readonly government: Civ;
 	public readonly lect: Lect;
 
 	/**
 	 * base a culture off of some ancestor culture, with some changes
 	 * @param parent the proto-culture off of which this one is based
 	 * @param homeland the place that will serve as the new cultural capital
-	 * @param government the Civ that rules this people
+	 * @param ruler the Culture that is dominant over this one, or null if it owns itself
+	 * @param technology the current technology level to which these people have access
 	 * @param seed a random number seed
 	 */
-	constructor(parent: Culture | null, homeland: Tile, government: Civ, seed: number) { // TODO: check to see if this actually works, once ocean kingdoms are gon and maps are regional
+	constructor(parent: Culture | null, homeland: Tile, ruler: Culture | null, technology: number, seed: number) {
 		const rng = new Random(seed);
 		this.featureLists = [];
-		this.government = government;
 		this.homeland = homeland;
 		this.klas = new Set<string>();
 		
 		// start by assigning the deterministic cultural classes it has from its location
-		this.klas.add(BIOME_NAMES[homeland.biome]);
+		if ([Biome.JUNGLE, Biome.STEAMLAND, Biome.DESERT].includes(this.homeland.biome))
+			this.klas.add("hot");
+		if ([Biome.TAIGA, Biome.TUNDRA, Biome.DRY_TUNDRA, Biome.ICE].includes(this.homeland.biome))
+			this.klas.add("cold");
+		if ([Biome.JUNGLE, Biome.STEAMLAND].includes(this.homeland.biome))
+			this.klas.add("humid");
+		if ([Biome.DRY_TUNDRA, Biome.ICE, Biome.DESERT].includes(this.homeland.biome))
+			this.klas.add("dry");
+		if ([Biome.DRY_TUNDRA, Biome.ICE, Biome.DESERT, Biome.GRASSLAND].includes(this.homeland.biome))
+			this.klas.add("plains");
+		if ([Biome.DRY_TUNDRA, Biome.ICE, Biome.DESERT, Biome.STEAMLAND].includes(this.homeland.biome))
+			this.klas.add("barren");
+		if (this.homeland.biome === Biome.DESERT)
+			this.klas.add("sandy");
 		for (const neibor of this.homeland.neighbors.keys())
 			if (neibor.biome === Biome.OCEAN)
 				this.klas.add("coastal");
-		// TODO: define mountainousness and add class for "mountainous"
+		if (homeland.height > 3)
+			this.klas.add("mountainous"); // TODO: someday mountainousness will be independent of altitude
 		if (homeland.surface.hasDayNightCycle)
 			this.klas.add("day_night_cycle");
 		if (homeland.surface.hasSeasons(homeland.φ))
 			this.klas.add("four_seasons");
-		if (homeland === government.capital)
+		if (ruler === null)
 			this.klas.add("nation_state");
-		// TODO: have flag for nomadic and sedentary
-		
+		// there's also one deterministic class from ruler: whether they're free to be nomadic
+		if (ruler === null || ruler.klas.has("nomadic"))
+			this.klas.add("free");
+
 		if (parent === null) {
 			this.lect = new ProtoLang(rng); // create a new language from scratch
 			for (const aspect of KULTUR_ASPECTS) { // make up a whole new culture
 				if (rng.probability(aspect.chance)) {
 					const featureList = [];
 					for (const feature of aspect.features) {
-						const value = rng.choice(this.compatibleOptions(feature.possibleValues));
+						const value = rng.choice(this.compatibleOptions(feature.possibleValues, technology));
 						featureList.push(value); // pick all these things freely
 						this.klas.add(value.klas); // be sure to get note their classes to keep everything compatible
 					}
@@ -128,7 +142,7 @@ export class Culture {
 					if (rng.probability(DRIFT_RATE*KULTUR_ASPECTS[i].chance)) {
 						featureList = [];
 						for (const feature of KULTUR_ASPECTS[i].features) {
-							const featureValue = rng.choice(this.compatibleOptions(feature.possibleValues));
+							const featureValue = rng.choice(this.compatibleOptions(feature.possibleValues, technology));
 							featureList.push(featureValue); // pick all these things freely
 							this.klas.add(featureValue.klas); // be sure to get note their classes to keep everything compatible
 						}
@@ -144,8 +158,9 @@ export class Culture {
 					else {
 						featureList = parent.featureLists[i].slice();
 						for (let j = 0; j < KULTUR_ASPECTS[i].features.length; j ++) {
-							if (!this.isCompatible(featureList[j].conditions) || rng.probability(DRIFT_RATE)) { // and occasionally
-								featureList[j] = rng.choice(this.compatibleOptions(KULTUR_ASPECTS[i].features[j].possibleValues)); // make a modificacion
+							if (!this.isCompatible(featureList[j].conditions, technology) || rng.probability(DRIFT_RATE)) { // and occasionally
+								featureList[j] = rng.choice(this.compatibleOptions(
+									KULTUR_ASPECTS[i].features[j].possibleValues, technology)); // make a modificacion
 								this.klas.add(featureList[j].klas);
 							}
 							else {
@@ -162,16 +177,17 @@ export class Culture {
 	/**
 	 * return the list of valid options for this cultural feature
 	 * @param options the Options from which to choose
+	 * @param technology the current available technology level
 	 */
-	private compatibleOptions(options: FeatureValue[]): FeatureValue[] {
+	private compatibleOptions(options: FeatureValue[], technology: number): FeatureValue[] {
 		return options.filter(
-			(option: FeatureValue) => this.isCompatible(option.conditions));
+			(option: FeatureValue) => this.isCompatible(option.conditions, technology));
 	}
 
 	/**
 	 * check if this Culture is compatible with this list of stipulations
 	 */
-	private isCompatible(conditions: Condition[]): boolean {
+	private isCompatible(conditions: Condition[], technology: number): boolean {
 		for (const condition of conditions) {
 			switch (condition.type) {
 				case ConditionType.REQUIREMENT:
@@ -183,7 +199,7 @@ export class Culture {
 						return false;
 					break;
 				case ConditionType.TECH_LEVEL:
-					if (this.government.technology < (condition.value as number))
+					if (technology < (condition.value as number))
 						return false;
 			}
 		}

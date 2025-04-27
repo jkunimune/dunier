@@ -60,7 +60,7 @@ const BIOME_COLORS = new Map([
 	[Biome.FOREST,    '#B0C797'],
 	[Biome.TAIGA,     '#9FE0B0'],
 	[Biome.STEAMLAND, '#A1A17E'],
-	[Biome.PLAINS,    '#D9E88A'],
+	[Biome.GRASSLAND, '#D9E88A'],
 	[Biome.DESERT,    '#FCF0B7'],
 	[Biome.TUNDRA,    '#FFFFFF'],
 	[Biome.DRY_TUNDRA,'#FFFFFF'],

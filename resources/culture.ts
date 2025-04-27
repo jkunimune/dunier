@@ -1,5 +1,15 @@
 export default [
   {
+    "key": "type", "chance": 1.0, "features": [
+      {
+        "key": "type", "newWord": false, "values": [
+          { "key": "nomadic", "klas": "nomadic", "conditions": ["+plains", "+free"] },
+          { "key": "sedentary", "klas": "sedentary", "conditions": [] }
+        ]
+      }
+    ]
+  },
+  {
     "key": "skill", "chance": 1.0, "features": [
       {
         "key": "skill", "newWord": true, "values": [
@@ -35,7 +45,7 @@ export default [
           { "key": "glassworking", "klas": "none", "conditions": ["tech>-2500"] },
           { "key": "fireworks", "klas": "none", "conditions": ["tech>1110"] },
           { "key": "horseback", "klas": "none", "conditions": [] },
-          { "key": "elephant", "klas": "none", "conditions": ["+jungle", "+plains"] },
+          { "key": "elephant", "klas": "none", "conditions": ["-cold", "-barren"] },
           { "key": "seafaring", "klas": "none", "conditions": ["tech>-2100", "+coastal"] },
           { "key": "flying", "klas": "none", "conditions": ["tech>1903"] },
           { "key": "cinema", "klas": "none", "conditions": ["tech>1888"] },
@@ -62,8 +72,8 @@ export default [
       {
         "key": "person", "newWord": false, "values": [
           { "key": "people", "klas": "none", "conditions": [] },
-          { "key": "men", "klas": "none", "conditions": [] },
-          { "key": "women", "klas": "none", "conditions": [] },
+          { "key": "men", "klas": "men", "conditions": [] },
+          { "key": "women", "klas": "women", "conditions": [] },
           { "key": "elders", "klas": "none", "conditions": [] },
           { "key": "soldiers", "klas": "none", "conditions": [] },
           { "key": "leaders", "klas": "none", "conditions": [] },
@@ -88,17 +98,17 @@ export default [
           { "key": "cape", "klas": "fabric", "conditions": [] },
           { "key": "tunic", "klas": "fabric", "conditions": [] },
           { "key": "belt", "klas": "fabric", "conditions": [] },
-          { "key": "neckerchief", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "pants", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "sleeve", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "scarf", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "headscarf", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "shawl", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "coat", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "robe", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "dress", "klas": "fabric", "conditions": ["-jungle", "-steamland"] },
-          { "key": "chestwrap", "klas": "fabric", "conditions": ["-tundra", "-taiga"] },
-          { "key": "waistwrap", "klas": "fabric", "conditions": ["-tundra", "-taiga"] },
+          { "key": "neckerchief", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "pants", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "sleeve", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "scarf", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "headscarf", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "shawl", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "coat", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "robe", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "dress", "klas": "fabric", "conditions": ["-humid"] },
+          { "key": "chestwrap", "klas": "fabric", "conditions": ["+hot"] },
+          { "key": "waistwrap", "klas": "fabric", "conditions": ["+hot"] },
           { "key": "wings", "klas": "none", "conditions": [] },
           { "key": "hat", "klas": "none", "conditions": [] },
           { "key": "big_hat", "klas": "none", "conditions": [] },
@@ -111,7 +121,7 @@ export default [
           { "key": "wig", "klas": "none", "conditions": [] },
           { "key": "earring", "klas": "none", "conditions": [] },
           { "key": "bracelet", "klas": "none", "conditions": [] },
-          { "key": "anklet", "klas": "none", "conditions": ["-tundra", "-taiga"] },
+          { "key": "anklet", "klas": "none", "conditions": ["-cold"] },
           { "key": "cord", "klas": "none", "conditions": [] },
           { "key": "eyepiece", "klas": "none", "conditions": ["tech>1100"] }
         ]
@@ -131,13 +141,13 @@ export default [
           { "key": "fluorescent", "klas": "none", "conditions": ["tech>1852"] },
           { "key": "iridescent", "klas": "none", "conditions": ["tech>698"] },
           { "key": "glowing", "klas": "none", "conditions": ["+coastal"] },
-          { "key": "intricate", "klas": "none", "conditions": [] },
+          { "key": "intricate", "klas": "none", "conditions": ["-hot"] },
           { "key": "feathered", "klas": "none", "conditions": [] },
           { "key": "sequined", "klas": "none", "conditions": [] },
-          { "key": "extravagant", "klas": "none", "conditions": [] },
+          { "key": "extravagant", "klas": "none", "conditions": ["-hot"] },
           { "key": "jeweled", "klas": "none", "conditions": [] },
-          { "key": "shelled", "klas": "none", "conditions": ["+coastal", "-tundra", "-taiga"] },
-          { "key": "pearled", "klas": "none", "conditions": ["+coastal", "-tundra", "-taiga"] },
+          { "key": "shelled", "klas": "none", "conditions": ["+coastal", "-cold"] },
+          { "key": "pearled", "klas": "none", "conditions": ["+coastal", "-cold"] },
           { "key": "decorated", "klas": "none", "conditions": [] },
           { "key": "ceremonial", "klas": "none", "conditions": [] },
           { "key": "calligraphic", "klas": "none", "conditions": [] },
@@ -145,18 +155,18 @@ export default [
           { "key": "flowered", "klas": "none", "conditions": [] },
           { "key": "belled", "klas": "none", "conditions": ["tech>-600"] },
           { "key": "pointy", "klas": "none", "conditions": [] },
-          { "key": "fur", "klas": "none", "conditions": ["-jungle", "-desert", "-steamland"] },
-          { "key": "grass", "klas": "none", "conditions": ["-desert", "-tundra"] },
-          { "key": "barkcloth", "klas": "none", "conditions": ["+fabric", "-desert", "-tundra"] },
-          { "key": "thick", "klas": "none", "conditions": ["+fabric"] },
-          { "key": "leather", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "fur", "klas": "none", "conditions": ["+cold"] },
+          { "key": "grass", "klas": "none", "conditions": ["-barren"] },
+          { "key": "barkcloth", "klas": "none", "conditions": ["+fabric", "-barren"] },
+          { "key": "thick", "klas": "none", "conditions": ["+fabric", "+cold"] },
+          { "key": "leather", "klas": "none", "conditions": ["+fabric", "-humid"] },
           { "key": "tiedyed", "klas": "none", "conditions": ["+fabric"] },
           { "key": "flowing", "klas": "none", "conditions": ["+fabric"] },
           { "key": "loose", "klas": "none", "conditions": ["+fabric"] },
-          { "key": "tight", "klas": "none", "conditions": ["+fabric", "-desert"] },
+          { "key": "tight", "klas": "none", "conditions": ["+fabric", "-sandy"] },
           { "key": "pleated", "klas": "none", "conditions": ["+fabric"] },
-          { "key": "layered", "klas": "none", "conditions": ["+fabric"] },
-          { "key": "voluminous", "klas": "none", "conditions": ["+fabric"] },
+          { "key": "layered", "klas": "none", "conditions": ["+fabric", "+cold"] },
+          { "key": "voluminous", "klas": "none", "conditions": ["+fabric", "+cold"] },
           { "key": "embroidered", "klas": "none", "conditions": ["+fabric"] },
           { "key": "patterned", "klas": "none", "conditions": ["+fabric"] },
           { "key": "aloha", "klas": "none", "conditions": ["+fabric"] }
@@ -166,13 +176,13 @@ export default [
         "key": "hair", "newWord": false, "values": [
           { "key": "short", "klas": "none", "conditions": ["-hairpin"] },
           { "key": "medium", "klas": "none", "conditions": ["-hairpin"] },
-          { "key": "long", "klas": "none", "conditions": ["-hairpin"] },
+          { "key": "long", "klas": "none", "conditions": ["-hairpin", "-men"] },
           { "key": "bushy", "klas": "none", "conditions": ["-hairpin"] },
           { "key": "bun", "klas": "none", "conditions": [] },
           { "key": "loop", "klas": "none", "conditions": [] },
-          { "key": "tail", "klas": "none", "conditions": [] },
-          { "key": "braid", "klas": "none", "conditions": [] },
-          { "key": "tails", "klas": "none", "conditions": [] },
+          { "key": "tail", "klas": "none", "conditions": ["-men"] },
+          { "key": "braid", "klas": "none", "conditions": ["-men"] },
+          { "key": "tails", "klas": "none", "conditions": ["-men"] },
           { "key": "knots", "klas": "none", "conditions": [] },
           { "key": "braids", "klas": "none", "conditions": [] },
           { "key": "elaborate", "klas": "none", "conditions": [] },
@@ -181,7 +191,7 @@ export default [
           { "key": "lateral", "klas": "none", "conditions": [] },
           { "key": "ornamented", "klas": "none", "conditions": [] },
           { "key": "sculpted", "klas": "none", "conditions": [] },
-          { "key": "sideburns", "klas": "none", "conditions": [] },
+          { "key": "sideburns", "klas": "none", "conditions": ["-women"] },
           { "key": "buzzed", "klas": "none", "conditions": ["-hairpin", "tech>1900"] },
           { "key": "greased", "klas": "none", "conditions": ["tech>1000"] },
           { "key": "colorful", "klas": "none", "conditions": ["tech>1850"] }
@@ -209,16 +219,16 @@ export default [
           { "key": "chewy", "klas": "none", "conditions": [] },
           { "key": "dry", "klas": "none", "conditions": [] },
           { "key": "liquid", "klas": "none", "conditions": [] },
-          { "key": "hot", "klas": "none", "conditions": ["-jungle", "-desert", "-steamland"] },
-          { "key": "cold", "klas": "none", "conditions": ["tech>1911", "-tundra", "-taiga"] }
+          { "key": "hot", "klas": "none", "conditions": ["-hot"] },
+          { "key": "cold", "klas": "none", "conditions": ["tech>1911", "-cold"] }
         ]
       },
       {
         "key": "base", "newWord": true, "values": [
-          { "key": "cereal", "klas": "none", "conditions": [] },
-          { "key": "rice", "klas": "none", "conditions": ["-tundra"] },
-          { "key": "tuber", "klas": "none", "conditions": [] },
-          { "key": "corn", "klas": "none", "conditions": ["-tundra"] },
+          { "key": "cereal", "klas": "none", "conditions": ["-cold"] },
+          { "key": "rice", "klas": "none", "conditions": ["-dry"] },
+          { "key": "tuber", "klas": "none", "conditions": ["+cold"] },
+          { "key": "corn", "klas": "none", "conditions": ["+plains"] },
           { "key": "meat", "klas": "none", "conditions": [] },
           { "key": "fish", "klas": "none", "conditions": [] },
           { "key": "fruit", "klas": "none", "conditions": [] },
@@ -260,7 +270,7 @@ export default [
       },
       {
         "key": "effect", "newWord": true, "values": [
-          { "key": "leaf", "klas": "none", "conditions": ["-desert", "-tundra", "-plains"] },
+          { "key": "leaf", "klas": "none", "conditions": ["-plains"] },
           { "key": "seed", "klas": "none", "conditions": [] },
           { "key": "sap", "klas": "none", "conditions": [] },
           { "key": "fruit", "klas": "none", "conditions": [] }
@@ -272,26 +282,26 @@ export default [
     "key": "house", "chance": 0.3, "features": [
       {
         "key": "wall", "newWord": false, "values": [
-          { "key": "pelt", "klas": "none", "conditions": ["-sedentary"] },
-          { "key": "cloth", "klas": "none", "conditions": ["-sedentary"] },
-          { "key": "wood", "klas": "none", "conditions": ["+sedentary", "-desert", "-tundra", "-plains"] },
+          { "key": "pelt", "klas": "none", "conditions": ["+nomadic"] },
+          { "key": "cloth", "klas": "none", "conditions": ["+nomadic"] },
+          { "key": "wood", "klas": "none", "conditions": ["+sedentary", "-plains"] },
           { "key": "mud", "klas": "none", "conditions": ["+sedentary"] },
           { "key": "mudbrick", "klas": "none", "conditions": ["+sedentary"] },
           { "key": "cob", "klas": "none", "conditions": ["+sedentary"] },
           { "key": "adobe", "klas": "none", "conditions": ["+sedentary"] },
           { "key": "clay", "klas": "none", "conditions": ["+sedentary"] },
-          { "key": "snowbrick", "klas": "none", "conditions": ["+sedentary", "+tundra"] },
+          { "key": "snowbrick", "klas": "none", "conditions": ["+sedentary", "+cold", "+plains"] },
           { "key": "marble", "klas": "none", "conditions": ["+sedentary"] },
           { "key": "concrete", "klas": "none", "conditions": ["+sedentary", "tech>-800"] },
           { "key": "steel", "klas": "none", "conditions": ["+sedentary", "tech>1000"] },
-          { "key": "floating", "klas": "floating", "conditions": ["+coastal", "-tundra", "-taiga"] }
+          { "key": "floating", "klas": "floating", "conditions": ["+coastal", "-cold"] }
         ]
       },
       {
         "key": "roof", "newWord": false, "values": [
-          { "key": "none", "klas": "none", "conditions": ["-sedentary"] },
-          { "key": "thatching", "klas": "none", "conditions": ["+sedentary", "-desert", "-tundra", "-plains"] },
-          { "key": "claytile", "klas": "none", "conditions": ["+sedentary", "-tundra"] },
+          { "key": "none", "klas": "none", "conditions": ["+nomadic"] },
+          { "key": "thatching", "klas": "none", "conditions": ["+sedentary", "-plains"] },
+          { "key": "claytile", "klas": "none", "conditions": ["+sedentary", "-cold"] },
           { "key": "terracottatile", "klas": "none", "conditions": ["+sedentary"] },
           { "key": "slatetile", "klas": "none", "conditions": ["+sedentary"] },
           { "key": "metal", "klas": "none", "conditions": ["+sedentary", "tech>1840"] },
@@ -370,12 +380,12 @@ export default [
           { "key": "plants", "klas": "none", "conditions": [] },
           { "key": "animals", "klas": "none", "conditions": [] },
           { "key": "birds", "klas": "none", "conditions": [] },
-          { "key": "fish", "klas": "none", "conditions": ["-desert"] },
+          { "key": "fish", "klas": "none", "conditions": ["-dry"] },
           { "key": "serpents", "klas": "none", "conditions": [] },
           { "key": "cats", "klas": "none", "conditions": [] },
           { "key": "dragons", "klas": "none", "conditions": [] },
           { "key": "flowers", "klas": "none", "conditions": [] },
-          { "key": "trees", "klas": "none", "conditions": ["-desert", "-tundra", "-plains"] },
+          { "key": "trees", "klas": "none", "conditions": ["-plains"] },
           { "key": "rivers", "klas": "none", "conditions": [] },
           { "key": "stars", "klas": "none", "conditions": ["+day_night_cycle"] },
           { "key": "sun", "klas": "none", "conditions": [] },
@@ -494,8 +504,8 @@ export default [
           { "key": "short_horn", "klas": "none", "conditions": ["-wind_instrument"] },
           { "key": "long_horn", "klas": "none", "conditions": ["-wind_instrument"] },
           { "key": "panpipe", "klas": "none", "conditions": ["-wind_instrument"] },
-          { "key": "reed", "klas": "none", "conditions": ["-wind_instrument", "-desert", "-tundra"] },
-          { "key": "seashell_horn", "klas": "none", "conditions": ["-wind_instrument", "+coastal", "-tundra", "-taiga"] },
+          { "key": "reed", "klas": "none", "conditions": ["-wind_instrument", "-barren"] },
+          { "key": "seashell_horn", "klas": "none", "conditions": ["-wind_instrument", "+coastal", "-cold"] },
           { "key": "flute", "klas": "none", "conditions": ["-wind_instrument"] },
           { "key": "plucked", "klas": "none", "conditions": ["-string_instrument"] },
           { "key": "strummed", "klas": "none", "conditions": ["-string_instrument"] },
@@ -551,7 +561,7 @@ export default [
         "key": "condition", "newWord": true, "values": [
           { "key": "ground", "klas": "none", "conditions": ["-roll", "-push", "-pvp"] },
           { "key": "horse", "klas": "none", "conditions": [] },
-          { "key": "elephant", "klas": "none", "conditions": ["+jungle", "+plains"] },
+          { "key": "elephant", "klas": "none", "conditions": ["-cold", "-barren"] },
           { "key": "fire", "klas": "none", "conditions": [] },
           { "key": "race", "klas": "none", "conditions": [] },
           { "key": "time", "klas": "none", "conditions": ["tech>-1500"] },
@@ -565,8 +575,8 @@ export default [
           { "key": "telekinesis", "klas": "none", "conditions": [] },
           { "key": "broomstick", "klas": "none", "conditions": [] },
           { "key": "spoon", "klas": "none", "conditions": [] },
-          { "key": "skating", "klas": "none", "conditions": ["-jungle", "-desert", "-steamland", "-plains", "-forest"] },
-          { "key": "swimming", "klas": "none", "conditions": ["+coastal", "-tundra", "-taiga", "-desert", "-roll"] },
+          { "key": "skating", "klas": "none", "conditions": ["+cold", "-dry"] },
+          { "key": "swimming", "klas": "none", "conditions": ["+coastal", "-cold", "-dry", "-roll"] },
           { "key": "phone", "klas": "none", "conditions": ["tech>2000"] }
         ]
       }
@@ -649,8 +659,8 @@ export default [
           { "key": "anticle", "klas": "none", "conditions": [] },
           { "key": "creche", "klas": "none", "conditions": [] },
           { "key": "adults", "klas": "none", "conditions": [] },
-          { "key": "geophagy", "klas": "none", "conditions": ["-desert"] },
-          { "key": "eat_sand", "klas": "none", "conditions": ["+desert"] },
+          { "key": "geophagy", "klas": "none", "conditions": ["-sandy"] },
+          { "key": "eat_sand", "klas": "none", "conditions": ["+sandy"] },
           { "key": "weekday", "klas": "none", "conditions": ["-colored_clothes"] }
         ]
       }

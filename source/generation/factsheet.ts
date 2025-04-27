@@ -183,7 +183,6 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolea
 			const offset = borderCentroid.minus(topic.capital.pos);
 			const easting = offset.dot(topic.capital.east);
 			const northing = offset.dot(topic.capital.north);
-			console.log(`for a Tile located at <${topic.capital.pos.x}, ${topic.capital.pos.y}, ${topic.capital.pos.z}`)
 			const bearing = Math.atan2(northing, easting)*180/Math.PI;
 			let direction;
 			if (Math.abs(bearing) > 135)
