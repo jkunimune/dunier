@@ -11,6 +11,7 @@ import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../uti
 import {straightSkeleton} from "../utilities/straightskeleton.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {Civ} from "../generation/civ.js";
+import {POPULATION_DENSITY} from "../generation/world.js";
 
 
 const TILE_AREA = 30000; // target area of a tile in km^2
@@ -463,14 +464,13 @@ export class Tile {
 	}
 
 	/**
-	 * calculate the population of this Tile.  for encapsulation purposes, I don't really want to include the
-	 * POPULATION_DENSITY prefactor, but it doesn't matter as long as you're only comparing.
+	 * calculate the population density of this Tile.
 	 */
-	getNormalizedPopulation(): number {
+	getPopulationDensity(): number {
 		if (this.government === null)
 			return 0;
 		else
-			return this.government.technology*this.arableArea;
+			return POPULATION_DENSITY*this.government.technology*this.arableArea/this.getArea();
 	}
 
 	/**
