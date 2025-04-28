@@ -35,7 +35,7 @@ const GREEBLE_SCALE = 1; // the smallest edge lengths to show (mm)
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_FACTOR = 6000; // the average scaled watershed area needed to display a river (mm²)
-const BORDER_SPECIFY_THRESHOLD = 0.5; // the population density at which borders must be rigorusly defined
+const BORDER_SPECIFY_THRESHOLD = 0.3; // the population density at which borders must be rigorusly defined
 const MAP_PRECISION = 10; // max segment length in mm
 const GRATICULE_SPACING = 50; // typical spacing between lines of latitude or longitude in mm
 

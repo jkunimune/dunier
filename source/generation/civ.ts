@@ -199,6 +199,16 @@ export class Civ {
 	 * @param end the place being invaded
 	 */
 	estimateInvasionTime(start: Tile, end: Tile) {
+		// first, check if we surround this tile
+		let numOwnedNeighbors = 0;
+		for (const neibor of end.neighbors.keys())
+			if (this === neibor.government)
+				numOwnedNeighbors ++;
+		// if we own most of its neibors, we should gain it instantly
+		if (numOwnedNeighbors > end.neighbors.size/2)
+			return 0;
+
+		// otherwise, calculate how long it will take us to fill it with our armies
 		const invadee = end.government;
 		const momentum = this.getStrength();
 		const resistance = (invadee !== null) ? invadee.getStrength() : 0;
