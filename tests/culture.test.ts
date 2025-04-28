@@ -9,6 +9,7 @@ import ES_STRINGS from "../resources/translations/es.js";
 import JA_STRINGS from "../resources/translations/ja.js";
 import PD_STRINGS from "../resources/translations/pd.js";
 import TECHNOLOGIES from "../resources/tech_tree.js";
+import {formatNumber} from "../source/utilities/miscellaneus.js";
 
 
 const USER_STRING_SETS = [EN_STRINGS, ES_STRINGS, JA_STRINGS, PD_STRINGS];
@@ -66,4 +67,13 @@ describe("tech_tree.ts", () => {
 				expect(strings.hasOwnProperty(`factbook.tech.${technology.type}.${technology.key}`)).toBe(true);
 			});
 	}
+});
+
+describe("format", () => {
+	test("six digits", () => {
+		expect(formatNumber(123456)).toEqual("123 500");
+	});
+	test("five digits", () => {
+		expect(formatNumber(1234567)).toEqual("1 235 000");
+	});
 });

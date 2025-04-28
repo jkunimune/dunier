@@ -9,6 +9,7 @@ import EN_STRINGS from "../../resources/translations/en.js";
 import ES_STRINGS from "../../resources/translations/es.js";
 import JA_STRINGS from "../../resources/translations/ja.js";
 import PD_STRINGS from "../../resources/translations/pd.js";
+import {formatNumber} from "../utilities/miscellaneus.js";
 
 
 let USER_STRINGS: { [index: string]: string };
@@ -36,7 +37,7 @@ switch (DOM.elm("bash").textContent) {
  * cast the given args to user strings (with a fixed format specificacion) and add them to
  * the given format in place of '{0}', '{1}', etc.  output will all ultimately be
  * extracted from USER_STRINGS.
- * @param sentence the key for the encompassing phrase
+ * @param sentence the key for the encompassing phrase, or ".test" to just dump the arg
  * @param args the data to fill into the template.  there are a few different data types that get formatted differently.
  *               - strings will be treated as translation keys; the corresponding value from the translation file will be added.
  *               - numbers will be displayed as nice integers
@@ -47,11 +48,11 @@ switch (DOM.elm("bash").textContent) {
 export function format(transcriptionStyle: string, sentence: string, ...args: (string|number|Name|string[])[]): string {
 	if (!USER_STRINGS.hasOwnProperty(sentence))
 		throw new Error(`Could not find user string in resource file for ${sentence}`);
-	let output = USER_STRINGS[sentence];
+	let output = (sentence !== ".test") ? USER_STRINGS[sentence] : "{0}";
 	for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
 		let convertedArg: string;
 		if (args[i] === null || args[i] === undefined) {
-			if (sentence.includes(`{${i}}`))
+			if (output.includes(`{${i}}`))
 				throw new Error(`${args[i]} was passd as the ${i}° argument.  this is only allowd when the argument is absent from the format string, which was not the case here.`);
 			continue;
 		}
@@ -62,16 +63,7 @@ export function format(transcriptionStyle: string, sentence: string, ...args: (s
 			convertedArg = USER_STRINGS[<string>args[i]]; // look up strings in the resource file
 		}
 		else if (typeof args[i] == 'number') {
-			if (args[i] === 0) {
-				convertedArg = "0"; // zeros get formatted like so
-			}
-			else { // and other numbers are formatted like so
-				const magnitude = Math.pow(10, Math.floor(Math.log10(<number>args[i])) - 3); // determine its order of magnitude
-				const value = Math.round(<number>args[i]/magnitude)*magnitude; // round to three decimal points below that
-				convertedArg = value.toString().split("").reverse().join(""); // reverse it
-				convertedArg = convertedArg.replace(/(\d\d\d)(\d)/g, '$1 $2').replace(/,$/, ''); // add thousands separators
-				convertedArg = convertedArg.split("").reverse().join(""); // reverse it back
-			}
+			convertedArg = formatNumber(<number>args[i]);
 		}
 		// for an array, list them out using a language-specific separator
 		else if (args[i] instanceof Array) {

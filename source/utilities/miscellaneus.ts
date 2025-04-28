@@ -9,6 +9,22 @@ import {Random} from "./random.js";
 import {trajectoryIntersection, Vector} from "./geometry.js";
 
 /**
+ * nicely format a number (the result of this function looks way nicer than Number.toString)
+ */
+export function formatNumber(number: number): string {
+	if (number === 0) {
+		return "0"; // zeros get formatted like so
+	}
+	else { // and other numbers are formatted like so
+		const magnitude = Math.pow(10, Math.floor(Math.log10(number)) - 3); // determine its order of magnitude
+		const value = Math.round(number/magnitude)*magnitude; // round to three decimal points below that
+		let digits = value.toString().split("").reverse().join(""); // reverse it
+		digits = digits.replace(/(\d\d\d)/g, '$1 ').replace(/ $/, ''); // add thousands separators
+		return digits.split("").reverse().join(""); // reverse it back
+	}
+}
+
+/**
  * index of the maximum.
  */
 export function argmax(arr: number[]): number {
