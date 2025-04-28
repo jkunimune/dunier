@@ -11,9 +11,8 @@ import {Civ} from "./civ.js";
 export const START_OF_HUMAN_HISTORY = -3200; // [BCE]
 export const TIME_STEP = 100; // [year]
 export const CIVILIZATION_RATE = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
-export const REBELLION_RATE = 2e-7; // [1/year/km^2] rate at which people start revolucions
-export const NATIONALISM_FACTOR = 3.0; // [] factor by which oppressed minorities are more likely to rebel
-export const CONQUEST_RATE = 1.5e-1; // [km/y] the rate at which denizens conquer
+export const REBELLION_RATE = 5e-7; // [1/year/km^2] rate at which people start revolucions
+export const CONQUEST_RATE = 2e-1; // [km/y] the rate at which denizens conquer
 export const TECH_ADVANCEMENT_RATE = 5e-8; // [1/y] the rate at which denizens have good ideas
 export const POPULATION_DENSITY = .20; // [1/km^2] density of people that can live in one unit of arable land with entry-level technology
 export const TECH_SPREAD_RATE = .01; // [1/year] rate at which ideas spread across borders
@@ -78,12 +77,7 @@ export class World {
 					this.civs.add(new Civ(tile, this.nextID, this, rng));
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
-				let linguisticModifier;
-				if (tile.culture.lect.isIntelligible(ruler.capital.culture.lect))
-					linguisticModifier = 1;
-				else
-					linguisticModifier = NATIONALISM_FACTOR;
-				if (rng.probability(REBELLION_RATE*TIME_STEP*demomultia*linguisticModifier)) // use the population without technology correction for balancing
+				if (rng.probability(REBELLION_RATE*TIME_STEP*demomultia)) // use the population without technology correction for balancing
 					this.civs.add(new Civ(tile, this.nextID, this, rng, ruler.technology));
 			}
 			this.nextID ++;
@@ -109,8 +103,8 @@ export class World {
 		while (!invasions.empty()) {
 			let {time, invader, start, end} = invasions.pop(); // as invasions finish
 			const invadee = end.government;
-			const invaderStrength = invader.getStrength(invadee, end);
-			const invadeeStrength = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
+			const invaderStrength = invader.getStrength();
+			const invadeeStrength = (invadee !== null) ? invadee.getStrength() : 0;
 			if (invader.tileTree.has(start) && !invader.tileTree.has(end) &&
 					invaderStrength > invadeeStrength) { // check that they're still doable
 				invader.conquer(end, start); // update the game state

@@ -9,7 +9,7 @@ import {
 	POPULATION_DENSITY,
 	MEAN_ASSIMILATION_TIME,
 	SLOPE_FACTOR, CONQUEST_RATE,
-	TECH_ADVANCEMENT_RATE, NATIONALISM_FACTOR,
+	TECH_ADVANCEMENT_RATE,
 	MEAN_EMPIRE_LIFETIME,
 	TIME_STEP,
 	World
@@ -200,8 +200,8 @@ export class Civ {
 	 */
 	estimateInvasionTime(start: Tile, end: Tile) {
 		const invadee = end.government;
-		const momentum = this.getStrength(invadee, end);
-		const resistance = (invadee !== null) ? invadee.getStrength(invadee, end) : 0;
+		const momentum = this.getStrength();
+		const resistance = (invadee !== null) ? invadee.getStrength() : 0;
 		const distance = end.getArea()/start.neighbors.get(end).getLength();
 		const elevation = start.height - end.height;
 		const distanceEff = Math.hypot(distance, SLOPE_FACTOR*elevation)/end.passability;
@@ -245,15 +245,10 @@ export class Civ {
 	}
 
 	/**
-	 * how strong the Civ's military is in this particular context
-	 * @param kontra the opponent
-	 * @param sa the location
+	 * how strong the Civ's military is
 	 */
-	getStrength(kontra: Civ, sa: Tile) : number {
-		let linguisticModifier = 1;
-		if (kontra !== null && sa.culture.lect.isIntelligible(this.capital.culture.lect))
-			linguisticModifier = NATIONALISM_FACTOR;
-		return this.militarism*this.technology*linguisticModifier;
+	getStrength() : number {
+		return this.militarism*this.technology;
 	}
 
 	/**
