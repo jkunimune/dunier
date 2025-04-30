@@ -1091,8 +1091,9 @@ export class Chart {
 		const meanRadius = rSum/count;
 
 		// turn the region into a proper closed polygon in the [-π, π) domain
+		const landOfInterest = filterSet(regionOfInterest, tile => !tile.isWater() && tile.biome !== Biome.ICE);
 		const coastline = intersection(
-			Chart.border(filterSet(regionOfInterest, tile => !tile.isWater())),
+			Chart.border(landOfInterest),
 			Chart.rectangle(
 				Math.max(surface.φMin, -Math.PI), -Math.PI,
 				Math.min(surface.φMax, Math.PI), Math.PI, true),
@@ -1125,11 +1126,9 @@ export class Chart {
 			// if there are no empty longitudes, do a periodic mean over the land part of the region of interest
 			let xCenter = 0;
 			let yCenter = 0;
-			for (const tile of regionOfInterest) {
-				if (!tile.isWater()) {
-					xCenter += Math.cos(tile.λ);
-					yCenter += Math.sin(tile.λ);
-				}
+			for (const tile of landOfInterest) {
+				xCenter += Math.cos(tile.λ);
+				yCenter += Math.sin(tile.λ);
 			}
 			centralMeridian = Math.atan2(yCenter, xCenter);
 		}

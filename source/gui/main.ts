@@ -239,7 +239,7 @@ function applyTerrain(): void {
 	// save the continents in an easily accessible form
 	continents = [];
 	for (const tile of surface.tiles) {
-		if (tile.biome === Biome.OCEAN)
+		if (tile.biome === Biome.OCEAN || tile.biome === Biome.ICE)
 			continue;
 		while (continents.length <= tile.plateIndex)
 			continents.push(new Set());
