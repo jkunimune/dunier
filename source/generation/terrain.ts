@@ -37,7 +37,7 @@ const OCEAN_DEPTH = 4; // km
 const CONTINENT_VARIATION = .5; // km
 const OCEANIC_VARIATION = 1; // km
 const MOUNTAIN_HEIGHT = 4; // km
-const VOLCANO_HEIGHT = 3.3; // km
+const VOLCANO_HEIGHT = 2.3; // km
 const RIDGE_HEIGHT = 1.5; // km
 const TRENCH_DEPTH = 4; // km
 const MOUNTAIN_WIDTH = 400; // km
@@ -236,7 +236,7 @@ function movePlates(surf: Surface, rng: Random): void {
 			else {
 				if (tile.height < 0) {
 					type = FaultType.OCEANIC_RIFT; // mid-oceanic rift
-					width = relSpeed*RIDGE_WIDTH*2;
+					width = relSpeed*RIDGE_WIDTH*2; // TODO: this would be easier to read if I used lambda functions instead of an enum
 				}
 				else {
 					type = FaultType.RIFT_WITH_SLOPE; // mid-oceanic rift plus continental slope (plus a little bit of convexity)
@@ -263,17 +263,17 @@ function movePlates(surf: Surface, rng: Random): void {
 			if (type === FaultType.CONTINENT_COLLISION) { // based on the type, find the height change as a function of distance
 				const x = distance / (speed*MOUNTAIN_WIDTH);
 				tile.height += Math.sqrt(speed) * MOUNTAIN_HEIGHT * // continent-continent ranges are even
-					bellCurve(x) * wibbleCurve(x); // (the sinusoidal term makes it a little more rugged)
+					bellCurve(x) * wibbleCurve(x, 1/6); // (the sinusoidal term makes it a little more rugged)
 			}
 			else if (type === FaultType.SEA_TRENCH) {
 				const x = distance / TRENCH_WIDTH;
 				tile.height -= speed * TRENCH_DEPTH *
-					digibbalCurve(x) * wibbleCurve(x); // while subductive faults are odd
+					digibbalCurve(x) * wibbleCurve(x, 1/6); // while subductive faults are odd
 			}
 			else if (type === FaultType.ISLAND_ARC) {
 				const x = distance / MOUNTAIN_WIDTH;
 				tile.height += speed * VOLCANO_HEIGHT *
-					digibbalCurve(x) * wibbleCurve(x);
+					digibbalCurve(x) * wibbleCurve(x, 1);
 			}
 			else if (type === FaultType.OCEANIC_RIFT) {
 				const width = speed*oceanWidth;
@@ -660,6 +660,6 @@ function digibbalCurve(x: number): number {
 	return Math.sqrt(3125/512)*x*(1 - x*x*(1 - x*x/4));
 }
 
-function wibbleCurve(x: number): number {
-	return 1 + Math.cos(12*Math.PI*x)/6;
+function wibbleCurve(x: number, δ: number): number {
+	return 1 + δ*Math.cos(12*Math.PI*x);
 }
