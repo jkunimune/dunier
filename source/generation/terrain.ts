@@ -290,7 +290,7 @@ function movePlates(surf: Surface, rng: Random): void {
 				const xR = (distance - x0) / RIDGE_WIDTH;
 				tile.height += Math.min(
 					OCEAN_DEPTH * (Math.exp(-xS) - 1) + RIDGE_HEIGHT * Math.exp(-xR),
-					-OCEAN_DEPTH/2 / (1 + Math.exp(xS/2.)/CONTINENTAL_CONVEXITY));
+					-OCEAN_DEPTH/2 / (1 + Math.exp(-xS/2.)/CONTINENTAL_CONVEXITY));
 			}
 			else {
 				throw new Error("Unrecognized fault type");
