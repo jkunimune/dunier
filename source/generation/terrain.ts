@@ -9,25 +9,26 @@ import {argmin, union} from "../utilities/miscellaneus.js";
 import {Vector} from "../utilities/geometry.js";
 
 
-const TERME_NOISE_LEVEL = 12;
-const BARXE_NOISE_LEVEL = 1;
+const TERME_NOISE_LEVEL = 5;
+const BARXE_NOISE_LEVEL = 0.3;
 const MAX_NOISE_SCALE = 1/8;
 const ATMOSPHERE_THICKNESS = 12; // km
 const CLOUD_HEIGHT = 2; // km
 const OROGRAPHIC_MAGNITUDE = 1;
-const OROGRAPHIC_RANGE = 500; // km
-const RAINFALL_NEEDED_TO_CREATE_MARSH = 1e7; // km^2
+const OROGRAPHIC_RANGE = 2000; // km
 
-const TUNDRA_TEMP = -10; // °C
-const DESERT_INTERCEPT = -30; // °C
-const DESERT_SLOPE = 60; // °C/u
-const TAIGA_TEMP = +5; // °C
+const TUNDRA_TEMP = -15; // °C
+const DESERT_INTERCEPT = -15; // °C
+const DESERT_SLOPE = 32; // °C/u
+const DESERT_POWER = 0.75;
+const TAIGA_TEMP = -5; // °C
 const FLASH_TEMP = +50; // °C
 const TROPIC_TEMP = +22; // °C
-const FOREST_INTERCEPT = -40; // °C
-const FOREST_SLOPE = 37; // °C/u
+const FOREST_INTERCEPT = -15; // °C
+const FOREST_SLOPE = 25; // °C/u
+const FOREST_POWER = 0.75;
 
-const RIVER_THRESH = -25; // °C
+const RIVER_THRESH = -20; // °C
 const RIVER_WIDTH = 10; // km
 const CANYON_DEPTH = 0.1; // km
 const LAKE_THRESH = -0.07; // km
@@ -60,7 +61,6 @@ export enum Biome {
 	OCEAN,
 	LAKE,
 	ICE,
-	DRY_TUNDRA,
 	TUNDRA,
 	TAIGA,
 	FOREST,
@@ -80,7 +80,6 @@ export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.GRASSLAND, 3.0],
 	[Biome.DESERT,    0.1],
 	[Biome.TUNDRA,    0.3],
-	[Biome.DRY_TUNDRA, 0.1],
 	[Biome.ICE,       0.1],
 ]);
 export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
@@ -93,7 +92,6 @@ export const ARABILITY = new Map([ // terrain modifiers for civ spawning and pop
 	[Biome.GRASSLAND, 0.30],
 	[Biome.DESERT,    0.00],
 	[Biome.TUNDRA,    0.03],
-	[Biome.DRY_TUNDRA, 0.00],
 	[Biome.ICE,       0.00],
 ]);
 export const RIVER_UTILITY_THRESHOLD = 1e6; // [km^2] size of watershed needed to produce a river that supports large cities
@@ -106,7 +104,7 @@ export const SALTWATER_UTILITY = 50; // [km] width of highly populated region ne
  * of a good fictional world.
  * @param numContinents number of continents, equal to half the number of plates
  * @param seaLevel desired sea level in km
- * @param meanTemperature some vaguely defined median temperature in Kelvin
+ * @param meanTemperature some vaguely defined median temperature in °C
  * @param surf the surface to modify
  * @param rng the seeded random number generator to use
  */
@@ -362,8 +360,9 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 	for (const tile of surf.tiles) { // and then throw in the baseline
 		tile.temperature += Math.pow(
 			surf.insolation(tile.φ)*Math.exp(-tile.height/ATMOSPHERE_THICKNESS),
-			1/4.)*avgTerme - 273;
+			1/4.)*(avgTerme + 273) - 273;
 		tile.rainfall += surf.windConvergence(tile.φ);
+		tile.rainfall = Math.max(0, tile.rainfall);
 		const {north, east} = surf.windVelocity(tile.φ);
 		tile.windVelocity = tile.north.times(north).plus(tile.east.times(east));
 	}
@@ -452,9 +451,9 @@ function addRivers(surf: Surface): void {
 						if (beyond.height >= maxHeight - CANYON_DEPTH) {
 							const length = surf.distance(beyond, above);
 							let quality; // decide how good a river this would be
-							if (length < RIVER_WIDTH)
+							if (length < RIVER_WIDTH) // if the edge is really short we must make it a river immediately
 								quality = Infinity;
-							else if (beyond.height >= above.height) // calculate the slope for downhill rivers
+							else if (beyond.height >= above.height) // otherwise, calculate the slope for downhill rivers
 								quality = (beyond.height - above.height)/length;
 							else // calculate the amount of canyon you would need for an uphill river
 								quality = -(uphillLength + length);
@@ -486,9 +485,11 @@ function addRivers(surf: Surface): void {
 		if (vertex.downstream instanceof Vertex) {
 			for (const tile of vertex.tiles) { // compute the sum of rainfall and inflow (with some adjustments)
 				if (tile instanceof Tile) {
-					let nadasle = 1; // base river yield is 1 per tile
-					nadasle += tile.rainfall - (tile.temperature - DESERT_INTERCEPT)/DESERT_SLOPE; // add in biome factor
-					nadasle += tile.height/CLOUD_HEIGHT; // add in mountain sources
+					let nadasle = (1 // base river yield is 1 per tile
+						+ tile.rainfall // add in climate factor
+						- ((DESERT_INTERCEPT - tile.temperature)/DESERT_SLOPE)**(1/DESERT_POWER)
+						+ tile.height/CLOUD_HEIGHT // add in mountain sources
+					);
 					if (nadasle > 0 && tile.temperature >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
 						vertex.flow += nadasle*unitArea/tile.neighbors.size;
 				}
@@ -554,12 +555,6 @@ function addRivers(surf: Surface): void {
  */
 function setBiomes(surf: Surface): void {
 	for (const tile of surf.tiles) {
-		let adjacentWater = false;
-		for (const neighbor of tile.neighbors.keys())
-			if (neighbor.biome === Biome.OCEAN || neighbor.biome === Biome.LAKE ||
-					tile.neighbors.get(neighbor).flow > RAINFALL_NEEDED_TO_CREATE_MARSH)
-				adjacentWater = true;
-
 		// make sure the edge is frozen to hold all the water in
 		if (surf.edge.has(tile))
 			tile.biome = Biome.ICE;
@@ -567,20 +562,16 @@ function setBiomes(surf: Surface): void {
 		else if (tile.biome === null) {
 			if (tile.temperature < RIVER_THRESH)
 				tile.biome = Biome.ICE;
-			else if (tile.temperature > DESERT_SLOPE*tile.rainfall + DESERT_INTERCEPT) {
-				if (tile.temperature < TUNDRA_TEMP)
-					tile.biome = Biome.DRY_TUNDRA;
-				else
-					tile.biome = Biome.DESERT;
-			}
 			else if (tile.temperature < TUNDRA_TEMP)
 				tile.biome = Biome.TUNDRA;
-			else if (tile.temperature < TAIGA_TEMP)
-				tile.biome = Biome.TAIGA;
+			else if (tile.temperature > DESERT_SLOPE*tile.rainfall**DESERT_POWER + DESERT_INTERCEPT)
+				tile.biome = Biome.DESERT;
 			else if (tile.temperature > FLASH_TEMP)
 				tile.biome = Biome.STEAMLAND;
-			else if (tile.temperature > FOREST_SLOPE*tile.rainfall + FOREST_INTERCEPT)
+			else if (tile.temperature > FOREST_SLOPE*tile.rainfall**FOREST_POWER + FOREST_INTERCEPT)
 				tile.biome = Biome.GRASSLAND;
+			else if (tile.temperature < TAIGA_TEMP)
+				tile.biome = Biome.TAIGA;
 			else if (tile.temperature < TROPIC_TEMP)
 				tile.biome = Biome.FOREST;
 			else
