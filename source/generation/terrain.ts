@@ -185,6 +185,7 @@ function movePlates(surf: Surface, rng: Random): void {
 
 	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
 
+	// create a high- and low-priority queue to propagate the fault line effects
 	const hpQueue: Queue<{tile: Tile, distance: number, width: number, speed: number, type: FaultType}> = new Queue([], (a, b) => a.distance - b.distance);
 	const lpQueue: Queue<{tile: Tile, distance: number, width: number, speed: number, type: FaultType}> = new Queue([], (a, b) => a.distance - b.distance);
 	for (const tile of surf.tiles) { // now for phase 2:
@@ -245,14 +246,11 @@ function movePlates(surf: Surface, rng: Random): void {
 			const queueElement = {
 				tile: tile, distance: minDistance/2, width: width,
 				speed: Math.abs(relSpeed), type: type}; // add it to the queue
-			if (type === FaultType.RIFT_WITH_SLOPE)
-				hpQueue.push(queueElement);
+			if (type === FaultType.RIFT_WITH_SLOPE || type === FaultType.CONTINENT_COLLISION)
+				hpQueue.push(queueElement); // continental plate boundaries have high priority
 			else
-				lpQueue.push(queueElement); // which queue depends on priority
-			// tile.relSpeed = relSpeed;
+				lpQueue.push(queueElement); // other plate boundaries have low priority
 		}
-		// else
-			// tile.relSpeed = NaN;
 
 		tile.flag = false; // also set up these temporary flags
 	}
