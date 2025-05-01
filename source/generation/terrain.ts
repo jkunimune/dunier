@@ -487,7 +487,7 @@ function addRivers(surf: Surface): void {
 				if (tile instanceof Tile) {
 					let nadasle = (1 // base river yield is 1 per tile
 						+ tile.rainfall // add in climate factor
-						- ((DESERT_INTERCEPT - tile.temperature)/DESERT_SLOPE)**(1/DESERT_POWER)
+						- (Math.max(0, tile.temperature - DESERT_INTERCEPT)/DESERT_SLOPE)**(1/DESERT_POWER)
 						+ tile.height/CLOUD_HEIGHT // add in mountain sources
 					);
 					if (nadasle > 0 && tile.temperature >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
