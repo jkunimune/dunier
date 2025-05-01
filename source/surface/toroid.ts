@@ -107,7 +107,7 @@ export class Toroid extends Surface {
 	}
 
 	windVelocity(φ: number): {north: number, east: number} {
-		return {north: 0, east: Math.cos(φ)};
+		return {north: 0, east: -Math.cos(φ)};
 	}
 
 	φ(point: {r: number, z: number}): number {

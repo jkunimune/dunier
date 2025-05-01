@@ -385,17 +385,19 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 		if (tile.biome === Biome.OCEAN) // also seed the orographic effect in the oceans
 			queue.push({tile: tile, moisture: OROGRAPHIC_MAGNITUDE});
 		if (tile.height > CLOUD_HEIGHT) // and also remove some moisture from mountains
-			tile.rainfall -= OROGRAPHIC_MAGNITUDE;
+			tile.rainfall -= OROGRAPHIC_MAGNITUDE/2;
 	}
 	while (queue.length > 0) {
-		const {tile, moisture} = queue.pop(); // each tile looks downwind
-		tile.rainfall += moisture;
-		for (const downwind of tile.downwind) {
-			if (downwind.biome !== Biome.OCEAN && downwind.height <= CLOUD_HEIGHT) { // land neighbors that are not separated by mountains
-				const distance: number = tile.neighbors.get(downwind).getDistance();
-				queue.push({
-					tile: downwind,
-					moisture: moisture*Math.exp(-distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // receive slightly less moisture than this one got
+		const {tile, moisture} = queue.pop(); // wet air blows from upwind
+		tile.rainfall += moisture; // this tile gets rain from the wet air
+		if (tile.height <= CLOUD_HEIGHT) { // if it's is low enuff
+			for (const downwind of tile.downwind) { // it passes it onto any neibors downwind of it
+				if (downwind.biome !== Biome.OCEAN) {
+					const distance: number = tile.neighbors.get(downwind).getDistance();
+					queue.push({
+						tile: downwind,
+						moisture: moisture*Math.exp(-distance/OROGRAPHIC_RANGE/Math.sqrt(downwind.windVelocity.sqr()))}); // the air gradually dries out
+				}
 			}
 		}
 	}

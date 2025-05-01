@@ -102,7 +102,7 @@ export class Spheroid extends Surface {
 	}
 
 	windVelocity(φ: number): {north: number, east: number} {
-		return {north: 0, east: Math.cos(φ)}; // realistically this should change direccion, but this formula makes rain shadows more apparent
+		return {north: 0, east: -Math.cos(φ)}; // realistically this should change direccion, but this formula makes rain shadows more apparent
 	}
 
 	φ(point: {r: number, z: number}): number {
