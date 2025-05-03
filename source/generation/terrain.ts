@@ -17,16 +17,22 @@ const CLOUD_HEIGHT = 2; // km
 const OROGRAPHIC_MAGNITUDE = 1;
 const OROGRAPHIC_RANGE = 2000; // km
 
+/** the temperature threshold between tundra and taiga */
 const TUNDRA_TEMP = -15; // °C
-const DESERT_INTERCEPT = -15; // °C
-const DESERT_SLOPE = 32; // °C/u
-const DESERT_POWER = 0.75;
+/** the temperature above which evaporation is important */
+const EVAPORATION_INTERCEPT = -15; // °C
+/** the exponent for the evaporation rate */
+const EVAPORATION_POWER = 4/3;
+/** the prefactor for the evaporation rate */
+const EVAPORATION_COEFFICIENT = 0.01;
+/** the temperature threshold between taiga and temperate forest */
 const TAIGA_TEMP = -5; // °C
+/** the temperature threshold between grassland and steamland */
 const FLASH_TEMP = +50; // °C
+/** the temperature threshold between temperate forest and jungle */
 const TROPIC_TEMP = +22; // °C
-const FOREST_INTERCEPT = -15; // °C
-const FOREST_SLOPE = 25; // °C/u
-const FOREST_POWER = 0.75;
+/** a prefactor for the threshold between grassland and forest */
+const FOREST_FACTOR = 1.35; // u
 
 const RIVER_THRESH = -20; // °C
 const RIVER_WIDTH = 10; // km
@@ -485,7 +491,7 @@ function addRivers(surf: Surface): void {
 				if (tile instanceof Tile) {
 					let nadasle = (1 // base river yield is 1 per tile
 						+ tile.rainfall // add in climate factor
-						- (Math.max(0, tile.temperature - DESERT_INTERCEPT)/DESERT_SLOPE)**(1/DESERT_POWER)
+						- evaporation_rate(tile.temperature) // subtract out evaporation
 						+ tile.height/CLOUD_HEIGHT // add in mountain sources
 					);
 					if (nadasle > 0 && tile.temperature >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
@@ -560,13 +566,13 @@ function setBiomes(surf: Surface): void {
 		else if (tile.biome === null) {
 			if (tile.temperature < RIVER_THRESH)
 				tile.biome = Biome.ICE;
+			else if (tile.rainfall <= evaporation_rate(tile.temperature))
+				tile.biome = Biome.DESERT;
 			else if (tile.temperature < TUNDRA_TEMP)
 				tile.biome = Biome.TUNDRA;
-			else if (tile.temperature > DESERT_SLOPE*tile.rainfall**DESERT_POWER + DESERT_INTERCEPT)
-				tile.biome = Biome.DESERT;
 			else if (tile.temperature > FLASH_TEMP)
 				tile.biome = Biome.STEAMLAND;
-			else if (tile.temperature > FOREST_SLOPE*tile.rainfall**FOREST_POWER + FOREST_INTERCEPT)
+			else if (tile.rainfall < FOREST_FACTOR*evaporation_rate(tile.temperature))
 				tile.biome = Biome.GRASSLAND;
 			else if (tile.temperature < TAIGA_TEMP)
 				tile.biome = Biome.TAIGA;
@@ -650,6 +656,15 @@ function getNoiseFunction(tile: Tile, parents: Tile[], attr: string, surf: Surfa
 	value += rng.normal(0, std); // finally, add the random part of the random noise
 
 	return value;
+}
+
+/**
+ * this isn't physics-based at all; just tuned to look nice.
+ * @param T the temperature in °C
+ * @return the evaporation rate in the same units as rainfall
+ */
+function evaporation_rate(T: number): number {
+	return EVAPORATION_COEFFICIENT*Math.max(0, T - EVAPORATION_INTERCEPT)**EVAPORATION_POWER;
 }
 
 function bellCurve(x: number): number {

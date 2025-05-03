@@ -3,7 +3,7 @@ This work by Justin Kunimune is marked with CC0 1.0 Universal.
 To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
 """
 from matplotlib import pyplot as plt
-from numpy import linspace, pi, radians, cos, sin, exp, array, full
+from numpy import linspace, pi, radians, cos, sin, exp, array, zeros_like, maximum
 from scipy.special import legendre
 
 TERME_NOISE_LEVEL = 12
@@ -12,15 +12,13 @@ ATMOSPHERE_THICKNESS = 12
 OROGRAPHIC_MAGNITUDE = 1
 
 TUNDRA_TEMP = -15
-DESERT_INTERCEPT = -15
-DESERT_SLOPE = 32
-DESERT_POWER = 0.75
+EVAPORATION_INTERCEPT = -15
+EVAPORATION_COFFICIENT = 0.01
+EVAPORATION_POWER = 4/3
 TAIGA_TEMP = -5
 FLASH_TEMP = +50
 TROPIC_TEMP = +22
-FOREST_INTERCEPT = -15
-FOREST_SLOPE = 25
-FOREST_POWER = 0.75
+FOREST_FACTOR = 1.35
 
 RIVER_THRESH = -20
 
@@ -49,15 +47,15 @@ plt.axvspan(-100, TROPIC_TEMP,
             facecolor="darkolivegreen", edgecolor="black", linewidth=0.7)
 plt.axvspan(-100, TAIGA_TEMP,
             facecolor="turquoise", edgecolor="black", linewidth=0.7)
-r = linspace(0, 10, 101)
-plt.fill_betweenx(r, FOREST_INTERCEPT + FOREST_SLOPE*r**FOREST_POWER, full(r.shape, 100),
+T = linspace(-100, 100, 101)
+plt.fill_between(T, zeros_like(T), FOREST_FACTOR*EVAPORATION_COFFICIENT*maximum(0, T - EVAPORATION_INTERCEPT)**EVAPORATION_POWER,
                   facecolor="greenyellow", edgecolor="black", linewidth=0.7)
 plt.axvspan(FLASH_TEMP, 100,
             facecolor="orange", edgecolor="black", linewidth=0.7)
-plt.fill_betweenx(r, DESERT_INTERCEPT + DESERT_SLOPE*r**DESERT_POWER, full(r.shape, 100),
-                  facecolor="khaki", edgecolor="black", linewidth=0.7)
 plt.axvspan(-100, TUNDRA_TEMP,
             facecolor="honeydew", edgecolor="black", linewidth=0.7)
+plt.fill_between(T, zeros_like(T), EVAPORATION_COFFICIENT*maximum(0, T - EVAPORATION_INTERCEPT)**EVAPORATION_POWER,
+                 facecolor="khaki", edgecolor="black", linewidth=0.7)
 plt.axvspan(-100, RIVER_THRESH,
             facecolor="white", edgecolor="black", linewidth=0.7)
 
