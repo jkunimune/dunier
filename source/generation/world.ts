@@ -8,18 +8,30 @@ import {Random} from "../utilities/random.js";
 import {Civ} from "./civ.js";
 
 
-export const START_OF_HUMAN_HISTORY = -3200; // [BCE]
+/** the year at which civilization starts */
+export const START_OF_HUMAN_HISTORY = -3200;
+/** the smallest time interval to simulate (year) */
 export const TIME_STEP = 100; // [year]
-export const CIVILIZATION_RATE = 1e-7; // [1/year/km^2] rate at which people coalesce into kingdoms
-export const REBELLION_RATE = 5e-7; // [1/year/km^2] rate at which people start revolucions
-export const CONQUEST_RATE = 2e-1; // [km/y] the rate at which denizens conquer
-export const TECH_ADVANCEMENT_RATE = 5e-8; // [1/y] the rate at which denizens have good ideas
-export const POPULATION_DENSITY = .20; // [1/km^2] density of people that can live in one unit of arable land with entry-level technology
-export const TECH_SPREAD_RATE = .01; // [1/year] rate at which ideas spread across borders
-export const APOCALYPSE_SURVIVAL_RATE = .80; // [] the fraccion of the populacion a country gets to keep after a cataclysm (not accounting for domino effects)
-export const MEAN_EMPIRE_LIFETIME = 1000; // [year] time it takes for an empire's might to decay by 2.7
-export const MEAN_ASSIMILATION_TIME = 160; // [year] time it takes to erase a people's language
-export const SLOPE_FACTOR = 100; // [] multiplier on vertical distances TODO: use the minimum slope that a military can traverse instead
+/** the rate at which people coalesce into kingdoms (/year/km^2) */
+export const CIVILIZATION_RATE = 1e-7;
+/** the rate at which people start revolutions (/year/km^2) */
+export const REBELLION_RATE = 5e-7;
+/** the rate at which people conquer with entry-level technology (km/y) */
+export const CONQUEST_RATE = 2e-1;
+/** the rate at which a person has good ideas (/y) */
+export const TECH_ADVANCEMENT_RATE = 5e-8;
+/** the density of people that can live in one unit of arable land with entry-level technology (/km^2) */
+export const POPULATION_DENSITY = .20;
+/** the rate at which ideas spread across borders (/y) */
+export const TECH_SPREAD_RATE = .01;
+/** the fraction of the populacion a country gets to keep after a cataclysm (not accounting for domino effects) */
+export const APOCALYPSE_SURVIVAL_RATE = .80;
+/** the time it takes for an empire's might to decay by 2.7 (y) */
+export const MEAN_EMPIRE_LIFETIME = 1000;
+/** the time it takes to erase a people's language (y) */
+export const MEAN_ASSIMILATION_TIME = 160;
+/** multiplier on vertical distances */
+export const SLOPE_FACTOR = 100; // TODO: express it as the minimum slope that a military can traverse instead
 
 
 /**

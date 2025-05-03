@@ -9,48 +9,72 @@ import {argmin, union} from "../utilities/miscellaneus.js";
 import {Vector} from "../utilities/geometry.js";
 
 
+/** the magnitude of random temperature variation (°C) */
 const TERME_NOISE_LEVEL = 5;
+/** the magnitude of random rainfall variation */
 const BARXE_NOISE_LEVEL = 0.3;
+/** the maximum number of planet radii at which random variation is correlated */
 const MAX_NOISE_SCALE = 1/8;
-const ATMOSPHERE_THICKNESS = 12; // km
-const CLOUD_HEIGHT = 2; // km
+/** the decay parameter for temperature as a function of altitude (km) */
+const ATMOSPHERE_THICKNESS = 12;
+/** the minimum mountain heit needed to cast a rain shadow (km) */
+const CLOUD_HEIGHT = 2;
+/** the strength of rain shadows */
 const OROGRAPHIC_MAGNITUDE = 1;
-const OROGRAPHIC_RANGE = 2000; // km
+/** the maximum distance from the ocean at which rain shadows can happen (km) */
+const OROGRAPHIC_RANGE = 2000;
 
-/** the temperature threshold between tundra and taiga */
-const TUNDRA_TEMP = -15; // °C
-/** the temperature above which evaporation is important */
-const EVAPORATION_INTERCEPT = -15; // °C
+/** the temperature threshold between tundra and taiga (°C) */
+const TUNDRA_TEMP = -15;
+/** the temperature above which evaporation is important (°C) */
+const EVAPORATION_INTERCEPT = -15;
 /** the exponent for the evaporation rate */
 const EVAPORATION_POWER = 4/3;
 /** the prefactor for the evaporation rate */
 const EVAPORATION_COEFFICIENT = 0.01;
-/** the temperature threshold between taiga and temperate forest */
-const TAIGA_TEMP = -5; // °C
-/** the temperature threshold between grassland and steamland */
-const FLASH_TEMP = +50; // °C
-/** the temperature threshold between temperate forest and jungle */
-const TROPIC_TEMP = +22; // °C
+/** the temperature threshold between taiga and temperate forest (°C) */
+const TAIGA_TEMP = -5;
+/** the temperature threshold between grassland and steamland (°C) */
+const FLASH_TEMP = +50;
+/** the temperature threshold between temperate forest and jungle (°C) */
+const TROPIC_TEMP = +22;
 /** a prefactor for the threshold between grassland and forest */
-const FOREST_FACTOR = 1.35; // u
+const FOREST_FACTOR = 1.35;
 
-const RIVER_THRESH = -20; // °C
-const RIVER_WIDTH = 10; // km
-const CANYON_DEPTH = 0.1; // km
-const LAKE_THRESH = -0.07; // km
+/** the temperature threshold between normal biomes and permanent ice sheets (°C) */
+const RIVER_THRESH = -20;
+/** the minimum edge length that can separate two rivers without them merging (km) */
+const RIVER_WIDTH = 10;
+/** the maximum amount that a river can flow uphill (km) */
+const CANYON_DEPTH = 0.1;
+/** the depth threshold needed to form a large lake (km) */
+const LAKE_THRESH = -0.07;
 
-const OCEAN_DEPTH = 4; // km
-const CONTINENT_VARIATION = .5; // km
-const OCEANIC_VARIATION = 1; // km
-const MOUNTAIN_HEIGHT = 4; // km
-const VOLCANO_HEIGHT = 2.3; // km
-const RIDGE_HEIGHT = 1.5; // km
-const TRENCH_DEPTH = 4; // km
-const MOUNTAIN_WIDTH = 400; // km
-const TRENCH_WIDTH = 100; // km
-const SLOPE_WIDTH = 200; // km
-const RIDGE_WIDTH = 100; // km
-const OCEAN_SIZE = 0.2; // as a fraction of continental length scale
+/** the average altitude difference between oceanic crust and continental crust (km) */
+const OCEAN_DEPTH = 4;
+/** the magnitude of random altitude variation on continents (km) */
+const CONTINENT_VARIATION = .5;
+/** the magnitude of random depth variation in oceans (km) */
+const OCEANIC_VARIATION = 1;
+/** the typical height of mountain ranges formed by continental collisions (km) */
+const MOUNTAIN_HEIGHT = 4;
+/** the typical height of mountain ranges formed over subduction zones (km) */
+const VOLCANO_HEIGHT = 2.3;
+/** the typical height of mid-oceanic ridges (km) */
+const RIDGE_HEIGHT = 1.5;
+/** the typical depth of subduction trenches (km) */
+const TRENCH_DEPTH = 4;
+/** the typical width of mountain ranges (km) */
+const MOUNTAIN_WIDTH = 400;
+/** the typical width of subduction trenches (km) */
+const TRENCH_WIDTH = 100;
+/** the typical depth of continental slopes (km) */
+const SLOPE_WIDTH = 200;
+/** the typical width of mid-oceanic ridges (km) */
+const RIDGE_WIDTH = 100;
+/** the typical width of inter-continental oceans, as a fraction of continental length scale */
+const OCEAN_SIZE = 0.2;
+/** the amount of depression to apply to the edges of continents near passive margins */
 const CONTINENTAL_CONVEXITY = 0.05; // between 0 and 1
 
 /** different ways two plates can interact at a given fault */
