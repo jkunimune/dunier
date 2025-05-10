@@ -90,15 +90,15 @@ export class Culture {
 		// start by assigning the deterministic cultural classes it has from its location
 		if ([Biome.JUNGLE, Biome.STEAMLAND, Biome.DESERT].includes(this.homeland.biome))
 			this.klas.add("hot");
-		if ([Biome.TAIGA, Biome.TUNDRA, Biome.ICE].includes(this.homeland.biome))
+		if ([Biome.TAIGA, Biome.TUNDRA].includes(this.homeland.biome))
 			this.klas.add("cold");
 		if ([Biome.JUNGLE, Biome.STEAMLAND].includes(this.homeland.biome))
 			this.klas.add("humid");
-		if ([Biome.ICE, Biome.DESERT].includes(this.homeland.biome))
+		if ([Biome.DESERT].includes(this.homeland.biome))
 			this.klas.add("dry");
-		if ([Biome.ICE, Biome.DESERT, Biome.GRASSLAND].includes(this.homeland.biome))
+		if ([Biome.DESERT, Biome.GRASSLAND].includes(this.homeland.biome))
 			this.klas.add("plains");
-		if ([Biome.ICE, Biome.DESERT, Biome.STEAMLAND].includes(this.homeland.biome))
+		if ([Biome.DESERT, Biome.STEAMLAND].includes(this.homeland.biome))
 			this.klas.add("barren");
 		if (this.homeland.biome === Biome.DESERT)
 			this.klas.add("sandy");

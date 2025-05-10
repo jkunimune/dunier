@@ -458,7 +458,11 @@ export class Tile {
 	}
 
 	isWater(): boolean {
-		return this.biome === Biome.OCEAN || this.biome === Biome.LAKE;
+		return this.biome === Biome.OCEAN || this.biome === Biome.LAKE || this.biome === Biome.SEA_ICE;
+	}
+
+	isIceCovered(): boolean {
+		return this.biome === Biome.LAND_ICE || this.biome === Biome.SEA_ICE;
 	}
 
 	getArea(): number {

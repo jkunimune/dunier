@@ -90,7 +90,8 @@ enum FaultType {
 export enum Biome {
 	OCEAN,
 	LAKE,
-	ICE,
+	SEA_ICE,
+	LAND_ICE,
 	TUNDRA,
 	TAIGA,
 	FOREST,
@@ -110,7 +111,8 @@ export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.GRASSLAND, 3.0],
 	[Biome.DESERT,    0.1],
 	[Biome.TUNDRA,    0.3],
-	[Biome.ICE,       0.1],
+	[Biome.LAND_ICE,  0.1],
+	[Biome.SEA_ICE,   0.1],
 ]);
 export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
 	[Biome.OCEAN,     0.00],
@@ -122,7 +124,8 @@ export const ARABILITY = new Map([ // terrain modifiers for civ spawning and pop
 	[Biome.GRASSLAND, 0.30],
 	[Biome.DESERT,    0.00],
 	[Biome.TUNDRA,    0.03],
-	[Biome.ICE,       0.00],
+	[Biome.LAND_ICE,  0.00],
+	[Biome.SEA_ICE,   0.00],
 ]);
 export const RIVER_UTILITY_THRESHOLD = 1e6; // [km^2] size of watershed needed to produce a river that supports large cities
 export const FRESHWATER_UTILITY = 20; // [km] width of highly populated region near river
@@ -584,12 +587,16 @@ function addRivers(surf: Surface): void {
 function setBiomes(surf: Surface): void {
 	for (const tile of surf.tiles) {
 		// make sure the edge is frozen to hold all the water in
-		if (surf.edge.has(tile))
-			tile.biome = Biome.ICE;
+		if (surf.edge.has(tile)) {
+			if (tile.biome === Biome.OCEAN)
+				tile.biome = Biome.SEA_ICE;
+			else
+				tile.biome = Biome.LAND_ICE;
+		}
 		// assign all other biomes based on temperature and rainfall
 		else if (tile.biome === null) {
 			if (tile.temperature < RIVER_THRESH)
-				tile.biome = Biome.ICE;
+				tile.biome = Biome.LAND_ICE;
 			else if (tile.rainfall <= evaporation_rate(tile.temperature))
 				tile.biome = Biome.DESERT;
 			else if (tile.temperature < TUNDRA_TEMP)

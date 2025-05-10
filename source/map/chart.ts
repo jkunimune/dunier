@@ -63,7 +63,8 @@ const BIOME_COLORS = new Map([
 	[Biome.GRASSLAND, '#D9E88A'],
 	[Biome.DESERT,    '#FCF0B7'],
 	[Biome.TUNDRA,    '#FFFFFF'],
-	[Biome.ICE,       '#FFFFFF'],
+	[Biome.LAND_ICE,  '#FFFFFF'],
+	[Biome.SEA_ICE,   '#FFFFFF'],
 ]);
 
 const COUNTRY_COLORS = [
@@ -123,8 +124,11 @@ const DEPTH_COLORS = [
 ];
 
 enum Layer {
+	/** geographic regions – greeble everything */
 	GEO,
+	/** bioregions – greeble only coasts */
 	BIO,
+	/** cultural regions – greeble only coasts and densely populated areas */
 	KULTUR,
 }
 
@@ -552,7 +556,14 @@ export class Chart {
 		// trace the coasts
 		this.fill(
 			filterSet(surface.tiles, n => n.isWater()),
-			svg, 'none', Layer.GEO, waterStroke, 0.7);
+			svg, 'none', Layer.BIO, waterStroke, 0.7);
+
+		// also color in sea-ice if desired
+		if (color === 'physical') {
+			this.fill(
+				filterSet(surface.tiles, n => n.isIceCovered()),
+				svg, BIOME_COLORS.get(Biome.SEA_ICE), Layer.GEO);
+		}
 
 		// add relief shadows
 		if (shading) {
@@ -1090,7 +1101,7 @@ export class Chart {
 		const meanRadius = rSum/count;
 
 		// turn the region into a proper closed polygon in the [-π, π) domain
-		const landOfInterest = filterSet(regionOfInterest, tile => !tile.isWater() && tile.biome !== Biome.ICE);
+		const landOfInterest = filterSet(regionOfInterest, tile => !tile.isWater());
 		const coastline = intersection(
 			Chart.border(landOfInterest),
 			Chart.rectangle(
