@@ -385,59 +385,69 @@ export class Chart {
 		// decide what color the rivers will be
 		let landFill;
 		let waterFill;
+		let iceFill;
 		let waterStroke;
 		let borderStroke;
 		if (COLOR_BY_PLATE) {
 			landFill = FUCHSIA;
 			waterFill = 'none';
+			iceFill = 'none';
 			waterStroke = CHARCOAL;
 			borderStroke = CHARCOAL;
 		}
 		else if (color === 'white') {
 			landFill = WHITE;
 			waterFill = WHITE;
+			iceFill = 'none';
 			waterStroke = CHARCOAL;
 			borderStroke = CHARCOAL;
 		}
 		else if (color === 'gray') {
 			landFill = EGGSHELL;
 			waterFill = LIGHT_GRAY;
+			iceFill = 'none';
 			waterStroke = DARK_GRAY;
 			borderStroke = CHARCOAL;
 		}
 		else if (color === 'black') {
 			landFill = EGGSHELL;
 			waterFill = CHARCOAL;
+			iceFill = 'none';
 			waterStroke = CHARCOAL;
 			borderStroke = BLACK;
 		}
 		else if (color === 'sepia') {
 			landFill = CREAM;
 			waterFill = TAN;
+			iceFill = 'none';
 			waterStroke = RUSSET;
 			borderStroke = RUSSET;
 		}
 		else if (color === 'wikipedia') {
 			landFill = YELLOW;
 			waterFill = AZURE;
+			iceFill = 'none';
 			waterStroke = BLUE;
 			borderStroke = DARK_GRAY;
 		}
 		else if (color === 'political') {
 			landFill = EGGSHELL;
 			waterFill = AZURE;
+			iceFill = 'none';
 			waterStroke = BLUE;
 			borderStroke = DARK_GRAY;
 		}
 		else if (color === 'physical') {
 			landFill = FUCHSIA;
 			waterFill = BLUE;
+			iceFill = WHITE;
 			waterStroke = BLUE;
 			borderStroke = CHARCOAL;
 		}
 		else if (color === 'heightmap') {
 			landFill = FUCHSIA;
 			waterFill = FUCHSIA;
+			iceFill = 'none';
 			waterStroke = DEPTH_COLORS[0];
 			borderStroke = CHARCOAL;
 		}
@@ -541,6 +551,13 @@ export class Chart {
 				svg, waterFill, Layer.GEO);
 		}
 
+		// also color in sea-ice if desired
+		if (color === 'physical') {
+			this.fill(
+				filterSet(surface.tiles, n => n.isIceCovered()),
+				svg, BIOME_COLORS.get(Biome.SEA_ICE), Layer.BIO);
+		}
+
 		// add borders
 		if (borders) {
 			if (world === null)
@@ -554,16 +571,14 @@ export class Chart {
 		}
 
 		// trace the coasts
-		this.fill(
-			filterSet(surface.tiles, n => n.isWater()),
-			svg, 'none', Layer.BIO, waterStroke, 0.7);
-
-		// also color in sea-ice if desired
-		if (color === 'physical') {
+		if (iceFill === 'none')
 			this.fill(
-				filterSet(surface.tiles, n => n.isIceCovered()),
-				svg, BIOME_COLORS.get(Biome.SEA_ICE), Layer.GEO);
-		}
+				filterSet(surface.tiles, n => n.isWater()),
+				svg, 'none', Layer.BIO, waterStroke, 0.7);
+		else
+			this.fill(
+				filterSet(surface.tiles, n => n.isWater() && !n.isIceCovered()),
+				svg, 'none', Layer.BIO, waterStroke, 0.7);
 
 		// add relief shadows
 		if (shading) {
