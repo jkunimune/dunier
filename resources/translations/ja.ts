@@ -777,7 +777,7 @@ export default {
 	"parameter.planet.tilt": "赤道傾斜角",
 	"parameter.seed": "擬似乱数列の初期値",
 	"parameter.terrain": "地形",
-	"parameter.terrain.continents": "大陸の数",
+	"parameter.terrain.continents": "プレートの数",
 	"parameter.terrain.sea_level": "海面",
 	"parameter.terrain.sea_level.-1": "低",
 	"parameter.terrain.sea_level.-2": "特低",

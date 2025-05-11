@@ -461,6 +461,10 @@ export class Tile {
 		return this.biome === Biome.OCEAN || this.biome === Biome.LAKE || this.biome === Biome.SEA_ICE;
 	}
 
+	isSaltWater(): boolean {
+		return this.biome === Biome.OCEAN || this.biome === Biome.SEA_ICE;
+	}
+
 	isIceCovered(): boolean {
 		return this.biome === Biome.LAND_ICE || this.biome === Biome.SEA_ICE;
 	}

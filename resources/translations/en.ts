@@ -782,7 +782,7 @@ export default {
 	"parameter.planet.tilt": "Axial tilt",
 	"parameter.seed": "Random seed",
 	"parameter.terrain": "Terrain",
-	"parameter.terrain.continents": "Number of continents",
+	"parameter.terrain.continents": "Number of plates",
 	"parameter.terrain.sea_level": "Sea level",
 	"parameter.terrain.sea_level.-1": "Low",
 	"parameter.terrain.sea_level.-2": "Extra low",

@@ -18,6 +18,9 @@
 
 /**
  * The smallest and simplest binary heap priority queue in JavaScript.
+ * Compare should be defined so that it returns a negative number if a should come out first
+ * and a positive number if b should come out first.
+ * so compare = (a, b) => a - b will go from smallest to biggest numbers
  * @author Vladimir Agafonkin (@mourner)
  */
 export default class Queue<E> {

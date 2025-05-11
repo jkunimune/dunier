@@ -26,6 +26,7 @@ import {chooseLabelLocation} from "./labeling.js";
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
+const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
 const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than categorical colors
 const SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
 const SHOW_BACKGROUND = false; // have a big red rectangle under the map
@@ -341,6 +342,7 @@ export class Chart {
 	/**
 	 * do your thing
 	 * @param surface the surface that we're mapping
+	 * @param continents some sets of tiles that go nicely together (only used for debugging)
 	 * @param world the world on that surface, if we're mapping human features
 	 * @param svg the SVG element on which to draw everything
 	 * @param color the color scheme
@@ -355,7 +357,8 @@ export class Chart {
 	 * @param style the transliteration convention to use for them
 	 * @return the list of Civs that are shown in this map
 	 */
-	depict(surface: Surface, world: World | null, svg: SVGGElement,
+	depict(surface: Surface, continents: Set<Tile>[], world: World | null,
+	       svg: SVGGElement,
 	       color: string,
 		   rivers: boolean, borders: boolean,
 		   graticule = false, windrose = false,
@@ -388,7 +391,7 @@ export class Chart {
 		let iceFill;
 		let waterStroke;
 		let borderStroke;
-		if (COLOR_BY_PLATE) {
+		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT) {
 			landFill = FUCHSIA;
 			waterFill = 'none';
 			iceFill = 'none';
@@ -455,11 +458,18 @@ export class Chart {
 		// color in the land
 		if (COLOR_BY_PLATE) {
 			// color the land (and the sea (don't worry, we'll still trace coastlines later)) by plate index
-			for (let i = 0; i < 14; i ++) {
+			for (let i = 0; i < 20; i ++) {
 				this.fill(
 					filterSet(surface.tiles, n => n.plateIndex === i),
 					svg, COUNTRY_COLORS[i], Layer.GEO);
 			}
+		}
+		else if (COLOR_BY_CONTINENT) {
+			this.fill(surface.tiles, svg, EGGSHELL, Layer.GEO);
+			for (let i = 0; i < continents.length; i ++)
+				this.fill(
+					continents[i],
+					svg, COUNTRY_COLORS[i%COUNTRY_COLORS.length], Layer.GEO);
 		}
 		else if (color === 'physical') {
 			// color the land by biome
@@ -552,10 +562,10 @@ export class Chart {
 		}
 
 		// also color in sea-ice if desired
-		if (color === 'physical') {
+		if (iceFill !== 'none') {
 			this.fill(
 				filterSet(surface.tiles, n => n.isIceCovered()),
-				svg, BIOME_COLORS.get(Biome.SEA_ICE), Layer.BIO);
+				svg, iceFill, Layer.BIO);
 		}
 
 		// add borders

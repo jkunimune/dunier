@@ -775,7 +775,7 @@ export default {
 	"parameter.planet.tilt": "terchia da akse",
 	"parameter.seed": "falsozari sem",
 	"parameter.terrain": "geoforme",
-	"parameter.terrain.continents": "nombre da daynes",
+	"parameter.terrain.continents": "nombre da geoplate",
 	"parameter.terrain.sea_level": "gawia da hay",
 	"parameter.terrain.sea_level.-1": "lilo tali",
 	"parameter.terrain.sea_level.-2": "tali",

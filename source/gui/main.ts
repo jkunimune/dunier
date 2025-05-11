@@ -5,7 +5,7 @@
 import "../libraries/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import {DOM} from "./dom.js";
 import {format} from "./internationalization.js";
-import {Biome, generateTerrain} from "../generation/terrain.js";
+import {generateTerrain} from "../generation/terrain.js";
 import {Surface, Tile} from "../surface/surface.js";
 import {World} from "../generation/world.js";
 import {Random} from "../utilities/random.js";
@@ -20,6 +20,7 @@ import {Selector} from "../utilities/selector.js";
 import {Civ} from "../generation/civ.js";
 import {convertSVGToBlob, convertSVGToPNGAndThenDownloadIt, download, serialize} from "./export.js";
 import {filterSet} from "../utilities/miscellaneus.js";
+import {subdivideLand} from "../generation/subdivideRegion.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -220,10 +221,15 @@ function applyTerrain(): void {
 	console.log("jena zemforme...");
 	rng = rng.reset();
 	generateTerrain(
-		Number(DOM.val('terrain-continents')) * 2,
+		Number(DOM.val('terrain-continents')),
 		Number(DOM.val('terrain-sea-level')),
 		Number(DOM.val('terrain-temperature')),
 		surface, rng); // create the terrain!
+
+	// break the landmasses up into continents
+	continents = subdivideLand(
+		surface.tiles, surface.area/20, surface.area/3, 1000);
+	continents = continents.sort((tilesA, tilesB) => tilesB.size - tilesA.size);
 
 	console.log("grafa...");
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
@@ -231,26 +237,11 @@ function applyTerrain(): void {
 		projection, surface, surface.tiles,
 		"north", false, 62500);
 	mapper.depict(surface,
+				  continents,
 	              null,
 	              DOM.elm('terrain-map') as SVGGElement,
 	              'physical',
 	              true, false, true);
-
-	// save the continents in an easily accessible form
-	continents = [];
-	for (const tile of surface.tiles) {
-		if (tile.biome === Biome.OCEAN || tile.biome === Biome.SEA_ICE)
-			continue;
-		while (continents.length <= tile.plateIndex)
-			continents.push(new Set());
-		continents[tile.plateIndex].add(tile);
-	}
-	continents = continents.sort((tilesA, tilesB) => tilesB.size - tilesA.size);
-	let minSizeToList = MIN_SIZE_TO_LIST;
-	if (continents[0].size < minSizeToList && continents[0].size > 0)
-		minSizeToList = continents[0].size;
-	continents = continents.filter((tiles) => tiles.size >= minSizeToList);
-	continents = continents.slice(0, Number(DOM.val('terrain-continents')));
 
 	console.log("fina!");
 	lastUpdated = Layer.TERRAIN;
@@ -279,6 +270,7 @@ function applyHistory(): void {
 		projection, surface, surface.tiles,
 		"north", false, 62500);
 	mapper.depict(surface,
+				  continents,
 	              world,
 	              DOM.elm('history-map') as SVGGElement,
 	              'political',
@@ -347,6 +339,7 @@ function applyMap(): void {
 		DOM.elm('test-text') as HTMLDivElement);
 	mappedCivs = chart.depict(
 		surface,
+		continents,
 		world,
 		DOM.elm('map-map') as SVGGElement,
 		DOM.val('map-color'),

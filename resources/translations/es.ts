@@ -777,7 +777,7 @@ export default {
 	"parameter.planet.tilt": "Inclinación axial",
 	"parameter.seed": "Semilla aleatoria",
 	"parameter.terrain": "Terreno",
-	"parameter.terrain.continents": "Número de continentes",
+	"parameter.terrain.continents": "Número de placas",
 	"parameter.terrain.sea_level": "Nivel de mar",
 	"parameter.terrain.sea_level.-1": "Bajo",
 	"parameter.terrain.sea_level.-2": "Muy bajo",
