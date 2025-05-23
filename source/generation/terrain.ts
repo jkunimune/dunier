@@ -454,14 +454,25 @@ function addRivers(surf: Surface): void {
 
 	const riverOrder: Map<Vertex, number> = new Map();
 	const riverStack: Array<Vertex> = [];
-	const riverQueue: Queue<{below: Vertex | Tile | EmptySpace, above: Vertex, maxHeight: number, uphillLength: number, quality: number}> = new Queue(
+	const riverQueue = new Queue<{below: Vertex, above: Vertex, maxHeight: number, uphillLength: number, quality: number}>(
 		[], (a, b) => b.quality - a.quality); // start with a queue of rivers forming from their deltas
 
-	for (const vertex of surf.vertices) { // fill it initially with coastal vertices that are guaranteed to flow into the ocean or off the edge
-		for (const tile of vertex.tiles) {
-			if (tile instanceof Tile && tile.biome === Biome.OCEAN) {
-				riverQueue.push({
-					below: tile, above: vertex,
+	// start by searching for vertices where a river can enter the ocean or flow off the edge
+	for (const vertex of surf.vertices) {
+		for (let i = 0; i < 3; i ++) { // if you can find any orientation
+			const a = vertex.tiles[i];
+			const b = vertex.tiles[(i + 1)%3];
+			const c = vertex.tiles[(i + 2)%3];
+			const viableAsADelta = (
+				(a instanceof EmptySpace || a.isSaltWater()) &&
+				(b instanceof Tile && !b.isSaltWater() &&
+				(c instanceof Tile && !c.isSaltWater())));
+			if (viableAsADelta) { // where there are two land tiles facing one sea/empty tile
+				vertex.downstream = a; // set its flow as into the ocean
+				riverOrder.set(vertex, 0);
+				riverStack.push(vertex);
+				riverQueue.push({ // then add its uphill neibor to the cue
+					below: vertex, above: b.rightOf(c),
 					maxHeight: 0, uphillLength: 0,
 					quality: Infinity,
 				});
@@ -478,7 +489,7 @@ function addRivers(surf: Surface): void {
 			riverStack.push(above); // cue it up for the flow calculation later
 			for (const beyond of above.neighbors.keys()) { // then look for what comes next
 				if (beyond !== null) {
-					if (beyond.downstream === null) { // (it's a little redundant, but checking availability here, as well, saves some time)
+					if (beyond.downstream === null) { // (it's a little redundant, but checking availability here as well saves some time)
 						if (beyond.height >= maxHeight - CANYON_DEPTH) {
 							const length = surf.distance(beyond, above);
 							let quality; // decide how good a river this would be
