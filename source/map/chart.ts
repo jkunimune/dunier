@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Domain, Edge, EmptySpace, INFINITE_PLANE, Surface, Tile, Vertex} from "../surface/surface.js";
+import {Domain, Edge, EmptySpace, INFINITE_PLANE, outline, Surface, Tile, Vertex} from "../surface/surface.js";
 import {
 	filterSet, localizeInRange,
 	pathToString, weightedAverage,
@@ -666,7 +666,7 @@ export class Chart {
 			for (const civ of world.getCivs(true))
 				if (this.projectPath(
 					Chart.convertToGreebledPath(
-						Chart.outline([...civ.tileTree.keys()].filter(n => !n.isWater())),
+						outline([...civ.tileTree.keys()].filter(n => !n.isWater())),
 						Layer.KULTUR, this.scale),
 					true).length > 0)
 					visible.push(civ);
@@ -693,7 +693,7 @@ export class Chart {
 		if (tiles.size <= 0)
 			return this.draw([], svg);
 		const segments = convertPathClosuresToZ(this.projectPath(
-			Chart.convertToGreebledPath(Chart.outline(tiles), greeble, this.scale), true));
+			Chart.convertToGreebledPath(outline(tiles), greeble, this.scale), true));
 		const path = this.draw(segments, svg);
 		path.setAttribute('style',
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin};`);
@@ -788,7 +788,7 @@ export class Chart {
 		const aspectRatio = lengthPerSize/heightPerSize;
 
 		const path = this.projectPath( // do the projection
-			Chart.convertToGreebledPath(Chart.outline(new Set(tiles)), Layer.KULTUR, this.scale),
+			Chart.convertToGreebledPath(outline(new Set(tiles)), Layer.KULTUR, this.scale),
 			true
 		);
 		if (path.length === 0)
@@ -844,9 +844,11 @@ export class Chart {
 	 * meaning you want the path representing the whole Surface (which will end up being just the map outline)
 	 * @param segments ordered Iterator of segments, which each have attributes .type (str) and .args ([double])
 	 * @param closePath if this is set to true, the map will make adjustments to account for its complete nature
+	 * @param cleanUpPath if this is set to true, this will purge any movetos without any connected segments
+	 *                    (otherwise some might unexpectedly appear at the fringes of the map region)
 	 * @return SVG.Path object in Cartesian coordinates
 	 */
-	projectPath(segments: PathSegment[], closePath: boolean): PathSegment[] {
+	projectPath(segments: PathSegment[], closePath=false, cleanUpPath=true): PathSegment[] {
 		const croppedToGeoRegion = intersection(
 			transformInput(this.projection.φMin, this.projection.λMin, segments),
 			this.geoEdges,
@@ -854,13 +856,15 @@ export class Chart {
 		);
 		if (croppedToGeoRegion.length === 0)
 			return [];
-		const projected = applyProjectionToPath(
+		let projected = applyProjectionToPath(
 			this.projection,
 			croppedToGeoRegion,
 			MAP_PRECISION/this.scale,
 		);
+		if (cleanUpPath)
+			projected = removeLoosePoints(projected);
 		const croppedToMapRegion = intersection(
-			removeLoosePoints(projected),
+			projected,
 			this.mapEdges,
 			INFINITE_PLANE, closePath,
 		);
@@ -879,76 +883,7 @@ export class Chart {
 
 		if (tileSet.size === 0)
 			throw new Error(`I cannot find the border of a nonexistent region.`);
-		return this.convertToGreebledPath(Chart.outline(tileSet), Layer.KULTUR, 1e-6);
-	}
-
-	/**
-	 * create some ordered loops of points that describe the boundary of these Tiles.
-	 * @param tiles Set of Tiles that are part of this group.
-	 * @return Array of loops, each loop being an Array of Vertexes or plain coordinate pairs
-	 */
-	static outline(tiles: Tile[] | Set<Tile>): ΦΛPoint[][] {
-		const tileSet = new Set(tiles);
-		const accountedFor = new Set(); // keep track of which Edges have been done
-		const output: ΦΛPoint[][] = [];
-		for (let inTile of tileSet) { // look at every included tile
-			for (let outTile of inTile.neighbors.keys()) { // and every tile adjacent to an included one
-				if (tileSet.has(outTile))
-					continue; // (we only care if that adjacent tile is excluded)
-				const startingEdge = inTile.neighbors.get(outTile); // the edge between them defines the start of the loop
-				if (accountedFor.has(startingEdge))
-					continue; // (and can ignore edges we've already hit)
-
-				const currentLoop: Vertex[][] = []; // if we've found a new edge, start going around it
-				let currentSection: Vertex[] = [inTile.rightOf(outTile)]; // keep track of each continuus section of this loop
-
-				do {
-					const edge = inTile.neighbors.get(outTile); // pick out the edge between them
-					accountedFor.add(edge); // check this edge off
-
-					const vertex = inTile.leftOf(outTile); // look for the next Vertex, going widdershins
-
-					// add the next Vertex to the complete Path
-					currentSection.push(vertex);
-
-					// now, advance to the next Tile(s)
-					const nextTile = vertex.widershinsOf(outTile);
-					if (nextTile instanceof EmptySpace) {
-						// if there isn't one after this Vertex, break off this section
-						currentLoop.push(currentSection);
-						// shimmy outTile around the internal portion of the edge
-						outTile = inTile;
-						let i = 0;
-						do {
-							outTile = outTile.surface.edge.get(outTile).next;
-							i ++;
-						} while (tileSet.has(outTile)); // until it becomes external again
-						inTile = outTile.surface.edge.get(outTile).prev; // then, grab the new inTile
-						// start a new section in the same loop on this side of the gap
-						currentSection = [inTile.rightOf(outTile)];
-					}
-					else if (tileSet.has(nextTile)) // if there is and it's in, make it the new inTile
-						inTile = nextTile;
-					else // if there is and it's out, make it the new outTile
-						outTile = nextTile;
-
-					if (output.length >= 100000)
-						throw new Error(`something went wrong why does this polygon have ${output.length} vertices?`);
-
-				} while (inTile.neighbors.get(outTile) !== startingEdge); // continue until you go all the outTile around this loop
-
-				// concatenate the first and last sections
-				if (currentLoop.length > 0) {
-					currentLoop[0] = currentSection.concat(currentLoop[0].slice(1));
-					output.push(...currentLoop); // and save all sections to the output
-				}
-				else {
-					output.push(currentSection);
-				}
-			}
-		}
-
-		return output;
+		return this.convertToGreebledPath(outline(tileSet), Layer.KULTUR, 1e-6);
 	}
 
 	/**

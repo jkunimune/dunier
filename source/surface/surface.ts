@@ -824,3 +824,74 @@ export class Edge {
 		return `${this.tileL.pos}--${this.tileR.pos}`;
 	}
 }
+
+
+/**
+ * create some ordered loops of points that describe the boundary of these Tiles.
+ * @param tiles Set of Tiles that are part of this group.
+ * @return Array of loops, each loop being an Array of Vertexes or plain coordinate pairs.
+ *         the first and last elements of each loop are the same iff the outline is a closed loop.
+ */
+export function outline(tiles: Tile[] | Set<Tile>): Vertex[][] {
+	const tileSet = new Set(tiles);
+	const accountedFor = new Set(); // keep track of which Edges have been done
+	const output: Vertex[][] = [];
+	for (let inTile of tileSet) { // look at every included tile
+		for (let outTile of inTile.neighbors.keys()) { // and every tile adjacent to an included one
+			if (tileSet.has(outTile))
+				continue; // (we only care if that adjacent tile is excluded)
+			const startingEdge = inTile.neighbors.get(outTile); // the edge between them defines the start of the loop
+			if (accountedFor.has(startingEdge))
+				continue; // (and can ignore edges we've already hit)
+
+			const currentLoop: Vertex[][] = []; // if we've found a new edge, start going around it
+			let currentSection: Vertex[] = [inTile.rightOf(outTile)]; // keep track of each continuus section of this loop
+
+			do {
+				const edge = inTile.neighbors.get(outTile); // pick out the edge between them
+				accountedFor.add(edge); // check this edge off
+
+				const vertex = inTile.leftOf(outTile); // look for the next Vertex, going widdershins
+
+				// add the next Vertex to the complete Path
+				currentSection.push(vertex);
+
+				// now, advance to the next Tile(s)
+				const nextTile = vertex.widershinsOf(outTile);
+				if (nextTile instanceof EmptySpace) {
+					// if there isn't one after this Vertex, break off this section
+					currentLoop.push(currentSection);
+					// shimmy outTile around the internal portion of the edge
+					outTile = inTile;
+					let i = 0;
+					do {
+						outTile = outTile.surface.edge.get(outTile).next;
+						i ++;
+					} while (tileSet.has(outTile)); // until it becomes external again
+					inTile = outTile.surface.edge.get(outTile).prev; // then, grab the new inTile
+					// start a new section in the same loop on this side of the gap
+					currentSection = [inTile.rightOf(outTile)];
+				}
+				else if (tileSet.has(nextTile)) // if there is and it's in, make it the new inTile
+					inTile = nextTile;
+				else // if there is and it's out, make it the new outTile
+					outTile = nextTile;
+
+				if (output.length >= 100000)
+					throw new Error(`something went wrong why does this polygon have ${output.length} vertices?`);
+
+			} while (inTile.neighbors.get(outTile) !== startingEdge); // continue until you go all the outTile around this loop
+
+			// concatenate the first and last sections
+			if (currentLoop.length > 0) {
+				currentLoop[0] = currentSection.concat(currentLoop[0].slice(1));
+				output.push(...currentLoop); // and save all sections to the output
+			}
+			else {
+				output.push(currentSection);
+			}
+		}
+	}
+
+	return output;
+}
