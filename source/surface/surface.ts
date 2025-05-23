@@ -643,9 +643,9 @@ export class Vertex {
 	}
 
 	toString(): string {
-		return `${(this.tiles[0] instanceof Tile) ? this.tiles[0].pos : 'void'}--` +
-		       `${(this.tiles[1] instanceof Tile) ? this.tiles[1].pos : 'void'}--` +
-		       `${(this.tiles[2] instanceof Tile) ? this.tiles[2].pos : 'void'}`;
+		return `${(this.tiles[0] instanceof Tile) ? this.tiles[0].index : 'void'}--` +
+		       `${(this.tiles[1] instanceof Tile) ? this.tiles[1].index : 'void'}--` +
+		       `${(this.tiles[2] instanceof Tile) ? this.tiles[2].index : 'void'}`;
 	}
 }
 

@@ -25,6 +25,7 @@ import {chooseLabelLocation} from "./labeling.js";
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
+const SHOW_TILE_INDICES = false; // label each tile with its number
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
 const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than categorical colors
@@ -633,6 +634,21 @@ export class Chart {
 						civ.getName().toString(style),
 						g,
 						fontSize);
+		}
+
+		if (SHOW_TILE_INDICES) {
+			for (const tile of surface.tiles) {
+				const text = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
+				const location = this.projectPath([{type: 'M', args: [tile.φ, tile.λ]}], false, false);
+				if (location.length > 0) {
+					const [x, y] = location[0].args;
+					text.setAttribute("x", `${x}`);
+					text.setAttribute("y", `${y}`);
+					text.setAttribute("font-size", "0.2em");
+					text.textContent = `${tile.index}`;
+					svg.appendChild(text);
+				}
+			}
 		}
 
 		// add an outline to the whole thing
