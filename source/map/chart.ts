@@ -1050,14 +1050,11 @@ export class Chart {
 			for (let i = 1; i < line.length; i ++) {
 				const start = line[i - 1];
 				const end = line[i];
-				// do this long type-casting song and dance to see if there's an edge to greeble
+				// see if there's an edge to greeble
 				let edge: Edge | null = null;
-				if (start.hasOwnProperty('neighbors')) {
-					const neighbors = (<{neighbors: Map<ΦΛPoint, Edge>}><unknown>start).neighbors;
-					if (typeof neighbors.has === 'function' && typeof neighbors.get === 'function')
-						if (neighbors.has(end))
-							edge = neighbors.get(end);
-				}
+				if (start instanceof Vertex && end instanceof Vertex)
+					if (start.neighbors.has(end))
+						edge = start.neighbors.get(end);
 				let step: ΦΛPoint[];
 				// if there is an edge and it should be greebled, greeble it
 				if (edge !== null && Chart.weShouldGreeble(edge, greeble)) {
