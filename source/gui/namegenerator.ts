@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Random} from "../utilities/random.js";
-import {Dialect, Lect, ProtoLang, WordType} from "../language/lect.js";
+import {Dialect, Lect, ProtoLect, WordType} from "../language/lect.js";
 import {DOM} from "./dom.js";
 
 
@@ -18,7 +18,7 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
 	console.log("jena nam...");
 
 	const rng = new Random(seed);
-	let bax: Lect = new ProtoLang(rng);
+	let bax: Lect = new ProtoLect(rng);
 	for (let i = 0; i < 30; i ++)
 		bax = new Dialect(bax, rng);
 

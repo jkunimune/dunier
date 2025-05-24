@@ -35,7 +35,7 @@ export const SLOPE_FACTOR = 100; // TODO: express it as the minimum slope that a
 
 
 /**
- * collection of civilizations and languages that goes on a planet
+ * a mutable collection of civilizations and cultures that goes on a Surface
  */
 export class World {
 	/** [1/y] the rate at which the apocalypse happens */
@@ -72,7 +72,7 @@ export class World {
 				this.haveCataclysm(t + TIME_STEP, rng);
 			for (const civ of this.civs)
 				if (civ.tileTree.size > 0)
-					civ.update(rng);
+					civ.update(t + TIME_STEP, rng);
 		}
 	}
 
@@ -179,7 +179,7 @@ export class World {
 			if (civ.isDead())
 				this.civs.delete(civ); // clear out any Civs that no longer exist
 			else
-				civ.history.push({type: "cataclysm", year: year, participants: [civ.getName()]}); // mourn the Civs that still do
+				civ.history.push({type: "cataclysm", year: year, participants: [civ]}); // mourn the Civs that still do
 		}
 	}
 

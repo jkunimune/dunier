@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Random} from "../utilities/random.js";
-import {Dialect, Lect, WordType, ProtoLang} from "../language/lect.js";
+import {Dialect, Lect, WordType, ProtoLect} from "../language/lect.js";
 import {Tile} from "../surface/surface.js";
 import {Name} from "../language/name.js";
 import {Biome} from "./terrain.js";
@@ -79,9 +79,10 @@ export class Culture {
 	 * @param homeland the place that will serve as the new cultural capital
 	 * @param ruler the Culture that is dominant over this one, or null if it owns itself
 	 * @param technology the current technology level to which these people have access
+	 * @param birthYear the year in which this culture comes to be
 	 * @param seed a random number seed
 	 */
-	constructor(parent: Culture | null, homeland: Tile, ruler: Culture | null, technology: number, seed: number) {
+	constructor(parent: Culture | null, homeland: Tile, ruler: Culture | null, technology: number, birthYear: number, seed: number) {
 		const rng = new Random(seed);
 		this.featureLists = [];
 		this.homeland = homeland;
@@ -118,7 +119,7 @@ export class Culture {
 			this.klas.add("free");
 
 		if (parent === null) {
-			this.lect = new ProtoLang(rng); // create a new language from scratch
+			this.lect = new ProtoLect(birthYear, rng); // create a new language from scratch
 			for (const aspect of KULTUR_ASPECTS) { // make up a whole new culture
 				if (rng.probability(aspect.chance)) {
 					const featureList = [];
@@ -135,7 +136,7 @@ export class Culture {
 			}
 		}
 		else {
-			this.lect = new Dialect(parent.lect, rng);
+			this.lect = new Dialect(parent.lect, birthYear, rng);
 			for (let i = 0; i < KULTUR_ASPECTS.length; i ++) {
 				let featureList;
 				if (parent.featureLists[i] === null) {

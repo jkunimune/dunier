@@ -39,7 +39,7 @@ export class WordType extends Enumify {
 }
 
 /**
- * a collection of similar words.
+ * an immutable definition of a language's vocabulary
  */
 export abstract class Lect {
 	/** this language's preferd romanization style */
@@ -48,10 +48,13 @@ export abstract class Lect {
 	public readonly prefixing: boolean;
 	/** the proto-language for the set of lects intelligible to this one */
 	public macrolanguage: Lect;
+	/** the year in which this language was spoken */
+	public readonly year: number;
 
-	protected constructor(defaultStyle: string, rightBranching: boolean) {
+	protected constructor(defaultStyle: string, rightBranching: boolean, year: number) {
 		this.defaultStyle = defaultStyle;
 		this.prefixing = rightBranching;
+		this.year = year;
 	}
 
 	/**
@@ -71,15 +74,20 @@ export abstract class Lect {
 	 * is this language actually a dialect of lang?
 	 */
 	isIntelligible(lang: Lect): boolean {
+		if (this.year !== lang.year)
+			throw new Error("these languages were never contemporary so we shouldn't be comparing them.");
 		return this.macrolanguage === lang.macrolanguage;
 	}
 }
 
-export class ProtoLang extends Lect {
+/**
+ * an original Lect
+ */
+export class ProtoLect extends Lect {
 	private static VOWELS = ipa("aiueoəɛɔyø");
 	private static CONSON = ipa("mnptksljwhfbdɡrzŋʃʔxqvɣθʙ");
 	private static MEDIAL = ipa("ljwr");
-	private static R_INDEX = ProtoLang.CONSON.indexOf(ipa("r")[0]); // note the index of r, because it's phonotactically important
+	private static R_INDEX = ProtoLect.CONSON.indexOf(ipa("r")[0]); // note the index of r, because it's phonotactically important
 
 	private static P_ONSET = 0.8;
 	private static P_MEDIAL = 0.4;
@@ -103,15 +111,16 @@ export class ProtoLang extends Lect {
 	/** the noun endings */
 	private readonly fin: Sound[][];
 
-	constructor(rng: Random) {
+	constructor(year: number, rng: Random) {
 		super(
 			`native${rng.discrete(0, 4)}`,
-			rng.probability(0.2));
+			rng.probability(0.2),
+			year);
 		this.macrolanguage = this;
 
 		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
 		this.nVowel = 5 + rng.binomial(5, .1); // choose how many nuclei it will have
-		this.nMedial = (this.nConson > ProtoLang.R_INDEX) ? 4 : 0;
+		this.nMedial = (this.nConson > ProtoLect.R_INDEX) ? 4 : 0;
 		this.complexity = 2*Math.log10(1 + this.nConson)
 			+ Math.log10(1 + this.nMedial) + Math.log10(1 + this.nVowel);
 
@@ -189,14 +198,14 @@ export class ProtoLang extends Lect {
 		const syllableSize = syllables/syllableNumber;
 		let mul = [];
 		for (let i = 0; i < syllableNumber; i++) {
-			if (rng.probability(ProtoLang.P_ONSET*syllableSize))
-				mul.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
-			if (this.nMedial > 0 && rng.probability(ProtoLang.P_MEDIAL*syllableSize))
-				mul.push(rng.choice(ProtoLang.MEDIAL.slice(0, this.nMedial)));
-			if (rng.probability(ProtoLang.P_NUCLEUS*syllableSize))
-				mul.push(rng.choice(ProtoLang.VOWELS.slice(0, this.nVowel)));
-			if (rng.probability(ProtoLang.P_CODA*syllableSize))
-				mul.push(rng.choice(ProtoLang.CONSON.slice(0, this.nConson)));
+			if (rng.probability(ProtoLect.P_ONSET*syllableSize))
+				mul.push(rng.choice(ProtoLect.CONSON.slice(0, this.nConson)));
+			if (this.nMedial > 0 && rng.probability(ProtoLect.P_MEDIAL*syllableSize))
+				mul.push(rng.choice(ProtoLect.MEDIAL.slice(0, this.nMedial)));
+			if (rng.probability(ProtoLect.P_NUCLEUS*syllableSize))
+				mul.push(rng.choice(ProtoLect.VOWELS.slice(0, this.nVowel)));
+			if (rng.probability(ProtoLect.P_CODA*syllableSize))
+				mul.push(rng.choice(ProtoLect.CONSON.slice(0, this.nConson)));
 		}
 		return mul;
 	}
@@ -210,13 +219,16 @@ export class ProtoLang extends Lect {
 	}
 }
 
+/**
+ * a Lect derived from a ProtoLect with phonological processes
+ */
 export class Dialect extends Lect {
 	private readonly parent: Lect;
 	private readonly wordProcesses: WordProcess[];
 	private readonly phraseProcesses: PhraseProcess[];
 
-	constructor(parent: Lect, rng: Random) {
-		super(parent.defaultStyle, parent.prefixing);
+	constructor(parent: Lect, year: number, rng: Random) {
+		super(parent.defaultStyle, parent.prefixing, year);
 		this.parent = parent;
 		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 

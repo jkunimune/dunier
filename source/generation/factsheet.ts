@@ -10,6 +10,7 @@ import {argmax} from "../utilities/miscellaneus.js";
 import {compare} from "../language/script.js";
 import {Tile} from "../surface/surface.js";
 import {Vector} from "../utilities/geometry.js";
+import {Name} from "../language/name.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
@@ -128,17 +129,26 @@ function generateFactSheet(doc: Document, topic: Civ, tidalLock: boolean, transc
  * add some paragraphs to this page recounting the history of the given country
  */
 function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
-	let history = topic.history;
+	let history: {type: string, year: number, participants: (Civ | Culture | number)[]}[] = topic.history;
 
 	// add in the time of peak area if that's interesting
 	if (topic.peak.landArea > 2*topic.getLandArea())
-		history = [...history, {type: "peak", year: topic.peak.year, participants: [topic.getName(), topic.peak.landArea]}]; // TODO it's weird that this uses the country's modern name when the rest of history uses its contemporary name
+		history = [...history, {type: "peak", year: topic.peak.year, participants: [topic, topic.peak.landArea]}];
+	history.sort((a, b) => a.year - b.year);
 
 	let text = "";
-	for (const event of history)
+	for (const event of history) {
+		const args: (Name | number)[] = [];
+		for (const participant of event.participants) {
+			if (participant instanceof Civ || participant instanceof Culture)
+				args.push(participant.getName());
+			else
+				args.push(participant);
+		}
 		text += format(
 			transcriptionStyle, `factbook.history.${event.type}`,
-			event.year, ...event.participants);
+			event.year, ...args);
+	}
 	addParagraph(text, page, 'p');
 }
 

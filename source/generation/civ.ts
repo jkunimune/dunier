@@ -21,7 +21,7 @@ import {Dequeue} from "../datastructures/dequeue.js";
 
 
 /**
- * a single political entity
+ * a mutable collection of information defining a political entity
  */
 export class Civ {
 	public readonly id: number;
@@ -34,6 +34,8 @@ export class Civ {
 	/** the set of tiles it owns that are adjacent to tiles it doesn't */
 	public readonly border: Map<Tile, Set<Tile>>;
 	public readonly world: World;
+	/** the language last spoken by this Civ's ruling class */
+	private language: Lect;
 
 	/** everything interesting that has happened in this Civ's history */
 	public history: Event[];
@@ -77,19 +79,20 @@ export class Civ {
 
 		this.capital = capital;
 		if (capital.government === null) { // if this is a wholly new civilization
-			capital.culture = new Culture(null, capital, null, technology, rng.next() + 1); // make up a proto-culture (offset the seed to increase variability)
+			capital.culture = new Culture(null, capital, null, technology, birthYear, rng.next() + 1); // make up a proto-culture (offset the seed to increase variability)
 		}
+		this.language = this.capital.culture.lect;
 
 		// record how it came to be in its history
 		if (capital.government === null)
 			this.history = [
-				{type: "confederation", year: birthYear, participants: [this.capital.culture.getName(), this.getName()]}];
+				{type: "confederation", year: birthYear, participants: [this.capital.culture, this]}];
 		else {
 			const parent = capital.government;
 			this.history = [
-				{type: "independence", year: birthYear, participants: [this.getName(), parent.getName()]}];
+				{type: "independence", year: birthYear, participants: [this, parent]}];
 			parent.history.push(
-				{type: "secession", year: birthYear, participants: [parent.getName(), this.getName()]});
+				{type: "secession", year: birthYear, participants: [parent, this]});
 		}
 
 		this.conquer(capital, null, birthYear);
@@ -147,19 +150,19 @@ export class Civ {
 		// if this is the fall of a nation, record it in the annals of history
 		if (loser !== null && tile === loser.capital) {
 			const lastEvent = this.history[this.history.length - 1]; // figure out how to spin it: coup, civil war, or conquest?
-			const finishingAShortCivilWar = lastEvent.type === "independence" && lastEvent.year >= year - 100 && (<Name>lastEvent.participants[1]).equals(loser.getName()) && this.capital.culture === tile.culture;
-			const quashingRecentRebellion = lastEvent.type === "secession" && lastEvent.year >= year - 100 && (<Name>lastEvent.participants[1]).equals(loser.getName());
+			const finishingAShortCivilWar = lastEvent.type === "independence" && lastEvent.year >= year - 100 && lastEvent.participants[1] === loser && this.capital.culture === tile.culture;
+			const quashingRecentRebellion = lastEvent.type === "secession" && lastEvent.year >= year - 100 && lastEvent.participants[1] === loser;
 			if (quashingRecentRebellion)
 				this.history.pop(); // if we're just quashing a recent rebellion, it doesn't even need to be mentioned at all
 			else if (finishingAShortCivilWar) {
 				this.history = loser.history.filter(({type}) => !["conquest", "secession"].includes(type)); // if we just recently came from this country, make their history our own
 				if (tile === this.capital)
-					this.history.push({type: "coup", year: year, participants: [this.getName(), loser.getName()]});
-				else if (this.capital.culture.lect.isIntelligible(loser.capital.culture.lect))
-					this.history.push({type: "civil_war", year: year, participants: [this.getName(), loser.getName()]});
+					this.history.push({type: "coup", year: year, participants: [this, loser]});
+				else if (this.language.isIntelligible(loser.language))
+					this.history.push({type: "civil_war", year: year, participants: [this, loser]});
 			}
 			else
-				this.history.push({type: "conquest", year: year, participants: [this.getName(), loser.getName()]});
+				this.history.push({type: "conquest", year: year, participants: [this, loser]});
 		}
 
 		if (loser !== null) {
@@ -220,10 +223,11 @@ export class Civ {
 
 	/**
 	 * change with the passing of the centuries
+	 * @param year the current year
 	 * @param rng the random number generator to use for the update
 	 */
-	update(rng: Random) {
-		const rulingCulture = new Culture(this.capital.culture, this.capital, null, this.technology, rng.next()); // start by updating the capital, tying it to the new homeland
+	update(year: number, rng: Random) {
+		const rulingCulture = new Culture(this.capital.culture, this.capital, null, this.technology, year, rng.next()); // start by updating the capital, tying it to the new homeland
 		const newKultur: Map<Lect, Culture> = new Map(); // TODO: cultures should transcend boundaries
 		newKultur.set(
 			this.capital.culture.lect.macrolanguage,
@@ -234,7 +238,7 @@ export class Civ {
 			}
 			else { // otherwise update it normally
 				if (!newKultur.has(tile.culture.lect.macrolanguage)) { // if you encounter a culture that hasn't been updated and added to the Map yet
-					const updatedCulture = new Culture(tile.culture, tile.culture.homeland, rulingCulture, this.technology, rng.next() + 1);
+					const updatedCulture = new Culture(tile.culture, tile.culture.homeland, rulingCulture, this.technology, year, rng.next() + 1);
 					newKultur.set(
 						tile.culture.lect.macrolanguage,
 						updatedCulture); // update that culture, treating it as a diaspora
@@ -243,6 +247,7 @@ export class Civ {
 			}
 		}
 
+		this.language = rulingCulture.lect;
 		this.militarism *= Math.exp(-TIME_STEP / MEAN_EMPIRE_LIFETIME);
 		const densestPopulation = POPULATION_DENSITY*this.sortedTiles.peek().arableArea;
 		this.technology += TECH_ADVANCEMENT_RATE*TIME_STEP*densestPopulation*this.technology;
@@ -367,7 +372,7 @@ export class Civ {
 	}
 
 	getName(): Name {
-		return this.capital.culture.lect.getName(
+		return this.language.getName(
 			this.capital.index.toString(), WordType.COUNTRY);
 	}
 
@@ -377,5 +382,5 @@ export class Civ {
 interface Event {
 	type: string;
 	year: number;
-	participants: (Name | number)[];
+	participants: (Civ | Culture)[];
 }
