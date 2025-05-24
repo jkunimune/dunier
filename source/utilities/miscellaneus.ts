@@ -16,10 +16,11 @@ export function formatNumber(number: number): string {
 		return "0"; // zeros get formatted like so
 	}
 	else { // and other numbers are formatted like so
-		const magnitude = Math.pow(10, Math.floor(Math.log10(number)) - 3); // determine its order of magnitude
-		const value = Math.round(number/magnitude)*magnitude; // round to three decimal points below that
+		const magnitude = Math.pow(10, Math.floor(Math.log10(Math.abs(number)))); // determine its order of magnitude
+		const value = Math.round(number/magnitude*1e3)*magnitude/1e3; // round to three decimal points below that
 		let digits = value.toString().split("").reverse().join(""); // reverse it
-		digits = digits.replace(/(\d\d\d)/g, '$1 ').replace(/ $/, ''); // add thousands separators
+		if (magnitude >= 10000)
+			digits = digits.replace(/(\d\d\d)/g, '$1 ').replace(/ $/, ''); // add thousands separators
 		return digits.split("").reverse().join(""); // reverse it back
 	}
 }

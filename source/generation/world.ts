@@ -65,7 +65,7 @@ export class World {
 	 */
 	generateHistory(year: number, rng: Random) {
 		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
-			this.spawnCivs(rng); // TODO: build cities
+			this.spawnCivs(t, rng); // TODO: build cities
 			this.spreadCivs(rng);
 			this.spreadIdeas();
 			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
@@ -78,19 +78,20 @@ export class World {
 
 	/**
 	 * generate a few new civs in uninhabited territory
+	 * @param year the end of the time-step in which these are spawning
 	 * @param rng the random number generator to use
 	 */
-	spawnCivs(rng: Random) {
+	spawnCivs(year: number, rng: Random) {
 		for (const tile of this.planet.tiles) {
-			const demomultia = POPULATION_DENSITY*tile.arableArea; // TODO: implement nomads, city state leagues, and federal states.
+			const demomultia = POPULATION_DENSITY*tile.arableArea;
 			const ruler = tile.government;
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (rng.probability(CIVILIZATION_RATE*TIME_STEP*demomultia))
-					this.civs.add(new Civ(tile, this.nextID, this, rng));
+					this.civs.add(new Civ(tile, this.nextID, this, year, rng));
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
 				if (rng.probability(REBELLION_RATE*TIME_STEP*demomultia)) // use the population without technology correction for balancing
-					this.civs.add(new Civ(tile, this.nextID, this, rng, ruler.technology));
+					this.civs.add(new Civ(tile, this.nextID, this, year, rng, ruler.technology));
 			}
 			this.nextID ++;
 		}

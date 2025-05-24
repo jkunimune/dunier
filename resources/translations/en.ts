@@ -422,7 +422,7 @@ export default {
 	"factbook.history": "History",
 	"factbook.history.assimilation": "In {0}, the government completed a sustained campaign to assimilate the {2} people, rendering the {1} dialect of {3} extinct.  ",
 	"factbook.history.civil_war": "In {0}, a civil war was fought between the central {2} government and a breakaway government in {3}.  ",
-	"factbook.history.confederation": "The origins of the {2} are not well known.  The city of {3} was a major cultural center by {0}.  ",
+	"factbook.history.confederation": "The origins of the {1} are not well known.  The city of {2} was a major cultural center by {0}.  ",
 	"factbook.history.coup": "The presiding government was overthrown in a coup d'etat in {0}.  ",
 	"factbook.history.gain": "It used to have a much greater extent, but lost much of its territory in a {0} war with {2}.  ",
 	"factbook.history.independence": "{1} declared independence from {2} in {0}.  ",

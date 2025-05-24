@@ -116,11 +116,11 @@ function generateFactSheet(doc: Document, topic: Civ, tidalLock: boolean, transc
 			topic.getPopulation()),
 		page, 'p');
 
-	addHistorySection(page, topic, transcriptionStyle);
-
 	addGeographySection(page, topic, tidalLock, transcriptionStyle);
 
 	addDemographicsSection(page, topic, tidalLock, transcriptionStyle);
+
+	addHistorySection(page, topic, transcriptionStyle);
 }
 
 
@@ -128,6 +128,13 @@ function generateFactSheet(doc: Document, topic: Civ, tidalLock: boolean, transc
  * add some paragraphs to this page recounting the history of the given country
  */
 function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
+	let text = "";
+	console.log(topic.history);
+	for (const event of topic.history)
+		text += format(
+			transcriptionStyle, `factbook.history.${event.type}`,
+			event.year, ...event.participants);
+	addParagraph(text, page, 'p');
 }
 
 

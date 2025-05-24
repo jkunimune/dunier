@@ -35,6 +35,7 @@ export class Civ {
 	/** the set of tiles it owns that are adjacent to tiles it doesn't */
 	public readonly border: Map<Tile, Set<Tile>>;
 	public readonly world: World;
+	public readonly history: Event[];
 
 	/** base military strength */
 	public militarism: number;
@@ -48,10 +49,11 @@ export class Civ {
 	 * @param capital the home tile, with which this empire starts
 	 * @param id a nonnegative integer unique to this civ
 	 * @param world the world in which this civ lives
+	 * @param birthYear the exact year in which this Civ is born
 	 * @param rng th random number generator to use to set Civ properties
 	 * @param technology the starting technological multiplier
 	 */
-	constructor(capital: Tile, id: number, world: World, rng: Random, technology: number = 1) {
+	constructor(capital: Tile, id: number, world: World, birthYear: number, rng: Random, technology: number = 1) {
 		this.world = world;
 		this.id = id;
 		this.tileTree = new Map<Tile, {parent: Tile | null, children: Set<Tile>}>();
@@ -64,8 +66,21 @@ export class Civ {
 		this.arableArea = 0;
 
 		this.capital = capital;
-		if (capital.government === null) // if this is a wholly new civilization
+		if (capital.government === null) { // if this is a wholly new civilization
 			capital.culture = new Culture(null, capital, null, technology, rng.next() + 1); // make up a proto-culture (offset the seed to increase variability)
+		}
+
+		// record how it came to be in its history
+		if (capital.government === null)
+			this.history = [
+				{type: "confederation", year: birthYear, participants: [this.capital.culture.getName(), this.getName()]}];
+		else if (capital.government.capital !== capital)
+			this.history = [
+				{type: "independence", year: birthYear, participants: [this.getName(), capital.government.getName()]}];
+		else
+			this.history = [
+				...capital.government.history, {type: "coup", year: birthYear, participants: []}];
+
 		this.conquer(capital, null);
 	}
 
@@ -323,4 +338,11 @@ export class Civ {
 			this.capital.index.toString(), WordType.COUNTRY);
 	}
 
+}
+
+
+interface Event {
+	type: string;
+	year: number;
+	participants: Name[];
 }
