@@ -128,9 +128,14 @@ function generateFactSheet(doc: Document, topic: Civ, tidalLock: boolean, transc
  * add some paragraphs to this page recounting the history of the given country
  */
 function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
+	let history = topic.history;
+
+	// add in the time of peak area if that's interesting
+	if (topic.peak.landArea > 2*topic.getLandArea())
+		history = [...history, {type: "peak", year: topic.peak.year, participants: [topic.getName(), topic.peak.landArea]}]; // TODO it's weird that this uses the country's modern name when the rest of history uses its contemporary name
+
 	let text = "";
-	console.log(topic.history);
-	for (const event of topic.history)
+	for (const event of history)
 		text += format(
 			transcriptionStyle, `factbook.history.${event.type}`,
 			event.year, ...event.participants);

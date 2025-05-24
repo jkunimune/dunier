@@ -66,10 +66,10 @@ export class World {
 	generateHistory(year: number, rng: Random) {
 		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
 			this.spawnCivs(t, rng); // TODO: build cities
-			this.spreadCivs(rng);
+			this.spreadCivs(t, t + TIME_STEP, rng);
 			this.spreadIdeas();
 			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
-				this.haveCataclysm(rng);
+				this.haveCataclysm(t + TIME_STEP, rng);
 			for (const civ of this.civs)
 				if (civ.tileTree.size > 0)
 					civ.update(rng);
@@ -99,16 +99,18 @@ export class World {
 
 	/**
 	 * expand the territories of expansionist civs
+	 * @param start_time the year in which we start this timestep
+	 * @param stop_time the year in which we freeze the borders
 	 * @param rng the random number generator to use
 	 */
-	spreadCivs(rng: Random) {
+	spreadCivs(start_time: number, stop_time: number, rng: Random) {
 		const invasions: Queue<{time: number, invader: Civ, start: Tile, end: Tile}> = new Queue(
 			[], (a, b) => a.time - b.time); // keep track of all current invasions
 		for (const invader of this.civs) {
 			for (const ourTile of invader.border.keys()) { // each civ initiates all its invasions
 				for (const theirTile of invader.border.get(ourTile)) {
-					const time = rng.exponential(invader.estimateInvasionTime(ourTile, theirTile)); // figure out when they will be done
-					if (time <= TIME_STEP) // if that goal is within reach
+					const time = start_time + rng.exponential(invader.estimateInvasionTime(ourTile, theirTile)); // figure out when they will be done
+					if (time <= stop_time) // if that goal is within reach
 						invasions.push({time: time, invader: invader, start: ourTile, end: theirTile}); // start on it
 				}
 			}
@@ -120,12 +122,12 @@ export class World {
 			const invadeeStrength = (invadee !== null) ? invadee.getStrength() : 0;
 			if (invader.tileTree.has(start) && !invader.tileTree.has(end) &&
 					invaderStrength > invadeeStrength) { // check that they're still doable
-				invader.conquer(end, start); // update the game state
+				invader.conquer(end, start, time); // update the game state
 				for (const conquerdLand of invader.getAllChildrenOf(end)) { // and set up new invasions that bild off of it
 					for (const neighbor of conquerdLand.neighbors.keys()) {
 						if (!invader.tileTree.has(neighbor)) {
 							time = time + rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
-							if (time <= TIME_STEP) {
+							if (time <= stop_time) {
 								invasions.push({time: time, invader: invader, start: end, end: neighbor});
 							}
 						}
@@ -164,19 +166,21 @@ export class World {
 
 	/**
 	 * devastate the entire world. the details of how are fuzzy, but in a nutshell half of all people die (well, more
-	 * accurately, half of all provinces are depopulated, and half of all technologies are lost.
+	 * accurately, 80% of all provinces are depopulated, and 80% of all technologies are lost.
 	 */
-	haveCataclysm(rng: Random) {
+	haveCataclysm(year: number, rng: Random) {
 		for (const civ of this.civs) {
 			for (const tile of [...civ.tileTree.keys()])
 				if (civ.tileTree.has(tile) && !rng.probability(APOCALYPSE_SURVIVAL_RATE))
 					civ.lose(tile);
 			civ.technology *= rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE)*2, 1);
 		}
-		for (const civ of this.civs)
+		for (const civ of this.civs) {
 			if (civ.isDead())
 				this.civs.delete(civ); // clear out any Civs that no longer exist
-
+			else
+				civ.history.push({type: "cataclysm", year: year, participants: [civ.getName()]}); // mourn the Civs that still do
+		}
 	}
 
 	/**

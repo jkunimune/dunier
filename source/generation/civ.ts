@@ -16,7 +16,6 @@ import {
 } from "./world.js";
 import {Culture} from "./culture.js";
 import {Name} from "../language/name.js";
-import {Biome} from "./terrain.js";
 import Queue from "../datastructures/queue.js";
 import {Dequeue} from "../datastructures/dequeue.js";
 
@@ -35,14 +34,22 @@ export class Civ {
 	/** the set of tiles it owns that are adjacent to tiles it doesn't */
 	public readonly border: Map<Tile, Set<Tile>>;
 	public readonly world: World;
-	public readonly history: Event[];
+
+	/** everything interesting that has happened in this Civ's history */
+	public history: Event[];
 
 	/** base military strength */
 	public militarism: number;
 	/** technological military modifier */
 	public technology: number;
+	/** the current total area (including ocean) in km^2 */
+	private totalArea: number;
+	/** the current land area in km^2 */
+	private landArea: number;
 	/** population multiplier (km^2) */
 	private arableArea: number;
+	/** the largest area it has ever had */
+	peak: {year: number, landArea: number};
 
 	/**
 	 * create a new civilization
@@ -63,7 +70,10 @@ export class Civ {
 
 		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
 		this.technology = technology;
+		this.totalArea = 0;
+		this.landArea = 0;
 		this.arableArea = 0;
+		this.peak = {year: birthYear, landArea: 0};
 
 		this.capital = capital;
 		if (capital.government === null) { // if this is a wholly new civilization
@@ -74,14 +84,15 @@ export class Civ {
 		if (capital.government === null)
 			this.history = [
 				{type: "confederation", year: birthYear, participants: [this.capital.culture.getName(), this.getName()]}];
-		else if (capital.government.capital !== capital)
+		else {
+			const parent = capital.government;
 			this.history = [
-				{type: "independence", year: birthYear, participants: [this.getName(), capital.government.getName()]}];
-		else
-			this.history = [
-				...capital.government.history, {type: "coup", year: birthYear, participants: []}];
+				{type: "independence", year: birthYear, participants: [this.getName(), parent.getName()]}];
+			parent.history.push(
+				{type: "secession", year: birthYear, participants: [parent.getName(), this.getName()]});
+		}
 
-		this.conquer(capital, null);
+		this.conquer(capital, null, birthYear);
 	}
 
 	/**
@@ -89,11 +100,12 @@ export class Civ {
 	 * subsidiary to it.
 	 * @param tile the land being acquired
 	 * @param from the place from which it was acquired
+	 * @param year the date on which this happened
 	 */
-	conquer(tile: Tile, from: Tile | null) {
+	conquer(tile: Tile, from: Tile | null, year: number) {
 		const loser = tile.government;
 
-		this._conquer(tile, from, loser);
+		this._conquer(tile, from, loser, year);
 
 		if (loser !== null)
 			loser.lose(tile); // do the opposite upkeep for the other gy
@@ -112,23 +124,48 @@ export class Civ {
 				}
 			}
 		}
+
+		if (this.getLandArea() >= this.peak.landArea) {
+			this.peak = {year: year, landArea: this.getLandArea()};
+		}
 	}
 
 	/**
 	 * do all the parts of conquer that happen recursively
 	 */
-	_conquer(tile: Tile, from: Tile | null, loser: Civ) {
+	_conquer(tile: Tile, from: Tile | null, loser: Civ, year: number) {
 		tile.government = this;
 		this.tileTree.set(tile, {parent: from, children: new Set()}); // add it to this.tileTree
 		if (from !== null)
 			this.tileTree.get(from).children.add(tile); // add it to from's children
 		this.sortedTiles.push(tile);
+		this.totalArea += tile.getArea();
+		if (!tile.isSaltWater())
+			this.landArea += tile.getArea();
 		this.arableArea += tile.arableArea;
+
+		// if this is the fall of a nation, record it in the annals of history
+		if (loser !== null && tile === loser.capital) {
+			const lastEvent = this.history[this.history.length - 1]; // figure out how to spin it: coup, civil war, or conquest?
+			const finishingAShortCivilWar = lastEvent.type === "independence" && lastEvent.year >= year - 100 && (<Name>lastEvent.participants[1]).equals(loser.getName()) && this.capital.culture === tile.culture;
+			const quashingRecentRebellion = lastEvent.type === "secession" && lastEvent.year >= year - 100 && (<Name>lastEvent.participants[1]).equals(loser.getName());
+			if (quashingRecentRebellion)
+				this.history.pop(); // if we're just quashing a recent rebellion, it doesn't even need to be mentioned at all
+			else if (finishingAShortCivilWar) {
+				this.history = loser.history.filter(({type}) => !["conquest", "secession"].includes(type)); // if we just recently came from this country, make their history our own
+				if (tile === this.capital)
+					this.history.push({type: "coup", year: year, participants: [this.getName(), loser.getName()]});
+				else if (this.capital.culture.lect.isIntelligible(loser.capital.culture.lect))
+					this.history.push({type: "civil_war", year: year, participants: [this.getName(), loser.getName()]});
+			}
+			else
+				this.history.push({type: "conquest", year: year, participants: [this.getName(), loser.getName()]});
+		}
 
 		if (loser !== null) {
 			for (const child of loser.tileTree.get(tile).children) // then recurse
 				if (child.arableArea > 0)
-					this._conquer(child, tile, loser);
+					this._conquer(child, tile, loser, year);
 		}
 		else {
 			tile.culture = this.capital.culture; // perpetuate the ruling culture
@@ -175,6 +212,9 @@ export class Civ {
 			this.tileTree.get(parent).children.delete(tile);
 		this.tileTree.delete(tile);
 
+		this.totalArea -= tile.getArea();
+		if (!tile.isSaltWater())
+			this.landArea -= tile.getArea();
 		this.arableArea -= tile.arableArea;
 	}
 
@@ -184,7 +224,7 @@ export class Civ {
 	 */
 	update(rng: Random) {
 		const rulingCulture = new Culture(this.capital.culture, this.capital, null, this.technology, rng.next()); // start by updating the capital, tying it to the new homeland
-		const newKultur: Map<Lect, Culture> = new Map();
+		const newKultur: Map<Lect, Culture> = new Map(); // TODO: cultures should transcend boundaries
 		newKultur.set(
 			this.capital.culture.lect.macrolanguage,
 			rulingCulture);
@@ -277,24 +317,17 @@ export class Civ {
 	}
 
 	/**
-	 * get the total controlld area, including ocean.  careful; this is an O(n) operation.
+	 * get the total controlld area, including ocean.
 	 */
 	getTotalArea(): number {
-		let area = 0;
-		for (const tile of this.tileTree.keys())
-			area += tile.getArea();
-		return area;
+		return this.totalArea;
 	}
 
 	/**
-	 * get the total controlld land area, other than ocean.  careful; this is an O(n) operation.
+	 * get the total controlld land area, other than ocean.
 	 */
 	getLandArea(): number {
-		let area = 0;
-		for (const tile of this.tileTree.keys())
-			if (tile.biome !== Biome.OCEAN)
-				area += tile.getArea();
-		return area;
+		return this.landArea;
 	}
 
 	/**
@@ -344,5 +377,5 @@ export class Civ {
 interface Event {
 	type: string;
 	year: number;
-	participants: Name[];
+	participants: (Name | number)[];
 }

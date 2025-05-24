@@ -41,4 +41,19 @@ export class Name {
 		}
 		return transcribe(this.parts, style);
 	}
+
+	equals(that: Name): boolean {
+		if (this.language !== that.language)
+			return false;
+		if (this.parts.length !== that.parts.length)
+			return false;
+		for (let i = 0; i < this.parts.length; i ++) {
+			if (this.parts[i].length !== that.parts[i].length)
+				return false;
+			for (let j = 0; j < this.parts[i].length; j ++)
+				if (!this.parts[i][j].equals(that.parts[i][j]))
+					return false;
+		}
+		return true;
+	}
 }

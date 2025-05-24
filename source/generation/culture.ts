@@ -86,7 +86,7 @@ export class Culture {
 		this.featureLists = [];
 		this.homeland = homeland;
 		this.klas = new Set<string>();
-		
+
 		// start by assigning the deterministic cultural classes it has from its location
 		if ([Biome.JUNGLE, Biome.STEAMLAND, Biome.DESERT].includes(this.homeland.biome))
 			this.klas.add("hot");
