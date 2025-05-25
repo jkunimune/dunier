@@ -351,17 +351,6 @@ export class Sound {
 			this.mode.enumKey.toLowerCase();
 	}
 
-	equals(that: Sound): boolean {
-		return this.silabia === that.silabia &&
-			this.longia === that.longia &&
-			this.minorLoke === that.minorLoke &&
-			this.nosia === that.nosia &&
-			this.latia === that.latia &&
-			this.voze === that.voze &&
-			this.loke === that.loke &&
-			this.mode === that.mode;
-	}
-
 	getSonority() {
 		return this.mode.sonority
 			- ((this.latia === Latia.LATERAL) ? 1.5 : 0)
