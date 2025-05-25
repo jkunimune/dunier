@@ -9,18 +9,16 @@ import EN_STRINGS from "../../resources/translations/en.js";
 import ES_STRINGS from "../../resources/translations/es.js";
 import JA_STRINGS from "../../resources/translations/ja.js";
 import PD_STRINGS from "../../resources/translations/pd.js";
-import {formatNumber} from "../utilities/miscellaneus.js";
+import {enforceGrammaticalAgreement, formatNumber} from "../utilities/miscellaneus.js";
 
 
 let USER_STRINGS: { [index: string]: string };
-let SPECIAL_RULE_FOR_AND_BEFORE_I = false;
 switch (DOM.elm("bash").textContent) {
 	case "en":
 		USER_STRINGS = EN_STRINGS;
 		break;
 	case "es":
 		USER_STRINGS = ES_STRINGS;
-		SPECIAL_RULE_FOR_AND_BEFORE_I = true;
 		break;
 	case "ja":
 		USER_STRINGS = JA_STRINGS;
@@ -74,8 +72,6 @@ export function format(transcriptionStyle: string, sentence: string, ...args: (s
 				convertedArg = parts[0].toString();
 			else if (parts.length === 2) {
 				let and = format(transcriptionStyle, 'grammar.and');
-				if (SPECIAL_RULE_FOR_AND_BEFORE_I && /^[iíïịɨиイ]/i.test(parts[1]))
-					and = and.replace("y", "e");
 				convertedArg = parts[0] + and + parts[1];
 			}
 			else {
@@ -83,8 +79,6 @@ export function format(transcriptionStyle: string, sentence: string, ...args: (s
 				const first_separator = format(transcriptionStyle, 'grammar.comma');
 				const last_part = parts[parts.length - 1];
 				let last_separator = format(transcriptionStyle, 'grammar.comma_and');
-				if (SPECIAL_RULE_FOR_AND_BEFORE_I && /^[iíïịɨиイ]/i.test(parts[parts.length - 1]))
-					last_separator = last_separator.replace("y", "e");
 				convertedArg = first_parts.join(first_separator) + last_separator + last_part;
 			}
 		}
@@ -92,5 +86,5 @@ export function format(transcriptionStyle: string, sentence: string, ...args: (s
 			throw new Error(`Could not find user string in resource file for ${args[i]}`);
 		output = output.replaceAll(`{${i}}`, convertedArg); // then slot it in
 	}
-	return output;
+	return enforceGrammaticalAgreement(output);
 }

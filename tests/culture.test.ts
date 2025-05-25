@@ -9,7 +9,7 @@ import ES_STRINGS from "../resources/translations/es.js";
 import JA_STRINGS from "../resources/translations/ja.js";
 import PD_STRINGS from "../resources/translations/pd.js";
 import TECHNOLOGIES from "../resources/tech_tree.js";
-import {formatNumber} from "../source/utilities/miscellaneus.js";
+import {enforceGrammaticalAgreement, formatNumber} from "../source/utilities/miscellaneus.js";
 
 
 const USER_STRING_SETS = [EN_STRINGS, ES_STRINGS, JA_STRINGS, PD_STRINGS];
@@ -70,6 +70,16 @@ describe("tech_tree.ts", () => {
 });
 
 describe("format", () => {
+	test("grammatical agreement", () => {
+		expect(enforceGrammaticalAgreement(
+			"a(n) egg y/e a(n) ham y/e hielo. a (e)l(a) mapa pequeñ@. a (e)l(a) fuente pequeñ@. capas larg@s."
+		)).toEqual(
+			"an egg y a ham e hielo. al mapa pequeño. a la fuente pequeña. capas largas."
+		);
+	});
+	test("four digits", () => {
+		expect(formatNumber(1234)).toEqual("1234");
+	});
 	test("six digits", () => {
 		expect(formatNumber(123456)).toEqual("123 500");
 	});

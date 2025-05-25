@@ -8,6 +8,73 @@ import {PathSegment, XYPoint} from "./coordinates.js";
 import {Random} from "./random.js";
 import {trajectoryIntersection, Vector} from "./geometry.js";
 
+
+const VOWELS = /[aeiouáéíóúäạåæëẹəïịɨöọœüụỵаиоуыэアイウエオ]/i;
+const FRONT_HIGH_VOWELS = /[iíïịɨиイ]/i;
+const SILENT_LETTERS = /[hʕʻ]/i;
+const IRREGULAR_FEMININE_NOUNS = ["clave", "fuente"];
+const IRREGULAR_MASCULINE_NOUNS = ["mapa"];
+
+
+/**
+ * go through this string and replace "a(n)", "y/e", " "@"
+ * @param phrase
+ */
+export function enforceGrammaticalAgreement(phrase: string): string {
+	// replace "a(n)" with either "a" or "an" depending on the next letter
+	while (phrase.search(/a\(n\) /i) >= 0) {
+		const i = phrase.search(/a\(n\) /i);
+		if (phrase[i + 5].match(VOWELS))
+			phrase = phrase.slice(0, i) + "an " + phrase.slice(i + 5);
+		else
+			phrase = phrase.slice(0, i) + "a " + phrase.slice(i + 5);
+	}
+	// replace "y/e" with either "y" or "e" depending on the next two letters
+	while (phrase.search(/y\/e \S./i) >= 0) {
+		const i = phrase.search(/y\/e \S./i);
+		if (phrase[i + 4].match(FRONT_HIGH_VOWELS) ||
+			(phrase[i + 4].match(SILENT_LETTERS) && phrase[i + 5].match(FRONT_HIGH_VOWELS)))
+			phrase = phrase.slice(0, i) + "e " + phrase.slice(i + 4);
+		else
+			phrase = phrase.slice(0, i) + "y " + phrase.slice(i + 4);
+	}
+	// replace "@" with either "a" or "o" depending on the previus word
+	while (phrase.search(/\S \S*@/i) >= 0) {
+		const match = phrase.match(/\b((\S*[^s])s? \S*)@/i);
+		const i = match.index + match[1].length;
+		if (esFeminina(match[2]))
+			phrase = phrase.slice(0, i) + "a" + phrase.slice(i + 1);
+		else
+			phrase = phrase.slice(0, i) + "o" + phrase.slice(i + 1);
+	}
+	// replace "(e)l(a)" with either "el" or "la" depending on the next word
+	while (phrase.search(/\(e\)l\(a\) /i) >= 0) {
+		const match = phrase.match(/\(e\)l\(a\) (\S*)\b/i);
+		if (esFeminina(match[1]))
+			phrase = phrase.slice(0, match.index) + "la" + phrase.slice(match.index + 7);
+		else
+			phrase = phrase.slice(0, match.index) + "el" + phrase.slice(match.index + 7);
+	}
+	// fix "de el" and "a el"
+	phrase = phrase.replaceAll(/\bde el\b/g, "del");
+	phrase = phrase.replaceAll(/\ba el\b/g, "al");
+	return phrase;
+}
+
+/**
+ * figure out the gender of this word in Spanish
+ */
+function esFeminina(palabra: string): boolean {
+	if (IRREGULAR_FEMININE_NOUNS.includes(palabra))
+		return true;
+	else if (IRREGULAR_MASCULINE_NOUNS.includes(palabra))
+		return false;
+	else if (palabra.endsWith("a"))
+		return true;
+	else
+		return false;
+}
+
 /**
  * nicely format a number (the result of this function looks way nicer than Number.toString)
  */
