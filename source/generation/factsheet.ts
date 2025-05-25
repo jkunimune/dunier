@@ -12,6 +12,7 @@ import {Tile} from "../surface/surface.js";
 import {Vector} from "../utilities/geometry.js";
 import {Name} from "../language/name.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
+import TECHNOLOGIES from "../../resources/tech_tree.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
@@ -294,6 +295,23 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolea
  * add some paragraphs to this page listing and describing the peoples of the given country
  */
 function addDemographicsSection(page: HTMLDivElement, topic: Civ, tidalLock: boolean, transcriptionStyle: string) {
+	// write a bit about the technology level
+	const techDescriptors = new Map<string, string>();
+	for (const technology of TECHNOLOGIES)
+		if (topic.technology >= Math.exp((technology.year + 3000)/1400))
+			techDescriptors.set(technology.type, technology.key);
+	addParagraph(
+		format(
+			transcriptionStyle, `factbook.tech`,
+			topic.getName(),
+			`factbook.tech.age.${techDescriptors.get("age")}`,
+			`factbook.tech.fighting.${techDescriptors.get("fighting")}`,
+			`factbook.tech.movement.${techDescriptors.get("movement")}`,
+			`factbook.tech.lighting.${techDescriptors.get("lighting")}`,
+			`factbook.tech.other.${techDescriptors.get("other")}`,
+		),
+		page, 'p');
+
 	// calculate the centroid of the whole country
 	let civCentroid = new Vector(0, 0, 0);
 	for (const tile of topic.tileTree.keys())
