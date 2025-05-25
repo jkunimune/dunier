@@ -560,7 +560,7 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, s
 					s = startWeight*start.s + (1 - startWeight)*end.s;
 				}
 				if (domain.isPeriodic())
-					s = localizeInRange(s, start.s - π, start.s + π);
+					s = localizeInRange(s, domain.sMin, domain.sMax);
 				intersections = [{s: s, goingEast: goingRight}];
 			}
 			else
