@@ -11,6 +11,7 @@ import {compare} from "../language/script.js";
 import {Tile} from "../surface/surface.js";
 import {Vector} from "../utilities/geometry.js";
 import {Name} from "../language/name.js";
+import {Biome, BIOME_NAMES} from "./terrain.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
@@ -254,10 +255,37 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolea
 	else
 		type = 'generic';
 
+	const locationSentence = format(
+		transcriptionStyle, `factbook.geography.${type}`,
+		topic.getName(), borderSpecifier);
+
+	// tally up all the biomes in this country
+	const biomeCounter: number[] = [];
+	for (const tile of topic.tileTree.keys()) {
+		while (biomeCounter.length <= tile.biome)
+			biomeCounter.push(0);
+		biomeCounter[tile.biome] += tile.getArea();
+	}
+	// and figure out of which biome it has the most
+	const allBiomes = [];
+	for (let biome = 0; biome < biomeCounter.length; biome ++)
+		if (biome !== Biome.OCEAN && biome !== Biome.SEA_ICE && biome !== Biome.LAKE)
+			allBiomes.push(biome);
+	allBiomes.sort((a, b) => biomeCounter[b] - biomeCounter[a]);
+	let terrainSentence;
+	if  (biomeCounter[allBiomes[0]] >= topic.getLandArea()/2)
+		terrainSentence = format(
+			transcriptionStyle, `factbook.geography.biome`,
+			`factbook.geography.${BIOME_NAMES[allBiomes[0]]}`);
+	else
+		terrainSentence = format(
+			transcriptionStyle, `factbook.geography.biomes`,
+			allBiomes.slice(0, 3).map(biome => format(
+				transcriptionStyle, `factbook.geography.${BIOME_NAMES[biome]}`
+			)));
+
 	addParagraph(
-		format(
-			transcriptionStyle, `factbook.geography.${type}`,
-			topic.getName(), borderSpecifier),
+		locationSentence + terrainSentence,
 		page, 'p');
 }
 

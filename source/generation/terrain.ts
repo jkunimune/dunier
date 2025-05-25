@@ -101,6 +101,20 @@ export enum Biome {
 	STEAMLAND,
 }
 
+export const BIOME_NAMES = [
+	"ocean",
+	"lake",
+	"sea_ice",
+	"land_ice",
+	"tundra",
+	"taiga",
+	"forest",
+	"jungle",
+	"desert",
+	"grassland",
+	"steamland",
+];
+
 export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.OCEAN,     0.1],
 	[Biome.JUNGLE,    0.1],
