@@ -144,7 +144,7 @@ describe("script", () => {
 		words[2][0] = words[2][0].with(Nosia.NASALIZED);
 		words[2][1] = words[2][1].with(Nosia.NASALIZED);
 		test("ipa", () => {
-			expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwijən j̃ʊ̃ŋ wiwiɡjaɡwaɡwiɡaɡiθaθikaki");
+			expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwi.jən j̃ʊ̃ŋ wi.wiɡ.jaɡ.waɡ.wi.ɡa.ɡi.θa.θi.ka.ki");
 		});
 		test("en", () => {
 			expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung Wewegiagwagwegageethathecacky");

@@ -247,7 +247,9 @@ export default {
       "symbols": ["ɒ",  "o",  "o",  "o*", "о",  "o",  "o",  "å",  "a",  "ọ",  "a"] }
   ],
   "suprasegmentals": [
-    { "name": "pause",
+    { "name": "syllable break",
+      "symbols": [".",  "",   "",   "",   "",   "",   "",   "",   "",   "",   ""] },
+    { "name": "word break",
       "symbols": [" ",  " ",  " ",  " ",  "-",  "・",  " ",  " ",  " ",  " ",  "-"] }
   ],
   "modifiers": [
@@ -282,9 +284,9 @@ export default {
     { "name": "prenasaliz",
       "symbols": ["x͡Y", "xY", "xY", "xY", "xY", "ンY", "xY", "xY", "xY", "Yx", "xY"] },
     { "name": "primary",
-      "symbols": ["X́",  "X",  "X́",  "X",  "X́",  "X",  "X",  "X",  "X",  "X́",  "X"] },
+      "symbols": ["ˈX",  "X",  "X́",  "X",  "X́",  "X",  "X",  "X",  "X",  "X́",  "X"] },
     { "name": "secondary",
-      "symbols": ["X̀",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X"] },
+      "symbols": ["ˌX",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X"] },
     { "name": "glide",
       "symbols": ["X̯",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X̆",  "X"] },
     { "name": "syllabic",

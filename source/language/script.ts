@@ -189,6 +189,24 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
 }
 
 /**
+ * split a word up into its syllables
+ */
+function syllabate(sounds: Sound[]): Sound[][] {
+	const nucleusIndices = [];
+	for (let i = 0; i < sounds.length; i ++)
+		if (sounds[i].is(Quality.SYLLABIC))
+			nucleusIndices.push(i);
+	const breakIndices = [0];
+	for (let i = 0; i < nucleusIndices.length - 1; i ++)
+		breakIndices.push(Math.ceil((nucleusIndices[i] + nucleusIndices[i + 1])/2));
+	breakIndices.push(sounds.length);
+	const syllables = [];
+	for (let i = 0; i < breakIndices.length - 1; i ++)
+		syllables.push(sounds.slice(breakIndices[i], breakIndices[i + 1]));
+	return syllables;
+}
+
+/**
  * convert a phonetic word to a unicode string somehow.
  * @param allSounds the array of sound-strings.
  * @param style the transcription style to use.
@@ -230,10 +248,27 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]);
 		}
 
+		// syllabate the word
+		const sound_syllables = syllabate(sounds);
+
 		// form the inicial spelling by reading the transcripcion out of the table
-		let symbols = "";
-		for (const sound of sounds)
-			symbols += lookUp(sound, style);
+		const symbol_syllables: string[] = [];
+		for (const syllable of sound_syllables)
+			symbol_syllables.push(syllable.map(sound => lookUp(sound, style)).join(""));
+
+		// apply IPA suprasegmental markings
+		if (style === 'ipa') {
+			// move all stress symbols to the start of the respective syllable
+			for (let i = 0; i < symbol_syllables.length; i ++) {
+				if (symbol_syllables[i].includes("ˈ"))
+					symbol_syllables[i] = "ˈ" + symbol_syllables[i].replace("ˈ", "");
+				else if (symbol_syllables[i].includes("ˌ"))
+					symbol_syllables[i] = "ˌ" + symbol_syllables[i].replace("ˌ", "");
+			}
+		}
+
+		// join the syllables with the appropriate separator
+		let symbols = symbol_syllables.join(TO_TEXT.get(style).get("syllable break"));
 
 		// apply russian spelling rules
 		if (style === 'ru') {
@@ -468,7 +503,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		allSymbols.push(symbols);
 	}
 
-	return allSymbols.join(TO_TEXT.get(style).get("pause"));
+	return allSymbols.join(TO_TEXT.get(style).get("word break"));
 }
 
 
