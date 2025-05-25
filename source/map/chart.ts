@@ -858,7 +858,9 @@ export class Chart {
 	draw(segments: PathSegment[], svg: Element): SVGPathElement {
 		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 		path.setAttribute('d', pathToString(segments));
-		return svg.appendChild(path); // put it in the SVG
+		if (segments.length > 0)
+			svg.appendChild(path); // put it in the SVG
+		return path;
 	}
 
 
