@@ -29,6 +29,7 @@ const SHOW_TILE_INDICES = false; // label each tile with its number
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
 const COLOR_BY_TECHNOLOGY = false; // choropleth the countries by technological level rather than categorical colors
+const COLOR_BY_TILE = false; // color each tile a different color
 const SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
 const SHOW_BACKGROUND = false; // have a big red rectangle under the map
 
@@ -392,7 +393,7 @@ export class Chart {
 		let iceFill;
 		let waterStroke;
 		let borderStroke;
-		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT) {
+		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE) {
 			landFill = FUCHSIA;
 			waterFill = 'none';
 			iceFill = 'none';
@@ -467,10 +468,17 @@ export class Chart {
 		}
 		else if (COLOR_BY_CONTINENT) {
 			this.fill(surface.tiles, svg, EGGSHELL, Layer.GEO);
-			for (let i = 0; i < continents.length; i ++)
+			for (let i = 0; i < 20; i ++)
 				this.fill(
 					continents[i],
-					svg, COUNTRY_COLORS[i%COUNTRY_COLORS.length], Layer.GEO);
+					svg, COUNTRY_COLORS[i], Layer.GEO);
+		}
+		else if (COLOR_BY_TILE) {
+			for (const tile of surface.tiles)
+				this.fill(
+					new Set([tile]),
+					svg, COUNTRY_COLORS[tile.index%COUNTRY_COLORS.length], Layer.GEO,
+					waterStroke, 0.35);
 		}
 		else if (color === 'physical') {
 			// color the land by biome
