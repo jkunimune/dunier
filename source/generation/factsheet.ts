@@ -30,6 +30,9 @@ export function generateFactbook(map: SVGSVGElement, civs: Civ[], tidalLock: boo
 	const listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
 	const doc = document.implementation.createHTMLDocument(format(
 		transcriptionStyle, 'parameter.factbook'));
+	const style = document.createElementNS('http://www.w3.org/2000/html', 'style');
+	style.innerHTML = 'body { font-family: "Noto Sans", "Arial", "sans-serif"; }';
+	doc.head.appendChild(style);
 	generateTitlePage(doc, map, listedCivs, transcriptionStyle);
 	for (const civ of listedCivs)
 		generateFactSheet(doc, civ, tidalLock, transcriptionStyle);
