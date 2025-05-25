@@ -629,6 +629,7 @@ export default {
 	"factbook.tech.lighting.gas": "ガス灯",
 	"factbook.tech.lighting.led": "LED",
 	"factbook.tech.lighting.oil": "油火",
+	"factbook.tech.lighting.soul": "地獄から収穫した魂",
 	"factbook.tech.movement.airplane": "飛行機に乗って",
 	"factbook.tech.movement.car": "自動車に乗って",
 	"factbook.tech.movement.carriage": "馬車に乗って",

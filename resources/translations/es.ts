@@ -629,6 +629,7 @@ export default {
 	"factbook.tech.lighting.gas": "gas",
 	"factbook.tech.lighting.led": "LEDs",
 	"factbook.tech.lighting.oil": "aceite",
+	"factbook.tech.lighting.soul": "frascos de almas condenadas",
 	"factbook.tech.movement.airplane": "por aeroplano",
 	"factbook.tech.movement.car": "por automóviles",
 	"factbook.tech.movement.carriage": "por carruaje",

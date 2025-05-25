@@ -628,6 +628,7 @@ export default {
 	"factbook.tech.lighting.gas": "gas",
 	"factbook.tech.lighting.led": "LEDs",
 	"factbook.tech.lighting.oil": "oil lamps",
+	"factbook.tech.lighting.soul": "souls of the damned trapped in glass jars",
 	"factbook.tech.movement.airplane": "by airplane",
 	"factbook.tech.movement.car": "automobiles",
 	"factbook.tech.movement.carriage": "in horse-drawn carriages",

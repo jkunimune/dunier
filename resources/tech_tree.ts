@@ -42,7 +42,8 @@ export default [
   {"year":  1990, "key": "led", "type": "lighting"},
   {"year":  2018, "key": "scooter", "type": "movement"},
   {"year":  2100, "key": "future", "type": "age"},
-  {"year":  2100, "key": "space", "type": "movement"},
-  {"year":  2200, "key": "vr", "type": "other"},
-  {"year":  2800, "key": "death_star", "type": "fighting"}
+  {"year":  2200, "key": "space", "type": "movement"},
+  {"year":  2300, "key": "vr", "type": "other"},
+  {"year":  2500, "key": "death_star", "type": "fighting"},
+  {"year":  2800, "key": "soul", "type": "lighting"}
 ];
