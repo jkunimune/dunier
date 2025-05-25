@@ -426,7 +426,7 @@ export default {
 	"factbook.history.confederation": "The country traces its origins back to the ancient {1} people, who appeared in {2} around {0}.  ",
 	"factbook.history.conquest": "In {0}, {1} conquered {2}.  ",
 	"factbook.history.coup": "In {0}, a coup d'etat installed a new government.  ",
-	"factbook.history.independence": "In {0}, {1} declared independence from {2}.  ",
+	"factbook.history.independence": "{1} declared independence from {2} in {0}.  ",
 	"factbook.history.peak": "At its peak in {0}, {1} controlled {2} km² of territory.  ",
 	"factbook.history.secession": "In {0}, {2} seceded from {1}.  ",
 	"factbook.house": "They mostly live in {0}.  ",
