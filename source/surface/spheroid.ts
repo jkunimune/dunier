@@ -27,13 +27,15 @@ export class Spheroid extends Surface {
 		if (obliquity < 0)
 			throw new Error(`the obliquity must be a nonnegative number, not ${obliquity}`);
 		super(-Math.PI/2, Math.PI/2, omega > 0);
+
 		this.radius = radius; // keep radius in km
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
+		if (w > 0.5) // 0.5 corresponds to an aspect ratio of about 2.4
+			throw new RangeError("Too fast to sustain an ellipsoidal planet.");
+
 		// this polynomial is based on some fitting done in source/python/simulate_perspective.py, assuming a uniformly dense fluid body.
 		// it doesn't quite match the Earth's flattening because the Earth is not uniformly dense.
 		this.aspectRatio = 1 + 1.25*w - 0.550*w*w + 7.362*w*w*w;
-		if (this.aspectRatio > 4)
-			throw new RangeError("Too fast to sustain an ellipsoidal planet.");
 		this.flattening = 1 - 1/this.aspectRatio;
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2));
 		this.obliquity = obliquity;

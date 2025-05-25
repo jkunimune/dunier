@@ -41,6 +41,18 @@ export class Selector {
 			throw new Error(`This element has no value:\n${element}`);
 	}
 
+	set(id: string, value: string): void {
+		const element = this.elm(id);
+		if (element.tagName.toLowerCase() === 'input')
+			(<HTMLInputElement> element).value = value;
+		else if (element.tagName.toLowerCase() === 'select')
+			(<HTMLSelectElement> element).value = value;
+		else if (element.hasAttribute('value'))
+			element.setAttribute('value', value);
+		else
+			throw new Error(`This element has no value:\n${element}`);
+	}
+
 	/**
 	 * see if the checkbox with the given ID is checked or not
 	 */

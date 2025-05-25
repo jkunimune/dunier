@@ -431,6 +431,45 @@ function postErrorAlert(message: string): void {
 
 
 /**
+ * automaticly adjust the day length for toroids or spheroids to keep things stable
+ */
+function fixDayLength() {
+	const locking = <HTMLInputElement>DOM.elm('planet-locked');
+	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
+	const gravity = Number(DOM.val('planet-gravity')) * 9.8;
+	// if it's spheroidal now
+	if (DOM.val("planet-type") === 'spheroid') {
+		// locking is okay
+		locking.toggleAttribute('disabled', false);
+		// make sure it's not spinning too fast
+		const minDayLength = Math.ceil(2*Math.PI/Math.sqrt(0.5*gravity/(radius*1000))/3600*10)/10;
+		DOM.set(
+			"planet-day",
+			String(Math.max(minDayLength, Number(DOM.val("planet-day")))));
+	}
+	// if it's toroidal now
+	else if (DOM.val("planet-type") === 'toroid') {
+		// locking is not okay
+		if (locking.checked) // uncheck tidal locking if we need to
+			locking.click();
+		locking.toggleAttribute('disabled', true); // and disable it
+		// make sure it's not spinning too fast or too slow
+		const minDayLength = Math.ceil(2*Math.PI/Math.sqrt(0.50*gravity/(radius*1000))/3600*10)/10;
+		const maxDayLength = Math.floor(2*Math.PI/Math.sqrt(0.15*gravity/(radius*1000))/3600*10)/10;
+		DOM.set(
+			"planet-day",
+			String(Math.max(minDayLength, Math.min(maxDayLength, Number(DOM.val("planet-day"))))));
+	}
+	// if it's planar
+	else {
+		// locking is okay
+		locking.toggleAttribute('disabled', false);
+	}
+}
+
+
+
+/**
  * when the map aspect ratio changes or one of the map size input spinners change,
  * make sure they're all consistent.
  */
@@ -568,6 +607,11 @@ DOM.elm('map-download-png').addEventListener('click', () => {
 DOM.elm('factbook-print').addEventListener('click', () => {
 	(DOM.elm('factbook-embed') as HTMLIFrameElement).contentWindow.print();
 });
+
+/**
+ * When the planet type changes, make sure the day length is legal
+ */
+DOM.elm('planet-type').addEventListener('change', () => fixDayLength());
 
 /**
  * When one of the map size inputs change, change its counterpart to match

@@ -3,20 +3,6 @@
 
 <!-- UI functions -->
 <script>
-  /** grey out tidal locking for toroidal planets */
-  function disableTidalLocking(type) {
-    const checkbox = document.getElementById('planet-locked');
-    if (type === 'toroid') { // if it's toroidal now
-      if (checkbox.checked) { // uncheck tidal locking if we need to
-        checkbox.click();
-        disableRotationParams(checkbox.checked);
-      }
-      checkbox.toggleAttribute('disabled', true); // and disable it
-    } else { // if it's anything else
-      checkbox.toggleAttribute('disabled', false); // enable it
-    }
-  }
-
   /** grey out the day length and obliquity when the planet is tidally locked */
   function disableRotationParams(locked) {
     document.getElementById('planet-day').toggleAttribute('disabled', locked); // rotation period
@@ -119,7 +105,7 @@
           <form>
             <div class="form-group">
               <label for="planet-type">{parameter.planet.shape}</label>
-              <select id="planet-type" onchange="disableTidalLocking(this.value); hideProjectionSelection(this.value);">
+              <select id="planet-type" onchange="hideProjectionSelection(this.value);">
                 <option selected value="spheroid">{parameter.planet.shape.spheroid}</option>
                 <option value="toroid">{parameter.planet.shape.toroid}</option>
                 <option value="plane">{parameter.planet.shape.plane}</option>

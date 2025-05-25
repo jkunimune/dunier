@@ -30,15 +30,17 @@ export class Toroid extends Surface {
 	 */
 	constructor(radius: number, gravity: number, omega: number, obliquity: number) {
 		super(-Infinity, Infinity, true);
+
 		const w = (radius*1000)*omega*omega/gravity; // this dimensionless parameter determines the aspect ratio
+		if (w > 0.5) // 0.5 corresponds to an aspect ratio of about 1.5
+			throw new RangeError("Too fast to sustain a toroidal planet.");
+		if (w < 0.15) // 0.15 corresponds to an aspect ratio of about 6.0
+			throw new RangeError("Too slow to sustain a toroidal planet.");
+
 		const aspectRatio = 1/(1.010*w + 0.618*w*w); // numerically determined formula for aspect ratio
 		this.elongation = 1/(1 - 0.204*w + 4.436*w*w); // numerically determined formula for elongation
 		if (!Number.isFinite(aspectRatio))
 			throw new RangeError("The toroid must be rotating.");
-		if (aspectRatio < 1.5)
-			throw new RangeError("Too fast to sustain a toroidal planet.");
-		if (aspectRatio > 6)
-			throw new RangeError("Too slow to sustain a toroidal planet.");
 		this.majorRadius = radius/(1 + 1/aspectRatio);
 		this.minorRadius = radius/aspectRatio/(1 + 1/aspectRatio);
 		this.obliquity = obliquity;
