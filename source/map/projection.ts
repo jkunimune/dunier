@@ -75,7 +75,9 @@ export class MapProjection {
 		this.λMin = this.λCenter - Math.PI;
 		this.λMax = this.λMin + 2*Math.PI;
 		this.domain = new Domain(
-			this.φMin, this.φMin + 2*Math.PI, this.λMin, this.λMax,
+			(this.φMin + this.φMax)/2 - Math.PI,
+			(this.φMin + this.φMax)/2 - Math.PI + 2*Math.PI, // this weird phrasing is to ensure the diff is always 2π even when there's roundoff
+			this.λMin, this.λMax,
 			(point) => this.surface.isOnEdge(assert_φλ(point)));
 	}
 
