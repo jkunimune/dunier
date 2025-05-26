@@ -164,7 +164,7 @@ export class Chart {
 
 	/**
 	 * build an object for visualizing geographic information in SVG.
-	 * @param projectionName the type of projection to choose – one of "equal_earth", "bonne", "conformal_conic", or "orthographic"
+	 * @param projectionName the type of projection to choose – one of "equal_earth", "bonne", "conformal_conic", "mercator", or "orthographic"
 	 * @param surface the Surface for which to design the projection
 	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
 	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
@@ -204,6 +204,9 @@ export class Chart {
 				centralMeridian, 0); // we'll revisit the longitude bounds later so leave them at 0 for now
 		else if (projectionName === 'conformal_conic')
 			this.projection = MapProjection.conformalConic(
+				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
+		else if (projectionName === 'mercator')
+			this.projection = MapProjection.mercator(
 				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
 		else if (projectionName === 'orthographic')
 			this.projection = MapProjection.orthographic(
