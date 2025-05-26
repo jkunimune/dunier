@@ -228,7 +228,7 @@ function applyTerrain(): void {
 
 	// break the landmasses up into continents
 	continents = subdivideLand(
-		surface.tiles, 6, 1000);
+		surface.tiles, 4, 1000);
 	continents = continents.sort((tilesA, tilesB) => tilesB.size - tilesA.size);
 
 	console.log("grafa...");

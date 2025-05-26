@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 
-import {outline, Tile, Vertex} from "../surface/surface.js";
+import {Tile} from "../surface/surface.js";
 import {filterSet} from "../utilities/miscellaneus.js";
 import Queue from "../datastructures/queue.js";
 
@@ -17,8 +17,16 @@ export function subdivideLand(tiles: Iterable<Tile>, targetNumContinents: number
 	if (land.size === 0)
 		return []; // if there is no land, then there are no continents
 
+	// first, perform a grassfire transform to get the distance from the ocean of each Tile
+	let distanceMap;
+	try {
+		distanceMap = calculateBoundaryDistance(land);
+	} catch (e) {
+		return [land]; // if this fails, that probably means there's no boundary, so just use the whole thing
+	}
+
 	// now calculate the "drainage divides" of this distance function
-	const basins = divideDrainageBasins(land);
+	const basins = calculateInvertedDrainageBasins(land, distanceMap);
 
 	// combine neiboring ones that are too small
 	const totalLandArea = [...land].map(t => t.getArea()).reduce((a, b) => a + b);
@@ -27,7 +35,7 @@ export function subdivideLand(tiles: Iterable<Tile>, targetNumContinents: number
 	const regions = combineAdjacentRegions(
 		basins, targetContinentArea, minimumContinentArea);
 
-	// then remove small ones and expand them to cover endorheic basins
+	// then remove small ones and expand the bigger ones to cover them
 	const continents = makeContinentsComprehensive(
 		land, regions, minimumContinentArea, connectionDistance);
 
@@ -36,86 +44,97 @@ export function subdivideLand(tiles: Iterable<Tile>, targetNumContinents: number
 
 
 /**
- * get the drainage basin for every river
+ * calculate the distance of every Tile in region from the nearest Tile in boundaries
  */
-function divideDrainageBasins(region: Set<Tile>): Region[] {
-	const basins: Region[][] = [];
-	const wraps: boolean[] = [];
-	// first iterate around the region's border
-	const vertices = outline(region);
-	for (let i = 0; i < vertices.length; i ++) {
-		wraps.push(vertices[i][0] === vertices[i][vertices[i].length - 1]);
-		basins.push([]);
-		for (let j = 0; j < vertices[i].length; j ++) {
-			if (wraps[i] && j === vertices[i].length - 1)
-				break; // skip the last vertex if it's the same as the first one
-			// find the basin for each vertex
-			const basin = findDrainageBasin(vertices[i][j]);
-			if (basin.area > 0) {
-				basin.borderLengths = new Map<Region, number>();
-				basin.neighbors = new Set<Region>();
-				basins[i].push(basin);
+function calculateBoundaryDistance(region: Set<Tile>): Map<Tile, number> {
+	// seed the queue with all coastal tiles
+	const startPoints = [];
+	for (const tile of region) {
+		for (const neibor of tile.neighbors.keys()) {
+			if (!region.has(neibor)) {
+				startPoints.push({
+					tile: tile,
+					seaDistance: tile.neighbors.get(neibor).getDistance()/2,
+				});
 			}
 		}
 	}
-	// then go back and assign adjacencies
-	for (let i = 0; i < basins.length; i ++) {
-		if (basins[i].length > 1) {
-			for (let j0 = 0; j0 < basins[i].length; j0 ++) {
-				if (!wraps[i] && j0 === basins[i].length - 1)
-					break; // skip connecting the last pair if this loop isn't closed
-				let j1 = (j0 + 1)%basins[i].length;
-				basins[i][j0].neighbors.add(basins[i][j1]);
-				basins[i][j1].neighbors.add(basins[i][j0]);
-			}
+	const grassfireQueue = new Queue<{ tile: Tile, seaDistance: number }>(
+		startPoints, (a, b) => a.seaDistance - b.seaDistance);
+	if (grassfireQueue.empty())
+		throw new Error("the region is somehow completely separated from the boundaries so the distance is undefined.");
+	// store the distances in this map
+	const seaDistanceMap = new Map<Tile, number>();
+	while (!grassfireQueue.empty()) {
+		const {tile, seaDistance} = grassfireQueue.pop();
+		if (seaDistanceMap.has(tile))
+			continue;
+		else {
+			seaDistanceMap.set(tile, seaDistance);
+			for (const mauka of tile.neighbors.keys())
+				if (region.has(mauka) && !seaDistanceMap.has(mauka))
+					grassfireQueue.push({
+						tile: mauka,
+						seaDistance: seaDistance + tile.neighbors.get(mauka).getDistance(),
+					});
 		}
 	}
 
-	const ravelledBasins = [];
-	for (let i = 0; i < basins.length; i ++)
-		ravelledBasins.push(...basins[i]);
-	return ravelledBasins;
+	// check that we got them all
+	for (const tile of region)
+		if (!seaDistanceMap.has(tile))
+			throw new Error(`what happened?  why didn't we get the distance of this BIOME-${tile.biome} tile?`);
+	if (seaDistanceMap.size !== region.size)
+		throw new Error(`what happened?  we categorized the distances of ${seaDistanceMap.size} tiles but we were supposed to categorize ${region.size}.`);
+
+	return seaDistanceMap;
 }
 
 
 /**
- * get the set of Tiles that drains into a given river Vertex
+ * calculate the inverted drainage divides of a heightmap.
+ * rather than seeding water thruout the region, making it flow downward, and seeing where it exits,
+ * we drop water at the edges of the region, make it flow upward, and see where it collects.
+ * @param tiles the set of tiles we want to divide up
+ * @param heightmap the Map used to determine the altitude of each Tile
+ * @return a bunch of Regions that cover the space
  */
-function findDrainageBasin(delta: Vertex): Region {
-	const riverVertices = new Set<Vertex>();
-	const abuttingTiles = new Set<Tile>();
-	// first explore up the river system
-	const explorationQueue: Vertex[] = [delta];
-	while (explorationQueue.length > 0) {
-		const vertex = explorationQueue.pop();
-		// note every vertex you pass
-		riverVertices.add(vertex);
-		// note all Tiles to which you are adjacent
-		for (const tile of vertex.tiles)
-			if (tile instanceof Tile && !tile.isSaltWater())
-				abuttingTiles.add(tile);
-		// then propagate to your upstream neibors
-		for (const neibor of vertex.neighbors.keys())
-			if (vertex === neibor.downstream)
-				explorationQueue.push(neibor);
+function calculateInvertedDrainageBasins(tiles: Set<Tile>, heightmap: Map<Tile, number>): Region[] {
+	// go from top to bottom, adding each Tile to the appropriate basin
+	const roots = new Set<Tile>();
+	const basins = new Map<Tile, Region>();
+	const tilesFromTopToBottom = [...tiles].sort((a, b) => heightmap.get(b) - heightmap.get(a));
+	for (const tile of tilesFromTopToBottom) {
+		if (!heightmap.has(tile))
+			throw new Error("the heightmap is incomplete!");
+		// calculate to which neibor this will flow
+		let highestNeibor = null;
+		for (const neibor of tile.neighbors.keys())
+			if (tiles.has(neibor))
+				if (highestNeibor === null || heightmap.get(neibor) > heightmap.get(highestNeibor))
+					highestNeibor = neibor;
+
+		// find the basin associated with that neibor
+		let basin: Region;
+		if (highestNeibor !== null && basins.has(highestNeibor)) {
+			basin = basins.get(highestNeibor);
+		}
+		else {
+			roots.add(tile); // or create a new one if this is a local max
+			basin = {tiles: new Set(), area: 0, borders: null};
+		}
+
+		// add it to that basin
+		basin.tiles.add(tile);
+		basin.area += tile.getArea();
+		basins.set(tile, basin);
 	}
 
-	// now filter out the abutting Tiles that should actually drain to adjacent river systems
-	const basin = new Set<Tile>();
-	let area = 0;
-	for (const tile of abuttingTiles) {
-		let bestNeiboringVertex: Vertex | null = null;
-		for (const {vertex} of tile.getPolygon())
-			if (bestNeiboringVertex === null || vertex.flow > bestNeiboringVertex.flow)
-				bestNeiboringVertex = vertex;
-		// if its neiboring vertex with the most flow is in the river system
-		if (riverVertices.has(bestNeiboringVertex)) {
-			basin.add(tile); // take it
-			area += tile.getArea();
-		}
-		// if its fastest flowing neibor is someone else, leave it
-	}
-	return {tiles: basin, area: area, borderLengths: null, neighbors: null};
+	// finally, extract all of the basins in an array
+	const uniqueBasins = [];
+	for (const root of roots)
+		uniqueBasins.push(basins.get(root));
+	return uniqueBasins;
 }
 
 
@@ -135,36 +154,32 @@ function combineAdjacentRegions(
 			map.set(tile, region);
 
 	// determine which are adjacent to each other and by how much
+	for (const region of regions)
+		region.borders = new Map<Region, number>();
 	for (const regionA of regions) {
 		for (const tile of regionA.tiles) {
 			for (const neibor of tile.neighbors.keys()) {
 				if (map.has(neibor) && regionA !== map.get(neibor)) {
 					const regionB = map.get(neibor);
-					if (!regionA.borderLengths.has(regionB))
-						regionA.borderLengths.set(regionB, 0);
-					let adjacency = regionA.borderLengths.get(regionB);
+					if (!regionA.borders.has(regionB))
+						regionA.borders.set(regionB, 0);
+					let adjacency = regionA.borders.get(regionB);
 					adjacency += tile.neighbors.get(neibor).getLength();
-					regionA.borderLengths.set(regionB, adjacency);
-					regionB.borderLengths.set(regionA, adjacency);
+					regionA.borders.set(regionB, adjacency);
 				}
 			}
 		}
 	}
 
-	for (const region of regions)
-		for (const neighbor of region.neighbors)
-			if (!region.borderLengths.has(neighbor))
-				region.borderLengths.set(neighbor, 0);
-
 	// then seed the merge cue
 	const initiallyPossibleMerges: {a: Region, b: Region, priority: number}[] = [];
 	for (const regionA of regions)
-		for (const regionB of regionA.neighbors)
+		for (const regionB of regionA.borders.keys())
 			if (regionA.area <= regionB.area) // include this check to reduce the number of duplicate mergers
 				initiallyPossibleMerges.push({
 					a: regionA,
 					b: regionB,
-					priority: regionA.borderLengths.get(regionB)/Math.min(regionA.area, regionB.area),
+					priority: regionA.borders.get(regionB)/Math.min(regionA.area, regionB.area),
 				});
 
 	const remainingRegions = new Set(regions);
@@ -177,7 +192,7 @@ function combineAdjacentRegions(
 	while (!queue.empty()) {
 		const {a, b, priority} = queue.pop();
 		if (Number.isNaN(priority))
-			throw new Error(`nan priorities are not okay.  the areas are ${a.area} km² and ${b.area} km² and their border is ${a.borderLengths.get(b)} km long`);
+			throw new Error(`nan priorities are not okay.  the areas are ${a.area} km² and ${b.area} km² and their border is ${a.borders.get(b)} km long`);
 		// stop when the continents get big or separated enuff
 		if (priority >= minimumAcceptableQuality || Math.min(a.area, b.area) < minimumArea) {
 			// skip any outdated merges
@@ -185,47 +200,38 @@ function combineAdjacentRegions(
 				continue;
 
 			// merge the regions and their associated data
-			const combinedBorderLengths = a.borderLengths;
-			for (const neighbor of b.borderLengths.keys()) {
-				if (!combinedBorderLengths.has(neighbor))
-					combinedBorderLengths.set(neighbor, 0);
-				let borderLength = combinedBorderLengths.get(neighbor);
-				borderLength += b.borderLengths.get(neighbor);
-				combinedBorderLengths.set(neighbor, borderLength);
+			const combinedBorders = a.borders;
+			for (const neighbor of b.borders.keys()) {
+				if (!combinedBorders.has(neighbor))
+					combinedBorders.set(neighbor, 0);
+				let borderLength = combinedBorders.get(neighbor);
+				borderLength += b.borders.get(neighbor);
+				combinedBorders.set(neighbor, borderLength);
 			}
-			combinedBorderLengths.delete(a);
-			combinedBorderLengths.delete(b);
-			const combinedNeighbors = new Set([...a.neighbors, ...b.neighbors]);
-			combinedNeighbors.delete(a);
-			combinedNeighbors.delete(b);
+			combinedBorders.delete(a);
+			combinedBorders.delete(b);
 			const newRegion = {
 				tiles: new Set([...a.tiles, ...b.tiles]),
 				area: a.area + b.area,
-				borderLengths: combinedBorderLengths,
-				neighbors: combinedNeighbors,
+				borders: combinedBorders,
 			};
 			remainingRegions.delete(a);
 			remainingRegions.delete(b);
 			remainingRegions.add(newRegion);
 
 			// update the neibors' border maps
-			for (const neighbor of newRegion.borderLengths.keys()) {
-				neighbor.borderLengths.delete(a);
-				neighbor.borderLengths.delete(b);
-				neighbor.borderLengths.set(newRegion, newRegion.borderLengths.get(neighbor));
-			}
-			for (const neighbor of newRegion.neighbors) {
-				neighbor.neighbors.delete(a);
-				neighbor.neighbors.delete(b);
-				neighbor.neighbors.add(newRegion);
+			for (const neighbor of newRegion.borders.keys()) {
+				neighbor.borders.delete(a);
+				neighbor.borders.delete(b);
+				neighbor.borders.set(newRegion, newRegion.borders.get(neighbor));
 			}
 
-			// don't forget to update the next possible mergers
-			for (const neighbor of combinedNeighbors)
+			// don't forget to cue up the next possible mergers
+			for (const neighbor of combinedBorders.keys())
 				queue.push({
 					a: newRegion,
 					b: neighbor,
-					priority: newRegion.borderLengths.get(neighbor)/Math.min(newRegion.area, neighbor.area),
+					priority: newRegion.borders.get(neighbor)/Math.min(newRegion.area, neighbor.area),
 				});
 		}
 	}
@@ -295,6 +301,5 @@ function makeContinentsComprehensive(region: Set<Tile>, divisions: Region[], min
 interface Region {
 	tiles: Set<Tile>;
 	area: number;
-	borderLengths: Map<Region, number> | null;
-	neighbors: Set<Region> | null;
+	borders: Map<Region, number> | null;
 }
