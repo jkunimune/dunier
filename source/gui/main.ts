@@ -18,7 +18,7 @@ import {LockedDisc} from "../surface/lockeddisc.js";
 import {generateFactbook} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
 import {Civ} from "../generation/civ.js";
-import {convertSVGToBlob, convertSVGToPNGAndThenDownloadIt, download, serialize} from "./export.js";
+import {convertXMLToBlob, convertSVGToPNGAndThenDownloadIt, download, serialize} from "./export.js";
 import {filterSet} from "../utilities/miscellaneus.js";
 import {subdivideLand} from "../generation/subdivideRegion.js";
 // @ts-ignore
@@ -586,8 +586,8 @@ DOM.elm('map-download-svg').addEventListener('click', () => {
 	printscaleMap.setAttribute("width", `${width}mm`);
 	printscaleMap.setAttribute("height", `${height}mm`);
 	download(
-		convertSVGToBlob(printscaleMap),
-		format(null, "filename") + ".svg");
+		convertXMLToBlob(printscaleMap, "image/svg"),
+		format(null, "filename.map") + ".svg");
 });
 
 /**
@@ -595,10 +595,25 @@ DOM.elm('map-download-svg').addEventListener('click', () => {
  */
 DOM.elm('map-download-png').addEventListener('click', () => {
 	convertSVGToPNGAndThenDownloadIt(
-		convertSVGToBlob(DOM.elm('map-map') as SVGSVGElement),
+		convertXMLToBlob(DOM.elm('map-map') as SVGSVGElement, "image/svg"),
 		Number.parseInt(DOM.val('map-width-px')),
 		Number.parseInt(DOM.val('map-height-px')),
-		format(null, "filename") + ".png");
+		format(null, "filename.map") + ".png");
+});
+
+/**
+ * When the download button is clicked, export and download the factbook as a HTML
+ */
+DOM.elm('factbook-download-html').addEventListener('click', () => {
+	const factbookFrame = DOM.elm('factbook-embed') as HTMLIFrameElement;
+	let factbook: HTMLHtmlElement;
+	if (factbookFrame.contentDocument)
+		factbook = factbookFrame.contentDocument.documentElement as HTMLHtmlElement;
+	else
+		factbook = factbookFrame.contentWindow.document.documentElement as HTMLHtmlElement;
+	download(
+		convertXMLToBlob(factbook, "text/html"),
+		format(null, "filename.factbook") + ".html");
 });
 
 /**

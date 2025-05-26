@@ -30,7 +30,7 @@ export function generateFactbook(map: SVGSVGElement, civs: Civ[], tidalLock: boo
 	const listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
 	const doc = document.implementation.createHTMLDocument(format(
 		transcriptionStyle, 'parameter.factbook'));
-	const style = document.createElementNS('http://www.w3.org/2000/html', 'style');
+	const style = document.createElement('style');
 	style.innerHTML = 'body { font-family: "Noto Sans", "Arial", "sans-serif"; }';
 	doc.head.appendChild(style);
 	generateTitlePage(doc, map, listedCivs, transcriptionStyle);
@@ -72,7 +72,7 @@ function chooseMostImportantCivs(civs: Civ[], transcriptionStyle: string): Civ[]
  * @param transcriptionStyle the spelling style to use for the proper nouns
  */
 function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[], transcriptionStyle: string) {
-	const page = document.createElementNS('http://www.w3.org/2000/html', 'div') as HTMLDivElement;
+	const page = document.createElement('div') as HTMLDivElement;
 	page.setAttribute('style', 'break-after: page');
 	doc.body.appendChild(page);
 
@@ -106,7 +106,7 @@ function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[], trans
  * @param transcriptionStyle the spelling style to use for the loanwords
  */
 function generateFactSheet(doc: Document, topic: Civ, tidalLock: boolean, transcriptionStyle: string) {
-	const page = document.createElementNS('http://www.w3.org/2000/html', 'div') as HTMLDivElement;
+	const page = document.createElement('div') as HTMLDivElement;
 	page.setAttribute('style', 'break-after: page');
 	doc.body.appendChild(page);
 
@@ -415,7 +415,7 @@ function describe(culture: Culture, transcriptionStyle: string): string {
  * @param type the HTML tag (usually "p", "h1", or "h2")
  */
 function addParagraph(text: string, page: HTMLDivElement, type: string = 'p') {
-	const paragraph = document.createElementNS('http://www.w3.org/2000/html', type); // start by creating the text element
+	const paragraph = document.createElement(type); // start by creating the text element
 	paragraph.innerHTML = text;
 	page.appendChild(paragraph);
 }

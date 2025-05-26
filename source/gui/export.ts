@@ -36,10 +36,12 @@ export function convertSVGToPNGAndThenDownloadIt(svg: Blob, width: number, heigh
 
 /**
  * stuff the contents of an SVG into a Blob and assign it a URL
+ * @param xml the XML object (either a HTMLHTMLElement object or an SVGSVGElement objet)
+ * @param type the MIME type (either image/svg or text/html)
  */
-export function convertSVGToBlob(svg: SVGSVGElement): Blob {
-	const serializedSVG = '<?xml version="1.0" encoding="UTF-8"?>' + serialize(svg);
-	return new Blob([serializedSVG], {type: "image/svg+xml;charset=utf-8"});
+export function convertXMLToBlob(xml: HTMLHtmlElement | SVGSVGElement, type: string): Blob {
+	const serializedXML = '<?xml version="1.0" encoding="UTF-8"?>' + serialize(xml);
+	return new Blob([serializedXML], {type: type + "+xml;charset=utf-8"});
 }
 
 /**
