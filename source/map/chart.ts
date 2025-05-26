@@ -468,7 +468,7 @@ export class Chart {
 		}
 		else if (COLOR_BY_CONTINENT) {
 			this.fill(surface.tiles, svg, EGGSHELL, Layer.GEO);
-			for (let i = 0; i < 20; i ++)
+			for (let i = 0; i < Math.min(continents.length, COUNTRY_COLORS.length); i ++)
 				this.fill(
 					continents[i],
 					svg, COUNTRY_COLORS[i], Layer.GEO);
