@@ -1173,7 +1173,7 @@ export class Chart {
 		const southPoleIsDistant = projection.differentiability(projection.φMin) < .5;
 
 		// calculate the Cartesian bounds, with some margin
-		const margin = 0.1*Math.sqrt(
+		const margin = 0.05*Math.sqrt(
 			(projectedBounds.sMax - projectedBounds.sMin)*
 			(projectedBounds.tMax - projectedBounds.tMin));
 		const xLeft = projectedBounds.sMin - margin;
@@ -1229,11 +1229,11 @@ export class Chart {
 		const yMin = projection.projectPoint({φ: regionBounds.sMax, λ: projection.λCenter}).y;
 		const ySouthEdge = projection.projectPoint({φ: projection.φMin, λ: projection.λCenter}).y;
 		const yNorthEdge = projection.projectPoint({φ: projection.φMax, λ: projection.λCenter}).y;
-		let φMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.1*yMin - 0.1*yMax, yNorthEdge)}).φ;
-		let φMin = projection.inverseProjectPoint({x: 0, y: Math.min(1.1*yMax - 0.1*yMin, ySouthEdge)}).φ;
+		let φMax = projection.inverseProjectPoint({x: 0, y: Math.max(1.05*yMin - 0.05*yMax, yNorthEdge)}).φ;
+		let φMin = projection.inverseProjectPoint({x: 0, y: Math.min(1.05*yMax - 0.05*yMin, ySouthEdge)}).φ;
 		const ds_dλ = projection.surface.rz((φMin + φMax)/2).r;
-		const λMin = Math.max(projection.λMin, regionBounds.tMin - 0.1*(yMax - yMin)/ds_dλ);
-		const λMax = Math.min(projection.λMax, regionBounds.tMax + 0.1*(yMax - yMin)/ds_dλ);
+		const λMin = Math.max(projection.λMin, regionBounds.tMin - 0.05*(yMax - yMin)/ds_dλ);
+		const λMax = Math.min(projection.λMax, regionBounds.tMax + 0.05*(yMax - yMin)/ds_dλ);
 		// cut out the poles if desired
 		const longitudesWrapAround = projection.wrapsAround() && λMax - λMin === 2*Math.PI;
 		if (northPoleIsDistant || (northPoleIsPoint && !longitudesWrapAround))

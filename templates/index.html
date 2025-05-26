@@ -268,8 +268,8 @@
                     <label for="map-projection">{parameter.map.type}</label>
                     <div class="input-group">
                       <select id="map-projection" class="form-control" onchange="updateProjectionDescription(this.value);">
-                        <option selected value="bonne">{parameter.map.type.bonne}</option>
-                        <option value="conformal_conic">{parameter.map.type.conformal_conic}</option>
+                        <option value="bonne">{parameter.map.type.bonne}</option>
+                        <option selected value="conformal_conic">{parameter.map.type.conformal_conic}</option>
                         <option value="equal_earth">{parameter.map.type.equal_earth}</option>
                         <option value="mercator">{parameter.map.type.mercator}</option>
                       </select>
@@ -356,7 +356,7 @@
                   </div>
                   <div class="form-group">
                     <div class="custom-checkbox">
-                      <input type="checkbox" id="map-graticule">
+                      <input type="checkbox" id="map-graticule" checked>
                       <label for="map-graticule">{parameter.map.features.graticule}</label>
                     </div>
                   </div>
