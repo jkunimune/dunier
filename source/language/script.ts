@@ -235,14 +235,6 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		for (const sound of sounds)
 			symbols += lookUp(sound, style);
 
-		// apply pandunia spelling rules
-		if (style === 'pd') {
-			// add -e to the end of words that end in multiple consonants
-			symbols = symbols.replace(/([bcdfghjklmnpqrstvwxyz][bcdfghjklmnpqrstvwxyz]$)/, "$1e");
-			// spell /ks/ with ⟨x⟩
-			symbols = symbols.replace("ks", "x");
-		}
-
 		// apply russian spelling rules
 		if (style === 'ru') {
 			// a soft-sign turns ш into щ

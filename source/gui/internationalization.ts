@@ -8,7 +8,6 @@ import {DOM} from "./dom.js";
 import EN_STRINGS from "../../resources/translations/en.js";
 import ES_STRINGS from "../../resources/translations/es.js";
 import JA_STRINGS from "../../resources/translations/ja.js";
-import PD_STRINGS from "../../resources/translations/pd.js";
 
 
 let USER_STRINGS: { [index: string]: string };
@@ -23,9 +22,6 @@ switch (DOM.elm("bash").textContent) {
 		break;
 	case "ja":
 		USER_STRINGS = JA_STRINGS;
-		break;
-	case "pd":
-		USER_STRINGS = PD_STRINGS;
 		break;
 	default:
 		throw new Error(`I don't recognize the language code ${DOM.elm("bash").textContent}`);

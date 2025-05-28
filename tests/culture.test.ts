@@ -7,11 +7,10 @@ import UNPARSED_KULTUR_ASPECTS from "../resources/culture.js";
 import EN_STRINGS from "../resources/translations/en.js";
 import ES_STRINGS from "../resources/translations/es.js";
 import JA_STRINGS from "../resources/translations/ja.js";
-import PD_STRINGS from "../resources/translations/pd.js";
 import TECHNOLOGIES from "../resources/tech_tree.js";
 
 
-const USER_STRING_SETS = [EN_STRINGS, ES_STRINGS, JA_STRINGS, PD_STRINGS];
+const USER_STRING_SETS = [EN_STRINGS, ES_STRINGS, JA_STRINGS];
 describe("culture.json", () => {
 	describe("keys are all inatlized", () => {
 		for (const aspect of UNPARSED_KULTUR_ASPECTS)

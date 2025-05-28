@@ -6,8 +6,8 @@ import json
 import os
 import re
 
-LANGUAGES = ['en', 'es', 'ja', 'pd']
-DEFAULT_LANGUAGE = 'pd'
+LANGUAGES = ['en', 'es', 'ja']
+DEFAULT_LANGUAGE = 'en'
 
 
 def build_html():
