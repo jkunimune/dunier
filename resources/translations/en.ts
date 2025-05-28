@@ -747,7 +747,6 @@ export default {
 	"parameter.map.orientation.right": "Deasil-up",
 	"parameter.map.orientation.south": "South-up",
 	"parameter.map.orientation.west": "West-up",
-	"parameter.map.resolution": "Resolution",
 	"parameter.map.sea_texture": "Sea texture",
 	"parameter.map.shape": "Border shape",
 	"parameter.map.shape.rectangle": "Rectangle",

@@ -742,7 +742,6 @@ export default {
 	"parameter.map.orientation.right": "右が上",
 	"parameter.map.orientation.south": "南が上",
 	"parameter.map.orientation.west": "西が上",
-	"parameter.map.resolution": "解像度",
 	"parameter.map.sea_texture": "海の模様",
 	"parameter.map.shape": "輪郭形",
 	"parameter.map.shape.rectangle": "矩形",
