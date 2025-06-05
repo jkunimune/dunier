@@ -21,6 +21,7 @@ import {
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
+import {h, VNode} from "../gui/virtualdom.js";
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -158,7 +159,6 @@ export class Chart {
 	public readonly latitudeScale: number;
 	/** the average spacing between meridians in mm/radian */
 	public readonly longitudeScale: number;
-	private readonly testText: HTMLDivElement;
 	private labelIndex: number;
 
 
@@ -170,12 +170,10 @@ export class Chart {
 	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 * @param area the desired bounding box area in mm²
-	 * @param testText an invisible element that can be used to measure string lengths
 	 */
 	constructor(
 		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
 		orientationName: string, rectangularBounds: boolean, area: number,
-		testText: HTMLDivElement=null,
 	) {
 		// convert the orientation name into a number of degrees
 		if (orientationName === 'north')
@@ -340,7 +338,6 @@ export class Chart {
 			this.dimensions.bottom + margin,
 		);
 
-		this.testText = testText;
 		this.labelIndex = 0;
 	}
 
@@ -349,7 +346,6 @@ export class Chart {
 	 * @param surface the surface that we're mapping
 	 * @param continents some sets of tiles that go nicely together (only used for debugging)
 	 * @param world the world on that surface, if we're mapping human features
-	 * @param svg the SVG element on which to draw everything
 	 * @param color the color scheme
 	 * @param rivers whether to add rivers
 	 * @param borders whether to add state borders
@@ -360,34 +356,37 @@ export class Chart {
 	 * @param windrose whether to add a compass rose
 	 * @param fontSize the size of city labels and minimum size of country and biome labels (mm)
 	 * @param style the transliteration convention to use for them
-	 * @return the list of Civs that are shown in this map
+	 * @return the SVG on which everything has been drawn, and the list of Civs that are shown in this map
 	 */
-	depict(surface: Surface, continents: Set<Tile>[], world: World | null,
-	       svg: SVGGElement,
+	depict(surface: Surface, continents: Set<Tile>[] | null, world: World | null,
 	       color: string,
 		   rivers: boolean, borders: boolean,
 		   graticule = false, windrose = false,
 		   shading = false,
 		   civLabels = false, geoLabels = false,
-		   fontSize = 3, style: string = '(default)'): Civ[] {
+		   fontSize = 3, style: string = '(default)'): {map: VNode, mappedCivs: Civ[] | null} {
 		const bbox = this.dimensions;
-		svg.setAttribute('viewBox',
-			`${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`);
-		svg.textContent = ''; // clear the image
+
+		const svg = h('svg', {
+			width: "100%",
+			height: "100%",
+			viewBox: `${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`,
+		});
 
 		// set the basic overarching styles
-		const styleSheet = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-		styleSheet.innerHTML = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; }';
-		svg.appendChild(styleSheet);
+		const styleSheet = h('style');
+		styleSheet.textContent = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; }';
+		svg.children.push(styleSheet);
 
 		if (SHOW_BACKGROUND) {
-			const rectangle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-			rectangle.setAttribute('x', `${this.dimensions.left}`);
-			rectangle.setAttribute('y', `${this.dimensions.top}`);
-			rectangle.setAttribute('width', `${this.dimensions.width}`);
-			rectangle.setAttribute('height', `${this.dimensions.height}`);
-			rectangle.setAttribute('style', 'fill: red; stroke: black; stroke-width: 10px');
-			svg.appendChild(rectangle);
+			const rectangle = h('rect', {
+				x: `${this.dimensions.left}`,
+				y: `${this.dimensions.top}`,
+				width: `${this.dimensions.width}`,
+				height: `${this.dimensions.height}`,
+				style: 'fill: red; stroke: black; stroke-width: 10px',
+			});
+			svg.children.push(rectangle);
 		}
 
 		// decide what color the rivers will be
@@ -469,7 +468,7 @@ export class Chart {
 					svg, COUNTRY_COLORS[i], Layer.GEO);
 			}
 		}
-		else if (COLOR_BY_CONTINENT) {
+		else if (COLOR_BY_CONTINENT && continents !== null) {
 			this.fill(surface.tiles, svg, EGGSHELL, Layer.GEO);
 			for (let i = 0; i < Math.min(continents.length, COUNTRY_COLORS.length); i ++)
 				this.fill(
@@ -525,7 +524,7 @@ export class Chart {
 				const fill = this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
 					g, color, Layer.KULTUR);
-				if (fill.getAttribute("d").length > 0)
+				if (fill.attributes.d.length > 0)
 					numFilledCivs ++;
 			}
 		}
@@ -588,7 +587,7 @@ export class Chart {
 			for (const civ of world.getCivs()) {
 				this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
-					g, 'none', Layer.KULTUR, borderStroke, 0.7).setAttribute('pointer-events', 'all');
+					g, 'none', Layer.KULTUR, borderStroke, 0.7).attributes['pointer-events'] = 'all';
 			}
 		}
 
@@ -611,9 +610,7 @@ export class Chart {
 		// add the graticule
 		if (graticule) {
 			const graticule = Chart.createSVGGroup(svg, "graticule");
-			graticule.style.fill = "none";
-			graticule.style.stroke = borderStroke;
-			graticule.style.strokeWidth = "0.35";
+			graticule.attributes.style = `fill:none; stroke:${borderStroke}; stroke-width:0.35`;
 			let Δφ = GRATICULE_SPACING/this.latitudeScale;
 			Δφ = Math.PI/2/Math.max(1, Math.round(Math.PI/2/Δφ));
 			const φInit = Math.ceil(this.φMin/Δφ)*Δφ;
@@ -649,15 +646,15 @@ export class Chart {
 
 		if (SHOW_TILE_INDICES) {
 			for (const tile of surface.tiles) {
-				const text = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
+				const text = h('text'); // start by creating the text element
 				const location = this.projectPath([{type: 'M', args: [tile.φ, tile.λ]}], false, false);
 				if (location.length > 0) {
 					const [x, y] = location[0].args;
-					text.setAttribute("x", `${x}`);
-					text.setAttribute("y", `${y}`);
-					text.setAttribute("font-size", "0.2em");
+					text.attributes["x"] = `${x}`;
+					text.attributes["y"] = `${y}`;
+					text.attributes["font-size"] = "0.2em";
 					text.textContent = `${tile.index}`;
-					svg.appendChild(text);
+					svg.children.push(text);
 				}
 			}
 		}
@@ -675,21 +672,22 @@ export class Chart {
 			const radius = Math.min(25, 0.2*Math.min(this.dimensions.width, this.dimensions.height));
 			const x = this.dimensions.left + 1.2*radius;
 			const y = this.dimensions.top + 1.2*radius;
-			windrose.setAttribute("transform", `translate(${x}, ${y}) scale(${radius/26})`);
+			windrose.attributes.transform = `translate(${x}, ${y}) scale(${radius/26})`;
 
 			// load the content from windrose.svg
 			fetch('../../resources/images/windrose.svg')
 				.then(response => response.text())
 				.then(svgText => {
 					const innerSVG = svgText.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s)[1];
-					windrose.innerHTML = innerSVG;
+					windrose.textContent = innerSVG;
 				});
 		}
 
+		let visible;
 		if (world !== null) {
 			// finally, check which Civs are on this map
 			// (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
-			const visible = [];
+			visible = [];
 			for (const civ of world.getCivs(true))
 				if (this.projectPath(
 					Chart.convertToGreebledPath(
@@ -697,11 +695,12 @@ export class Chart {
 						Layer.KULTUR, this.scale),
 					true).length > 0)
 					visible.push(civ);
-			return visible;
 		}
 		else {
-			return null;
+			visible = null;
 		}
+
+		return {map: svg, mappedCivs: visible};
 	}
 
 	/**
@@ -715,15 +714,15 @@ export class Chart {
 	 * @param strokeLinejoin the line joint style to use
 	 * @return the newly created element encompassing these tiles.
 	 */
-	fill(tiles: Set<Tile>, svg: SVGGElement, color: string, greeble: Layer,
-		 stroke = 'none', strokeWidth = 0, strokeLinejoin = 'round'): SVGPathElement {
+	fill(tiles: Set<Tile>, svg: VNode, color: string, greeble: Layer,
+		 stroke = 'none', strokeWidth = 0, strokeLinejoin = 'round'): VNode {
 		if (tiles.size <= 0)
 			return this.draw([], svg);
 		const segments = convertPathClosuresToZ(this.projectPath(
 			Chart.convertToGreebledPath(outline(tiles), greeble, this.scale), true));
 		const path = this.draw(segments, svg);
-		path.setAttribute('style',
-			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin};`);
+		path.attributes.style =
+			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin};`;
 		return path;
 	}
 
@@ -737,15 +736,15 @@ export class Chart {
 	 * @param strokeLinejoin the stroke joint style to use
 	 * @returns the newly created element comprising all these lines
 	 */
-	stroke(strokes: Iterable<ΦΛPoint[]>, svg: SVGGElement,
-	       color: string, width: number, greeble: Layer, strokeLinejoin = 'round'): SVGPathElement {
+	stroke(strokes: Iterable<ΦΛPoint[]>, svg: VNode,
+	       color: string, width: number, greeble: Layer, strokeLinejoin = 'round'): VNode {
 		let segments = this.projectPath(
 			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.scale), false);
 		if (SMOOTH_RIVERS)
 			segments = Chart.smooth(segments);
 		const path = this.draw(segments, svg);
-		path.setAttribute('style',
-			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: round;`);
+		path.attributes.style =
+			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: round;`;
 		return path;
 	}
 
@@ -754,7 +753,7 @@ export class Chart {
 	 * @param triangles Array of Vertexes to shade as triangles.
 	 * @param svg SVG object on which to shade.
 	 */
-	shade(triangles: Set<Vertex>, svg: SVGGElement): void { // TODO use separate delaunay triangulation
+	shade(triangles: Set<Vertex>, svg: VNode): void { // TODO use separate delaunay triangulation
 		if (!triangles)
 			return;
 
@@ -788,9 +787,8 @@ export class Chart {
 			path[0].type = 'M';
 			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
 				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
-			this.draw(this.projectPath(path, true), svg).setAttribute('style',
-				`fill: '#000'; fill-opacity: ${1-brightness};`
-			);
+			this.draw(this.projectPath(path, true), svg).attributes.style =
+				`fill: '#000'; fill-opacity: ${1-brightness};`;
 		}
 	}
 
@@ -802,16 +800,15 @@ export class Chart {
 	 * @param minFontSize the smallest allowable font size, in mm. if the label cannot fit inside
 	 *                    the region with this font size, no label will be placed.
 	 */
-	label(tiles: Tile[], label: string, svg: SVGGElement, minFontSize: number) {
-		if (this.testText === null)
-			throw new Error("you never passed me the test text element so how am I supposed to calibrate labels?");
+	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number) {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
-		this.testText.innerHTML = '..'+label+'..';
-		const testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
-		this.testText.innerHTML = '';
-		const lengthPerSize = testTextLength/20;
+		// this.testText.innerHTML = '..'+label+'..';
+		// const testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
+		// this.testText.innerHTML = '';
+		// const lengthPerSize = testTextLength/20;
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
+		const lengthPerSize = heightPerSize*6;
 		const aspectRatio = lengthPerSize/heightPerSize;
 
 		const path = this.projectPath( // do the projection
@@ -838,18 +835,19 @@ export class Chart {
 		const arc = this.draw(location.arc, svg); // make the arc in the SVG
 		// arc.setAttribute('style', `fill: none; stroke: #400; stroke-width: .5px;`);
 		if (SHOW_LABEL_PATHS)
-			arc.setAttribute('style', `fill: none; stroke: #770000; stroke-width: ${location.height}`);
+			arc.attributes.style = `fill: none; stroke: #770000; stroke-width: ${location.height}`;
 		else
-			arc.setAttribute('style', 'fill: none; stroke: none;');
-		arc.setAttribute('id', `labelArc${this.labelIndex}`);
-		const textGroup = document.createElementNS('http://www.w3.org/2000/svg', 'text'); // start by creating the text element
-		textGroup.setAttribute('style', `font-size: ${fontSize}px; letter-spacing: ${location.letterSpacing*.5}em;`); // this .5em is just a guess at the average letter width
-		svg.appendChild(textGroup);
-		const textPath = document.createElementNS('http://www.w3.org/2000/svg', 'textPath');
-		textPath.setAttribute('class', 'map-label');
-		textPath.setAttribute('startOffset', '50%');
-		textPath.setAttribute('href', `#labelArc${this.labelIndex}`);
-		textGroup.appendChild(textPath);
+			arc.attributes.style = 'fill: none; stroke: none;';
+		arc.attributes.id = `labelArc${this.labelIndex}`;
+		const textGroup = h('text', { // start by creating the text element
+			style: `font-size: ${fontSize}px; letter-spacing: ${location.letterSpacing*.5}em;`}); // this .5em is just a guess at the average letter width
+		svg.children.push(textGroup);
+		const textPath = h('textPath', {
+			class: 'map-label',
+			startOffset: '50%',
+			href: `#labelArc${this.labelIndex}`,
+		});
+		textGroup.children.push(textPath);
 		textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
 
 		this.labelIndex += 1;
@@ -858,11 +856,10 @@ export class Chart {
 	/**
 	 * convert the series of segments to an HTML path element and add it to the Element
 	 */
-	draw(segments: PathSegment[], svg: Element): SVGPathElement {
-		const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-		path.setAttribute('d', pathToString(segments));
+	draw(segments: PathSegment[], svg: VNode): VNode {
+		const path = h('path', {d: pathToString(segments)});
 		if (segments.length > 0)
-			svg.appendChild(path); // put it in the SVG
+			svg.children.push(path); // put it in the SVG
 		return path;
 	}
 
@@ -1269,10 +1266,9 @@ export class Chart {
 	/**
 	 * create a new <g> element under the given parent
 	 */
-	static createSVGGroup(parent: SVGElement, id: string): SVGGElement {
-		const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-		g.setAttribute('id', id);
-		parent.appendChild(g);
+	static createSVGGroup(parent: VNode, id: string): VNode {
+		const g = h('g', {id: id});
+		parent.children.push(g);
 		return g;
 	}
 }

@@ -13,6 +13,7 @@ import {Vector} from "../utilities/geometry.js";
 import {Name} from "../language/name.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 import TECHNOLOGIES from "../../resources/tech_tree.js";
+import {cloneNode, h, VNode} from "../gui/virtualdom.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
@@ -24,19 +25,21 @@ const PRINT_DEBUGGING_INFORMATION = false;
  * @param map the complete SVG code of the map
  * @param civs the list of Civs that will be described later in the document
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
+ * @param language the language in which to write the factbook
  * @param transcriptionStyle the spelling style to use for the proper nouns
  */
-export function generateFactbook(map: SVGSVGElement, civs: Civ[], tidalLock: boolean, transcriptionStyle: string): Document {
+export function generateFactbook(map: VNode, civs: Civ[], tidalLock: boolean, language: string, transcriptionStyle: string): VNode {
 	const listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
-	const doc = document.implementation.createHTMLDocument(format(
-		transcriptionStyle, 'parameter.factbook'));
-	const style = document.createElement('style');
-	style.innerHTML = 'body { font-family: "Noto Sans", "Arial", "sans-serif"; }';
-	doc.head.appendChild(style);
-	generateTitlePage(doc, map, listedCivs, transcriptionStyle);
+	const title = h('title');
+	title.textContent = format(language, transcriptionStyle, 'parameter.factbook');
+	const style = h('style');
+	style.textContent = 'body { font-family: "Noto Sans", "Arial", "sans-serif"; }';
+	const head = h('head', {}, title, style);
+	const body = h('body');
+	generateTitlePage(body, map, listedCivs, language, transcriptionStyle);
 	for (const civ of listedCivs)
-		generateFactSheet(doc, civ, tidalLock, transcriptionStyle);
-	return doc;
+		generateFactSheet(body, civ, tidalLock, language, transcriptionStyle);
+	return h('html', {}, head, body);
 }
 
 
@@ -69,32 +72,32 @@ function chooseMostImportantCivs(civs: Civ[], transcriptionStyle: string): Civ[]
  * @param doc the document into which to write this page
  * @param map the complete SVG code of the map
  * @param civs the list of Civs that will be described later in the document
+ * @param language the language in which to write the factbook
  * @param transcriptionStyle the spelling style to use for the proper nouns
  */
-function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[], transcriptionStyle: string) {
-	const page = document.createElement('div') as HTMLDivElement;
-	page.setAttribute('style', 'break-after: page');
-	doc.body.appendChild(page);
+function generateTitlePage(doc: VNode, map: VNode, civs: Civ[], language: string, transcriptionStyle: string) {
+	const page = h('div', {style: 'break-after: page'});
+	doc.children.push(page);
 
 	addParagraph(
-		format(transcriptionStyle, 'factbook.outline.title'),
+		format(language, transcriptionStyle, 'factbook.outline.title'),
 		page, 'h1');
 
 	if (civs.length > 0)
 		addParagraph(
 			format(
-				transcriptionStyle, 'factbook.outline.lede.some',
+				language, transcriptionStyle, 'factbook.outline.lede.some',
 				civs.length, civs.map(c => c.getName().toString(transcriptionStyle))),
 			page, 'p');
 	else
 		addParagraph(
-			format(transcriptionStyle, 'factbook.outline.lede.none'),
+			format(language, transcriptionStyle, 'factbook.outline.lede.none'),
 			page, 'p');
 
-	const importedMap = <SVGSVGElement>map.cloneNode(true);
-	importedMap.setAttribute("width", "100%");
-	importedMap.setAttribute("height", "6.5in");
-	page.appendChild(importedMap);
+	const importedMap = cloneNode(map);
+	importedMap.attributes.width = "100%";
+	importedMap.attributes.height = "6.5in";
+	page.children.push(importedMap);
 }
 
 
@@ -103,37 +106,37 @@ function generateTitlePage(doc: Document, map: SVGSVGElement, civs: Civ[], trans
  * @param doc the document into which to write this page
  * @param topic the Civ being described on this page
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
- * @param transcriptionStyle the spelling style to use for the loanwords
+ * @param language the language in which to write the factbook
+ * @param style the spelling style to use for the loanwords
  */
-function generateFactSheet(doc: Document, topic: Civ, tidalLock: boolean, transcriptionStyle: string) {
-	const page = document.createElement('div') as HTMLDivElement;
-	page.setAttribute('style', 'break-after: page');
-	doc.body.appendChild(page);
+function generateFactSheet(doc: VNode, topic: Civ, tidalLock: boolean, language: string, style: string) {
+	const page = h('div', {style: 'break-after: page'});
+	doc.children.push(page);
 
 	addParagraph(
-		format(transcriptionStyle, 'factbook.outline.section_header',
+		format(language, style, 'factbook.outline.section_header',
 			topic.getName(),
 			topic.getName().pronunciation()),
 		page, 'h2');
 
 	addParagraph(
-		format(transcriptionStyle, 'factbook.stats',
+		format(language, style, 'factbook.stats',
 			topic.getLandArea(),
 			topic.getPopulation()),
 		page, 'p');
 
-	addGeographySection(page, topic, tidalLock, transcriptionStyle);
+	addGeographySection(page, topic, tidalLock, language, style);
 
-	addDemographicsSection(page, topic, tidalLock, transcriptionStyle);
+	addDemographicsSection(page, topic, tidalLock, language, style);
 
-	addHistorySection(page, topic, transcriptionStyle);
+	addHistorySection(page, topic, language, style);
 }
 
 
 /**
  * add some paragraphs to this page recounting the history of the given country
  */
-function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle: string) {
+function addHistorySection(page: VNode, topic: Civ, language: string, style: string) {
 	let history: {type: string, year: number, participants: (Civ | Culture | number)[]}[] = topic.history;
 
 	// add in the time of peak area if that's interesting
@@ -151,7 +154,7 @@ function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle:
 				args.push(participant);
 		}
 		text += format(
-			transcriptionStyle, `factbook.history.${event.type}`,
+			language, style, `factbook.history.${event.type}`,
 			event.year, ...args);
 	}
 	addParagraph(text, page, 'p');
@@ -161,7 +164,7 @@ function addHistorySection(page: HTMLDivElement, topic: Civ, transcriptionStyle:
 /**
  * add some paragraphs to this page detailing the geography of the given country
  */
-function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolean, transcriptionStyle: string) {
+function addGeographySection(page: VNode, topic: Civ, tidalLock: boolean, language: string, style: string) {
 	// look at every tile adjacent to this country
 	const adjacentLand: Set<Tile> = new Set();
 	const adjacentWater: Set<Tile> = new Set();
@@ -229,10 +232,10 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolea
 		for (const direction of borders.keys()) {
 			const neighborNames = [];
 			for (const neighbor of borders.get(direction))
-				neighborNames.push(neighbor.getName().toString(transcriptionStyle));
-			neighborNames.sort((a, b) => compare(a, b, transcriptionStyle));
+				neighborNames.push(neighbor.getName().toString(style));
+			neighborNames.sort((a, b) => compare(a, b, style));
 			borderDescriptions.push(format(
-				transcriptionStyle, 'factbook.geography.neibor_direction',
+				language, style, 'factbook.geography.neibor_direction',
 				neighborNames, `factbook.direction.${direction}`));
 		}
 
@@ -260,7 +263,7 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolea
 		type = 'generic';
 
 	const locationSentence = format(
-		transcriptionStyle, `factbook.geography.${type}`,
+		language, style, `factbook.geography.${type}`,
 		topic.getName(), borderSpecifier);
 
 	// tally up all the biomes in this country
@@ -279,13 +282,13 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolea
 	let terrainSentence;
 	if  (biomeCounter[allBiomes[0]] >= topic.getLandArea()/2)
 		terrainSentence = format(
-			transcriptionStyle, `factbook.geography.biome`,
+			language, style, `factbook.geography.biome`,
 			`factbook.geography.${BIOME_NAMES[allBiomes[0]]}`);
 	else
 		terrainSentence = format(
-			transcriptionStyle, `factbook.geography.biomes`,
+			language, style, `factbook.geography.biomes`,
 			allBiomes.slice(0, 3).map(biome => format(
-				transcriptionStyle, `factbook.geography.${BIOME_NAMES[biome]}`
+				language, style, `factbook.geography.${BIOME_NAMES[biome]}`
 			)));
 
 	addParagraph(
@@ -297,7 +300,7 @@ function addGeographySection(page: HTMLDivElement, topic: Civ, tidalLock: boolea
 /**
  * add some paragraphs to this page listing and describing the peoples of the given country
  */
-function addDemographicsSection(page: HTMLDivElement, topic: Civ, tidalLock: boolean, transcriptionStyle: string) {
+function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, language: string, style: string) {
 	// write a bit about the technology level
 	const techDescriptors = new Map<string, string>();
 	for (const technology of TECHNOLOGIES)
@@ -305,7 +308,7 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, tidalLock: boo
 			techDescriptors.set(technology.type, technology.key);
 	addParagraph(
 		format(
-			transcriptionStyle, `factbook.tech`,
+			language, style, `factbook.tech`,
 			topic.getName(),
 			`factbook.tech.age.${techDescriptors.get("age")}`,
 			`factbook.tech.fighting.${techDescriptors.get("fighting")}`,
@@ -361,7 +364,7 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, tidalLock: boo
 
 		addParagraph(
 			format(
-				transcriptionStyle,
+				language, style,
 				(populationFraction < 2/3) ?
 					'factbook.demography.minority' :
 					'factbook.demography.majority',
@@ -372,7 +375,7 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, tidalLock: boo
 				`factbook.direction.${region}`,
 				Math.round(populationFraction*100),
 				topic.getName()) +
-			describe(culture, transcriptionStyle),
+			describe(culture, language, style),
 			page, 'p');
 
 		if (PRINT_DEBUGGING_INFORMATION)
@@ -386,7 +389,7 @@ function addDemographicsSection(page: HTMLDivElement, topic: Civ, tidalLock: boo
 /**
  * format this Culture as a nice short paragraff
  */
-function describe(culture: Culture, transcriptionStyle: string): string {
+function describe(culture: Culture, language: string, style: string): string {
 	let str = "";
 	for (let i = 0; i < culture.featureLists.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
 		const featureList = culture.featureLists[i];
@@ -400,7 +403,7 @@ function describe(culture: Culture, transcriptionStyle: string): string {
 			const keys: string[] = [];
 			for (let j = 0; j < culture.featureLists[i].length; j ++)
 				keys.push(`factbook.${KULTUR_ASPECTS[i].key}.${KULTUR_ASPECTS[i].features[j].key}.${featureList[j].key}`);
-			str += format(transcriptionStyle, `factbook.${KULTUR_ASPECTS[i].key}`,
+			str += format(language, style, `factbook.${KULTUR_ASPECTS[i].key}`,
 				...keys, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
 		}
 	}
@@ -414,8 +417,8 @@ function describe(culture: Culture, transcriptionStyle: string): string {
  * @param page the element to which to add it
  * @param type the HTML tag (usually "p", "h1", or "h2")
  */
-function addParagraph(text: string, page: HTMLDivElement, type: string = 'p') {
-	const paragraph = document.createElement(type); // start by creating the text element
-	paragraph.innerHTML = text;
-	page.appendChild(paragraph);
+function addParagraph(text: string, page: VNode, type: string = 'p') {
+	const paragraph = h(type); // start by creating the text element
+	paragraph.textContent = text;
+	page.children.push(paragraph);
 }

@@ -1,5 +1,5 @@
 <!-- generation scripts -->
-<script src="/source/gui/main.js" type="module" defer></script>
+<script src="/source/gui/mapgui.js" type="module" defer></script>
 
 <!-- UI functions -->
 <script>
@@ -145,7 +145,7 @@
           </form>
         </div>
 
-        <div class="map" id="planet-map">
+        <div class="map" id="planet-map-container">
         </div>
       </div>
     </div>
@@ -194,10 +194,7 @@
           </form>
         </div>
 
-        <div class="map">
-          <svg xmlns="http://www.w3.org/2000/svg"
-               viewBox="-1 -1 2 2" width="100%" height="100%" id="terrain-map">
-          </svg>
+        <div class="map" id="terrain-map-container">
         </div>
       </div>
     </div>
@@ -235,10 +232,7 @@
           </form>
         </div>
 
-        <div class="map">
-          <svg xmlns="http://www.w3.org/2000/svg"
-               viewBox="-1 -1 2 2" width="100%" height="100%" id="history-map">
-          </svg>
+        <div class="map" id="history-map-container">
         </div>
       </div>
     </div>
@@ -260,8 +254,8 @@
                   <div class="form-group">
                     <label for="map-jung">{parameter.map.focus}</label>
                     <select id="map-jung">
-                      <option selected value="0">United States of America</option>
-                      <option value="1">China</option>
+                      <option value="world">{{parameter.map.focus.whole_world}}</option>
+                      <option selected value="continent0">{{parameter.map.focus.continent}}</option>
                     </select>
                   </div>
                   <div class="form-group" id="map-projection-form">
@@ -446,10 +440,7 @@
           </form>
         </div>
 
-        <div class="map">
-          <svg xmlns="http://www.w3.org/2000/svg"
-               viewBox="-1 -1 2 2" width="100%" height="100%" id="map-map">
-          </svg>
+        <div class="map" id="map-map-container">
         </div>
       </div>
     </div>

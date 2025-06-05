@@ -2,25 +2,12 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import "../libraries/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import {DOM} from "./dom.js";
 import {format} from "./internationalization.js";
-import {generateTerrain} from "../generation/terrain.js";
-import {Surface, Tile} from "../surface/surface.js";
-import {World} from "../generation/world.js";
-import {Random} from "../utilities/random.js";
-import {Chart} from "../map/chart.js";
-import {Spheroid} from "../surface/spheroid.js";
-import {Sphere} from "../surface/sphere.js";
-import {Disc} from "../surface/disc.js";
-import {Toroid} from "../surface/toroid.js";
-import {LockedDisc} from "../surface/lockeddisc.js";
-import {generateFactbook} from "../generation/factsheet.js";
 import {Selector} from "../utilities/selector.js";
-import {Civ} from "../generation/civ.js";
-import {convertXMLToBlob, convertSVGToPNGAndThenDownloadIt, download, serialize} from "./export.js";
-import {filterSet} from "../utilities/miscellaneus.js";
-import {subdivideLand} from "../generation/subdivideRegion.js";
+import {convertXMLToBlob, convertSVGToPNGAndThenDownloadIt, download} from "./export.js";
+import "../libraries/plotly.min.js";
+import {Layer} from "./mapgenerator.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -42,18 +29,8 @@ const TERRAIN_COLORMAP = [
 	[1.00, 'rgb(  7,   0,   0)'],
 ];
 
-const MIN_SIZE_TO_LIST = 6;
-const MAX_COUNTRIES_TO_LIST = 20;
-const FONT_SIZE = 8; // pt
+const LANGUAGE = DOM.elm("bash").textContent;
 
-enum Layer {
-	NONE,
-	PLANET,
-	TERRAIN,
-	HISTORY,
-	MAP,
-	FACTBOOK
-}
 
 /** which level of the model currently has all input changes applied */
 let lastUpdated = Layer.NONE;
@@ -61,95 +38,129 @@ let lastUpdated = Layer.NONE;
 let planetRendered = false;
 /** whether a process is currently running */
 let inProgress: boolean = false; // TODO; I can't remember why this is here; if I click forward in the tabs while it's loading, does everything update?
-/** the planet on which the map is defined */
-let surface: Surface = null;
-/** the list of continents with at least some land */
-let continents: Set<Tile>[] = null;
-/** the human world on that planet */
-let world: World = null;
-/** the Chart representing the main map */
-let chart: Chart = null;
-/** the list of countries on the current map */
-let mappedCivs: Civ[] = null;
+const worker = new Worker("source/gui/mapgenerator.js", {type: "module"});
 /** the number of alerts that have been posted */
 let alertCounter: number = 0;
 
+/** the current aspect ratio of the main map */
+let aspectRatio = Math.sqrt(2);
 
-/**
- * Generate the planet and its mean temperature (not yet accounting for altitude)
- */
-function applyPlanet() {
-	console.log("jena planete...");
+
+function updateEverythingUpTo(target: Layer) {
+	disableButtons();
+
 	const planetType = DOM.val('planet-type'); // read input
-	const hasDayNightCycle = !DOM.checked('planet-locked');
+	const tidallyLocked = DOM.checked('planet-locked');
 	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
 	const gravity = Number(DOM.val('planet-gravity')) * 9.8;
 	const spinRate = 1 / Number(DOM.val('planet-day')) * 2*Math.PI/3600;
 	const obliquity = Number(DOM.val('planet-tilt')) * Math.PI/180;
+	const terrainSeed = Number(DOM.val('terrain-seed'));
+	const numContinents = Number(DOM.val('terrain-continents'));
+	const seaLevel = Number(DOM.val('terrain-sea-level'));
+	const temperature = Number(DOM.val('terrain-temperature'));
+	const historySeed = Number(DOM.val('history-seed'));
+	const cataclysms = Number(DOM.val('history-meteors'));
+	const year = Number(DOM.val('history-year'));
+	const projectionName = DOM.val('map-projection');
+	const orientation = DOM.val('map-orientation');
+	const rectangularBounds = (DOM.val('map-shape') === 'rectangle');
+	const width = Number.parseFloat(DOM.val('map-width-mm'));
+	const height = Number.parseFloat(DOM.val('map-height-mm'));
+	const focusSpecifier = DOM.val('map-jung');
+	const color = DOM.val('map-color');
+	const rivers = DOM.checked('map-rivers');
+	const borders = DOM.checked('map-borders');
+	const graticule = DOM.checked('map-graticule');
+	const windrose = DOM.checked('map-windrose');
+	const shading = DOM.checked('map-shading');
+	const civLabels = DOM.checked('map-political-labels');
+	const geoLabels = DOM.checked('map-physical-labels');
+	const style = DOM.val('map-spelling');
 
-	try { // create a surface
-		if (planetType === 'spheroid') { // spheroid
-			if (hasDayNightCycle) { // oblate
-				surface = new Spheroid(
-					radius,
-					gravity,
-					spinRate,
-					obliquity);
-			} else { // spherical
-				surface = new Sphere(
-					radius);
-			}
-		}
-		else if (planetType === 'toroid') { // toroid
-			surface = new Toroid(
-				radius,
-				gravity,
-				spinRate,
-				obliquity);
-		}
-		else if (planetType === 'plane') { // plane
-			if (hasDayNightCycle) { // with orbiting sun
-				surface = new Disc(
-					radius,
-					obliquity,
-					hasDayNightCycle);
-			} else { // with static sun
-				surface = new LockedDisc(
-					radius);
-			}
-		}
-		else {
-			console.error(`What kind of planet is ${planetType}`);
-			return;
-		}
-	} catch (err) {
-		if (err instanceof RangeError) {
-			let message: string;
-			if (err.message.startsWith("Too fast"))
-				message = format(null, "error.planet_too_fast"); // TODO: it should automaticly bound the day-length at stable values
-			else if (err.message.startsWith("Too slow"))
-				message = format(null, "error.planet_too_slow");
-			postErrorAlert(message);
-			return;
-		} else
-			throw err;
-	}
-	surface.initialize();
-
-	console.log("fina!");
-	lastUpdated = Layer.PLANET;
-	planetRendered = false;
+	worker.postMessage([
+		LANGUAGE, lastUpdated, target,
+		planetType, tidallyLocked, radius, gravity, spinRate, obliquity,
+		terrainSeed, numContinents, seaLevel, temperature,
+		historySeed, cataclysms, year,
+		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
+		color, rivers, borders, shading, civLabels, geoLabels, graticule, windrose, style,
+	]);
 }
 
 
-function renderPlanet() {
-	if (lastUpdated < Layer.PLANET)
-		applyPlanet();
+worker.onmessage = (message) => {
+	let planetData: { x: number[][], y: number[][], z: number[][], I: number[][] };
+	let terrainMap: string;
+	let historyMap: string;
+	let map: string;
+	let factbook: string;
+	let focusOptions: {value: string, label: string}[];
+	[
+		lastUpdated,
+		planetData, terrainMap, historyMap, map, factbook,
+		focusOptions,
+	] = message.data;
 
+	// TODO: plot
+	if (terrainMap !== null) {
+		// show the global physical map
+		DOM.elm('terrain-map-container').innerHTML = terrainMap;
+	}
+	if (historyMap !== null) {
+		// show the global political map
+		DOM.elm('history-map-container').innerHTML = historyMap;
+	}
+	if (map !== null) {
+		// show the main map
+		DOM.elm('map-map-container').innerHTML = map;
+		// adjust the height and width options to reflect the new aspect ratio
+		aspectRatio = calculateAspectRatio(DOM.elm('map-map-container').firstElementChild as SVGSVGElement);
+		enforceAspectRatio("neither", "mm");
+		enforceAspectRatio("neither", "px");
+	}
+	if (factbook !== null) {
+		// show the factbook
+		DOM.elm('factbook-embed').setAttribute('srcdoc', factbook);
+	}
+
+	enableButtons();
+
+	// now set up the "focus" options for the map tab:
+	if (focusOptions !== null) {
+		console.log("mute ba chuze bil...");
+		const picker = document.getElementById('map-jung');
+		picker.textContent = "";
+		for (let i = 0; i < focusOptions.length; i ++) {
+			const option = document.createElement('option');
+			option.selected = (i === 1);
+			option.setAttribute('value', focusOptions[i].value);
+			option.textContent = focusOptions[i].label;
+			picker.appendChild(option);
+		}
+	}
+};
+
+
+worker.onerror = (error) => {
+	console.error(error.message);
+	console.error(error);
+	postErrorAlert(format(
+		LANGUAGE, null,
+		"error.uncaught"));
+	enableButtons();
+};
+
+
+/**
+ * use Plotly to draw the planet in a 3D plot
+ * @param planetData the result of calling surface.parameterize(), which will be used to draw the Surface in 3D
+ * @param radius the radius of the planet
+ */
+function renderPlanet(planetData: {x: number[][], y: number[][], z: number[][], I: number[][]}, radius: number): HTMLDivElement {
 	console.log("grafa planete...");
-	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
 
-	const {x, y, z, I} = surface.parameterize(18);
+	const {x, y, z, I} = planetData;
 
 	// apply a smotherstep normalization to the insolation
 	const color = [];
@@ -159,8 +170,9 @@ function renderPlanet() {
 			color[i].push(Math.pow(I[i][j], 3)*(3*I[i][j]*I[i][j] - 15*I[i][j] + 20)/8);
 	}
 
+	const plot = new HTMLDivElement();
 	Plotly.react(
-		DOM.elm('planet-map'),
+		plot,
 		[{
 			type: 'surface',
 			x: x,
@@ -203,214 +215,28 @@ function renderPlanet() {
 	});
 
 	console.log("fina!");
-	planetRendered = true;
+	return plot;
 }
 
 
-/**
- * Generate the heightmap and biomes on the planet's surface.
- */
-function applyTerrain(): void {
-	if (lastUpdated < Layer.PLANET)
-		applyPlanet();
-
-	console.log("Delone tingonfa...");
-	let rng = new Random(Number(DOM.val('terrain-seed'))); // use the random seed
-	surface.populateWith(surface.randomlySubdivide(rng)); // finish constructing the surface
-
-	console.log("jena zemforme...");
-	rng = rng.reset();
-	generateTerrain(
-		Number(DOM.val('terrain-continents')),
-		Number(DOM.val('terrain-sea-level')),
-		Number(DOM.val('terrain-temperature')),
-		surface, rng); // create the terrain!
-
-	// break the landmasses up into continents
-	continents = subdivideLand(
-		surface.tiles, 3, 500);
-	continents = continents.sort((tilesA, tilesB) => tilesB.size - tilesA.size);
-
-	console.log("grafa...");
-	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
-	const mapper = new Chart(
-		projection, surface, surface.tiles,
-		"north", false, 62500);
-	mapper.depict(surface,
-				  continents,
-	              null,
-	              DOM.elm('terrain-map') as SVGGElement,
-	              'physical',
-	              true, false, true);
-
-	console.log("fina!");
-	lastUpdated = Layer.TERRAIN;
-}
-
-
-/**
- * Generate the countries on the planet's surface.
- */
-function applyHistory(): void {
-	if (lastUpdated < Layer.TERRAIN)
-		applyTerrain();
-
-	console.log("jena histore...");
-	world = new World(
-		Number(DOM.val('history-meteors')),
-		surface);
-	let rng = new Random(Number(DOM.val('history-seed'))); // use the random seed
-	world.generateHistory(
-		Number(DOM.val('history-year')),
-		rng); // create the terrain!
-
-	console.log("grafa...");
-	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
-	const mapper = new Chart(
-		projection, surface, surface.tiles,
-		"north", false, 62500);
-	mapper.depict(surface,
-				  continents,
-	              world,
-	              DOM.elm('history-map') as SVGGElement,
-	              'political',
-	              false, true, false);
-
-	// now set up the "focus" options for the map tab:
-	console.log("mute ba chuze bil...");
-	const picker = document.getElementById('map-jung');
-	picker.textContent = "";
-	// show the whole world
-	const option = document.createElement('option');
-	option.setAttribute('value', 'world');
-	option.textContent = format(null, "parameter.map.focus.whole_world");
-	picker.appendChild(option);
-	// show a single continent
-	for (let i = 0; i < continents.length; i ++) {
-		const option = document.createElement('option');
-		option.selected = (i === 0);
-		option.setAttribute('value', `continent${i}`);
-		option.textContent = format(null, "parameter.map.focus.continent", i + 1);
-		picker.appendChild(option);
-	}
-	// or show a single country
-	const countries = world.getCivs(true, MIN_SIZE_TO_LIST); // list the biggest countries for the centering selection
-	for (const country of countries.slice(0, MAX_COUNTRIES_TO_LIST)) {
-		const option = document.createElement('option');
-		option.setAttribute('value', `country${country.id}`);
-		option.textContent = country.getName().toString(DOM.val("map-spelling"));
-		picker.appendChild(option);
-	}
-
-	console.log("fina!");
-	lastUpdated = Layer.HISTORY;
-}
-
-
-/**
- * Generate a final formatted map.
- */
-function applyMap(): void {
-	if (lastUpdated < Layer.HISTORY)
-		applyHistory();
-
-	console.log("grafa zemgrafe...");
-	const projectionName = surface.isFlat() ? "orthographic" : DOM.val('map-projection');
-	const orientation = DOM.val('map-orientation');
-	const rectangularBounds = (DOM.val('map-shape') === 'rectangle');
-	const width = Number.parseFloat(DOM.val('map-width-mm'));
-	const height = Number.parseFloat(DOM.val('map-height-mm'));
-	const focusSpecifier = DOM.val('map-jung');
-	let regionOfInterest: Set<Tile>;
-	if (focusSpecifier === "world")
-		regionOfInterest = surface.tiles;
-	else if (focusSpecifier.startsWith("continent"))
-		regionOfInterest = continents[Number.parseInt(focusSpecifier.slice(9))];
-	else if (focusSpecifier.startsWith("country")) {
-		const civ = world.getCiv(Number.parseInt(focusSpecifier.slice(7)));
-		regionOfInterest = filterSet(civ.tileTree.keys(), tile => !tile.isWater());
-	}
-	else
-		throw new Error(`invalid focusSpecifier: '${focusSpecifier}'`);
-
-	chart = new Chart(
-		projectionName, surface, regionOfInterest,
-		orientation, rectangularBounds, width*height,
-		DOM.elm('test-text') as HTMLDivElement);
-	mappedCivs = chart.depict(
-		surface,
-		continents,
-		world,
-		DOM.elm('map-map') as SVGGElement,
-		DOM.val('map-color'),
-		DOM.checked('map-rivers'),
-		DOM.checked('map-borders'),
-		DOM.checked('map-graticule'),
-		DOM.checked('map-windrose'),
-		DOM.checked('map-shading'),
-		DOM.checked('map-political-labels'),
-		DOM.checked('map-physical-labels'),
-		FONT_SIZE*0.35, // convert to mm
-		DOM.val('map-spelling'),
-	);
-
-	// adjust the height and width options to reflect the new aspect ratio
-	enforceAspectRatio("neither", "mm");
-	enforceAspectRatio("neither", "px");
-
-	console.log("fina!");
-	lastUpdated = Layer.MAP;
-}
-
-
-/**
- * Generate a nicely typeset document giving all the information about the mapped countries
- */
-function applyFactbook(): void {
-	if (lastUpdated < Layer.MAP)
-		applyMap();
-
-	console.log("jena factbook...");
-	const doc = generateFactbook(
-		DOM.elm('map-map') as SVGSVGElement,
-		mappedCivs,
-		DOM.checked('planet-locked'),
-		DOM.val('map-spelling'),
-	);
-	DOM.elm('factbook-embed').setAttribute('srcdoc', serialize(doc));
-
-	console.log("fina!");
-	lastUpdated = Layer.FACTBOOK;
-}
-
-
-/**
- * disable all the buttons, turn on the loading icon, call the funccion, wait, then set
- * everything back to how it was before.
- */
-function disableButtonsAndDo(func: () => void): void {
+function disableButtons() {
 	inProgress = true;
 	for (const tab of ['planet', 'terrain', 'history', 'map']) {
 		DOM.elm(`${tab}-apply`).toggleAttribute('disabled', true);
 		DOM.elm(`${tab}-ready`).style.display = 'none';
 		DOM.elm(`${tab}-loading`).style.display = null;
 	}
+}
 
-	setTimeout(() => {
-		try {
-			func();
-		} catch (error) {
-			console.error(error);
-			postErrorAlert(format(null, "error.uncaught"));
-		}
 
-		inProgress = false;
-		for (const tab of ['planet', 'terrain', 'history', 'map']) {
-			DOM.elm(`${tab}-apply`).toggleAttribute('disabled', false);
-			DOM.elm(`${tab}-ready`).style.display = null;
-			DOM.elm(`${tab}-loading`).style.display = 'none';
-		}
-	}, 10);
+function enableButtons() {
+	inProgress = false;
+	for (const tab of ['planet', 'terrain', 'history', 'map']) {
+		DOM.elm(`${tab}-apply`).toggleAttribute('disabled', false);
+		DOM.elm(`${tab}-ready`).style.display = null;
+		DOM.elm(`${tab}-loading`).style.display = 'none';
+	}
+
 }
 
 
@@ -468,13 +294,21 @@ function fixDayLength() {
 }
 
 
+/**
+ * infer the aspect ratio of an SVG element from its viewBox
+ */
+function calculateAspectRatio(svg: SVGSVGElement): number {
+	const [, , widthString, heightString] = svg.getAttribute("viewBox").split(" ");
+	return Number(widthString)/Number(heightString);
+}
+
+
 
 /**
  * when the map aspect ratio changes or one of the map size input spinners change,
  * make sure they're all consistent.
  */
 function enforceAspectRatio(fixed: string, unit: string) {
-	const aspectRatio = chart.dimensions.width/chart.dimensions.height;
 	const widthSpinner = DOM.elm(`map-width-${unit}`) as HTMLInputElement;
 	const heightSpinner = DOM.elm(`map-height-${unit}`) as HTMLInputElement;
 	if (fixed === "width") {
@@ -540,32 +374,32 @@ for (const suffix of ['apply', 'tab']) {
 	 * must update every time the tab is opened because of Plotly.
 	 */
 	DOM.elm(`planet-${suffix}`).addEventListener('click', () => {
-		if (!planetRendered && !inProgress)
-			disableButtonsAndDo(renderPlanet);
+		if (!inProgress)
+			updateEverythingUpTo(Layer.PLANET);
 	});
 
 	/**
 	 * When the terrain tab or button is clicked, do its thing
 	 */
 	DOM.elm(`terrain-${suffix}`).addEventListener('click', () => {
-		if (lastUpdated < Layer.TERRAIN && !inProgress)
-			disableButtonsAndDo(applyTerrain);
+		if (!inProgress)
+			updateEverythingUpTo(Layer.TERRAIN);
 	});
 
 	/**
 	 * When the history tab or button is clicked, activate its purpose.
 	 */
 	DOM.elm(`history-${suffix}`).addEventListener('click', () => {
-		if (lastUpdated < Layer.HISTORY && !inProgress)
-			disableButtonsAndDo(applyHistory);
+		if (!inProgress)
+			updateEverythingUpTo(Layer.HISTORY);
 	});
 
 	/**
 	 * When the map tab or button is clicked, reveal its true form.
 	 */
 	DOM.elm(`map-${suffix}`).addEventListener('click', () => {
-		if (lastUpdated < Layer.MAP && !inProgress)
-			disableButtonsAndDo(applyMap);
+		if (!inProgress)
+			updateEverythingUpTo(Layer.MAP);
 	});
 }
 
@@ -573,21 +407,21 @@ for (const suffix of ['apply', 'tab']) {
  * When the factbook tab is clicked, generate the factbook.
  */
 DOM.elm('factbook-tab').addEventListener('click', () => {
-	if (lastUpdated < Layer.FACTBOOK && !inProgress)
-		disableButtonsAndDo(applyFactbook);
+	if (!inProgress)
+		updateEverythingUpTo(Layer.FACTBOOK);
 });
 
 /**
  * When the download button is clicked, export and download the map as an SVG
  */
 DOM.elm('map-download-svg').addEventListener('click', () => {
-	const printscaleMap = DOM.elm('map-map').cloneNode(true) as SVGSVGElement;
+	const printscaleMap = DOM.elm('map-map-container').firstElementChild.cloneNode(true) as SVGSVGElement;
 	const [, , width, height] = printscaleMap.getAttribute("viewBox").split(" ");
 	printscaleMap.setAttribute("width", `${width}mm`);
 	printscaleMap.setAttribute("height", `${height}mm`);
 	download(
 		convertXMLToBlob(printscaleMap, "image/svg"),
-		format(null, "filename.map") + ".svg");
+		format(LANGUAGE, null, "filename.map") + ".svg");
 });
 
 /**
@@ -595,10 +429,10 @@ DOM.elm('map-download-svg').addEventListener('click', () => {
  */
 DOM.elm('map-download-png').addEventListener('click', () => {
 	convertSVGToPNGAndThenDownloadIt(
-		convertXMLToBlob(DOM.elm('map-map') as SVGSVGElement, "image/svg"),
+		convertXMLToBlob(DOM.elm('map-map-container').firstElementChild as SVGSVGElement, "image/svg"),
 		Number.parseInt(DOM.val('map-width-px')),
 		Number.parseInt(DOM.val('map-height-px')),
-		format(null, "filename.map") + ".png");
+		format(LANGUAGE, null, "filename.map") + ".png");
 });
 
 /**
@@ -613,7 +447,7 @@ DOM.elm('factbook-download-html').addEventListener('click', () => {
 		factbook = factbookFrame.contentWindow.document.documentElement as HTMLHtmlElement;
 	download(
 		convertXMLToBlob(factbook, "text/html"),
-		format(null, "filename.factbook") + ".html");
+		format(LANGUAGE, null, "filename.factbook") + ".html");
 });
 
 /**
