@@ -225,6 +225,7 @@ function disableButtons() {
 		DOM.elm(`${tab}-apply`).toggleAttribute('disabled', true);
 		DOM.elm(`${tab}-ready`).style.display = 'none';
 		DOM.elm(`${tab}-loading`).style.display = null;
+		DOM.elm(`${tab}-map-container`).style.opacity = '50%';
 	}
 }
 
@@ -235,6 +236,7 @@ function enableButtons() {
 		DOM.elm(`${tab}-apply`).toggleAttribute('disabled', false);
 		DOM.elm(`${tab}-ready`).style.display = null;
 		DOM.elm(`${tab}-loading`).style.display = 'none';
+		DOM.elm(`${tab}-map-container`).style.opacity = '100%';
 	}
 
 }
