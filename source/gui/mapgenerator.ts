@@ -92,7 +92,7 @@ onmessage = (message) => {
 
 	if (target >= Layer.PLANET && lastUpdated < Layer.PLANET)
 		surface = applyPlanet(
-			planetType, !tidallyLocked, radius, gravity, spinRate, obliquity)
+			planetType, !tidallyLocked, radius, gravity, spinRate, obliquity);
 	if (target >= Layer.TERRAIN && lastUpdated < Layer.TERRAIN)
 		[continents, terrainMap] = applyTerrain(
 			terrainSeed, numContinents, seaLevel, temperature);
