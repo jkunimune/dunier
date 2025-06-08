@@ -28,7 +28,6 @@ const FONT_SIZE = 8; // pt
 export enum Layer {
 	NONE,
 	PLANET,
-	PLANET_RENDER,
 	TERRAIN,
 	HISTORY,
 	MAP,
@@ -91,11 +90,9 @@ onmessage = (message) => {
 
 	let mappedCivs = null;
 
-	if (target >= Layer.PLANET && lastUpdated < Layer.PLANET) {
+	if (target >= Layer.PLANET && lastUpdated < Layer.PLANET)
 		surface = applyPlanet(
 			language, planetType, !tidallyLocked, radius, gravity, spinRate, obliquity)
-		// planetData = surface.parameterize(18);
-	}
 	if (target >= Layer.TERRAIN && lastUpdated < Layer.TERRAIN)
 		[continents, terrainMap] = applyTerrain(
 			terrainSeed, numContinents, seaLevel, temperature);
@@ -135,7 +132,7 @@ onmessage = (message) => {
 
 	postMessage([
 		lastUpdated,
-		null,
+		surface.parameterize(18),
 		(terrainMap !== null) ? toXML(terrainMap) : null,
 		(historyMap !== null) ? toXML(historyMap) : null,
 		(map !== null) ? toXML(map) : null,

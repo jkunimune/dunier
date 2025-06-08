@@ -102,7 +102,11 @@ worker.onmessage = (message) => {
 		focusOptions,
 	] = message.data;
 
-	// TODO: plot
+	if (planetData !== null && !planetRendered && !DOM.elm('planet-panel').hasAttribute("hidden")) {
+		// show a 3D model of the planet
+		renderPlanet(planetData);
+		planetRendered = true;
+	}
 	if (terrainMap !== null) {
 		// show the global physical map
 		DOM.elm('terrain-map-container').innerHTML = terrainMap;
@@ -128,7 +132,6 @@ worker.onmessage = (message) => {
 
 	// now set up the "focus" options for the map tab:
 	if (focusOptions !== null) {
-		console.log("mute ba chuze bil...");
 		const picker = document.getElementById('map-jung');
 		picker.textContent = "";
 		for (let i = 0; i < focusOptions.length; i ++) {
@@ -155,12 +158,18 @@ worker.onerror = (error) => {
 /**
  * use Plotly to draw the planet in a 3D plot
  * @param planetData the result of calling surface.parameterize(), which will be used to draw the Surface in 3D
- * @param radius the radius of the planet
  */
-function renderPlanet(planetData: {x: number[][], y: number[][], z: number[][], I: number[][]}, radius: number): HTMLDivElement {
+function renderPlanet(planetData: {x: number[][], y: number[][], z: number[][], I: number[][]}): void {
 	console.log("grafa planete...");
 
 	const {x, y, z, I} = planetData;
+
+	let maxRadius = 0;
+	for (let i = 0; i < x.length; i ++)
+		for (let j = 0; j < x[i].length; j ++)
+			maxRadius = Math.max(
+				maxRadius,
+				Math.sqrt(x[i][j]**2 + y[i][j]**2 + z[i][j]**2));
 
 	// apply a smotherstep normalization to the insolation
 	const color = [];
@@ -170,9 +179,8 @@ function renderPlanet(planetData: {x: number[][], y: number[][], z: number[][], 
 			color[i].push(Math.pow(I[i][j], 3)*(3*I[i][j]*I[i][j] - 15*I[i][j] + 20)/8);
 	}
 
-	const plot = new HTMLDivElement();
 	Plotly.react(
-		plot,
+		DOM.elm("planet-map-container"),
 		[{
 			type: 'surface',
 			x: x,
@@ -195,15 +203,15 @@ function renderPlanet(planetData: {x: number[][], y: number[][], z: number[][], 
 			scene: {
 				xaxis: {
 					showspikes: false,
-					range: [-radius, radius],
+					range: [-maxRadius, maxRadius],
 				},
 				yaxis: {
 					showspikes: false,
-					range: [-radius, radius],
+					range: [-maxRadius, maxRadius],
 				},
 				zaxis: {
 					showspikes: false,
-					range: [-radius, radius],
+					range: [-maxRadius, maxRadius],
 				},
 				aspectmode: 'cube',
 			},
@@ -215,7 +223,6 @@ function renderPlanet(planetData: {x: number[][], y: number[][], z: number[][], 
 	});
 
 	console.log("fina!");
-	return plot;
 }
 
 
@@ -372,8 +379,6 @@ for (const prefix of ['planet', 'terrain', 'history', 'map', 'factbook']) {
 for (const suffix of ['apply', 'tab']) {
 	/**
 	 * When the planet button is clicked, call its function.
-	 * Note that this does not check if the planet is out of sync; it
-	 * must update every time the tab is opened because of Plotly.
 	 */
 	DOM.elm(`planet-${suffix}`).addEventListener('click', () => {
 		if (!inProgress)
