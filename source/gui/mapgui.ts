@@ -146,11 +146,18 @@ worker.onmessage = (message) => {
 
 
 worker.onerror = (error) => {
-	console.error(error.message);
 	console.error(error);
-	postErrorAlert(format(
-		LANGUAGE, null,
-		"error.uncaught"));
+	if (error.message === undefined)
+		console.error("this error doesn't even have a message!  is it a syntax issue?");
+	else {
+		const message = error.message.split(":")[1].trim();
+		if (message.startsWith("Too fast"))
+			postErrorAlert(format(LANGUAGE, null, "error.planet_too_fast"));
+		else if (message.startsWith("Too slow"))
+			postErrorAlert(format(LANGUAGE, null, "error.planet_too_slow"));
+		else
+			postErrorAlert(format(LANGUAGE, null, "error.uncaught"));
+	}
 	enableButtons();
 };
 

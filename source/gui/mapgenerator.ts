@@ -92,7 +92,7 @@ onmessage = (message) => {
 
 	if (target >= Layer.PLANET && lastUpdated < Layer.PLANET)
 		surface = applyPlanet(
-			language, planetType, !tidallyLocked, radius, gravity, spinRate, obliquity)
+			planetType, !tidallyLocked, radius, gravity, spinRate, obliquity)
 	if (target >= Layer.TERRAIN && lastUpdated < Layer.TERRAIN)
 		[continents, terrainMap] = applyTerrain(
 			terrainSeed, numContinents, seaLevel, temperature);
@@ -144,7 +144,6 @@ onmessage = (message) => {
 
 /**
  * Generate the planet and its mean temperature (not yet accounting for altitude)
- * @param language the language to use for the error messages
  * @param planetType the category of surface, one of ["spheroid", "toroid", or "plane"]
  * @param hasDayNightCycle whether or not the planet is rotating relative to its sun
  * @param radius the radius of the planet at its widest point (km)
@@ -152,53 +151,42 @@ onmessage = (message) => {
  * @param spinRate the angular velocity of the planet (/s)
  * @param obliquity the angle of this planet's axis with respect to its orbital plane (radians)
  */
-function applyPlanet(language: string, planetType: string, hasDayNightCycle: boolean, radius: number, gravity: number, spinRate: number, obliquity: number): Surface {
+function applyPlanet(planetType: string, hasDayNightCycle: boolean, radius: number, gravity: number, spinRate: number, obliquity: number): Surface {
 	console.log("jena planete...");
 
-	try { // create a surface
-		if (planetType === 'spheroid') { // spheroid
-			if (hasDayNightCycle) { // oblate
-				surface = new Spheroid(
-					radius,
-					gravity,
-					spinRate,
-					obliquity);
-			} else { // spherical
-				surface = new Sphere(
-					radius);
-			}
-		}
-		else if (planetType === 'toroid') { // toroid
-			surface = new Toroid(
+	// create a surface
+	if (planetType === 'spheroid') { // spheroid
+		if (hasDayNightCycle) { // oblate
+			surface = new Spheroid(
 				radius,
 				gravity,
 				spinRate,
 				obliquity);
+		} else { // spherical
+			surface = new Sphere(
+				radius);
 		}
-		else if (planetType === 'plane') { // plane
-			if (hasDayNightCycle) { // with orbiting sun
-				surface = new Disc(
-					radius,
-					obliquity,
-					hasDayNightCycle);
-			} else { // with static sun
-				surface = new LockedDisc(
-					radius);
-			}
+	}
+	else if (planetType === 'toroid') { // toroid
+		surface = new Toroid(
+			radius,
+			gravity,
+			spinRate,
+			obliquity);
+	}
+	else if (planetType === 'plane') { // plane
+		if (hasDayNightCycle) { // with orbiting sun
+			surface = new Disc(
+				radius,
+				obliquity,
+				hasDayNightCycle);
+		} else { // with static sun
+			surface = new LockedDisc(
+				radius);
 		}
-		else {
-			throw new Error(`What kind of planet is ${planetType}`);
-		}
-	} catch (err) {
-		if (err instanceof RangeError) {
-			let message: string;
-			if (err.message.startsWith("Too fast"))
-				message = format(language, null, "error.planet_too_fast"); // TODO: it should automaticly bound the day-length at stable values
-			else if (err.message.startsWith("Too slow"))
-				message = format(language, null, "error.planet_too_slow");
-			throw new Error(message);
-		} else
-			throw err;
+	}
+	else {
+		throw new Error(`What kind of planet is ${planetType}`);
 	}
 	surface.initialize();
 
