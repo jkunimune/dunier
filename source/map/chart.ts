@@ -22,6 +22,7 @@ import {
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
 import {h, VNode} from "../gui/virtualdom.js";
+import {measureText} from "../gui/mapgenerator.js";
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -803,12 +804,8 @@ export class Chart {
 	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number) {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
-		// this.testText.innerHTML = '..'+label+'..';
-		// const testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
-		// this.testText.innerHTML = '';
-		// const lengthPerSize = testTextLength/20;
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
-		const lengthPerSize = heightPerSize*6;
+		const lengthPerSize = measureText('..' + label + '..');
 		const aspectRatio = lengthPerSize/heightPerSize;
 
 		const path = this.projectPath( // do the projection

@@ -46,7 +46,7 @@ let alertCounter: number = 0;
 let aspectRatio = Math.sqrt(2);
 
 
-function updateEverythingUpTo(target: Layer) {
+function requestContent(target: Layer) {
 	disableButtons();
 
 	const planetType = DOM.val('planet-type'); // read input
@@ -78,18 +78,18 @@ function updateEverythingUpTo(target: Layer) {
 	const geoLabels = DOM.checked('map-physical-labels');
 	const style = DOM.val('map-spelling');
 
-	worker.postMessage([
+	worker.postMessage({type: "commissioning a new map", args: [
 		LANGUAGE, lastUpdated, target,
 		planetType, tidallyLocked, radius, gravity, spinRate, obliquity,
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
 		color, rivers, borders, shading, civLabels, geoLabels, graticule, windrose, style,
-	]);
+	]});
 }
 
 
-worker.onmessage = (message) => {
+function displayContent(generatedContent: any[]) {
 	let planetData: { x: number[][], y: number[][], z: number[][], I: number[][] };
 	let terrainMap: string;
 	let historyMap: string;
@@ -100,7 +100,7 @@ worker.onmessage = (message) => {
 		lastUpdated,
 		planetData, terrainMap, historyMap, map, factbook,
 		focusOptions,
-	] = message.data;
+	] = generatedContent;
 
 	if (planetData !== null && !planetRendered && !DOM.elm('planet-panel').hasAttribute("hidden")) {
 		// show a 3D model of the planet
@@ -142,23 +142,6 @@ worker.onmessage = (message) => {
 			picker.appendChild(option);
 		}
 	}
-};
-
-
-worker.onerror = (error) => {
-	console.error(error);
-	if (error.message === undefined)
-		console.error("this error doesn't even have a message!  is it a syntax issue?");
-	else {
-		const message = error.message.split(":")[1].trim();
-		if (message.startsWith("Too fast"))
-			postErrorAlert(format(LANGUAGE, null, "error.planet_too_fast"));
-		else if (message.startsWith("Too slow"))
-			postErrorAlert(format(LANGUAGE, null, "error.planet_too_slow"));
-		else
-			postErrorAlert(format(LANGUAGE, null, "error.uncaught"));
-	}
-	enableButtons();
 };
 
 
@@ -343,6 +326,19 @@ function enforceAspectRatio(fixed: string, unit: string) {
 }
 
 
+/**
+ * figure out how long a string is in space in the default font
+ * @param text
+ */
+function measureText(text: string): number {
+	const testText = DOM.elm('test-text') as HTMLDivElement;
+	testText.innerHTML = text;
+	const testTextLength = testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
+	testText.innerHTML = '';
+	return testTextLength/20;
+}
+
+
 for (const prefix of ['content', 'style', 'formatting']) {
 	/** when the user clicks on a card header, toggle whether it is shown and hide all the others */
 	DOM.elm(`map-${prefix}-heading`).addEventListener('click', () => {
@@ -389,7 +385,7 @@ for (const suffix of ['apply', 'tab']) {
 	 */
 	DOM.elm(`planet-${suffix}`).addEventListener('click', () => {
 		if (!inProgress)
-			updateEverythingUpTo(Layer.PLANET);
+			requestContent(Layer.PLANET);
 	});
 
 	/**
@@ -397,7 +393,7 @@ for (const suffix of ['apply', 'tab']) {
 	 */
 	DOM.elm(`terrain-${suffix}`).addEventListener('click', () => {
 		if (!inProgress)
-			updateEverythingUpTo(Layer.TERRAIN);
+			requestContent(Layer.TERRAIN);
 	});
 
 	/**
@@ -405,7 +401,7 @@ for (const suffix of ['apply', 'tab']) {
 	 */
 	DOM.elm(`history-${suffix}`).addEventListener('click', () => {
 		if (!inProgress)
-			updateEverythingUpTo(Layer.HISTORY);
+			requestContent(Layer.HISTORY);
 	});
 
 	/**
@@ -413,7 +409,7 @@ for (const suffix of ['apply', 'tab']) {
 	 */
 	DOM.elm(`map-${suffix}`).addEventListener('click', () => {
 		if (!inProgress)
-			updateEverythingUpTo(Layer.MAP);
+			requestContent(Layer.MAP);
 	});
 }
 
@@ -422,8 +418,42 @@ for (const suffix of ['apply', 'tab']) {
  */
 DOM.elm('factbook-tab').addEventListener('click', () => {
 	if (!inProgress)
-		updateEverythingUpTo(Layer.FACTBOOK);
+		requestContent(Layer.FACTBOOK);
 });
+
+/**
+ * when the Worker thread finishes generating content, display it
+ */
+worker.onmessage = function(message: MessageEvent) {
+	if (message.data.type === "new map just dropped")
+		displayContent(message.data.args);
+	else if (message.data.type === "asking for your measurements")
+		worker.postMessage({
+			type: "those measurements you wanted",
+			args: measureText(message.data.args)});
+	else
+		throw Error(`what do you mean, ${message.data.type}`);
+};
+
+/**
+ * when the Worker thread throws an error, report it
+ */
+worker.onerror = function(error: ErrorEvent) {
+	console.error(error);
+	if (error.message === undefined)
+		console.error("this error doesn't even have a message!  is it a syntax issue?");
+	else {
+		const message = error.message.split(":")[1].trim();
+		if (message.startsWith("Too fast"))
+			postErrorAlert(format(LANGUAGE, null, "error.planet_too_fast"));
+		else if (message.startsWith("Too slow"))
+			postErrorAlert(format(LANGUAGE, null, "error.planet_too_slow"));
+		else
+			postErrorAlert(format(LANGUAGE, null, "error.uncaught"));
+	}
+	enableButtons();
+
+}
 
 /**
  * When the download button is clicked, export and download the map as an SVG

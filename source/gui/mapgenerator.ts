@@ -41,8 +41,11 @@ let continents: Set<Tile>[] = null;
 /** the human world on that planet */
 let world: World = null;
 
+/** used to receive replies from the GUI thread */
+let answer: any = null;
 
-onmessage = (message) => {
+
+function generateContent(inputData: any[]) {
 	let language: string;
 	let lastUpdated: Layer;
 	let target: Layer;
@@ -81,7 +84,7 @@ onmessage = (message) => {
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
 		color, rivers, borders, shading, civLabels, geoLabels, graticule, windrose, style,
-	] = message.data;
+	] = inputData;
 
 	let terrainMap = null;
 	let historyMap = null;
@@ -139,7 +142,7 @@ onmessage = (message) => {
 		(factbook !== null) ? toXML(factbook) : null,
 		focusOptions,
 	]);
-};
+}
 
 
 /**
@@ -364,3 +367,24 @@ function applyFactbook(map: VNode, mappedCivs: Civ[], tidalLock: boolean, langua
 	console.log("fina!");
 	return doc;
 }
+
+
+export function measureText(text: string): number {
+	answer = null;
+	postMessage({type: "asking for your measurements", args: text});
+	const startTime = Date.now();
+	while (answer === null)
+		if (Date.now() > startTime + 2000)
+			throw new Error("it should not take this long for the GUI thread to measure a string.  did something happen?");
+	return answer;
+}
+
+
+onmessage = function(message: MessageEvent) {
+	if (message.data.type === "commissioning a new map")
+		generateContent(message.data.args);
+	else if (message.data.type === "those measurements you wanted")
+		answer = message.data.args;
+	else
+		throw Error(`I don't understand what you want from me. '${message.data.type}'?`);
+};
