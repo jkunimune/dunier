@@ -7,7 +7,6 @@ import {Name} from "../language/name.js";
 import EN_STRINGS from "../../resources/translations/en.js";
 import ES_STRINGS from "../../resources/translations/es.js";
 import JA_STRINGS from "../../resources/translations/ja.js";
-import PD_STRINGS from "../../resources/translations/pd.js";
 import {enforceGrammaticalAgreement, formatNumber} from "../utilities/miscellaneus.js";
 
 
@@ -15,7 +14,6 @@ const USER_STRINGS: { [index: string]: { [index: string]: string } } = {
 	en: EN_STRINGS,
 	es: ES_STRINGS,
 	ja: JA_STRINGS,
-	pd: PD_STRINGS,
 };
 
 
