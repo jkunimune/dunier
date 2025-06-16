@@ -40,6 +40,10 @@ let surface: Surface = null;
 let continents: Set<Tile>[] = null;
 /** the human world on that planet */
 let world: World = null;
+/** the current main map SVG */
+let map: VNode = null;
+/** the list of countries that are visible on the current map */
+let mappedCivs: Civ[] = null;
 /** the width of every character in the map font */
 let characterWidthMap: Map<string, number> = null;
 
@@ -88,10 +92,7 @@ onmessage = (message) => {
 
 	let terrainMap = null;
 	let historyMap = null;
-	let map = null;
 	let factbook = null;
-
-	let mappedCivs = null;
 
 	if (target >= Layer.PLANET && lastUpdated < Layer.PLANET)
 		surface = applyPlanet(
