@@ -40,6 +40,8 @@ let surface: Surface = null;
 let continents: Set<Tile>[] = null;
 /** the human world on that planet */
 let world: World = null;
+/** the width of every character in the map font */
+let characterWidthMap: Map<string, number> = null;
 
 
 onmessage = (message) => {
@@ -81,6 +83,7 @@ onmessage = (message) => {
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
 		color, rivers, borders, shading, civLabels, geoLabels, graticule, windrose, style,
+		characterWidthMap,
 	] = message.data;
 
 	let terrainMap = null;
@@ -223,7 +226,8 @@ function applyTerrain(seed: number, numContinents: number, seaLevel: number, tem
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
 		projection, surface, surface.tiles,
-		"north", false, 62500);
+		"north", false, 62500,
+		characterWidthMap);
 	const {map} = mapper.depict(surface,
 		continents,
 		null,
@@ -255,7 +259,8 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
 		projection, surface, surface.tiles,
-		"north", false, 62500);
+		"north", false, 62500,
+		characterWidthMap);
 	const {map} = mapper.depict(surface,
 		null,
 		world,
@@ -321,7 +326,8 @@ function applyMap(
 	const chart = new Chart(
 		surface.isFlat() ? "orthographic" : projectionName,
 		surface, regionOfInterest,
-		orientation, rectangularBounds, width*height);
+		orientation, rectangularBounds, width*height,
+		characterWidthMap);
 	const {map, mappedCivs} = chart.depict(
 		surface,
 		continents,

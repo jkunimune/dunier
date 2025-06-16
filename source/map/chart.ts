@@ -159,6 +159,9 @@ export class Chart {
 	public readonly latitudeScale: number;
 	/** the average spacing between meridians in mm/radian */
 	public readonly longitudeScale: number;
+	/** a table containing the width of every possible character, in units of font-size */
+	private readonly characterWidthMap: Map<string, number>;
+	/** the number of labels that have been gerenated (for unique ID purposes) */
 	private labelIndex: number;
 
 
@@ -170,10 +173,12 @@ export class Chart {
 	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 * @param area the desired bounding box area in mm²
+	 * @param characterWidthMap a table containing the width of every possible character, for label length calculation purposes
 	 */
 	constructor(
 		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
 		orientationName: string, rectangularBounds: boolean, area: number,
+		characterWidthMap: Map<string, number>,
 	) {
 		// convert the orientation name into a number of degrees
 		if (orientationName === 'north')
@@ -338,6 +343,7 @@ export class Chart {
 			this.dimensions.bottom + margin,
 		);
 
+		this.characterWidthMap = characterWidthMap;
 		this.labelIndex = 0;
 	}
 
@@ -803,12 +809,8 @@ export class Chart {
 	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number) {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
-		// this.testText.innerHTML = '..'+label+'..';
-		// const testTextLength = this.testText.getBoundingClientRect().width; // to calibrate the label's aspect ratio, measure the dimensions of some test text
-		// this.testText.innerHTML = '';
-		// const lengthPerSize = testTextLength/20;
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
-		const lengthPerSize = heightPerSize*6;
+		const lengthPerSize = Chart.calculateStringLength(this.characterWidthMap, label);
 		const aspectRatio = lengthPerSize/heightPerSize;
 
 		const path = this.projectPath( // do the projection
@@ -1270,6 +1272,20 @@ export class Chart {
 		const g = h('g', {id: id});
 		parent.children.push(g);
 		return g;
+	}
+
+	/**
+	 * calculate how long a string will be when written out
+	 */
+	static calculateStringLength(characterWidthMap: Map<string, number>, text: string): number {
+		let length = 0;
+		for (let i = 0; i < text.length; i ++) {
+			if (characterWidthMap.has(text[i]))
+				length += characterWidthMap.get(text[i]);
+			else
+				throw new Error(`unrecognized character: '${text[i]}'`);
+		}
+		return length;
 	}
 }
 

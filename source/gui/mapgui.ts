@@ -8,6 +8,7 @@ import {Selector} from "../utilities/selector.js";
 import {convertXMLToBlob, convertSVGToPNGAndThenDownloadIt, download} from "./export.js";
 import "../libraries/plotly.min.js";
 import {Layer} from "./mapgenerator.js"; // note that I modified this copy of Plotly to work in vanilla ES6
+import HARFIA_TABLE from "../../resources/alphabet.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -44,6 +45,8 @@ let alertCounter: number = 0;
 
 /** the current aspect ratio of the main map */
 let aspectRatio = Math.sqrt(2);
+/** the width of every character in the map font */
+let characterWidthMap: Map<string, number> = null;
 
 
 function updateEverythingUpTo(target: Layer) {
@@ -85,6 +88,7 @@ function updateEverythingUpTo(target: Layer) {
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
 		color, rivers, borders, shading, civLabels, geoLabels, graticule, windrose, style,
+		characterWidthMap,
 	]);
 }
 
@@ -343,6 +347,45 @@ function enforceAspectRatio(fixed: string, unit: string) {
 }
 
 
+/**
+ * build a map containing the width of every possible character
+ */
+function measureAllCharacters(): Map<string, number> {
+	const allCharacters = new Set<string>();
+	for (let style = 0; style < HARFIA_TABLE.styles.length; style ++) {
+		for (const sound of HARFIA_TABLE.sounds) {
+			for (const character of sound.symbols[style]) {
+				allCharacters.add(character);
+				if (HARFIA_TABLE.flags[0].values[style])
+					allCharacters.add(character.toUpperCase());
+			}
+		}
+		for (const suprasegmental of HARFIA_TABLE.suprasegmentals) {
+			allCharacters.add(suprasegmental.symbols[style]);
+		}
+		for (const modifier of HARFIA_TABLE.modifiers) {
+			for (const character of modifier.symbols[style]) {
+				allCharacters.add(character);
+				if (HARFIA_TABLE.flags[0].values[style])
+					allCharacters.add(character.toUpperCase());
+			}
+		}
+	}
+
+	const testText = DOM.elm('test-text');
+	testText.innerHTML = 'n';
+	const en = testText.getBoundingClientRect().width;
+	const widthMap = new Map<string, number>();
+	for (const character of allCharacters) {
+		testText.innerHTML = 'n' + character + 'n';
+		const testTextLength = testText.getBoundingClientRect().width;
+		widthMap.set(character, (testTextLength - 2*en)/20);
+	}
+	testText.innerHTML = '';
+	return widthMap;
+}
+
+
 for (const prefix of ['content', 'style', 'formatting']) {
 	/** when the user clicks on a card header, toggle whether it is shown and hide all the others */
 	DOM.elm(`map-${prefix}-heading`).addEventListener('click', () => {
@@ -512,6 +555,8 @@ for (const { layer, name } of tabs) {
  * Once the page is ready, start the algorithm!
  */
 document.addEventListener("DOMContentLoaded", () => {
+	console.log("measuring the map font...");
+	characterWidthMap = measureAllCharacters();
 	console.log("ready!");
 	(DOM.elm('map-tab') as HTMLElement).click();
 }); // TODO: warn before leaving page
