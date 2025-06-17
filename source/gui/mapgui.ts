@@ -79,7 +79,6 @@ function updateEverythingUpTo(target: Layer) {
 	const windrose = DOM.checked('map-windrose');
 	const shading = DOM.checked('map-shading');
 	const civLabels = DOM.checked('map-political-labels');
-	const geoLabels = DOM.checked('map-physical-labels');
 	const style = DOM.val('map-spelling');
 
 	worker.postMessage([
@@ -88,7 +87,7 @@ function updateEverythingUpTo(target: Layer) {
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
-		color, rivers, borders, shading, civLabels, geoLabels, graticule, windrose, style,
+		color, rivers, borders, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	]);
 }

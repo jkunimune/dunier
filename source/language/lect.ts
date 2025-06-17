@@ -23,11 +23,9 @@ export class WordType extends Enumify {
 	public readonly asString: string;
 
 	static PEOPLE = new WordType(0, 1, 'people');
-	static LANGUAGE = new WordType(1, 1, 'language');
-	static COUNTRY = new WordType(2, 3, 'country');
-	static CITY = new WordType(3, 6, 'city');
-	static FAMILY = new WordType(4, 12, 'family');
-	static OTHER = new WordType(5, 0, 'other');
+	static COUNTRY = new WordType(1, 3, 'country');
+	static FAMILY = new WordType(2, 12, 'family');
+	static OTHER = new WordType(3, 0, 'other');
 	static _ = WordType.closeEnum();
 
 	constructor(index: number, numClassifiers: number, asString: string) {

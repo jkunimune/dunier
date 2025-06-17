@@ -76,7 +76,6 @@ onmessage = (message) => {
 	let borders: boolean;
 	let shading: boolean;
 	let civLabels: boolean;
-	let geoLabels: boolean;
 	let graticule: boolean;
 	let windrose: boolean;
 	let style: string;
@@ -86,7 +85,7 @@ onmessage = (message) => {
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
-		color, rivers, borders, shading, civLabels, geoLabels, graticule, windrose, style,
+		color, rivers, borders, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	] = message.data;
 
@@ -105,7 +104,7 @@ onmessage = (message) => {
 	if (target >= Layer.MAP && lastUpdated < Layer.MAP)
 		[map, mappedCivs] = applyMap(
 			projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
-			color, rivers, borders, graticule, windrose, shading, civLabels, geoLabels, style);
+			color, rivers, borders, graticule, windrose, shading, civLabels, style);
 	if (target >= Layer.FACTBOOK && lastUpdated < Layer.FACTBOOK)
 		factbook = applyFactbook(map, mappedCivs, tidallyLocked, language, style);
 	lastUpdated = target;
@@ -287,7 +286,6 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
  * @param borders whether to add state borders
  * @param shading whether to add shaded relief
  * @param civLabels whether to label countries
- * @param geoLabels whether to label mountain ranges and seas
  * @param graticule whether to draw a graticule
  * @param windrose whether to add a compass rose
  * @param style the transliteration convention to use for them
@@ -296,7 +294,7 @@ function applyMap(
 	projectionName: string, orientation: string,
 	rectangularBounds: boolean, width: number, height: number, focusSpecifier: string,
 	color: string, rivers: boolean, borders: boolean, graticule: boolean, windrose: boolean,
-	shading: boolean, civLabels: boolean, geoLabels: boolean, style: string): [VNode, Civ[]] {
+	shading: boolean, civLabels: boolean, style: string): [VNode, Civ[]] {
 
 	console.log("grafa zemgrafe...");
 	let regionOfInterest: Set<Tile>;
@@ -341,7 +339,6 @@ function applyMap(
 		windrose,
 		shading,
 		civLabels,
-		geoLabels,
 		FONT_SIZE*0.35, // convert to mm
 		style,
 	);

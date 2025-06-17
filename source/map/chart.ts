@@ -357,7 +357,6 @@ export class Chart {
 	 * @param borders whether to add state borders
 	 * @param shading whether to add shaded relief
 	 * @param civLabels whether to label countries
-	 * @param geoLabels whether to label mountain ranges and seas
 	 * @param graticule whether to draw a graticule
 	 * @param windrose whether to add a compass rose
 	 * @param fontSize the size of city labels and minimum size of country and biome labels (mm)
@@ -369,7 +368,7 @@ export class Chart {
 		   rivers: boolean, borders: boolean,
 		   graticule = false, windrose = false,
 		   shading = false,
-		   civLabels = false, geoLabels = false,
+		   civLabels = false,
 		   fontSize = 3, style: string = '(default)'): {map: VNode, mappedCivs: Civ[] | null} {
 		const bbox = this.dimensions;
 
