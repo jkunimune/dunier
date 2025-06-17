@@ -289,16 +289,29 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			// э is only used at the starts of words
 			symbols = symbols.replace(/(.)э/, "$1е");
 		}
+		// apply latin spelling rules
+		if (style === 'la') {
+			// forbid double j
+			symbols = symbols.replace(/jj/g, "j");
+			// forbid double v
+			symbols = symbols.replace(/vv/g, "v");
+			// change j to i adjacent to consonants
+			symbols = symbols.replace(/([^aeijouv̄])j/g, "$1i");
+			symbols = symbols.replace(/j([^aeijouv̄])/g, "i$1");
+			// change v to u adjacent to consonants
+			symbols = symbols.replace(/([^aeijouv̄])v/g, "$1u");
+			symbols = symbols.replace(/v([^aeijouv̄])/g, "u$1");
+		}
 		// apply spanish spelling rules
 		if (style === 'es') {
 			// change y to i adjacent to consonants
 			symbols = symbols.replace(/([^aeioú])y/g, "$1i");
 			symbols = symbols.replace(/y([^aeioú])/g, "i$1");
 			// remove duplicate letters
-			for (let i = symbols.length - 1; i >= 1; i --)
+			for (let i = symbols.length - 1; i >= 1; i--)
 				if (symbols[i - 1] === symbols[i])
 					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
-			for (let i = symbols.length - 1; i >= 2; i --)
+			for (let i = symbols.length - 1; i >= 2; i--)
 				if (symbols[i - 1] === "́" && symbols[i - 2] === symbols[i]) // watch out for the combining diacritics
 					symbols = symbols.slice(0, i) + symbols.slice(i + 1);
 			// change combining diacritics to special characters (because ú should behave differently from u)
@@ -317,13 +330,32 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			symbols = symbols.replace(/g([ieíé])/g, "gu$1");
 			symbols = symbols.replace(/c([ieíé])/g, "qu$1");
 			symbols = symbols.replace(/z([ieíé])/g, "c$1");
+			// now try to guess where the regular stress falls
+			let seenAnything = false;
+			let seenAConsonantCluster = false;
+			let seenAPreConsonantVowelCluster = false;
+			for (let i = symbols.length - 1; i >= 0; i--) {
+				if (seenAnything && "áéíóú".includes(symbols[i])) {
+					symbols = symbols.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u");
+					break;
+				}
+				if (i === symbols.length - 1 && "ns".includes(symbols[i]))
+					continue;
+				seenAnything = true;
+				if (!"aeiouáéíóú".includes(symbols[i]))
+					seenAConsonantCluster = true;
+				if (seenAConsonantCluster && "aeiouáéíóú".includes(symbols[i]))
+					seenAPreConsonantVowelCluster = true;
+				if (seenAPreConsonantVowelCluster && !"aeiouáéíóú".includes(symbols[i]))
+					break;
+			}
 		}
 		// apply english spelling rules
 		else if (style === 'en') {
 			symbols = "#" + symbols + "#";
 			for (const vise of ENGLISH_REPLACEMENTS) {
 				for (const pattern of vise.patterns) { // look through the replacements in ENGLI_VISE
-					for (let i = symbols.length; i >= 1; i--) { // ang go through the string
+					for (let i = symbols.length; i >= 1; i --) { // ang go through the string
 						if (i - pattern.length >= 0 && symbols.substring(i - pattern.length, i) === pattern)
 							symbols = symbols.substring(0, i - pattern.length) + vise.result + symbols.substring(i);
 					}

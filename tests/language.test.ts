@@ -138,6 +138,17 @@ describe("script", () => {
 		expect(words.sort((a, b) => compare(a, b, "en"))).toEqual(
 			["aa", "ʻaʻa", "áa", "ʻaʻu", "au", "áu", "n̈a", "na", "n̈u", "nu", "ケイ", "ゲイ", "ケン", "ゲン"]);
 	});
+	test("spanish stress placement", () => {
+		const word = ipa("ananas");
+		word[0] = ipa("a")[0].with(Silabia.PRIMARY_STRESSED);
+		expect(transcribe([word], "es")).toEqual("Ánanas");
+		word[0] = ipa("a")[0];
+		word[2] = ipa("a")[0].with(Silabia.PRIMARY_STRESSED);
+		expect(transcribe([word], "es")).toEqual("Ananas");
+		word[2] = ipa("a")[0];
+		word[4] = ipa("a")[0].with(Silabia.PRIMARY_STRESSED);
+		expect(transcribe([word], "es")).toEqual("Ananás");
+	});
 	describe("transcribe", () => {
 		const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ"), ipa("wiwiɡjaɡwaɡwiɡaɡiθaθikaki")];
 		words[0][0] = words[0][0].with(Nosia.NASALIZED).with(Mode.AFFRICATE);
@@ -157,6 +168,9 @@ describe("script", () => {
 		});
 		test("ru", () => {
 			expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Вивигягвагвигагифафикаки");
+		});
+		test("la", () => {
+			expect(transcribe(words, "la")).toEqual("Nstarc Nuijen Jun Vivigiaguaguigagithathicaci");
 		});
 	});
 });
