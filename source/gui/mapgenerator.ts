@@ -120,7 +120,7 @@ onmessage = (message) => {
 			label: format(language, null, "parameter.map.focus.whole_world"),
 		});
 		// show a single continent
-		for (let i = 0; i < numContinents; i ++)
+		for (let i = 0; i < continents.length; i ++)
 			focusOptions.push({
 				value: `continent${i}`,
 				label: format(language, null, "parameter.map.focus.continent", i + 1),
