@@ -9,6 +9,7 @@ import {convertXMLToBlob, convertSVGToPNGAndThenDownloadIt, download} from "./ex
 import "../libraries/plotly.min.js";
 import {Layer} from "./mapgenerator.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import HARFIA_TABLE from "../../resources/alphabet.js";
+import KATAKANA_TABLE from "../../resources/rules_ja.js";
 // @ts-ignore
 const Plotly = window.Plotly;
 
@@ -370,6 +371,14 @@ function measureAllCharacters(): Map<string, number> {
 					allCharacters.add(character.toUpperCase());
 			}
 		}
+	}
+	for (const row of KATAKANA_TABLE.columns)
+		for (const syllable of row.kana)
+			for (const character of syllable)
+				allCharacters.add(character);
+	for (const specialCharacter of "áéíóúüяеёию") {
+		allCharacters.add(specialCharacter);
+		allCharacters.add(specialCharacter.toUpperCase());
 	}
 
 	const testText = DOM.elm('test-text');
