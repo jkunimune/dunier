@@ -23,7 +23,7 @@ describe("all together", () => {
 	test("full world Equal Earth", () => {
 		const chart = new Chart(
 			"equal_earth", globe, globe.tiles,
-			"north", true, 14.3861);
+			"north", true, 14.3861, new Map<string, number>);
 		expect(chart.dimensions).toEqual(expect.objectContaining({
 			left: expect.closeTo(-2.7893 - 0.5, 1),
 			right: expect.closeTo(2.7893 + 0.5, 1),
