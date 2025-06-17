@@ -259,7 +259,8 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 	console.log("grafa...");
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
-		projection, surface, surface.tiles,
+		projection, surface,
+		filterSet(surface.tiles, (t) => !t.isWater() && !t.isIceCovered()),
 		"north", false, 62500,
 		characterWidthMap);
 	const {map} = mapper.depict(surface,
