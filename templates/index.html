@@ -376,10 +376,10 @@
                   <div class="form-group">
                     <label for="map-spelling">{parameter.map.spelling}</label>
                     <select id="map-spelling">
-                      <option value="(default)" {If {.language} en} selected {EndIf} {If {.language} es} selected {EndIf}>{parameter.map.spelling.modern}</option>
+                      <option value="(default)">{parameter.map.spelling.modern}</option>
                       <option value="en">{parameter.map.spelling.en}</option>
-                      <option value="es">{parameter.map.spelling.es}</option>
-                      <option value="la">{parameter.map.spelling.la}</option>
+                      <option value="es" {If {.language} es} selected {EndIf}>{parameter.map.spelling.es}</option>
+                      <option value="la" {If {.language} en} selected {EndIf}>{parameter.map.spelling.la}</option>
                       <option value="ja" {If {.language} ja} selected {EndIf}>{parameter.map.spelling.ja}</option>
                       <option value="ru">{parameter.map.spelling.ru}</option>
                     </select>
