@@ -3,14 +3,13 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Civ} from "./civ.js";
-import {format} from "../gui/internationalization.js";
+import {format, formatList, localize} from "../gui/internationalization.js";
 import {WordType} from "../language/lect.js";
 import {Culture, KULTUR_ASPECTS} from "./culture.js";
 import {argmax} from "../utilities/miscellaneus.js";
 import {compare} from "../language/script.js";
 import {Tile} from "../surface/surface.js";
 import {Vector} from "../utilities/geometry.js";
-import {Word} from "../language/word.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 import TECHNOLOGIES from "../../resources/tech_tree.js";
 import {cloneNode, h, VNode} from "../gui/virtualdom.js";
@@ -31,7 +30,7 @@ const PRINT_DEBUGGING_INFORMATION = false;
 export function generateFactbook(map: VNode, civs: Civ[], tidalLock: boolean, language: string, transcriptionStyle: string): VNode {
 	const listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
 	const title = h('title');
-	title.textContent = format(language, transcriptionStyle, 'parameter.factbook');
+	title.textContent = localize('parameter.factbook', language);
 	const style = h('style');
 	style.textContent = 'body { font-family: "Noto Sans", "Arial", "sans-serif"; }';
 	const head = h('head', {}, title, style);
@@ -80,18 +79,19 @@ function generateTitlePage(doc: VNode, map: VNode, civs: Civ[], language: string
 	doc.children.push(page);
 
 	addParagraph(
-		format(language, transcriptionStyle, 'factbook.outline.title'),
+		localize('factbook.outline.title', language),
 		page, 'h1');
 
 	if (civs.length > 0)
 		addParagraph(
 			format(
-				language, transcriptionStyle, 'factbook.outline.lede.some',
-				civs.length, civs.map(c => c.getName().toString(transcriptionStyle))),
+				localize('factbook.outline.lede.some', language),
+				civs.length,
+				formatList(civs.map(c => c.getName().toString(transcriptionStyle)), language)),
 			page, 'p');
 	else
 		addParagraph(
-			format(language, transcriptionStyle, 'factbook.outline.lede.none'),
+			localize('factbook.outline.lede.none', language),
 			page, 'p');
 
 	const importedMap = cloneNode(map);
@@ -114,16 +114,18 @@ function generateFactSheet(doc: VNode, topic: Civ, tidalLock: boolean, language:
 	doc.children.push(page);
 
 	addParagraph(
-		format(language, style, 'factbook.outline.section_header',
-			topic.getName()
+		format(
+			localize('factbook.outline.section_header', language),
+			topic.getName().toString(style),
 		),
 		page, 'h2');
 
 	addParagraph(
-		format(language, '(default)', 'factbook.stats',
-			topic.language.getName(),
-			topic.getName(),
-			topic.getName().pronunciation(),
+		format(
+			localize('factbook.stats', language),
+			topic.language.getName().toString(style),
+			topic.getName().toString('(default)'),
+			topic.getName().toString('ipa'),
 			topic.getLandArea(),
 			topic.getPopulation()),
 		page, 'p');
@@ -149,15 +151,15 @@ function addHistorySection(page: VNode, topic: Civ, language: string, style: str
 
 	let text = "";
 	for (const event of history) {
-		const args: (Word | number)[] = [];
+		const args: (string | number)[] = [];
 		for (const participant of event.participants) {
 			if (participant instanceof Civ || participant instanceof Culture)
-				args.push(participant.getName());
+				args.push(participant.getName().toString(style));
 			else
 				args.push(participant);
 		}
 		text += format(
-			language, style, `factbook.history.${event.type}`,
+			localize(`factbook.history.${event.type}`, language),
 			event.year, ...args);
 	}
 	addParagraph(text, page, 'p');
@@ -197,12 +199,12 @@ function addGeographySection(page: VNode, topic: Civ, tidalLock: boolean, langua
 	let borderSpecifier;
 	if (adjacentCivs.size === 0) {
 		// if there's noting there, say so
-		borderSpecifier = 'factbook.geography.nothing';
+		borderSpecifier = localize('factbook.geography.nothing', language);
 	}
 	else if (adjacentCivs.size === 1) {
 		// if there's one civ, get its name out of the Map and use just that
 		for (const neighboringCiv of adjacentCivs.keys())
-			borderSpecifier = neighboringCiv.getName();
+			borderSpecifier = neighboringCiv.getName().toString(style);
 	}
 	else {
 		// otherwise, ascertain the average direction to each adjacent polity
@@ -238,11 +240,12 @@ function addGeographySection(page: VNode, topic: Civ, tidalLock: boolean, langua
 				neighborNames.push(neighbor.getName().toString(style));
 			neighborNames.sort((a, b) => compare(a, b, style));
 			borderDescriptions.push(format(
-				language, style, 'factbook.geography.neibor_direction',
-				neighborNames, `factbook.direction.${direction}`));
+				localize('factbook.geography.neibor_direction', language),
+				formatList(neighborNames, language),
+				localize(`factbook.direction.${direction}`, language)));
 		}
 
-		borderSpecifier = borderDescriptions;
+		borderSpecifier = formatList(borderDescriptions, language);
 	}
 
 	const landArea = topic.getLandArea();
@@ -266,8 +269,8 @@ function addGeographySection(page: VNode, topic: Civ, tidalLock: boolean, langua
 		type = 'generic';
 
 	const locationSentence = format(
-		language, style, `factbook.geography.${type}`,
-		topic.getName(), borderSpecifier);
+		localize(`factbook.geography.${type}`, language),
+		topic.getName().toString(style), borderSpecifier);
 
 	// tally up all the biomes in this country
 	const biomeCounter: number[] = [];
@@ -283,16 +286,21 @@ function addGeographySection(page: VNode, topic: Civ, tidalLock: boolean, langua
 			allBiomes.push(biome);
 	allBiomes.sort((a, b) => biomeCounter[b] - biomeCounter[a]);
 	let terrainSentence;
-	if  (biomeCounter[allBiomes[0]] >= topic.getLandArea()/2)
+	if  (biomeCounter[allBiomes[0]] >= topic.getLandArea()/2) {
+		const mainBiome = allBiomes[0];
 		terrainSentence = format(
-			language, style, `factbook.geography.biome`,
-			`factbook.geography.${BIOME_NAMES[allBiomes[0]]}`);
-	else
+			localize(`factbook.geography.biome`, language),
+			localize(`factbook.geography.${BIOME_NAMES[mainBiome]}`, language));
+	}
+	else {
+		const mainBiomes = allBiomes.slice(0, 3);
 		terrainSentence = format(
-			language, style, `factbook.geography.biomes`,
-			allBiomes.slice(0, 3).map(biome => format(
-				language, style, `factbook.geography.${BIOME_NAMES[biome]}`
-			)));
+			localize(`factbook.geography.biomes`, language),
+			formatList(
+				mainBiomes.map(biome => localize(`factbook.geography.${BIOME_NAMES[biome]}`, language)),
+				language,
+			));
+	}
 
 	addParagraph(
 		locationSentence + terrainSentence,
@@ -311,13 +319,13 @@ function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, lan
 			techDescriptors.set(technology.type, technology.key);
 	addParagraph(
 		format(
-			language, style, `factbook.tech`,
-			topic.getName(),
-			`factbook.tech.age.${techDescriptors.get("age")}`,
-			`factbook.tech.fighting.${techDescriptors.get("fighting")}`,
-			`factbook.tech.movement.${techDescriptors.get("movement")}`,
-			`factbook.tech.lighting.${techDescriptors.get("lighting")}`,
-			`factbook.tech.other.${techDescriptors.get("other")}`,
+			localize(`factbook.tech`, language),
+			topic.getName().toString(style),
+			localize(`factbook.tech.age.${techDescriptors.get("age")}`, language),
+			localize(`factbook.tech.fighting.${techDescriptors.get("fighting")}`, language),
+			localize(`factbook.tech.movement.${techDescriptors.get("movement")}`, language),
+			localize(`factbook.tech.lighting.${techDescriptors.get("lighting")}`, language),
+			localize(`factbook.tech.other.${techDescriptors.get("other")}`, language),
 		),
 		page, 'p');
 
@@ -374,30 +382,33 @@ function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, lan
 		}
 
 		const populationSentence = format(
-			language, style,
-			(populationFraction < 2/3) ?
-				'factbook.demography.minority' :
-				'factbook.demography.majority',
-			culture.getName(),
-			(inhabitedTiles.size <= topic.tileTree.size/2) ?
-				`factbook.demography.part` :
-				`factbook.demography.whole`,
-			`factbook.direction.${region}`,
+			localize(
+				(populationFraction < 2/3) ?
+					'factbook.demography.minority' :
+					'factbook.demography.majority',
+				language),
+			culture.getName().toString(style),
+			localize(
+				(inhabitedTiles.size <= topic.tileTree.size/2) ?
+					`factbook.demography.part` :
+					`factbook.demography.whole`,
+				language),
+			localize(
+				`factbook.direction.${region}`,
+				language),
 			Math.round(populationFraction*100),
-			topic.getName());
+			topic.getName().toString(style));
 
 		let languageSentence;
 		if (relatedLect === null)
 			languageSentence = format(
-				language, style,
-				'factbook.demography.language_isolate',
-				culture.lect.getName());
+				localize('factbook.demography.language_isolate', language),
+				culture.lect.getName().toString(style));
 		else
 			languageSentence = format(
-				language, style,
-				'factbook.demography.language_related',
-				culture.lect.getName(),
-				relatedLect.getName());
+				localize('factbook.demography.language_related', language),
+				culture.lect.getName().toString(style),
+				relatedLect.getName().toString(style));
 
 		addParagraph(
 			populationSentence + languageSentence + describe(culture, language, style),
@@ -422,14 +433,19 @@ function describe(culture: Culture, language: string, style: string): string {
 		if (featureList !== null) {
 			let madeUpWord;
 			if (logaIndex !== null)
-				madeUpWord = culture.lect.getWord(featureList[logaIndex].key, WordType.OTHER);
+				madeUpWord = culture.lect
+					.getWord(featureList[logaIndex].key, WordType.OTHER)
+					.toString(style);
 			else
 				madeUpWord = null;
-			const keys: string[] = [];
+			const args: string[] = [];
 			for (let j = 0; j < culture.featureLists[i].length; j ++)
-				keys.push(`factbook.${KULTUR_ASPECTS[i].key}.${KULTUR_ASPECTS[i].features[j].key}.${featureList[j].key}`);
-			str += format(language, style, `factbook.${KULTUR_ASPECTS[i].key}`,
-				...keys, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
+				args.push(localize(
+					`factbook.${KULTUR_ASPECTS[i].key}.${KULTUR_ASPECTS[i].features[j].key}.${featureList[j].key}`,
+					language));
+			str += format(
+				localize(`factbook.${KULTUR_ASPECTS[i].key}`, language),
+				...args, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
 		}
 	}
 	return str.trim();

@@ -10,7 +10,9 @@ import {transcribe} from "./script.js";
  * an immutable collection of sounds with spelling information attached
  */
 export class Word {
+	/** the pronunciation */
 	public readonly parts: Sound[][];
+	/** the language of origin (this will sometimes determine how it's spelled) */
 	public readonly language: Lect;
 
 	constructor(parts: Sound[][], language: Lect) {
@@ -22,26 +24,13 @@ export class Word {
 	}
 
 	/**
-	 * strip this of its linguistic context so that it is just a string of phones (and
-	 * will render in the IPA by default)
-	 */
-	pronunciation(): Word {
-		return new Word(this.parts, null);
-	}
-
-	/**
 	 * transcribe this in the given orthographick style, or its native romanizacion
 	 * system if the style is '(default)'
 	 */
 	toString(style: string = '(default)'): string {
-		if (style === '(default)') {
-			// query the language for the default spelling style
-			if (this.language !== null)
-				style = this.language.defaultStyle;
-			// for raw phonetic information, the default spelling is the IPA
-			else
-				style = 'ipa';
-		}
-		return transcribe(this.parts, style);
+		if (style === '(default)')
+			return transcribe(this.parts, this.language.defaultStyle);
+		else
+			return transcribe(this.parts, style);
 	}
 }

@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {DOM} from "./dom.js";
-import {format} from "./internationalization.js";
+import {localize} from "./internationalization.js";
 import {Selector} from "../utilities/selector.js";
 import {convertXMLToBlob, convertSVGToPNGAndThenDownloadIt, download} from "./export.js";
 import "../libraries/plotly.min.js";
@@ -161,11 +161,11 @@ worker.onerror = (error) => {
 	else {
 		const message = error.message.split(":")[1].trim();
 		if (message.startsWith("Too fast"))
-			postErrorAlert(format(LANGUAGE, null, "error.planet_too_fast"));
+			postErrorAlert(localize("error.planet_too_fast", LANGUAGE));
 		else if (message.startsWith("Too slow"))
-			postErrorAlert(format(LANGUAGE, null, "error.planet_too_slow"));
+			postErrorAlert(localize("error.planet_too_slow", LANGUAGE));
 		else
-			postErrorAlert(format(LANGUAGE, null, "error.uncaught"));
+			postErrorAlert(localize("error.uncaught", LANGUAGE));
 	}
 	enableButtons();
 };
@@ -491,7 +491,7 @@ DOM.elm('map-download-svg').addEventListener('click', () => {
 	printscaleMap.setAttribute("height", `${height}mm`);
 	download(
 		convertXMLToBlob(printscaleMap, "image/svg"),
-		format(LANGUAGE, null, "filename.map") + ".svg");
+		localize("filename.map", LANGUAGE) + ".svg");
 });
 
 /**
@@ -502,7 +502,7 @@ DOM.elm('map-download-png').addEventListener('click', () => {
 		convertXMLToBlob(DOM.elm('map-map-container').firstElementChild as SVGSVGElement, "image/svg"),
 		Number.parseInt(DOM.val('map-width-px')),
 		Number.parseInt(DOM.val('map-height-px')),
-		format(LANGUAGE, null, "filename.map") + ".png");
+		localize("filename.map", LANGUAGE) + ".png");
 });
 
 /**
@@ -517,7 +517,7 @@ DOM.elm('factbook-download-html').addEventListener('click', () => {
 		factbook = factbookFrame.contentWindow.document.documentElement as HTMLHtmlElement;
 	download(
 		convertXMLToBlob(factbook, "text/html"),
-		format(LANGUAGE, null, "filename.factbook") + ".html");
+		localize("filename.factbook", LANGUAGE) + ".html");
 });
 
 /**

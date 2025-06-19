@@ -14,7 +14,7 @@ import {generateTerrain} from "../generation/terrain.js";
 import {subdivideLand} from "../generation/subdivideRegion.js";
 import {Chart} from "../map/chart.js";
 import {World} from "../generation/world.js";
-import {format} from "./internationalization.js";
+import {format, localize} from "./internationalization.js";
 import {filterSet} from "../utilities/miscellaneus.js";
 import {Civ} from "../generation/civ.js";
 import {LockedDisc} from "../surface/lockeddisc.js";
@@ -268,13 +268,13 @@ function listFocusOptions(continents: Set<Tile>[], world: World, selectedFocusOp
 	// show the whole world
 	focusOptions.push({
 		value: 'world',
-		label: format(language, null, "parameter.map.focus.whole_world"),
+		label: localize("parameter.map.focus.whole_world", language),
 	});
 	// show a single continent
 	for (let i = 0; i < continents.length; i ++)
 		focusOptions.push({
 			value: `continent${i}`,
-			label: format(language, null, "parameter.map.focus.continent", i + 1),
+			label: format(localize("parameter.map.focus.continent", language), i + 1),
 		});
 	// or show a single country
 	const countries = world.getCivs(true, MIN_SIZE_TO_LIST); // list the biggest countries for the centering selection
