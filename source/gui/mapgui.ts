@@ -40,7 +40,7 @@ let lastUpdated = Layer.NONE;
 let planetRendered = false;
 /** whether a process is currently running */
 let inProgress: boolean = false; // TODO; I can't remember why this is here; if I click forward in the tabs while it's loading, does everything update?
-const worker = new Worker("source/gui/mapgenerator.js", {type: "module"});
+const worker = new Worker("/source/gui/mapgenerator.js", {type: "module"});
 /** the number of alerts that have been posted */
 let alertCounter: number = 0;
 
