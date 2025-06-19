@@ -323,8 +323,11 @@ function applyMap(
 
 	// then interpret it into an actual region
 	let regionOfInterest: Set<Tile>;
-	if (focusSpecifier === "world")
-		regionOfInterest = surface.tiles;
+	if (focusSpecifier === "world") {
+		regionOfInterest = filterSet(surface.tiles, t => !t.isIceCovered() && !t.isWater());
+		if (regionOfInterest.size === 0)
+			regionOfInterest = surface.tiles;
+	}
 	else if (focusSpecifier.startsWith("continent")) {
 		const i = Number.parseInt(focusSpecifier.slice(9));
 		if (i < continents.length)

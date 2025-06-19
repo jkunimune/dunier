@@ -35,13 +35,13 @@ const SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the pa
 const SHOW_BACKGROUND = false; // have a big red rectangle under the map
 
 // OTHER FIXED DISPLAY OPTIONS
-const GREEBLE_SCALE = 1; // the smallest edge lengths to show (mm)
+const GREEBLE_SCALE = 3.; // the smallest edge lengths to show (mm)
 const SUN_ELEVATION = 60/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_FACTOR = 6000; // the average scaled watershed area needed to display a river (mm²)
 const BORDER_SPECIFY_THRESHOLD = 0.3; // the population density at which borders must be rigorusly defined
 const MAP_PRECISION = 10; // max segment length in mm
-const GRATICULE_SPACING = 50; // typical spacing between lines of latitude or longitude in mm
+const GRATICULE_SPACING = 30; // typical spacing between lines of latitude or longitude in mm
 
 const WHITE = '#FFFFFF';
 const EGGSHELL = '#FAF2E4';
@@ -643,7 +643,7 @@ export class Chart {
 			for (const civ of world.getCivs())
 				if (civ.getPopulation() > 0)
 					this.label(
-						[...civ.tileTree.keys()].filter(n => !n.isWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
+						[...civ.tileTree.keys()].filter(n => !n.isSaltWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
 						civ.getName().toString(style),
 						g,
 						fontSize);
