@@ -18,9 +18,9 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
 	console.log("jena nam...");
 
 	const rng = new Random(seed);
-	let bax: Lect = new ProtoLect(0, rng);
+	let bax: Lect = new ProtoLect(0, '0', rng);
 	for (let i = 0; i < 30; i ++)
-		bax = new Dialect(bax, 0, rng);
+		bax = new Dialect(bax, 0, '0', rng);
 
 	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
 

@@ -115,12 +115,15 @@ function generateFactSheet(doc: VNode, topic: Civ, tidalLock: boolean, language:
 
 	addParagraph(
 		format(language, style, 'factbook.outline.section_header',
-			topic.getName(),
-			topic.getName().pronunciation()),
+			topic.getName()
+		),
 		page, 'h2');
 
 	addParagraph(
-		format(language, style, 'factbook.stats',
+		format(language, '(default)', 'factbook.stats',
+			topic.language.getName(),
+			topic.getName(),
+			topic.getName().pronunciation(),
 			topic.getLandArea(),
 			topic.getPopulation()),
 		page, 'p');
@@ -362,20 +365,42 @@ function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, lan
 				region = tidalLock ? "dayleft" : "southwest";
 		}
 
-		addParagraph(
-			format(
+		let relatedLect = null;
+		for (const otherLect of topic.world.getLects()) {
+			if (otherLect !== culture.lect && culture.lect.getAncestor(10_000) === otherLect.getAncestor(10_000)) {
+				relatedLect = otherLect;
+				break;
+			}
+		}
+
+		const populationSentence = format(
+			language, style,
+			(populationFraction < 2/3) ?
+				'factbook.demography.minority' :
+				'factbook.demography.majority',
+			culture.getName(),
+			(inhabitedTiles.size <= topic.tileTree.size/2) ?
+				`factbook.demography.part` :
+				`factbook.demography.whole`,
+			`factbook.direction.${region}`,
+			Math.round(populationFraction*100),
+			topic.getName());
+
+		let languageSentence;
+		if (relatedLect === null)
+			languageSentence = format(
 				language, style,
-				(populationFraction < 2/3) ?
-					'factbook.demography.minority' :
-					'factbook.demography.majority',
-				culture.getName(),
-				(inhabitedTiles.size <= topic.tileTree.size/2) ?
-					`factbook.demography.part` :
-					`factbook.demography.whole`,
-				`factbook.direction.${region}`,
-				Math.round(populationFraction*100),
-				topic.getName()) +
-			describe(culture, language, style),
+				'factbook.demography.language_isolate',
+				culture.lect.getName());
+		else
+			languageSentence = format(
+				language, style,
+				'factbook.demography.language_related',
+				culture.lect.getName(),
+				relatedLect.getName());
+
+		addParagraph(
+			populationSentence + languageSentence + describe(culture, language, style),
 			page, 'p');
 
 		if (PRINT_DEBUGGING_INFORMATION)

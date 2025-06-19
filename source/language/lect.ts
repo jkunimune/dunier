@@ -23,9 +23,10 @@ export class WordType extends Enumify {
 	public readonly asString: string;
 
 	static PEOPLE = new WordType(0, 1, 'people');
-	static COUNTRY = new WordType(1, 3, 'country');
-	static FAMILY = new WordType(2, 12, 'family');
-	static OTHER = new WordType(3, 0, 'other');
+	static LANGUAGE = new WordType(1, 1, 'language');
+	static COUNTRY = new WordType(2, 3, 'country');
+	static FAMILY = new WordType(3, 12, 'family');
+	static OTHER = new WordType(4, 0, 'other');
 	static _ = WordType.closeEnum();
 
 	constructor(index: number, numClassifiers: number, asString: string) {
@@ -48,11 +49,14 @@ export abstract class Lect {
 	public macrolanguage: Lect;
 	/** the year in which this language was spoken */
 	public readonly year: number;
+	/** the seed we use to get the name of this Language's people/place of origin */
+	private readonly homelandIndex: string;
 
-	protected constructor(defaultStyle: string, rightBranching: boolean, year: number) {
+	protected constructor(defaultStyle: string, rightBranching: boolean, year: number, homelandIndex: string) {
 		this.defaultStyle = defaultStyle;
 		this.prefixing = rightBranching;
 		this.year = year;
+		this.homelandIndex = homelandIndex;
 	}
 
 	/**
@@ -75,6 +79,10 @@ export abstract class Lect {
 		if (this.year !== lang.year)
 			throw new Error("these languages were never contemporary so we shouldn't be comparing them.");
 		return this.macrolanguage === lang.macrolanguage;
+	}
+
+	getName(): Word {
+		return this.getWord(this.homelandIndex, WordType.LANGUAGE);
 	}
 }
 
@@ -109,11 +117,12 @@ export class ProtoLect extends Lect {
 	/** the noun endings */
 	private readonly fin: Sound[][];
 
-	constructor(year: number, rng: Random) {
+	constructor(year: number, homelandIndex: string, rng: Random) {
 		super(
 			`native${rng.discrete(0, 4)}`,
 			rng.probability(0.2),
-			year);
+			year,
+			homelandIndex);
 		this.macrolanguage = this;
 
 		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
@@ -225,8 +234,8 @@ export class Dialect extends Lect {
 	private readonly wordProcesses: WordProcess[];
 	private readonly phraseProcesses: PhraseProcess[];
 
-	constructor(parent: Lect, year: number, rng: Random) {
-		super(parent.defaultStyle, parent.prefixing, year);
+	constructor(parent: Lect, year: number, homelandIndex: string, rng: Random) {
+		super(parent.defaultStyle, parent.prefixing, year, homelandIndex);
 		this.parent = parent;
 		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 

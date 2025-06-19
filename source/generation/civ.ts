@@ -35,7 +35,7 @@ export class Civ {
 	public readonly border: Map<Tile, Set<Tile>>;
 	public readonly world: World;
 	/** the language last spoken by this Civ's ruling class */
-	private language: Lect;
+	public language: Lect;
 
 	/** everything interesting that has happened in this Civ's history */
 	public history: Event[];

@@ -6,6 +6,7 @@ import Queue from '../datastructures/queue.js';
 import {Tile, Surface} from "../surface/surface.js";
 import {Random} from "../utilities/random.js";
 import {Civ} from "./civ.js";
+import {Lect} from "../language/lect.js";
 
 
 /** the year at which civilization starts */
@@ -181,6 +182,22 @@ export class World {
 			else
 				civ.history.push({type: "cataclysm", year: year, participants: [civ]}); // mourn the Civs that still do
 		}
+	}
+
+	/**
+	 * get a list of every Lect currently spoken in this world, sorted roughly from most to least important.
+	 * there may be duplicates.
+	 */
+	getLects(): Lect[] {
+		const lects = [];
+		// start with the national languages
+		for (const civ of this.getCivs(true))
+			lects.push(civ.language);
+		// then add in the minority languages
+		for (const civ of this.getCivs(true))
+			for (const {culture} of civ.getCultures().slice(1))
+				lects.push(culture.lect);
+		return lects;
 	}
 
 	/**
