@@ -70,7 +70,7 @@ onmessage = (message) => {
 	let rectangularBounds: boolean;
 	let width: number;
 	let height: number;
-	let focusSpecifier: string;
+	let selectedFocusOption: string;
 	let color: string;
 	let rivers: boolean;
 	let borders: boolean;
@@ -84,13 +84,14 @@ onmessage = (message) => {
 		planetType, tidallyLocked, radius, gravity, spinRate, obliquity,
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
-		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
+		projectionName, orientation, rectangularBounds, width, height, selectedFocusOption,
 		color, rivers, borders, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	] = message.data;
 
 	let terrainMap = null;
 	let historyMap = null;
+	let focusOptions = null;
 	let factbook = null;
 
 	if (target >= Layer.PLANET && lastUpdated < Layer.PLANET)
@@ -99,39 +100,19 @@ onmessage = (message) => {
 	if (target >= Layer.TERRAIN && lastUpdated < Layer.TERRAIN)
 		[continents, terrainMap] = applyTerrain(
 			terrainSeed, numContinents, seaLevel, temperature);
-	if (target >= Layer.HISTORY && lastUpdated < Layer.HISTORY)
-		[world, historyMap] = applyHistory(historySeed, cataclysms, year);
+	if (target >= Layer.HISTORY && lastUpdated < Layer.HISTORY) {
+		[world, historyMap] = applyHistory(
+			historySeed, cataclysms, year);
+		[focusOptions, selectedFocusOption] = listFocusOptions(
+			continents, world, selectedFocusOption, language, style);
+	}
 	if (target >= Layer.MAP && lastUpdated < Layer.MAP)
 		[map, mappedCivs] = applyMap(
-			projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
+			projectionName, orientation, rectangularBounds, width, height, selectedFocusOption,
 			color, rivers, borders, graticule, windrose, shading, civLabels, style);
 	if (target >= Layer.FACTBOOK && lastUpdated < Layer.FACTBOOK)
 		factbook = applyFactbook(map, mappedCivs, tidallyLocked, language, style);
 	lastUpdated = target;
-
-	// list the available "focus" options
-	let focusOptions = null;
-	if (mappedCivs !== null) {
-		focusOptions = [];
-		// show the whole world
-		focusOptions.push({
-			value: 'world',
-			label: format(language, null, "parameter.map.focus.whole_world"),
-		});
-		// show a single continent
-		for (let i = 0; i < continents.length; i ++)
-			focusOptions.push({
-				value: `continent${i}`,
-				label: format(language, null, "parameter.map.focus.continent", i + 1),
-			});
-		// or show a single country
-		const countries = world.getCivs(true, MIN_SIZE_TO_LIST); // list the biggest countries for the centering selection
-		for (const country of countries.slice(0, MAX_COUNTRIES_TO_LIST))
-			focusOptions.push({
-				value: `country${country.id}`,
-				label: country.getName().toString(style),
-			});
-	}
 
 	postMessage([
 		lastUpdated,
@@ -141,6 +122,7 @@ onmessage = (message) => {
 		(map !== null) ? toXML(map) : null,
 		(factbook !== null) ? toXML(factbook) : null,
 		focusOptions,
+		selectedFocusOption,
 	]);
 };
 
@@ -274,6 +256,47 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 
 
 /**
+ * enumerate the geographic entities at which we can look
+ * @param continents the list of available continents
+ * @param world the World containing the available countries
+ * @param selectedFocusOption the currently selected option
+ * @param language the language in which to localize the option labels
+ * @param style the transcription style to use for the proper nouns
+ */
+function listFocusOptions(continents: Set<Tile>[], world: World, selectedFocusOption: string, language: string, style: string): [{value: string, label: string}[], string] {
+	const focusOptions = [];
+	// show the whole world
+	focusOptions.push({
+		value: 'world',
+		label: format(language, null, "parameter.map.focus.whole_world"),
+	});
+	// show a single continent
+	for (let i = 0; i < continents.length; i ++)
+		focusOptions.push({
+			value: `continent${i}`,
+			label: format(language, null, "parameter.map.focus.continent", i + 1),
+		});
+	// or show a single country
+	const countries = world.getCivs(true, MIN_SIZE_TO_LIST); // list the biggest countries for the centering selection
+	for (const country of countries.slice(0, MAX_COUNTRIES_TO_LIST))
+		focusOptions.push({
+			value: `country${country.id}-${country.getName().toString('ipa')}`,
+			label: country.getName().toString(style),
+		});
+
+	// now, if the set of options no longer contains the selected one, set it to the default
+	if (!focusOptions.some(option => selectedFocusOption === option.value)) {
+		if (focusOptions.length > 1)
+			selectedFocusOption = focusOptions[1].value;
+		else
+			selectedFocusOption = focusOptions[0].value;
+	}
+
+	return [focusOptions, selectedFocusOption];
+}
+
+
+/**
  * Generate a final formatted map.
  * @param projectionName the type of projection to choose – one of "equal_earth", "bonne", "conformal_conic", "mercator", or "orthographic"
  * @param orientation the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
@@ -297,6 +320,8 @@ function applyMap(
 	shading: boolean, civLabels: boolean, style: string): [VNode, Civ[]] {
 
 	console.log("grafa zemgrafe...");
+
+	// then interpret it into an actual region
 	let regionOfInterest: Set<Tile>;
 	if (focusSpecifier === "world")
 		regionOfInterest = surface.tiles;
@@ -310,7 +335,7 @@ function applyMap(
 		}
 	}
 	else if (focusSpecifier.startsWith("country")) {
-		const i = Number.parseInt(focusSpecifier.slice(7));
+		const i = Number.parseInt(focusSpecifier.split("-")[0].slice(7));
 		try {
 			const civ = world.getCiv(i);
 			regionOfInterest = filterSet(civ.tileTree.keys(), tile => !tile.isWater());
@@ -323,6 +348,7 @@ function applyMap(
 	else
 		throw new Error(`invalid focusSpecifier: '${focusSpecifier}'`);
 
+	// now you can construct and call the Chart object
 	const chart = new Chart(
 		surface.isFlat() ? "orthographic" : projectionName,
 		surface, regionOfInterest,

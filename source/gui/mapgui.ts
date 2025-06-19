@@ -100,10 +100,11 @@ worker.onmessage = (message) => {
 	let map: string;
 	let factbook: string;
 	let focusOptions: {value: string, label: string}[];
+	let selectedFocusOption: string;
 	[
 		lastUpdated,
 		planetData, terrainMap, historyMap, map, factbook,
-		focusOptions,
+		focusOptions, selectedFocusOption,
 	] = message.data;
 
 	if (planetData !== null && !planetRendered && !DOM.elm('planet-panel').hasAttribute("hidden")) {
@@ -136,15 +137,19 @@ worker.onmessage = (message) => {
 
 	// now set up the "focus" options for the map tab:
 	if (focusOptions !== null) {
-		const picker = document.getElementById('map-jung');
+		const picker = DOM.elm('map-jung') as HTMLSelectElement;
+		// clear it
 		picker.textContent = "";
 		for (let i = 0; i < focusOptions.length; i ++) {
 			const option = document.createElement('option');
-			option.selected = (i === 1);
+			option.selected = (focusOptions[i].value === selectedFocusOption);
 			option.setAttribute('value', focusOptions[i].value);
 			option.textContent = focusOptions[i].label;
 			picker.appendChild(option);
 		}
+		// if the selection could not be kept, default it to continent 1
+		if (picker.selectedIndex === -1 && picker.childNodes.length > 1)
+			(picker.childNodes.item(1) as HTMLOptionElement).selected = true;
 	}
 };
 
