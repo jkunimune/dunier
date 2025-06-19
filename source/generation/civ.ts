@@ -15,7 +15,7 @@ import {
 	World
 } from "./world.js";
 import {Culture} from "./culture.js";
-import {Name} from "../language/name.js";
+import {Word} from "../language/word.js";
 import Queue from "../datastructures/queue.js";
 import {Dequeue} from "../datastructures/dequeue.js";
 
@@ -371,8 +371,8 @@ export class Civ {
 		return Math.round(POPULATION_DENSITY*this.technology*this.arableArea);
 	}
 
-	getName(): Name {
-		return this.language.getName(
+	getName(): Word {
+		return this.language.getWord(
 			this.capital.index.toString(), WordType.COUNTRY);
 	}
 

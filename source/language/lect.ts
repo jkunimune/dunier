@@ -6,7 +6,7 @@ import {Random} from "../utilities/random.js";
 import {Sound} from "./sound.js";
 import {DEFAULT_STRESS, WordProcess, PhraseProcess, WORD_PROCESS_OPTIONS, PHRASE_PROCESS_OPTIONS} from "./process.js";
 import {ipa} from "./script.js";
-import {Name} from "./name.js";
+import {Word} from "./word.js";
 import {Enumify} from "../libraries/enumify.js";
 import {decodeBase37} from "../utilities/miscellaneus.js";
 
@@ -56,11 +56,11 @@ export abstract class Lect {
 	}
 
 	/**
-	 * get a name from this language. the style of name and valid indices depend on the WordType:
-	 * @param index the pseudorandom seed of the name
-	 * @param tipo the type of name
+	 * get a word from this language. the style of word and valid indices depend on the WordType:
+	 * @param index the pseudorandom seed of the word
+	 * @param tipo the type of word
 	 */
-	abstract getName(index: string, tipo: WordType): Name;
+	abstract getWord(index: string, tipo: WordType): Word;
 
 	/**
 	 * get the language that this was n timesteps ago
@@ -103,7 +103,7 @@ export class ProtoLect extends Lect {
 	/** the approximate amount of information in one syllable */
 	private readonly complexity: number;
 	/** the word references of each type */
-	private readonly name: Map<WordType, Map<string, Name>>;
+	private readonly word: Map<WordType, Map<string, Word>>;
 	/** the noun classifiers */
 	private readonly classifiers: Map<WordType, Sound[][]>;
 	/** the noun endings */
@@ -128,10 +128,10 @@ export class ProtoLect extends Lect {
 			this.fin.push(this.noveMul('fmncrh'[i], 0.5));
 
 		this.diversity = rng.uniform(0, 1); // choose how much lexical suffixing to do
-		this.name = new Map<WordType, Map<string, Name>>();
+		this.word = new Map<WordType, Map<string, Word>>();
 		this.classifiers = new Map<WordType, Sound[][]>();
 		for (const wordType of WordType) {
-			this.name.set(<WordType>wordType, new Map<string, Name>());
+			this.word.set(<WordType>wordType, new Map<string, Word>());
 			this.classifiers.set(<WordType>wordType, []);
 			for (let i = 0; i < Math.round(this.diversity*(<WordType>wordType).numClassifiers); i ++) // TODO countries can be named after cities
 				this.classifiers.get(<WordType>wordType).push(
@@ -139,29 +139,29 @@ export class ProtoLect extends Lect {
 		}
 	}
 
-	getName(index: string, tipo: WordType): Name {
-		if (!this.name.get(tipo).has(index)) {
+	getWord(index: string, tipo: WordType): Word {
+		if (!this.word.get(tipo).has(index)) {
 			const base = this.noveLoga(index, Math.max(1, 4/this.complexity)); // get the base
 			if (base.length === 0)
 				throw new Error(`this new word is empty; it was supposed to have ${4/this.complexity} syllables`);
 
-			let nameParts;
+			let wordParts;
 			if (this.classifiers.get(tipo).length === 0)
-				nameParts = [base];
+				wordParts = [base];
 			else {
 				const seed = decodeBase37(index) + 100;
 				const rng = new Random(seed);
 				const classifierOptions = this.classifiers.get(tipo);
 				const classifier = rng.choice(classifierOptions);
 				if (this.prefixing)
-					nameParts = [classifier, base];
+					wordParts = [classifier, base];
 				else
-					nameParts = [base, classifier];
+					wordParts = [base, classifier];
 			}
 
-			this.name.get(tipo).set(index, new Name(nameParts, this));
+			this.word.get(tipo).set(index, new Word(wordParts, this));
 		}
-		return this.name.get(tipo).get(index);
+		return this.word.get(tipo).get(index);
 	}
 
 	/**
@@ -240,18 +240,18 @@ export class Dialect extends Lect {
 				this.phraseProcesses.push(proces);
 	}
 
-	getName(index: string, tipo: WordType) {
-		return this.applyChanges(this.parent.getName(index, tipo));
+	getWord(index: string, tipo: WordType) {
+		return this.applyChanges(this.parent.getWord(index, tipo));
 	}
 
-	applyChanges(lekse: Name): Name {
+	applyChanges(lekse: Word): Word {
 		const newParts = [];
 		for (let part of lekse.parts) {
 			for (const change of this.wordProcesses)
 				part = change.apply(part);
 			newParts.push(part);
 		}
-		let newLekse = new Name(newParts, lekse.language);
+		let newLekse = new Word(newParts, lekse.language);
 		for (const change of this.phraseProcesses)
 			newLekse = change.apply(newLekse);
 		return newLekse;

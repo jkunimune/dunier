@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Name} from "../language/name.js";
+import {Word} from "../language/word.js";
 
 import EN_STRINGS from "../../resources/translations/en.js";
 import ES_STRINGS from "../../resources/translations/es.js";
@@ -26,11 +26,11 @@ const USER_STRINGS: { [index: string]: { [index: string]: string } } = {
  * @param args the data to fill into the template.  there are a few different data types that get formatted differently.
  *               - strings will be treated as translation keys; the corresponding value from the translation file will be added.
  *               - numbers will be displayed as nice integers
- *               - Names will be transcribed using the given style
+ *               - Words will be transcribed using the given style
  *               - lists of strings will get concatenated with commas and "and"s between them
- * @param style the spelling style to use for any Names
+ * @param style the spelling style to use for any Words
  */
-export function format(language: string, style: string, sentence: string, ...args: (string|number|Name|string[])[]): string {
+export function format(language: string, style: string, sentence: string, ...args: (string|number|Word|string[])[]): string {
 	if (!USER_STRINGS[language].hasOwnProperty(sentence))
 		throw new Error(`Could not find user string in resource file for ${sentence}`);
 	let output = (sentence !== ".test") ? USER_STRINGS[language][sentence] : "{0}";
@@ -41,8 +41,8 @@ export function format(language: string, style: string, sentence: string, ...arg
 				throw new Error(`${args[i]} was passd as the ${i}° argument.  this is only allowd when the argument is absent from the format string, which was not the case here.`);
 			continue;
 		}
-		if (args[i] instanceof Name) {
-			convertedArg = (<Name>args[i]).toString(style); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
+		if (args[i] instanceof Word) {
+			convertedArg = (<Word>args[i]).toString(style); // transcribe words using the specified style TODO: use the user-specified style TODO sometimes italicize instead of capitalizing
 		}
 		else if (typeof args[i] === 'string') {
 			convertedArg = USER_STRINGS[language][<string>args[i]]; // look up strings in the resource file

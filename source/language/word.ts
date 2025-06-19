@@ -9,7 +9,7 @@ import {transcribe} from "./script.js";
 /**
  * an immutable collection of sounds with spelling information attached
  */
-export class Name {
+export class Word {
 	public readonly parts: Sound[][];
 	public readonly language: Lect;
 
@@ -25,8 +25,8 @@ export class Name {
 	 * strip this of its linguistic context so that it is just a string of phones (and
 	 * will render in the IPA by default)
 	 */
-	pronunciation(): Name {
-		return new Name(this.parts, null);
+	pronunciation(): Word {
+		return new Word(this.parts, null);
 	}
 
 	/**

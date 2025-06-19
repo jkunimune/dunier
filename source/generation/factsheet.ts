@@ -10,7 +10,7 @@ import {argmax} from "../utilities/miscellaneus.js";
 import {compare} from "../language/script.js";
 import {Tile} from "../surface/surface.js";
 import {Vector} from "../utilities/geometry.js";
-import {Name} from "../language/name.js";
+import {Word} from "../language/word.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 import TECHNOLOGIES from "../../resources/tech_tree.js";
 import {cloneNode, h, VNode} from "../gui/virtualdom.js";
@@ -146,7 +146,7 @@ function addHistorySection(page: VNode, topic: Civ, language: string, style: str
 
 	let text = "";
 	for (const event of history) {
-		const args: (Name | number)[] = [];
+		const args: (Word | number)[] = [];
 		for (const participant of event.participants) {
 			if (participant instanceof Civ || participant instanceof Culture)
 				args.push(participant.getName());
@@ -397,7 +397,7 @@ function describe(culture: Culture, language: string, style: string): string {
 		if (featureList !== null) {
 			let madeUpWord;
 			if (logaIndex !== null)
-				madeUpWord = culture.lect.getName(featureList[logaIndex].key, WordType.OTHER);
+				madeUpWord = culture.lect.getWord(featureList[logaIndex].key, WordType.OTHER);
 			else
 				madeUpWord = null;
 			const keys: string[] = [];

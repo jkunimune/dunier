@@ -17,7 +17,7 @@ import {
 	Voze, parseFeature
 } from "./sound.js";
 import {ipaSymbol, transcribe} from "./script.js";
-import {Name} from "./name.js";
+import {Word} from "./word.js";
 
 import UNPARSED_PROCESS_OPTIONS from "../../resources/processes.js";
 
@@ -354,7 +354,7 @@ export class PhraseProcess {
 		this.name = name;
 	}
 
-	apply(old: Name): Name {
+	apply(old: Word): Word {
 		if (this.name === "compounding") {
 			// string all of the parts together without pauses, and make sure there's only one primary stress
 			const compoundWord = [];
@@ -367,7 +367,7 @@ export class PhraseProcess {
 				}
 			}
 			compoundWord.push(...old.parts[old.parts.length - 1]);
-			return new Name([compoundWord], old.language);
+			return new Word([compoundWord], old.language);
 		}
 		else
 			throw new Error(`the special process ${this.name} is not implemented.`);

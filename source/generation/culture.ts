@@ -5,7 +5,7 @@
 import {Random} from "../utilities/random.js";
 import {Dialect, Lect, WordType, ProtoLect} from "../language/lect.js";
 import {Tile} from "../surface/surface.js";
-import {Name} from "../language/name.js";
+import {Word} from "../language/word.js";
 import {Biome} from "./terrain.js";
 
 import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";
@@ -207,8 +207,8 @@ export class Culture {
 		return true;
 	}
 
-	public getName(): Name {
-		return this.lect.getName(
+	public getName(): Word {
+		return this.lect.getWord(
 			this.homeland.index.toString(), WordType.PEOPLE);
 	}
 }

@@ -28,8 +28,8 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
 	for (const nameList of [DOM.elm('name-list-1'), DOM.elm('name-list-2')]) {
 		nameList.textContent = '';
 		for (let i = 0; i < NUM_ROWS; i++) {
-			const givenName = bax.getName(`firstname${nameSeed}`, WordType.OTHER);
-			const familyName = bax.getName(`lastname${nameSeed}`, WordType.FAMILY);
+			const givenName = bax.getWord(`firstname${nameSeed}`, WordType.OTHER);
+			const familyName = bax.getWord(`lastname${nameSeed}`, WordType.FAMILY);
 			let fullName;
 			if (type === 1)
 				fullName = `${givenName} ${familyName}`;
