@@ -61,7 +61,7 @@ export default [
           { "key": "dams", "klas": "none", "conditions": [] },
           { "key": "knots", "klas": "none", "conditions": [] },
           { "key": "fabric", "klas": "none", "conditions": [] },
-          { "key": "fishing", "klas": "none", "conditions": [] },
+          { "key": "fishing", "klas": "none", "conditions": ["+coastal"] },
           { "key": "bluntness", "klas": "none", "conditions": [] }
         ]
       }
@@ -230,7 +230,7 @@ export default [
           { "key": "tuber", "klas": "none", "conditions": ["+cold"] },
           { "key": "corn", "klas": "none", "conditions": ["+plains"] },
           { "key": "meat", "klas": "none", "conditions": [] },
-          { "key": "fish", "klas": "none", "conditions": [] },
+          { "key": "fish", "klas": "none", "conditions": ["+coastal"] },
           { "key": "fruit", "klas": "none", "conditions": [] },
           { "key": "nuts", "klas": "none", "conditions": [] },
           { "key": "beans", "klas": "none", "conditions": [] },
