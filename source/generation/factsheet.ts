@@ -150,6 +150,7 @@ function addHistorySection(page: VNode, topic: Civ, language: string, style: str
 
 	let text = "";
 	for (const event of history) {
+		// collect the transcribed names of all the entities mentioned in the records
 		const args: (string | number)[] = [];
 		for (const participant of event.participants) {
 			if (participant instanceof Civ || participant instanceof Culture)
@@ -157,6 +158,12 @@ function addHistorySection(page: VNode, topic: Civ, language: string, style: str
 			else
 				args.push(participant);
 		}
+		// add a note if the first name mentioned is different from the current name
+		if (text.length === 0 && args[0] !== topic.getName().toString(style))
+			args[0] = format(
+				localize('factbook.history.predecessor_clarification', language),
+				args[0], topic.getName().toString(style));
+		// write it out into the history paragraph
 		text += format(
 			localize(`factbook.history.${event.type}`, language),
 			event.year, ...args);

@@ -427,6 +427,7 @@ export default {
 	"factbook.history.coup": "In {0}, a coup d'etat installed a new government.  ",
 	"factbook.history.independence": "{1} declared independence from {2} in {0}.  ",
 	"factbook.history.peak": "At its peak in {0}, {1} controlled {2} km² of territory.  ",
+	"factbook.history.predecessor_clarification": "{0}, the predecessor of {1},",
 	"factbook.history.secession": "In {0}, {2} seceded from {1}.  ",
 	"factbook.house": "They mostly live in {0}.  ",
 	"factbook.house.roof.claytile": "clay tile",

@@ -425,6 +425,7 @@ export default {
 	"factbook.history.coup": "{0}年には、クーデターが政府を改めた。",
 	"factbook.history.independence": "{0}年に{1}は{2}から独立を宣言した。",
 	"factbook.history.peak": "{0}年の頂点には、{1}が{2}km²治めた。",
+	"factbook.history.predecessor_clarification": "{1}の先代の{0}",
 	"factbook.history.secession": "{0}年には、{2}がから{1}脱退した。",
 	"factbook.house": "民俗はたいてい{0}で済んでいる。",
 	"factbook.house.roof.claytile": "粘土瓦",
