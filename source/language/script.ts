@@ -221,32 +221,36 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		sounds = sounds.slice();
 
 		// handle some common orthographickal rules
+		if (ORTHOGRAPHIC_FLAGS.get(style).get('au as ao')) {
+			for (let i = 0; i < sounds.length - 1; i ++) // for this flag, go thru the original phonemick representacion
+				if (sounds[i].is(Quality.LOW) && new Klas([Loke.VELAR, Quality.HIGH, Silabia.NONSYLLABIC]).matches(sounds[i + 1])) // find the sequence aw
+					sounds[i + 1] = new Klas([Quality.MID]).apply(sounds[i + 1]); // and change it to ao
+		}
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
-			for (let i = 0; i < sounds.length; i++) // for this flag, go thru the original phonemick representacion
+			for (let i = 0; i < sounds.length; i ++) // for this flag, go thru the original phonemick representacion
 				if (sounds[i].is(Quality.HIGH)
 					&& (i + 1 >= sounds.length || sounds[i + 1].is(Silabia.NONSYLLABIC))) // find glides in codas
 					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]); // and change them to vowels
 		}
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
-			for (let i = 0; i < sounds.length - 1; i++)
+			for (let i = 0; i < sounds.length - 1; i ++)
 				if (sounds[i].is(Loke.VELAR) && sounds[i].is(Mode.NASAL)
 					&& sounds[i + 1].is(Loke.VELAR) && sounds[i + 1].is(Quality.OCCLUSIVE)) // find velar nasals followd by velar stops
 					sounds[i] = new Klas([Loke.ALVEOLAR]).apply(sounds[i]); // and change them to be coronal
 		}
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('chain nasalized vocoids')) {
-			for (let i = 0; i < sounds.length - 1; i++)
+			for (let i = 0; i < sounds.length - 1; i ++)
 				if (sounds[i].is(Quality.VOCOID) && sounds[i].is(Nosia.NASALIZED) && sounds[i + 1].is(Quality.NASAL)) // find nasalized vocoids followd by other nasal sounds
 					sounds[i] = new Klas([Nosia.ORAL]).apply(sounds[i]); // and change them to be not nasalized
 		}
-		if (ORTHOGRAPHIC_FLAGS.get(style).get('monosyllabic word as unstressed')) {
-			let syllables = [];
-			for (let i = 0; i < sounds.length; i ++)
-				if (sounds[i].is(Quality.SYLLABIC))
-					syllables.push(i);
-			if (syllables.length === 1)
-				for (const i of syllables)
-					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]);
-		}
+
+		// remove stress markers from any monosyllabic words
+		let syllables = [];
+		for (let i = 0; i < sounds.length; i ++)
+			if (sounds[i].is(Quality.SYLLABIC))
+				syllables.push(i);
+		if (syllables.length === 1)
+			sounds[syllables[0]] = new Klas([Silabia.UNSTRESSED]).apply(sounds[syllables[0]]);
 
 		// syllabate the word
 		const sound_syllables = syllabate(sounds);
@@ -272,22 +276,24 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 
 		// apply russian spelling rules
 		if (style === 'ru') {
+			// forbid double й or ь
+			symbols = symbols.replace(/([йь])[йь]/g, "$1");
 			// a soft-sign turns ш into щ
-			symbols = symbols.replace(/шь/, "щь");
+			symbols = symbols.replace(/шь/g, "щь");
 			// a soft-sign or й merges with a following vowel
-			symbols = symbols.replace(/[йь]а/g, "я");
-			symbols = symbols.replace(/[йь]э/g, "е");
-			symbols = symbols.replace(/[йь]о/g, "ё");
-			symbols = symbols.replace(/[йь]ы/g, "и");
-			symbols = symbols.replace(/[йь]у/g, "ю");
+			symbols = symbols.replace(/[йь][ая]/g, "я");
+			symbols = symbols.replace(/[йь][эе]/g, "е");
+			symbols = symbols.replace(/[йь][оё]/g, "ё");
+			symbols = symbols.replace(/[йь][ыи]/g, "и");
+			symbols = symbols.replace(/[йь][ую]/g, "ю");
 			// an и softens the following vowel (except э and ы)
 			symbols = symbols.replace(/и(́?)а/g, "и$1я");
 			symbols = symbols.replace(/и(́?)о/g, "и$1ё");
 			symbols = symbols.replace(/и(́?)у/g, "и$1ю");
-			// й must be adjacent to a vowel or becomes и
-			symbols = symbols.replace(/([^аеёиоуыэюя])й([^аеёиоуыэюя])/g, "$1и$2");
+			// й must follow a vowel or becomes и
+			symbols = symbols.replace(/([^аеёиоуыэюя])й/g, "$1и");
 			// э is only used at the starts of words
-			symbols = symbols.replace(/(.)э/, "$1е");
+			symbols = symbols.replace(/(.)э/g, "$1е");
 		}
 		// apply latin spelling rules
 		if (style === 'la') {
@@ -295,6 +301,10 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			symbols = symbols.replace(/jj/g, "j");
 			// forbid double v
 			symbols = symbols.replace(/vv/g, "v");
+			// remove j between a consonant and i
+			symbols = symbols.replace(/([^aeijouv̄])ji/g, "$1i");
+			// remove v between a consonant and u
+			symbols = symbols.replace(/([^aeijouv̄])vu/g, "$1u");
 			// change j to i adjacent to consonants
 			symbols = symbols.replace(/([^aeijouv̄])j/g, "$1i");
 			symbols = symbols.replace(/j([^aeijouv̄])/g, "i$1");
@@ -304,9 +314,6 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		}
 		// apply spanish spelling rules
 		if (style === 'es') {
-			// change y to i adjacent to consonants
-			symbols = symbols.replace(/([^aeioú])y/g, "$1i");
-			symbols = symbols.replace(/y([^aeioú])/g, "i$1");
 			// remove duplicate letters
 			for (let i = symbols.length - 1; i >= 1; i--)
 				if (symbols[i - 1] === symbols[i])
@@ -314,6 +321,11 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			for (let i = symbols.length - 1; i >= 2; i--)
 				if (symbols[i - 1] === "́" && symbols[i - 2] === symbols[i]) // watch out for the combining diacritics
 					symbols = symbols.slice(0, i) + symbols.slice(i + 1);
+			// change y to i adjacent to consonants
+			symbols = symbols.replace(/([^aeioú])y/g, "$1i");
+			symbols = symbols.replace(/y([^aeioú])/g, "i$1");
+			// this may create double is, so remove those
+			symbols = symbols.replace(/ii/g, "i");
 			// change combining diacritics to special characters (because ú should behave differently from u)
 			symbols = symbols.replace(/á/g, "á");
 			symbols = symbols.replace(/é/g, "é");
@@ -421,6 +433,8 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		}
 		// apply japanese spelling rules
 		else if (style === "ja") {
+			// long nasalized vowels will end in ンー by default; the ン already makes it long so drop the ー
+			symbols = symbols.replace(/ンー/g, "ン");
 			// convert iy and uw to long vowels
 			for (let i = 2; i < symbols.length + 1; i ++) {
 				if (i >= symbols.length || !"aiueo".includes(symbols[i])) {
@@ -450,7 +464,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			// superscript n means add an ン if it's after a vowel but omit it otherwise
 			for (let i = symbols.length - 1; i >= 0; i --) {
 				if (symbols[i] === "ⁿ") {
-					if (i - 1 >= 0 && "aiueo".includes(symbols[i - 1]))
+					if (i - 1 >= 0 && "aiueoywー".includes(symbols[i - 1]))
 						symbols = symbols.slice(0, i) + "ン" + symbols.slice(i + 1);
 					else
 						symbols = symbols.slice(0, i) + symbols.slice(i + 1);

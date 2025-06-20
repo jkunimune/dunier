@@ -48,7 +48,7 @@ export default {
     { "features": ["alveolar", "fricate"],
       "symbols": ["z",  "z",  "z",  "z",  "з",  "z",  "z",  "z",  "z",  "z",  "z"] },
     { "features": ["postalveolar", "affricate", "voiceless"],
-      "symbols": ["t͡ʃ", "s",  "ch", "ch", "ч",  "q",  "ch", "tsh","ch", "č",  "c"] },
+      "symbols": ["t͡ʃ", "sc",  "ch", "ch", "ч",  "q",  "ch", "tsh","ch", "č",  "c"] },
     { "features": ["postalveolar", "affricate"],
       "symbols": ["d͡ʒ", "j",  "y",  "j",  "дж", "j",  "j",  "dzh","j",  "dž", "j"] },
     { "features": ["postalveolar", "fricate", "voiceless"],
@@ -84,7 +84,7 @@ export default {
     { "features": ["retroflex", "stop"],
       "symbols": ["ɖ",  "d",  "d",  "d",  "д",  "d",  "d",  "ḍ",  "dr", "ḍ",  "ḍ"] },
     { "features": ["retroflex", "affricate", "voiceless"],
-      "symbols": ["ʈ͡ʂ", "s",  "ch", "ch", "ч",  "q",  "c",  "tṣ", "ch", "cz", "ch"] },
+      "symbols": ["ʈ͡ʂ", "sc",  "ch", "ch", "ч",  "q",  "c",  "tṣ", "ch", "cz", "ch"] },
     { "features": ["retroflex", "affricate"],
       "symbols": ["ɖ͡ʐ", "j",  "y",  "j",  "дж", "j",  "j",  "dẓ", "j",  "drz","zh"] },
     { "features": ["retroflex", "fricate", "voiceless"],
@@ -297,13 +297,13 @@ export default {
   "flags": [
     { "name": "capitalization",
       "values": [false, true, true, true, true, false, false, true, true, true, true] },
+    { "name": "au as ao",
+      "values": [false, false, false, false, false, false, false, false, true, false, false] },
     { "name": "diphthong as hiatus",
       "values": [false, true, false, true, false, false, true, true, true, true, false] },
     { "name": "velar nasal as coronal",
       "values": [false, true, true, true, true, true, true, true, false, true, false] },
     { "name": "chain nasalized vocoids",
-      "values": [false, false, false, false, false, true, true, false, true, false, false] },
-    { "name": "monosyllabic word as unstressed",
-      "values": [true, false, true, false, true, false, false, false, false, true, false] }
+      "values": [false, false, false, false, false, true, true, false, true, false, false] }
   ]
 };

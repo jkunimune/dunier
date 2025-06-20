@@ -10,7 +10,7 @@ import {
 	WORD_PROCESS_OPTIONS
 } from "../source/language/process.js";
 import {compare, ipa, transcribe} from "../source/language/script.js";
-import {Klas, Loke, Mode, Nosia, Quality, Silabia, Sound, Voze} from "../source/language/sound.js";
+import {Klas, Loke, Longia, Mode, Nosia, Quality, Silabia, Sound, Voze} from "../source/language/sound.js";
 import {Random} from "../source/utilities/random.js";
 
 describe("process", () => {
@@ -150,27 +150,27 @@ describe("script", () => {
 		expect(transcribe([word], "es")).toEqual("Ananás");
 	});
 	describe("transcribe", () => {
-		const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ"), ipa("wiwiɡjaɡwaɡwiɡaɡiθaθikaki")];
+		const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ"), ipa("wiwiɡjaɡwaɡwiɡaɡiθaθikaki"), ipa("tjiejt")];
 		words[0][0] = words[0][0].with(Nosia.NASALIZED).with(Mode.AFFRICATE);
 		words[2][0] = words[2][0].with(Nosia.NASALIZED);
-		words[2][1] = words[2][1].with(Nosia.NASALIZED);
+		words[2][1] = words[2][1].with(Nosia.NASALIZED).with(Longia.LONG);
 		test("ipa", () => {
-			expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwi.jən j̃ʊ̃ŋ wi.wiɡ.jaɡ.waɡ.wi.ɡa.ɡi.θa.θi.ka.ki");
+			expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwi.jən j̃ʊ̃ːŋ wi.wiɡ.jaɡ.waɡ.wi.ɡa.ɡi.θa.θi.ka.ki tji.ejt");
 		});
 		test("en", () => {
-			expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung Wewegiagwagwegageethathecacky");
+			expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung Wewegiagwagwegageethathecacky Teaeet");
 		});
 		test("ja", () => {
-			expect(transcribe(words, "ja")).toEqual("ンチタルク・グイヤン・ユング・ウィウィギャグワグイガギサシカキ");
+			expect(transcribe(words, "ja")).toEqual("ンチタルク・グイヤン・ユーング・ウィウィギャグワグイガギサシカキ・ティイエイト");
 		});
 		test("es", () => {
-			expect(transcribe(words, "es")).toEqual("Nchtarc Nuiyen Yun Huihuiguiaguagüigaguizacicaqui");
+			expect(transcribe(words, "es")).toEqual("Nchtarc Nuiyen Yun Huihuiguiaguagüigaguizacicaqui Tieit");
 		});
 		test("ru", () => {
-			expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Вивигягвагвигагифафикаки");
+			expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Вивигягвагвигагифафикаки-Тиейт");
 		});
 		test("la", () => {
-			expect(transcribe(words, "la")).toEqual("Nstarc Nuijen Jun Vivigiaguaguigagithathicaci");
+			expect(transcribe(words, "la")).toEqual("Nsctarc Nuijen Jūn Vivigiaguaguigagithathicaci Tieit");
 		});
 	});
 });
