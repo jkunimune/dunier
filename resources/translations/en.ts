@@ -604,7 +604,7 @@ export default {
 	"factbook.sport.object.rock": "a rock",
 	"factbook.sport.object.sack": "a footbag",
 	"factbook.sport.object.stick": "a baton",
-	"factbook.stats": "{0}: <i>{1}</i> (pronounced {2})<br/>Area: {3} km²<br/>Population: {4}",
+	"factbook.stats": "Local name: <i>{0}</i> (pronounced [{1}])<br/>Area: {2} km²<br/>Population: {3}",
 	"factbook.tech": "{0} is a(n) {1} society.  Its inhabitants make war with {2}, get around {3}, light their homes with {4}, and {5}.  ",
 	"factbook.tech.age.bronze": "bronze-age",
 	"factbook.tech.age.early_modern": "pre-industrial",

@@ -600,7 +600,7 @@ export default {
 	"factbook.sport.object.rock": "una roca",
 	"factbook.sport.object.sack": "un saco de footbag",
 	"factbook.sport.object.stick": "un testigo",
-	"factbook.stats": "{0}: <i>{1}</i> (AFI: [{3}])<br/>Superficie: {0} km²<br/>Población: {1}",
+	"factbook.stats": "Nombre local: <i>{0}</i> (AFI: [{1}])<br/>Superficie: {2} km²<br/>Población: {3}",
 	"factbook.tech": "{0} es en la {1}.  Los puebles pelean con {2}, se mueven {3}, iluminan sus casas con {4}, y {5}.  ",
 	"factbook.tech.age.bronze": "Edad del Bronce",
 	"factbook.tech.age.early_modern": "Edad Moderna",

@@ -123,7 +123,6 @@ function generateFactSheet(doc: VNode, topic: Civ, tidalLock: boolean, language:
 	addParagraph(
 		format(
 			localize('factbook.stats', language),
-			topic.language.getName().toString(style),
 			topic.getName().toString('(default)'),
 			topic.getName().toString('ipa'),
 			topic.getLandArea(),

@@ -600,7 +600,7 @@ export default {
 	"factbook.sport.object.rock": "石",
 	"factbook.sport.object.sack": "フットバッグ",
 	"factbook.sport.object.stick": "棒",
-	"factbook.stats": "{0}語：「{1}」（IPA：[{2}]）<br/>面積：{3}km²<br/>人口：{4}",
+	"factbook.stats": "内名：「{0}」（IPA：[{1}]）<br/>面積：{2}km²<br/>人口：{3}",
 	"factbook.tech": "{0}は{1}技術がある。住民は{2}で戦って、{3}、{4}で家を照らして、{5}。",
 	"factbook.tech.age.bronze": "青銅時代の",
 	"factbook.tech.age.early_modern": "江戸時代の",
