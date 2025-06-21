@@ -101,4 +101,3 @@ export default class Queue<E> {
 		data[pos] = item;
 	}
 }
-

@@ -16,7 +16,7 @@ import {
 } from "./world.js";
 import {Culture} from "./culture.js";
 import {Word} from "./language/word.js";
-import Queue from "../utilities/queue.js";
+import Queue from "../utilities/external/tinyqueue.js";
 import {Dequeue} from "../utilities/dequeue.js";
 
 

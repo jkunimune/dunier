@@ -6,8 +6,8 @@ tests/*.js.map
 resources/**/*.js
 resources/**/*.js.map
 # except libraries that don't have typescript counterparts
-!source/utilities/external/*.js
-source/utilities/external/enumify.js
+!source/utilities/external/bootstrap-input-spinner.js
+!source/utilities/external/plotly.min.js
 
 ### internationalized HTML ###
 /*.html

@@ -4,7 +4,7 @@
  */
 import {XYPoint} from "./coordinates.js";
 import {Tree} from "./tree.js";
-import Queue from "./queue.js";
+import Queue from "./external/tinyqueue.js";
 import {trajectoryIntersection} from "./geometry.js";
 
 /**

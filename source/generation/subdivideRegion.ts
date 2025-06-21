@@ -5,7 +5,7 @@
 
 import {Tile} from "./surface/surface.js";
 import {filterSet} from "../utilities/miscellaneus.js";
-import Queue from "../utilities/queue.js";
+import Queue from "../utilities/external/tinyqueue.js";
 
 /**
  * break the land tiles of the world up into a handful of continents.

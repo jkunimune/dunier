@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 // @ts-ignore
-import Queue from "./queue.js";
+import Queue from "./external/tinyqueue.js";
 import {PathSegment, XYPoint} from "./coordinates.js";
 import {Random} from "./random.js";
 import {trajectoryIntersection, Vector} from "./geometry.js";
