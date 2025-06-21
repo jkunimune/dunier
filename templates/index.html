@@ -40,6 +40,8 @@
       document.getElementById('map-projection-description').innerHTML = "{parameter.map.type.conformal_conic.description}";
     else if (projection === "equal_earth")
       document.getElementById('map-projection-description').innerHTML = "{parameter.map.type.equal_earth.description}";
+    else if (projection === "mercator")
+      document.getElementById('map-projection-description').innerHTML = "{parameter.map.type.mercator.description}";
     else {
       document.getElementById('map-projection-description').innerHTML = "?????";
       console.error(`unrecognized map projeccion: '${projection}'`);
@@ -254,8 +256,8 @@
                   <div class="form-group">
                     <label for="map-jung">{parameter.map.focus}</label>
                     <select id="map-jung">
-                      <option value="world">{{parameter.map.focus.whole_world}}</option>
-                      <option selected value="continent0">{{parameter.map.focus.continent}}</option>
+                      <option value="world">{parameter.map.focus.whole_world}</option>
+                      <option selected value="continent0">{parameter.map.focus.continent}</option>
                     </select>
                   </div>
                   <div class="form-group" id="map-projection-form">
@@ -448,4 +450,4 @@
   </div>
 </div>
 
-<div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">{parameter.map.type.bonne.description}</div>
+<div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">{parameter.map.type.conformal_conic.description}</div>
