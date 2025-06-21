@@ -164,7 +164,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 		const height = 2*halfWidth/aspectRatio;
 
 		const θC = θ0 + location/R;
-		const area = height*height, bendRatio = height/2/R, horizontality = -Math.sin(θ0);
+		const area = height*height, bendRatio = height/2/R, horizontality = -Math.sin(θC);
 		if (bendRatio > 1)
 			continue; // bendRatio above 1 means this is useless garbage that shouldn't even be considered
 		if (horizontality < 0) // if it's going to be upside down
@@ -192,6 +192,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 						]},
 					]
 				};
+				console.assert(Math.cos(θR) > Math.cos(θL), aspectRatio);
 			}
 			else {
 				// in this debug mode, return the raw candidate rather than the arc you found
