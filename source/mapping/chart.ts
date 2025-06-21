@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Domain, Edge, EmptySpace, INFINITE_PLANE, outline, Surface, Tile, Vertex} from "../surface/surface.js";
+import {Domain, Edge, EmptySpace, INFINITE_PLANE, outline, Surface, Tile, Vertex} from "../generation/surface/surface.js";
 import {
 	filterSet, localizeInRange,
 	pathToString, weightedAverage,
@@ -10,7 +10,7 @@ import {
 import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
-import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
+import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
 import {assert_φλ, PathSegment, ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
 import {Biome} from "../generation/terrain.js";
@@ -680,7 +680,7 @@ export class Chart {
 			windrose.attributes.transform = `translate(${x}, ${y}) scale(${radius/26})`;
 
 			// load the content from windrose.svg
-			fetch('../../resources/images/windrose.svg')
+			fetch('../../resources/windrose.svg')
 				.then(response => response.text())
 				.then(svgText => {
 					const innerSVG = svgText.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s)[1];

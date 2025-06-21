@@ -2,8 +2,8 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import Queue from '../datastructures/queue.js';
-import {Surface, Vertex, Tile, EmptySpace} from "../surface/surface.js";
+import Queue from '../utilities/queue.js';
+import {Surface, Vertex, Tile, EmptySpace} from "./surface/surface.js";
 import {Random} from "../utilities/random.js";
 import {argmin, union} from "../utilities/miscellaneus.js";
 import {Vector} from "../utilities/geometry.js";

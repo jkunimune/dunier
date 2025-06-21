@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {ErodingSegmentTree} from "../source/datastructures/erodingsegmenttree.js";
+import {ErodingSegmentTree} from "../source/utilities/erodingsegmenttree.js";
 
 test("full", () => {
 	const tree = new ErodingSegmentTree(0, 1);

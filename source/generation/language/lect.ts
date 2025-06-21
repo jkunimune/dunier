@@ -2,13 +2,13 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Random} from "../utilities/random.js";
+import {Random} from "../../utilities/random.js";
 import {Sound} from "./sound.js";
 import {DEFAULT_STRESS, WordProcess, PhraseProcess, WORD_PROCESS_OPTIONS, PHRASE_PROCESS_OPTIONS} from "./process.js";
 import {ipa} from "./script.js";
 import {Word} from "./word.js";
-import {Enumify} from "../libraries/enumify.js";
-import {decodeBase37} from "../utilities/miscellaneus.js";
+import {Enumify} from "../../utilities/external/enumify.js";
+import {decodeBase37} from "../../utilities/miscellaneus.js";
 
 
 const DEVIATION_TIME = 2; // TODO: replace this with a number of sound changes

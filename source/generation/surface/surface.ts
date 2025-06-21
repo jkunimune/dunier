@@ -2,16 +2,16 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Random} from "../utilities/random.js";
-import {binarySearch, linterp, noisyProfile} from "../utilities/miscellaneus.js";
-import {Culture} from "../generation/culture.js";
-import {Biome} from "../generation/terrain.js";
-import {ΦΛPoint, XYPoint, Point} from "../utilities/coordinates.js";
-import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../utilities/geometry.js";
-import {straightSkeleton} from "../utilities/straightskeleton.js";
-import {delaunayTriangulate} from "../utilities/delaunay.js";
-import {Civ} from "../generation/civ.js";
-import {POPULATION_DENSITY} from "../generation/world.js";
+import {Random} from "../../utilities/random.js";
+import {binarySearch, linterp, noisyProfile} from "../../utilities/miscellaneus.js";
+import {Culture} from "../culture.js";
+import {Biome} from "../terrain.js";
+import {ΦΛPoint, XYPoint, Point} from "../../utilities/coordinates.js";
+import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../../utilities/geometry.js";
+import {straightSkeleton} from "../../utilities/straightskeleton.js";
+import {delaunayTriangulate} from "../../utilities/delaunay.js";
+import {Civ} from "../civ.js";
+import {POPULATION_DENSITY} from "../world.js";
 
 
 const TILE_AREA = 30000; // target area of a tile in km^2

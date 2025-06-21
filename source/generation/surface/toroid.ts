@@ -4,8 +4,8 @@
  */
 import {Tile, Surface, Vertex} from "./surface.js";
 import {Spheroid} from "./spheroid.js";
-import {ΦΛPoint} from "../utilities/coordinates.js";
-import {localizeInRange} from "../utilities/miscellaneus.js";
+import {ΦΛPoint} from "../../utilities/coordinates.js";
+import {localizeInRange} from "../../utilities/miscellaneus.js";
 
 
 /**

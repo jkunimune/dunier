@@ -4,20 +4,20 @@
  */
 
 import {generateFactbook} from "../generation/factsheet.js";
-import {Spheroid} from "../surface/spheroid.js";
-import {Sphere} from "../surface/sphere.js";
-import {Toroid} from "../surface/toroid.js";
-import {Disc} from "../surface/disc.js";
-import {Surface, Tile} from "../surface/surface.js";
+import {Spheroid} from "../generation/surface/spheroid.js";
+import {Sphere} from "../generation/surface/sphere.js";
+import {Toroid} from "../generation/surface/toroid.js";
+import {Disc} from "../generation/surface/disc.js";
+import {Surface, Tile} from "../generation/surface/surface.js";
 import {Random} from "../utilities/random.js";
 import {generateTerrain} from "../generation/terrain.js";
 import {subdivideLand} from "../generation/subdivideRegion.js";
-import {Chart} from "../map/chart.js";
+import {Chart} from "../mapping/chart.js";
 import {World} from "../generation/world.js";
 import {format, localize} from "./internationalization.js";
 import {filterSet} from "../utilities/miscellaneus.js";
 import {Civ} from "../generation/civ.js";
-import {LockedDisc} from "../surface/lockeddisc.js";
+import {LockedDisc} from "../generation/surface/lockeddisc.js";
 import {toXML, VNode} from "./virtualdom.js";
 
 

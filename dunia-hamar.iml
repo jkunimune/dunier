@@ -18,7 +18,7 @@
       <excludeFolder url="file://$MODULE_DIR$/ja" />
       <excludeFolder url="file://$MODULE_DIR$/pd" />
       <excludeFolder url="file://$MODULE_DIR$/resources/bootstrap-4.6.2-dist" />
-      <excludeFolder url="file://$MODULE_DIR$/source/libraries" />
+      <excludeFolder url="file://$MODULE_DIR$/source/utilities/external" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="feather-icons" level="application" />

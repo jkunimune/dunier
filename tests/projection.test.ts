@@ -3,9 +3,9 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 
-import {MapProjection} from "../source/map/projection.js";
-import {Disc} from "../source/surface/disc.js";
-import {Spheroid} from "../source/surface/spheroid.js";
+import {MapProjection} from "../source/mapping/projection.js";
+import {Disc} from "../source/generation/surface/disc.js";
+import {Spheroid} from "../source/generation/surface/spheroid.js";
 import {assert_xy, endpoint} from "../source/utilities/coordinates.js";
 
 describe("on a sphere", () => {

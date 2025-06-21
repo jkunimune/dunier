@@ -6,7 +6,7 @@ import {DOM} from "./dom.js";
 import {localize} from "./internationalization.js";
 import {Selector} from "../utilities/selector.js";
 import {convertXMLToBlob, convertSVGToPNGAndThenDownloadIt, download} from "./export.js";
-import "../libraries/plotly.min.js";
+import "../utilities/external/plotly.min.js";
 import {Layer} from "./mapgenerator.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import HARFIA_TABLE from "../../resources/alphabet.js";
 import KATAKANA_TABLE from "../../resources/rules_ja.js";

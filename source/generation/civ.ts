@@ -2,8 +2,8 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Tile} from "../surface/surface.js";
-import {Lect, WordType} from "../language/lect.js";
+import {Tile} from "./surface/surface.js";
+import {Lect, WordType} from "./language/lect.js";
 import {Random} from "../utilities/random.js";
 import {
 	POPULATION_DENSITY,
@@ -15,9 +15,9 @@ import {
 	World
 } from "./world.js";
 import {Culture} from "./culture.js";
-import {Word} from "../language/word.js";
-import Queue from "../datastructures/queue.js";
-import {Dequeue} from "../datastructures/dequeue.js";
+import {Word} from "./language/word.js";
+import Queue from "../utilities/queue.js";
+import {Dequeue} from "../utilities/dequeue.js";
 
 
 /**

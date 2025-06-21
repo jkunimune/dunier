@@ -3,8 +3,8 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Tile, Surface, Vertex} from "./surface.js";
-import {legendreP2, legendreP4, legendreP6} from "../utilities/miscellaneus.js";
-import {ΦΛPoint} from "../utilities/coordinates.js";
+import {legendreP2, legendreP4, legendreP6} from "../../utilities/miscellaneus.js";
+import {ΦΛPoint} from "../../utilities/coordinates.js";
 
 /**
  * an oblate spheroid (i.e. a normal planet)

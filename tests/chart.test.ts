@@ -2,8 +2,8 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Chart} from "../source/map/chart.js";
-import {Sphere} from "../source/surface/sphere.js";
+import {Chart} from "../source/mapping/chart.js";
+import {Sphere} from "../source/generation/surface/sphere.js";
 import {Random} from "../source/utilities/random.js";
 
 test("rectangle", () => {

@@ -3,9 +3,9 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Random} from "../utilities/random.js";
-import {Dialect, Lect, WordType, ProtoLect} from "../language/lect.js";
-import {Tile} from "../surface/surface.js";
-import {Word} from "../language/word.js";
+import {Dialect, Lect, WordType, ProtoLect} from "./language/lect.js";
+import {Tile} from "./surface/surface.js";
+import {Word} from "./language/word.js";
 import {Biome} from "./terrain.js";
 
 import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";

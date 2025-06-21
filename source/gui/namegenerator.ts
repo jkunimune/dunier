@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Random} from "../utilities/random.js";
-import {Dialect, Lect, ProtoLect, WordType} from "../language/lect.js";
+import {Dialect, Lect, ProtoLect, WordType} from "../generation/language/lect.js";
 import {DOM} from "./dom.js";
 
 

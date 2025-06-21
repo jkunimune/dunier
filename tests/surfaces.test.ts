@@ -3,11 +3,11 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 
-import {Spheroid} from "../source/surface/spheroid.js";
+import {Spheroid} from "../source/generation/surface/spheroid.js";
 import {Vector} from "../source/utilities/geometry.js";
-import {Toroid} from "../source/surface/toroid.js";
-import {Disc} from "../source/surface/disc.js";
-import {Sphere} from "../source/surface/sphere.js";
+import {Toroid} from "../source/generation/surface/toroid.js";
+import {Disc} from "../source/generation/surface/disc.js";
+import {Sphere} from "../source/generation/surface/sphere.js";
 
 describe("Spheroid", () => {
 	const radius = 6371;

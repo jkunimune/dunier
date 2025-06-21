@@ -3,8 +3,8 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {XYPoint} from "./coordinates.js";
-import {Tree} from "../datastructures/tree.js";
-import Queue from "../datastructures/queue.js";
+import {Tree} from "./tree.js";
+import Queue from "./queue.js";
 import {trajectoryIntersection} from "./geometry.js";
 
 /**

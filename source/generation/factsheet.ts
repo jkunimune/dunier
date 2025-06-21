@@ -4,11 +4,11 @@
  */
 import {Civ} from "./civ.js";
 import {format, formatList, localize} from "../gui/internationalization.js";
-import {WordType} from "../language/lect.js";
+import {WordType} from "./language/lect.js";
 import {Culture, KULTUR_ASPECTS} from "./culture.js";
 import {argmax} from "../utilities/miscellaneus.js";
-import {compare} from "../language/script.js";
-import {Tile} from "../surface/surface.js";
+import {compare} from "./language/script.js";
+import {Tile} from "./surface/surface.js";
 import {Vector} from "../utilities/geometry.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 import TECHNOLOGIES from "../../resources/tech_tree.js";

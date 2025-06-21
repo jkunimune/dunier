@@ -91,7 +91,7 @@ def star(r1: float, r0: float, n: int, fill: str) -> Path:
 
 
 def save_windrose(paths: list[Path]):
-	with open("../../resources/images/windrose.svg", "w") as file:
+	with open("../../resources/windrose.svg", "w") as file:
 		file.write(
 			'<?xml version="1.0" encoding="utf-8"?>\n'
 			f'<svg version="1.1" xmlns="http://www.w3.org/2000/svg" '

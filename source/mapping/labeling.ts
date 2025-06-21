@@ -6,10 +6,10 @@ import {assert_xy, endpoint, PathSegment} from "../utilities/coordinates.js";
 import {arcCenter, Vector} from "../utilities/geometry.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
 import {contains} from "./pathutilities.js";
-import {INFINITE_PLANE} from "../surface/surface.js";
+import {INFINITE_PLANE} from "../generation/surface/surface.js";
 import {localizeInRange, longestShortestPath, pathToString, Side} from "../utilities/miscellaneus.js";
 import {circularRegression} from "../utilities/fitting.js";
-import {ErodingSegmentTree} from "../datastructures/erodingsegmenttree.js";
+import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
 
 
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis

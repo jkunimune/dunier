@@ -3,8 +3,8 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Tile, Surface, Vertex} from "./surface.js";
-import {Vector} from "../utilities/geometry.js";
-import {ΦΛPoint} from "../utilities/coordinates.js";
+import {Vector} from "../../utilities/geometry.js";
+import {ΦΛPoint} from "../../utilities/coordinates.js";
 
 /**
  * a planar planet based on the modern flat earth model, where the sun circles in a horizontal plane above the world,

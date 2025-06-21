@@ -19,7 +19,7 @@ import {
 import {ipaSymbol, transcribe} from "./script.js";
 import {Word} from "./word.js";
 
-import UNPARSED_PROCESS_OPTIONS from "../../resources/processes.js";
+import UNPARSED_PROCESS_OPTIONS from "../../../resources/processes.js";
 
 /**
  * a process by which words change over time

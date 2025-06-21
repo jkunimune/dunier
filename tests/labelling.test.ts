@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {chooseLabelLocation, findOpenSpotOnArc, resamplePath} from "../source/map/labeling.js";
+import {chooseLabelLocation, findOpenSpotOnArc, resamplePath} from "../source/mapping/labeling.js";
 import {endpoint} from "../source/utilities/coordinates.js";
 
 

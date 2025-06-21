@@ -18,9 +18,9 @@ import {
 	get_loke_from_name, get_mode_from_name
 } from "./sound.js";
 
-import HARFIA_TABLE from "../../resources/alphabet.js";
-import ENGLISH_REPLACEMENTS from "../../resources/rules_en.js";
-import KATAKANA_TABLE from "../../resources/rules_ja.js";
+import HARFIA_TABLE from "../../../resources/alphabet.js";
+import ENGLISH_REPLACEMENTS from "../../../resources/rules_en.js";
+import KATAKANA_TABLE from "../../../resources/rules_ja.js";
 
 
 const MODIFIERS: {klas: Klas, baze: Feature[], kode: string}[] = [ // TODO: can I rearrange this to put the macron underneath the acute accent?

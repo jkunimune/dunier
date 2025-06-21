@@ -3,9 +3,9 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 
-import {Tile} from "../surface/surface.js";
+import {Tile} from "./surface/surface.js";
 import {filterSet} from "../utilities/miscellaneus.js";
-import Queue from "../datastructures/queue.js";
+import Queue from "../utilities/queue.js";
 
 /**
  * break the land tiles of the world up into a handful of continents.

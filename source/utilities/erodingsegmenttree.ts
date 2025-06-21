@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 
-import {localizeInRange} from "../utilities/miscellaneus.js";
+import {localizeInRange} from "./miscellaneus.js";
 
 /**
  * a data structure describing a shrinking subset of a line segment.

@@ -3,8 +3,8 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Spheroid} from "./spheroid.js";
-import {Vector} from "../utilities/geometry.js";
-import {ΦΛPoint} from "../utilities/coordinates.js";
+import {Vector} from "../../utilities/geometry.js";
+import {ΦΛPoint} from "../../utilities/coordinates.js";
 
 /**
  * a non-rotating spheroid. aspectRatio = 1, and latitude is measured in the -y direction

@@ -19,7 +19,7 @@ import {
 } from "../utilities/geometry.js";
 import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
-import {Domain} from "../surface/surface.js";
+import {Domain} from "../generation/surface/surface.js";
 
 
 const π = Math.PI;

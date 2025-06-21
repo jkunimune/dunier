@@ -2,8 +2,8 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {EmptySpace, Tile} from "../source/surface/surface.js";
-import {Disc} from "../source/surface/disc.js";
+import {EmptySpace, Tile} from "../source/generation/surface/surface.js";
+import {Disc} from "../source/generation/surface/disc.js";
 import {Vector} from "../source/utilities/geometry.js";
 
 // remember: the surface's normal vector points in the negative z direction, so you're looking at this plane from underneath

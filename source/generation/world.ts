@@ -2,11 +2,11 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import Queue from '../datastructures/queue.js';
-import {Tile, Surface} from "../surface/surface.js";
+import Queue from '../utilities/queue.js';
+import {Tile, Surface} from "./surface/surface.js";
 import {Random} from "../utilities/random.js";
 import {Civ} from "./civ.js";
-import {Lect} from "../language/lect.js";
+import {Lect} from "./language/lect.js";
 
 
 /** the year at which civilization starts */

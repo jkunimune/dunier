@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Enumify} from "../libraries/enumify.js";
+import {Enumify} from "../../utilities/external/enumify.js";
 
 
 /** list of active articulators */

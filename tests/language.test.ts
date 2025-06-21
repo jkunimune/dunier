@@ -8,9 +8,9 @@ import {
 	SoundChange, StressPlacement,
 	Syllabicization,
 	WORD_PROCESS_OPTIONS
-} from "../source/language/process.js";
-import {compare, ipa, transcribe} from "../source/language/script.js";
-import {Klas, Loke, Longia, Mode, Nosia, Quality, Silabia, Sound, Voze} from "../source/language/sound.js";
+} from "../source/generation/language/process.js";
+import {compare, ipa, transcribe} from "../source/generation/language/script.js";
+import {Klas, Loke, Longia, Mode, Nosia, Quality, Silabia, Sound, Voze} from "../source/generation/language/sound.js";
 import {Random} from "../source/utilities/random.js";
 
 describe("process", () => {
