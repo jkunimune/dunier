@@ -112,10 +112,8 @@ onmessage = (message) => {
 			color, rivers, borders, graticule, windrose, shading, civLabels, style);
 	if (target >= Layer.FACTBOOK && lastUpdated < Layer.FACTBOOK)
 		factbook = applyFactbook(map, mappedCivs, tidallyLocked, language, style);
-	lastUpdated = target;
 
 	postMessage([
-		lastUpdated,
 		surface.parameterize(18),
 		(terrainMap !== null) ? toXML(terrainMap) : null,
 		(historyMap !== null) ? toXML(historyMap) : null,

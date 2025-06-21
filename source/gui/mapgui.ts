@@ -90,6 +90,7 @@ function updateEverythingUpTo(target: Layer) {
 		color, rivers, borders, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	]);
+	lastUpdated = target;
 }
 
 
@@ -102,7 +103,6 @@ worker.onmessage = (message) => {
 	let focusOptions: {value: string, label: string}[];
 	let selectedFocusOption: string;
 	[
-		lastUpdated,
 		planetData, terrainMap, historyMap, map, factbook,
 		focusOptions, selectedFocusOption,
 	] = message.data;
