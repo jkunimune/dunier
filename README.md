@@ -29,24 +29,23 @@ This repository contains the following files and directories, among others.
 - `tsconfig.json` – instructions for TypeScript to compile the code
 - `source/` – the TypeScript source code
   - `gui/` – source files that interact directly with the user interface
-  - `surface/` – source files related to the geometry and topology of planetary surfaces
-  - `generation/` – source files related to terrain and society generation
-  - `language/` – source files related to constructing languages
-  - `map/` – source files related to graphical representation of geographic data
-  - `datastructures/` – some simple data structure classes
-  - `utilities/` – other low-level utilities that I had to write
-  - `libraries/` – low-level utilities that were not written by me
+  - `generation/` – source files related to generating and modelling the fantasy world
+    - `surface/` – source files related to the geometry and topology of planetary surfaces
+    - `language/` – source files related to constructing languages
+  - `mapping/` – source files related to graphical representation of geographic data
+  - `utilities/` – low-level utility functions and classes
+    - `external/` – utilities that were not written by me
   - `python/` – some auxiliary Python scripts, to generate resources and such
 - `templates/` – the untranslated HTML files from which the localized ones are built
 - `resources/` – all other files used by the webpage at runtime
   - `style.css` – the main stylesheet
-  - `processes.txt` – the list of phonological changes languages can undergo
-  - `alphabet.tsv` – the table of graphemes defining the different transcription styles
-  - `rules_english.tsv` – the list of special rules needed for the "English" transcription style
-  - `culture.tsv` – the specification of how to construct and describe fictional cultures
-  - `tech_tree.txt` – a list of technologies and dates used to qualitatively describe technological advancement
+  - `processes.ts` – the list of phonological changes languages can undergo
+  - `alphabet.ts` – the table of graphemes defining the different transcription styles
+  - `rules_en.ts` – the list of special rules needed for the "English" transcription style
+  - `rules_ja.ts` – the katakana table, to be used for the "English" transcription style
+  - `culture.ts` – the specification of how to construct and describe fictional cultures
+  - `tech_tree.ts` – a list of technologies and dates used to qualitatively describe technological advancement
   - `translations/` – the lists of translated GUI strings used to build the localized HTML
-  - `images/` – all images used in the webpage (mostly flags for the language selector)
 - `tests/` – the Jest test scripts
 
 You'll note that the HTML files are absent.
