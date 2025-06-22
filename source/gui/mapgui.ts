@@ -6,8 +6,7 @@ import {DOM} from "./dom.js";
 import {localize} from "./internationalization.js";
 import {Selector} from "../utilities/selector.js";
 import {convertXMLToBlob, convertSVGToPNGAndThenDownloadIt, download} from "./export.js";
-import "../utilities/external/plotly.min.js";
-import {Layer} from "./mapgenerator.js"; // note that I modified this copy of Plotly to work in vanilla ES6
+import "../utilities/external/plotly.min.js"; // note that I modified this copy of Plotly to work in vanilla ES6
 import HARFIA_TABLE from "../../resources/alphabet.js";
 import KATAKANA_TABLE from "../../resources/rules_ja.js";
 // @ts-ignore
@@ -34,13 +33,21 @@ const TERRAIN_COLORMAP = [
 const LANGUAGE = DOM.elm("bash").textContent;
 
 
+enum Layer {
+	NONE,
+	PLANET,
+	TERRAIN,
+	HISTORY,
+	MAP,
+	FACTBOOK
+}
+
 /** which level of the model currently has all input changes applied */
 let lastUpdated = Layer.NONE;
 /** whether the plotly image is up to date with the model */
 let planetRendered = false;
 /** whether a process is currently running */
 let inProgress: boolean = false; // TODO; I can't remember why this is here; if I click forward in the tabs while it's loading, does everything update?
-const worker = new Worker("/source/gui/mapgenerator.js", {type: "module"});
 /** the number of alerts that have been posted */
 let alertCounter: number = 0;
 
@@ -48,6 +55,10 @@ let alertCounter: number = 0;
 let aspectRatio = Math.sqrt(2);
 /** the width of every character in the map font */
 let characterWidthMap: Map<string, number> = null;
+
+
+// start the work thread
+const worker = new Worker("/source/gui/mapgenerator.js", {type: "module"});
 
 
 function updateEverythingUpTo(target: Layer) {
@@ -77,6 +88,7 @@ function updateEverythingUpTo(target: Layer) {
 	const borders = DOM.checked('map-borders');
 	const graticule = DOM.checked('map-graticule');
 	const windrose = DOM.checked('map-windrose');
+	const texture = DOM.checked('map-land-texture');
 	const shading = DOM.checked('map-shading');
 	const civLabels = DOM.checked('map-political-labels');
 	const style = DOM.val('map-spelling');
@@ -87,7 +99,7 @@ function updateEverythingUpTo(target: Layer) {
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
-		color, rivers, borders, shading, civLabels, graticule, windrose, style,
+		color, rivers, borders, texture, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	]);
 	lastUpdated = target;

@@ -11,9 +11,9 @@ import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
-import {assert_φλ, PathSegment, ΦΛPoint} from "../utilities/coordinates.js";
+import {assert_φλ, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
-import {Biome} from "../generation/terrain.js";
+import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
 	convertPathClosuresToZ,
@@ -159,6 +159,8 @@ export class Chart {
 	public readonly latitudeScale: number;
 	/** the average spacing between meridians in mm/radian */
 	public readonly longitudeScale: number;
+	/** some preloaded SVG assets for us to use */
+	private readonly resources: Map<string, string>;
 	/** a table containing the width of every possible character, in units of font-size */
 	private readonly characterWidthMap: Map<string, number>;
 	/** the number of labels that have been gerenated (for unique ID purposes) */
@@ -173,12 +175,13 @@ export class Chart {
 	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 * @param area the desired bounding box area in mm²
+	 * @param resources any preloaded SVG assets we should have
 	 * @param characterWidthMap a table containing the width of every possible character, for label length calculation purposes
 	 */
 	constructor(
 		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
 		orientationName: string, rectangularBounds: boolean, area: number,
-		characterWidthMap: Map<string, number>,
+		resources: Map<string, string>, characterWidthMap: Map<string, number>,
 	) {
 		// convert the orientation name into a number of degrees
 		if (orientationName === 'north')
@@ -343,6 +346,7 @@ export class Chart {
 			this.dimensions.bottom + margin,
 		);
 
+		this.resources = resources;
 		this.characterWidthMap = characterWidthMap;
 		this.labelIndex = 0;
 	}
@@ -355,6 +359,7 @@ export class Chart {
 	 * @param color the color scheme
 	 * @param rivers whether to add rivers
 	 * @param borders whether to add state borders
+	 * @param texture whether to draw little trees to indicate the biomes
 	 * @param shading whether to add shaded relief
 	 * @param civLabels whether to label countries
 	 * @param graticule whether to draw a graticule
@@ -367,7 +372,7 @@ export class Chart {
 	       color: string,
 		   rivers: boolean, borders: boolean,
 		   graticule = false, windrose = false,
-		   shading = false,
+		   texture = false, shading = false,
 		   civLabels = false,
 		   fontSize = 3, style: string = '(default)'): {map: VNode, mappedCivs: Civ[] | null} {
 		const bbox = this.dimensions;
@@ -606,6 +611,32 @@ export class Chart {
 				filterSet(surface.tiles, n => n.isWater() && !n.isIceCovered()),
 				svg, 'none', Layer.BIO, waterStroke, 0.7);
 
+		// add some terrain elements for texture
+		if (texture) {
+			const defs = h('defs');
+			svg.children.splice(0, 0, defs);
+			const g = h('g', {id: "texture"});
+			svg.children.push(g);
+			for (const biome of BIOME_COLORS.keys()) {
+				const region = filterSet(surface.tiles, t => t.biome === biome);
+				const textureName = BIOME_NAMES[biome];
+				if (this.resources.has(`textures/${textureName}`) && region.size > 0) {
+					const texture = h('g', {id: `texture-${textureName}`});
+					texture.textContent = this.resources.get(`textures/${textureName}`);
+					defs.children.push(texture);
+					for (const tile of region) {
+						const point = this.projectPoint(tile);
+						if (point !== null) {
+							const {x, y} = point;
+							const picture = h('use', {href: `#texture-${textureName}`, x: `${x}`, y: `${y}`});
+							picture.textContent = this.resources.get(BIOME_NAMES[biome]);
+							g.children.push(picture);
+						}
+					}
+				}
+			}
+		}
+
 		// add relief shadows
 		if (shading) {
 			const g = Chart.createSVGGroup(svg, "shading");
@@ -652,11 +683,10 @@ export class Chart {
 		if (SHOW_TILE_INDICES) {
 			for (const tile of surface.tiles) {
 				const text = h('text'); // start by creating the text element
-				const location = this.projectPath([{type: 'M', args: [tile.φ, tile.λ]}], false, false);
-				if (location.length > 0) {
-					const [x, y] = location[0].args;
-					text.attributes["x"] = `${x}`;
-					text.attributes["y"] = `${y}`;
+				const location = this.projectPoint(tile);
+				if (location !== null) {
+					text.attributes["x"] = `${location.x}`;
+					text.attributes["y"] = `${location.y}`;
 					text.attributes["font-size"] = "0.2em";
 					text.textContent = `${tile.index}`;
 					svg.children.push(text);
@@ -680,12 +710,7 @@ export class Chart {
 			windrose.attributes.transform = `translate(${x}, ${y}) scale(${radius/26})`;
 
 			// load the content from windrose.svg
-			fetch('../../resources/windrose.svg')
-				.then(response => response.text())
-				.then(svgText => {
-					const innerSVG = svgText.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s)[1];
-					windrose.textContent = innerSVG;
-				});
+			windrose.textContent = this.resources.get("windrose");
 		}
 
 		let visible;
@@ -896,6 +921,25 @@ export class Chart {
 			INFINITE_PLANE, closePath,
 		);
 		return scalePath(rotatePath(croppedToMapRegion, this.orientation), this.scale);
+	}
+
+
+	/**
+	 * project a geographic point defined by latitude and longitude to a point on the map defined by x and y,
+	 * accounting for the map domain and the orientation and scale of the map
+	 * @param point
+	 * @return the projected point in Cartesian coordinates (mm), or null if the point falls outside the mapped area.
+	 */
+	projectPoint(point: ΦΛPoint): XYPoint | null {
+		// use the projectPath function, since that's much more general by necessity
+		const result = this.projectPath([{type: 'M', args: [point.φ, point.λ]}], false, false);
+		// then simply extract the coordinates from the result
+		if (result.length === 0)
+			return null;
+		else if (result.length === 1)
+			return {x: result[0].args[0], y: result[0].args[1]};
+		else
+			throw new Error("well that wasn't supposed to happen.");
 	}
 
 
