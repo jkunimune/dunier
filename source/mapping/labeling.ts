@@ -241,7 +241,7 @@ export function resamplePath(path: PathSegment[]): PathSegment[] {
 			const nSegments = Math.ceil(ARC_SEGMENTATION*Math.abs(Δθ));
 			const lineApprox = [];
 			for (let j = 1; j <= nSegments; j ++)
-				lineApprox.push({type: 'L', args: [ // TODO why not use arc segments here?
+				lineApprox.push({type: 'L', args: [
 						c.x + r*Math.cos(θ0 + Δθ*j/nSegments),
 						c.y + r*Math.sin(θ0 + Δθ*j/nSegments)]});
 			path.splice(i, 1, ...lineApprox);
@@ -461,15 +461,10 @@ export function findOpenSpotOnArc(min: number, max: number, wedges: Wedge[]): { 
 			if (next.y < y + pole.radius) { // if the next wedge comes before we run out of space
 				validRegion.erode((next.y - y)); // go up to it
 				y = next.y;
-				if (validRegion.getMinim() >= next.xL && validRegion.getMaxim() <= next.xR) { // if it obstructs the entire remaining area
-					if (validRegion.contains(0)) // pick a remaining spot and return the current heit
-						return {halfWidth: y, location: 0};
-					else
-						return {halfWidth: y, location: validRegion.getClosest(0)}; // TODO I don't need this if-statement; getClosest already does that check
-				}
-				else {
+				if (validRegion.getMinim() >= next.xL && validRegion.getMaxim() <= next.xR) // if it obstructs the entire remaining area
+					return {halfWidth: y, location: validRegion.getClosest(0)};
+				else
 					validRegion.remove(next.xL, next.xR); // or just cover up whatever area it obstructs
-				}
 			}
 			else { // if the next wedge comes too late, find the last remaining point
 				return {location: pole.location, halfWidth: y + pole.radius};
