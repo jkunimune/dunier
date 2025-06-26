@@ -436,9 +436,14 @@ function applyFactbook(map: VNode, mappedCivs: Civ[], tidalLock: boolean, langua
 async function loadSVGResources(...filenames: string[]): Promise<void> {
 	resources = new Map<string, string>();
 	for (const filename of filenames) {
-		const content = await fetch(`../../resources/${filename}.svg`)
-			.then(response => response.text());
-		const innerSVG = content.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s)[1];
+		const response = await fetch(`../../resources/${filename}.svg`);
+		const content = await response.text();
+		const match = content.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s);
+		if (match === null) {
+			console.error(content);
+			throw new Error(`I tried to load resources/${filename}.svg but I didn't seem to get a valid SVG.`);
+		}
+		const innerSVG = match[1];
 		if (innerSVG === null)
 			throw new Error(`what's wrong with ../../resources/${filename}.svg?  I can't read it.`);
 		resources.set(filename, innerSVG);
