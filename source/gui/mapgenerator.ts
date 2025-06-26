@@ -64,8 +64,8 @@ onmessage = (message) => {
 
 loadSVGResources(
 	"windrose",
-	"textures/desert", "textures/forest", "textures/grassland", "textures/jungle", "textures/mountain",
-	"textures/ocean", "textures/steamland", "textures/taiga", "textures/tundra",
+	"textures/desert", "textures/forest", "textures/grassland", "textures/jungle",
+	"textures/steamland", "textures/taiga", "textures/tundra",
 ).then(() => {
 	for (const message of messageQueue)
 		generateFantasyMap(message.data);
