@@ -631,7 +631,6 @@ export class Chart {
 						defs.children.push(texture);
 						for (const {x, y} of poissonDiscSample(polygon, 10)) {
 							const picture = h('use', {href: `#texture-${textureName}`, x: `${x}`, y: `${y}`});
-							picture.textContent = this.resources.get(BIOME_NAMES[biome]);
 							g.children.push(picture);
 						}
 					}
