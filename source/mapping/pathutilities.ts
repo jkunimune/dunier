@@ -500,7 +500,7 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], domai
  * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Point, domain: Domain, successGuaranteed=false): Side {
+export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_PLANE, successGuaranteed=false): Side {
 	let lastM = -Infinity;
 	let lastCurve = -Infinity;
 	for (let i = 0; i < polygon.length; i ++) {
@@ -1105,6 +1105,50 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 		}
 	}
 	return true;
+}
+
+/**
+ * represent a path as faithfully as possible using only 'M'- and 'L'-type segments
+ * @param path the true path segments
+ * @param precision how many line segments to use for a one-radian arc
+ */
+export function polygonize(path: PathSegment[], precision=6): PathSegment[] {
+	let lastMovetoArgs = null;
+	const newPath = [];
+	for (let i = 0; i < path.length; i ++) { // convert it into a simplified polygon
+		if (path[i].type === 'M') {
+			lastMovetoArgs = path[i].args;
+			newPath.push(path[i]);
+		}
+		else if (path[i].type === 'L')
+			newPath.push(path[i]);
+		else if (path[i].type === 'Z') {
+			if (lastMovetoArgs === null)
+				throw new Error("bruh you didn't start the path with a 'M'?");
+			newPath.push({type: 'L', args: lastMovetoArgs});
+		}
+		else if (path[i].type === 'A') { // turn arcs into triscadecagons
+			const start = assert_xy(endpoint(path[i-1]));
+			const end = assert_xy(endpoint(path[i]));
+			const [r1, r2, , largeArcFlag, sweepFlag, , ] = path[i].args;
+			const l = Math.hypot(end.x - start.x, end.y - start.y);
+			const r = (r1 + r2)/2;
+			const c = arcCenter(start, end, r,
+				largeArcFlag !== sweepFlag);
+			const Δθ = 2*Math.asin(l/(2*r)) * ((sweepFlag === 1) ? 1 : -1);
+			const θ0 = Math.atan2(start.y - c.y, start.x - c.x);
+			const nSegments = Math.ceil(precision*Math.abs(Δθ));
+			const lineApprox = [];
+			for (let j = 1; j <= nSegments; j ++)
+				lineApprox.push({type: 'L', args: [
+						c.x + r*Math.cos(θ0 + Δθ*j/nSegments),
+						c.y + r*Math.sin(θ0 + Δθ*j/nSegments)]});
+			newPath.push(...lineApprox);
+		}
+		else
+			throw new Error(`I don't know how to polygonize '${path[i].type}'-type segments`);
+	}
+	return newPath;
 }
 
 /**

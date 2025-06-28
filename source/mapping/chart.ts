@@ -22,6 +22,7 @@ import {
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
 import {h, VNode} from "../gui/virtualdom.js";
+import {poissonDiscSample} from "../utilities/poissondisc.js";
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -619,15 +620,16 @@ export class Chart {
 			svg.children.push(g);
 			for (const biome of BIOME_COLORS.keys()) {
 				const region = filterSet(surface.tiles, t => t.biome === biome);
-				const textureName = BIOME_NAMES[biome];
-				if (this.resources.has(`textures/${textureName}`) && region.size > 0) {
-					const texture = h('g', {id: `texture-${textureName}`});
-					texture.textContent = this.resources.get(`textures/${textureName}`);
-					defs.children.push(texture);
-					for (const tile of region) {
-						const point = this.projectPoint(tile);
-						if (point !== null) {
-							const {x, y} = point;
+				if (region.size > 0) {
+					const polygon = this.projectPath(
+						Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
+						true);
+					const textureName = BIOME_NAMES[biome];
+					if (this.resources.has(`textures/${textureName}`) && polygon.length > 0) {
+						const texture = h('g', {id: `texture-${textureName}`});
+						texture.textContent = this.resources.get(`textures/${textureName}`);
+						defs.children.push(texture);
+						for (const {x, y} of poissonDiscSample(polygon, 10)) {
 							const picture = h('use', {href: `#texture-${textureName}`, x: `${x}`, y: `${y}`});
 							picture.textContent = this.resources.get(BIOME_NAMES[biome]);
 							g.children.push(picture);

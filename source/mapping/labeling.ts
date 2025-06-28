@@ -3,16 +3,15 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {assert_xy, endpoint, PathSegment} from "../utilities/coordinates.js";
-import {arcCenter, Vector} from "../utilities/geometry.js";
+import {Vector} from "../utilities/geometry.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
-import {contains, INFINITE_PLANE} from "./pathutilities.js";
+import {contains, polygonize, INFINITE_PLANE} from "./pathutilities.js";
 import {localizeInRange, longestShortestPath, pathToString, Side} from "../utilities/miscellaneus.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
 
 
 const SIMPLE_PATH_LENGTH = 72; // maximum number of vertices for estimating median axis
-const ARC_SEGMENTATION = 6; // number of line segments into which to break one radian of arc
 const RALF_NUM_CANDIDATES = 6; // number of sizeable longest shortest paths to try using for the label
 
 const DEBUG_FULL_SKELETON = false; // return skeletons instead of usable arcs
@@ -223,29 +222,8 @@ export function resamplePath(path: PathSegment[]): PathSegment[] {
 	if (path[0].type !== 'M')
 		throw new Error(`all paths must start with M; what is ${pathToString(path)}??`);
 
-	// first, copy the input so you don't modify it
-	path = path.slice();
-
-	for (let i = path.length - 1; i >= 1; i --) { // convert it into a simplified polygon
-		if (path[i].type === 'A') { // turn arcs into triscadecagons
-			const start = assert_xy(endpoint(path[i-1]));
-			const end = assert_xy(endpoint(path[i]));
-			const [r1, r2, , largeArcFlag, sweepFlag, , ] = path[i].args;
-			const l = Math.hypot(end.x - start.x, end.y - start.y);
-			const r = (r1 + r2)/2;
-			const c = arcCenter(start, end, r,
-				largeArcFlag !== sweepFlag);
-			const Δθ = 2*Math.asin(l/(2*r)) * ((sweepFlag === 1) ? 1 : -1);
-			const θ0 = Math.atan2(start.y - c.y, start.x - c.x);
-			const nSegments = Math.ceil(ARC_SEGMENTATION*Math.abs(Δθ));
-			const lineApprox = [];
-			for (let j = 1; j <= nSegments; j ++)
-				lineApprox.push({type: 'L', args: [ // TODO why not use arc segments here?
-						c.x + r*Math.cos(θ0 + Δθ*j/nSegments),
-						c.y + r*Math.sin(θ0 + Δθ*j/nSegments)]});
-			path.splice(i, 1, ...lineApprox);
-		}
-	}
+	// first, convert the path to a polygon
+	path = polygonize(path);
 
 	// calculate the perimeter of the shape
 	const segmentLengths = [];

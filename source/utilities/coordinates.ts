@@ -77,6 +77,15 @@ export function assert_xy(location: Point): XYPoint {
 }
 
 /**
+ * rename this point's coordinates from x and y to s and t, so that it can be passed to
+ * generic functions
+ * @param location
+ */
+export function generic(location: XYPoint): Point {
+	return { s: location.x, t: location.y };
+}
+
+/**
  * rename this point's coordinates from s and t to φ and λ, so that it can be passed to
  * geographic functions
  */
