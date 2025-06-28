@@ -6,7 +6,7 @@ import {Random} from "../../utilities/random.js";
 import {binarySearch, linterp, noisyProfile} from "../../utilities/miscellaneus.js";
 import {Culture} from "../culture.js";
 import {Biome} from "../terrain.js";
-import {ΦΛPoint, XYPoint, Point} from "../../utilities/coordinates.js";
+import {ΦΛPoint, XYPoint} from "../../utilities/coordinates.js";
 import {checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector} from "../../utilities/geometry.js";
 import {straightSkeleton} from "../../utilities/straightskeleton.js";
 import {delaunayTriangulate} from "../../utilities/delaunay.js";
@@ -18,38 +18,6 @@ const TILE_AREA = 30000; // target area of a tile in km^2
 const GREEBLE_FACTOR = .35;
 const FINEST_RESOLUTION = 0.1; // km
 const INTEGRATION_RESOLUTION = 32;
-
-
-/**
- * an object that encodes basic topologic information for a 2D coordinate system.
- * it contains bounds, which should be either infinite for a Cartesian coordinate system,
- * or two intervals of width 2π for an angular coordinate system.
- */
-export class Domain {
-	public readonly sMin: number;
-	public readonly sMax: number;
-	public readonly tMin: number;
-	public readonly tMax: number;
-	public readonly isOnEdge: (point: Point) => boolean;
-
-	constructor(sMin: number, sMax: number, tMin: number, tMax: number, isOnEdge: (point: Point) => boolean) {
-		this.sMin = sMin;
-		this.sMax = sMax;
-		this.tMin = tMin;
-		this.tMax = tMax;
-		this.isOnEdge = isOnEdge;
-	}
-
-	isPeriodic() {
-		return Number.isFinite(this.sMin);
-	}
-}
-
-
-/**
- * a domain with no edge and no periodicity in its coordinates
- */
-export const INFINITE_PLANE = new Domain(-Infinity, Infinity, -Infinity, Infinity, (_) => false);
 
 
 /**

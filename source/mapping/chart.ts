@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Domain, Edge, EmptySpace, INFINITE_PLANE, outline, Surface, Tile, Vertex} from "../generation/surface/surface.js";
+import {Edge, EmptySpace, outline, Surface, Tile, Vertex} from "../generation/surface/surface.js";
 import {
 	filterSet, localizeInRange,
 	pathToString, weightedAverage,
@@ -16,7 +16,7 @@ import {Vector} from "../utilities/geometry.js";
 import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
-	convertPathClosuresToZ,
+	convertPathClosuresToZ, Domain, INFINITE_PLANE,
 	intersection, removeLoosePoints, rotatePath, scalePath,
 	transformInput,
 } from "./pathutilities.js";

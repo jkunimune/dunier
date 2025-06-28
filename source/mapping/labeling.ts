@@ -5,8 +5,7 @@
 import {assert_xy, endpoint, PathSegment} from "../utilities/coordinates.js";
 import {arcCenter, Vector} from "../utilities/geometry.js";
 import {delaunayTriangulate} from "../utilities/delaunay.js";
-import {contains} from "./pathutilities.js";
-import {INFINITE_PLANE} from "../generation/surface/surface.js";
+import {contains, INFINITE_PLANE} from "./pathutilities.js";
 import {localizeInRange, longestShortestPath, pathToString, Side} from "../utilities/miscellaneus.js";
 import {circularRegression} from "../utilities/fitting.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";

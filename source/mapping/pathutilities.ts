@@ -19,10 +19,41 @@ import {
 } from "../utilities/geometry.js";
 import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
-import {Domain} from "../generation/surface/surface.js";
 
 
 const π = Math.PI;
+
+
+/**
+ * an object that encodes basic topologic information for a 2D coordinate system.
+ * it contains bounds, which should be either infinite for a Cartesian coordinate system,
+ * or two intervals of width 2π for an angular coordinate system.
+ */
+export class Domain {
+	public readonly sMin: number;
+	public readonly sMax: number;
+	public readonly tMin: number;
+	public readonly tMax: number;
+	public readonly isOnEdge: (point: Point) => boolean;
+
+	constructor(sMin: number, sMax: number, tMin: number, tMax: number, isOnEdge: (point: Point) => boolean) {
+		this.sMin = sMin;
+		this.sMax = sMax;
+		this.tMin = tMin;
+		this.tMax = tMax;
+		this.isOnEdge = isOnEdge;
+	}
+
+	isPeriodic() {
+		return Number.isFinite(this.sMin);
+	}
+}
+
+
+/**
+ * a domain with no edge and no periodicity in its coordinates
+ */
+export const INFINITE_PLANE = new Domain(-Infinity, Infinity, -Infinity, Infinity, (_) => false);
 
 
 /**

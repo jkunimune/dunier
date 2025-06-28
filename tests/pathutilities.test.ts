@@ -8,13 +8,12 @@ import {
 	intersection,
 	encompasses,
 	getEdgeCrossings,
-	isClosed
+	isClosed, Domain, INFINITE_PLANE
 } from "../source/mapping/pathutilities.js";
 import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
 import {LockedDisc} from "../source/generation/surface/lockeddisc.js";
 import {MapProjection} from "../source/mapping/projection.js";
-import {Domain, INFINITE_PLANE} from "../source/generation/surface/surface.js";
 
 const π = Math.PI;
 const plane = INFINITE_PLANE;
