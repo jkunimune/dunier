@@ -618,23 +618,33 @@ export class Chart {
 			svg.children.splice(0, 0, defs);
 			const g = h('g', {id: "texture"});
 			svg.children.push(g);
+			const textureInstances: {x: number, y: number, name: string}[] = [];
+			// for each biome
 			for (const biome of BIOME_COLORS.keys()) {
+				// get the region of the map that needs to be filled
 				const region = filterSet(surface.tiles, t => t.biome === biome);
 				if (region.size > 0) {
 					const polygon = this.projectPath(
 						Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
 						true);
+					// add the relevant texture to the <defs/>
 					const textureName = BIOME_NAMES[biome];
 					if (this.resources.has(`textures/${textureName}`) && polygon.length > 0) {
 						const texture = h('g', {id: `texture-${textureName}`});
 						texture.textContent = this.resources.get(`textures/${textureName}`);
 						defs.children.push(texture);
-						for (const {x, y} of poissonDiscSample(polygon, 10)) {
-							const picture = h('use', {href: `#texture-${textureName}`, x: `${x}`, y: `${y}`});
-							g.children.push(picture);
-						}
+						// and draw points to fill that region
+						for (const {x, y} of poissonDiscSample(polygon, 10))
+							textureInstances.push({x: x, y: y, name: textureName});
 					}
 				}
+			}
+			// make sure zorder is based on y
+			textureInstances.sort((a, b) => a.y - b.y);
+			// then add the things to the map
+			for (const {x, y, name} of textureInstances) {
+				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`});
+				g.children.push(picture);
 			}
 		}
 
