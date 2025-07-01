@@ -7,17 +7,8 @@ import {generic, PathSegment, XYPoint} from "./coordinates.js";
 import {calculatePathBounds, contains} from "../mapping/pathutilities.js";
 
 /**
- * generate a maximal set of random points in a region of a plane
+ * generate a set of random points in a region of a plane
  * where no two points are closer than a given minimum distance.
- * this function uses a modified version of Robert Bridson's algorithm (see [1])
- * that confines samples to a given region and uses the grid to find new samples rather than previus elements.
- * this allows us to ensure we fill all parts of the region even if it's noncontiguus.  the way I've done it
- * does cause grid cells on the region boundary to be a little bit oversampled, but that's probably fine.
- * the region near the edge is always going to be a little oversampled when you're doing maximal sampling,
- * unless you also generate samples outside the boundary, which I'd like to avoid.
- * the algorithm used to identify which cells are feasible is similar to that by Ebeida's et al (see [2]).
- * 1. "Fast Poisson disk sampling in arbitrary dimensions" in the ACM SIGGRAPH 2007 proceedings, DOI: 10.1145/1278780.1278807
- * 2. "Efficient Maximal Poisson-Disk Sampling" in ACM Transactions on Graphics 30, DOI: 10.1145/2010324.1964944
  * @param region the path that defines the bounds of the region to sample
  * @param density the density of points to attempt.  the actual density will be lower if miDistance is nonzero; it will max out somewhere around 0.69minDistance**-2
  * @param minDistance the minimum allowable distance between two samples
