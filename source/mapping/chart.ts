@@ -634,7 +634,7 @@ export class Chart {
 						texture.textContent = this.resources.get(`textures/${textureName}`);
 						defs.children.push(texture);
 						// and draw points to fill that region
-						for (const {x, y} of poissonDiscSample(polygon, 10))
+						for (const {x, y} of poissonDiscSample(polygon, 0.02, 7))
 							textureInstances.push({x: x, y: y, name: textureName});
 					}
 				}
