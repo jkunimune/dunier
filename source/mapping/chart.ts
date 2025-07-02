@@ -24,6 +24,9 @@ import {chooseLabelLocation} from "./labeling.js";
 import {h, VNode} from "../gui/virtualdom.js";
 import {poissonDiscSample} from "../utilities/poissondisc.js";
 
+import TEXTURE_MIXES from "../../resources/texture_mixes.js";
+
+
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
@@ -618,31 +621,51 @@ export class Chart {
 			svg.children.splice(0, 0, defs);
 			const g = h('g', {id: "texture"});
 			svg.children.push(g);
-			const textureInstances: {x: number, y: number, name: string}[] = [];
+			const textureNames = new Set<string>();
+			const symbols: {x: number, y: number, name: string}[] = [];
 			// for each biome
-			for (const biome of BIOME_COLORS.keys()) {
+			for (const textureMix of TEXTURE_MIXES) {
 				// get the region of the map that needs to be filled
+				const biome = BIOME_NAMES.indexOf(textureMix.name);
 				const region = filterSet(surface.tiles, t => t.biome === biome);
 				if (region.size > 0) {
 					const polygon = this.projectPath(
 						Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
 						true);
-					// add the relevant texture to the <defs/>
-					const textureName = BIOME_NAMES[biome];
-					if (this.resources.has(`textures/${textureName}`) && polygon.length > 0) {
-						const texture = h('g', {id: `texture-${textureName}`});
-						texture.textContent = this.resources.get(`textures/${textureName}`);
-						defs.children.push(texture);
-						// and draw points to fill that region
-						for (const {x, y} of poissonDiscSample(polygon, 0.02, 7))
-							textureInstances.push({x: x, y: y, name: textureName});
+					if (polygon.length > 0) {
+						// calculate how many symbols to place
+						let totalDensity = 0;
+						for (const component of textureMix.components) {
+							textureNames.add(component.name);
+							totalDensity += component.density;
+						}
+						// choose the locations
+						const locations = poissonDiscSample(polygon, totalDensity, 5);
+						// and then divvy those locations up among the different components of the texture
+						let index = 0;
+						for (const component of textureMix.components) {
+							const number = Math.round(
+								component.density/totalDensity*(locations.length - index));
+							for (const {x, y} of locations.slice(index, index + number))
+								symbols.push({x: x, y: y, name: component.name});
+							totalDensity -= component.density;
+							index += number;
+						}
 					}
 				}
 			}
+			// add all the relevant textures to the <defs/>
+			for (const textureName of textureNames) {
+				if (!this.resources.has(`textures/${textureName}`))
+					throw new Error(`I couldn't find the texture textures/${textureName}.svg!`);
+				const texture = h('g', {id: `texture-${textureName}`});
+				texture.textContent = this.resources.get(`textures/${textureName}`);
+				defs.children.push(texture);
+			}
 			// make sure zorder is based on y
-			textureInstances.sort((a, b) => a.y - b.y);
+			symbols.sort((a, b) => a.y - b.y);
 			// then add the things to the map
-			for (const {x, y, name} of textureInstances) {
+			for (const {x, y, name} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`});
 				g.children.push(picture);
 			}
