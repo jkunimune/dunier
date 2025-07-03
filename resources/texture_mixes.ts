@@ -9,7 +9,7 @@ export default [
     "name": "jungle",
     "components": [
       {"name": "oak_0", "density": 0.01},
-      {"name": "monkeypod_0", "density": 0.02}
+      {"name": "monkeypod_0", "density": 0.01}
     ]
   },
   {

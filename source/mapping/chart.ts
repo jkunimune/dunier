@@ -638,7 +638,7 @@ export class Chart {
 							totalDensity += component.density;
 						}
 						// choose the locations
-						const locations = poissonDiscSample(polygon, totalDensity, 5, rng);
+						const locations = poissonDiscSample(polygon, 5*totalDensity, Math.sqrt(1/(2*totalDensity)), rng);
 						// and then divvy those locations up among the different components of the texture
 						let index = 0;
 						for (const component of textureMix.components) {
