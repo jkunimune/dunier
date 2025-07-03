@@ -25,6 +25,7 @@ import {h, VNode} from "../gui/virtualdom.js";
 import {poissonDiscSample} from "../utilities/poissondisc.js";
 
 import TEXTURE_MIXES from "../../resources/texture_mixes.js";
+import {Random} from "../utilities/random.js";
 
 
 // DEBUG OPTIONS
@@ -617,10 +618,7 @@ export class Chart {
 
 		// add some terrain elements for texture
 		if (texture) {
-			const defs = h('defs');
-			svg.children.splice(0, 0, defs);
-			const g = h('g', {id: "texture"});
-			svg.children.push(g);
+			const rng = new Random(0);
 			const textureNames = new Set<string>();
 			const symbols: {x: number, y: number, name: string}[] = [];
 			// for each biome
@@ -640,7 +638,7 @@ export class Chart {
 							totalDensity += component.density;
 						}
 						// choose the locations
-						const locations = poissonDiscSample(polygon, totalDensity, 5);
+						const locations = poissonDiscSample(polygon, totalDensity, 5, rng);
 						// and then divvy those locations up among the different components of the texture
 						let index = 0;
 						for (const component of textureMix.components) {
@@ -655,6 +653,8 @@ export class Chart {
 				}
 			}
 			// add all the relevant textures to the <defs/>
+			const defs = h('defs');
+			svg.children.splice(0, 0, defs);
 			for (const textureName of textureNames) {
 				if (!this.resources.has(`textures/${textureName}`))
 					throw new Error(`I couldn't find the texture textures/${textureName}.svg!`);
@@ -665,6 +665,8 @@ export class Chart {
 			// make sure zorder is based on y
 			symbols.sort((a, b) => a.y - b.y);
 			// then add the things to the map
+			const g = h('g', {id: "texture"});
+			svg.children.push(g);
 			for (const {x, y, name} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`});
 				g.children.push(picture);

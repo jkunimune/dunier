@@ -3,6 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {poissonDiscSample} from "../source/utilities/poissondisc.js";
+import {Random} from "../source/utilities/random.js";
 
 test("maximal sampling", () => {
 	const path = [
@@ -12,7 +13,7 @@ test("maximal sampling", () => {
 		{type: 'L', args: [2, 0]},
 		{type: 'L', args: [0, 0]},
 	];
-	const points = poissonDiscSample(path, Infinity, 1);
+	const points = poissonDiscSample(path, Infinity, 1, new Random(0));
 	expect(points.length).toBeGreaterThanOrEqual(4);
 	expect(points.length).toBeLessThanOrEqual(9);
 	for (let i = 0; i < points.length; i ++)

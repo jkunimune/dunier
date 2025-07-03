@@ -5,6 +5,7 @@
 
 import {generic, PathSegment, XYPoint} from "./coordinates.js";
 import {calculatePathBounds, contains} from "../mapping/pathutilities.js";
+import {Random} from "./random.js";
 
 /**
  * generate a set of random points in a region of a plane
@@ -12,11 +13,12 @@ import {calculatePathBounds, contains} from "../mapping/pathutilities.js";
  * @param region the path that defines the bounds of the region to sample
  * @param density the density of points to attempt.  the actual density will be lower if miDistance is nonzero; it will max out somewhere around 0.69minDistance**-2
  * @param minDistance the minimum allowable distance between two samples
+ * @param rng the random number generator
  */
-export function poissonDiscSample(region: PathSegment[], density: number, minDistance: number): XYPoint[] {
+export function poissonDiscSample(region: PathSegment[], density: number, minDistance: number, rng: Random): XYPoint[] {
 	// decide on the area to sample
 	const domainBounds = calculatePathBounds(region);
-	domainBounds.sMin -= minDistance;
+	domainBounds.sMin -= minDistance; // expand the domain area by R so that you don't get points clustering on the edge
 	domainBounds.sMax += minDistance;
 	domainBounds.tMin -= minDistance;
 	domainBounds.tMax += minDistance;
@@ -49,8 +51,8 @@ export function poissonDiscSample(region: PathSegment[], density: number, minDis
 	candidateGeneration:
 	for (let k = 0; k < numCandidates; k ++) {
 		const candidate = {
-			x: grid.xMin + Math.random()*grid.width,
-			y: grid.yMin + Math.random()*grid.height,
+			x: rng.uniform(domainBounds.sMin, domainBounds.sMax),
+			y: rng.uniform(domainBounds.tMin, domainBounds.tMax),
 		};
 		const index = bin(candidate, grid);
 		// make sure it's not too close to any other points
