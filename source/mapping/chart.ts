@@ -141,7 +141,7 @@ const DEPTH_COLORS = [
 
 /** what kind of texturing to apply at what altitudes */
 const ALTITUDE_CLASSES = [
-	{name: "lowland", min: 0.0, max: 1.5},
+	{name: "lowland", min: -Infinity, max: 1.5},
 	{name: "hill", min: 1.5, max: 3.0},
 	{name: "mountain", min: 3.0, max: Infinity},
 ];
@@ -652,9 +652,9 @@ export class Chart {
 			const rng = new Random(0);
 			const textureNames = new Set<string>();
 			const symbols: {x: number, y: number, name: string, fill: string}[] = [];
-			// for each biome except lakes
+			// for each non-aquatic biome
 			for (let biome = 0; biome < BIOME_NAMES.length; biome ++) {
-				if (biome === Biome.LAKE)
+				if ([Biome.LAKE, Biome.OCEAN, Biome.SEA_ICE].includes(biome))
 					continue;
 				// for each altitude within that biome
 				for (const altitudeClass of ALTITUDE_CLASSES) {
