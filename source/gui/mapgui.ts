@@ -83,7 +83,7 @@ function updateEverythingUpTo(target: Layer) {
 	const width = Number.parseFloat(DOM.val('map-width-mm'));
 	const height = Number.parseFloat(DOM.val('map-height-mm'));
 	const focusSpecifier = DOM.val('map-jung');
-	const color = DOM.val('map-color');
+	const colorSchemeName = DOM.val('map-color');
 	const rivers = DOM.checked('map-rivers');
 	const borders = DOM.checked('map-borders');
 	const graticule = DOM.checked('map-graticule');
@@ -99,7 +99,7 @@ function updateEverythingUpTo(target: Layer) {
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
-		color, rivers, borders, texture, shading, civLabels, graticule, windrose, style,
+		colorSchemeName, rivers, borders, texture, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	]);
 	lastUpdated = target;

@@ -48,21 +48,81 @@ const BORDER_SPECIFY_THRESHOLD = 0.3; // the population density at which borders
 const MAP_PRECISION = 10; // max segment length in mm
 const GRATICULE_SPACING = 30; // typical spacing between lines of latitude or longitude in mm
 
-const WHITE = '#FFFFFF';
-const EGGSHELL = '#FAF2E4';
-const LIGHT_GRAY = '#d4cdbf';
-const MEDIUM_GRAY = '#857f77';
-const DARK_GRAY = '#4c473f';
-const CHARCOAL = '#302d28';
-const BLACK = '#000000';
-const BLUE = '#5A7ECA';
-const AZURE = '#cceeff';
-const YELLOW = '#fff9e2';
-const CREAM = '#F9E7D0';
-const TAN = '#E9CFAA';
-const BROWN = '#896b50';
-const RUSSET = '#361907';
-const FUCHSIA = '#FF00FF';
+/** color scheme presets */
+const COLOR_SCHEMES = new Map([
+	['debug', {
+		primaryStroke: '#302d28',
+		waterStroke: '#302d28',
+		secondaryStroke: '#5a554c',
+		waterFill: 'none',
+		landFill: '#FAF2E4',
+		iceFill: 'none',
+	}],
+	['white', {
+		primaryStroke: '#302d28',
+		waterStroke: '#302d28',
+		secondaryStroke: '#5a554c',
+		waterFill: '#FFFFFF',
+		landFill: '#FFFFFF',
+		iceFill: 'none',
+	}],
+	['gray', {
+		primaryStroke: '#302d28',
+		waterStroke: '#4c473f',
+		secondaryStroke: '#5a554c',
+		waterFill: '#d4cdbf',
+		landFill: '#FAF2E4',
+		iceFill: 'none',
+	}],
+	['black', {
+		primaryStroke: '#302d28',
+		waterStroke: '#302d28',
+		secondaryStroke: '#302d28',
+		waterFill: '#302d28',
+		landFill: '#FAF2E4',
+		iceFill: 'none',
+	}],
+	['sepia', {
+		primaryStroke: '#361907',
+		waterStroke: '#361907',
+		secondaryStroke: '#896b50',
+		waterFill: '#E9CFAA',
+		landFill: '#F9E7D0',
+		iceFill: 'none',
+	}],
+	['wikipedia', {
+		primaryStroke: '#4c473f',
+		waterStroke: '#5A7ECA',
+		secondaryStroke: '#857f77',
+		waterFill: '#cceeff',
+		landFill: '#fff7d9',
+		iceFill: 'none',
+	}],
+	['political', {
+		primaryStroke: '#302d28',
+		waterStroke: '#5A7ECA',
+		secondaryStroke: '#5a554c',
+		waterFill: '#cceeff',
+		landFill: '#FAF2E4',
+		iceFill: 'none',
+	}],
+	['physical', {
+		primaryStroke: '#302d28',
+		waterStroke: '#5A7ECA',
+		secondaryStroke: '#4c473f',
+		waterFill: '#5A7ECA',
+		landFill: '#FF00FF',
+		iceFill: '#FFFFFF',
+	}],
+	['heightmap', {
+		primaryStroke: '#302d28',
+		waterStroke: 'rgb(59, 72, 151)',
+		secondaryStroke: '#4c473f',
+		waterFill: '#FF00FF',
+		landFill: '#FF00FF',
+		iceFill: 'none',
+	}],
+]);
 
 /** color scheme for biomes */
 const BIOME_COLORS = new Map([
@@ -376,7 +436,7 @@ export class Chart {
 	 * @param surface the surface that we're mapping
 	 * @param continents some sets of tiles that go nicely together (only used for debugging)
 	 * @param world the world on that surface, if we're mapping human features
-	 * @param color the color scheme
+	 * @param colorSchemeName the color scheme
 	 * @param rivers whether to add rivers
 	 * @param borders whether to add state borders
 	 * @param texture whether to draw little trees to indicate the biomes
@@ -389,7 +449,7 @@ export class Chart {
 	 * @return the SVG on which everything has been drawn, and the list of Civs that are shown in this map
 	 */
 	depict(surface: Surface, continents: Set<Tile>[] | null, world: World | null,
-	       color: string,
+	       colorSchemeName: string,
 		   rivers: boolean, borders: boolean,
 		   graticule = false, windrose = false,
 		   texture = false, shading = false,
@@ -419,85 +479,9 @@ export class Chart {
 			svg.children.push(rectangle);
 		}
 
-		// decide what color the rivers will be
-		let landFill;
-		let waterFill;
-		let iceFill;
-		let waterStroke;
-		let primaryStroke;
-		let secondaryStroke;
-		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE) {
-			landFill = FUCHSIA;
-			waterFill = 'none';
-			iceFill = 'none';
-			waterStroke = CHARCOAL;
-			primaryStroke = CHARCOAL;
-			secondaryStroke = MEDIUM_GRAY;
-		}
-		else if (color === 'white') {
-			landFill = WHITE;
-			waterFill = WHITE;
-			iceFill = 'none';
-			waterStroke = CHARCOAL;
-			primaryStroke = CHARCOAL;
-			secondaryStroke = MEDIUM_GRAY;
-		}
-		else if (color === 'gray') {
-			landFill = EGGSHELL;
-			waterFill = LIGHT_GRAY;
-			iceFill = 'none';
-			waterStroke = DARK_GRAY;
-			primaryStroke = CHARCOAL;
-			secondaryStroke = MEDIUM_GRAY;
-		}
-		else if (color === 'black') {
-			landFill = EGGSHELL;
-			waterFill = CHARCOAL;
-			iceFill = 'none';
-			waterStroke = CHARCOAL;
-			primaryStroke = BLACK;
-			secondaryStroke = CHARCOAL;
-		}
-		else if (color === 'sepia') {
-			landFill = CREAM;
-			waterFill = TAN;
-			iceFill = 'none';
-			waterStroke = RUSSET;
-			primaryStroke = RUSSET;
-			secondaryStroke = BROWN;
-		}
-		else if (color === 'wikipedia') {
-			landFill = YELLOW;
-			waterFill = AZURE;
-			iceFill = 'none';
-			waterStroke = BLUE;
-			primaryStroke = DARK_GRAY;
-			secondaryStroke = MEDIUM_GRAY;
-		}
-		else if (color === 'political') {
-			landFill = EGGSHELL;
-			waterFill = AZURE;
-			iceFill = 'none';
-			waterStroke = BLUE;
-			primaryStroke = DARK_GRAY;
-			secondaryStroke = MEDIUM_GRAY;
-		}
-		else if (color === 'physical') {
-			landFill = FUCHSIA;
-			waterFill = BLUE;
-			iceFill = WHITE;
-			waterStroke = BLUE;
-			primaryStroke = CHARCOAL;
-			secondaryStroke = DARK_GRAY;
-		}
-		else if (color === 'heightmap') {
-			landFill = FUCHSIA;
-			waterFill = FUCHSIA;
-			iceFill = 'none';
-			waterStroke = DEPTH_COLORS[0];
-			primaryStroke = CHARCOAL;
-			secondaryStroke = DARK_GRAY;
-		}
+		let colorScheme = COLOR_SCHEMES.get(colorSchemeName);
+		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
+			colorScheme = COLOR_SCHEMES.get('debug');
 
 		// color in the land
 		if (COLOR_BY_PLATE) {
@@ -509,7 +493,7 @@ export class Chart {
 			}
 		}
 		else if (COLOR_BY_CONTINENT && continents !== null) {
-			this.fill(surface.tiles, svg, EGGSHELL, Layer.GEO);
+			this.fill(surface.tiles, svg, colorScheme.landFill, Layer.GEO);
 			for (let i = 0; i < Math.min(continents.length, COUNTRY_COLORS.length); i ++)
 				this.fill(
 					continents[i],
@@ -520,30 +504,30 @@ export class Chart {
 				this.fill(
 					new Set([tile]),
 					svg, COUNTRY_COLORS[tile.index%COUNTRY_COLORS.length], Layer.GEO,
-					waterStroke, 0.35);
+					colorScheme.waterStroke, 0.35);
 		}
-		else if (color === 'physical') {
+		else if (colorSchemeName === 'physical') {
 			// color the land by biome
 			const g = Chart.createSVGGroup(svg, "biomes");
 			for (const biome of BIOME_COLORS.keys()) {
 				if (biome === Biome.LAKE)
 					this.fill(
 						filterSet(surface.tiles, n => n.biome === biome),
-						g, waterFill, Layer.BIO);
+						g, colorScheme.waterFill, Layer.BIO);
 				else if (biome !== Biome.OCEAN)
 					this.fill(
 						filterSet(surface.tiles, n => n.biome === biome),
 						g, BIOME_COLORS.get(biome), Layer.BIO);
 			}
 		}
-		else if (color === 'political') {
+		else if (colorSchemeName === 'political') {
 			// color the land by country
 			if (world === null)
 				throw new Error("this Chart was asked to color land politicly but the provided World was null");
 			const g = Chart.createSVGGroup(svg, "countries");
 			this.fill(
 				filterSet(surface.tiles, n => !n.isWater()),
-				g, EGGSHELL, Layer.KULTUR);
+				g, colorScheme.landFill, Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
 			let numFilledCivs = 0;
 			for (let i = 0; biggestCivs.length > 0; i++) {
@@ -568,7 +552,7 @@ export class Chart {
 					numFilledCivs ++;
 			}
 		}
-		else if (color === 'heightmap') {
+		else if (colorSchemeName === 'heightmap') {
 			// color the land by altitude
 			const g = Chart.createSVGGroup(svg, "land-contours");
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
@@ -583,18 +567,18 @@ export class Chart {
 			// color in the land with a uniform color
 			this.fill(
 				filterSet(surface.tiles, n => !n.isWater()),
-				svg, landFill, Layer.BIO);
+				svg, colorScheme.landFill, Layer.BIO);
 		}
 
 		// add rivers
 		if (rivers) {
 			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR/this.scale**2;
 			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
-				svg, waterStroke, 1.4, Layer.GEO);
+				svg, colorScheme.waterStroke, 1.4, Layer.GEO);
 		}
 
 		// color in the sea
-		if (color === 'heightmap') {
+		if (colorSchemeName === 'heightmap') {
 			// color in the sea by altitude
 			const g = Chart.createSVGGroup(svg, "sea-contours");
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
@@ -609,14 +593,14 @@ export class Chart {
 			// color in the sea with a uniform color
 			this.fill(
 				filterSet(surface.tiles, n => n.isWater()),
-				svg, waterFill, Layer.GEO);
+				svg, colorScheme.waterFill, Layer.GEO);
 		}
 
 		// also color in sea-ice if desired
-		if (iceFill !== 'none') {
+		if (colorScheme.iceFill !== 'none') {
 			this.fill(
 				filterSet(surface.tiles, n => n.isIceCovered()),
-				svg, iceFill, Layer.BIO);
+				svg, colorScheme.iceFill, Layer.BIO);
 		}
 
 		// add borders
@@ -627,90 +611,26 @@ export class Chart {
 			for (const civ of world.getCivs()) {
 				this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
-					g, 'none', Layer.KULTUR, primaryStroke, 0.7).attributes['pointer-events'] = 'all';
+					g, 'none', Layer.KULTUR, colorScheme.primaryStroke, 0.7).attributes['pointer-events'] = 'all';
 			}
 		}
 
 		// trace the coasts
-		if (iceFill === 'none')
+		if (colorScheme.iceFill === 'none')
 			this.fill(
 				filterSet(surface.tiles, n => n.isWater()),
-				svg, 'none', Layer.BIO, waterStroke, 0.7);
+				svg, 'none', Layer.BIO, colorScheme.waterStroke, 0.7);
 		else
 			this.fill(
 				filterSet(surface.tiles, n => n.isWater() && !n.isIceCovered()),
-				svg, 'none', Layer.BIO, waterStroke, 0.7);
+				svg, 'none', Layer.BIO, colorScheme.waterStroke, 0.7);
 
 		// add some terrain elements for texture
 		if (texture) {
-			const g = Chart.createSVGGroup(svg, "texture");
-			g.attributes.stroke = secondaryStroke;
-
-			const textureMixLookup = new Map<string, {name: string, density: number}[]>();
-			for (const {name, components} of TEXTURE_MIXES)
-				textureMixLookup.set(name, components);
-			const rng = new Random(0);
+			const symbols = this.generateTexture(surface.tiles, colorSchemeName);
 			const textureNames = new Set<string>();
-			const symbols: {x: number, y: number, name: string, fill: string}[] = [];
-			// for each non-aquatic biome
-			for (let biome = 0; biome < BIOME_NAMES.length; biome ++) {
-				if ([Biome.LAKE, Biome.OCEAN, Biome.SEA_ICE].includes(biome))
-					continue;
-				// for each altitude within that biome
-				for (const altitudeClass of ALTITUDE_CLASSES) {
-
-					// get the region of the map that needs to be filled
-					let region = filterSet(surface.tiles, t =>
-						t.biome === biome && t.height >= altitudeClass.min && t.height < altitudeClass.max);
-					if (region.size > 0) {
-						const polygon = this.projectPath(
-							Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
-							true);
-						if (polygon.length > 0) {
-							let fill;
-							if (color === 'physical')
-								fill = BIOME_COLORS.get(biome);
-							else
-								fill = landFill;
-
-							// get the plant texture
-							const plantComponents = textureMixLookup.has(BIOME_NAMES[biome]) ?
-								textureMixLookup.get(BIOME_NAMES[biome]) : [];
-							let plantDensity = 0;
-							for (const plant of plantComponents) {
-								textureNames.add(plant.name);
-								plantDensity += plant.density;
-							}
-							// get the topographic texture
-							const rockComponents = textureMixLookup.get(altitudeClass.name);
-							let rockDensity = 0;
-							for (const rock of rockComponents) {
-								textureNames.add(rock.name);
-								rockDensity += rock.density;
-							}
-							// put them together, and scale the plant density to make room for the rocks
-							let totalDensity = Math.max(plantDensity, rockDensity);
-							const plantFactor = (totalDensity - rockDensity)/plantDensity;
-							const components = rockComponents.slice();
-							for (const {name, density} of plantComponents)
-								components.push({name: name, density: density*plantFactor});
-
-							// choose the locations
-							const locations = poissonDiscSample(polygon, 5*totalDensity, Math.sqrt(1/(2*totalDensity)), rng);
-							// and then divvy those locations up among the different components of the texture
-							let index = 0;
-							for (const {name, density} of components) {
-								const number = Math.round(
-									density/totalDensity*(locations.length - index));
-								for (const {x, y} of locations.slice(index, index + number))
-									symbols.push({x: x, y: y, name: name, fill: fill});
-								totalDensity -= density;
-								index += number;
-							}
-						}
-					}
-				}
-			}
+			for (const symbol of symbols)
+				textureNames.add(symbol.name);
 
 			// add all the relevant textures to the <defs/>
 			const defs = h('defs');
@@ -723,9 +643,9 @@ export class Chart {
 				defs.children.push(texture);
 			}
 
-			// make sure zorder is based on y
-			symbols.sort((a, b) => a.y - b.y);
 			// then add the things to the map
+			const g = Chart.createSVGGroup(svg, "texture");
+			g.attributes.stroke = colorScheme.secondaryStroke;
 			for (const {x, y, name, fill} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
 				g.children.push(picture);
@@ -741,7 +661,7 @@ export class Chart {
 		// add the graticule
 		if (graticule) {
 			const graticule = Chart.createSVGGroup(svg, "graticule");
-			graticule.attributes.style = `fill:none; stroke:${primaryStroke}; stroke-width:0.35`;
+			graticule.attributes.style = `fill:none; stroke:${colorScheme.primaryStroke}; stroke-width:0.35`;
 			let Δφ = GRATICULE_SPACING/this.latitudeScale;
 			Δφ = Math.PI/2/Math.max(1, Math.round(Math.PI/2/Δφ));
 			const φInit = Math.ceil(this.φMin/Δφ)*Δφ;
@@ -871,6 +791,78 @@ export class Chart {
 		path.attributes.style =
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: round;`;
 		return path;
+	}
+
+	/**
+	 * describe a bunch of random symbols to put on the map to indicate biome and elevation
+	 * @param tiles the tiles being textured
+	 * @param colorSchemeName the color scheme
+	 */
+	generateTexture(tiles: Set<Tile>, colorSchemeName: string): {name: string, x: number, y: number, fill: string}[] {
+		const textureMixLookup = new Map<string, {name: string, density: number}[]>();
+		for (const {name, components} of TEXTURE_MIXES)
+			textureMixLookup.set(name, components);
+		const rng = new Random(0);
+		const symbols: {x: number, y: number, name: string, fill: string}[] = [];
+		// for each non-aquatic biome
+		for (let biome = 0; biome < BIOME_NAMES.length; biome ++) {
+			if ([Biome.LAKE, Biome.OCEAN, Biome.SEA_ICE].includes(biome))
+				continue;
+			// for each altitude within that biome
+			for (const altitudeClass of ALTITUDE_CLASSES) {
+
+				// get the region of the map that needs to be filled
+				let region = filterSet(tiles, t =>
+					t.biome === biome && t.height >= altitudeClass.min && t.height < altitudeClass.max);
+				if (region.size > 0) {
+					const polygon = this.projectPath(
+						Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
+						true);
+					if (polygon.length > 0) {
+						let fill;
+						if (colorSchemeName === 'physical')
+							fill = BIOME_COLORS.get(biome);
+						else
+							fill = COLOR_SCHEMES.get(colorSchemeName).landFill;
+
+						// get the plant texture
+						const plantComponents = textureMixLookup.has(BIOME_NAMES[biome]) ?
+							textureMixLookup.get(BIOME_NAMES[biome]) : [];
+						let plantDensity = 0;
+						for (const plant of plantComponents)
+							plantDensity += plant.density;
+						// get the topographic texture
+						const rockComponents = textureMixLookup.get(altitudeClass.name);
+						let rockDensity = 0;
+						for (const rock of rockComponents)
+							rockDensity += rock.density;
+						// put them together, and scale the plant density to make room for the rocks
+						let totalDensity = Math.max(plantDensity, rockDensity);
+						const plantFactor = (totalDensity - rockDensity)/plantDensity;
+						const components = rockComponents.slice();
+						for (const {name, density} of plantComponents)
+							components.push({name: name, density: density*plantFactor});
+
+						// choose the locations
+						const locations = poissonDiscSample(polygon, 5*totalDensity, Math.sqrt(1/(2*totalDensity)), rng);
+						// and then divvy those locations up among the different components of the texture
+						let index = 0;
+						for (const {name, density} of components) {
+							const number = Math.round(
+								density/totalDensity*(locations.length - index));
+							for (const {x, y} of locations.slice(index, index + number))
+								symbols.push({x: x, y: y, name: name, fill: fill});
+							totalDensity -= density;
+							index += number;
+						}
+					}
+				}
+			}
+		}
+
+		// make sure zorder is based on y
+		symbols.sort((a, b) => a.y - b.y);
+		return symbols;
 	}
 
 	/**
