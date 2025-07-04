@@ -1,21 +1,14 @@
 export default [
   {
-    "name": "forest",
-    "components": [
-      {"name": "oak_0", "density": 0.01}
-    ]
-  },
-  {
-    "name": "jungle",
-    "components": [
-      {"name": "oak_0", "density": 0.01},
-      {"name": "monkeypod_0", "density": 0.01}
-    ]
-  },
-  {
     "name": "desert",
     "components": [
       {"name": "cactus_0", "density": 0.002}
+    ]
+  },
+  {
+    "name": "forest",
+    "components": [
+      {"name": "oak_0", "density": 0.01}
     ]
   },
   {
@@ -26,9 +19,29 @@ export default [
     ]
   },
   {
-    "name": "tundra",
+    "name": "hill",
     "components": [
-      {"name": "grass_0", "density": 0.005}
+      {"name": "mountain_0", "density": 0.005}
+    ]
+  },
+  {
+    "name": "jungle",
+    "components": [
+      {"name": "oak_0", "density": 0.01},
+      {"name": "monkeypod_0", "density": 0.01}
+    ]
+  },
+  {
+    "name": "mountain",
+    "components": [
+      {"name": "mountain_0", "density": 0.015}
+    ]
+  },
+  {
+    "name": "steamland",
+    "components": [
+      {"name": "grass_0", "density": 0.005},
+      {"name": "stick_0", "density": 0.01}
     ]
   },
   {
@@ -38,10 +51,9 @@ export default [
     ]
   },
   {
-    "name": "steamland",
+    "name": "tundra",
     "components": [
-      {"name": "grass_0", "density": 0.005},
-      {"name": "stick_0", "density": 0.01}
+      {"name": "grass_0", "density": 0.005}
     ]
   }
 ]

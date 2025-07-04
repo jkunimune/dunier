@@ -624,8 +624,15 @@ export class Chart {
 			// for each biome
 			for (const textureMix of TEXTURE_MIXES) {
 				// get the region of the map that needs to be filled
-				const biome = BIOME_NAMES.indexOf(textureMix.name);
-				const region = filterSet(surface.tiles, t => t.biome === biome);
+				let region: Set<Tile>;
+				if (textureMix.name === "mountain")
+					region = filterSet(surface.tiles, t => t.height >= 3.0);
+				else if (textureMix.name === "hill")
+					region = filterSet(surface.tiles, t => t.height >= 1.5 && t.height < 3.0);
+				else {
+					const biome = BIOME_NAMES.indexOf(textureMix.name);
+					region = filterSet(surface.tiles, t => t.height < 3.0 && t.biome === biome);
+				}
 				if (region.size > 0) {
 					const polygon = this.projectPath(
 						Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
