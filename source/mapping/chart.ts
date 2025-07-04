@@ -51,15 +51,16 @@ const GRATICULE_SPACING = 30; // typical spacing between lines of latitude or lo
 const WHITE = '#FFFFFF';
 const EGGSHELL = '#FAF2E4';
 const LIGHT_GRAY = '#d4cdbf';
+const MEDIUM_GRAY = '#857f77';
 const DARK_GRAY = '#4c473f';
 const CHARCOAL = '#302d28';
 const BLACK = '#000000';
 const BLUE = '#5A7ECA';
 const AZURE = '#cceeff';
 const YELLOW = '#fff9e2';
-// const BEIGE = '#E9CFAA';
 const CREAM = '#F9E7D0';
 const TAN = '#E9CFAA';
+const BROWN = '#896b50';
 const RUSSET = '#361907';
 const FUCHSIA = '#FF00FF';
 
@@ -423,69 +424,79 @@ export class Chart {
 		let waterFill;
 		let iceFill;
 		let waterStroke;
-		let borderStroke;
+		let primaryStroke;
+		let secondaryStroke;
 		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE) {
 			landFill = FUCHSIA;
 			waterFill = 'none';
 			iceFill = 'none';
 			waterStroke = CHARCOAL;
-			borderStroke = CHARCOAL;
+			primaryStroke = CHARCOAL;
+			secondaryStroke = MEDIUM_GRAY;
 		}
 		else if (color === 'white') {
 			landFill = WHITE;
 			waterFill = WHITE;
 			iceFill = 'none';
 			waterStroke = CHARCOAL;
-			borderStroke = CHARCOAL;
+			primaryStroke = CHARCOAL;
+			secondaryStroke = MEDIUM_GRAY;
 		}
 		else if (color === 'gray') {
 			landFill = EGGSHELL;
 			waterFill = LIGHT_GRAY;
 			iceFill = 'none';
 			waterStroke = DARK_GRAY;
-			borderStroke = CHARCOAL;
+			primaryStroke = CHARCOAL;
+			secondaryStroke = MEDIUM_GRAY;
 		}
 		else if (color === 'black') {
 			landFill = EGGSHELL;
 			waterFill = CHARCOAL;
 			iceFill = 'none';
 			waterStroke = CHARCOAL;
-			borderStroke = BLACK;
+			primaryStroke = BLACK;
+			secondaryStroke = CHARCOAL;
 		}
 		else if (color === 'sepia') {
 			landFill = CREAM;
 			waterFill = TAN;
 			iceFill = 'none';
 			waterStroke = RUSSET;
-			borderStroke = RUSSET;
+			primaryStroke = RUSSET;
+			secondaryStroke = BROWN;
 		}
 		else if (color === 'wikipedia') {
 			landFill = YELLOW;
 			waterFill = AZURE;
 			iceFill = 'none';
 			waterStroke = BLUE;
-			borderStroke = DARK_GRAY;
+			primaryStroke = DARK_GRAY;
+			secondaryStroke = MEDIUM_GRAY;
 		}
 		else if (color === 'political') {
 			landFill = EGGSHELL;
 			waterFill = AZURE;
 			iceFill = 'none';
 			waterStroke = BLUE;
-			borderStroke = DARK_GRAY;
+			primaryStroke = DARK_GRAY;
+			secondaryStroke = MEDIUM_GRAY;
 		}
 		else if (color === 'physical') {
 			landFill = FUCHSIA;
 			waterFill = BLUE;
 			iceFill = WHITE;
 			waterStroke = BLUE;
-			borderStroke = CHARCOAL;
+			primaryStroke = CHARCOAL;
+			secondaryStroke = DARK_GRAY;
 		}
 		else if (color === 'heightmap') {
 			landFill = FUCHSIA;
 			waterFill = FUCHSIA;
 			iceFill = 'none';
 			waterStroke = DEPTH_COLORS[0];
-			borderStroke = CHARCOAL;
+			primaryStroke = CHARCOAL;
+			secondaryStroke = DARK_GRAY;
 		}
 
 		// color in the land
@@ -616,7 +627,7 @@ export class Chart {
 			for (const civ of world.getCivs()) {
 				this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
-					g, 'none', Layer.KULTUR, borderStroke, 0.7).attributes['pointer-events'] = 'all';
+					g, 'none', Layer.KULTUR, primaryStroke, 0.7).attributes['pointer-events'] = 'all';
 			}
 		}
 
@@ -632,12 +643,15 @@ export class Chart {
 
 		// add some terrain elements for texture
 		if (texture) {
+			const g = Chart.createSVGGroup(svg, "texture");
+			g.attributes.stroke = secondaryStroke;
+
 			const textureMixLookup = new Map<string, {name: string, density: number}[]>();
 			for (const {name, components} of TEXTURE_MIXES)
 				textureMixLookup.set(name, components);
 			const rng = new Random(0);
 			const textureNames = new Set<string>();
-			const symbols: {x: number, y: number, name: string}[] = [];
+			const symbols: {x: number, y: number, name: string, fill: string}[] = [];
 			// for each biome except lakes
 			for (let biome = 0; biome < BIOME_NAMES.length; biome ++) {
 				if (biome === Biome.LAKE)
@@ -653,6 +667,11 @@ export class Chart {
 							Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
 							true);
 						if (polygon.length > 0) {
+							let fill;
+							if (color === 'physical')
+								fill = BIOME_COLORS.get(biome);
+							else
+								fill = landFill;
 
 							// get the plant texture
 							const plantComponents = textureMixLookup.has(BIOME_NAMES[biome]) ?
@@ -684,7 +703,7 @@ export class Chart {
 								const number = Math.round(
 									density/totalDensity*(locations.length - index));
 								for (const {x, y} of locations.slice(index, index + number))
-									symbols.push({x: x, y: y, name: name});
+									symbols.push({x: x, y: y, name: name, fill: fill});
 								totalDensity -= density;
 								index += number;
 							}
@@ -703,14 +722,12 @@ export class Chart {
 				texture.textContent = this.resources.get(`textures/${textureName}`);
 				defs.children.push(texture);
 			}
-			
+
 			// make sure zorder is based on y
 			symbols.sort((a, b) => a.y - b.y);
 			// then add the things to the map
-			const g = h('g', {id: "texture"});
-			svg.children.push(g);
-			for (const {x, y, name} of symbols) {
-				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`});
+			for (const {x, y, name, fill} of symbols) {
+				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
 				g.children.push(picture);
 			}
 		}
@@ -724,7 +741,7 @@ export class Chart {
 		// add the graticule
 		if (graticule) {
 			const graticule = Chart.createSVGGroup(svg, "graticule");
-			graticule.attributes.style = `fill:none; stroke:${borderStroke}; stroke-width:0.35`;
+			graticule.attributes.style = `fill:none; stroke:${primaryStroke}; stroke-width:0.35`;
 			let Δφ = GRATICULE_SPACING/this.latitudeScale;
 			Δφ = Math.PI/2/Math.max(1, Math.round(Math.PI/2/Δφ));
 			const φInit = Math.ceil(this.φMin/Δφ)*Δφ;
