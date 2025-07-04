@@ -32,6 +32,10 @@ export default [
     ]
   },
   {
+    "name": "lowland",
+    "components": []
+  },
+  {
     "name": "mountain",
     "components": [
       {"name": "mountain_0", "density": 0.015}

@@ -63,6 +63,7 @@ const TAN = '#E9CFAA';
 const RUSSET = '#361907';
 const FUCHSIA = '#FF00FF';
 
+/** color scheme for biomes */
 const BIOME_COLORS = new Map([
 	[Biome.LAKE,      '#5A7ECA'],
 	[Biome.JUNGLE,    '#82C17A'],
@@ -76,6 +77,7 @@ const BIOME_COLORS = new Map([
 	[Biome.SEA_ICE,   '#FFFFFF'],
 ]);
 
+/** color scheme for political maps */
 const COUNTRY_COLORS = [
 	'rgb(230, 169, 187)',
 	'rgb(143, 211, 231)',
@@ -115,7 +117,9 @@ const COUNTRY_COLORS = [
 	'rgb(131, 196, 219)',
 ];
 
+/** spacing between topographic contours */
 const ALTITUDE_STEP = 0.5;
+/** colormap for above-sea-level elevation */
 const ALTITUDE_COLORS = [
 	'rgb(114, 184, 91)',
 	'rgb(153, 192, 94)',
@@ -124,7 +128,9 @@ const ALTITUDE_COLORS = [
 	'rgb(229, 225, 162)',
 	'rgb(243, 240, 201)',
 ];
+/** spacing between bathymetric contours */
 const DEPTH_STEP = 1.0;
+/** coloramp for below-sea-level elevation */
 const DEPTH_COLORS = [
 	'rgb(85, 165, 178)',
 	'rgb(37, 138, 178)',
@@ -132,6 +138,14 @@ const DEPTH_COLORS = [
 	'rgb(59, 72, 151)',
 ];
 
+/** what kind of texturing to apply at what altitudes */
+const ALTITUDE_CLASSES = [
+	{name: "lowland", min: 0.0, max: 1.5},
+	{name: "hill", min: 1.5, max: 3.0},
+	{name: "mountain", min: 3.0, max: Infinity},
+];
+
+/** a type of area feature with a particular greebling profile */
 enum Layer {
 	/** geographic regions – greeble everything */
 	GEO,
@@ -618,47 +632,67 @@ export class Chart {
 
 		// add some terrain elements for texture
 		if (texture) {
+			const textureMixLookup = new Map<string, {name: string, density: number}[]>();
+			for (const {name, components} of TEXTURE_MIXES)
+				textureMixLookup.set(name, components);
 			const rng = new Random(0);
 			const textureNames = new Set<string>();
 			const symbols: {x: number, y: number, name: string}[] = [];
-			// for each biome
-			for (const textureMix of TEXTURE_MIXES) {
-				// get the region of the map that needs to be filled
-				let region: Set<Tile>;
-				if (textureMix.name === "mountain")
-					region = filterSet(surface.tiles, t => t.height >= 3.0);
-				else if (textureMix.name === "hill")
-					region = filterSet(surface.tiles, t => t.height >= 1.5 && t.height < 3.0);
-				else {
-					const biome = BIOME_NAMES.indexOf(textureMix.name);
-					region = filterSet(surface.tiles, t => t.height < 3.0 && t.biome === biome);
-				}
-				if (region.size > 0) {
-					const polygon = this.projectPath(
-						Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
-						true);
-					if (polygon.length > 0) {
-						// calculate how many symbols to place
-						let totalDensity = 0;
-						for (const component of textureMix.components) {
-							textureNames.add(component.name);
-							totalDensity += component.density;
-						}
-						// choose the locations
-						const locations = poissonDiscSample(polygon, 5*totalDensity, Math.sqrt(1/(2*totalDensity)), rng);
-						// and then divvy those locations up among the different components of the texture
-						let index = 0;
-						for (const component of textureMix.components) {
-							const number = Math.round(
-								component.density/totalDensity*(locations.length - index));
-							for (const {x, y} of locations.slice(index, index + number))
-								symbols.push({x: x, y: y, name: component.name});
-							totalDensity -= component.density;
-							index += number;
+			// for each biome except lakes
+			for (let biome = 0; biome < BIOME_NAMES.length; biome ++) {
+				if (biome === Biome.LAKE)
+					continue;
+				// for each altitude within that biome
+				for (const altitudeClass of ALTITUDE_CLASSES) {
+
+					// get the region of the map that needs to be filled
+					let region = filterSet(surface.tiles, t =>
+						t.biome === biome && t.height >= altitudeClass.min && t.height < altitudeClass.max);
+					if (region.size > 0) {
+						const polygon = this.projectPath(
+							Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
+							true);
+						if (polygon.length > 0) {
+
+							// get the plant texture
+							const plantComponents = textureMixLookup.has(BIOME_NAMES[biome]) ?
+								textureMixLookup.get(BIOME_NAMES[biome]) : [];
+							let plantDensity = 0;
+							for (const plant of plantComponents) {
+								textureNames.add(plant.name);
+								plantDensity += plant.density;
+							}
+							// get the topographic texture
+							const rockComponents = textureMixLookup.get(altitudeClass.name);
+							let rockDensity = 0;
+							for (const rock of rockComponents) {
+								textureNames.add(rock.name);
+								rockDensity += rock.density;
+							}
+							// put them together, and scale the plant density to make room for the rocks
+							let totalDensity = Math.max(plantDensity, rockDensity);
+							const plantFactor = (totalDensity - rockDensity)/plantDensity;
+							const components = rockComponents.slice();
+							for (const {name, density} of plantComponents)
+								components.push({name: name, density: density*plantFactor});
+
+							// choose the locations
+							const locations = poissonDiscSample(polygon, 5*totalDensity, Math.sqrt(1/(2*totalDensity)), rng);
+							// and then divvy those locations up among the different components of the texture
+							let index = 0;
+							for (const {name, density} of components) {
+								const number = Math.round(
+									density/totalDensity*(locations.length - index));
+								for (const {x, y} of locations.slice(index, index + number))
+									symbols.push({x: x, y: y, name: name});
+								totalDensity -= density;
+								index += number;
+							}
 						}
 					}
 				}
 			}
+
 			// add all the relevant textures to the <defs/>
 			const defs = h('defs');
 			svg.children.splice(0, 0, defs);
@@ -669,6 +703,7 @@ export class Chart {
 				texture.textContent = this.resources.get(`textures/${textureName}`);
 				defs.children.push(texture);
 			}
+			
 			// make sure zorder is based on y
 			symbols.sort((a, b) => a.y - b.y);
 			// then add the things to the map
