@@ -8,7 +8,7 @@ import {
 	intersection,
 	encompasses,
 	getEdgeCrossings,
-	isClosed, Domain, INFINITE_PLANE
+	isClosed, Domain, INFINITE_PLANE, polygonize, decimate
 } from "../source/mapping/pathutilities.js";
 import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
@@ -1387,4 +1387,75 @@ describe("applyProjectionToPath", () => {
 		]);
 	});
 
+});
+
+
+describe("polygonize", () => {
+	test("empty", () => {
+		expect(polygonize([], 6)).toEqual([]);
+	});
+	test("arc", () => {
+		const path = [
+			{type: 'M', args: [1, 0]},
+			{type: 'A', args: [1, 1, 0, 0, 1, -1, 0]},
+		];
+		const expectation = [];
+		for (let i = 0; i <= 19; i ++)
+			expectation.push({
+				type: (i === 0) ? 'M' : 'L',
+				args: [
+					expect.closeTo(Math.cos(i/19*Math.PI)),
+					expect.closeTo(Math.sin(i/19*Math.PI)),
+				],
+			});
+		expect(polygonize(path, 6)).toEqual(expectation);
+	});
+});
+
+describe("decimate", () => {
+	test("zig zag", () => {
+		expect(decimate([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 1]},
+			{type: 'L', args: [2, 0]},
+			{type: 'L', args: [3, 0.01]},
+			{type: 'L', args: [4, -0.01]},
+			{type: 'L', args: [5, 0]},
+		], 0.1)).toEqual([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 1]},
+			{type: 'L', args: [2, 0]},
+			{type: 'L', args: [5, 0]},
+		]);
+	});
+	test("two curves", () => {
+		expect(decimate([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 0]},
+			{type: 'L', args: [2, 0]},
+			{type: 'M', args: [3, 0]},
+			{type: 'L', args: [4, 0]},
+			{type: 'L', args: [5, 0]},
+		], 0.1)).toEqual([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [2, 0]},
+			{type: 'M', args: [3, 0]},
+			{type: 'L', args: [5, 0]},
+		]);
+	});
+	test("arc", () => {
+		expect(decimate([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 0]},
+			{type: 'L', args: [2, 0]},
+			{type: 'A', args: [100, 100, 0, 0, 0, 3, 0]},
+			{type: 'L', args: [4, 0]},
+			{type: 'L', args: [5, 0]},
+		], 0.1)).toEqual([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [2, 0]},
+			{type: 'A', args: [100, 100, 0, 0, 0, 3, 0]},
+			{type: 'L', args: [5, 0]},
+		]);
+	});
 });

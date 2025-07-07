@@ -102,7 +102,8 @@ function generateFantasyMap(args: any[]): void {
 	let colorSchemeName: string;
 	let rivers: boolean;
 	let borders: boolean;
-	let texture: boolean;
+	let landTexture: boolean;
+	let seaTexture: boolean;
 	let shading: boolean;
 	let civLabels: boolean;
 	let graticule: boolean;
@@ -114,7 +115,7 @@ function generateFantasyMap(args: any[]): void {
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, selectedFocusOption,
-		colorSchemeName, rivers, borders, texture, shading, civLabels, graticule, windrose, style,
+		colorSchemeName, rivers, borders, landTexture, seaTexture, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	] = args;
 
@@ -138,7 +139,8 @@ function generateFantasyMap(args: any[]): void {
 	if (target >= Layer.MAP && lastUpdated < Layer.MAP)
 		[map, mappedCivs] = applyMap(
 			projectionName, orientation, rectangularBounds, width, height, selectedFocusOption,
-			colorSchemeName, rivers, borders, graticule, windrose, texture, shading, civLabels, style);
+			colorSchemeName, rivers, borders, graticule, windrose, landTexture, seaTexture, shading,
+			civLabels, style);
 	if (target >= Layer.FACTBOOK && lastUpdated < Layer.FACTBOOK)
 		factbook = applyFactbook(map, mappedCivs, tidallyLocked, language, style);
 
@@ -334,7 +336,8 @@ function listFocusOptions(continents: Set<Tile>[], world: World, selectedFocusOp
  * @param colorSchemeName the color scheme
  * @param rivers whether to add rivers
  * @param borders whether to add state borders
- * @param texture whether to draw little trees to indicate the biomes
+ * @param landTexture whether to draw little trees to indicate the biomes
+ * @param seaTexture whether to draw horizontal lines by the coast
  * @param shading whether to add shaded relief
  * @param civLabels whether to label countries
  * @param graticule whether to draw a graticule
@@ -345,7 +348,8 @@ function applyMap(
 	projectionName: string, orientation: string,
 	rectangularBounds: boolean, width: number, height: number, focusSpecifier: string,
 	colorSchemeName: string, rivers: boolean, borders: boolean, graticule: boolean, windrose: boolean,
-	texture: boolean, shading: boolean, civLabels: boolean, style: string): [VNode, Civ[]] {
+	landTexture: boolean, seaTexture: boolean, shading: boolean, civLabels: boolean,
+	style: string): [VNode, Civ[]] {
 
 	console.log("grafa zemgrafe...");
 
@@ -394,7 +398,8 @@ function applyMap(
 		borders,
 		graticule,
 		windrose,
-		texture,
+		landTexture,
+		seaTexture,
 		shading,
 		civLabels,
 		FONT_SIZE*0.35, // convert to mm

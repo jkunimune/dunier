@@ -13,6 +13,9 @@ import {
 	localizeInRange, longestShortestPath, Matrix, pathToString,
 	tanh, union, weightedAverage
 } from "../source/utilities/miscellaneus.js";
+import {poissonDiscSample} from "../source/utilities/poissondisc.js";
+import {Random} from "../source/utilities/random.js";
+import {offset} from "../source/utilities/offset.js";
 
 describe("argmax()", () => {
 	test("empty", () => {
@@ -344,4 +347,70 @@ describe("Matrix", () => {
 			for (let j = 0; j < expected.n; j ++)
 				expect(actual.get(i, j)).toBeCloseTo(expected.get(i, j));
 	});
+});
+
+test("poissonDisc()", () => {
+	const path = [
+		{type: 'M', args: [0, 0]},
+		{type: 'L', args: [0, 4]},
+		{type: 'L', args: [4, 4]},
+		{type: 'L', args: [4, 0]},
+		{type: 'L', args: [0, 0]},
+	];
+	const points = poissonDiscSample(path, Infinity, 1, new Random(0));
+	expect(points.length).toBeGreaterThanOrEqual(4);
+	expect(points.length).toBeLessThanOrEqual(23);
+	for (let i = 0; i < points.length; i ++)
+		for (let j = 0; j < i; j ++)
+			expect(Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y)).toBeGreaterThanOrEqual(1);
+});
+
+test("offset()", () => {
+	const path = [
+		{type: 'M', args: [0, 0]},
+		{type: 'L', args: [0, 12]},
+		{type: 'L', args: [1, 12]},
+		{type: 'A', args: [2, 2, 0, 0, 0, 1, 8]},
+		{type: 'L', args: [1, 2]},
+		{type: 'A', args: [1, 1, 0, 0, 1, 2, 1]},
+		{type: 'L', args: [5, 1]},
+		{type: 'A', args: [4, 4, 0, 0, 1, 9, 5]},
+		{type: 'L', args: [9, 8]},
+		{type: 'A', args: [2, 2, 0, 0, 0, 9, 12]},
+		{type: 'L', args: [10, 12]},
+		{type: 'L', args: [10, 0]},
+		{type: 'L', args: [0, 0]},
+		{type: 'M', args: [13, 15]},
+		{type: 'L', args: [13, 16]},
+		{type: 'L', args: [14, 16]},
+		{type: 'L', args: [14, 15]},
+		{type: 'L', args: [13, 15]},
+	];
+	expect(offset(path, 3)).toEqual([
+		{type: 'M', args: [-3, 0]},
+		{type: 'L', args: [-3, 12]},
+		{type: 'A', args: [3, 3, 0, 0, 0, 0, 15]},
+		{type: 'L', args: [1, 15]},
+		{type: 'A', args: [5, 5, 0, 0, 0, 5, 13]},
+		{type: 'A', args: [5, 5, 0, 0, 0, 9, 15]},
+		{type: 'L', args: [10, 15]},
+		{type: 'L', args: [10, 16]},
+		{type: 'A', args: [3, 3, 0, 0, 0, 13, 19]},
+		{type: 'L', args: [14, 19]},
+		{type: 'A', args: [3, 3, 0, 0, 0, 17, 16]},
+		{type: 'L', args: [17, 15]},
+		{type: 'A', args: [3, 3, 0, 0, 0, 14, 12]},
+		{type: 'L', args: [13, 12]},
+		{type: 'L', args: [13, 0]},
+		{type: 'A', args: [3, 3, 0, 0, 0, 10, -3]},
+		{type: 'L', args: [0, -3]},
+		{type: 'A', args: [3, 3, 0, 0, 0, -3, 0]},
+		{type: 'M', args: [5, 7]},
+		{type: 'A', args: [5, 5, 0, 0, 0, 4, 6]},
+		{type: 'L', args: [4, 4]},
+		{type: 'L', args: [5, 4]},
+		{type: 'A', args: [1, 1, 0, 0, 1, 6, 5]},
+		{type: 'L', args: [6, 6]},
+		{type: 'A', args: [5, 5, 0, 0, 0, 5, 7]},
+	]);
 });

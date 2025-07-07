@@ -15,13 +15,16 @@ import {
 	angleSign,
 	arcCenter,
 	lineArcIntersections,
-	lineLineIntersection
+	lineLineIntersection, lineSegmentDistance
 } from "../utilities/geometry.js";
 import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
 
 
 const π = Math.PI;
+
+
+// TODO: this should probably be in utilities/, and it should probably include pathToString and other functions like that.
 
 
 /**
@@ -1152,6 +1155,52 @@ export function polygonize(path: PathSegment[], precision=6): PathSegment[] {
 }
 
 /**
+ * simplify a path as much as possible without losing detail at the given level.
+ * note that the first and last PathSegments will always be unchanged.
+ * this function assumes the Path is in the Cartesian plane.
+ * @param path the true path segments
+ * @param tolerance the maximum distance the simplified path can be from the true path
+ * @param checkForM whether to check for and deal with any non-L segments.
+ *                  if it's false, we'll assume it's something followed by nothing but Ls.
+ */
+export function decimate(path: PathSegment[], tolerance: number, checkForM=true): PathSegment[] {
+	if (checkForM) {
+		// go thru and separately decimate all of the polyline sections
+		const output = [];
+		let sectionStart = 0;
+		for (let i = 1; i <= path.length; i ++) {
+			if (i >= path.length || path[i].type !== 'L') {
+				output.push(...decimate(path.slice(sectionStart, i), tolerance, false));
+				sectionStart = i;
+			}
+		}
+		return output;
+	}
+	else {
+		// otherwise activate the Ramer–Douglas–Peucker algorithm
+		if (path.length <= 2)
+			return path;
+		const start = assert_xy(endpoint(path[0]));
+		const end = assert_xy(endpoint(path[path.length - 1]));
+		let greatestDistance = 0;
+		let farthestI = 0;
+		for (let i = 1; i < path.length - 1; i ++) {
+			const distance = lineSegmentDistance(start, end, assert_xy(endpoint(path[i])));
+			if (distance > greatestDistance) {
+				greatestDistance = distance;
+				farthestI = i;
+			}
+		}
+		if (greatestDistance < tolerance)
+			return [path[0], path[path.length - 1]];
+		else
+			return [
+				...decimate(path.slice(0, farthestI), tolerance, false),
+				...decimate(path.slice(farthestI), tolerance, false)];
+	}
+}
+
+/**
  * remove any isolated movetos, that don't have any segments connected to them
  */
 export function removeLoosePoints(segments: PathSegment[]): PathSegment[] {
@@ -1174,6 +1223,41 @@ export function convertPathClosuresToZ(segments: PathSegment[]): PathSegment[] {
 			newSegments.push({type: 'Z', args: []});
 	}
 	return newSegments;
+}
+
+
+/**
+ * return a copy of this path that traces the same route, but in the opposite direction
+ */
+export function reversePath(segments: PathSegment[]): PathSegment[] {
+	const start = endpoint(segments[segments.length - 1]);
+	const output: PathSegment[] = [{type: 'M', args: [start.s, start.t]}];
+	let pendingZ = false;
+	for (let i = segments.length - 2; i >= 0; i --) {
+		if (segments[i + 1].type === 'M') {
+			if (pendingZ)
+				output.push({type: 'Z', args: []});
+			pendingZ = false;
+			output.push({type: 'M', args: segments[i].args});
+		}
+		else if (segments[i + 1].type === 'L') {
+			output.push({type: 'L', args: segments[i].args});
+		}
+		else if (segments[i + 1].type === 'A') {
+			const [R1, R2, rotation, largeArcFlag, sweepFlag, , ] = segments[i + 1].args;
+			const end = endpoint(segments[i]);
+			output.push({type: 'A', args: [
+				R1, R2, rotation, largeArcFlag, (sweepFlag > 0) ? 0 : 1, end.s, end.t
+			]});
+		}
+		else if (segments[i + 1].type === 'Z') {
+			pendingZ = true;
+		}
+		else {
+			throw new Error(`I haven't implemented reversePath() for segments of type '${segments[i + 1].type}'.`);
+		}
+	}
+	return output;
 }
 
 

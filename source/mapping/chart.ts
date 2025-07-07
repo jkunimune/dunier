@@ -17,7 +17,7 @@ import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
 	convertPathClosuresToZ, Domain, INFINITE_PLANE,
-	intersection, removeLoosePoints, rotatePath, scalePath,
+	intersection, removeLoosePoints, reversePath, rotatePath, scalePath,
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
@@ -26,6 +26,7 @@ import {poissonDiscSample} from "../utilities/poissondisc.js";
 
 import TEXTURE_MIXES from "../../resources/texture_mixes.js";
 import {Random} from "../utilities/random.js";
+import {offset} from "../utilities/offset.js";
 
 
 // DEBUG OPTIONS
@@ -304,7 +305,7 @@ export class Chart {
 		const transformedRegionOfInterest = intersection(
 			transformInput(
 				this.projection.φMin, this.projection.λMin,
-				Chart.border(regionOfInterest)),
+				Chart.convertToGreebledPath(outline(regionOfInterest), Layer.GEO, 1e-6)),
 			Chart.rectangle(
 				this.projection.φMax, this.projection.λMax,
 				this.projection.φMin, this.projection.λMin, true),
@@ -439,7 +440,8 @@ export class Chart {
 	 * @param colorSchemeName the color scheme
 	 * @param rivers whether to add rivers
 	 * @param borders whether to add state borders
-	 * @param texture whether to draw little trees to indicate the biomes
+	 * @param landTexture whether to draw little trees to indicate the biomes
+	 * @param seaTexture whether to draw horizontal lines by the coast
 	 * @param shading whether to add shaded relief
 	 * @param civLabels whether to label countries
 	 * @param graticule whether to draw a graticule
@@ -452,7 +454,7 @@ export class Chart {
 	       colorSchemeName: string,
 		   rivers: boolean, borders: boolean,
 		   graticule = false, windrose = false,
-		   texture = false, shading = false,
+		   landTexture = false, seaTexture = false, shading = false,
 		   civLabels = false,
 		   fontSize = 3, style: string = '(default)'): {map: VNode, mappedCivs: Civ[] | null} {
 		const bbox = this.dimensions;
@@ -625,8 +627,16 @@ export class Chart {
 				filterSet(surface.tiles, n => n.isWater() && !n.isIceCovered()),
 				svg, 'none', Layer.BIO, colorScheme.waterStroke, 0.7);
 
+		if (seaTexture) {
+			const g = Chart.createSVGGroup(svg, "sea-texture");
+			const landPolygon = this.projectedOutline(
+				filterSet(surface.tiles, t => !t.isWater()), Layer.GEO);
+			const nearLandPolygon = offset(landPolygon, 5.0).concat(reversePath(landPolygon));
+			this.hatch(nearLandPolygon, g, colorScheme.secondaryStroke, 0.35, 1.00);
+		}
+
 		// add some terrain elements for texture
-		if (texture) {
+		if (landTexture) {
 			const symbols = this.generateTexture(surface.tiles, colorSchemeName);
 			const textureNames = new Set<string>();
 			for (const symbol of symbols)
@@ -644,7 +654,7 @@ export class Chart {
 			}
 
 			// then add the things to the map
-			const g = Chart.createSVGGroup(svg, "texture");
+			const g = Chart.createSVGGroup(svg, "land-texture");
 			g.attributes.stroke = colorScheme.secondaryStroke;
 			for (const {x, y, name, fill} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
@@ -734,11 +744,10 @@ export class Chart {
 			// (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
 			visible = [];
 			for (const civ of world.getCivs(true))
-				if (this.projectPath(
-					Chart.convertToGreebledPath(
-						outline([...civ.tileTree.keys()].filter(n => !n.isWater())),
-						Layer.KULTUR, this.scale),
-					true).length > 0)
+				if (this.projectedOutline(
+					[...civ.tileTree.keys()].filter(n => !n.isWater()),
+					Layer.KULTUR
+				).length > 0)
 					visible.push(civ);
 		}
 		else {
@@ -763,8 +772,7 @@ export class Chart {
 		 stroke = 'none', strokeWidth = 0, strokeLinejoin = 'round'): VNode {
 		if (tiles.size <= 0)
 			return this.draw([], svg);
-		const segments = convertPathClosuresToZ(this.projectPath(
-			Chart.convertToGreebledPath(outline(tiles), greeble, this.scale), true));
+		const segments = convertPathClosuresToZ(this.projectedOutline(tiles, greeble));
 		const path = this.draw(segments, svg);
 		path.attributes.style =
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin};`;
@@ -794,6 +802,20 @@ export class Chart {
 	}
 
 	/**
+	 * shade in a polygon on the map with horizontal lines
+	 * @param shape the shape to hatch in
+	 * @param svg the SVG object on which to put the lines
+	 * @param color String that HTML can interpret as a color
+	 * @param width the width of the stroke
+	 * @param spacing distance between adjacent lines in the pattern
+	 */
+	hatch(shape: PathSegment[], svg: VNode, color: string, width: number, spacing: number): void {
+		const path = this.draw(shape, svg);
+		path.attributes.style =
+			`fill: ${color}; stroke: none; opacity: ${width/spacing};`; // TODO: actually hatch
+	}
+
+	/**
 	 * describe a bunch of random symbols to put on the map to indicate biome and elevation
 	 * @param tiles the tiles being textured
 	 * @param colorSchemeName the color scheme
@@ -815,9 +837,7 @@ export class Chart {
 				let region = filterSet(tiles, t =>
 					t.biome === biome && t.height >= altitudeClass.min && t.height < altitudeClass.max);
 				if (region.size > 0) {
-					const polygon = this.projectPath(
-						Chart.convertToGreebledPath(outline(region), Layer.BIO, this.scale),
-						true);
+					const polygon = this.projectedOutline(region, Layer.BIO);
 					if (polygon.length > 0) {
 						let fill;
 						if (colorSchemeName === 'physical')
@@ -924,9 +944,8 @@ export class Chart {
 		const lengthPerSize = Chart.calculateStringLength(this.characterWidthMap, label);
 		const aspectRatio = lengthPerSize/heightPerSize;
 
-		const path = this.projectPath( // do the projection
-			Chart.convertToGreebledPath(outline(new Set(tiles)), Layer.KULTUR, this.scale),
-			true
+		const path = this.projectedOutline( // do the projection
+			tiles, Layer.KULTUR,
 		);
 		if (path.length === 0)
 			return;
@@ -1031,17 +1050,14 @@ export class Chart {
 
 
 	/**
-	 * create a path that forms the border of this set of Tiles.  this will only include the interface between included
-	 * Tiles and excluded Tiles; even if it's a surface with an edge, the surface edge will not be part of the return
-	 * value.  that means that a region that takes up the entire Surface will always have a border of [].
+	 * create a path that forms the border of this set of Tiles on the map.
 	 * @param tiles the tiles that comprise the region whose outline is desired
+	 * @param greeble what kind of border this is for the purposes of greebling
 	 */
-	static border(tiles: Iterable<Tile>): PathSegment[] {
-		const tileSet = new Set(tiles);
-
-		if (tileSet.size === 0)
-			throw new Error(`I cannot find the border of a nonexistent region.`);
-		return this.convertToGreebledPath(outline(tileSet), Layer.KULTUR, 1e-6);
+	projectedOutline(tiles: Iterable<Tile>, greeble: Layer): PathSegment[] {
+		return this.projectPath(
+			Chart.convertToGreebledPath(outline(tiles), greeble, this.scale),
+			true);
 	}
 
 	/**
@@ -1218,7 +1234,7 @@ export class Chart {
 		// turn the region into a proper closed polygon in the [-π, π) domain
 		const landOfInterest = filterSet(regionOfInterest, tile => !tile.isWater());
 		const coastline = intersection(
-			Chart.border(landOfInterest),
+			Chart.convertToGreebledPath(outline(landOfInterest), Layer.KULTUR, 1e-6),
 			Chart.rectangle(
 				Math.max(surface.φMin, -Math.PI), -Math.PI,
 				Math.min(surface.φMax, Math.PI), Math.PI, true),

@@ -800,7 +800,7 @@ export class Edge {
  * @return Array of loops, each loop being an Array of Vertexes or plain coordinate pairs.
  *         the first and last elements of each loop are the same iff the outline is a closed loop.
  */
-export function outline(tiles: Tile[] | Set<Tile>): Vertex[][] {
+export function outline(tiles: Iterable<Tile>): Vertex[][] {
 	const tileSet = new Set(tiles);
 	const accountedFor = new Set(); // keep track of which Edges have been done
 	const output: Vertex[][] = [];
