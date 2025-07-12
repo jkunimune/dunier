@@ -1039,6 +1039,75 @@ function getParallelCrossing(
 }
 
 /**
+ * get all intersections of a path segment with an array of constant-t lines.
+ * for the purposes of this function, points on a line are considered below (t+) it,
+ * so a tangent segment will only log a crossing if the rest of the segment is above (t-) the line.
+ * unlike getEdgeCrossings, this function will endeavor to make crossings unique.
+ * @param segmentStart the previus path point from which this segment starts
+ * @param segment the segment with which we're checking for intersections
+ * @param t0 the position of the line at index zero
+ * @param Δt the spacing between adjacent lines
+ * @return a list of intersections, each marked by an s-coordinate, a line index, and a direction (true if the segment is going upward at that point, and false otherwise)
+ */
+export function getCombCrossings(segmentStart: Point, segment: PathSegment, t0: number, Δt: number): {s: number, index: number, upward: boolean}[] {
+	const segmentAsPath = [{type: 'M', args: [segmentStart.s, segmentStart.t]}, segment];
+	const limits = calculatePathBounds(segmentAsPath);
+	const iMin = Math.floor((limits.tMin - t0)/Δt) + 1;
+	const iMax = Math.floor((limits.tMax - t0)/Δt);
+	const segmentEnd = endpoint(segment);
+
+	const crossings: {s: number, index: number, upward: boolean}[] = [];
+	if (segment.type === 'L') {
+		for (let i = iMin; i <= iMax; i ++) {
+			const t = t0 + i*Δt;
+			crossings.push({
+				s: segmentStart.s + (segmentEnd.s - segmentStart.s)/(segmentEnd.t - segmentStart.t)*(t - segmentStart.t),
+				index: i,
+				upward: segmentEnd.t < segmentStart.t,
+			});
+		}
+	}
+	else if (segment.type === 'A') {
+		const [r, rOther, , largeArcFlag, sweepFlag, , ] = segment.args; // get the parameters
+		console.assert(r === rOther, "I haven't accounted for ellipses.");
+
+		const center = arcCenter(assert_xy(segmentStart), assert_xy(segmentEnd), r, largeArcFlag !== sweepFlag); // compute the center
+		for (let i = iMin; i <= iMax; i ++) {
+			const y = t0 + i*Δt;
+			const possibleXs = [
+				center.x - Math.sqrt(r**2 - (y - center.y)**2),
+				center.x + Math.sqrt(r**2 - (y - center.y)**2),
+			];
+			for (const x of possibleXs) {
+				let onArc;
+				if (x === segmentStart.s && y === segmentStart.t)
+					onArc = (x > center.x) === (sweepFlag === 0);
+				else if (x === segmentEnd.s && y === segmentEnd.t)
+					onArc = (x > center.x) !== (sweepFlag === 0);
+				else {
+					const point = {x: x, y: y};
+					let afterStart = angleSign(assert_xy(segmentStart), center, point) >= 0;
+					let beforeEnd = angleSign(point, center, assert_xy(segmentEnd)) >= 0;
+					if (sweepFlag === 1) {
+						afterStart = !afterStart;
+						beforeEnd = !beforeEnd;
+					}
+					onArc = (largeArcFlag > 0) ? afterStart || beforeEnd : afterStart && beforeEnd;
+				}
+				if (onArc) {
+					const upward = (x < center.x) !== (sweepFlag === 0);
+					crossings.push({s: x, index: i, upward: upward});
+				}
+			}
+		}
+	}
+	else if (segment.type !== 'M') {
+		throw new Error(`this function isn't equipped to handle '${segment.type}'-type segments.`);
+	}
+	return crossings;
+}
+
+/**
  * return a number indicating where on the edge of map this point lies
  * @param point the coordinates of the point
  * @param edges the loops of edges on which we are trying to place it
@@ -1224,42 +1293,6 @@ export function convertPathClosuresToZ(segments: PathSegment[]): PathSegment[] {
 	}
 	return newSegments;
 }
-
-
-/**
- * return a copy of this path that traces the same route, but in the opposite direction
- */
-export function reversePath(segments: PathSegment[]): PathSegment[] {
-	const start = endpoint(segments[segments.length - 1]);
-	const output: PathSegment[] = [{type: 'M', args: [start.s, start.t]}];
-	let pendingZ = false;
-	for (let i = segments.length - 2; i >= 0; i --) {
-		if (segments[i + 1].type === 'M') {
-			if (pendingZ)
-				output.push({type: 'Z', args: []});
-			pendingZ = false;
-			output.push({type: 'M', args: segments[i].args});
-		}
-		else if (segments[i + 1].type === 'L') {
-			output.push({type: 'L', args: segments[i].args});
-		}
-		else if (segments[i + 1].type === 'A') {
-			const [R1, R2, rotation, largeArcFlag, sweepFlag, , ] = segments[i + 1].args;
-			const end = endpoint(segments[i]);
-			output.push({type: 'A', args: [
-				R1, R2, rotation, largeArcFlag, (sweepFlag > 0) ? 0 : 1, end.s, end.t
-			]});
-		}
-		else if (segments[i + 1].type === 'Z') {
-			pendingZ = true;
-		}
-		else {
-			throw new Error(`I haven't implemented reversePath() for segments of type '${segments[i + 1].type}'.`);
-		}
-	}
-	return output;
-}
-
 
 /**
  * return a copy of this path that is isotropically scaled toward or from the origin

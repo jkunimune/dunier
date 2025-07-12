@@ -6,10 +6,12 @@
 import {assert_xy, endpoint, PathSegment} from "./coordinates.js";
 import {decimate} from "../mapping/pathutilities.js";
 import {angleSign, arcCenter} from "./geometry.js";
-import {pathToString} from "./miscellaneus.js";
 
 /**
- * take a closed SVG path and generate another one that encloses the same space that the input path encloses, plus all of the points within a certain distance of it.
+ * take a closed SVG path and generate another one that encloses the same space that the input path encloses,
+ * plus all of the points within a certain distance of it.
+ * the resulting path won't necessarily be nice; there may be a lot of self-intersection.
+ * but if you just use a nonzero fill winding it _will_ contain the correct set of points.
  * @param path the shape to be offset.  it may have multiple parts, but it must be closed.
  * @param offset the distance.
  */
@@ -97,12 +99,14 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
 				throw new Error(`offset() is not implemented for '${ogSection[i].type}'-type segments.`);
 
 			// put down the arc linking this segment and the next
-			const isConvex = angleSign(offsetVertex1, vertex, offsetVertex2) > 0;
-			offSection.push({type: 'A*', args: [
-				isConvex ? offset : -offset,
-				vertex.x, vertex.y,
-				offsetVertex2.x, offsetVertex2.y,
-			]});
+			if (offsetVertex1.x !== offsetVertex2.x || offsetVertex1.y !== offsetVertex2.y) {
+				const isConvex = angleSign(offsetVertex1, vertex, offsetVertex2) > 0;
+				offSection.push({type: 'A*', args: [
+					isConvex ? offset : -offset,
+					vertex.x, vertex.y,
+					offsetVertex2.x, offsetVertex2.y,
+				]});
+			}
 		}
 
 		// finally, add the initial M

@@ -11,13 +11,13 @@ import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
-import {assert_φλ, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordinates.js";
+import {assert_φλ, endpoint, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
 import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
-	convertPathClosuresToZ, Domain, INFINITE_PLANE,
-	intersection, removeLoosePoints, reversePath, rotatePath, scalePath,
+	convertPathClosuresToZ, Domain, getCombCrossings, INFINITE_PLANE,
+	intersection, removeLoosePoints, rotatePath, scalePath,
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
@@ -631,8 +631,9 @@ export class Chart {
 			const g = Chart.createSVGGroup(svg, "sea-texture");
 			const landPolygon = this.projectedOutline(
 				filterSet(surface.tiles, t => !t.isWater()), Layer.GEO);
-			const nearLandPolygon = offset(landPolygon, 5.0).concat(reversePath(landPolygon));
-			this.hatch(nearLandPolygon, g, colorScheme.secondaryStroke, 0.35, 1.00);
+			this.hatchShadow(landPolygon, g, 1.00, 5.0);
+			g.attributes.style =
+				`fill:none; stroke:${colorScheme.primaryStroke}; stroke-width:0.35; stroke-linecap:round`;
 		}
 
 		// add some terrain elements for texture
@@ -802,17 +803,78 @@ export class Chart {
 	}
 
 	/**
-	 * shade in a polygon on the map with horizontal lines
-	 * @param shape the shape to hatch in
+	 * shade in the area around a polygon with horizontal lines
+	 * @param shape the shape to outline in hatch
 	 * @param svg the SVG object on which to put the lines
-	 * @param color String that HTML can interpret as a color
-	 * @param width the width of the stroke
 	 * @param spacing distance between adjacent lines in the pattern
+	 * @param radius the distance from the shape to draw horizontal lines
 	 */
-	hatch(shape: PathSegment[], svg: VNode, color: string, width: number, spacing: number): void {
-		const path = this.draw(shape, svg);
-		path.attributes.style =
-			`fill: ${color}; stroke: none; opacity: ${width/spacing};`; // TODO: actually hatch
+	hatchShadow(shape: PathSegment[], svg: VNode, spacing: number, radius: number): void {
+		// calculate the outer envelope of the lines
+		const dilatedShape = offset(shape, radius);
+
+		// establish the y coordinates of the lines
+		const boundingBox = calculatePathBounds(dilatedShape);
+		const yMed = (boundingBox.tMin + boundingBox.tMax)/2;
+		const numLines = Math.floor((boundingBox.tMax - boundingBox.tMin)/spacing/2)*2 + 1;
+		const yMin = yMed - spacing*(numLines - 1)/2;
+
+		// find everywhere one of the lines crosses either polygon
+		const intersections: {x: number, upward: boolean, trueCoast: boolean}[][] = [];
+		for (let i = 0; i < numLines; i ++)
+			intersections.push([]);
+		for (let i = 1; i < shape.length; i ++)
+			for (const {s, index, upward} of getCombCrossings(endpoint(shape[i - 1]), shape[i], yMin, spacing))
+				intersections[index].push({x: s, upward: upward, trueCoast: true});
+		for (let i = 1; i < dilatedShape.length; i ++)
+			for (const {s, index, upward} of getCombCrossings(endpoint(dilatedShape[i - 1]), dilatedShape[i], yMin, spacing))
+				intersections[index].push({x: s, upward: upward, trueCoast: false});
+
+		// select the ones that should be the endpoints of line segments
+		const endpoints: number[][] = [];
+		for (let i = 0; i < numLines; i ++) {
+			endpoints.push([]);
+			intersections[i] = intersections[i].sort((a, b) => a.x - b.x);
+			let falseWraps = 0;
+			let trueWraps = 0;
+			for (const intersection of intersections[i]) {
+				if (intersection.trueCoast) {
+					if (intersection.upward)
+						trueWraps -= 1;
+					else
+						trueWraps += 1;
+					endpoints[i].push(intersection.x);
+				}
+				else {
+					if (intersection.upward) {
+						falseWraps -= 1;
+						if (falseWraps === 0 && trueWraps === 0)
+							endpoints[i].push(intersection.x);
+					}
+					else {
+						if (falseWraps === 0 && trueWraps === 0)
+							endpoints[i].push(intersection.x);
+						falseWraps += 1;
+					}
+				}
+			}
+			if (endpoints[i].length%2 !== 0) {
+				console.log(pathToString(shape));
+				console.log(pathToString(dilatedShape));
+				console.log(`M${boundingBox.sMin},${yMin + i*spacing} H${boundingBox.sMax}`);
+				throw new Error("something went wrong in the hatching; these should always be even.");
+			}
+		}
+
+		// finally, draw the lines
+		for (let i = 0; i < numLines; i ++) {
+			for (let j = 0; j < endpoints[i].length; j += 2) {
+				const x1 = endpoints[i][j];
+				const x2 = endpoints[i][j + 1];
+				const y = yMin + i*spacing;
+				this.draw([{type: 'M', args: [x1, y]}, {type: 'H', args: [x2]}], svg);
+			}
+		}
 	}
 
 	/**

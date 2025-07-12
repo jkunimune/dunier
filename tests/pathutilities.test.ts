@@ -8,7 +8,7 @@ import {
 	intersection,
 	encompasses,
 	getEdgeCrossings,
-	isClosed, Domain, INFINITE_PLANE, polygonize, decimate
+	isClosed, Domain, INFINITE_PLANE, polygonize, decimate, getCombCrossings
 } from "../source/mapping/pathutilities.js";
 import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
@@ -520,6 +520,22 @@ describe("getEdgeCrossings", () => {
 				]);
 			});
 		});
+	});
+});
+
+describe("getCombCrossings", () => {
+	test("line", () => {
+		expect(getCombCrossings({s: 0, t: 0}, {type: 'L', args: [2, 2]}, 0, 1)).toEqual([
+			{s: 1, index: 1, upward: false},
+			{s: 2, index: 2, upward: false},
+		]);
+	});
+	test("arc", () => {
+		expect(getCombCrossings({s: 0, t: 0}, {type: 'A', args: [5, 5, 0, 0, 1, 1, 3]}, 0, 1)).toEqual([
+			{s: Math.sqrt(21) - 4, index: 1, upward: false},
+			{s: Math.sqrt(24) - 4, index: 2, upward: false},
+			{s: 1, index: 3, upward: false},
+		]);
 	});
 });
 
