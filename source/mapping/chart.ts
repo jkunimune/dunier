@@ -631,9 +631,11 @@ export class Chart {
 			const g = Chart.createSVGGroup(svg, "sea-texture");
 			const landPolygon = this.projectedOutline(
 				filterSet(surface.tiles, t => !t.isWater()), Layer.GEO);
-			this.hatchShadow(landPolygon, g, 1.00, 5.0);
+			this.hatchShadow(landPolygon, g, 1.00, 4.0);
+			const color = (colorScheme.waterStroke !== colorScheme.waterFill) ?
+				colorScheme.waterStroke : colorScheme.secondaryStroke;
 			g.attributes.style =
-				`fill:none; stroke:${colorScheme.primaryStroke}; stroke-width:0.35; stroke-linecap:round`;
+				`fill:none; stroke:${color}; stroke-width:0.35; stroke-linecap:round`;
 		}
 
 		// add some terrain elements for texture
@@ -810,6 +812,9 @@ export class Chart {
 	 * @param radius the distance from the shape to draw horizontal lines
 	 */
 	hatchShadow(shape: PathSegment[], svg: VNode, spacing: number, radius: number): void {
+		// instantiate a random number generator for feathering the edges
+		const rng = new Random(0);
+
 		// calculate the outer envelope of the lines
 		const dilatedShape = offset(shape, radius);
 
@@ -849,11 +854,11 @@ export class Chart {
 					if (intersection.upward) {
 						falseWraps -= 1;
 						if (falseWraps === 0 && trueWraps === 0)
-							endpoints[i].push(intersection.x);
+							endpoints[i].push(rng.normal(intersection.x, spacing/2));
 					}
 					else {
 						if (falseWraps === 0 && trueWraps === 0)
-							endpoints[i].push(intersection.x);
+							endpoints[i].push(rng.normal(intersection.x, spacing/2));
 						falseWraps += 1;
 					}
 				}
