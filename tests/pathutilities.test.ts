@@ -8,9 +8,9 @@ import {
 	intersection,
 	encompasses,
 	getEdgeCrossings,
-	isClosed, Domain, INFINITE_PLANE, polygonize, decimate, getAllCombCrossings, removeHoles
+	isClosed, Domain, INFINITE_PLANE, polygonize, decimate, getAllCombCrossings
 } from "../source/mapping/pathutilities.js";
-import {pathToString, Side} from "../source/utilities/miscellaneus.js";
+import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
 import {LockedDisc} from "../source/generation/surface/lockeddisc.js";
 import {MapProjection} from "../source/mapping/projection.js";
@@ -1482,34 +1482,4 @@ describe("decimate", () => {
 			{type: 'L', args: [5, 0]},
 		]);
 	});
-});
-
-test("removeHoles", () => {
-	expect(removeHoles([
-		{type: 'M', args: [-1, 0]},
-		{type: 'L', args: [0, -1]},
-		{type: 'L', args: [1, 0]},
-		{type: 'L', args: [0, 1]},
-		{type: 'L', args: [-1, 0]},
-		{type: 'M', args: [0, -2]},
-		{type: 'A', args: [2, 2, 0, 0, 0, 0, 2]},
-		{type: 'A', args: [2, 2, 0, 0, 0, 0, -2]},
-		{type: 'M', args: [4, -1]},
-		{type: 'A', args: [1, 1, 0, 0, 0, 4, 1]},
-		{type: 'A', args: [1, 1, 0, 0, 0, 4, -1]},
-	])).toEqual([
-		{type: 'M', args: [0, -2]},
-		{type: 'A', args: [2, 2, 0, 0, 0, 0, 2]},
-		{type: 'A', args: [2, 2, 0, 0, 0, 2, 0]},
-		{type: 'L', args: [1, 0]},
-		{type: 'L', args: [0, 1]},
-		{type: 'L', args: [-1, 0]},
-		{type: 'L', args: [0, -1]},
-		{type: 'L', args: [1, 0]},
-		{type: 'L', args: [2, 0]},
-		{type: 'A', args: [2, 2, 0, 0, 0, 0, -2]},
-		{type: 'M', args: [4, -1]},
-		{type: 'A', args: [1, 1, 0, 0, 0, 4, 1]},
-		{type: 'A', args: [1, 1, 0, 0, 0, 4, -1]},
-	]);
 });

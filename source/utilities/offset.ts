@@ -4,10 +4,7 @@
  */
 
 import {assert_xy, endpoint, PathSegment} from "./coordinates.js";
-import {
-	decimate,
-	removeHoles
-} from "../mapping/pathutilities.js";
+import {decimate} from "../mapping/pathutilities.js";
 import {angleSign, arcCenter} from "./geometry.js";
 
 /**
@@ -21,8 +18,6 @@ import {angleSign, arcCenter} from "./geometry.js";
 export function offset(path: PathSegment[], offset: number): PathSegment[] {
 	// first, discard any detail that will be lost when we turn everything into arcs
 	path = decimate(path, offset/6);
-	// remove holes, because this algorithm doesn't necessarily work when there are holes
-	path = removeHoles(path);
 	// then switch to our fancy new arc notation
 	path = parameterize(path);
 
@@ -71,7 +66,7 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
 					y: y + offset/radius*(y - yC),
 				};
 				offSection.push({type: 'A*', args: [
-					Math.abs(radius + offset)*Math.sign(radius),
+					radius + offset,
 					xC, yC,
 					offsetVertex1.x, offsetVertex1.y,
 				]});
@@ -107,9 +102,8 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
 
 			// put down the arc linking this segment and the next
 			if (offsetVertex1.x !== offsetVertex2.x || offsetVertex1.y !== offsetVertex2.y) {
-				const isConvex = angleSign(offsetVertex1, vertex, offsetVertex2) > 0;
 				offSection.push({type: 'A*', args: [
-					isConvex ? offset : -offset,
+					offset,
 					vertex.x, vertex.y,
 					offsetVertex2.x, offsetVertex2.y,
 				]});
