@@ -1,4 +1,20 @@
 /**
+ * This file contains miscellaneus functions for manipulating geometry expressed as SVG paths.
+ * note that for all the functions in this file, closed paths are directional.  that means that
+ * a widdershins path contains the points inside it and not the points outside it, as one would expect,
+ * but a clockwise path is considered inside-out, and only contains the points outside of it.
+ * in general, paths can also exist on either a planar Cartesian coordinate system where y is down,
+ * or on a doubly-periodic geographic coordinate system measured in radians.  both systems are left-handed.
+ *
+ * the main functions are contains(), which determines whether a given point is enclosed by a certain path,
+ * and intersection(), which is the geometric AND operation between an arbitrary path and a rectangular path.
+ * you may also use the get*Crossings() functions, which calculate intersections between two path segments.
+ * note that these are distingusihed from the getAll*Crossings() functions, which calculate intersections
+ * between a full path and infinite lines.
+ * the get*Crossings() functions take pains to correctly handle periodicity so that they work with geographic paths,
+ * but sometimes register a single intersection as two crossings.  the getAll*Crossings() functions, on the other hand,
+ * garantee that crossings are unique but don't work so well with periodicity.
+ *
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
@@ -402,8 +418,12 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], doma
  *                   is not 1:1, this will be on the side corresponding to start.
  * @param intersect1 the intersection point. in the event that the coordinate system
  *                   is not 1:1, this will be on the side of segment's endpoint.
+ *                   if not passed, this defaults to the same as intersect0
  */
-function spliceSegment(start: Point, segment: PathSegment, intersect0: Point, intersect1: Point): PathSegment[] {
+function spliceSegment(start: Point, segment: PathSegment, intersect0: Point, intersect1: Point = null): PathSegment[] {
+	if (intersect1 === null)
+		intersect1 = intersect0;
+
 	const end = endpoint(segment);
 	if (start.s === intersect0.s && start.t === intersect0.t) // if you're splicing at the beginning
 		return [
@@ -544,9 +564,7 @@ export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_P
 	// chiefly because it needs to account for the directionality of the polygon.  drawing a ray from the point that
 	// doesn't intersect the polygon doesn't automaticly mean the point is out; you would need to then go and check
 	// whether the polygon is inside-out or not (or put more strictly, whether it contains the infinitely distant
-	// terminus of your ray). there are two modifications that have to be made here as a result.  first is that instead
-	// of a ray from the point in an arbitrary direction, our test path needs to be chosen to garantee it intersects the
-	// polygon.  this is acheved by calculating testPath as above.  twoth is that we need to mind the direction of the
+	// terminus of your ray). we need to mind the direction of the
 	// nearest crossing rather than just counting how many crossings there are in each direction.  nieve implementations
 	// of this will fail if the polygon has a vertex on the test path but doesn't *cross* the test path at that vertex,
 	// because if you're just noting the direction of the segments and the location where they intersect the path,
@@ -555,93 +573,14 @@ export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_P
 	// *sum* them, weying them by how far they are from the point.  since the crossings should always alternate in
 	// direction when you look at them along a path, and any two crossings in the same place will now cancel out, it can
 	// be shown that the sign of that sum will then correspond to the nearest unambiguus crossing.
+	const intersections = getAllHorizontalLineCrossings(polygon, point.t, domain);
 	let crossingSum = 0.;
-	// iterate around the polygon
-	for (let i = 1; i < polygon.length; i ++) {
-		const start = endpoint(polygon[i - 1]);
-		const end = endpoint(polygon[i]);
-		// check to see if this segment crosses the test path and if so where
-		let intersections: {s: number, goingEast: boolean}[];
-		if (polygon[i].type === 'M')
-			intersections = [];
-		else if (polygon[i].type === 'Λ')
-			intersections = [];
-		else if (polygon[i].type === 'Φ') {
-			let crosses = (start.t < point.t) !== (end.t < point.t);
-			if (crosses)
-				intersections = [{s: end.s, goingEast: end.t > start.t}];
-			else
-				intersections = [];
-		}
-		else if (polygon[i].type === 'L') {
-			let crosses = (start.t < point.t) !== (end.t < point.t);
-			let goingRight = end.t > start.t;
-			if (domain.isPeriodic()) {
-				if (Math.abs(end.t - start.t) > π) { // account for wrapping
-					crosses = !crosses;
-					goingRight = !goingRight;
-					start.t = localizeInRange(start.t, point.t - π, point.t + π);
-					end.t = localizeInRange(end.t, point.t - π, point.t + π);
-				}
-				end.s = localizeInRange(end.s, start.s - π, start.s + π);
-			}
-			if (crosses) {
-				let s;
-				if (end.s === start.s)
-					s = end.s;
-				else {
-					const startWeight = (end.t - point.t)/(end.t - start.t);
-					s = startWeight*start.s + (1 - startWeight)*end.s;
-				}
-				if (domain.isPeriodic())
-					s = localizeInRange(s, domain.sMin, domain.sMax);
-				intersections = [{s: s, goingEast: goingRight}];
-			}
-			else
-				intersections = [];
-		}
-		else if (polygon[i].type === 'A') {
-			if (domain.isPeriodic())
-				throw new Error("you may not use arcs on periodic domains.");
-			const [radius, , , largeArc, sweepDirection, , ] = polygon[i].args;
-			// first compute the circle
-			const q0 = assert_xy(start);
-			const q1 = assert_xy(end);
-			const center = arcCenter(q0, q1, radius, largeArc !== sweepDirection);
-			// solve for the zero or two intersections with the circle
-			intersections = [];
-			const discriminant = Math.pow(radius, 2) - Math.pow(point.t - center.y, 2);
-			if (discriminant >= 0) {
-				for (let sign of [-1, 1]) {
-					const x = center.x + sign*Math.sqrt(discriminant);
-					const vy = (sweepDirection > 0) ? x - center.x : center.x - x;
-					if (vy !== 0) { // (ignore tangencies)
-						// make sure the intersection is on or between the endpoints
-						const pointSign = -angleSign(q0, {x: x, y: point.t}, q1); // negate this because of the left-handed coordinate system
-						if (pointSign === 0 || (pointSign < 0) === (sweepDirection > 0)) {
-							// discard it if it's on an endpoint and the rest of the arc is below the endpoint (for consistency with linetos)
-							if (point.t === q0.y && vy > 0)
-								continue;
-							if (point.t === q1.y && vy < 0)
-								continue;
-							// otherwise add it to the list
-							intersections.push({s: x, goingEast: vy > 0});
-						}
-					}
-				}
-			}
-		}
-		else {
-			throw new Error(`you may not use shapes with ${polygon[i].type} segments in contains()`);
-		}
-
-		// look at where it crosses
-		for (const {s, goingEast} of intersections) {
-			const d = s - point.s;
-			if (d === 0) // if any segment is *on* the point, it's borderline
-				return Side.BORDERLINE;
-			crossingSum += (goingEast) ? -1/d : 1/d; // otherwise, add its weited crossing direction to the sum
-		}
+	// look at where it crosses
+	for (const {s, goingEast} of intersections) {
+		const d = s - point.s;
+		if (d === 0) // if any segment is *on* the point, it's borderline
+			return Side.BORDERLINE;
+		crossingSum += (goingEast) ? -1/d : 1/d; // otherwise, add its weited crossing direction to the sum
 	}
 	// count it up to determine if you're in or out
 	if (crossingSum > 0)
@@ -1043,66 +982,110 @@ function getParallelCrossing(
  * for the purposes of this function, points on a line are considered below (t+) it,
  * so a tangent segment will only log a crossing if the rest of the segment is above (t-) the line.
  * unlike getEdgeCrossings, this function will endeavor to make crossings unique.
- * @param segmentStart the previus path point from which this segment starts
- * @param segment the segment with which we're checking for intersections
+ * @param path the segments doing the crossing
  * @param t0 the position of the line at index zero
  * @param Δt the spacing between adjacent lines
- * @return a list of intersections, each marked by an s-coordinate, a line index, and a direction (true if the segment is going upward at that point, and false otherwise)
+ * @param domain the topology of the space on which these points' coordinates are defined
+ * @return a list of intersections, each marked by an s-coordinate, the segment index i, the line index j, and a direction (true if the path is increasing in t at that point, and false otherwise)
  */
-export function getCombCrossings(segmentStart: Point, segment: PathSegment, t0: number, Δt: number): {s: number, index: number, upward: boolean}[] {
-	const segmentAsPath = [{type: 'M', args: [segmentStart.s, segmentStart.t]}, segment];
-	const limits = calculatePathBounds(segmentAsPath);
-	const iMin = Math.floor((limits.tMin - t0)/Δt) + 1;
-	const iMax = Math.floor((limits.tMax - t0)/Δt);
-	const segmentEnd = endpoint(segment);
+export function getAllCombCrossings(path: PathSegment[], t0: number, Δt: number, domain: Domain): {i: number, s: number, j: number, goingEast: boolean}[] {
+	const crossings: { s: number, i: number, j: number, goingEast: boolean }[] = [];
+	for (let i = 1; i < path.length; i ++) {
+		const segmentStart = endpoint(path[i - 1]);
+		const segmentAsPath = [{type: 'M', args: [segmentStart.s, segmentStart.t]}, path[i]];
+		const limits = calculatePathBounds(segmentAsPath);
+		const jMin = Math.floor((limits.tMin - t0)/Δt) + 1;
+		const jMax = Math.floor((limits.tMax - t0)/Δt);
 
-	const crossings: {s: number, index: number, upward: boolean}[] = [];
-	if (segment.type === 'L') {
-		for (let i = iMin; i <= iMax; i ++) {
-			const t = t0 + i*Δt;
-			crossings.push({
-				s: segmentStart.s + (segmentEnd.s - segmentStart.s)/(segmentEnd.t - segmentStart.t)*(t - segmentStart.t),
-				index: i,
-				upward: segmentEnd.t < segmentStart.t,
-			});
+		for (let j = jMin; j <= jMax; j ++) {
+			const tCrossings = getAllHorizontalLineCrossings(segmentAsPath, t0 + j*Δt, domain);
+			for (const {s, i, goingEast} of tCrossings)
+				crossings.push({s: s, i: i, j: j, goingEast: goingEast});
 		}
 	}
-	else if (segment.type === 'A') {
-		const [r, rOther, , largeArcFlag, sweepFlag, , ] = segment.args; // get the parameters
-		console.assert(r === rOther, "I haven't accounted for ellipses.");
+	return crossings;
+}
 
-		const center = arcCenter(assert_xy(segmentStart), assert_xy(segmentEnd), r, largeArcFlag !== sweepFlag); // compute the center
-		for (let i = iMin; i <= iMax; i ++) {
-			const y = t0 + i*Δt;
-			const possibleXs = [
-				center.x - Math.sqrt(r**2 - (y - center.y)**2),
-				center.x + Math.sqrt(r**2 - (y - center.y)**2),
-			];
-			for (const x of possibleXs) {
-				let onArc;
-				if (x === segmentStart.s && y === segmentStart.t)
-					onArc = (x > center.x) === (sweepFlag === 0);
-				else if (x === segmentEnd.s && y === segmentEnd.t)
-					onArc = (x > center.x) !== (sweepFlag === 0);
-				else {
-					const point = {x: x, y: y};
-					let afterStart = angleSign(assert_xy(segmentStart), center, point) >= 0;
-					let beforeEnd = angleSign(point, center, assert_xy(segmentEnd)) >= 0;
-					if (sweepFlag === 1) {
-						afterStart = !afterStart;
-						beforeEnd = !beforeEnd;
-					}
-					onArc = (largeArcFlag > 0) ? afterStart || beforeEnd : afterStart && beforeEnd;
+/**
+ * get all intersections of a path with a constant-t line.
+ * for the purposes of this function, points on a line are considered below (t+) it,
+ * so a tangent path will only log a crossing if the rest of the segment is above (t-) the line.
+ * unlike getEdgeCrossings, this function will endeavor to make crossings unique.
+ * @return a list of intersections, each marked by an s-coordinate, the index of the path segment, and a direction (true if the path is increasing in t at that point, and false otherwise)
+ */
+export function getAllHorizontalLineCrossings(path: PathSegment[], t: number, domain: Domain): {i: number, s: number, goingEast: boolean}[] {
+	const crossings: {i: number, s: number, goingEast: boolean}[] = [];
+
+	// iterate around the polygon
+	for (let i = 1; i < path.length; i ++) {
+		const start = endpoint(path[i - 1]);
+		const end = endpoint(path[i]);
+		// check to see if this segment crosses the test path and if so where
+		if (path[i].type === 'M' || path[i].type === 'Λ') {
+		}
+		else if (path[i].type === 'Φ') {
+			let crosses = (start.t < t) !== (end.t < t);
+			if (crosses)
+				crossings.push({i: i, s: end.s, goingEast: end.t > start.t});
+		}
+		else if (path[i].type === 'L') {
+			let crosses = (start.t < t) !== (end.t < t);
+			let goingRight = end.t > start.t;
+			if (domain.isPeriodic()) {
+				if (Math.abs(end.t - start.t) > π) { // account for wrapping
+					crosses = !crosses;
+					goingRight = !goingRight;
+					start.t = localizeInRange(start.t, t - π, t + π);
+					end.t = localizeInRange(end.t, t - π, t + π);
 				}
-				if (onArc) {
-					const upward = (x < center.x) !== (sweepFlag === 0);
-					crossings.push({s: x, index: i, upward: upward});
+				end.s = localizeInRange(end.s, start.s - π, start.s + π);
+			}
+			if (crosses) {
+				let s;
+				if (end.s === start.s)
+					s = end.s;
+				else {
+					const startWeight = (end.t - t)/(end.t - start.t);
+					s = startWeight*start.s + (1 - startWeight)*end.s;
+				}
+				if (domain.isPeriodic())
+					s = localizeInRange(s, domain.sMin, domain.sMax);
+				crossings.push({i: i, s: s, goingEast: goingRight});
+			}
+		}
+		else if (path[i].type === 'A') {
+			if (domain.isPeriodic())
+				throw new Error("you may not use arcs on periodic domains.");
+			const [radius, , , largeArc, sweepDirection, ,] = path[i].args;
+			// first compute the circle
+			const q0 = assert_xy(start);
+			const q1 = assert_xy(end);
+			const center = arcCenter(q0, q1, radius, largeArc !== sweepDirection);
+			// solve for the zero or two intersections with the circle
+			const discriminant = Math.pow(radius, 2) - Math.pow(t - center.y, 2);
+			if (discriminant >= 0) {
+				for (let sign of [-1, 1]) {
+					const x = center.x + sign*Math.sqrt(discriminant);
+					const vy = (sweepDirection > 0) ? x - center.x : center.x - x;
+					if (vy !== 0) { // (ignore tangencies)
+						// make sure the intersection is on or between the endpoints
+						const pointSign = -angleSign(q0, {x: x, y: t}, q1); // negate this because of the left-handed coordinate system
+						if (pointSign === 0 || (pointSign < 0) === (sweepDirection > 0)) {
+							// discard it if it's on an endpoint and the rest of the arc is below the endpoint (for consistency with linetos)
+							if (t === q0.y && vy > 0)
+								continue;
+							if (t === q1.y && vy < 0)
+								continue;
+							// otherwise add it to the list
+							crossings.push({i: i, s: x, goingEast: vy > 0});
+						}
+					}
 				}
 			}
 		}
-	}
-	else if (segment.type !== 'M') {
-		throw new Error(`this function isn't equipped to handle '${segment.type}'-type segments.`);
+		else {
+			throw new Error(`you may not use shapes with ${path[i].type} segments in getAllHorizontalLineCrossings()`);
+		}
 	}
 	return crossings;
 }
@@ -1267,6 +1250,91 @@ export function decimate(path: PathSegment[], tolerance: number, checkForM=true)
 				...decimate(path.slice(0, farthestI), tolerance, false),
 				...decimate(path.slice(farthestI), tolerance, false)];
 	}
+}
+
+/**
+ * take a closed shape that may have holes and add infinitessimal gaps connecting the holes
+ * to the outer shell so that it technicly doesn't have holes.
+ * this function does not account for periodicity.
+ */
+export function removeHoles(path: PathSegment[]): PathSegment[] {
+	const totalBounds = calculatePathBounds(path);
+	const outsidePoint = {
+		s: 2*totalBounds.sMax - totalBounds.sMin,
+		t: (totalBounds.tMin + totalBounds.tMax)/2,
+	};
+
+	// break it up into distinct loops
+	const sections: PathSegment[][] = [];
+	let i = null;
+	for (let j = 0; j <= path.length; j ++) {
+		if (j >= path.length || path[j].type === 'M') {
+			if (i !== null)
+				sections.push(path.slice(i, j));
+			i = j;
+		}
+	}
+
+	// look for inside-out sections
+	for (let k = sections.length - 1; k >= 0; k --) {
+		// first, determine whether section k is truly closed (by which I mean, whether it is right-side-out
+		const insideOut = contains(sections[k], outsidePoint, INFINITE_PLANE) === Side.IN;
+		if (!insideOut)
+			continue;
+
+		// then, choose a t-coordinate (the coordinate of the moveto works well)
+		const tBridge = sections[k][0].args[1];
+
+		// identify the rightmost point where ours hits the line at that y-coordinate
+		const innerCrossings = getAllHorizontalLineCrossings(sections[k], tBridge, INFINITE_PLANE);
+		let bridgeStart = {i: 0, s: sections[k][0].args[0]};
+		for (const innerCrossing of innerCrossings)
+			if (innerCrossing.s > bridgeStart.s)
+				bridgeStart = innerCrossing;
+
+		// identify the nearest point where it hits a different polygon
+		let bridgeEnd = {l: -1, i: 0, s: Infinity};
+		for (let l = 0; l < sections.length; l ++) {
+			if (l !== k) {
+				const outerCrossings = getAllHorizontalLineCrossings(sections[l], tBridge, INFINITE_PLANE);
+				for (const outerCrossing of outerCrossings)
+					if (outerCrossing.s >= bridgeStart.s && outerCrossing.s < bridgeEnd.s)
+						bridgeEnd = {l: l, i: outerCrossing.i, s: outerCrossing.s};
+			}
+		}
+		if (bridgeEnd.l === -1)
+			throw new Error("I couldn't find a loop that contains this inner loop.  are you sure this path is outside-in?");
+
+		// rearrange this one to start and end at the bridge
+		if (bridgeStart.i !== 0) {
+			const before = sections[k].slice(1, bridgeStart.i);
+			const after = sections[k].slice(bridgeStart.i + 1);
+			const between = spliceSegment(
+				endpoint(sections[k][bridgeStart.i - 1]),
+				sections[k][bridgeStart.i],
+				{s: bridgeStart.s, t: tBridge});
+			let jSplice = between.findIndex(({type}) => type === 'M');
+			const justBefore = between.slice(0, jSplice);
+			const justAfter = between.slice(jSplice);
+			sections[k] = justAfter.concat(after, before, justBefore);
+		}
+
+		// splice it into outer section
+		const context = spliceSegment(
+			endpoint(sections[bridgeEnd.l][bridgeEnd.i - 1]),
+			sections[bridgeEnd.l][bridgeEnd.i],
+			{s: bridgeEnd.s, t: tBridge});
+		let jSplice = context.findIndex(({type}) => type === 'M');
+		context[jSplice] = {type: 'L', args: context[jSplice].args};
+		sections[k][0] = {type: 'L', args: sections[k][0].args};
+		const justBefore = context.slice(0, jSplice);
+		const justAfter = context.slice(jSplice);
+		sections[bridgeEnd.l].splice(bridgeEnd.i, 1, ...justBefore, ...sections[k], ...justAfter);
+		// remove the hole section
+		sections.splice(k, 1);
+	}
+
+	return [].concat(...sections);
 }
 
 /**

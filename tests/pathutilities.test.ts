@@ -8,9 +8,9 @@ import {
 	intersection,
 	encompasses,
 	getEdgeCrossings,
-	isClosed, Domain, INFINITE_PLANE, polygonize, decimate, getCombCrossings
+	isClosed, Domain, INFINITE_PLANE, polygonize, decimate, getAllCombCrossings, removeHoles
 } from "../source/mapping/pathutilities.js";
-import {Side} from "../source/utilities/miscellaneus.js";
+import {pathToString, Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
 import {LockedDisc} from "../source/generation/surface/lockeddisc.js";
 import {MapProjection} from "../source/mapping/projection.js";
@@ -525,16 +525,24 @@ describe("getEdgeCrossings", () => {
 
 describe("getCombCrossings", () => {
 	test("line", () => {
-		expect(getCombCrossings({s: 0, t: 0}, {type: 'L', args: [2, 2]}, 0, 1)).toEqual([
-			{s: 1, index: 1, upward: false},
-			{s: 2, index: 2, upward: false},
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [2, 2]},
+		];
+		expect(getAllCombCrossings(path, 0, 1, INFINITE_PLANE)).toEqual([
+			{i: 1, s: 1, j: 1, goingEast: true},
+			{i: 1, s: 2, j: 2, goingEast: true},
 		]);
 	});
 	test("arc", () => {
-		expect(getCombCrossings({s: 0, t: 0}, {type: 'A', args: [5, 5, 0, 0, 1, 1, 3]}, 0, 1)).toEqual([
-			{s: Math.sqrt(21) - 4, index: 1, upward: false},
-			{s: Math.sqrt(24) - 4, index: 2, upward: false},
-			{s: 1, index: 3, upward: false},
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'A', args: [5, 5, 0, 0, 1, 1, 3]},
+		];
+		expect(getAllCombCrossings(path, 0, 1, INFINITE_PLANE)).toEqual([
+			{i: 1, s: Math.sqrt(21) - 4, j: 1, goingEast: true},
+			{i: 1, s: Math.sqrt(24) - 4, j: 2, goingEast: true},
+			{i: 1, s: 1, j: 3, goingEast: true},
 		]);
 	});
 });
@@ -1474,4 +1482,34 @@ describe("decimate", () => {
 			{type: 'L', args: [5, 0]},
 		]);
 	});
+});
+
+test("removeHoles", () => {
+	expect(removeHoles([
+		{type: 'M', args: [-1, 0]},
+		{type: 'L', args: [0, -1]},
+		{type: 'L', args: [1, 0]},
+		{type: 'L', args: [0, 1]},
+		{type: 'L', args: [-1, 0]},
+		{type: 'M', args: [0, -2]},
+		{type: 'A', args: [2, 2, 0, 0, 0, 0, 2]},
+		{type: 'A', args: [2, 2, 0, 0, 0, 0, -2]},
+		{type: 'M', args: [4, -1]},
+		{type: 'A', args: [1, 1, 0, 0, 0, 4, 1]},
+		{type: 'A', args: [1, 1, 0, 0, 0, 4, -1]},
+	])).toEqual([
+		{type: 'M', args: [0, -2]},
+		{type: 'A', args: [2, 2, 0, 0, 0, 0, 2]},
+		{type: 'A', args: [2, 2, 0, 0, 0, 2, 0]},
+		{type: 'L', args: [1, 0]},
+		{type: 'L', args: [0, 1]},
+		{type: 'L', args: [-1, 0]},
+		{type: 'L', args: [0, -1]},
+		{type: 'L', args: [1, 0]},
+		{type: 'L', args: [2, 0]},
+		{type: 'A', args: [2, 2, 0, 0, 0, 0, -2]},
+		{type: 'M', args: [4, -1]},
+		{type: 'A', args: [1, 1, 0, 0, 0, 4, 1]},
+		{type: 'A', args: [1, 1, 0, 0, 0, 4, -1]},
+	]);
 });

@@ -11,12 +11,12 @@ import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
-import {assert_φλ, endpoint, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordinates.js";
+import {assert_φλ, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
 import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
-	convertPathClosuresToZ, Domain, getCombCrossings, INFINITE_PLANE,
+	convertPathClosuresToZ, Domain, getAllCombCrossings, INFINITE_PLANE,
 	intersection, removeLoosePoints, rotatePath, scalePath,
 	transformInput,
 } from "./pathutilities.js";
@@ -825,58 +825,54 @@ export class Chart {
 		const yMin = yMed - spacing*(numLines - 1)/2;
 
 		// find everywhere one of the lines crosses either polygon
-		const intersections: {x: number, upward: boolean, trueCoast: boolean}[][] = [];
-		for (let i = 0; i < numLines; i ++)
+		const intersections: {x: number, downward: boolean, trueCoast: boolean}[][] = [];
+		for (let j = 0; j < numLines; j ++)
 			intersections.push([]);
-		for (let i = 1; i < shape.length; i ++)
-			for (const {s, index, upward} of getCombCrossings(endpoint(shape[i - 1]), shape[i], yMin, spacing))
-				intersections[index].push({x: s, upward: upward, trueCoast: true});
-		for (let i = 1; i < dilatedShape.length; i ++)
-			for (const {s, index, upward} of getCombCrossings(endpoint(dilatedShape[i - 1]), dilatedShape[i], yMin, spacing))
-				intersections[index].push({x: s, upward: upward, trueCoast: false});
+		for (const {s, j, goingEast} of getAllCombCrossings(shape, yMin, spacing, INFINITE_PLANE))
+			intersections[j].push({x: s, downward: goingEast, trueCoast: true});
+		for (const {s, j, goingEast} of getAllCombCrossings(dilatedShape, yMin, spacing, INFINITE_PLANE))
+			intersections[j].push({x: s, downward: goingEast, trueCoast: false});
 
 		// select the ones that should be the endpoints of line segments
 		const endpoints: number[][] = [];
-		for (let i = 0; i < numLines; i ++) {
+		for (let j = 0; j < numLines; j ++) {
 			endpoints.push([]);
-			intersections[i] = intersections[i].sort((a, b) => a.x - b.x);
+			intersections[j] = intersections[j].sort((a, b) => a.x - b.x);
 			let falseWraps = 0;
 			let trueWraps = 0;
-			for (const intersection of intersections[i]) {
+			for (const intersection of intersections[j]) {
 				if (intersection.trueCoast) {
-					if (intersection.upward)
-						trueWraps -= 1;
-					else
+					if (intersection.downward)
 						trueWraps += 1;
-					endpoints[i].push(intersection.x);
+					else
+						trueWraps -= 1;
+					endpoints[j].push(intersection.x);
 				}
 				else {
-					if (intersection.upward) {
-						falseWraps -= 1;
+					if (intersection.downward) {
 						if (falseWraps === 0 && trueWraps === 0)
-							endpoints[i].push(rng.normal(intersection.x, spacing/2));
+							endpoints[j].push(rng.normal(intersection.x, spacing/2));
+						falseWraps += 1;
 					}
 					else {
+						falseWraps -= 1;
 						if (falseWraps === 0 && trueWraps === 0)
-							endpoints[i].push(rng.normal(intersection.x, spacing/2));
-						falseWraps += 1;
+							endpoints[j].push(rng.normal(intersection.x, spacing/2));
 					}
 				}
 			}
-			if (endpoints[i].length%2 !== 0) {
-				console.log(pathToString(shape));
-				console.log(pathToString(dilatedShape));
-				console.log(`M${boundingBox.sMin},${yMin + i*spacing} H${boundingBox.sMax}`);
-				throw new Error("something went wrong in the hatching; these should always be even.");
+			if (endpoints[j].length%2 !== 0) {
+				console.error("something went wrong in the hatching; these should always be even.");
+				endpoints[j] = [];
 			}
 		}
 
 		// finally, draw the lines
-		for (let i = 0; i < numLines; i ++) {
-			for (let j = 0; j < endpoints[i].length; j += 2) {
-				const x1 = endpoints[i][j];
-				const x2 = endpoints[i][j + 1];
-				const y = yMin + i*spacing;
+		for (let j = 0; j < numLines; j ++) {
+			for (let k = 0; k < endpoints[j].length; k += 2) {
+				const x1 = endpoints[j][k];
+				const x2 = endpoints[j][k + 1];
+				const y = yMin + j*spacing;
 				this.draw([{type: 'M', args: [x1, y]}, {type: 'H', args: [x2]}], svg);
 			}
 		}

@@ -4,7 +4,10 @@
  */
 
 import {assert_xy, endpoint, PathSegment} from "./coordinates.js";
-import {decimate} from "../mapping/pathutilities.js";
+import {
+	decimate,
+	removeHoles
+} from "../mapping/pathutilities.js";
 import {angleSign, arcCenter} from "./geometry.js";
 
 /**
@@ -18,10 +21,13 @@ import {angleSign, arcCenter} from "./geometry.js";
 export function offset(path: PathSegment[], offset: number): PathSegment[] {
 	// first, discard any detail that will be lost when we turn everything into arcs
 	path = decimate(path, offset/6);
+	// remove holes, because this algorithm doesn't necessarily work when there are holes
+	path = removeHoles(path);
 	// then switch to our fancy new arc notation
 	path = parameterize(path);
+
 	// then break it up into however many separate sections there are
-	const ogSections = [];
+	const ogSections: PathSegment[][] = [];
 	let i = null;
 	for (let j = 0; j <= path.length; j ++) {
 		if (j >= path.length || path[j].type === 'M') {
@@ -36,6 +42,7 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
 		}
 	}
 
+	// now, go thru each segment of each section and do the actual offsetting
 	const offSections: PathSegment[][] = [];
 	for (const ogSection of ogSections) {
 		const offSection: PathSegment[] = [];
@@ -116,7 +123,7 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
 	}
 
 	// put it all back together and change back to regular arc notation before returning it
-	return deparameterize(removeSelfIntersection([].concat(...offSections)));
+	return deparameterize([].concat(...offSections));
 }
 
 
@@ -172,11 +179,4 @@ function deparameterize(path: PathSegment[]): PathSegment[] {
 			output.push(path[i]);
 	}
 	return output;
-}
-
-/**
- * return the true outline of this path, removing any inverted sections caused by self-intersection
- */
-function removeSelfIntersection(path: PathSegment[]): PathSegment[] {
-	return path; // TODO: write this function
 }
