@@ -1278,6 +1278,46 @@ export function convertPathClosuresToZ(segments: PathSegment[]): PathSegment[] {
 }
 
 /**
+ * return a copy of this path that traces the same route, but in the opposite direction
+ */
+export function reversePath(segments: PathSegment[]): PathSegment[] {
+	const output: PathSegment[] = [];
+	let pendingM = true;
+	let pendingZ = false;
+	for (let i = segments.length - 1; i >= 1; i --) {
+		if (pendingM && segments[i].type !== 'Z') {
+			const end = endpoint(segments[i]);
+			output.push({type: 'M', args: [end.s, end.t]});
+			pendingM = false;
+		}
+
+		if (segments[i].type === 'M') {
+			if (pendingZ)
+				output.push({type: 'Z', args: []});
+			pendingZ = false;
+			pendingM = true;
+		}
+		else if (segments[i].type === 'L') {
+			output.push({type: 'L', args: segments[i - 1].args});
+		}
+		else if (segments[i].type === 'A') {
+			const [R1, R2, rotation, largeArcFlag, sweepFlag, , ] = segments[i].args;
+			const end = endpoint(segments[i - 1]);
+			output.push({type: 'A', args: [
+					R1, R2, rotation, largeArcFlag, (sweepFlag > 0) ? 0 : 1, end.s, end.t
+				]});
+		}
+		else if (segments[i].type === 'Z') {
+			pendingZ = true;
+		}
+		else {
+			throw new Error(`I haven't implemented reversePath() for segments of type '${segments[i].type}'.`);
+		}
+	}
+	return output;
+}
+
+/**
  * return a copy of this path that is isotropically scaled toward or from the origin
  * @param segments the path to scale
  * @param scale the desired dimensionless scale factor

@@ -17,7 +17,7 @@ import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds,
 	convertPathClosuresToZ, Domain, getAllCombCrossings, INFINITE_PLANE,
-	intersection, removeLoosePoints, rotatePath, scalePath,
+	intersection, removeLoosePoints, reversePath, rotatePath, scalePath,
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
@@ -460,8 +460,6 @@ export class Chart {
 		const bbox = this.dimensions;
 
 		const svg = h('svg', {
-			width: "100%",
-			height: "100%",
 			viewBox: `${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`,
 		});
 
@@ -722,10 +720,13 @@ export class Chart {
 			}
 		}
 
-		// add an outline to the whole thing
-		this.fill(
-			surface.tiles,
-			svg, 'none', Layer.GEO, 'black', 1.4, 'miter');
+		// add a margin and outline to the whole thing
+		const outline = convertPathClosuresToZ(this.projectedOutline(surface.tiles, Layer.BIO));
+		const paperEdge = Chart.rectangle(bbox.left, bbox.top, bbox.right, bbox.bottom, false);
+		this.draw(paperEdge.concat(reversePath(outline)), svg).attributes.style =
+			`fill: white; stroke: white; stroke-width: 0.7;`;
+		this.draw(outline, svg).attributes.style =
+			`fill: none; stroke: black; stroke-width: 1.4; stroke-linejoin: miter;`;
 
 		// add the windrose
 		if (windrose) {

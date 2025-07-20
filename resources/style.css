@@ -357,6 +357,7 @@ iframe {
     width: 100%;
 }
 .map {
+    display: flex;
     width: 100%;
 }
 
@@ -370,6 +371,12 @@ iframe {
         height: calc(100vh - 8rem);
         padding-left: 0;
     }
+}
+
+.map svg {
+    max-width: 100%;
+    max-height: 100%;
+    margin: auto;
 }
 
 .form-group {
