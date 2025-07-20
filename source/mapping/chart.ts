@@ -21,7 +21,7 @@ import {
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
-import {h, VNode} from "../gui/virtualdom.js";
+import {cloneNode, h, VNode} from "../gui/virtualdom.js";
 import {poissonDiscSample} from "../utilities/poissondisc.js";
 
 import TEXTURE_MIXES from "../../resources/texture_mixes.js";
@@ -458,6 +458,9 @@ export class Chart {
 		   civLabels = false,
 		   fontSize = 3, style: string = '(default)'): {map: VNode, mappedCivs: Civ[] | null} {
 		const bbox = this.dimensions;
+		let colorScheme = COLOR_SCHEMES.get(colorSchemeName);
+		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
+			colorScheme = COLOR_SCHEMES.get('debug');
 
 		const svg = h('svg', {
 			viewBox: `${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`,
@@ -465,7 +468,18 @@ export class Chart {
 
 		// set the basic overarching styles
 		const styleSheet = h('style');
-		styleSheet.textContent = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; }';
+		styleSheet.textContent =
+			'.label {\n' +
+			'  font-family: "Noto Serif","Times New Roman","Times",serif;\n' +
+			'  text-anchor: middle;\n' +
+			'  fill: black;\n' +
+			'}\n' +
+			'.halo {\n' +
+			`  fill: ${colorScheme.landFill};\n` +
+			`  stroke: ${colorScheme.landFill};\n` +
+			'  stroke-width: 1.4;\n' +
+			'  stroke-opacity: 0.7;\n' +
+			'}\n';
 		svg.children.push(styleSheet);
 
 		if (SHOW_BACKGROUND) {
@@ -478,10 +492,6 @@ export class Chart {
 			});
 			svg.children.push(rectangle);
 		}
-
-		let colorScheme = COLOR_SCHEMES.get(colorSchemeName);
-		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
-			colorScheme = COLOR_SCHEMES.get('debug');
 
 		// color in the land
 		if (COLOR_BY_PLATE) {
@@ -629,7 +639,7 @@ export class Chart {
 			const g = Chart.createSVGGroup(svg, "sea-texture");
 			const landPolygon = this.projectedOutline(
 				filterSet(surface.tiles, t => !t.isWater()), Layer.GEO);
-			this.hatchShadow(landPolygon, g, 1.00, 4.0);
+			this.hatchShadow(landPolygon, g, 1.0, 3.0);
 			const color = (colorScheme.waterStroke !== colorScheme.waterFill) ?
 				colorScheme.waterStroke : colorScheme.secondaryStroke;
 			g.attributes.style =
@@ -703,7 +713,9 @@ export class Chart {
 						[...civ.tileTree.keys()].filter(n => !n.isSaltWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
 						civ.getName().toString(style),
 						g,
-						fontSize);
+						fontSize,
+						3*fontSize,
+						landTexture);
 		}
 
 		if (SHOW_TILE_INDICES) {
@@ -1000,8 +1012,11 @@ export class Chart {
 	 * @param svg the SVG object on which to write the label.
 	 * @param minFontSize the smallest allowable font size, in mm. if the label cannot fit inside
 	 *                    the region with this font size, no label will be placed.
+	 * @param maxFontSize the largest allowable font size, in mm. if there is space available for
+	 *                    a bigger label, it will appear at this font size
+	 * @param halo whether to give the text a halo to make it easier to read
 	 */
-	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number) {
+	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number, maxFontSize: number, halo: boolean) {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
@@ -1018,7 +1033,7 @@ export class Chart {
 		let location;
 		try {
 			location = chooseLabelLocation(
-				path, aspectRatio);
+				path, aspectRatio, 0.7, maxFontSize*heightPerSize);
 		} catch (e) {
 			console.error(e);
 			return;
@@ -1035,16 +1050,27 @@ export class Chart {
 		else
 			arc.attributes.style = 'fill: none; stroke: none;';
 		arc.attributes.id = `labelArc${this.labelIndex}`;
-		const textGroup = h('text', { // start by creating the text element
+
+		// create the text element
+		const textGroup = h('text', {
 			style: `font-size: ${fontSize}px; letter-spacing: ${location.letterSpacing*.5}em;`}); // this .5em is just a guess at the average letter width
-		svg.children.push(textGroup);
 		const textPath = h('textPath', {
-			class: 'map-label',
+			class: 'label',
 			startOffset: '50%',
 			href: `#labelArc${this.labelIndex}`,
 		});
+		textPath.textContent = label;
+
+		// also add a halo below it if desired
+		if (halo) {
+			const haloPath = cloneNode(textPath);
+			haloPath.attributes.class += ' halo';
+
+			textGroup.children.push(haloPath);
+		}
+
 		textGroup.children.push(textPath);
-		textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
+		svg.children.push(textGroup);
 
 		this.labelIndex += 1;
 	}

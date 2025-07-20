@@ -60,10 +60,12 @@ interface Circumcenter {
  *     https://arxiv.org/abs/2001.02938 TODO: try horizontal labels: https://github.com/mapbox/polylabel
  * @param path the shape into which the label must fit
  * @param aspectRatio the ratio of the length of the text to be written to its height
+ * @param margin the amount of space to allot around the label
+ * @param maxHeight the maximum desirable label height.  labels larger than this will be shrunk to match.
  * @return the label location defined as an SVG path, the allowable height of the label, and how much the letter spacing must be adjusted
  * @throws Error if it can't find any adequate place for this label
  */
-export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {arc: PathSegment[], height: number, letterSpacing: number} {
+export function chooseLabelLocation(path: PathSegment[], aspectRatio: number, margin: number, maxHeight: number): {arc: PathSegment[], height: number, letterSpacing: number} {
 	if (aspectRatio < 0)
 		throw Error("the aspect ratio can't be negative, dummy.");
 	if (aspectRatio === 0)
@@ -153,12 +155,14 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 
 		// convert path segments into wedge-shaped no-label zones
 		const θ0 = Math.atan2(midpoint.y - cy, midpoint.x - cx);
-		const {xMin, xMax, wedges} = mapPointsToArcCoordinates(R, cx, cy, θ0, path, aspectRatio);
+		const {xMin, xMax, wedges} = mapPointsToArcCoordinates(R, cx, cy, θ0, path, aspectRatio, margin);
 		if (xMin > xMax) // occasionally we get these really terrible candidates TODO I think this means I did something rong.
 			continue; // just skip them
 
 		let {location, halfWidth} = findOpenSpotOnArc(
 			xMin, xMax, wedges);
+		if (halfWidth > maxHeight/2*aspectRatio)
+			halfWidth = maxHeight/2*aspectRatio;
 		const height = 2*halfWidth/aspectRatio;
 
 		const θC = θ0 + location/R;
@@ -174,7 +178,7 @@ export function chooseLabelLocation(path: PathSegment[], aspectRatio: number): {
 			if (!DEBUG_UNFIT_AXIS) {
 				const θL = θC - halfWidth/R;
 				const θR = θC + halfWidth/R;
-				const rBaseline = (θR < θL) ? R + height/2 : R - height/2;
+				const rBaseline = (θR < θL) ? R + height/2 : R - height/2; // don't forget to offset it to center the text verticly
 				bestAxis = {
 					height: height,
 					letterSpacing: rBaseline/R - 1,
@@ -362,12 +366,13 @@ function estimateSkeleton(path: PathSegment[]) { // TODO why not calculate the e
  * @param θ0 – the angle associated with a circular x-coordinate of 0 (in radians, measured from the x+ axis)
  * @param path the set of points and line segments that the label must avoid
  * @param aspectRatio the ratio of the desired label's length to its height
+ * @param margin the amount of space to require on each side of the label
  * @return xMin – the absolute minimum acceptable circular x-coordinate
  * @return xMax – the absolute maximum acceptable circular x-coordinate
  * @return wedges – the set of `Wedge` functions that define the feasible space
  */
 function mapPointsToArcCoordinates(
-	R: number, cx: number, cy: number, θ0: number, path: PathSegment[], aspectRatio: number
+	R: number, cx: number, cy: number, θ0: number, path: PathSegment[], aspectRatio: number, margin: number,
 ): {xMin: number, xMax: number, wedges: Wedge[]} {
 	const polarPath: PathSegment[] = []; // get polygon segments in circular coordinates
 	for (const segment of path) {
@@ -382,34 +387,28 @@ function mapPointsToArcCoordinates(
 	const wedges: Wedge[] = [];
 	for (let i = 1; i < polarPath.length; i ++) { // there's a wedge associated with each pair of points
 		if (polarPath[i].type === 'L') {
-			const p0 = assert_xy(endpoint(polarPath[i - 1]));
-			const p1 = assert_xy(endpoint(polarPath[i]));
-			const height = (p0.y < 0 === p1.y < 0) ? Math.min(Math.abs(p0.y), Math.abs(p1.y)) : 0;
-			const interpretations = [];
-			if (Math.abs(p1.x - p0.x) < Math.PI*R) {
-				interpretations.push([p0.x, p1.x, height]); // well, usually there's just one
-			}
-			else {
-				interpretations.push([p0.x, p1.x + 2*Math.PI*R*Math.sign(p0.x), height]); // but sometimes there's clipping on the periodic boundary condition...
-				interpretations.push([p0.x + 2*Math.PI*R*Math.sign(p1.x), p1.x, height]); // so you have to try wrapping p0 over to p1, and also p1 over to p0
-			}
+			let p0 = assert_xy(endpoint(polarPath[i - 1]));
+			let p1 = assert_xy(endpoint(polarPath[i]));
 
-			for (const [x0, x1, y] of interpretations) {
-				if (height === 0) { // if this crosses the baseline, adjust the total bounds TODO wouldn't it be simpler to simply put a Wedge there with y=0?
-					if (x0 < 0 || x1 < 0)
-						if (Math.max(x0, x1) > xMin)
-							xMin = Math.max(x0, x1);
-					if (x0 > 0 || x1 > 0)
-						if (Math.min(x0, x1) < xMax)
-							xMax = Math.min(x0, x1);
-				}
-				else { // otherwise, add a floating wedge
-					wedges.push({
-						xL: Math.min(x0, x1) - y*aspectRatio,
-						xR: Math.max(x0, x1) + y*aspectRatio,
-						y: y*aspectRatio,
-					});
-				}
+			// calculate the polar bounding box of the line segment, and amplify it by the margin
+			const xL = Math.min(p0.x, p1.x) - margin; // TODO: technically this margin should be scaled for radius
+			const xR = Math.max(p0.x, p1.x) + margin;
+			const height = (p0.y < 0 === p1.y < 0) ? Math.min(Math.abs(p0.y), Math.abs(p1.y)) - margin : 0;
+
+			if (height <= 0) { // if this crosses the baseline, adjust the total bounds
+				if (xL < 0 || xR < 0)
+					if (xR > xMin)
+						xMin = xR;
+				if (xL > 0 || xR > 0)
+					if (xL < xMax)
+						xMax = xL;
+			}
+			else { // otherwise, add a floating wedge
+				wedges.push({
+					xL: xL - height*aspectRatio,
+					xR: xR + height*aspectRatio,
+					y: height*aspectRatio,
+				});
 			}
 		}
 	}
