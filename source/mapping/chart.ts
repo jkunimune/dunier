@@ -15,7 +15,7 @@ import {assert_φλ, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordin
 import {Vector} from "../utilities/geometry.js";
 import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
-	applyProjectionToPath, calculatePathBounds,
+	applyProjectionToPath, calculatePathBounds, contains,
 	convertPathClosuresToZ, Domain, getAllCombCrossings, INFINITE_PLANE,
 	intersection, removeLoosePoints, reversePath, rotatePath, scalePath,
 	transformInput,
@@ -112,7 +112,7 @@ const COLOR_SCHEMES = new Map([
 		waterStroke: '#5A7ECA',
 		secondaryStroke: '#4c473f',
 		waterFill: '#5A7ECA',
-		landFill: '#FF00FF',
+		landFill: '#FFFFFF77',
 		iceFill: '#FFFFFF',
 	}],
 	['heightmap', {
@@ -120,7 +120,7 @@ const COLOR_SCHEMES = new Map([
 		waterStroke: 'rgb(59, 72, 151)',
 		secondaryStroke: '#4c473f',
 		waterFill: '#FF00FF',
-		landFill: '#FF00FF',
+		landFill: '#FFFFFF77',
 		iceFill: 'none',
 	}],
 ]);
@@ -475,10 +475,9 @@ export class Chart {
 			'  fill: black;\n' +
 			'}\n' +
 			'.halo {\n' +
-			`  fill: ${colorScheme.landFill};\n` +
-			`  stroke: ${colorScheme.landFill};\n` +
+			`  fill: none;\n` +
 			'  stroke-width: 1.4;\n' +
-			'  stroke-opacity: 0.7;\n' +
+			'  opacity: 0.7;\n' +
 			'}\n';
 		svg.children.push(styleSheet);
 
@@ -492,6 +491,9 @@ export class Chart {
 			});
 			svg.children.push(rectangle);
 		}
+
+		const coloredRegions: {path: PathSegment[], fill: string}[] = [];
+		const politicalColorMap = new Map<number, string>();
 
 		// color in the land
 		if (COLOR_BY_PLATE) {
@@ -555,11 +557,14 @@ export class Chart {
 					else
 						color = COUNTRY_COLORS[numFilledCivs];
 				}
-				const fill = this.fill(
+				const path = this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
 					g, color, Layer.KULTUR);
-				if (fill.attributes.d.length > 0)
+				if (path.length > 0) {
+					coloredRegions.push({path: path, fill: color});
+					politicalColorMap.set(civ.id, color);
 					numFilledCivs ++;
+				}
 			}
 		}
 		else if (colorSchemeName === 'heightmap') {
@@ -568,9 +573,10 @@ export class Chart {
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : -Infinity;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Infinity;
-				this.fill(
+				const path = this.fill(
 					filterSet(surface.tiles, n => !n.isWater() && n.height >= min && n.height < max),
 					g, ALTITUDE_COLORS[i], Layer.GEO);
+				coloredRegions.push({path: path, fill: ALTITUDE_COLORS[i]});
 			}
 		}
 		else {
@@ -621,7 +627,7 @@ export class Chart {
 			for (const civ of world.getCivs()) {
 				this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
-					g, 'none', Layer.KULTUR, colorScheme.primaryStroke, 0.7).attributes['pointer-events'] = 'all';
+					g, 'none', Layer.KULTUR, colorScheme.primaryStroke, 0.7);
 			}
 		}
 
@@ -669,6 +675,12 @@ export class Chart {
 			g.attributes.stroke = colorScheme.secondaryStroke;
 			for (const {x, y, name, fill} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
+				for (const region of coloredRegions) { // check if it should inherit color from a base fill
+					if (contains(region.path, {s: x, t: y})) {
+						picture.attributes.fill = region.fill;
+						break;
+					}
+				}
 				g.children.push(picture);
 			}
 		}
@@ -708,14 +720,22 @@ export class Chart {
 				throw new Error("this Chart was asked to label countries but the provided World was null");
 			const g = Chart.createSVGGroup(svg, "labels");
 			for (const civ of world.getCivs())
-				if (civ.getPopulation() > 0)
+				if (civ.getPopulation() > 0) {
+					let halo;
+					if (!landTexture)
+						halo = null;
+					else if (politicalColorMap.has(civ.id))
+						halo = politicalColorMap.get(civ.id);
+					else
+						halo = colorScheme.landFill;
 					this.label(
 						[...civ.tileTree.keys()].filter(n => !n.isSaltWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
 						civ.getName().toString(style),
 						g,
 						fontSize,
 						3*fontSize,
-						landTexture);
+						halo);
+				}
 		}
 
 		if (SHOW_TILE_INDICES) {
@@ -782,17 +802,17 @@ export class Chart {
 	 * @param stroke color of the outline.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
 	 * @param strokeLinejoin the line joint style to use
-	 * @return the newly created element encompassing these tiles.
+	 * @return the path object associated with this <path>
 	 */
 	fill(tiles: Set<Tile>, svg: VNode, color: string, greeble: Layer,
-		 stroke = 'none', strokeWidth = 0, strokeLinejoin = 'round'): VNode {
+		 stroke = 'none', strokeWidth = 0, strokeLinejoin = 'round'): PathSegment[] {
 		if (tiles.size <= 0)
-			return this.draw([], svg);
-		const segments = convertPathClosuresToZ(this.projectedOutline(tiles, greeble));
-		const path = this.draw(segments, svg);
+			return [];
+		const segments = this.projectedOutline(tiles, greeble);
+		const path = this.draw(convertPathClosuresToZ(segments), svg);
 		path.attributes.style =
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin};`;
-		return path;
+		return segments;
 	}
 
 	/**
@@ -1014,9 +1034,9 @@ export class Chart {
 	 *                    the region with this font size, no label will be placed.
 	 * @param maxFontSize the largest allowable font size, in mm. if there is space available for
 	 *                    a bigger label, it will appear at this font size
-	 * @param halo whether to give the text a halo to make it easier to read
+	 * @param haloColor the color of the text halo, if any, or null for no halos
 	 */
-	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number, maxFontSize: number, halo: boolean) {
+	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number, maxFontSize: number, haloColor: string | null) {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
@@ -1062,9 +1082,10 @@ export class Chart {
 		textPath.textContent = label;
 
 		// also add a halo below it if desired
-		if (halo) {
+		if (haloColor !== null) {
 			const haloPath = cloneNode(textPath);
 			haloPath.attributes.class += ' halo';
+			haloPath.attributes.stroke = haloColor;
 
 			textGroup.children.push(haloPath);
 		}
