@@ -672,7 +672,8 @@ export class Chart {
 
 			// then add the things to the map
 			const g = Chart.createSVGGroup(svg, "land-texture");
-			g.attributes.stroke = colorScheme.secondaryStroke;
+			g.attributes.style =
+				`stroke:${colorScheme.secondaryStroke}; stroke-width:0.35; stroke-linecap:round`;
 			for (const {x, y, name, fill} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
 				for (const region of coloredRegions) { // check if it should inherit color from a base fill

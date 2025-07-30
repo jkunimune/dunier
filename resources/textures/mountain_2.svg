@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="-6 -10 12 10" fill="white" stroke="black" stroke-width="0.35">
-	<polyline points="-6,0 -3.5,-2.4 -1.6,-5.1 -1,-5.9 0.6,-4.9 2.4,-2.1 4.6,-0.7 6,0"/>
-	<polyline points="-4.5,2.9 -2.1,0.4 -1.9,-2.8 -1,-5.9"/>
+	<polyline points="-5.4,-1.9 -2.5,-2.4 0,-5.6 0,0 -4.54,1.923"/>
+	<polyline points="-4.9,2.3 -2.8,0.1 -1.2,-2.7 0,-5.6 2,-2.5 3.7,-0.5 5.9,0.6"/>
 </svg>
