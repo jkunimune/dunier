@@ -159,7 +159,7 @@ worker.onerror = (error) => {
 	if (error.message === undefined)
 		console.error("this error doesn't even have a message!  is it a syntax issue?");
 	else {
-		const message = error.message.split(":")[1].trim();
+		const message = error.message.includes(":") ? error.message.split(":")[1].trim() : error.message;
 		if (message.startsWith("Too fast"))
 			postErrorAlert(localize("error.planet_too_fast", LANGUAGE));
 		else if (message.startsWith("Too slow"))
