@@ -13,9 +13,10 @@ import {
 	localizeInRange, longestShortestPath, Matrix, pathToString,
 	tanh, union, weightedAverage
 } from "../source/utilities/miscellaneus.js";
-import {poissonDiscSample} from "../source/utilities/poissondisc.js";
+import {poissonDiscSample, rasterInclusion} from "../source/utilities/poissondisc.js";
 import {Random} from "../source/utilities/random.js";
 import {offset} from "../source/utilities/offset.js";
+import {Rule, Side} from "../source/mapping/pathutilities.js";
 
 describe("argmax()", () => {
 	test("empty", () => {
@@ -352,68 +353,116 @@ describe("Matrix", () => {
 test("poissonDisc()", () => {
 	const path = [
 		{type: 'M', args: [0, 0]},
-		{type: 'L', args: [0, 4]},
-		{type: 'L', args: [4, 4]},
-		{type: 'L', args: [4, 0]},
+		{type: 'L', args: [0, 3]},
+		{type: 'L', args: [3, 3]},
+		{type: 'L', args: [3, 0]},
 		{type: 'L', args: [0, 0]},
 	];
-	const points = poissonDiscSample(path, Infinity, 1, new Random(0));
+	const points = poissonDiscSample(path, Infinity, 1.0, new Random(0));
 	expect(points.length).toBeGreaterThanOrEqual(4);
-	expect(points.length).toBeLessThanOrEqual(23);
-	for (let i = 0; i < points.length; i ++)
+	expect(points.length).toBeLessThanOrEqual(9);
+	for (let i = 0; i < points.length; i ++) {
+		expect(points[i].x).toBeGreaterThanOrEqual(0.5);
+		expect(points[i].x).toBeLessThanOrEqual(2.5);
+		expect(points[i].y).toBeGreaterThanOrEqual(0.5);
+		expect(points[i].y).toBeLessThanOrEqual(2.5);
 		for (let j = 0; j < i; j ++)
-			expect(Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y)).toBeGreaterThanOrEqual(1);
+			expect(
+				Math.hypot(points[i].x - points[j].x, points[i].y - points[j].y)
+			).toBeGreaterThanOrEqual(1.0);
+	}
 });
 
-test("offset()", () => {
+test("rasterInclusion", () => {
+	const grid = {xMin: 0., numX: 6, Δx: 1., yMin: 0., numY: 6, Δy: 1.};
 	const path = [
-		{type: 'M', args: [0, 0]},
-		{type: 'L', args: [0, 12]},
-		{type: 'L', args: [1, 12]},
-		{type: 'A', args: [2, 2, 0, 0, 0, 1, 8]},
-		{type: 'L', args: [1, 2]},
-		{type: 'A', args: [1, 1, 0, 0, 1, 2, 1]},
-		{type: 'L', args: [5, 1]},
-		{type: 'A', args: [4, 4, 0, 0, 1, 9, 5]},
-		{type: 'L', args: [9, 8]},
-		{type: 'A', args: [2, 2, 0, 0, 0, 9, 12]},
-		{type: 'L', args: [10, 12]},
-		{type: 'L', args: [10, 0]},
-		{type: 'L', args: [0, 0]},
-		{type: 'M', args: [13, 15]},
-		{type: 'L', args: [13, 16]},
-		{type: 'L', args: [14, 16]},
-		{type: 'L', args: [14, 15]},
-		{type: 'L', args: [13, 15]},
+		{type: 'M', args: [5.25, 0.25]},
+		{type: 'L', args: [0.25, 5.25]},
+		{type: 'L', args: [4.75, 4.75]},
+		{type: 'L', args: [5.25, 0.25]},
 	];
-	expect(offset(path, 3)).toEqual([
-		{type: 'M', args: [-3, 0]},
-		{type: 'L', args: [-3, 12]},
-		{type: 'A', args: [3, 3, 0, 0, 0, 0, 15]},
-		{type: 'L', args: [1, 15]},
-		{type: 'A', args: [5, 5, 0, 0, 0, 1, 5]},
-		{type: 'A', args: [3, 3, 0, 1, 0, 4, 8]},
-		{type: 'L', args: [4, 2]},
-		{type: 'A', args: [2, 2, 0, 1, 0, 2, 4]},
-		{type: 'L', args: [5, 4]},
-		{type: 'A', args: [1, 1, 0, 0, 1, 6, 5]},
-		{type: 'L', args: [6, 8]},
-		{type: 'A', args: [3, 3, 0, 1, 0, 9, 5]},
-		{type: 'A', args: [5, 5, 0, 0, 0, 9, 15]},
-		{type: 'L', args: [10, 15]},
-		{type: 'A', args: [3, 3, 0, 0, 0, 13, 12]},
-		{type: 'L', args: [13, 0]},
-		{type: 'A', args: [3, 3, 0, 0, 0, 10, -3]},
-		{type: 'L', args: [0, -3]},
-		{type: 'A', args: [3, 3, 0, 0, 0, -3, 0]},
-		{type: 'M', args: [10, 15]},
-		{type: 'L', args: [10, 16]},
-		{type: 'A', args: [3, 3, 0, 0, 0, 13, 19]},
-		{type: 'L', args: [14, 19]},
-		{type: 'A', args: [3, 3, 0, 0, 0, 17, 16]},
-		{type: 'L', args: [17, 15]},
-		{type: 'A', args: [3, 3, 0, 0, 0, 14, 12]},
-		{type: 'L', args: [13, 12]},
-		{type: 'A', args: [3, 3, 0, 0, 0, 10, 15]},
+	expect(rasterInclusion(path, grid, Rule.LEFT)).toEqual([
+		[Side.OUT,        Side.OUT,        Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE],
+		[Side.OUT,        Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
+		[Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
+		[Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.IN,         Side.BORDERLINE, Side.OUT],
+		[Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.OUT],
+		[Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.OUT,        Side.OUT,        Side.OUT],
 	]);
+});
+
+describe("offset()", () => {
+	test("positive", () => {
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [0, 12]},
+			{type: 'L', args: [1, 12]},
+			{type: 'A', args: [2, 2, 0, 0, 0, 1, 8]},
+			{type: 'L', args: [1, 2]},
+			{type: 'A', args: [1, 1, 0, 0, 1, 2, 1]},
+			{type: 'L', args: [5, 1]},
+			{type: 'A', args: [4, 4, 0, 0, 1, 9, 5]},
+			{type: 'L', args: [9, 8]},
+			{type: 'A', args: [2, 2, 0, 0, 0, 9, 12]},
+			{type: 'L', args: [10, 12]},
+			{type: 'L', args: [10, 0]},
+			{type: 'L', args: [0, 0]},
+			{type: 'M', args: [13, 15]},
+			{type: 'L', args: [13, 16]},
+			{type: 'L', args: [14, 16]},
+			{type: 'L', args: [14, 15]},
+			{type: 'L', args: [13, 15]},
+		];
+		expect(offset(path, 3)).toEqual([
+			{type: 'M', args: [-3, 0]},
+			{type: 'L', args: [-3, 12]},
+			{type: 'A', args: [3, 3, 0, 0, 0, 0, 15]},
+			{type: 'L', args: [1, 15]},
+			{type: 'A', args: [5, 5, 0, 0, 0, 1, 5]},
+			{type: 'A', args: [3, 3, 0, 1, 0, 4, 8]},
+			{type: 'L', args: [4, 2]},
+			{type: 'A', args: [2, 2, 0, 1, 0, 2, 4]},
+			{type: 'L', args: [5, 4]},
+			{type: 'A', args: [1, 1, 0, 0, 1, 6, 5]},
+			{type: 'L', args: [6, 8]},
+			{type: 'A', args: [3, 3, 0, 1, 0, 9, 5]},
+			{type: 'A', args: [5, 5, 0, 0, 0, 9, 15]},
+			{type: 'L', args: [10, 15]},
+			{type: 'A', args: [3, 3, 0, 0, 0, 13, 12]},
+			{type: 'L', args: [13, 0]},
+			{type: 'A', args: [3, 3, 0, 0, 0, 10, -3]},
+			{type: 'L', args: [0, -3]},
+			{type: 'A', args: [3, 3, 0, 0, 0, -3, 0]},
+			{type: 'M', args: [10, 15]},
+			{type: 'L', args: [10, 16]},
+			{type: 'A', args: [3, 3, 0, 0, 0, 13, 19]},
+			{type: 'L', args: [14, 19]},
+			{type: 'A', args: [3, 3, 0, 0, 0, 17, 16]},
+			{type: 'L', args: [17, 15]},
+			{type: 'A', args: [3, 3, 0, 0, 0, 14, 12]},
+			{type: 'L', args: [13, 12]},
+			{type: 'A', args: [3, 3, 0, 0, 0, 10, 15]},
+		]);
+	});
+
+	test("negative", () => {
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [0, 3]},
+			{type: 'L', args: [3, 3]},
+			{type: 'L', args: [3, 0]},
+			{type: 'L', args: [0, 0]},
+		];
+		expect(offset(path, -1)).toEqual([
+			{type: 'M', args: [1, 0]},
+			{type: 'L', args: [1, 3]},
+			{type: 'A', args: [1, 1, 0, 1, 1, 0, 2]},
+			{type: 'L', args: [3, 2]},
+			{type: 'A', args: [1, 1, 0, 1, 1, 2, 3]},
+			{type: 'L', args: [2, 0]},
+			{type: 'A', args: [1, 1, 0, 1, 1, 3, 1]},
+			{type: 'L', args: [0, 1]},
+			{type: 'A', args: [1, 1, 0, 1, 1, 1, 0]},
+		]);
+	});
 });

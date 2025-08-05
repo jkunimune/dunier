@@ -8,9 +8,8 @@ import {
 	intersection,
 	encompasses,
 	getEdgeCrossings,
-	isClosed, Domain, INFINITE_PLANE, polygonize, decimate, getAllCombCrossings
+	isClosed, Domain, INFINITE_PLANE, polygonize, decimate, getAllCombCrossings, Rule, Side
 } from "../source/mapping/pathutilities.js";
-import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
 import {LockedDisc} from "../source/generation/surface/lockeddisc.js";
 import {MapProjection} from "../source/mapping/projection.js";
@@ -877,6 +876,47 @@ describe("contains", () => {
 			{type: 'L', args: [0, 0]},
 		];
 		expect(() => contains(region, {s: 9000, t: 9001}, plane)).toThrow();
+	});
+	describe("self-intersecting region", () => {
+		const region: PathSegment[] = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 0]},
+			{type: 'L', args: [1, 5]},
+			{type: 'L', args: [2, 5]},
+			{type: 'L', args: [3, 4]},
+			{type: 'L', args: [2, 4]},
+			{type: 'L', args: [3, 5]},
+			{type: 'L', args: [4, 4]},
+			{type: 'L', args: [0, 0]},
+		];
+		describe("positive fill-rule", () => {
+			test("0 wraps", () => {
+				expect(contains(region, {s: 0, t: 0.5}, INFINITE_PLANE, Rule.POSITIVE)).toBe(Side.OUT);
+			});
+			test("+1 wrap", () => {
+				expect(contains(region, {s: 2, t: 3}, INFINITE_PLANE, Rule.POSITIVE)).toBe(Side.IN);
+			});
+			test("-1 wrap", () => {
+				expect(contains(region, {s: 0.9, t: 0.1}, INFINITE_PLANE, Rule.POSITIVE)).toBe(Side.OUT);
+			});
+			test("+2 wraps", () => {
+				expect(contains(region, {s: 2.5, t: 4.1}, INFINITE_PLANE, Rule.POSITIVE)).toBe(Side.IN);
+			});
+		});
+		describe("even-odd file rule", () => {
+			test("0 wraps", () => {
+				expect(contains(region, {s: 0, t: 0.5}, INFINITE_PLANE, Rule.ODD)).toBe(Side.OUT);
+			});
+			test("+1 wrap", () => {
+				expect(contains(region, {s: 2, t: 3}, INFINITE_PLANE, Rule.ODD)).toBe(Side.IN);
+			});
+			test("-1 wrap", () => {
+				expect(contains(region, {s: 0.9, t: 0.1}, INFINITE_PLANE, Rule.ODD)).toBe(Side.IN);
+			});
+			test("+2 wraps", () => {
+				expect(contains(region, {s: 2.5, t: 4.1}, INFINITE_PLANE, Rule.ODD)).toBe(Side.OUT);
+			});
+		});
 	});
 });
 

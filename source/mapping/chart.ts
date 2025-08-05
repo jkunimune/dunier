@@ -17,7 +17,7 @@ import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds, contains,
 	convertPathClosuresToZ, Domain, getAllCombCrossings, INFINITE_PLANE,
-	intersection, removeLoosePoints, reversePath, rotatePath, scalePath,
+	intersection, polygonize, removeLoosePoints, reversePath, rotatePath, scalePath,
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
@@ -673,7 +673,7 @@ export class Chart {
 			// then add the things to the map
 			const g = Chart.createSVGGroup(svg, "land-texture");
 			g.attributes.style =
-				`stroke:${colorScheme.secondaryStroke}; stroke-width:0.35; stroke-linecap:round`;
+				`stroke:${colorScheme.secondaryStroke}; stroke-width:0.35; stroke-linejoin:round`;
 			for (const {x, y, name, fill} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
 				for (const region of coloredRegions) { // check if it should inherit color from a base fill
@@ -919,8 +919,11 @@ export class Chart {
 	 */
 	generateTexture(tiles: Set<Tile>, colorSchemeName: string): {name: string, x: number, y: number, fill: string}[] {
 		const textureMixLookup = new Map<string, {name: string, density: number}[]>();
-		for (const {name, components} of TEXTURE_MIXES)
+		const textureRadiusLookup = new Map<string, number>();
+		for (const {name, minSpacing, components} of TEXTURE_MIXES) {
 			textureMixLookup.set(name, components);
+			textureRadiusLookup.set(name, minSpacing);
+		}
 		const rng = new Random(0);
 		const symbols: {x: number, y: number, name: string, fill: string}[] = [];
 		// for each non-aquatic biome
@@ -960,8 +963,17 @@ export class Chart {
 						for (const {name, density} of plantComponents)
 							components.push({name: name, density: density*plantFactor});
 
-						// choose the locations
-						const locations = poissonDiscSample(polygon, 5*totalDensity, Math.sqrt(1/(2*totalDensity)), rng);
+						// set how much space each symbol should get
+						const minSpacing = Math.max(
+							textureRadiusLookup.get(BIOME_NAMES[biome]),
+							textureRadiusLookup.get(altitudeClass.name));
+
+						// choose the locations (remember to scale vertically since we're looking down at a 45° angle)
+						const sinθ = Math.sqrt(1/2);
+						const scaledPolygon = scalePath(polygonize(polygon), 1, 1/sinθ);
+						const scaledLocations = poissonDiscSample(
+							scaledPolygon, totalDensity, minSpacing, rng);
+						const locations = scaledLocations.map(({x, y}) => ({x: x, y: y*sinθ}));
 						// and then divvy those locations up among the different components of the texture
 						let index = 0;
 						for (const {name, density} of components) {
@@ -1138,7 +1150,7 @@ export class Chart {
 			this.mapEdges,
 			INFINITE_PLANE, closePath,
 		);
-		return scalePath(rotatePath(croppedToMapRegion, this.orientation), this.scale);
+		return scalePath(rotatePath(croppedToMapRegion, this.orientation), this.scale, this.scale);
 	}
 
 

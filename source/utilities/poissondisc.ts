@@ -4,8 +4,16 @@
  */
 
 import {generic, PathSegment, XYPoint} from "./coordinates.js";
-import {calculatePathBounds, contains} from "../mapping/pathutilities.js";
+import {
+	calculatePathBounds,
+	contains,
+	getAllCombCrossings,
+	INFINITE_PLANE, rotatePath,
+	Rule,
+	Side
+} from "../mapping/pathutilities.js";
 import {Random} from "./random.js";
+import {offset} from "./offset.js";
 
 /**
  * generate a set of random points in a region of a plane
@@ -13,11 +21,12 @@ import {Random} from "./random.js";
  * @param region the path that defines the bounds of the region to sample
  * @param density the density of points to attempt.  the actual density will be lower if miDistance is nonzero; it will max out somewhere around 0.69minDistance**-2
  * @param minDistance the minimum allowable distance between two samples
- * @param rng the random number generator
+ * @param rng the random number generator to use
  */
 export function poissonDiscSample(region: PathSegment[], density: number, minDistance: number, rng: Random): XYPoint[] {
 	// decide on the area to sample
-	const domainBounds = calculatePathBounds(region);
+	const feasibleRegion = offset(region, -minDistance/2);
+	const domainBounds = calculatePathBounds(feasibleRegion);
 	domainBounds.sMin -= minDistance; // expand the domain area by R so that you don't get points clustering on the edge
 	domainBounds.sMax += minDistance;
 	domainBounds.tMin -= minDistance;
@@ -30,31 +39,44 @@ export function poissonDiscSample(region: PathSegment[], density: number, minDis
 	const grid = {
 		xMin: domainBounds.sMin,
 		numX: numX,
-		width: numX*gridScale,
+		Δx: gridScale,
 		yMin: domainBounds.tMin,
 		numY: numY,
-		height: numY*gridScale,
+		Δy: gridScale,
 	};
 
+	// whether each cell is fully in the feasible space, fully infeasible, or mixed
+	const cellFeasibility = rasterInclusion(feasibleRegion, grid, Rule.POSITIVE);
 	// the index of the sample in each grid cell, or null if there is none
 	const cellContent: number[][] = [];
 	for (let i = 0; i < numX; i ++) {
+		cellFeasibility.push([]);
 		cellContent.push([]);
-		for (let j = 0; j < numY; j ++)
+		for (let j = 0; j < numY; j ++) {
+			cellFeasibility[i].push(null);
 			cellContent[i].push(null);
+		}
 	}
 
+	// decide on the order in which you will test each cell
+	const feasibleCells: {i: number, j: number}[] = [];
+	for (let i = 0; i < numX; i ++)
+		for (let j = 0; j < numY; j ++)
+			if (cellFeasibility[i][j] !== Side.OUT)
+				feasibleCells.push({i: i, j: j});
+	shuffle(feasibleCells, rng);
+
 	// draw a certain number of candidates
-	const domainArea = (domainBounds.sMax - domainBounds.sMin)*(domainBounds.tMax - domainBounds.tMin);
-	const numCandidates = Math.round(domainArea*Math.min(100/minDistance**2, density));
+	const feasibleArea = grid.Δx*grid.Δy*feasibleCells.length;
+	const numCandidates = Math.round(feasibleArea*Math.min(100/minDistance**2, density));
 	const points: XYPoint[] = [];
 	candidateGeneration:
 	for (let k = 0; k < numCandidates; k ++) {
+		const index = feasibleCells[k%feasibleCells.length];
 		const candidate = {
-			x: rng.uniform(domainBounds.sMin, domainBounds.sMax),
-			y: rng.uniform(domainBounds.tMin, domainBounds.tMax),
+			x: grid.xMin + index.i*grid.Δx + rng.uniform(0, grid.Δx),
+			y: grid.yMin + index.j*grid.Δy + rng.uniform(0, grid.Δy),
 		};
-		const index = bin(candidate, grid);
 		// make sure it's not too close to any other points
 		if (cellContent[index.i][index.j] !== null)
 			continue;
@@ -72,18 +94,103 @@ export function poissonDiscSample(region: PathSegment[], density: number, minDis
 				}
 			}
 		}
+		// make sure it's in
+		if (cellFeasibility[index.i][index.j] === Side.BORDERLINE)
+			if (!contains(feasibleRegion, generic(candidate), INFINITE_PLANE, Rule.POSITIVE))
+				continue;
 		// if it passes both tests, add it to the list and mark this cell
 		cellContent[index.i][index.j] = points.length;
 		points.push(candidate);
 	}
 
-	// now, downsample to just points inside the region
-	const feasiblePoints: XYPoint[] = [];
-	for (let i = points.length - 1; i >= 0; i --)
-		if (contains(region, generic(points[i])))
-			feasiblePoints.push(points[i]);
+	return points;
+}
 
-	return feasiblePoints;
+
+/**
+ * determine whether each cell of a gri is wholly contained or wholly excluded by the given region
+ * @return a 2D array indexed by the horizontal index and then the vertical index,
+ *         containing IN for cells wholly contained by the region, OUT for cells wholly outside the region,
+ *         and BORDERLINE for cells that are touched by the region's edge.
+ */
+export function rasterInclusion(region: PathSegment[], grid: Grid, rule: Rule): Side[][] {
+	// initialize the array with null
+	const result: Side[][] = [];
+	for (let i = 0; i < grid.numX; i ++) {
+		result.push([]);
+		for (let j = 0; j < grid.numY; j ++)
+			result[i].push(null);
+	}
+
+	// trace the edges and mark all BORDERLINE cells
+	const verticalCrossings = getAllCombCrossings(region, grid.yMin, grid.Δy, INFINITE_PLANE);
+	for (const verticalCrossing of verticalCrossings) {
+		const j = verticalCrossing.j;
+		const {i} = bin({x: verticalCrossing.s, y: grid.yMin}, grid);
+		result[i][j - 1] = Side.BORDERLINE;
+		result[i][j] = Side.BORDERLINE;
+	}
+	const horizontalCrossings = getAllCombCrossings(rotatePath(region, 270), grid.xMin, grid.Δx, INFINITE_PLANE);
+	for (const horizontalCrossing of horizontalCrossings) {
+		const i = horizontalCrossing.j;
+		const {j} = bin({x: grid.xMin, y: -horizontalCrossing.s}, grid);
+		result[i - 1][j] = Side.BORDERLINE;
+		result[i][j] = Side.BORDERLINE;
+	}
+
+	// finally, go thru the remaining cells and set them to IN or OUT
+	for (let i = 0; i < grid.numX; i ++) {
+		for (let j = 0; j < grid.numY; j ++) {
+			if (result[i][j] === null) {
+				const value = contains(region, {
+					s: grid.xMin + (i + 1/2)*grid.Δx,
+					t: grid.yMin + (j + 1/2)*grid.Δy,
+				}, INFINITE_PLANE, rule);
+				if (value === Side.BORDERLINE)
+					throw new Error("it shouldn't be possible for this grid cell to be borderline; I thaut we found all of those!");
+				floodFill(result, i, j, value);
+			}
+		}
+	}
+
+	return result;
+}
+
+
+/**
+ * populate every null space connected to the given index in the 2D array with the given value
+ */
+function floodFill<T>(matrix: (T | null)[][], iStart: number, jStart: number, value: T) {
+	const queue: {i: number, j: number}[] = [{i: iStart, j: jStart}];
+	while (queue.length > 0) {
+		const {i, j} = queue.pop();
+		if (matrix[i][j] === null) {
+			matrix[i][j] = value;
+			if (i - 1 >= 0)
+				queue.push({i: i - 1, j: j});
+			if (i + 1 < matrix.length)
+				queue.push({i: i + 1, j: j});
+			if (j - 1 >= 0)
+				queue.push({i: i, j: j - 1});
+			if (j + 1 < matrix[i].length)
+				queue.push({i: i, j: j + 1});
+		}
+	}
+}
+
+
+/**
+ * randomly shuffle an array in-place using the "forward" version of the Fisher–Yates algorithm
+ * https://possiblywrong.wordpress.com/2020/12/10/the-fisher-yates-shuffle-is-backward/
+ */
+function shuffle<T>(array: T[], rng: Random): void {
+	for (let i = 0; i < array.length; i ++) {
+		const j = Math.floor(rng.uniform(0, i + 1));
+		const a = array[i];
+		const b = array[j];
+		array[j] = a;
+		array[i] = b;
+	}
 }
 
 
@@ -92,11 +199,13 @@ export function poissonDiscSample(region: PathSegment[], density: number, minDis
  * @return i: the index of the column corresponding to point.x, and j: the index of the row corresponding to point.y
  */
 function bin(point: XYPoint, grid: Grid): {i: number, j: number} {
-	if (point.x < grid.xMin || point.x - grid.xMin > grid.width || point.y < grid.yMin || point.y - grid.yMin > grid.height)
-		throw new Error(`this point is out of bounds of the grid: ${point}.`);
+	if (point.x < grid.xMin || point.x - grid.xMin > grid.Δx*grid.numX)
+		throw new Error(`this point is out of the grid's x-bounds: (${point.x}, ${point.y}) where ${grid.xMin} <= x <= ${grid.xMin + grid.Δx*grid.numX}.`);
+	if (point.y < grid.yMin || point.y - grid.yMin > grid.Δy*grid.numY)
+		throw new Error(`this point is out of the grid's y-bounds: (${point.x}, ${point.y}) where ${grid.yMin} <= y <= ${grid.yMin + grid.Δy*grid.numY}.`);
 	return {
-		i: Math.min(Math.floor((point.x - grid.xMin)/grid.width*grid.numX), grid.numX - 1),
-		j: Math.min(Math.floor((point.y - grid.yMin)/grid.height*grid.numY), grid.numY - 1),
+		i: Math.min(Math.floor((point.x - grid.xMin)/grid.Δx), grid.numX - 1),
+		j: Math.min(Math.floor((point.y - grid.yMin)/grid.Δy), grid.numY - 1),
 	};
 }
 
@@ -104,14 +213,14 @@ function bin(point: XYPoint, grid: Grid): {i: number, j: number} {
 interface Grid {
 	/** the left edge of the leftmost cell */
 	xMin: number;
-	/** the distance from the left edge of the leftmost cell to the right edge of the rightmost cell */
-	width: number;
+	/** the width of each cell */
+	Δx: number;
 	/** the number of columns in the grid */
 	numX: number;
 	/** the top edge of the topmost cell */
 	yMin: number;
-	/** the distance from the top edge of the topmost cell to the bottom edge of the bottommost cell */
-	height: number;
+	/** the height of each cell */
+	Δy: number;
 	/** the number of rows in the grid */
 	numY: number;
 }

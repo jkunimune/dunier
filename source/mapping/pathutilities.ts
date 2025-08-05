@@ -33,11 +33,26 @@ import {
 	lineArcIntersections,
 	lineLineIntersection, lineSegmentDistance
 } from "../utilities/geometry.js";
-import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
+import {isBetween, localizeInRange, pathToString} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
 
 
 const π = Math.PI;
+
+
+/**
+ * whether something is contained in a region or not
+ */
+export enum Side {
+	OUT, IN, BORDERLINE
+}
+
+/**
+ * a scheme used to consistently define whether a point is contained by a signed polygon
+ */
+export enum Rule {
+	POSITIVE, ODD, LEFT
+}
 
 
 // TODO: this should probably be in utilities/, and it should probably include pathToString and other functions like that.
@@ -506,24 +521,37 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], domai
 
 /**
  * find out if a point is contained by a polygon.
- * the direction of the polygon matters; if you're travelling along the polygon's edge,
- * points on your left are IN and points on your right are OUT.
+ * the direction of the polygon matters, depending on which rule you choose.
+ * generally, if you're travelling along the polygon's edge, points on your left are IN and points on your right are OUT.
  * if a point is on the polygon, it is considered BORDERLINE.
+ * for self-intersecting polygons or for polygons in geographic coordinates, there are nuances.
  * note that this operates on a left-handed coordinate system (if your y is decreasing, higher x is on your right).
  * also note that this function can fail to behave consistently when segments of the polygon move along the boundary of
- * the periodic domain ad point is also on the same boundary of the periodic domain.
+ * the periodic domain and point is also on the same boundary of the periodic domain.
  * @param polygon the path that defines the region we're checking.  it may jump across the boundary domains if
  *                periodicS and/or periodicT are set to true.  however, it may not intersect itself, and it must not
  *                form any ambiguusly included regions (like two concentric circles going the same way) or the result
  *                is undefined.
  * @param point the point that may or may not be in the region
  * @param domain the topology of the space on which these points' coordinates are defined
+ * @param rule one of "positive", "even", or "left".
+ *             - POSITIVE is like CSS "nonzero".  points far from the polygon are OUT,
+ *               and any number of positive wrappings will make a point IN.
+ *             - EVEN is like CSS "evenodd".  points far from the polygon are OUT,
+ *               and any odd number of wrappings in either direction will make a point IN.
+ *             - LEFT is only defined for non-self-intersecting polygons.  the space far from the polygon may be
+ *               IN or OUT depending on the sign of the outermost wrapping.  because no assumption is made about
+ *               points at infinity, this is the only one that works for non-planar domains.  with this rule, a
+ *               polygon with no sides contains the whole domain.
  * @param successGuaranteed if this is false and our line fails to conclusively determine containment, we might choose a
  *                          new point and recurse this function.  if it's true and that happens we'll just give up.
- * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
+ * @return IN if the point is contained by the polygon, OUT if it's not contained by the polygon it,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_PLANE, successGuaranteed=false): Side {
+export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_PLANE, rule=Rule.LEFT, successGuaranteed=false): Side {
+	if (rule !== Rule.LEFT && domain.isPeriodic())
+		throw new Error(`the fill-rule ${rule} is not defined for polygons on geographic domains.`);
+
 	let lastM = -Infinity;
 	let lastCurve = -Infinity;
 	for (let i = 0; i < polygon.length; i ++) {
@@ -537,8 +565,18 @@ export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_P
 			lastCurve = i;
 	}
 	
-	if (polygon.length === 0)
-		return Side.IN;
+	if (polygon.length === 0) {
+		switch (rule) {
+			case Rule.POSITIVE:
+				return Side.OUT;
+			case Rule.ODD:
+				return Side.OUT;
+			case Rule.LEFT:
+				return Side.IN;
+			default:
+				throw new Error("invalid fill rule");
+		}
+	}
 
 	// manually check for the most common forms of coincidences
 	for (let i = 1; i < polygon.length; i ++) {
@@ -580,56 +618,74 @@ export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_P
 		const d = s - point.s;
 		if (d === 0) // if any segment is *on* the point, it's borderline
 			return Side.BORDERLINE;
-		crossingSum += (goingEast) ? -1/d : 1/d; // otherwise, add its weited crossing direction to the sum
+		if (rule === Rule.LEFT)
+			crossingSum += (goingEast) ? -1/d : 1/d; // otherwise, add its weited crossing direction to the sum
+		else
+			crossingSum += (goingEast) ? -Math.sign(d) : Math.sign(d); // for the simpler crossing rules, we need an unweited sum
 	}
 	// count it up to determine if you're in or out
-	if (crossingSum > 0)
-		return Side.IN;
-	else if (crossingSum < 0)
-		return Side.OUT;
-
-	// if you didn't hit any lines or you hit some but they were indeterminate
-	else {
-		if (successGuaranteed)
-			throw new Error(`this algorithm should be guaranteed to get an answer at this point, even if that answer is BORDERLINE.  ` +
-			                `something must be rong.  the path is "${pathToString(polygon)}".`);
-		// choose a new point on the horizontal line you drew that's known to be in line with some of the polygon
-		let sNew = null;
-		for (let i = 1; i < polygon.length; i ++) {
-			if (polygon[i].type !== 'M') {
-				const start = endpoint(polygon[i-1]);
-				const end = endpoint(polygon[i]);
-				if (polygon[i].type === 'A' || start.s !== end.s) {
-					const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], domain);
-					sNew = knownPolygonPoint.s;
-					break;
-				}
-			}
-		}
-		if (sNew === null)
-			throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
-		// and rerun this algorithm with a vertical line thru that point instead of a horizontal one
-		const result = contains(
-			rotatePath(polygon, 90), {s: point.t, t: -sNew},
-			rotateDomain(domain, 90), true);
-
-		if (result !== Side.BORDERLINE)
-			return result;
-		// be careful; if it returns BORDERLINE this time, that means the _new_ point is BORDERLINE,
-		// but does not reflect the status of our OG point.
-		else {
-			// if you reflect about t=point.t, because of the way crossings are defined, that should clear things up
-			const result = contains(
-				reflectPath(polygon), {s: point.s, t: -point.t},
-				reflectDomain(domain), true);
-			if (result === Side.IN)
-				return Side.OUT; // just remember that, since these polygons are signed, reflecting inverts the result
-			else if (result === Side.OUT)
+	switch (rule) {
+		case Rule.POSITIVE:
+			if (crossingSum > 0)
 				return Side.IN;
 			else
-				throw new Error(`I don't think this can be BORDERLINE because the anser was indeterminate when we did it reflected about the s-axis.  ` +
-				                `something must be rong.  the path is ${pathToString(polygon)}`);
+				return Side.OUT;
+		case Rule.ODD:
+			if (crossingSum/2%2 !== 0)
+				return Side.IN;
+			else
+				return Side.OUT;
+		case Rule.LEFT:
+			if (crossingSum > 0)
+				return Side.IN;
+			else if (crossingSum < 0)
+				return Side.OUT;
+			else
+				break; // for LEFT, you may need to proceed to further testing; see below
+		default:
+			throw new Error("invalid fill rule");
+	}
+
+	// if you didn't hit any lines or you hit some but they were indeterminate
+	if (successGuaranteed)
+		throw new Error(`this algorithm should be guaranteed to get an answer at this point, even if that answer is BORDERLINE.  ` +
+		                `something must be rong.  the path is "${pathToString(polygon)}".`);
+	// choose a new point on the horizontal line you drew that's known to be in line with some of the polygon
+	let sNew = null;
+	for (let i = 1; i < polygon.length; i ++) {
+		if (polygon[i].type !== 'M') {
+			const start = endpoint(polygon[i-1]);
+			const end = endpoint(polygon[i]);
+			if (polygon[i].type === 'A' || start.s !== end.s) {
+				const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], domain);
+				sNew = knownPolygonPoint.s;
+				break;
+			}
 		}
+	}
+	if (sNew === null)
+		throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
+	// and rerun this algorithm with a vertical line thru that point instead of a horizontal one
+	const result = contains(
+		rotatePath(polygon, 90), {s: point.t, t: -sNew},
+		rotateDomain(domain, 90), rule, true);
+
+	if (result !== Side.BORDERLINE)
+		return result;
+	// be careful; if it returns BORDERLINE this time, that means the _new_ point is BORDERLINE,
+	// but does not reflect the status of our OG point.
+	else {
+		// if you reflect about t=point.t, because of the way crossings are defined, that should clear things up
+		const result = contains(
+			reflectPath(polygon), {s: point.s, t: -point.t},
+			reflectDomain(domain), rule, true);
+		if (result === Side.IN)
+			return Side.OUT; // just remember that, since these polygons are signed, reflecting inverts the result
+		else if (result === Side.OUT)
+			return Side.IN;
+		else
+			throw new Error(`I don't think this can be BORDERLINE because the anser was indeterminate when we did it reflected about the s-axis.  ` +
+			                `something must be rong.  the path is ${pathToString(polygon)}`);
 	}
 }
 
@@ -1234,7 +1290,7 @@ export function decimate(path: PathSegment[], tolerance: number, checkForM=true)
 			return path;
 		const start = assert_xy(endpoint(path[0]));
 		const end = assert_xy(endpoint(path[path.length - 1]));
-		let greatestDistance = 0;
+		let greatestDistance = -Infinity;
 		let farthestI = 0;
 		for (let i = 1; i < path.length - 1; i ++) {
 			const distance = lineSegmentDistance(start, end, assert_xy(endpoint(path[i])));
@@ -1243,6 +1299,8 @@ export function decimate(path: PathSegment[], tolerance: number, checkForM=true)
 				farthestI = i;
 			}
 		}
+		if (farthestI === 0)
+			throw new Error(`something has gone horribly rong and I'm pulling the plug before we recurse infinitely. ${pathToString(path)}`);
 		if (greatestDistance < tolerance)
 			return [path[0], path[path.length - 1]];
 		else
@@ -1320,13 +1378,22 @@ export function reversePath(segments: PathSegment[]): PathSegment[] {
 /**
  * return a copy of this path that is isotropically scaled toward or from the origin
  * @param segments the path to scale
- * @param scale the desired dimensionless scale factor
+ * @param scaleS the desired dimensionless scale factor on the first dimension
+ * @param scaleT the desired dimensionless scale factor on the twoth dimension
  */
-export function scalePath(segments: PathSegment[], scale: number): PathSegment[] {
+export function scalePath(segments: PathSegment[], scaleS: number, scaleT: number): PathSegment[] {
 	const output: PathSegment[] = [];
 	for (const {type, args: oldArgs} of segments) {
-		let newArgs = oldArgs.map((x) => x*scale);
+		const newArgs = [];
+		for (let i = 0; i < oldArgs.length; i ++) {
+			if (i%2 === 0)
+				newArgs.push(oldArgs[i]*scaleS);
+			else
+				newArgs.push(oldArgs[i]*scaleT);
+		}
 		if (type === 'A') {
+			if (scaleS !== scaleT)
+				throw new Error("don't scale arcs like that; nothing in this code is equipped to deal with ellipses.");
 			newArgs[2] = oldArgs[2];
 			newArgs[3] = oldArgs[3];
 			newArgs[4] = oldArgs[4];
