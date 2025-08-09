@@ -8,7 +8,7 @@ import {
 	calculatePathBounds,
 	contains,
 	getAllCombCrossings,
-	INFINITE_PLANE, rotatePath,
+	INFINITE_PLANE, reversePath, rotatePath,
 	Rule,
 	Side
 } from "../mapping/pathutilities.js";
@@ -19,18 +19,15 @@ import {offset} from "./offset.js";
  * generate a set of random points in a region of a plane
  * where no two points are closer than a given minimum distance.
  * @param region the path that defines the bounds of the region to sample
+ * @param walls any line features that samples need to avoid
  * @param density the density of points to attempt.  the actual density will be lower if miDistance is nonzero; it will max out somewhere around 0.69minDistance**-2
  * @param minDistance the minimum allowable distance between two samples
  * @param rng the random number generator to use
  */
-export function poissonDiscSample(region: PathSegment[], density: number, minDistance: number, rng: Random): XYPoint[] {
+export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][], density: number, minDistance: number, rng: Random): XYPoint[] {
 	// decide on the area to sample
 	const feasibleRegion = offset(region, -minDistance/2);
 	const domainBounds = calculatePathBounds(feasibleRegion);
-	domainBounds.sMin -= minDistance; // expand the domain area by R so that you don't get points clustering on the edge
-	domainBounds.sMax += minDistance;
-	domainBounds.tMin -= minDistance;
-	domainBounds.tMax += minDistance;
 
 	// establish the grid
 	const gridScale = minDistance/Math.sqrt(2);
@@ -50,12 +47,9 @@ export function poissonDiscSample(region: PathSegment[], density: number, minDis
 	// the index of the sample in each grid cell, or null if there is none
 	const cellContent: number[][] = [];
 	for (let i = 0; i < numX; i ++) {
-		cellFeasibility.push([]);
 		cellContent.push([]);
-		for (let j = 0; j < numY; j ++) {
-			cellFeasibility[i].push(null);
+		for (let j = 0; j < numY; j ++)
 			cellContent[i].push(null);
-		}
 	}
 
 	// decide on the order in which you will test each cell
@@ -65,6 +59,14 @@ export function poissonDiscSample(region: PathSegment[], density: number, minDis
 			if (cellFeasibility[i][j] !== Side.OUT)
 				feasibleCells.push({i: i, j: j});
 	shuffle(feasibleCells, rng);
+
+	// decide on any additional areas where you definitely can't sample
+	const forbiddenRegions = [];
+	for (const wall of walls)
+		forbiddenRegions.push(offset(wall, minDistance/2).concat(offset(reversePath(wall), minDistance/2)));
+	const cellForbidenness = [];
+	for (const forbiddenRegion of forbiddenRegions)
+		cellForbidenness.push(rasterInclusion(forbiddenRegion, grid, Rule.POSITIVE));
 
 	// draw a certain number of candidates
 	const feasibleArea = grid.Δx*grid.Δy*feasibleCells.length;
@@ -95,10 +97,15 @@ export function poissonDiscSample(region: PathSegment[], density: number, minDis
 			}
 		}
 		// make sure it's in
-		if (cellFeasibility[index.i][index.j] === Side.BORDERLINE)
-			if (!contains(feasibleRegion, generic(candidate), INFINITE_PLANE, Rule.POSITIVE))
+		if (cellFeasibility[index.i][index.j] !== Side.IN)
+			if (contains(feasibleRegion, generic(candidate), INFINITE_PLANE, Rule.POSITIVE) !== Side.IN)
 				continue;
-		// if it passes both tests, add it to the list and mark this cell
+		// make sure it's not clipping thru a wall
+		for (let l = 0; l < forbiddenRegions.length; l ++)
+			if (cellForbidenness[l][index.i][index.j] !== Side.OUT)
+				if (contains(forbiddenRegions[l], generic(candidate), INFINITE_PLANE, Rule.POSITIVE) !== Side.OUT)
+					continue candidateGeneration;
+		// if it passes all tests, add it to the list and mark this cell
 		cellContent[index.i][index.j] = points.length;
 		points.push(candidate);
 	}
@@ -126,16 +133,24 @@ export function rasterInclusion(region: PathSegment[], grid: Grid, rule: Rule): 
 	const verticalCrossings = getAllCombCrossings(region, grid.yMin, grid.Δy, INFINITE_PLANE);
 	for (const verticalCrossing of verticalCrossings) {
 		const j = verticalCrossing.j;
-		const {i} = bin({x: verticalCrossing.s, y: grid.yMin}, grid);
-		result[i][j - 1] = Side.BORDERLINE;
-		result[i][j] = Side.BORDERLINE;
+		const i = Math.min(Math.floor((verticalCrossing.s - grid.xMin)/grid.Δx), grid.numX - 1);
+		if (i >= 0 && i < grid.numX) {
+			if (j - 1 >= 0 && j - 1 < grid.numY)
+				result[i][j - 1] = Side.BORDERLINE;
+			if (j >= 0 && j < grid.numY)
+				result[i][j] = Side.BORDERLINE;
+		}
 	}
 	const horizontalCrossings = getAllCombCrossings(rotatePath(region, 270), grid.xMin, grid.Δx, INFINITE_PLANE);
 	for (const horizontalCrossing of horizontalCrossings) {
 		const i = horizontalCrossing.j;
-		const {j} = bin({x: grid.xMin, y: -horizontalCrossing.s}, grid);
-		result[i - 1][j] = Side.BORDERLINE;
-		result[i][j] = Side.BORDERLINE;
+		const j = Math.min(Math.floor((-horizontalCrossing.s - grid.yMin)/grid.Δy), grid.numY - 1);
+		if (j >= 0 && j < grid.numY) {
+			if (i - 1 >= 0 && i - 1 < grid.numX)
+				result[i - 1][j] = Side.BORDERLINE;
+			if (i >= 0 && i < grid.numX)
+				result[i][j] = Side.BORDERLINE;
+		}
 	}
 
 	// finally, go thru the remaining cells and set them to IN or OUT
@@ -191,22 +206,6 @@ function shuffle<T>(array: T[], rng: Random): void {
 		array[j] = a;
 		array[i] = b;
 	}
-}
-
-
-/**
- * get the indices of the grid cell that contains the given point
- * @return i: the index of the column corresponding to point.x, and j: the index of the row corresponding to point.y
- */
-function bin(point: XYPoint, grid: Grid): {i: number, j: number} {
-	if (point.x < grid.xMin || point.x - grid.xMin > grid.Δx*grid.numX)
-		throw new Error(`this point is out of the grid's x-bounds: (${point.x}, ${point.y}) where ${grid.xMin} <= x <= ${grid.xMin + grid.Δx*grid.numX}.`);
-	if (point.y < grid.yMin || point.y - grid.yMin > grid.Δy*grid.numY)
-		throw new Error(`this point is out of the grid's y-bounds: (${point.x}, ${point.y}) where ${grid.yMin} <= y <= ${grid.yMin + grid.Δy*grid.numY}.`);
-	return {
-		i: Math.min(Math.floor((point.x - grid.xMin)/grid.Δx), grid.numX - 1),
-		j: Math.min(Math.floor((point.y - grid.yMin)/grid.Δy), grid.numY - 1),
-	};
 }
 
 

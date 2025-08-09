@@ -492,7 +492,8 @@ export class Chart {
 			svg.children.push(rectangle);
 		}
 
-		const coloredRegions: {path: PathSegment[], fill: string}[] = [];
+		const lineFeatures: PathSegment[][] = [];
+		const areaFeatures: {path: PathSegment[], color: string}[] = [];
 		const politicalColorMap = new Map<number, string>();
 
 		// color in the land
@@ -561,7 +562,7 @@ export class Chart {
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
 					g, color, Layer.KULTUR);
 				if (path.length > 0) {
-					coloredRegions.push({path: path, fill: color});
+					areaFeatures.push({path: path, color: color});
 					politicalColorMap.set(civ.id, color);
 					numFilledCivs ++;
 				}
@@ -576,7 +577,7 @@ export class Chart {
 				const path = this.fill(
 					filterSet(surface.tiles, n => !n.isWater() && n.height >= min && n.height < max),
 					g, ALTITUDE_COLORS[i], Layer.GEO);
-				coloredRegions.push({path: path, fill: ALTITUDE_COLORS[i]});
+				areaFeatures.push({path: path, color: ALTITUDE_COLORS[i]});
 			}
 		}
 		else {
@@ -589,8 +590,9 @@ export class Chart {
 		// add rivers
 		if (rivers) {
 			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR/this.scale**2;
-			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
+			const line = this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
 				svg, colorScheme.waterStroke, 1.4, Layer.GEO);
+			lineFeatures.push(line);
 		}
 
 		// color in the sea
@@ -625,9 +627,10 @@ export class Chart {
 				throw new Error("this Chart was asked to draw political borders but the provided World was null");
 			const g = Chart.createSVGGroup(svg, "borders");
 			for (const civ of world.getCivs()) {
-				this.fill(
+				const line = this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
 					g, 'none', Layer.KULTUR, colorScheme.primaryStroke, 0.7);
+				lineFeatures.push(line);
 			}
 		}
 
@@ -641,6 +644,7 @@ export class Chart {
 				filterSet(surface.tiles, n => n.isWater() && !n.isIceCovered()),
 				svg, 'none', Layer.BIO, colorScheme.waterStroke, 0.7);
 
+		// add some horizontal hatching around the coast
 		if (seaTexture) {
 			const g = Chart.createSVGGroup(svg, "sea-texture");
 			const landPolygon = this.projectedOutline(
@@ -654,7 +658,7 @@ export class Chart {
 
 		// add some terrain elements for texture
 		if (landTexture) {
-			const symbols = this.generateTexture(surface.tiles, colorSchemeName);
+			const symbols = this.generateTexture(surface.tiles, colorSchemeName, lineFeatures);
 			const textureNames = new Set<string>();
 			for (const symbol of symbols)
 				textureNames.add(symbol.name);
@@ -676,9 +680,9 @@ export class Chart {
 				`stroke:${colorScheme.secondaryStroke}; stroke-width:0.35; stroke-linejoin:round`;
 			for (const {x, y, name, fill} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
-				for (const region of coloredRegions) { // check if it should inherit color from a base fill
+				for (const region of areaFeatures) { // check if it should inherit color from a base fill
 					if (contains(region.path, {s: x, t: y})) {
-						picture.attributes.fill = region.fill;
+						picture.attributes.fill = region.color;
 						break;
 					}
 				}
@@ -827,7 +831,7 @@ export class Chart {
 	 * @returns the newly created element comprising all these lines
 	 */
 	stroke(strokes: Iterable<ΦΛPoint[]>, svg: VNode,
-	       color: string, width: number, greeble: Layer, strokeLinejoin = 'round'): VNode {
+	       color: string, width: number, greeble: Layer, strokeLinejoin = 'round'): PathSegment[] {
 		let segments = this.projectPath(
 			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.scale), false);
 		if (SMOOTH_RIVERS)
@@ -835,7 +839,7 @@ export class Chart {
 		const path = this.draw(segments, svg);
 		path.attributes.style =
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: round;`;
-		return path;
+		return segments;
 	}
 
 	/**
@@ -916,8 +920,9 @@ export class Chart {
 	 * describe a bunch of random symbols to put on the map to indicate biome and elevation
 	 * @param tiles the tiles being textured
 	 * @param colorSchemeName the color scheme
+	 * @param lineFeatures any lines on the map to avoid
 	 */
-	generateTexture(tiles: Set<Tile>, colorSchemeName: string): {name: string, x: number, y: number, fill: string}[] {
+	generateTexture(tiles: Set<Tile>, colorSchemeName: string, lineFeatures: PathSegment[][]): {name: string, x: number, y: number, fill: string}[] {
 		const textureMixLookup = new Map<string, {name: string, density: number}[]>();
 		const textureRadiusLookup = new Map<string, number>();
 		for (const {name, minSpacing, components} of TEXTURE_MIXES) {
@@ -937,7 +942,7 @@ export class Chart {
 				let region = filterSet(tiles, t =>
 					t.biome === biome && t.height >= altitudeClass.min && t.height < altitudeClass.max);
 				if (region.size > 0) {
-					const polygon = this.projectedOutline(region, Layer.BIO);
+					const polygon = this.projectedOutline(region, Layer.KULTUR);
 					if (polygon.length > 0) {
 						let fill;
 						if (colorSchemeName === 'physical')
@@ -971,8 +976,9 @@ export class Chart {
 						// choose the locations (remember to scale vertically since we're looking down at a 45° angle)
 						const sinθ = Math.sqrt(1/2);
 						const scaledPolygon = scalePath(polygonize(polygon), 1, 1/sinθ);
+						const scaledLineFeatures = lineFeatures.map((line) => scalePath(polygonize(line), 1, 1/sinθ));
 						const scaledLocations = poissonDiscSample(
-							scaledPolygon, totalDensity, minSpacing, rng);
+							scaledPolygon, scaledLineFeatures, totalDensity, minSpacing, rng);
 						const locations = scaledLocations.map(({x, y}) => ({x: x, y: y*sinθ}));
 						// and then divvy those locations up among the different components of the texture
 						let index = 0;

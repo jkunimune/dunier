@@ -358,7 +358,7 @@ test("poissonDisc()", () => {
 		{type: 'L', args: [3, 0]},
 		{type: 'L', args: [0, 0]},
 	];
-	const points = poissonDiscSample(path, Infinity, 1.0, new Random(0));
+	const points = poissonDiscSample(path, [], Infinity, 1.0, new Random(0));
 	expect(points.length).toBeGreaterThanOrEqual(4);
 	expect(points.length).toBeLessThanOrEqual(9);
 	for (let i = 0; i < points.length; i ++) {
