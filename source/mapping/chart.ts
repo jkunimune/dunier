@@ -649,7 +649,7 @@ export class Chart {
 			const g = Chart.createSVGGroup(svg, "sea-texture");
 			const landPolygon = this.projectedOutline(
 				filterSet(surface.tiles, t => !t.isWater()), Layer.GEO);
-			this.hatchShadow(landPolygon, g, 1.0, 3.0);
+			this.hatchShadow(landPolygon, g, 1.2, 3.0);
 			const color = (colorScheme.waterStroke !== colorScheme.waterFill) ?
 				colorScheme.waterStroke : colorScheme.secondaryStroke;
 			g.attributes.style =

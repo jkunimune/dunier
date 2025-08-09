@@ -170,7 +170,7 @@ worker.onmessage = (message) => {
 worker.onerror = (error) => {
 	console.error(error);
 	if (error.message === undefined)
-		console.error("the worker threw an error that doesn't have a message!  is it a syntax issue?");
+		console.error("the worker threw an error that doesn't have a message!  is it a syntax issue, or maybe an import error?");
 	else {
 		const message = error.message.split(":")[1].trim();
 		if (message.startsWith("Too fast"))
