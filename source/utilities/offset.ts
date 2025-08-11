@@ -13,9 +13,12 @@ import {angleSign, arcCenter} from "./geometry.js";
  * the resulting path won't necessarily be nice; there may be a lot of self-intersection.
  * but if you just use a nonzero fill winding it _will_ contain the correct set of points.
  * @param path the shape to be offset.  it may have multiple parts, but it must be closed.
- * @param offset the distance.
+ * @param offset the distance; positive for dilation and negative for erosion.
  */
 export function offset(path: PathSegment[], offset: number): PathSegment[] {
+	if (offset === 0)
+		return path;
+
 	// first, discard any detail that will be lost when we turn everything into arcs
 	path = decimate(path, offset/6);
 	// then switch to our fancy new arc notation

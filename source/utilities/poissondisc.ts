@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 
-import {generic, PathSegment, XYPoint} from "./coordinates.js";
+import {generic, PathSegment} from "./coordinates.js";
 import {
 	calculatePathBounds,
 	contains,
@@ -14,23 +14,23 @@ import {
 } from "../mapping/pathutilities.js";
 import {Random} from "./random.js";
 import {offset} from "./offset.js";
+import {binarySearch} from "./miscellaneus.js";
 
 /**
- * generate a set of random points in a region of a plane
- * where no two points are closer than a given minimum distance.
+ * generate a set of random non-overlapping discs in a region of a plane.
  * @param region the path that defines the bounds of the region to sample
  * @param walls any line features that samples need to avoid
- * @param density the density of points to attempt.  the actual density will be lower if miDistance is nonzero; it will max out somewhere around 0.69minDistance**-2
- * @param minDistance the minimum allowable distance between two samples
+ * @param discTypes the list of types of sample.  each has a density of times to attempt it (the actual density will be lower if diameter is nonzero; it will max out somewhere around 0.69diameter**-2) and a diameter which represents how close it may be to other samples.
  * @param rng the random number generator to use
  */
-export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][], density: number, minDistance: number, rng: Random): XYPoint[] {
-	// decide on the area to sample
-	const feasibleRegion = offset(region, -minDistance/2);
-	const domainBounds = calculatePathBounds(feasibleRegion);
+export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][], discTypes: {density: number, diameter: number}[], rng: Random): {type: number, x: number, y: number}[] {
+	// establish the closest any two points can possibly be
+	const minDistance = Math.min(...discTypes.map(({diameter}) => diameter));
+	const maxRadius = Math.max(...discTypes.map(({diameter}) => diameter))/2;
 
 	// establish the grid
-	const gridScale = minDistance/Math.sqrt(2);
+	const domainBounds = calculatePathBounds(region);
+	const gridScale = minDistance/Math.sqrt(2); // set this so that each cell has no more than one sample
 	const numX = Math.ceil((domainBounds.sMax - domainBounds.sMin)/gridScale);
 	const numY = Math.ceil((domainBounds.tMax - domainBounds.tMin)/gridScale);
 	const grid = {
@@ -42,8 +42,18 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 		Δy: gridScale,
 	};
 
+	// the region in which centers may exist
+	const feasibleRegion = new Map<number, PathSegment[]>();
+	feasibleRegion.set(0, region);
+	for (const {diameter} of discTypes)
+		if (!feasibleRegion.has(diameter))
+			feasibleRegion.set(diameter, offset(region, -diameter/2));
+
 	// whether each cell is fully in the feasible space, fully infeasible, or mixed
-	const cellFeasibility = rasterInclusion(feasibleRegion, grid, Rule.POSITIVE);
+	const cellFeasibility = new Map<number, Side[][]>();
+	for (const diameter of feasibleRegion.keys())
+		cellFeasibility.set(diameter, rasterInclusion(feasibleRegion.get(diameter), grid, Rule.POSITIVE));
+
 	// the index of the sample in each grid cell, or null if there is none
 	const cellContent: number[][] = [];
 	for (let i = 0; i < numX; i ++) {
@@ -56,34 +66,71 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 	const feasibleCells: {i: number, j: number}[] = [];
 	for (let i = 0; i < numX; i ++)
 		for (let j = 0; j < numY; j ++)
-			if (cellFeasibility[i][j] !== Side.OUT)
+			// look for cells that could contain the smallest discs; make sure they're also in the plain region (that last check is necessary because my offsets are janky)
+			if (cellFeasibility.get(minDistance)[i][j] !== Side.OUT && cellFeasibility.get(0)[i][j] !== Side.OUT)
 				feasibleCells.push({i: i, j: j});
 	shuffle(feasibleCells, rng);
 
 	// decide on any additional areas where you definitely can't sample
-	const forbiddenRegions = [];
-	for (const wall of walls)
-		forbiddenRegions.push(offset(wall, minDistance/2).concat(offset(reversePath(wall), minDistance/2)));
-	const cellForbidenness = [];
-	for (const forbiddenRegion of forbiddenRegions)
-		cellForbidenness.push(rasterInclusion(forbiddenRegion, grid, Rule.POSITIVE));
+	const forbiddenRegions: Map<number, PathSegment[]>[] = [];
+	const cellForbidenness: Map<number, Side[][]>[] = [];
+	for (let l = 0; l < walls.length; l ++) {
+		forbiddenRegions.push(new Map<number, PathSegment[]>());
+		cellForbidenness.push(new Map<number, Side[][]>());
+		for (const diameter of feasibleRegion.keys()) {
+			forbiddenRegions[l].set(
+				diameter,
+				offset(walls[l], diameter/2).concat(offset(reversePath(walls[l]), diameter/2)));
+			cellForbidenness[l].set(
+				diameter,
+				rasterInclusion(forbiddenRegions[l].get(diameter), grid, Rule.POSITIVE));
+		}
+	}
+
+	// prepare to randomly choose types for each sample
+	const cumulativeProbability = [0];
+	for (let type = 0; type < discTypes.length; type ++)
+		cumulativeProbability.push(cumulativeProbability[type] + discTypes[type].density);
+	const scalingFactor = cumulativeProbability[discTypes.length];
+	for (let type = 0; type <= discTypes.length; type ++)
+		cumulativeProbability[type] /= scalingFactor;
+	// in particular, take care to fix any nans in the event of infinite (i.e. maximal) densities
+	if (scalingFactor === Infinity) {
+		for (let type = 0; type <= discTypes.length; type ++) {
+			if (type < discTypes.length && discTypes[type].density !== Infinity)
+				throw new Error("don't call this function where some types have infinite diameter and others don't.  that doesn't make any sense.  either all should be infinite or none should be.");
+			else
+				cumulativeProbability[type] = type/discTypes.length;
+		}
+	}
 
 	// draw a certain number of candidates
+	let totalDensity = 0;
+	for (const {density} of discTypes)
+		totalDensity += density;
 	const feasibleArea = grid.Δx*grid.Δy*feasibleCells.length;
-	const numCandidates = Math.round(feasibleArea*Math.min(100/minDistance**2, density));
-	const points: XYPoint[] = [];
+	const numCandidates = Math.round(feasibleArea*Math.min(100/minDistance**2, totalDensity));
+	const points: {type: number, x: number, y: number, diameter: number}[] = [];
 	candidateGeneration:
 	for (let k = 0; k < numCandidates; k ++) {
+		// take the next cell in the list
 		const index = feasibleCells[k%feasibleCells.length];
+		// make sure this cell isn't occupied
+		if (cellContent[index.i][index.j] !== null)
+			continue;
+		// generate the candidate
+		const typeCutoff = rng.random();
+		const type = binarySearch(cumulativeProbability, (x) => x > typeCutoff) - 1;
 		const candidate = {
+			type: type,
+			diameter: discTypes[type].diameter,
 			x: grid.xMin + index.i*grid.Δx + rng.uniform(0, grid.Δx),
 			y: grid.yMin + index.j*grid.Δy + rng.uniform(0, grid.Δy),
 		};
 		// make sure it's not too close to any other points
-		if (cellContent[index.i][index.j] !== null)
-			continue;
-		for (let iPrime = index.i - 2; iPrime <= index.i + 2; iPrime ++) {
-			for (let jPrime = index.j - 2; jPrime <= index.j + 2; jPrime ++) {
+		const searchRadius = Math.ceil((candidate.diameter/2 + maxRadius)/gridScale);
+		for (let iPrime = index.i - searchRadius; iPrime <= index.i + searchRadius; iPrime ++) {
+			for (let jPrime = index.j - searchRadius; jPrime <= index.j + searchRadius; jPrime ++) {
 				if (iPrime >= 0 && iPrime < grid.numX &&
 					jPrime >= 0 && jPrime < grid.numY &&
 					cellContent[iPrime][jPrime] !== null
@@ -91,20 +138,37 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 					const priorPoint = points[cellContent[iPrime][jPrime]];
 					const distance = Math.hypot(
 						candidate.x - priorPoint.x, candidate.y - priorPoint.y);
-					if (distance < minDistance)
+					if (distance < (candidate.diameter + priorPoint.diameter)/2)
 						continue candidateGeneration;
 				}
 			}
 		}
 		// make sure it's in
-		if (cellFeasibility[index.i][index.j] !== Side.IN)
-			if (contains(feasibleRegion, generic(candidate), INFINITE_PLANE, Rule.POSITIVE) !== Side.IN)
+		if (cellFeasibility.get(candidate.diameter)[index.i][index.j] === Side.OUT)
+			continue;
+		else if (cellFeasibility.get(candidate.diameter)[index.i][index.j] === Side.BORDERLINE) {
+			const candidateFeasibility = contains(
+				feasibleRegion.get(candidate.diameter),
+				generic(candidate),
+				INFINITE_PLANE, Rule.POSITIVE,
+			);
+			if (candidateFeasibility === Side.OUT)
 				continue;
+		}
 		// make sure it's not clipping thru a wall
-		for (let l = 0; l < forbiddenRegions.length; l ++)
-			if (cellForbidenness[l][index.i][index.j] !== Side.OUT)
-				if (contains(forbiddenRegions[l], generic(candidate), INFINITE_PLANE, Rule.POSITIVE) !== Side.OUT)
+		for (let l = 0; l < forbiddenRegions.length; l ++) {
+			if (cellForbidenness[l].get(candidate.diameter)[index.i][index.j] === Side.IN)
+				continue candidateGeneration;
+			else if (cellForbidenness[l].get(candidate.diameter)[index.i][index.j] === Side.BORDERLINE) {
+				const candidateForbiddenness = contains(
+					forbiddenRegions[l].get(candidate.diameter),
+					generic(candidate),
+					INFINITE_PLANE, Rule.POSITIVE,
+				);
+				if (candidateForbiddenness === Side.IN)
 					continue candidateGeneration;
+			}
+		}
 		// if it passes all tests, add it to the list and mark this cell
 		cellContent[index.i][index.j] = points.length;
 		points.push(candidate);
@@ -133,7 +197,7 @@ export function rasterInclusion(region: PathSegment[], grid: Grid, rule: Rule): 
 	const verticalCrossings = getAllCombCrossings(region, grid.yMin, grid.Δy, INFINITE_PLANE);
 	for (const verticalCrossing of verticalCrossings) {
 		const j = verticalCrossing.j;
-		const i = Math.min(Math.floor((verticalCrossing.s - grid.xMin)/grid.Δx), grid.numX - 1);
+		const i = Math.floor((verticalCrossing.s - grid.xMin)/grid.Δx);
 		if (i >= 0 && i < grid.numX) {
 			if (j - 1 >= 0 && j - 1 < grid.numY)
 				result[i][j - 1] = Side.BORDERLINE;
@@ -144,7 +208,7 @@ export function rasterInclusion(region: PathSegment[], grid: Grid, rule: Rule): 
 	const horizontalCrossings = getAllCombCrossings(rotatePath(region, 270), grid.xMin, grid.Δx, INFINITE_PLANE);
 	for (const horizontalCrossing of horizontalCrossings) {
 		const i = horizontalCrossing.j;
-		const j = Math.min(Math.floor((-horizontalCrossing.s - grid.yMin)/grid.Δy), grid.numY - 1);
+		const j = Math.floor((-horizontalCrossing.s - grid.yMin)/grid.Δy);
 		if (j >= 0 && j < grid.numY) {
 			if (i - 1 >= 0 && i - 1 < grid.numX)
 				result[i - 1][j] = Side.BORDERLINE;

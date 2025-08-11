@@ -922,13 +922,12 @@ export class Chart {
 	 * @param colorSchemeName the color scheme
 	 * @param lineFeatures any lines on the map to avoid
 	 */
+
 	generateTexture(tiles: Set<Tile>, colorSchemeName: string, lineFeatures: PathSegment[][]): {name: string, x: number, y: number, fill: string}[] {
-		const textureMixLookup = new Map<string, {name: string, density: number}[]>();
-		const textureRadiusLookup = new Map<string, number>();
-		for (const {name, minSpacing, components} of TEXTURE_MIXES) {
+		const textureMixLookup = new Map<string, {name: string, density: number, diameter: number}[]>();
+		for (const {name, components} of TEXTURE_MIXES)
 			textureMixLookup.set(name, components);
-			textureRadiusLookup.set(name, minSpacing);
-		}
+
 		const rng = new Random(0);
 		const symbols: {x: number, y: number, name: string, fill: string}[] = [];
 		// for each non-aquatic biome
@@ -953,43 +952,31 @@ export class Chart {
 						// get the plant texture
 						const plantComponents = textureMixLookup.has(BIOME_NAMES[biome]) ?
 							textureMixLookup.get(BIOME_NAMES[biome]) : [];
-						let plantDensity = 0;
+						let plantCoverage = 0;
 						for (const plant of plantComponents)
-							plantDensity += plant.density;
+							plantCoverage += plant.density*plant.diameter**2;
 						// get the topographic texture
 						const rockComponents = textureMixLookup.get(altitudeClass.name);
-						let rockDensity = 0;
+						let rockCoverage = 0;
 						for (const rock of rockComponents)
-							rockDensity += rock.density;
+							rockCoverage += rock.density*rock.diameter**2;
 						// put them together, and scale the plant density to make room for the rocks
-						let totalDensity = Math.max(plantDensity, rockDensity);
-						const plantFactor = (totalDensity - rockDensity)/plantDensity;
+						let totalCoverage = Math.max(plantCoverage, rockCoverage);
+						const plantFactor = (totalCoverage - rockCoverage)/plantCoverage;
 						const components = rockComponents.slice();
-						for (const {name, density} of plantComponents)
-							components.push({name: name, density: density*plantFactor});
-
-						// set how much space each symbol should get
-						const minSpacing = Math.max(
-							textureRadiusLookup.get(BIOME_NAMES[biome]),
-							textureRadiusLookup.get(altitudeClass.name));
+						for (const {name, diameter, density} of plantComponents)
+							components.push({name: name, diameter: diameter, density: density*plantFactor});
 
 						// choose the locations (remember to scale vertically since we're looking down at a 45° angle)
 						const sinθ = Math.sqrt(1/2);
 						const scaledPolygon = scalePath(polygonize(polygon), 1, 1/sinθ);
 						const scaledLineFeatures = lineFeatures.map((line) => scalePath(polygonize(line), 1, 1/sinθ));
 						const scaledLocations = poissonDiscSample(
-							scaledPolygon, scaledLineFeatures, totalDensity, minSpacing, rng);
-						const locations = scaledLocations.map(({x, y}) => ({x: x, y: y*sinθ}));
+							scaledPolygon, scaledLineFeatures, components, rng);
+						const locations = scaledLocations.map(({x, y, type}) => ({x: x, y: y*sinθ, type: type}));
 						// and then divvy those locations up among the different components of the texture
-						let index = 0;
-						for (const {name, density} of components) {
-							const number = Math.round(
-								density/totalDensity*(locations.length - index));
-							for (const {x, y} of locations.slice(index, index + number))
-								symbols.push({x: x, y: y, name: name, fill: fill});
-							totalDensity -= density;
-							index += number;
-						}
+						for (const {x, y, type} of locations)
+							symbols.push({x: x, y: y, name: components[type].name, fill: fill});
 					}
 				}
 			}
