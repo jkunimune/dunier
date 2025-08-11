@@ -48,7 +48,7 @@ export default class Queue<E> {
 	}
 
 	public pop(): E {
-		if (this.length === 0) return undefined;
+		if (this.length === 0) throw new Error("can't pop from an empty queue");
 
 		const top = this.data[0];
 		const bottom = this.data.pop();
@@ -62,6 +62,7 @@ export default class Queue<E> {
 	}
 
 	public peek(): E {
+		if (this.length === 0) throw new Error("can't peek an empty queue");
 		return this.data[0];
 	}
 

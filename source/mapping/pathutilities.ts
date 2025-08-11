@@ -1,4 +1,20 @@
 /**
+ * This file contains miscellaneus functions for manipulating geometry expressed as SVG paths.
+ * note that for all the functions in this file, closed paths are directional.  that means that
+ * a widdershins path contains the points inside it and not the points outside it, as one would expect,
+ * but a clockwise path is considered inside-out, and only contains the points outside of it.
+ * in general, paths can also exist on either a planar Cartesian coordinate system where y is down,
+ * or on a doubly-periodic geographic coordinate system measured in radians.  both systems are left-handed.
+ *
+ * the main functions are contains(), which determines whether a given point is enclosed by a certain path,
+ * and intersection(), which is the geometric AND operation between an arbitrary path and a rectangular path.
+ * you may also use the get*Crossings() functions, which calculate intersections between two path segments.
+ * note that these are distingusihed from the getAll*Crossings() functions, which calculate intersections
+ * between a full path and infinite lines.
+ * the get*Crossings() functions take pains to correctly handle periodicity so that they work with geographic paths,
+ * but sometimes register a single intersection as two crossings.  the getAll*Crossings() functions, on the other hand,
+ * garantee that crossings are unique but don't work so well with periodicity.
+ *
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
@@ -15,14 +31,63 @@ import {
 	angleSign,
 	arcCenter,
 	lineArcIntersections,
-	lineLineIntersection
+	lineLineIntersection, lineSegmentDistance
 } from "../utilities/geometry.js";
-import {isBetween, localizeInRange, pathToString, Side} from "../utilities/miscellaneus.js";
+import {isBetween, localizeInRange, pathToString} from "../utilities/miscellaneus.js";
 import {MapProjection} from "./projection.js";
-import {Domain} from "../generation/surface/surface.js";
 
 
 const π = Math.PI;
+
+
+/**
+ * whether something is contained in a region or not
+ */
+export enum Side {
+	OUT, IN, BORDERLINE
+}
+
+/**
+ * a scheme used to consistently define whether a point is contained by a signed polygon
+ */
+export enum Rule {
+	POSITIVE, ODD, LEFT
+}
+
+
+// TODO: this should probably be in utilities/, and it should probably include pathToString and other functions like that.
+
+
+/**
+ * an object that encodes basic topologic information for a 2D coordinate system.
+ * it contains bounds, which should be either infinite for a Cartesian coordinate system,
+ * or two intervals of width 2π for an angular coordinate system.
+ */
+export class Domain {
+	public readonly sMin: number;
+	public readonly sMax: number;
+	public readonly tMin: number;
+	public readonly tMax: number;
+	public readonly isOnEdge: (point: Point) => boolean;
+
+	constructor(sMin: number, sMax: number, tMin: number, tMax: number, isOnEdge: (point: Point) => boolean) {
+		this.sMin = sMin;
+		this.sMax = sMax;
+		this.tMin = tMin;
+		this.tMax = tMax;
+		this.isOnEdge = isOnEdge;
+	}
+
+	isPeriodic() {
+		return Number.isFinite(this.sMin);
+	}
+}
+
+
+/**
+ * a domain with no edge and no periodicity in its coordinates
+ */
+export const INFINITE_PLANE = new Domain(-Infinity, Infinity, -Infinity, Infinity, (_) => false);
 
 
 /**
@@ -368,8 +433,12 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], doma
  *                   is not 1:1, this will be on the side corresponding to start.
  * @param intersect1 the intersection point. in the event that the coordinate system
  *                   is not 1:1, this will be on the side of segment's endpoint.
+ *                   if not passed, this defaults to the same as intersect0
  */
-function spliceSegment(start: Point, segment: PathSegment, intersect0: Point, intersect1: Point): PathSegment[] {
+function spliceSegment(start: Point, segment: PathSegment, intersect0: Point, intersect1: Point = null): PathSegment[] {
+	if (intersect1 === null)
+		intersect1 = intersect0;
+
 	const end = endpoint(segment);
 	if (start.s === intersect0.s && start.t === intersect0.t) // if you're splicing at the beginning
 		return [
@@ -452,24 +521,37 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], domai
 
 /**
  * find out if a point is contained by a polygon.
- * the direction of the polygon matters; if you're travelling along the polygon's edge,
- * points on your left are IN and points on your right are OUT.
+ * the direction of the polygon matters, depending on which rule you choose.
+ * generally, if you're travelling along the polygon's edge, points on your left are IN and points on your right are OUT.
  * if a point is on the polygon, it is considered BORDERLINE.
+ * for self-intersecting polygons or for polygons in geographic coordinates, there are nuances.
  * note that this operates on a left-handed coordinate system (if your y is decreasing, higher x is on your right).
  * also note that this function can fail to behave consistently when segments of the polygon move along the boundary of
- * the periodic domain ad point is also on the same boundary of the periodic domain.
+ * the periodic domain and point is also on the same boundary of the periodic domain.
  * @param polygon the path that defines the region we're checking.  it may jump across the boundary domains if
  *                periodicS and/or periodicT are set to true.  however, it may not intersect itself, and it must not
  *                form any ambiguusly included regions (like two concentric circles going the same way) or the result
  *                is undefined.
  * @param point the point that may or may not be in the region
  * @param domain the topology of the space on which these points' coordinates are defined
+ * @param rule one of "positive", "even", or "left".
+ *             - POSITIVE is like CSS "nonzero".  points far from the polygon are OUT,
+ *               and any number of positive wrappings will make a point IN.
+ *             - EVEN is like CSS "evenodd".  points far from the polygon are OUT,
+ *               and any odd number of wrappings in either direction will make a point IN.
+ *             - LEFT is only defined for non-self-intersecting polygons.  the space far from the polygon may be
+ *               IN or OUT depending on the sign of the outermost wrapping.  because no assumption is made about
+ *               points at infinity, this is the only one that works for non-planar domains.  with this rule, a
+ *               polygon with no sides contains the whole domain.
  * @param successGuaranteed if this is false and our line fails to conclusively determine containment, we might choose a
  *                          new point and recurse this function.  if it's true and that happens we'll just give up.
- * @return IN if the point is part of the polygon, OUT if it's separate from the polygon,
+ * @return IN if the point is contained by the polygon, OUT if it's not contained by the polygon it,
  *         and BORDERLINE if it's on the polygon's edge.
  */
-export function contains(polygon: PathSegment[], point: Point, domain: Domain, successGuaranteed=false): Side {
+export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_PLANE, rule=Rule.LEFT, successGuaranteed=false): Side {
+	if (rule !== Rule.LEFT && domain.isPeriodic())
+		throw new Error(`the fill-rule ${rule} is not defined for polygons on geographic domains.`);
+
 	let lastM = -Infinity;
 	let lastCurve = -Infinity;
 	for (let i = 0; i < polygon.length; i ++) {
@@ -483,8 +565,18 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, s
 			lastCurve = i;
 	}
 	
-	if (polygon.length === 0)
-		return Side.IN;
+	if (polygon.length === 0) {
+		switch (rule) {
+			case Rule.POSITIVE:
+				return Side.OUT;
+			case Rule.ODD:
+				return Side.OUT;
+			case Rule.LEFT:
+				return Side.IN;
+			default:
+				throw new Error("invalid fill rule");
+		}
+	}
 
 	// manually check for the most common forms of coincidences
 	for (let i = 1; i < polygon.length; i ++) {
@@ -510,9 +602,7 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, s
 	// chiefly because it needs to account for the directionality of the polygon.  drawing a ray from the point that
 	// doesn't intersect the polygon doesn't automaticly mean the point is out; you would need to then go and check
 	// whether the polygon is inside-out or not (or put more strictly, whether it contains the infinitely distant
-	// terminus of your ray). there are two modifications that have to be made here as a result.  first is that instead
-	// of a ray from the point in an arbitrary direction, our test path needs to be chosen to garantee it intersects the
-	// polygon.  this is acheved by calculating testPath as above.  twoth is that we need to mind the direction of the
+	// terminus of your ray). we need to mind the direction of the
 	// nearest crossing rather than just counting how many crossings there are in each direction.  nieve implementations
 	// of this will fail if the polygon has a vertex on the test path but doesn't *cross* the test path at that vertex,
 	// because if you're just noting the direction of the segments and the location where they intersect the path,
@@ -521,142 +611,81 @@ export function contains(polygon: PathSegment[], point: Point, domain: Domain, s
 	// *sum* them, weying them by how far they are from the point.  since the crossings should always alternate in
 	// direction when you look at them along a path, and any two crossings in the same place will now cancel out, it can
 	// be shown that the sign of that sum will then correspond to the nearest unambiguus crossing.
+	const intersections = getAllHorizontalLineCrossings(polygon, point.t, domain);
 	let crossingSum = 0.;
-	// iterate around the polygon
-	for (let i = 1; i < polygon.length; i ++) {
-		const start = endpoint(polygon[i - 1]);
-		const end = endpoint(polygon[i]);
-		// check to see if this segment crosses the test path and if so where
-		let intersections: {s: number, goingEast: boolean}[];
-		if (polygon[i].type === 'M')
-			intersections = [];
-		else if (polygon[i].type === 'Λ')
-			intersections = [];
-		else if (polygon[i].type === 'Φ') {
-			let crosses = (start.t < point.t) !== (end.t < point.t);
-			if (crosses)
-				intersections = [{s: end.s, goingEast: end.t > start.t}];
-			else
-				intersections = [];
-		}
-		else if (polygon[i].type === 'L') {
-			let crosses = (start.t < point.t) !== (end.t < point.t);
-			let goingRight = end.t > start.t;
-			if (domain.isPeriodic()) {
-				if (Math.abs(end.t - start.t) > π) { // account for wrapping
-					crosses = !crosses;
-					goingRight = !goingRight;
-					start.t = localizeInRange(start.t, point.t - π, point.t + π);
-					end.t = localizeInRange(end.t, point.t - π, point.t + π);
-				}
-				end.s = localizeInRange(end.s, start.s - π, start.s + π);
-			}
-			if (crosses) {
-				let s;
-				if (end.s === start.s)
-					s = end.s;
-				else {
-					const startWeight = (end.t - point.t)/(end.t - start.t);
-					s = startWeight*start.s + (1 - startWeight)*end.s;
-				}
-				if (domain.isPeriodic())
-					s = localizeInRange(s, domain.sMin, domain.sMax);
-				intersections = [{s: s, goingEast: goingRight}];
-			}
-			else
-				intersections = [];
-		}
-		else if (polygon[i].type === 'A') {
-			if (domain.isPeriodic())
-				throw new Error("you may not use arcs on periodic domains.");
-			const [radius, , , largeArc, sweepDirection, , ] = polygon[i].args;
-			// first compute the circle
-			const q0 = assert_xy(start);
-			const q1 = assert_xy(end);
-			const center = arcCenter(q0, q1, radius, largeArc !== sweepDirection);
-			// solve for the zero or two intersections with the circle
-			intersections = [];
-			const discriminant = Math.pow(radius, 2) - Math.pow(point.t - center.y, 2);
-			if (discriminant >= 0) {
-				for (let sign of [-1, 1]) {
-					const x = center.x + sign*Math.sqrt(discriminant);
-					const vy = (sweepDirection > 0) ? x - center.x : center.x - x;
-					if (vy !== 0) { // (ignore tangencies)
-						// make sure the intersection is on or between the endpoints
-						const pointSign = -angleSign(q0, {x: x, y: point.t}, q1); // negate this because of the left-handed coordinate system
-						if (pointSign === 0 || (pointSign < 0) === (sweepDirection > 0)) {
-							// discard it if it's on an endpoint and the rest of the arc is below the endpoint (for consistency with linetos)
-							if (point.t === q0.y && vy > 0)
-								continue;
-							if (point.t === q1.y && vy < 0)
-								continue;
-							// otherwise add it to the list
-							intersections.push({s: x, goingEast: vy > 0});
-						}
-					}
-				}
-			}
-		}
-		else {
-			throw new Error(`you may not use shapes with ${polygon[i].type} segments in contains()`);
-		}
-
-		// look at where it crosses
-		for (const {s, goingEast} of intersections) {
-			const d = s - point.s;
-			if (d === 0) // if any segment is *on* the point, it's borderline
-				return Side.BORDERLINE;
+	// look at where it crosses
+	for (const {s, goingEast} of intersections) {
+		const d = s - point.s;
+		if (d === 0) // if any segment is *on* the point, it's borderline
+			return Side.BORDERLINE;
+		if (rule === Rule.LEFT)
 			crossingSum += (goingEast) ? -1/d : 1/d; // otherwise, add its weited crossing direction to the sum
-		}
+		else
+			crossingSum += (goingEast) ? -Math.sign(d) : Math.sign(d); // for the simpler crossing rules, we need an unweited sum
 	}
 	// count it up to determine if you're in or out
-	if (crossingSum > 0)
-		return Side.IN;
-	else if (crossingSum < 0)
-		return Side.OUT;
-
-	// if you didn't hit any lines or you hit some but they were indeterminate
-	else {
-		if (successGuaranteed)
-			throw new Error(`this algorithm should be guaranteed to get an answer at this point, even if that answer is BORDERLINE.  ` +
-			                `something must be rong.  the path is "${pathToString(polygon)}".`);
-		// choose a new point on the horizontal line you drew that's known to be in line with some of the polygon
-		let sNew = null;
-		for (let i = 1; i < polygon.length; i ++) {
-			if (polygon[i].type !== 'M') {
-				const start = endpoint(polygon[i-1]);
-				const end = endpoint(polygon[i]);
-				if (polygon[i].type === 'A' || start.s !== end.s) {
-					const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], domain);
-					sNew = knownPolygonPoint.s;
-					break;
-				}
-			}
-		}
-		if (sNew === null)
-			throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
-		// and rerun this algorithm with a vertical line thru that point instead of a horizontal one
-		const result = contains(
-			rotatePath(polygon, 90), {s: point.t, t: -sNew},
-			rotateDomain(domain, 90), true);
-
-		if (result !== Side.BORDERLINE)
-			return result;
-		// be careful; if it returns BORDERLINE this time, that means the _new_ point is BORDERLINE,
-		// but does not reflect the status of our OG point.
-		else {
-			// if you reflect about t=point.t, because of the way crossings are defined, that should clear things up
-			const result = contains(
-				reflectPath(polygon), {s: point.s, t: -point.t},
-				reflectDomain(domain), true);
-			if (result === Side.IN)
-				return Side.OUT; // just remember that, since these polygons are signed, reflecting inverts the result
-			else if (result === Side.OUT)
+	switch (rule) {
+		case Rule.POSITIVE:
+			if (crossingSum > 0)
 				return Side.IN;
 			else
-				throw new Error(`I don't think this can be BORDERLINE because the anser was indeterminate when we did it reflected about the s-axis.  ` +
-				                `something must be rong.  the path is ${pathToString(polygon)}`);
+				return Side.OUT;
+		case Rule.ODD:
+			if (crossingSum/2%2 !== 0)
+				return Side.IN;
+			else
+				return Side.OUT;
+		case Rule.LEFT:
+			if (crossingSum > 0)
+				return Side.IN;
+			else if (crossingSum < 0)
+				return Side.OUT;
+			else
+				break; // for LEFT, you may need to proceed to further testing; see below
+		default:
+			throw new Error("invalid fill rule");
+	}
+
+	// if you didn't hit any lines or you hit some but they were indeterminate
+	if (successGuaranteed)
+		throw new Error(`this algorithm should be guaranteed to get an answer at this point, even if that answer is BORDERLINE.  ` +
+		                `something must be rong.  the path is "${pathToString(polygon)}".`);
+	// choose a new point on the horizontal line you drew that's known to be in line with some of the polygon
+	let sNew = null;
+	for (let i = 1; i < polygon.length; i ++) {
+		if (polygon[i].type !== 'M') {
+			const start = endpoint(polygon[i-1]);
+			const end = endpoint(polygon[i]);
+			if (polygon[i].type === 'A' || start.s !== end.s) {
+				const knownPolygonPoint = getMidpoint(polygon[i - 1], polygon[i], domain);
+				sNew = knownPolygonPoint.s;
+				break;
+			}
 		}
+	}
+	if (sNew === null)
+		throw new Error(`this polygon didn't seem to have any segments: ${pathToString(polygon)}`);
+	// and rerun this algorithm with a vertical line thru that point instead of a horizontal one
+	const result = contains(
+		rotatePath(polygon, 90), {s: point.t, t: -sNew},
+		rotateDomain(domain, 90), rule, true);
+
+	if (result !== Side.BORDERLINE)
+		return result;
+	// be careful; if it returns BORDERLINE this time, that means the _new_ point is BORDERLINE,
+	// but does not reflect the status of our OG point.
+	else {
+		// if you reflect about t=point.t, because of the way crossings are defined, that should clear things up
+		const result = contains(
+			reflectPath(polygon), {s: point.s, t: -point.t},
+			reflectDomain(domain), rule, true);
+		if (result === Side.IN)
+			return Side.OUT; // just remember that, since these polygons are signed, reflecting inverts the result
+		else if (result === Side.OUT)
+			return Side.IN;
+		else
+			throw new Error(`I don't think this can be BORDERLINE because the anser was indeterminate when we did it reflected about the s-axis.  ` +
+			                `something must be rong.  the path is ${pathToString(polygon)}`);
 	}
 }
 
@@ -1005,6 +1034,119 @@ function getParallelCrossing(
 }
 
 /**
+ * get all intersections of a path segment with an array of constant-t lines.
+ * for the purposes of this function, points on a line are considered below (t+) it,
+ * so a tangent segment will only log a crossing if the rest of the segment is above (t-) the line.
+ * unlike getEdgeCrossings, this function will endeavor to make crossings unique.
+ * @param path the segments doing the crossing
+ * @param t0 the position of the line at index zero
+ * @param Δt the spacing between adjacent lines
+ * @param domain the topology of the space on which these points' coordinates are defined
+ * @return a list of intersections, each marked by an s-coordinate, the segment index i, the line index j, and a direction (true if the path is increasing in t at that point, and false otherwise)
+ */
+export function getAllCombCrossings(path: PathSegment[], t0: number, Δt: number, domain: Domain): {i: number, s: number, j: number, goingEast: boolean}[] {
+	const crossings: { s: number, i: number, j: number, goingEast: boolean }[] = [];
+	for (let i = 1; i < path.length; i ++) {
+		const segmentStart = endpoint(path[i - 1]);
+		const segmentAsPath = [{type: 'M', args: [segmentStart.s, segmentStart.t]}, path[i]];
+		const limits = calculatePathBounds(segmentAsPath);
+		const jMin = Math.floor((limits.tMin - t0)/Δt) + 1;
+		const jMax = Math.floor((limits.tMax - t0)/Δt);
+
+		for (let j = jMin; j <= jMax; j ++) {
+			const tCrossings = getAllHorizontalLineCrossings(segmentAsPath, t0 + j*Δt, domain);
+			for (const {s, i, goingEast} of tCrossings)
+				crossings.push({s: s, i: i, j: j, goingEast: goingEast});
+		}
+	}
+	return crossings;
+}
+
+/**
+ * get all intersections of a path with a constant-t line.
+ * for the purposes of this function, points on a line are considered below (t+) it,
+ * so a tangent path will only log a crossing if the rest of the segment is above (t-) the line.
+ * unlike getEdgeCrossings, this function will endeavor to make crossings unique.
+ * @return a list of intersections, each marked by an s-coordinate, the index of the path segment, and a direction (true if the path is increasing in t at that point, and false otherwise)
+ */
+export function getAllHorizontalLineCrossings(path: PathSegment[], t: number, domain: Domain): {i: number, s: number, goingEast: boolean}[] {
+	const crossings: {i: number, s: number, goingEast: boolean}[] = [];
+
+	// iterate around the polygon
+	for (let i = 1; i < path.length; i ++) {
+		const start = endpoint(path[i - 1]);
+		const end = endpoint(path[i]);
+		// check to see if this segment crosses the test path and if so where
+		if (path[i].type === 'M' || path[i].type === 'Λ') {
+		}
+		else if (path[i].type === 'Φ') {
+			let crosses = (start.t < t) !== (end.t < t);
+			if (crosses)
+				crossings.push({i: i, s: end.s, goingEast: end.t > start.t});
+		}
+		else if (path[i].type === 'L') {
+			let crosses = (start.t < t) !== (end.t < t);
+			let goingRight = end.t > start.t;
+			if (domain.isPeriodic()) {
+				if (Math.abs(end.t - start.t) > π) { // account for wrapping
+					crosses = !crosses;
+					goingRight = !goingRight;
+					start.t = localizeInRange(start.t, t - π, t + π);
+					end.t = localizeInRange(end.t, t - π, t + π);
+				}
+				end.s = localizeInRange(end.s, start.s - π, start.s + π);
+			}
+			if (crosses) {
+				let s;
+				if (end.s === start.s)
+					s = end.s;
+				else {
+					const startWeight = (end.t - t)/(end.t - start.t);
+					s = startWeight*start.s + (1 - startWeight)*end.s;
+				}
+				if (domain.isPeriodic())
+					s = localizeInRange(s, domain.sMin, domain.sMax);
+				crossings.push({i: i, s: s, goingEast: goingRight});
+			}
+		}
+		else if (path[i].type === 'A') {
+			if (domain.isPeriodic())
+				throw new Error("you may not use arcs on periodic domains.");
+			const [radius, , , largeArc, sweepDirection, ,] = path[i].args;
+			// first compute the circle
+			const q0 = assert_xy(start);
+			const q1 = assert_xy(end);
+			const center = arcCenter(q0, q1, radius, largeArc !== sweepDirection);
+			// solve for the zero or two intersections with the circle
+			const discriminant = Math.pow(radius, 2) - Math.pow(t - center.y, 2);
+			if (discriminant >= 0) {
+				for (let sign of [-1, 1]) {
+					const x = center.x + sign*Math.sqrt(discriminant);
+					const vy = (sweepDirection > 0) ? x - center.x : center.x - x;
+					if (vy !== 0) { // (ignore tangencies)
+						// make sure the intersection is on or between the endpoints
+						const pointSign = -angleSign(q0, {x: x, y: t}, q1); // negate this because of the left-handed coordinate system
+						if (pointSign === 0 || (pointSign < 0) === (sweepDirection > 0)) {
+							// discard it if it's on an endpoint and the rest of the arc is below the endpoint (for consistency with linetos)
+							if (t === q0.y && vy > 0)
+								continue;
+							if (t === q1.y && vy < 0)
+								continue;
+							// otherwise add it to the list
+							crossings.push({i: i, s: x, goingEast: vy > 0});
+						}
+					}
+				}
+			}
+		}
+		else {
+			throw new Error(`you may not use shapes with ${path[i].type} segments in getAllHorizontalLineCrossings()`);
+		}
+	}
+	return crossings;
+}
+
+/**
  * return a number indicating where on the edge of map this point lies
  * @param point the coordinates of the point
  * @param edges the loops of edges on which we are trying to place it
@@ -1077,6 +1219,98 @@ export function isClosed(segments: PathSegment[], domain: Domain): boolean {
 }
 
 /**
+ * represent a path as faithfully as possible using only 'M'- and 'L'-type segments
+ * @param path the true path segments
+ * @param precision how many line segments to use for a one-radian arc
+ */
+export function polygonize(path: PathSegment[], precision=6): PathSegment[] {
+	let lastMovetoArgs = null;
+	const newPath = [];
+	for (let i = 0; i < path.length; i ++) { // convert it into a simplified polygon
+		if (path[i].type === 'M') {
+			lastMovetoArgs = path[i].args;
+			newPath.push(path[i]);
+		}
+		else if (path[i].type === 'L')
+			newPath.push(path[i]);
+		else if (path[i].type === 'Z') {
+			if (lastMovetoArgs === null)
+				throw new Error("bruh you didn't start the path with a 'M'?");
+			newPath.push({type: 'L', args: lastMovetoArgs});
+		}
+		else if (path[i].type === 'A') { // turn arcs into triscadecagons
+			const start = assert_xy(endpoint(path[i-1]));
+			const end = assert_xy(endpoint(path[i]));
+			const [r1, r2, , largeArcFlag, sweepFlag, , ] = path[i].args;
+			const l = Math.hypot(end.x - start.x, end.y - start.y);
+			const r = (r1 + r2)/2;
+			const c = arcCenter(start, end, r,
+				largeArcFlag !== sweepFlag);
+			const Δθ = 2*Math.asin(l/(2*r)) * ((sweepFlag === 1) ? 1 : -1);
+			const θ0 = Math.atan2(start.y - c.y, start.x - c.x);
+			const nSegments = Math.ceil(precision*Math.abs(Δθ));
+			const lineApprox = [];
+			for (let j = 1; j <= nSegments; j ++)
+				lineApprox.push({type: 'L', args: [
+						c.x + r*Math.cos(θ0 + Δθ*j/nSegments),
+						c.y + r*Math.sin(θ0 + Δθ*j/nSegments)]});
+			newPath.push(...lineApprox);
+		}
+		else
+			throw new Error(`I don't know how to polygonize '${path[i].type}'-type segments`);
+	}
+	return newPath;
+}
+
+/**
+ * simplify a path as much as possible without losing detail at the given level.
+ * note that the first and last PathSegments will always be unchanged.
+ * this function assumes the Path is in the Cartesian plane.
+ * @param path the true path segments
+ * @param tolerance the maximum distance the simplified path can be from the true path
+ * @param checkForM whether to check for and deal with any non-L segments.
+ *                  if it's false, we'll assume it's something followed by nothing but Ls.
+ */
+export function decimate(path: PathSegment[], tolerance: number, checkForM=true): PathSegment[] {
+	if (checkForM) {
+		// go thru and separately decimate all of the polyline sections
+		const output = [];
+		let sectionStart = 0;
+		for (let i = 1; i <= path.length; i ++) {
+			if (i >= path.length || path[i].type !== 'L') {
+				output.push(...decimate(path.slice(sectionStart, i), tolerance, false));
+				sectionStart = i;
+			}
+		}
+		return output;
+	}
+	else {
+		// otherwise activate the Ramer–Douglas–Peucker algorithm
+		if (path.length <= 2)
+			return path;
+		const start = assert_xy(endpoint(path[0]));
+		const end = assert_xy(endpoint(path[path.length - 1]));
+		let greatestDistance = -Infinity;
+		let farthestI = 0;
+		for (let i = 1; i < path.length - 1; i ++) {
+			const distance = lineSegmentDistance(start, end, assert_xy(endpoint(path[i])));
+			if (distance > greatestDistance) {
+				greatestDistance = distance;
+				farthestI = i;
+			}
+		}
+		if (farthestI === 0)
+			throw new Error(`something has gone horribly rong and I'm pulling the plug before we recurse infinitely. ${pathToString(path)}`);
+		if (greatestDistance < tolerance)
+			return [path[0], path[path.length - 1]];
+		else
+			return [
+				...decimate(path.slice(0, farthestI), tolerance, false),
+				...decimate(path.slice(farthestI), tolerance, false)];
+	}
+}
+
+/**
  * remove any isolated movetos, that don't have any segments connected to them
  */
 export function removeLoosePoints(segments: PathSegment[]): PathSegment[] {
@@ -1101,17 +1335,65 @@ export function convertPathClosuresToZ(segments: PathSegment[]): PathSegment[] {
 	return newSegments;
 }
 
+/**
+ * return a copy of this path that traces the same route, but in the opposite direction
+ */
+export function reversePath(segments: PathSegment[]): PathSegment[] {
+	const output: PathSegment[] = [];
+	let pendingM = true;
+	let pendingZ = false;
+	for (let i = segments.length - 1; i >= 1; i --) {
+		if (pendingM && segments[i].type !== 'Z') {
+			const end = endpoint(segments[i]);
+			output.push({type: 'M', args: [end.s, end.t]});
+			pendingM = false;
+		}
+
+		if (segments[i].type === 'M') {
+			if (pendingZ)
+				output.push({type: 'Z', args: []});
+			pendingZ = false;
+			pendingM = true;
+		}
+		else if (segments[i].type === 'L') {
+			output.push({type: 'L', args: segments[i - 1].args});
+		}
+		else if (segments[i].type === 'A') {
+			const [R1, R2, rotation, largeArcFlag, sweepFlag, , ] = segments[i].args;
+			const end = endpoint(segments[i - 1]);
+			output.push({type: 'A', args: [
+					R1, R2, rotation, largeArcFlag, (sweepFlag > 0) ? 0 : 1, end.s, end.t
+				]});
+		}
+		else if (segments[i].type === 'Z') {
+			pendingZ = true;
+		}
+		else {
+			throw new Error(`I haven't implemented reversePath() for segments of type '${segments[i].type}'.`);
+		}
+	}
+	return output;
+}
 
 /**
  * return a copy of this path that is isotropically scaled toward or from the origin
  * @param segments the path to scale
- * @param scale the desired dimensionless scale factor
+ * @param scaleS the desired dimensionless scale factor on the first dimension
+ * @param scaleT the desired dimensionless scale factor on the twoth dimension
  */
-export function scalePath(segments: PathSegment[], scale: number): PathSegment[] {
+export function scalePath(segments: PathSegment[], scaleS: number, scaleT: number): PathSegment[] {
 	const output: PathSegment[] = [];
 	for (const {type, args: oldArgs} of segments) {
-		let newArgs = oldArgs.map((x) => x*scale);
+		const newArgs = [];
+		for (let i = 0; i < oldArgs.length; i ++) {
+			if (i%2 === 0)
+				newArgs.push(oldArgs[i]*scaleS);
+			else
+				newArgs.push(oldArgs[i]*scaleT);
+		}
 		if (type === 'A') {
+			if (scaleS !== scaleT)
+				throw new Error("don't scale arcs like that; nothing in this code is equipped to deal with ellipses.");
 			newArgs[2] = oldArgs[2];
 			newArgs[3] = oldArgs[3];
 			newArgs[4] = oldArgs[4];

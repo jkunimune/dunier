@@ -2,13 +2,14 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Domain, Surface} from "../generation/surface/surface.js";
+import {Surface} from "../generation/surface/surface.js";
 import {
 	PathSegment,
 	ΦΛPoint,
 	XYPoint, assert_φλ
 } from "../utilities/coordinates.js";
 import {binarySearch, cumulativeIntegral, linterp, localizeInRange} from "../utilities/miscellaneus.js";
+import {Domain} from "./pathutilities.js";
 
 
 /**

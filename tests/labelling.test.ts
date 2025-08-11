@@ -15,7 +15,7 @@ describe("chooseLabelLocation", () => {
 		{type: 'L', args: [0, 0]},
 	];
 	test("normal", () => {
-		expect(() => chooseLabelLocation(shape, 10)).not.toThrow();
+		expect(() => chooseLabelLocation(shape, 10, 0.1, Infinity)).not.toThrow();
 	});
 });
 

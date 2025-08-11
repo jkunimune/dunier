@@ -25,8 +25,8 @@ const MIN_SIZE_TO_LIST = 6;
 const MAX_COUNTRIES_TO_LIST = 20;
 const FONT_SIZE = 8; // pt
 
-export enum Layer {
-	NONE,
+enum Layer {
+	_,
 	PLANET,
 	TERRAIN,
 	HISTORY,
@@ -46,9 +46,45 @@ let map: VNode = null;
 let mappedCivs: Civ[] = null;
 /** the width of every character in the map font */
 let characterWidthMap: Map<string, number> = null;
+/** some SVG assets we should have on hand in case the Chart needs it */
+let resources: Map<string, string> = null;
+/** a list of messages that had to be deferred because the Worker wasn't ready yet */
+const messageQueue: MessageEvent[] = [];
+/** whether we're accepting messages yet */
+let ready = false;
 
 
 onmessage = (message) => {
+	if (ready)
+		generateFantasyMap(message.data);
+	else
+		messageQueue.push(message);
+};
+
+
+loadSVGResources(
+	"windrose",
+	"textures/banyan_0", "textures/banyan_1",
+	"textures/grass_0", "textures/grass_1", "textures/grass_2", "textures/grass_3",
+	"textures/hill_0", "textures/hill_1", "textures/hill_2", "textures/hill_3",
+	"textures/meranti_0", "textures/meranti_1",
+	"textures/monkeypod_0", "textures/monkeypod_1", "textures/monkeypod_2", "textures/monkeypod_3",
+	"textures/mountain_0", "textures/mountain_1", "textures/mountain_2", "textures/mountain_3",
+	"textures/oak_0", "textures/oak_1", "textures/oak_2", "textures/oak_3",
+	"textures/palm_0", "textures/palm_1",
+	"textures/shrub_0", "textures/shrub_1", "textures/shrub_2", "textures/shrub_3",
+	"textures/spruce_0", "textures/spruce_1", "textures/spruce_2", "textures/spruce_3",
+).then(() => {
+	for (const message of messageQueue)
+		generateFantasyMap(message.data);
+	ready = true;
+});
+
+
+/**
+ * respond to a message from the GUI thread by generating the requested map
+ */
+function generateFantasyMap(args: any[]): void {
 	let language: string;
 	let lastUpdated: Layer;
 	let target: Layer;
@@ -71,9 +107,11 @@ onmessage = (message) => {
 	let width: number;
 	let height: number;
 	let selectedFocusOption: string;
-	let color: string;
+	let colorSchemeName: string;
 	let rivers: boolean;
 	let borders: boolean;
+	let landTexture: boolean;
+	let seaTexture: boolean;
 	let shading: boolean;
 	let civLabels: boolean;
 	let graticule: boolean;
@@ -85,9 +123,9 @@ onmessage = (message) => {
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
 		projectionName, orientation, rectangularBounds, width, height, selectedFocusOption,
-		color, rivers, borders, shading, civLabels, graticule, windrose, style,
+		colorSchemeName, rivers, borders, landTexture, seaTexture, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
-	] = message.data;
+	] = args;
 
 	let terrainMap = null;
 	let historyMap = null;
@@ -109,7 +147,8 @@ onmessage = (message) => {
 	if (target >= Layer.MAP && lastUpdated < Layer.MAP)
 		[map, mappedCivs] = applyMap(
 			projectionName, orientation, rectangularBounds, width, height, selectedFocusOption,
-			color, rivers, borders, graticule, windrose, shading, civLabels, style);
+			colorSchemeName, rivers, borders, graticule, windrose, landTexture, seaTexture, shading,
+			civLabels, style);
 	if (target >= Layer.FACTBOOK && lastUpdated < Layer.FACTBOOK)
 		factbook = applyFactbook(map, mappedCivs, tidallyLocked, language, style);
 
@@ -122,7 +161,7 @@ onmessage = (message) => {
 		focusOptions,
 		selectedFocusOption,
 	]);
-};
+}
 
 
 /**
@@ -207,7 +246,7 @@ function applyTerrain(seed: number, numContinents: number, seaLevel: number, tem
 	const mapper = new Chart(
 		projection, surface, surface.tiles,
 		"north", false, 62500,
-		characterWidthMap);
+		resources, characterWidthMap);
 	const {map} = mapper.depict(surface,
 		continents,
 		null,
@@ -241,7 +280,7 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 		projection, surface,
 		filterSet(surface.tiles, (t) => !t.isWater() && !t.isIceCovered()),
 		"north", false, 62500,
-		characterWidthMap);
+		resources, characterWidthMap);
 	const {map} = mapper.depict(surface,
 		null,
 		world,
@@ -302,9 +341,11 @@ function listFocusOptions(continents: Set<Tile>[], world: World, selectedFocusOp
  * @param width the approximate desired width of the map (mm)
  * @param height the approximate desired height of the map (mm)
  * @param focusSpecifier a string that specifies what location is being mapped
- * @param color the color scheme
+ * @param colorSchemeName the color scheme
  * @param rivers whether to add rivers
  * @param borders whether to add state borders
+ * @param landTexture whether to draw little trees to indicate the biomes
+ * @param seaTexture whether to draw horizontal lines by the coast
  * @param shading whether to add shaded relief
  * @param civLabels whether to label countries
  * @param graticule whether to draw a graticule
@@ -314,8 +355,9 @@ function listFocusOptions(continents: Set<Tile>[], world: World, selectedFocusOp
 function applyMap(
 	projectionName: string, orientation: string,
 	rectangularBounds: boolean, width: number, height: number, focusSpecifier: string,
-	color: string, rivers: boolean, borders: boolean, graticule: boolean, windrose: boolean,
-	shading: boolean, civLabels: boolean, style: string): [VNode, Civ[]] {
+	colorSchemeName: string, rivers: boolean, borders: boolean, graticule: boolean, windrose: boolean,
+	landTexture: boolean, seaTexture: boolean, shading: boolean, civLabels: boolean,
+	style: string): [VNode, Civ[]] {
 
 	console.log("grafa zemgrafe...");
 
@@ -354,16 +396,18 @@ function applyMap(
 		surface.isFlat() ? "orthographic" : projectionName,
 		surface, regionOfInterest,
 		orientation, rectangularBounds, width*height,
-		characterWidthMap);
+		resources, characterWidthMap);
 	const {map, mappedCivs} = chart.depict(
 		surface,
 		continents,
 		world,
-		color,
+		colorSchemeName,
 		rivers,
 		borders,
 		graticule,
 		windrose,
+		landTexture,
+		seaTexture,
 		shading,
 		civLabels,
 		FONT_SIZE*0.35, // convert to mm
@@ -395,4 +439,26 @@ function applyFactbook(map: VNode, mappedCivs: Civ[], tidalLock: boolean, langua
 
 	console.log("fina!");
 	return doc;
+}
+
+
+/**
+ * grab all of the SVG files from the resources folder, fetch them into memory,
+ * and wait for them to be loaded.
+ */
+async function loadSVGResources(...filenames: string[]): Promise<void> {
+	resources = new Map<string, string>();
+	for (const filename of filenames) {
+		const response = await fetch(`../../resources/${filename}.svg`);
+		const content = await response.text();
+		const match = content.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s);
+		if (match === null) {
+			console.error(content);
+			throw new Error(`I tried to load resources/${filename}.svg but I didn't seem to get a valid SVG.`);
+		}
+		const innerSVG = match[1];
+		if (innerSVG === null)
+			throw new Error(`what's wrong with ../../resources/${filename}.svg?  I can't read it.`);
+		resources.set(filename, innerSVG);
+	}
 }

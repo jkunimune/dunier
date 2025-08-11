@@ -2,7 +2,7 @@
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
-import {Domain, Edge, EmptySpace, INFINITE_PLANE, outline, Surface, Tile, Vertex} from "../generation/surface/surface.js";
+import {Edge, EmptySpace, outline, Surface, Tile, Vertex} from "../generation/surface/surface.js";
 import {
 	filterSet, localizeInRange,
 	pathToString, weightedAverage,
@@ -11,17 +11,23 @@ import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
-import {assert_φλ, PathSegment, ΦΛPoint} from "../utilities/coordinates.js";
+import {assert_φλ, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
-import {Biome} from "../generation/terrain.js";
+import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
-	applyProjectionToPath, calculatePathBounds,
-	convertPathClosuresToZ,
-	intersection, removeLoosePoints, rotatePath, scalePath,
+	applyProjectionToPath, calculatePathBounds, contains,
+	convertPathClosuresToZ, Domain, getAllCombCrossings, INFINITE_PLANE,
+	intersection, polygonize, removeLoosePoints, reversePath, rotatePath, scalePath,
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
-import {h, VNode} from "../gui/virtualdom.js";
+import {cloneNode, h, VNode} from "../gui/virtualdom.js";
+import {poissonDiscSample} from "../utilities/poissondisc.js";
+
+import TEXTURE_MIXES from "../../resources/texture_mixes.js";
+import {Random} from "../utilities/random.js";
+import {offset} from "../utilities/offset.js";
+
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
@@ -43,21 +49,83 @@ const BORDER_SPECIFY_THRESHOLD = 0.3; // the population density at which borders
 const MAP_PRECISION = 10; // max segment length in mm
 const GRATICULE_SPACING = 30; // typical spacing between lines of latitude or longitude in mm
 
-const WHITE = '#FFFFFF';
-const EGGSHELL = '#FAF2E4';
-const LIGHT_GRAY = '#d4cdbf';
-const DARK_GRAY = '#4c473f';
-const CHARCOAL = '#302d28';
-const BLACK = '#000000';
-const BLUE = '#5A7ECA';
-const AZURE = '#cceeff';
-const YELLOW = '#fff9e2';
-// const BEIGE = '#E9CFAA';
-const CREAM = '#F9E7D0';
-const TAN = '#E9CFAA';
-const RUSSET = '#361907';
-const FUCHSIA = '#FF00FF';
+/** color scheme presets */
+const COLOR_SCHEMES = new Map([
+	['debug', {
+		primaryStroke: '#302d28',
+		waterStroke: '#302d28',
+		secondaryStroke: '#5a554c',
+		waterFill: 'none',
+		landFill: '#FAF2E4',
+		iceFill: 'none',
+	}],
+	['white', {
+		primaryStroke: '#302d28',
+		waterStroke: '#302d28',
+		secondaryStroke: '#5a554c',
+		waterFill: '#FFFFFF',
+		landFill: '#FFFFFF',
+		iceFill: 'none',
+	}],
+	['gray', {
+		primaryStroke: '#302d28',
+		waterStroke: '#4c473f',
+		secondaryStroke: '#5a554c',
+		waterFill: '#d4cdbf',
+		landFill: '#FAF2E4',
+		iceFill: 'none',
+	}],
+	['black', {
+		primaryStroke: '#302d28',
+		waterStroke: '#302d28',
+		secondaryStroke: '#302d28',
+		waterFill: '#302d28',
+		landFill: '#FAF2E4',
+		iceFill: 'none',
+	}],
+	['sepia', {
+		primaryStroke: '#361907',
+		waterStroke: '#361907',
+		secondaryStroke: '#896b50',
+		waterFill: '#E9CFAA',
+		landFill: '#F9E7D0',
+		iceFill: 'none',
+	}],
+	['wikipedia', {
+		primaryStroke: '#4c473f',
+		waterStroke: '#5A7ECA',
+		secondaryStroke: '#857f77',
+		waterFill: '#cceeff',
+		landFill: '#fff7d9',
+		iceFill: 'none',
+	}],
+	['political', {
+		primaryStroke: '#302d28',
+		waterStroke: '#5A7ECA',
+		secondaryStroke: '#5a554c',
+		waterFill: '#cceeff',
+		landFill: '#FAF2E4',
+		iceFill: 'none',
+	}],
+	['physical', {
+		primaryStroke: '#302d28',
+		waterStroke: '#5A7ECA',
+		secondaryStroke: '#4c473f',
+		waterFill: '#5A7ECA',
+		landFill: '#FFFFFF77',
+		iceFill: '#FFFFFF',
+	}],
+	['heightmap', {
+		primaryStroke: '#302d28',
+		waterStroke: 'rgb(59, 72, 151)',
+		secondaryStroke: '#4c473f',
+		waterFill: '#FF00FF',
+		landFill: '#FFFFFF77',
+		iceFill: 'none',
+	}],
+]);
 
+/** color scheme for biomes */
 const BIOME_COLORS = new Map([
 	[Biome.LAKE,      '#5A7ECA'],
 	[Biome.JUNGLE,    '#82C17A'],
@@ -71,6 +139,7 @@ const BIOME_COLORS = new Map([
 	[Biome.SEA_ICE,   '#FFFFFF'],
 ]);
 
+/** color scheme for political maps */
 const COUNTRY_COLORS = [
 	'rgb(230, 169, 187)',
 	'rgb(143, 211, 231)',
@@ -110,7 +179,9 @@ const COUNTRY_COLORS = [
 	'rgb(131, 196, 219)',
 ];
 
+/** spacing between topographic contours */
 const ALTITUDE_STEP = 0.5;
+/** colormap for above-sea-level elevation */
 const ALTITUDE_COLORS = [
 	'rgb(114, 184, 91)',
 	'rgb(153, 192, 94)',
@@ -119,7 +190,9 @@ const ALTITUDE_COLORS = [
 	'rgb(229, 225, 162)',
 	'rgb(243, 240, 201)',
 ];
+/** spacing between bathymetric contours */
 const DEPTH_STEP = 1.0;
+/** coloramp for below-sea-level elevation */
 const DEPTH_COLORS = [
 	'rgb(85, 165, 178)',
 	'rgb(37, 138, 178)',
@@ -127,6 +200,14 @@ const DEPTH_COLORS = [
 	'rgb(59, 72, 151)',
 ];
 
+/** what kind of texturing to apply at what altitudes */
+const ALTITUDE_CLASSES = [
+	{name: "lowland", min: -Infinity, max: 1.5},
+	{name: "hill", min: 1.5, max: 3.0},
+	{name: "mountain", min: 3.0, max: Infinity},
+];
+
+/** a type of area feature with a particular greebling profile */
 enum Layer {
 	/** geographic regions – greeble everything */
 	GEO,
@@ -159,6 +240,8 @@ export class Chart {
 	public readonly latitudeScale: number;
 	/** the average spacing between meridians in mm/radian */
 	public readonly longitudeScale: number;
+	/** some preloaded SVG assets for us to use */
+	private readonly resources: Map<string, string>;
 	/** a table containing the width of every possible character, in units of font-size */
 	private readonly characterWidthMap: Map<string, number>;
 	/** the number of labels that have been gerenated (for unique ID purposes) */
@@ -173,12 +256,13 @@ export class Chart {
 	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
 	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 * @param area the desired bounding box area in mm²
+	 * @param resources any preloaded SVG assets we should have
 	 * @param characterWidthMap a table containing the width of every possible character, for label length calculation purposes
 	 */
 	constructor(
 		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
 		orientationName: string, rectangularBounds: boolean, area: number,
-		characterWidthMap: Map<string, number>,
+		resources: Map<string, string>, characterWidthMap: Map<string, number>,
 	) {
 		// convert the orientation name into a number of degrees
 		if (orientationName === 'north')
@@ -221,7 +305,7 @@ export class Chart {
 		const transformedRegionOfInterest = intersection(
 			transformInput(
 				this.projection.φMin, this.projection.λMin,
-				Chart.border(regionOfInterest)),
+				Chart.convertToGreebledPath(outline(regionOfInterest), Layer.GEO, 1e-6)),
 			Chart.rectangle(
 				this.projection.φMax, this.projection.λMax,
 				this.projection.φMin, this.projection.λMin, true),
@@ -343,6 +427,7 @@ export class Chart {
 			this.dimensions.bottom + margin,
 		);
 
+		this.resources = resources;
 		this.characterWidthMap = characterWidthMap;
 		this.labelIndex = 0;
 	}
@@ -352,9 +437,11 @@ export class Chart {
 	 * @param surface the surface that we're mapping
 	 * @param continents some sets of tiles that go nicely together (only used for debugging)
 	 * @param world the world on that surface, if we're mapping human features
-	 * @param color the color scheme
+	 * @param colorSchemeName the color scheme
 	 * @param rivers whether to add rivers
 	 * @param borders whether to add state borders
+	 * @param landTexture whether to draw little trees to indicate the biomes
+	 * @param seaTexture whether to draw horizontal lines by the coast
 	 * @param shading whether to add shaded relief
 	 * @param civLabels whether to label countries
 	 * @param graticule whether to draw a graticule
@@ -364,23 +451,34 @@ export class Chart {
 	 * @return the SVG on which everything has been drawn, and the list of Civs that are shown in this map
 	 */
 	depict(surface: Surface, continents: Set<Tile>[] | null, world: World | null,
-	       color: string,
+	       colorSchemeName: string,
 		   rivers: boolean, borders: boolean,
 		   graticule = false, windrose = false,
-		   shading = false,
+		   landTexture = false, seaTexture = false, shading = false,
 		   civLabels = false,
 		   fontSize = 3, style: string = '(default)'): {map: VNode, mappedCivs: Civ[] | null} {
 		const bbox = this.dimensions;
+		let colorScheme = COLOR_SCHEMES.get(colorSchemeName);
+		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
+			colorScheme = COLOR_SCHEMES.get('debug');
 
 		const svg = h('svg', {
-			width: "100%",
-			height: "100%",
 			viewBox: `${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`,
 		});
 
 		// set the basic overarching styles
 		const styleSheet = h('style');
-		styleSheet.textContent = '.map-label { font-family: "Noto Serif","Times New Roman","Times",serif; text-anchor: middle; }';
+		styleSheet.textContent =
+			'.label {\n' +
+			'  font-family: "Noto Serif","Times New Roman","Times",serif;\n' +
+			'  text-anchor: middle;\n' +
+			'  fill: black;\n' +
+			'}\n' +
+			'.halo {\n' +
+			`  fill: none;\n` +
+			'  stroke-width: 1.4;\n' +
+			'  opacity: 0.7;\n' +
+			'}\n';
 		svg.children.push(styleSheet);
 
 		if (SHOW_BACKGROUND) {
@@ -394,75 +492,9 @@ export class Chart {
 			svg.children.push(rectangle);
 		}
 
-		// decide what color the rivers will be
-		let landFill;
-		let waterFill;
-		let iceFill;
-		let waterStroke;
-		let borderStroke;
-		if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE) {
-			landFill = FUCHSIA;
-			waterFill = 'none';
-			iceFill = 'none';
-			waterStroke = CHARCOAL;
-			borderStroke = CHARCOAL;
-		}
-		else if (color === 'white') {
-			landFill = WHITE;
-			waterFill = WHITE;
-			iceFill = 'none';
-			waterStroke = CHARCOAL;
-			borderStroke = CHARCOAL;
-		}
-		else if (color === 'gray') {
-			landFill = EGGSHELL;
-			waterFill = LIGHT_GRAY;
-			iceFill = 'none';
-			waterStroke = DARK_GRAY;
-			borderStroke = CHARCOAL;
-		}
-		else if (color === 'black') {
-			landFill = EGGSHELL;
-			waterFill = CHARCOAL;
-			iceFill = 'none';
-			waterStroke = CHARCOAL;
-			borderStroke = BLACK;
-		}
-		else if (color === 'sepia') {
-			landFill = CREAM;
-			waterFill = TAN;
-			iceFill = 'none';
-			waterStroke = RUSSET;
-			borderStroke = RUSSET;
-		}
-		else if (color === 'wikipedia') {
-			landFill = YELLOW;
-			waterFill = AZURE;
-			iceFill = 'none';
-			waterStroke = BLUE;
-			borderStroke = DARK_GRAY;
-		}
-		else if (color === 'political') {
-			landFill = EGGSHELL;
-			waterFill = AZURE;
-			iceFill = 'none';
-			waterStroke = BLUE;
-			borderStroke = DARK_GRAY;
-		}
-		else if (color === 'physical') {
-			landFill = FUCHSIA;
-			waterFill = BLUE;
-			iceFill = WHITE;
-			waterStroke = BLUE;
-			borderStroke = CHARCOAL;
-		}
-		else if (color === 'heightmap') {
-			landFill = FUCHSIA;
-			waterFill = FUCHSIA;
-			iceFill = 'none';
-			waterStroke = DEPTH_COLORS[0];
-			borderStroke = CHARCOAL;
-		}
+		const lineFeatures: PathSegment[][] = [];
+		const areaFeatures: {path: PathSegment[], color: string}[] = [];
+		const politicalColorMap = new Map<number, string>();
 
 		// color in the land
 		if (COLOR_BY_PLATE) {
@@ -474,7 +506,7 @@ export class Chart {
 			}
 		}
 		else if (COLOR_BY_CONTINENT && continents !== null) {
-			this.fill(surface.tiles, svg, EGGSHELL, Layer.GEO);
+			this.fill(surface.tiles, svg, colorScheme.landFill, Layer.GEO);
 			for (let i = 0; i < Math.min(continents.length, COUNTRY_COLORS.length); i ++)
 				this.fill(
 					continents[i],
@@ -485,30 +517,30 @@ export class Chart {
 				this.fill(
 					new Set([tile]),
 					svg, COUNTRY_COLORS[tile.index%COUNTRY_COLORS.length], Layer.GEO,
-					waterStroke, 0.35);
+					colorScheme.waterStroke, 0.35);
 		}
-		else if (color === 'physical') {
+		else if (colorSchemeName === 'physical') {
 			// color the land by biome
 			const g = Chart.createSVGGroup(svg, "biomes");
 			for (const biome of BIOME_COLORS.keys()) {
 				if (biome === Biome.LAKE)
 					this.fill(
 						filterSet(surface.tiles, n => n.biome === biome),
-						g, waterFill, Layer.BIO);
+						g, colorScheme.waterFill, Layer.BIO);
 				else if (biome !== Biome.OCEAN)
 					this.fill(
 						filterSet(surface.tiles, n => n.biome === biome),
 						g, BIOME_COLORS.get(biome), Layer.BIO);
 			}
 		}
-		else if (color === 'political') {
+		else if (colorSchemeName === 'political') {
 			// color the land by country
 			if (world === null)
 				throw new Error("this Chart was asked to color land politicly but the provided World was null");
 			const g = Chart.createSVGGroup(svg, "countries");
 			this.fill(
 				filterSet(surface.tiles, n => !n.isWater()),
-				g, EGGSHELL, Layer.KULTUR);
+				g, colorScheme.landFill, Layer.KULTUR);
 			const biggestCivs = world.getCivs(true).reverse();
 			let numFilledCivs = 0;
 			for (let i = 0; biggestCivs.length > 0; i++) {
@@ -526,40 +558,45 @@ export class Chart {
 					else
 						color = COUNTRY_COLORS[numFilledCivs];
 				}
-				const fill = this.fill(
+				const path = this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
 					g, color, Layer.KULTUR);
-				if (fill.attributes.d.length > 0)
+				if (path.length > 0) {
+					areaFeatures.push({path: path, color: color});
+					politicalColorMap.set(civ.id, color);
 					numFilledCivs ++;
+				}
 			}
 		}
-		else if (color === 'heightmap') {
+		else if (colorSchemeName === 'heightmap') {
 			// color the land by altitude
 			const g = Chart.createSVGGroup(svg, "land-contours");
 			for (let i = 0; i < ALTITUDE_COLORS.length; i++) {
 				const min = (i !== 0) ? i * ALTITUDE_STEP : -Infinity;
 				const max = (i !== ALTITUDE_COLORS.length - 1) ? (i + 1) * ALTITUDE_STEP : Infinity;
-				this.fill(
+				const path = this.fill(
 					filterSet(surface.tiles, n => !n.isWater() && n.height >= min && n.height < max),
 					g, ALTITUDE_COLORS[i], Layer.GEO);
+				areaFeatures.push({path: path, color: ALTITUDE_COLORS[i]});
 			}
 		}
 		else {
 			// color in the land with a uniform color
 			this.fill(
 				filterSet(surface.tiles, n => !n.isWater()),
-				svg, landFill, Layer.BIO);
+				svg, colorScheme.landFill, Layer.BIO);
 		}
 
 		// add rivers
 		if (rivers) {
 			const riverDisplayThreshold = RIVER_DISPLAY_FACTOR/this.scale**2;
-			this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
-				svg, waterStroke, 1.4, Layer.GEO);
+			const line = this.stroke([...surface.rivers].filter(ud => ud[0].flow >= riverDisplayThreshold),
+				svg, colorScheme.waterStroke, 1.4, Layer.GEO);
+			lineFeatures.push(line);
 		}
 
 		// color in the sea
-		if (color === 'heightmap') {
+		if (colorSchemeName === 'heightmap') {
 			// color in the sea by altitude
 			const g = Chart.createSVGGroup(svg, "sea-contours");
 			for (let i = 0; i < DEPTH_COLORS.length; i++) {
@@ -574,14 +611,14 @@ export class Chart {
 			// color in the sea with a uniform color
 			this.fill(
 				filterSet(surface.tiles, n => n.isWater()),
-				svg, waterFill, Layer.GEO);
+				svg, colorScheme.waterFill, Layer.GEO);
 		}
 
 		// also color in sea-ice if desired
-		if (iceFill !== 'none') {
+		if (colorScheme.iceFill !== 'none') {
 			this.fill(
 				filterSet(surface.tiles, n => n.isIceCovered()),
-				svg, iceFill, Layer.BIO);
+				svg, colorScheme.iceFill, Layer.BIO);
 		}
 
 		// add borders
@@ -590,21 +627,68 @@ export class Chart {
 				throw new Error("this Chart was asked to draw political borders but the provided World was null");
 			const g = Chart.createSVGGroup(svg, "borders");
 			for (const civ of world.getCivs()) {
-				this.fill(
+				const line = this.fill(
 					filterSet(civ.tileTree.keys(), n => !n.isWater()),
-					g, 'none', Layer.KULTUR, borderStroke, 0.7).attributes['pointer-events'] = 'all';
+					g, 'none', Layer.KULTUR, colorScheme.primaryStroke, 0.7);
+				lineFeatures.push(line);
 			}
 		}
 
 		// trace the coasts
-		if (iceFill === 'none')
+		if (colorScheme.iceFill === 'none')
 			this.fill(
 				filterSet(surface.tiles, n => n.isWater()),
-				svg, 'none', Layer.BIO, waterStroke, 0.7);
+				svg, 'none', Layer.BIO, colorScheme.waterStroke, 0.7);
 		else
 			this.fill(
 				filterSet(surface.tiles, n => n.isWater() && !n.isIceCovered()),
-				svg, 'none', Layer.BIO, waterStroke, 0.7);
+				svg, 'none', Layer.BIO, colorScheme.waterStroke, 0.7);
+
+		// add some horizontal hatching around the coast
+		if (seaTexture) {
+			const g = Chart.createSVGGroup(svg, "sea-texture");
+			const landPolygon = this.projectedOutline(
+				filterSet(surface.tiles, t => !t.isWater()), Layer.GEO);
+			this.hatchShadow(landPolygon, g, 1.2, 3.0);
+			const color = (colorScheme.waterStroke !== colorScheme.waterFill) ?
+				colorScheme.waterStroke : colorScheme.secondaryStroke;
+			g.attributes.style =
+				`fill:none; stroke:${color}; stroke-width:0.35; stroke-linecap:round`;
+		}
+
+		// add some terrain elements for texture
+		if (landTexture) {
+			const symbols = this.generateTexture(surface.tiles, colorSchemeName, lineFeatures);
+			const textureNames = new Set<string>();
+			for (const symbol of symbols)
+				textureNames.add(symbol.name);
+
+			// add all the relevant textures to the <defs/>
+			const defs = h('defs');
+			svg.children.splice(0, 0, defs);
+			for (const textureName of textureNames) {
+				if (!this.resources.has(`textures/${textureName}`))
+					throw new Error(`I couldn't find the texture textures/${textureName}.svg!`);
+				const texture = h('g', {id: `texture-${textureName}`});
+				texture.textContent = this.resources.get(`textures/${textureName}`);
+				defs.children.push(texture);
+			}
+
+			// then add the things to the map
+			const g = Chart.createSVGGroup(svg, "land-texture");
+			g.attributes.style =
+				`stroke:${colorScheme.secondaryStroke}; stroke-width:0.35; stroke-linejoin:round`;
+			for (const {x, y, name, fill} of symbols) {
+				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
+				for (const region of areaFeatures) { // check if it should inherit color from a base fill
+					if (contains(region.path, {s: x, t: y})) {
+						picture.attributes.fill = region.color;
+						break;
+					}
+				}
+				g.children.push(picture);
+			}
+		}
 
 		// add relief shadows
 		if (shading) {
@@ -615,7 +699,7 @@ export class Chart {
 		// add the graticule
 		if (graticule) {
 			const graticule = Chart.createSVGGroup(svg, "graticule");
-			graticule.attributes.style = `fill:none; stroke:${borderStroke}; stroke-width:0.35`;
+			graticule.attributes.style = `fill:none; stroke:${colorScheme.primaryStroke}; stroke-width:0.35`;
 			let Δφ = GRATICULE_SPACING/this.latitudeScale;
 			Δφ = Math.PI/2/Math.max(1, Math.round(Math.PI/2/Δφ));
 			const φInit = Math.ceil(this.φMin/Δφ)*Δφ;
@@ -641,22 +725,31 @@ export class Chart {
 				throw new Error("this Chart was asked to label countries but the provided World was null");
 			const g = Chart.createSVGGroup(svg, "labels");
 			for (const civ of world.getCivs())
-				if (civ.getPopulation() > 0)
+				if (civ.getPopulation() > 0) {
+					let halo;
+					if (!landTexture)
+						halo = null;
+					else if (politicalColorMap.has(civ.id))
+						halo = politicalColorMap.get(civ.id);
+					else
+						halo = colorScheme.landFill;
 					this.label(
 						[...civ.tileTree.keys()].filter(n => !n.isSaltWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
 						civ.getName().toString(style),
 						g,
-						fontSize);
+						fontSize,
+						3*fontSize,
+						halo);
+				}
 		}
 
 		if (SHOW_TILE_INDICES) {
 			for (const tile of surface.tiles) {
 				const text = h('text'); // start by creating the text element
-				const location = this.projectPath([{type: 'M', args: [tile.φ, tile.λ]}], false, false);
-				if (location.length > 0) {
-					const [x, y] = location[0].args;
-					text.attributes["x"] = `${x}`;
-					text.attributes["y"] = `${y}`;
+				const location = this.projectPoint(tile);
+				if (location !== null) {
+					text.attributes["x"] = `${location.x}`;
+					text.attributes["y"] = `${location.y}`;
 					text.attributes["font-size"] = "0.2em";
 					text.textContent = `${tile.index}`;
 					svg.children.push(text);
@@ -664,10 +757,13 @@ export class Chart {
 			}
 		}
 
-		// add an outline to the whole thing
-		this.fill(
-			surface.tiles,
-			svg, 'none', Layer.GEO, 'black', 1.4, 'miter');
+		// add a margin and outline to the whole thing
+		const outline = convertPathClosuresToZ(this.projectedOutline(surface.tiles, Layer.BIO));
+		const paperEdge = Chart.rectangle(bbox.left, bbox.top, bbox.right, bbox.bottom, false);
+		this.draw(paperEdge.concat(reversePath(outline)), svg).attributes.style =
+			`fill: white; stroke: white; stroke-width: 0.7;`;
+		this.draw(outline, svg).attributes.style =
+			`fill: none; stroke: black; stroke-width: 1.4; stroke-linejoin: miter;`;
 
 		// add the windrose
 		if (windrose) {
@@ -680,12 +776,7 @@ export class Chart {
 			windrose.attributes.transform = `translate(${x}, ${y}) scale(${radius/26})`;
 
 			// load the content from windrose.svg
-			fetch('../../resources/windrose.svg')
-				.then(response => response.text())
-				.then(svgText => {
-					const innerSVG = svgText.match(/<\?xml.*\?>\s*<svg[^>]*>\s*(.*)\s*<\/svg>\s*/s)[1];
-					windrose.textContent = innerSVG;
-				});
+			windrose.textContent = this.resources.get("windrose");
 		}
 
 		let visible;
@@ -694,11 +785,10 @@ export class Chart {
 			// (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
 			visible = [];
 			for (const civ of world.getCivs(true))
-				if (this.projectPath(
-					Chart.convertToGreebledPath(
-						outline([...civ.tileTree.keys()].filter(n => !n.isWater())),
-						Layer.KULTUR, this.scale),
-					true).length > 0)
+				if (this.projectedOutline(
+					[...civ.tileTree.keys()].filter(n => !n.isWater()),
+					Layer.KULTUR
+				).length > 0)
 					visible.push(civ);
 		}
 		else {
@@ -717,18 +807,17 @@ export class Chart {
 	 * @param stroke color of the outline.
 	 * @param strokeWidth the width of the outline to put around it (will match fill color).
 	 * @param strokeLinejoin the line joint style to use
-	 * @return the newly created element encompassing these tiles.
+	 * @return the path object associated with this <path>
 	 */
 	fill(tiles: Set<Tile>, svg: VNode, color: string, greeble: Layer,
-		 stroke = 'none', strokeWidth = 0, strokeLinejoin = 'round'): VNode {
+		 stroke = 'none', strokeWidth = 0, strokeLinejoin = 'round'): PathSegment[] {
 		if (tiles.size <= 0)
-			return this.draw([], svg);
-		const segments = convertPathClosuresToZ(this.projectPath(
-			Chart.convertToGreebledPath(outline(tiles), greeble, this.scale), true));
-		const path = this.draw(segments, svg);
+			return [];
+		const segments = this.projectedOutline(tiles, greeble);
+		const path = this.draw(convertPathClosuresToZ(segments), svg);
 		path.attributes.style =
 			`fill: ${color}; stroke: ${stroke}; stroke-width: ${strokeWidth}; stroke-linejoin: ${strokeLinejoin};`;
-		return path;
+		return segments;
 	}
 
 	/**
@@ -742,7 +831,7 @@ export class Chart {
 	 * @returns the newly created element comprising all these lines
 	 */
 	stroke(strokes: Iterable<ΦΛPoint[]>, svg: VNode,
-	       color: string, width: number, greeble: Layer, strokeLinejoin = 'round'): VNode {
+	       color: string, width: number, greeble: Layer, strokeLinejoin = 'round'): PathSegment[] {
 		let segments = this.projectPath(
 			Chart.convertToGreebledPath(Chart.aggregate(strokes), greeble, this.scale), false);
 		if (SMOOTH_RIVERS)
@@ -750,7 +839,152 @@ export class Chart {
 		const path = this.draw(segments, svg);
 		path.attributes.style =
 			`fill: none; stroke: ${color}; stroke-width: ${width}; stroke-linejoin: ${strokeLinejoin}; stroke-linecap: round;`;
-		return path;
+		return segments;
+	}
+
+	/**
+	 * shade in the area around a polygon with horizontal lines
+	 * @param shape the shape to outline in hatch
+	 * @param svg the SVG object on which to put the lines
+	 * @param spacing distance between adjacent lines in the pattern
+	 * @param radius the distance from the shape to draw horizontal lines
+	 */
+	hatchShadow(shape: PathSegment[], svg: VNode, spacing: number, radius: number): void {
+		// instantiate a random number generator for feathering the edges
+		const rng = new Random(0);
+
+		// calculate the outer envelope of the lines
+		const dilatedShape = offset(shape, radius);
+
+		// establish the y coordinates of the lines
+		const boundingBox = calculatePathBounds(dilatedShape);
+		const yMed = (boundingBox.tMin + boundingBox.tMax)/2;
+		const numLines = Math.floor((boundingBox.tMax - boundingBox.tMin)/spacing/2)*2 + 1;
+		const yMin = yMed - spacing*(numLines - 1)/2;
+
+		// find everywhere one of the lines crosses either polygon
+		const intersections: {x: number, downward: boolean, trueCoast: boolean}[][] = [];
+		for (let j = 0; j < numLines; j ++)
+			intersections.push([]);
+		for (const {s, j, goingEast} of getAllCombCrossings(shape, yMin, spacing, INFINITE_PLANE))
+			intersections[j].push({x: s, downward: goingEast, trueCoast: true});
+		for (const {s, j, goingEast} of getAllCombCrossings(dilatedShape, yMin, spacing, INFINITE_PLANE))
+			intersections[j].push({x: s, downward: goingEast, trueCoast: false});
+
+		// select the ones that should be the endpoints of line segments
+		const endpoints: number[][] = [];
+		for (let j = 0; j < numLines; j ++) {
+			endpoints.push([]);
+			intersections[j] = intersections[j].sort((a, b) => a.x - b.x);
+			let falseWraps = 0;
+			let trueWraps = 0;
+			for (const intersection of intersections[j]) {
+				if (intersection.trueCoast) {
+					if (intersection.downward)
+						trueWraps += 1;
+					else
+						trueWraps -= 1;
+					endpoints[j].push(intersection.x);
+				}
+				else {
+					if (intersection.downward) {
+						if (falseWraps === 0 && trueWraps === 0)
+							endpoints[j].push(rng.normal(intersection.x, spacing/2));
+						falseWraps += 1;
+					}
+					else {
+						falseWraps -= 1;
+						if (falseWraps === 0 && trueWraps === 0)
+							endpoints[j].push(rng.normal(intersection.x, spacing/2));
+					}
+				}
+			}
+			if (endpoints[j].length%2 !== 0) {
+				console.error("something went wrong in the hatching; these should always be even.");
+				endpoints[j] = [];
+			}
+		}
+
+		// finally, draw the lines
+		for (let j = 0; j < numLines; j ++) {
+			for (let k = 0; k < endpoints[j].length; k += 2) {
+				const x1 = endpoints[j][k];
+				const x2 = endpoints[j][k + 1];
+				const y = yMin + j*spacing;
+				this.draw([{type: 'M', args: [x1, y]}, {type: 'H', args: [x2]}], svg);
+			}
+		}
+	}
+
+	/**
+	 * describe a bunch of random symbols to put on the map to indicate biome and elevation
+	 * @param tiles the tiles being textured
+	 * @param colorSchemeName the color scheme
+	 * @param lineFeatures any lines on the map to avoid
+	 */
+
+	generateTexture(tiles: Set<Tile>, colorSchemeName: string, lineFeatures: PathSegment[][]): {name: string, x: number, y: number, fill: string}[] {
+		const textureMixLookup = new Map<string, {name: string, density: number, diameter: number}[]>();
+		for (const {name, components} of TEXTURE_MIXES)
+			textureMixLookup.set(name, components);
+
+		const rng = new Random(0);
+		const symbols: {x: number, y: number, name: string, fill: string}[] = [];
+		// for each non-aquatic biome
+		for (let biome = 0; biome < BIOME_NAMES.length; biome ++) {
+			if ([Biome.LAKE, Biome.OCEAN, Biome.SEA_ICE].includes(biome))
+				continue;
+			// for each altitude within that biome
+			for (const altitudeClass of ALTITUDE_CLASSES) {
+
+				// get the region of the map that needs to be filled
+				let region = filterSet(tiles, t =>
+					t.biome === biome && t.height >= altitudeClass.min && t.height < altitudeClass.max);
+				if (region.size > 0) {
+					const polygon = this.projectedOutline(region, Layer.KULTUR);
+					if (polygon.length > 0) {
+						let fill;
+						if (colorSchemeName === 'physical')
+							fill = BIOME_COLORS.get(biome);
+						else
+							fill = COLOR_SCHEMES.get(colorSchemeName).landFill;
+
+						// get the plant texture
+						const plantComponents = textureMixLookup.has(BIOME_NAMES[biome]) ?
+							textureMixLookup.get(BIOME_NAMES[biome]) : [];
+						let plantCoverage = 0;
+						for (const plant of plantComponents)
+							plantCoverage += plant.density*plant.diameter**2;
+						// get the topographic texture
+						const rockComponents = textureMixLookup.get(altitudeClass.name);
+						let rockCoverage = 0;
+						for (const rock of rockComponents)
+							rockCoverage += rock.density*rock.diameter**2;
+						// put them together, and scale the plant density to make room for the rocks
+						let totalCoverage = Math.max(plantCoverage, rockCoverage);
+						const plantFactor = (totalCoverage - rockCoverage)/plantCoverage;
+						const components = rockComponents.slice();
+						for (const {name, diameter, density} of plantComponents)
+							components.push({name: name, diameter: diameter, density: density*plantFactor});
+
+						// choose the locations (remember to scale vertically since we're looking down at a 45° angle)
+						const sinθ = Math.sqrt(1/2);
+						const scaledPolygon = scalePath(polygonize(polygon), 1, 1/sinθ);
+						const scaledLineFeatures = lineFeatures.map((line) => scalePath(polygonize(line), 1, 1/sinθ));
+						const scaledLocations = poissonDiscSample(
+							scaledPolygon, scaledLineFeatures, components, rng);
+						const locations = scaledLocations.map(({x, y, type}) => ({x: x, y: y*sinθ, type: type}));
+						// and then divvy those locations up among the different components of the texture
+						for (const {x, y, type} of locations)
+							symbols.push({x: x, y: y, name: components[type].name, fill: fill});
+					}
+				}
+			}
+		}
+
+		// make sure zorder is based on y
+		symbols.sort((a, b) => a.y - b.y);
+		return symbols;
 	}
 
 	/**
@@ -804,17 +1038,19 @@ export class Chart {
 	 * @param svg the SVG object on which to write the label.
 	 * @param minFontSize the smallest allowable font size, in mm. if the label cannot fit inside
 	 *                    the region with this font size, no label will be placed.
+	 * @param maxFontSize the largest allowable font size, in mm. if there is space available for
+	 *                    a bigger label, it will appear at this font size
+	 * @param haloColor the color of the text halo, if any, or null for no halos
 	 */
-	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number) {
+	label(tiles: Tile[], label: string, svg: VNode, minFontSize: number, maxFontSize: number, haloColor: string | null) {
 		if (tiles.length === 0)
 			throw new Error("there must be at least one tile to label");
 		const heightPerSize = 0.72; // this number was measured for Noto Sans
 		const lengthPerSize = Chart.calculateStringLength(this.characterWidthMap, label);
 		const aspectRatio = lengthPerSize/heightPerSize;
 
-		const path = this.projectPath( // do the projection
-			Chart.convertToGreebledPath(outline(new Set(tiles)), Layer.KULTUR, this.scale),
-			true
+		const path = this.projectedOutline( // do the projection
+			tiles, Layer.KULTUR,
 		);
 		if (path.length === 0)
 			return;
@@ -823,7 +1059,7 @@ export class Chart {
 		let location;
 		try {
 			location = chooseLabelLocation(
-				path, aspectRatio);
+				path, aspectRatio, 0.7, maxFontSize*heightPerSize);
 		} catch (e) {
 			console.error(e);
 			return;
@@ -840,16 +1076,28 @@ export class Chart {
 		else
 			arc.attributes.style = 'fill: none; stroke: none;';
 		arc.attributes.id = `labelArc${this.labelIndex}`;
-		const textGroup = h('text', { // start by creating the text element
+
+		// create the text element
+		const textGroup = h('text', {
 			style: `font-size: ${fontSize}px; letter-spacing: ${location.letterSpacing*.5}em;`}); // this .5em is just a guess at the average letter width
-		svg.children.push(textGroup);
 		const textPath = h('textPath', {
-			class: 'map-label',
+			class: 'label',
 			startOffset: '50%',
 			href: `#labelArc${this.labelIndex}`,
 		});
+		textPath.textContent = label;
+
+		// also add a halo below it if desired
+		if (haloColor !== null) {
+			const haloPath = cloneNode(textPath);
+			haloPath.attributes.class += ' halo';
+			haloPath.attributes.stroke = haloColor;
+
+			textGroup.children.push(haloPath);
+		}
+
 		textGroup.children.push(textPath);
-		textPath.textContent = label; // buffer the label with two spaces to ensure adequate visual spacing
+		svg.children.push(textGroup);
 
 		this.labelIndex += 1;
 	}
@@ -895,22 +1143,38 @@ export class Chart {
 			this.mapEdges,
 			INFINITE_PLANE, closePath,
 		);
-		return scalePath(rotatePath(croppedToMapRegion, this.orientation), this.scale);
+		return scalePath(rotatePath(croppedToMapRegion, this.orientation), this.scale, this.scale);
 	}
 
 
 	/**
-	 * create a path that forms the border of this set of Tiles.  this will only include the interface between included
-	 * Tiles and excluded Tiles; even if it's a surface with an edge, the surface edge will not be part of the return
-	 * value.  that means that a region that takes up the entire Surface will always have a border of [].
-	 * @param tiles the tiles that comprise the region whose outline is desired
+	 * project a geographic point defined by latitude and longitude to a point on the map defined by x and y,
+	 * accounting for the map domain and the orientation and scale of the map
+	 * @param point
+	 * @return the projected point in Cartesian coordinates (mm), or null if the point falls outside the mapped area.
 	 */
-	static border(tiles: Iterable<Tile>): PathSegment[] {
-		const tileSet = new Set(tiles);
+	projectPoint(point: ΦΛPoint): XYPoint | null {
+		// use the projectPath function, since that's much more general by necessity
+		const result = this.projectPath([{type: 'M', args: [point.φ, point.λ]}], false, false);
+		// then simply extract the coordinates from the result
+		if (result.length === 0)
+			return null;
+		else if (result.length === 1)
+			return {x: result[0].args[0], y: result[0].args[1]};
+		else
+			throw new Error("well that wasn't supposed to happen.");
+	}
 
-		if (tileSet.size === 0)
-			throw new Error(`I cannot find the border of a nonexistent region.`);
-		return this.convertToGreebledPath(outline(tileSet), Layer.KULTUR, 1e-6);
+
+	/**
+	 * create a path that forms the border of this set of Tiles on the map.
+	 * @param tiles the tiles that comprise the region whose outline is desired
+	 * @param greeble what kind of border this is for the purposes of greebling
+	 */
+	projectedOutline(tiles: Iterable<Tile>, greeble: Layer): PathSegment[] {
+		return this.projectPath(
+			Chart.convertToGreebledPath(outline(tiles), greeble, this.scale),
+			true);
 	}
 
 	/**
@@ -1087,7 +1351,7 @@ export class Chart {
 		// turn the region into a proper closed polygon in the [-π, π) domain
 		const landOfInterest = filterSet(regionOfInterest, tile => !tile.isWater());
 		const coastline = intersection(
-			Chart.border(landOfInterest),
+			Chart.convertToGreebledPath(outline(landOfInterest), Layer.KULTUR, 1e-6),
 			Chart.rectangle(
 				Math.max(surface.φMin, -Math.PI), -Math.PI,
 				Math.min(surface.φMax, Math.PI), Math.PI, true),

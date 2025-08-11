@@ -8,13 +8,11 @@ import {
 	intersection,
 	encompasses,
 	getEdgeCrossings,
-	isClosed
+	isClosed, Domain, INFINITE_PLANE, polygonize, decimate, getAllCombCrossings, Rule, Side
 } from "../source/mapping/pathutilities.js";
-import {Side} from "../source/utilities/miscellaneus.js";
 import {endpoint, PathSegment} from "../source/utilities/coordinates.js";
 import {LockedDisc} from "../source/generation/surface/lockeddisc.js";
 import {MapProjection} from "../source/mapping/projection.js";
-import {Domain, INFINITE_PLANE} from "../source/generation/surface/surface.js";
 
 const π = Math.PI;
 const plane = INFINITE_PLANE;
@@ -524,6 +522,30 @@ describe("getEdgeCrossings", () => {
 	});
 });
 
+describe("getCombCrossings", () => {
+	test("line", () => {
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [2, 2]},
+		];
+		expect(getAllCombCrossings(path, 0, 1, INFINITE_PLANE)).toEqual([
+			{i: 1, s: 1, j: 1, goingEast: true},
+			{i: 1, s: 2, j: 2, goingEast: true},
+		]);
+	});
+	test("arc", () => {
+		const path = [
+			{type: 'M', args: [0, 0]},
+			{type: 'A', args: [5, 5, 0, 0, 1, 1, 3]},
+		];
+		expect(getAllCombCrossings(path, 0, 1, INFINITE_PLANE)).toEqual([
+			{i: 1, s: Math.sqrt(21) - 4, j: 1, goingEast: true},
+			{i: 1, s: Math.sqrt(24) - 4, j: 2, goingEast: true},
+			{i: 1, s: 1, j: 3, goingEast: true},
+		]);
+	});
+});
+
 describe("contains", () => {
 	describe("normal region", () => {
 		const region = [
@@ -854,6 +876,47 @@ describe("contains", () => {
 			{type: 'L', args: [0, 0]},
 		];
 		expect(() => contains(region, {s: 9000, t: 9001}, plane)).toThrow();
+	});
+	describe("self-intersecting region", () => {
+		const region: PathSegment[] = [
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 0]},
+			{type: 'L', args: [1, 5]},
+			{type: 'L', args: [2, 5]},
+			{type: 'L', args: [3, 4]},
+			{type: 'L', args: [2, 4]},
+			{type: 'L', args: [3, 5]},
+			{type: 'L', args: [4, 4]},
+			{type: 'L', args: [0, 0]},
+		];
+		describe("positive fill-rule", () => {
+			test("0 wraps", () => {
+				expect(contains(region, {s: 0, t: 0.5}, INFINITE_PLANE, Rule.POSITIVE)).toBe(Side.OUT);
+			});
+			test("+1 wrap", () => {
+				expect(contains(region, {s: 2, t: 3}, INFINITE_PLANE, Rule.POSITIVE)).toBe(Side.IN);
+			});
+			test("-1 wrap", () => {
+				expect(contains(region, {s: 0.9, t: 0.1}, INFINITE_PLANE, Rule.POSITIVE)).toBe(Side.OUT);
+			});
+			test("+2 wraps", () => {
+				expect(contains(region, {s: 2.5, t: 4.1}, INFINITE_PLANE, Rule.POSITIVE)).toBe(Side.IN);
+			});
+		});
+		describe("even-odd file rule", () => {
+			test("0 wraps", () => {
+				expect(contains(region, {s: 0, t: 0.5}, INFINITE_PLANE, Rule.ODD)).toBe(Side.OUT);
+			});
+			test("+1 wrap", () => {
+				expect(contains(region, {s: 2, t: 3}, INFINITE_PLANE, Rule.ODD)).toBe(Side.IN);
+			});
+			test("-1 wrap", () => {
+				expect(contains(region, {s: 0.9, t: 0.1}, INFINITE_PLANE, Rule.ODD)).toBe(Side.IN);
+			});
+			test("+2 wraps", () => {
+				expect(contains(region, {s: 2.5, t: 4.1}, INFINITE_PLANE, Rule.ODD)).toBe(Side.OUT);
+			});
+		});
 	});
 });
 
@@ -1388,4 +1451,75 @@ describe("applyProjectionToPath", () => {
 		]);
 	});
 
+});
+
+
+describe("polygonize", () => {
+	test("empty", () => {
+		expect(polygonize([], 6)).toEqual([]);
+	});
+	test("arc", () => {
+		const path = [
+			{type: 'M', args: [1, 0]},
+			{type: 'A', args: [1, 1, 0, 0, 1, -1, 0]},
+		];
+		const expectation = [];
+		for (let i = 0; i <= 19; i ++)
+			expectation.push({
+				type: (i === 0) ? 'M' : 'L',
+				args: [
+					expect.closeTo(Math.cos(i/19*Math.PI)),
+					expect.closeTo(Math.sin(i/19*Math.PI)),
+				],
+			});
+		expect(polygonize(path, 6)).toEqual(expectation);
+	});
+});
+
+describe("decimate", () => {
+	test("zig zag", () => {
+		expect(decimate([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 1]},
+			{type: 'L', args: [2, 0]},
+			{type: 'L', args: [3, 0.01]},
+			{type: 'L', args: [4, -0.01]},
+			{type: 'L', args: [5, 0]},
+		], 0.1)).toEqual([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 1]},
+			{type: 'L', args: [2, 0]},
+			{type: 'L', args: [5, 0]},
+		]);
+	});
+	test("two curves", () => {
+		expect(decimate([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 0]},
+			{type: 'L', args: [2, 0]},
+			{type: 'M', args: [3, 0]},
+			{type: 'L', args: [4, 0]},
+			{type: 'L', args: [5, 0]},
+		], 0.1)).toEqual([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [2, 0]},
+			{type: 'M', args: [3, 0]},
+			{type: 'L', args: [5, 0]},
+		]);
+	});
+	test("arc", () => {
+		expect(decimate([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [1, 0]},
+			{type: 'L', args: [2, 0]},
+			{type: 'A', args: [100, 100, 0, 0, 0, 3, 0]},
+			{type: 'L', args: [4, 0]},
+			{type: 'L', args: [5, 0]},
+		], 0.1)).toEqual([
+			{type: 'M', args: [0, 0]},
+			{type: 'L', args: [2, 0]},
+			{type: 'A', args: [100, 100, 0, 0, 0, 3, 0]},
+			{type: 'L', args: [5, 0]},
+		]);
+	});
 });

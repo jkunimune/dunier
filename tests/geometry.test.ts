@@ -6,7 +6,7 @@ import {
 	angleSign,
 	checkVoronoiPolygon,
 	crossingSign,
-	lineArcIntersections, orthogonalBasis,
+	lineArcIntersections, lineSegmentDistance, orthogonalBasis,
 	trajectoryIntersection, Vector
 } from "../source/utilities/geometry.js";
 
@@ -85,6 +85,23 @@ describe("lineArcIntersections()", () => {
 		const q0 = {x: -517.7500966580174, y: -129.18154246100173};
 		const q1 = {x: -496.36792052009014, y: -195.8875212476573};
 		expect(lineArcIntersections(line[0], line[1], center, r, q0, q1)).toEqual([]);
+	});
+});
+
+describe("lineSegmentDistance()", () => {
+	const start = {x: 0, y: 0};
+	const end = {x: 4, y: 3};
+	test("start point", () => {
+		expect(lineSegmentDistance(start, end, {x: -2, y: 0})).toBeCloseTo(2);
+	});
+	test("middle", () => {
+		expect(lineSegmentDistance(start, end, {x: 0.5, y: 3.5})).toBeCloseTo(2.5);
+	});
+	test("end point", () => {
+		expect(lineSegmentDistance(start, end, {x: 4, y: 6})).toBeCloseTo(3);
+	});
+	test("degenerate", () => {
+		expect(lineSegmentDistance(end, end, {x: 4, y: 6})).toBeCloseTo(3);
 	});
 });
 

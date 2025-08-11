@@ -188,6 +188,38 @@ export function lineArcIntersections(
 
 
 /**
+ * calcluate the minimum distance between a point and a line segment.
+ * @param a one of the line segment's endpoints
+ * @param b one of the line segment's endpoints
+ * @param point the point to which we're measuring the distance
+ */
+export function lineSegmentDistance(a: XYPoint, b: XYPoint, point: XYPoint): number {
+	// if the line segment is degenerate, calculate point-to-point distance
+	if (a.x === b.x && a.y === b.y)
+		return Math.hypot(point.x - a.x, point.y - a.y);
+	// project the point onto the line
+	const t = (
+		(point.x - a.x)*(b.x - a.x) + (point.y - a.y)*(b.y - a.y)
+	)/(
+		(b.x - a.x)**2 + (b.y - a.y)**2
+	);
+	// use that to determine to which part of the line segment we should measure the distance
+	let nearestPoint;
+	if (t < 0)
+		nearestPoint = a;
+	else if (t > 1)
+		nearestPoint = b;
+	else
+		nearestPoint = {
+			x: (1 - t)*a.x + t*b.x,
+			y: (1 - t)*a.y + t*b.y,
+		};
+	// measure the distance
+	return Math.hypot(point.x - nearestPoint.x, point.y - nearestPoint.y);
+}
+
+
+/**
  * copy and edit a polygon so that if its vertices are approximately orderd
  * counterclockwise from the POV of the origin, then they are rearranged to be
  * exactly orderd widdershins from the POV of the origin

@@ -401,14 +401,6 @@ export function noisyProfile(initialProfile: XYPoint[], resolution: number, rng:
 
 
 /**
- * whether something is contained in a region or not
- */
-export enum Side {
-	OUT, IN, BORDERLINE
-}
-
-
-/**
  * an n×m matrix
  */
 export class Matrix {
