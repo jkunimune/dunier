@@ -40,9 +40,11 @@ const FLASH_TEMP = +50;
 const TROPIC_TEMP = +22;
 /** a prefactor for the threshold between grassland and forest */
 const FOREST_FACTOR = 1.35;
-
 /** the temperature threshold between normal biomes and permanent ice sheets (°C) */
-const RIVER_THRESH = -20;
+const PERMAFREEZE_TEMP = -20;
+/** the temperature threshold between variably liquid ocean and permanent ice sheets (°C) */
+const BRINE_PERMAFREEZE_TEMP = -20;
+
 /** the minimum edge length that can separate two rivers without them merging (km) */
 const RIVER_WIDTH = 10;
 /** the maximum amount that a river can flow uphill (km) */
@@ -404,7 +406,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 
 	for (const tile of surf.tiles) { // and then throw in the baseline
 		tile.temperature += Math.pow(
-			surf.insolation(tile.φ)*Math.exp(-tile.height/ATMOSPHERE_THICKNESS),
+			surf.insolation(tile.φ)*Math.exp(-Math.max(0, tile.height)/ATMOSPHERE_THICKNESS),
 			1/4.)*(avgTerme + 273) - 273;
 		tile.rainfall += surf.windConvergence(tile.φ);
 		tile.rainfall = Math.max(0, tile.rainfall);
@@ -546,7 +548,7 @@ function addRivers(surf: Surface): void {
 						- evaporation_rate(tile.temperature) // subtract out evaporation
 						+ tile.height/CLOUD_HEIGHT // add in mountain sources
 					);
-					if (nadasle > 0 && tile.temperature >= RIVER_THRESH) // this could lead to evaporation, but I'm not doing that because it would look ugly
+					if (nadasle > 0 && tile.temperature >= PERMAFREEZE_TEMP) // this could lead to evaporation, but I'm not doing that because it would look ugly
 						vertex.flow += nadasle*unitArea/tile.neighbors.size;
 				}
 			}
@@ -561,7 +563,7 @@ function addRivers(surf: Surface): void {
 	queue:
 	while (lageQueue.length > 0) { // now look at the tiles
 		const tile = lageQueue.pop(); // TODO: make lakes more likely to appear on large rivers
-		if (tile.isWater() || tile.temperature < RIVER_THRESH)
+		if (tile.isWater() || tile.temperature < PERMAFREEZE_TEMP)
 			continue; // ignoring things that are already water or too cold for this
 
 		// check whether there is up to 1 continuous body of water at its border
@@ -611,16 +613,14 @@ function addRivers(surf: Surface): void {
  */
 function setBiomes(surf: Surface): void {
 	for (const tile of surf.tiles) {
-		// make sure the edge is frozen to hold all the water in
-		if (surf.edge.has(tile)) {
-			if (tile.biome === Biome.OCEAN)
+		// assign oceanic biomes based on temperature
+		if (tile.biome === Biome.OCEAN) {
+			if (tile.temperature < BRINE_PERMAFREEZE_TEMP || surf.edge.has(tile))
 				tile.biome = Biome.SEA_ICE;
-			else
-				tile.biome = Biome.LAND_ICE;
 		}
-		// assign all other biomes based on temperature and rainfall
+		// assign terrestrial biomes based on temperature and rainfall
 		else if (tile.biome === null) {
-			if (tile.temperature < RIVER_THRESH)
+			if (tile.temperature < PERMAFREEZE_TEMP || surf.edge.has(tile))
 				tile.biome = Biome.LAND_ICE;
 			else if (tile.rainfall <= evaporation_rate(tile.temperature))
 				tile.biome = Biome.DESERT;
