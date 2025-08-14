@@ -117,10 +117,10 @@ export function transformInput(φMin: number, λMin: number, segments: PathSegme
  * @param projection the projection to use for each point
  * @param inPoints ordered Iterator of segments, which each have attributes .type (str) and .args ([double]) (km)
  * @param precision the maximum permissible line segment length (anything longer will be broken up to make sure the projection isn't too degraded) (km)
- * @return SVG.Path object
+ * @param bounds the rectangle inside which precision is needed (outside of that rectangle there will be no infill)
  */
 export function applyProjectionToPath(
-	projection: MapProjection, inPoints: PathSegment[], precision: number): PathSegment[] {
+	projection: MapProjection, inPoints: PathSegment[], precision: number, bounds: {left: number, right: number, top: number, bottom: number} = null): PathSegment[] {
 	// check for NaNs because they can really mess things up
 	for (const segment of inPoints)
 		for (const arg of segment.args)
@@ -153,6 +153,7 @@ export function applyProjectionToPath(
 			// for continuus segments, don't call projectPoint just yet
 			const pendingInPoints = [assert_φλ(endpoint(inPoints[i]))]; // add the desired destination to a queue
 			const completedInPoints = [assert_φλ(endpoint(inPoints[i - 1]))];
+			let numIntermediatePoints = 0;
 			while (pendingInPoints.length > 0) { // now, as long as there are points in the pending cue
 				const nextInPoint = pendingInPoints.pop(); // take the next point
 				const nextOutPoint = projection.projectPoint(nextInPoint); // project it
@@ -161,19 +162,41 @@ export function applyProjectionToPath(
 				if (nextOutPoint.x === lastOutPoint.x && nextOutPoint.y === lastOutPoint.y) { // if this segment ended up being redundant
 					completedInPoints.push(nextInPoint); // mark it as done but don't bother adding it to outPoints
 				}
-				else if (Math.hypot(nextOutPoint.x - lastOutPoint.x, nextOutPoint.y - lastOutPoint.y) < precision) { // if it's short and finite
-					completedInPoints.push(nextInPoint); // unpend it
-					outPoints.push({type: 'L', args: [nextOutPoint.x, nextOutPoint.y]});
-				}
-				else { // if it's too long
-					pendingInPoints.push(nextInPoint); // put it back
-					const intermediateInPoint = assert_φλ(getMidpoint(
-						{type: 'M', args: [lastInPoint.φ, lastInPoint.λ]},
-						{type: 'L', args: [nextInPoint.φ, nextInPoint.λ]}, projection.domain)); // that means we need to plot a midpoint first
-					pendingInPoints.push(intermediateInPoint);
+				else {
+					// if the segment is real, we need to decide whether to project its midpoint
+					const distance = Math.hypot(nextOutPoint.x - lastOutPoint.x, nextOutPoint.y - lastOutPoint.y);
+					let lastOutPointIsOffTheMap, nextOutPointIsOffTheMap;
+					if (bounds !== null) {
+						lastOutPointIsOffTheMap =
+							lastOutPoint.x <= bounds.left || lastOutPoint.x >= bounds.right ||
+							lastOutPoint.y <= bounds.top || lastOutPoint.y >= bounds.bottom;
+						nextOutPointIsOffTheMap =
+							nextOutPoint.x <= bounds.left || nextOutPoint.x >= bounds.right ||
+							nextOutPoint.y <= bounds.top || nextOutPoint.y >= bounds.bottom;
+					}
+					else {
+						lastOutPointIsOffTheMap = false;
+						nextOutPointIsOffTheMap = false;
+					}
+					// if it's short and finite, or out of bounds
+					if (distance < precision || (lastOutPointIsOffTheMap && nextOutPointIsOffTheMap)) {
+						completedInPoints.push(nextInPoint); // accept it as is
+						outPoints.push({type: 'L', args: [nextOutPoint.x, nextOutPoint.y]});
+					}
+					// if it's too long
+					else {
+						pendingInPoints.push(nextInPoint); // put it back
+						const intermediateInPoint = assert_φλ(getMidpoint(
+							{type: 'M', args: [lastInPoint.φ, lastInPoint.λ]},
+							{type: 'L', args: [nextInPoint.φ, nextInPoint.λ]}, projection.domain)); // that means we need to plot a midpoint first
+						pendingInPoints.push(intermediateInPoint);
+						numIntermediatePoints += 1;
 
-					if (pendingInPoints.length + outPoints.length > 100000)
-						throw new Error(`why can't I find a point between [${lastInPoint.φ},${lastInPoint.λ}]=>[${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.φ},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}]`);
+						if (numIntermediatePoints > 10000) {
+							console.error(`we've put an absurd number of points between [${lastInPoint.φ},${lastInPoint.λ}]=>[${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.φ},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}], but they're still over ${precision} apart.`);
+							break;
+						}
+					}
 				}
 			}
 		}

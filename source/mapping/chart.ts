@@ -1135,6 +1135,7 @@ export class Chart {
 			this.projection,
 			croppedToGeoRegion,
 			MAP_PRECISION/this.scale,
+			this.dimensions,
 		);
 		if (cleanUpPath)
 			projected = removeLoosePoints(projected);
