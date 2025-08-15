@@ -103,7 +103,7 @@ function updateEverythingUpTo(target: Layer) {
 		colorSchemeName, rivers, borders, landTexture, seaTexture, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	]);
-	lastUpdated = target;
+	lastUpdated = Math.max(lastUpdated, target);
 }
 
 
