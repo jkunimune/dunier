@@ -726,7 +726,7 @@ export class Chart {
 						halo = colorScheme.landFill;
 					this.label(
 						[...civ.tileTree.keys()].filter(n => !n.isSaltWater()), // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
-						civ.getName().toString(style),
+						civ.getName().toString(style).toUpperCase(),
 						g,
 						fontSize,
 						3*fontSize,
@@ -1058,7 +1058,7 @@ export class Chart {
 		let location;
 		try {
 			location = chooseLabelLocation(
-				path, aspectRatio, 0.7, maxFontSize*heightPerSize);
+				path, aspectRatio, 1.4, maxFontSize*heightPerSize);
 		} catch (e) {
 			console.error(e);
 			return;
