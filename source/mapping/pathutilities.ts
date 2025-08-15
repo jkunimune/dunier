@@ -744,13 +744,13 @@ export function calculatePathBounds(segments: PathSegment[]): {sMin: number, sMa
 					throw new Error("a path may not start with an arc.");
 				}
 				const start = assert_xy(endpoint(segments[i - 1]));
-				const [_, r, __, largeArcFlag, sweepFlag, xEnd, yEnd] = segment.args;
+				let [_, r, __, largeArcFlag, sweepFlag, xEnd, yEnd] = segment.args;
 				const end = {x: xEnd, y: yEnd};
 				const chord = Math.hypot(end.x - start.x, end.y - start.y);
 				if (chord === 0)
 					throw new Error(`this arc is degenerate (the start point is the same as the endpoint): A${segment.args.join(',')}`);
 				if (chord > 2*r)
-					throw new Error(`this arc is impossible; it needs to span a distance of ${chord} with a radius of only ${r}?`);
+					r = chord/2; // sometimes r is too small because of roundoff; clip it so the apothem is 0
 				const apothem = Math.sqrt(r*r - chord*chord/4);
 				const arcSign = (largeArcFlag === sweepFlag) ? 1 : -1;
 				const step = {
