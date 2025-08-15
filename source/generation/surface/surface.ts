@@ -800,13 +800,12 @@ export class Edge {
  * @return Array of loops, each loop being an Array of Vertexes or plain coordinate pairs.
  *         the first and last elements of each loop are the same iff the outline is a closed loop.
  */
-export function outline(tiles: Iterable<Tile>): Vertex[][] {
-	const tileSet = new Set(tiles);
+export function outline(tiles: Set<Tile>): Vertex[][] {
 	const accountedFor = new Set(); // keep track of which Edges have been done
 	const output: Vertex[][] = [];
-	for (let inTile of tileSet) { // look at every included tile
+	for (let inTile of tiles) { // look at every included tile
 		for (let outTile of inTile.neighbors.keys()) { // and every tile adjacent to an included one
-			if (tileSet.has(outTile))
+			if (tiles.has(outTile))
 				continue; // (we only care if that adjacent tile is excluded)
 			const startingEdge = inTile.neighbors.get(outTile); // the edge between them defines the start of the loop
 			if (accountedFor.has(startingEdge))
@@ -835,12 +834,12 @@ export function outline(tiles: Iterable<Tile>): Vertex[][] {
 					do {
 						outTile = outTile.surface.edge.get(outTile).next;
 						i ++;
-					} while (tileSet.has(outTile)); // until it becomes external again
+					} while (tiles.has(outTile)); // until it becomes external again
 					inTile = outTile.surface.edge.get(outTile).prev; // then, grab the new inTile
 					// start a new section in the same loop on this side of the gap
 					currentSection = [inTile.rightOf(outTile)];
 				}
-				else if (tileSet.has(nextTile)) // if there is and it's in, make it the new inTile
+				else if (tiles.has(nextTile)) // if there is and it's in, make it the new inTile
 					inTile = nextTile;
 				else // if there is and it's out, make it the new outTile
 					outTile = nextTile;

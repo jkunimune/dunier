@@ -48,6 +48,8 @@ const RIVER_DISPLAY_FACTOR = 6000; // the average scaled watershed area needed t
 const BORDER_SPECIFY_THRESHOLD = 0.3; // the population density at which borders must be rigorusly defined
 const MAP_PRECISION = 10; // max segment length in mm
 const GRATICULE_SPACING = 30; // typical spacing between lines of latitude or longitude in mm
+const HILL_HEIGHT = 1.5; // the altitude at which terrain becomes hilly (km)
+const MOUNTAIN_HEIGHT = 3.0; // the altitude at which terrain becomes mountainous (km)
 
 /** color scheme presets */
 const COLOR_SCHEMES = new Map([
@@ -198,13 +200,6 @@ const DEPTH_COLORS = [
 	'rgb(37, 138, 178)',
 	'rgb(42, 106, 171)',
 	'rgb(59, 72, 151)',
-];
-
-/** what kind of texturing to apply at what altitudes */
-const ALTITUDE_CLASSES = [
-	{name: "lowland", min: -Infinity, max: 1.5},
-	{name: "hill", min: 1.5, max: 3.0},
-	{name: "mountain", min: 3.0, max: Infinity},
 ];
 
 /** a type of area feature with a particular greebling profile */
@@ -523,14 +518,10 @@ export class Chart {
 			// color the land by biome
 			const g = Chart.createSVGGroup(svg, "biomes");
 			for (const biome of BIOME_COLORS.keys()) {
-				if (biome === Biome.LAKE)
-					this.fill(
-						filterSet(surface.tiles, n => n.biome === biome),
-						g, colorScheme.waterFill, Layer.BIO);
-				else if (biome !== Biome.OCEAN)
-					this.fill(
-						filterSet(surface.tiles, n => n.biome === biome),
-						g, BIOME_COLORS.get(biome), Layer.BIO);
+				const path = this.fill(
+					filterSet(surface.tiles, n => n.biome === biome),
+					g, BIOME_COLORS.get(biome), Layer.BIO);
+				areaFeatures.push({path: path, color: BIOME_COLORS.get(biome)});
 			}
 		}
 		else if (colorSchemeName === 'political') {
@@ -658,7 +649,7 @@ export class Chart {
 
 		// add some terrain elements for texture
 		if (landTexture) {
-			const symbols = this.generateTexture(surface.tiles, colorSchemeName, lineFeatures);
+			const symbols = this.generateTexture(surface.tiles, lineFeatures);
 			const textureNames = new Set<string>();
 			for (const symbol of symbols)
 				textureNames.add(symbol.name);
@@ -678,8 +669,8 @@ export class Chart {
 			const g = Chart.createSVGGroup(svg, "land-texture");
 			g.attributes.style =
 				`stroke:${colorScheme.secondaryStroke}; stroke-width:0.35; stroke-linejoin:round`;
-			for (const {x, y, name, fill} of symbols) {
-				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fill});
+			for (const {x, y, name} of symbols) {
+				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: colorScheme.landFill});
 				for (const region of areaFeatures) { // check if it should inherit color from a base fill
 					if (contains(region.path, {s: x, t: y})) {
 						picture.attributes.fill = region.color;
@@ -919,66 +910,74 @@ export class Chart {
 	/**
 	 * describe a bunch of random symbols to put on the map to indicate biome and elevation
 	 * @param tiles the tiles being textured
-	 * @param colorSchemeName the color scheme
 	 * @param lineFeatures any lines on the map to avoid
 	 */
-
-	generateTexture(tiles: Set<Tile>, colorSchemeName: string, lineFeatures: PathSegment[][]): {name: string, x: number, y: number, fill: string}[] {
+	generateTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][]): {name: string, x: number, y: number}[] {
 		const textureMixLookup = new Map<string, {name: string, density: number, diameter: number}[]>();
 		for (const {name, components} of TEXTURE_MIXES)
 			textureMixLookup.set(name, components);
 
-		const rng = new Random(0);
-		const symbols: {x: number, y: number, name: string, fill: string}[] = [];
+		// get the hill texture
+		const hillComponents = textureMixLookup.get("hill");
+		let hillCoverage = 0;
+		for (const rock of hillComponents)
+			hillCoverage += rock.density*rock.diameter**2;
+
+		const textureRegions: {region: Set<Tile>, components: {name: string, density: number, diameter: number}[]}[] = [];
 		// for each non-aquatic biome
 		for (let biome = 0; biome < BIOME_NAMES.length; biome ++) {
-			if ([Biome.LAKE, Biome.OCEAN, Biome.SEA_ICE].includes(biome))
+			if (!textureMixLookup.has(BIOME_NAMES[biome]))
 				continue;
-			// for each altitude within that biome
-			for (const altitudeClass of ALTITUDE_CLASSES) {
 
-				// get the region of the map that needs to be filled
-				let region = filterSet(tiles, t =>
-					t.biome === biome && t.height >= altitudeClass.min && t.height < altitudeClass.max);
-				if (region.size > 0) {
-					const polygon = this.projectedOutline(region, Layer.KULTUR);
-					if (polygon.length > 0) {
-						let fill;
-						if (colorSchemeName === 'physical')
-							fill = BIOME_COLORS.get(biome);
-						else
-							fill = COLOR_SCHEMES.get(colorSchemeName).landFill;
+			const region = filterSet(tiles, t => t.biome === biome);
 
-						// get the plant texture
-						const plantComponents = textureMixLookup.has(BIOME_NAMES[biome]) ?
-							textureMixLookup.get(BIOME_NAMES[biome]) : [];
-						let plantCoverage = 0;
-						for (const plant of plantComponents)
-							plantCoverage += plant.density*plant.diameter**2;
-						// get the topographic texture
-						const rockComponents = textureMixLookup.get(altitudeClass.name);
-						let rockCoverage = 0;
-						for (const rock of rockComponents)
-							rockCoverage += rock.density*rock.diameter**2;
-						// put them together, and scale the plant density to make room for the rocks
-						let totalCoverage = Math.max(plantCoverage, rockCoverage);
-						const plantFactor = (totalCoverage - rockCoverage)/plantCoverage;
-						const components = rockComponents.slice();
-						for (const {name, diameter, density} of plantComponents)
-							components.push({name: name, diameter: diameter, density: density*plantFactor});
+			// get the plant texture
+			const plantComponents = textureMixLookup.has(BIOME_NAMES[biome]) ?
+				textureMixLookup.get(BIOME_NAMES[biome]) : [];
+			let plantCoverage = 0;
+			for (const plant of plantComponents)
+				plantCoverage += plant.density*plant.diameter**2;
 
-						// choose the locations (remember to scale vertically since we're looking down at a 45° angle)
-						const sinθ = Math.sqrt(1/2);
-						const scaledPolygon = scalePath(polygonize(polygon), 1, 1/sinθ);
-						const scaledLineFeatures = lineFeatures.map((line) => scalePath(polygonize(line), 1, 1/sinθ));
-						const scaledLocations = poissonDiscSample(
-							scaledPolygon, scaledLineFeatures, components, rng);
-						const locations = scaledLocations.map(({x, y, type}) => ({x: x, y: y*sinθ, type: type}));
-						// and then divvy those locations up among the different components of the texture
-						for (const {x, y, type} of locations)
-							symbols.push({x: x, y: y, name: components[type].name, fill: fill});
-					}
-				}
+			// fill the lowlands of that biome with the appropriate flora
+			textureRegions.push({
+				region: filterSet(region, t => t.height < HILL_HEIGHT),
+				components: plantComponents,
+			});
+
+			// fill the highlands of that biome with the appropriate flora plus hills
+			let totalCoverage = Math.max(plantCoverage, hillCoverage);
+			const plantFactor = (totalCoverage - hillCoverage)/plantCoverage;
+			const components = hillComponents.slice();
+			for (const {name, diameter, density} of plantComponents)
+				components.push({name: name, diameter: diameter, density: density*plantFactor});
+			textureRegions.push({
+				region: filterSet(region, t => t.height >= HILL_HEIGHT && t.height < MOUNTAIN_HEIGHT),
+				components: components,
+			});
+		}
+
+		// also fill the mountainous regions of the world with mountains
+		textureRegions.push({
+			region: filterSet(tiles, t => t.height >= MOUNTAIN_HEIGHT && !t.isWater()),
+			components: textureMixLookup.get("mountain"),
+		});
+
+		const rng = new Random(0);
+		const symbols: {x: number, y: number, name: string}[] = [];
+		// for each texture region you identified
+		for (const {region, components} of textureRegions) {
+			const polygon = this.projectedOutline(region, Layer.BIO);
+			if (polygon.length > 0) {
+				// choose the locations (remember to scale vertically since we're looking down at a 45° angle)
+				const sinθ = Math.sqrt(1/2);
+				const scaledPolygon = scalePath(polygonize(polygon), 1, 1/sinθ);
+				const scaledLineFeatures = lineFeatures.map((line) => scalePath(polygonize(line), 1, 1/sinθ));
+				const scaledLocations = poissonDiscSample(
+					scaledPolygon, scaledLineFeatures, components, rng);
+				const locations = scaledLocations.map(({x, y, type}) => ({x: x, y: y*sinθ, type: type}));
+				// and then divvy those locations up among the different components of the texture
+				for (const {x, y, type} of locations)
+					symbols.push({x: x, y: y, name: components[type].name});
 			}
 		}
 
@@ -1173,8 +1172,11 @@ export class Chart {
 	 * @param greeble what kind of border this is for the purposes of greebling
 	 */
 	projectedOutline(tiles: Iterable<Tile>, greeble: Layer): PathSegment[] {
+		const tileSet = new Set(tiles);
+		if (tileSet.size === 0)
+			return [];
 		return this.projectPath(
-			Chart.convertToGreebledPath(outline(tiles), greeble, this.scale),
+			Chart.convertToGreebledPath(outline(tileSet), greeble, this.scale),
 			true);
 	}
 
