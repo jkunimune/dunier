@@ -54,6 +54,7 @@ const messageQueue: MessageEvent[] = [];
 let ready = false;
 
 
+// route all messages to generateFantasyMap() unless we're still loading the assets
 onmessage = (message) => {
 	if (ready)
 		generateFantasyMap(message.data);
@@ -62,6 +63,7 @@ onmessage = (message) => {
 };
 
 
+// load the assets
 loadSVGResources(
 	"windrose",
 	"textures/banyan_0", "textures/banyan_1",
@@ -75,9 +77,16 @@ loadSVGResources(
 	"textures/shrub_0", "textures/shrub_1", "textures/shrub_2", "textures/shrub_3",
 	"textures/spruce_0", "textures/spruce_1", "textures/spruce_2", "textures/spruce_3",
 ).then(() => {
+	// when you're done, retroactively deal with any messages we've received and cached
 	for (const message of messageQueue)
 		generateFantasyMap(message.data);
 	ready = true;
+});
+
+
+// I don't understand what this block is but it makes the error handling work correctly
+self.addEventListener('unhandledrejection', (event) => {
+	throw event.reason;
 });
 
 
