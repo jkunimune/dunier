@@ -536,6 +536,12 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			symbols = newSymbols.reverse().join("");
 		}
 
+		// remove triplicate letters (note the exception for Japanese: syllables are different)
+		if (style !== "ja")
+			for (let i = symbols.length - 1; i >= 2; i--)
+				if (symbols[i - 2] === symbols[i - 1] && symbols[i - 1] === symbols[i])
+					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+
 		// finally, capitalize
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('capitalization')) {
 			for (let i = 0; i < symbols.length; i ++)

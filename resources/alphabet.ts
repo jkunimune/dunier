@@ -290,7 +290,7 @@ export default {
     { "name": "glide",
       "symbols": ["X̯",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X̆",  "X"] },
     { "name": "syllabic",
-      "symbols": ["X̩",  "X",  "eX", "eX", "X",  "X",  "oX", "X",  "X'", "X",  "X"] },
+      "symbols": ["X̩",  "Xe",  "eX", "eX", "X",  "X",  "oX", "X",  "X'", "X",  "X"] },
     { "name": "approx",
       "symbols": ["X̞",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X"] }
   ],
