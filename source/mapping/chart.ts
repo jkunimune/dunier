@@ -42,7 +42,7 @@ const SHOW_BACKGROUND = false; // have a big red rectangle under the map
 
 // OTHER FIXED DISPLAY OPTIONS
 const GREEBLE_SCALE = 3.; // the smallest edge lengths to show (mm)
-const SUN_ELEVATION = 60/180*Math.PI;
+const SUN_ELEVATION = 45/180*Math.PI;
 const AMBIENT_LIGHT = 0.2;
 const RIVER_DISPLAY_FACTOR = 6000; // the average scaled watershed area needed to display a river (mm²)
 const BORDER_SPECIFY_THRESHOLD = 0.3; // the population density at which borders must be rigorusly defined
@@ -683,7 +683,11 @@ export class Chart {
 
 		// add relief shadows
 		if (shading) {
+			const clipPath = h("clipPath", {id: "shading-clip-path"});
+			this.draw(this.projectedOutline(filterSet(surface.tiles, t => !t.isWater()), Layer.GEO), clipPath);
+			svg.children.push(clipPath);
 			const g = Chart.createSVGGroup(svg, "shading");
+			g.attributes["clip-path"] = "url(#shading-clip-path)";
 			this.shade(surface.vertices, g);
 		}
 
@@ -988,45 +992,65 @@ export class Chart {
 
 	/**
 	 * create a relief layer for the given set of triangles.
-	 * @param triangles Array of Vertexes to shade as triangles.
+	 * @param vertices Array of Vertexes to shade as triangles.
 	 * @param svg SVG object on which to shade.
 	 */
-	shade(triangles: Set<Vertex>, svg: VNode): void { // TODO use separate delaunay triangulation
-		if (!triangles)
+	shade(vertices: Set<Vertex>, svg: VNode): void { // TODO use separate delaunay triangulation
+		if (!vertices)
 			return;
 
-		const slopes: Map<Vertex, number> = new Map();
-		let maxSlope = 0;
+		// first determine which triangles are wholly within the map TODO: include some nodes outside the map
+		const triangles: Vector[][] = [];
+		let minHeight = Infinity;
+		let maxHeight = -Infinity;
+		let maxEdgeLength = 0;
 		triangleSearch:
-		for (const t of triangles) { // start by computing slopes of all of the triangles
+		for (const t of vertices) {
 			const p = [];
 			for (const node of t.tiles) {
 				if (node instanceof EmptySpace)
 					continue triangleSearch;
-				const {x, y} = this.projection.projectPoint(node); // TODO: account for map orientation so it's not always north that's lit
-				const z = Math.max(0, node.height);
-				p.push(new Vector(x, -y, z));
+				const projectedNode = this.projectPoint(node);
+				if (projectedNode === null)
+					continue triangleSearch;
+				p.push(new Vector(projectedNode.x, -projectedNode.y, Math.max(0, node.height)));
+
+				if (node.height < minHeight && node.height >= 0)
+					minHeight = node.height;
+				if (node.height > maxHeight)
+					maxHeight = node.height;
 			}
-			let n = p[1].minus(p[0]).cross(p[2].minus(p[0])).normalized();
-			slopes.set(t, n.y/n.z);
-			if (n.z > 0 && slopes.get(t) > maxSlope)
-				maxSlope = slopes.get(t);
+			triangles.push(p);
+
+			for (let i = 0; i < 3; i ++) {
+				const edgeLength = Math.hypot(p[i].x - p[(i + 1)%3].x, p[i].y - p[(i + 1)%3].y);
+				if (edgeLength > maxEdgeLength)
+					maxEdgeLength = edgeLength;
+			}
 		}
 
-		const heightScale = -Math.tan(2*SUN_ELEVATION)/maxSlope; // use that to normalize
+		const heightScale = maxEdgeLength/(maxHeight - minHeight)/3;
 
-		for (const t of triangles) { // for each triangle TODO: use a newly generated triangulation
-			if (!slopes.has(t))
-				continue;
+		for (const p of triangles) { // start by computing slopes of all of the triangles
+			for (let i = 0; i < 3; i ++) // scale the heights
+				p[i].z *= heightScale;
+
+			let n = p[1].minus(p[0]).cross(p[2].minus(p[0])).normalized();
+			const slope = -n.y/n.z;
+
 			const path = [];
-			for (const node of t.tiles)
-				path.push({type: 'L', args: [(node as Tile).φ, (node as Tile).λ]}); // put its values in a plottable form
+			for (const {x, y} of p)
+				path.push({type: 'L', args: [x, -y]}); // put its values in a plottable form
 			path.push({type: 'L', args: [...path[0].args]});
 			path[0].type = 'M';
-			const brightness = AMBIENT_LIGHT + (1-AMBIENT_LIGHT)*Math.max(0,
-				Math.sin(SUN_ELEVATION + Math.atan(heightScale*slopes.get(t)))); // and use that to get a brightness
-			this.draw(this.projectPath(path, true), svg).attributes.style =
-				`fill: '#000'; fill-opacity: ${1-brightness};`;
+			const angle = Math.max(0, Math.min(Math.PI/2, SUN_ELEVATION - Math.atan(slope)));
+			const brightness = Math.sin(angle)/Math.sin(SUN_ELEVATION); // and use that to get a brightness
+			if (brightness > 1.02)
+				this.draw(path, svg).attributes.style =
+					`fill: #fff; fill-opacity: ${Math.min(brightness - 1, 1)*(1 - AMBIENT_LIGHT)};`;
+			else if (brightness < 0.98)
+				this.draw(path, svg).attributes.style =
+					`fill: #000; fill-opacity: ${Math.min(1 - brightness, 1)*(1 - AMBIENT_LIGHT)};`;
 		}
 	}
 
