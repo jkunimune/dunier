@@ -17,7 +17,7 @@ import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds, contains,
 	convertPathClosuresToZ, Domain, getAllCombCrossings, INFINITE_PLANE,
-	intersection, polygonize, removeLoosePoints, reversePath, rotatePath, scalePath,
+	intersection, polygonize, removeLoosePoints, reversePath, rotatePath, Rule, scalePath,
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
@@ -668,11 +668,11 @@ export class Chart {
 			// then add the things to the map
 			const g = Chart.createSVGGroup(svg, "land-texture");
 			g.attributes.style =
-				`stroke:${colorScheme.secondaryStroke}; stroke-width:0.35; stroke-linejoin:round`;
+				`stroke:${colorScheme.secondaryStroke}; stroke-width:0.35; stroke-linejoin:round; stroke-linecap: round;`;
 			for (const {x, y, name} of symbols) {
 				const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: colorScheme.landFill});
 				for (const region of areaFeatures) { // check if it should inherit color from a base fill
-					if (contains(region.path, {s: x, t: y})) {
+					if (contains(region.path, {s: x, t: y}, INFINITE_PLANE, Rule.POSITIVE)) {
 						picture.attributes.fill = region.color;
 						break;
 					}
