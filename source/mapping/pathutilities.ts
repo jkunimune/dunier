@@ -1379,7 +1379,8 @@ export function reversePath(segments: PathSegment[]): PathSegment[] {
 			pendingM = true;
 		}
 		else if (segments[i].type === 'L') {
-			output.push({type: 'L', args: segments[i - 1].args});
+			const end = endpoint(segments[i - 1]);
+			output.push({type: 'L', args: [end.s, end.t]});
 		}
 		else if (segments[i].type === 'A') {
 			const [R1, R2, rotation, largeArcFlag, sweepFlag, , ] = segments[i].args;
