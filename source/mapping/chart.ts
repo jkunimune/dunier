@@ -597,25 +597,6 @@ export class Chart {
 			lineFeatures.push(line);
 		}
 
-		// color in the sea
-		if (colorSchemeName === 'heightmap') {
-			// color in the sea by altitude
-			const g = Chart.createSVGGroup(svg, "sea-contours");
-			for (let i = 0; i < DEPTH_COLORS.length; i++) {
-				const min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
-				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
-				this.fill(
-					filterSet(surface.tiles, n => n.isWater() && -n.height >= min && -n.height < max),
-					g, DEPTH_COLORS[i], Layer.GEO); // TODO: enforce contiguity of shallow ocean?
-			}
-		}
-		else {
-			// color in the sea with a uniform color
-			this.fill(
-				filterSet(surface.tiles, n => n.isWater()),
-				svg, colorScheme.waterFill, Layer.GEO);
-		}
-
 		// also color in sea-ice if desired
 		if (colorScheme.iceFill !== 'none') {
 			this.fill(
@@ -636,15 +617,34 @@ export class Chart {
 			}
 		}
 
-		// trace the coasts
+		// add relief shadows
+		if (shading) {
+			const g = Chart.createSVGGroup(svg, "shading");
+			this.shade(surface.vertices, g);
+		}
+
+		// color in the sea
+		let sea;
 		if (colorScheme.iceFill === 'none')
-			this.fill(
-				filterSet(surface.tiles, n => n.isWater()),
-				svg, 'none', Layer.BIO, colorScheme.waterStroke, 0.7);
+			sea = filterSet(surface.tiles, n => n.isWater());
 		else
+			sea = filterSet(surface.tiles, n => n.isWater() && !n.isIceCovered());
+		if (colorSchemeName === 'heightmap') {
+			// color in the sea by altitude
+			const g = Chart.createSVGGroup(svg, "sea-contours");
+			for (let i = 0; i < DEPTH_COLORS.length; i++) {
+				const min = (i !== 0) ? i * DEPTH_STEP : -Infinity;
+				const max = (i !== DEPTH_COLORS.length - 1) ? (i + 1) * DEPTH_STEP : Infinity;
+				this.fill(
+					filterSet(sea, n => -n.height >= min && -n.height < max),
+					g, DEPTH_COLORS[i], Layer.GEO, colorScheme.waterStroke, 0.7); // TODO: enforce contiguity of shallow ocean?
+			}
+		}
+		else {
+			// color in the sea with a uniform color
 			this.fill(
-				filterSet(surface.tiles, n => n.isWater() && !n.isIceCovered()),
-				svg, 'none', Layer.BIO, colorScheme.waterStroke, 0.7);
+				sea, svg, colorScheme.waterFill, Layer.GEO, colorScheme.waterStroke, 0.7);
+		}
 
 		// add some horizontal hatching around the coast
 		if (seaTexture) {
@@ -690,16 +690,6 @@ export class Chart {
 				}
 				g.children.push(picture);
 			}
-		}
-
-		// add relief shadows
-		if (shading) {
-			const clipPath = h("clipPath", {id: "shading-clip-path"});
-			this.draw(this.projectedOutline(filterSet(surface.tiles, t => !t.isWater()), Layer.GEO), clipPath);
-			svg.children.push(clipPath);
-			const g = Chart.createSVGGroup(svg, "shading");
-			g.attributes["clip-path"] = "url(#shading-clip-path)";
-			this.shade(surface.vertices, g);
 		}
 
 		// add the graticule
