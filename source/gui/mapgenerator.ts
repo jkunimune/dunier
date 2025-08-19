@@ -112,7 +112,6 @@ function generateFantasyMap(args: any[]): void {
 	let year: number;
 	let projectionName: string;
 	let orientation: string;
-	let rectangularBounds: boolean;
 	let width: number;
 	let height: number;
 	let selectedFocusOption: string;
@@ -131,7 +130,7 @@ function generateFantasyMap(args: any[]): void {
 		planetType, tidallyLocked, radius, gravity, spinRate, obliquity,
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
-		projectionName, orientation, rectangularBounds, width, height, selectedFocusOption,
+		projectionName, orientation, width, height, selectedFocusOption,
 		colorSchemeName, rivers, borders, landTexture, seaTexture, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	] = args;
@@ -155,7 +154,7 @@ function generateFantasyMap(args: any[]): void {
 	}
 	if (target >= Layer.MAP && lastUpdated < Layer.MAP)
 		[map, mappedCivs] = applyMap(
-			projectionName, orientation, rectangularBounds, width, height, selectedFocusOption,
+			projectionName, orientation, width, height, selectedFocusOption,
 			colorSchemeName, rivers, borders, graticule, windrose, landTexture, seaTexture, shading,
 			civLabels, style);
 	if (target >= Layer.FACTBOOK && lastUpdated < Layer.FACTBOOK)
@@ -254,7 +253,7 @@ function applyTerrain(seed: number, numContinents: number, seaLevel: number, tem
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
 	const mapper = new Chart(
 		projection, surface, surface.tiles,
-		"north", false, 62500,
+		"north", 62500,
 		resources, characterWidthMap);
 	const {map} = mapper.depict(surface,
 		continents,
@@ -288,7 +287,7 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 	const mapper = new Chart(
 		projection, surface,
 		filterSet(surface.tiles, (t) => !t.isWater() && !t.isIceCovered()),
-		"north", false, 62500,
+		"north", 62500,
 		resources, characterWidthMap);
 	const {map} = mapper.depict(surface,
 		null,
@@ -346,7 +345,6 @@ function listFocusOptions(continents: Set<Tile>[], world: World, selectedFocusOp
  * Generate a final formatted map.
  * @param projectionName the type of projection to choose – one of "equal_earth", "bonne", "conformal_conic", "mercator", or "orthographic"
  * @param orientation the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
- * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
  * @param width the approximate desired width of the map (mm)
  * @param height the approximate desired height of the map (mm)
  * @param focusSpecifier a string that specifies what location is being mapped
@@ -363,7 +361,7 @@ function listFocusOptions(continents: Set<Tile>[], world: World, selectedFocusOp
  */
 function applyMap(
 	projectionName: string, orientation: string,
-	rectangularBounds: boolean, width: number, height: number, focusSpecifier: string,
+	width: number, height: number, focusSpecifier: string,
 	colorSchemeName: string, rivers: boolean, borders: boolean, graticule: boolean, windrose: boolean,
 	landTexture: boolean, seaTexture: boolean, shading: boolean, civLabels: boolean,
 	style: string): [VNode, Civ[]] {
@@ -404,7 +402,7 @@ function applyMap(
 	const chart = new Chart(
 		surface.isFlat() ? "orthographic" : projectionName,
 		surface, regionOfInterest,
-		orientation, rectangularBounds, width*height,
+		orientation, width*height,
 		resources, characterWidthMap);
 	const {map, mappedCivs} = chart.depict(
 		surface,

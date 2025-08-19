@@ -249,14 +249,13 @@ export class Chart {
 	 * @param surface the Surface for which to design the projection
 	 * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
 	 * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
-	 * @param rectangularBounds whether to make the bounding box as rectangular as possible, rather than having it conform to the graticule
 	 * @param area the desired bounding box area in mm²
 	 * @param resources any preloaded SVG assets we should have
 	 * @param characterWidthMap a table containing the width of every possible character, for label length calculation purposes
 	 */
 	constructor(
 		projectionName: string, surface: Surface, regionOfInterest: Set<Tile>,
-		orientationName: string, rectangularBounds: boolean, area: number,
+		orientationName: string, area: number,
 		resources: Map<string, string>, characterWidthMap: Map<string, number>,
 	) {
 		// convert the orientation name into a number of degrees
@@ -277,24 +276,36 @@ export class Chart {
 		const northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2*Math.PI);
 
 		// construct the map projection
-		if (projectionName === 'equal_earth')
+		let rectangularBounds;
+		if (projectionName === 'equal_earth') {
 			this.projection = MapProjection.equalEarth(
 				surface, meanRadius, southLimitingParallel, northLimitingParallel, centralMeridian);
-		else if (projectionName === 'bonne')
+			rectangularBounds = false;
+		}
+		else if (projectionName === 'bonne') {
 			this.projection = MapProjection.bonne(
 				surface, southLimitingParallel, centralParallel, northLimitingParallel,
 				centralMeridian, 0); // we'll revisit the longitude bounds later so leave them at 0 for now
-		else if (projectionName === 'conformal_conic')
+			rectangularBounds = false;
+		}
+		else if (projectionName === 'conformal_conic') {
 			this.projection = MapProjection.conformalConic(
 				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
-		else if (projectionName === 'mercator')
+			rectangularBounds = true;
+		}
+		else if (projectionName === 'mercator') {
 			this.projection = MapProjection.mercator(
 				surface, southLimitingParallel, centralParallel, northLimitingParallel, centralMeridian);
-		else if (projectionName === 'orthographic')
+			rectangularBounds = true;
+		}
+		else if (projectionName === 'orthographic') {
 			this.projection = MapProjection.orthographic(
 				surface, southLimitingParallel, northLimitingParallel, centralMeridian);
-		else
+			rectangularBounds = true;
+		}
+		else {
 			throw new Error(`no jana metode da graflance: '${projectionName}'.`);
+		}
 
 		// put the region of interest in the correct coordinate system
 		const transformedRegionOfInterest = intersection(

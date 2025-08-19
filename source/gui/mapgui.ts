@@ -79,7 +79,6 @@ function updateEverythingUpTo(target: Layer) {
 	const year = Number(DOM.val('history-year'));
 	const projectionName = DOM.val('map-projection');
 	const orientation = DOM.val('map-orientation');
-	const rectangularBounds = (DOM.val('map-shape') === 'rectangle');
 	const width = Number.parseFloat(DOM.val('map-width-mm'));
 	const height = Number.parseFloat(DOM.val('map-height-mm'));
 	const focusSpecifier = DOM.val('map-jung');
@@ -99,7 +98,7 @@ function updateEverythingUpTo(target: Layer) {
 		planetType, tidallyLocked, radius, gravity, spinRate, obliquity,
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
-		projectionName, orientation, rectangularBounds, width, height, focusSpecifier,
+		projectionName, orientation, width, height, focusSpecifier,
 		colorSchemeName, rivers, borders, landTexture, seaTexture, shading, civLabels, graticule, windrose, style,
 		characterWidthMap,
 	]);
