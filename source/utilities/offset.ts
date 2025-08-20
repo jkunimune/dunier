@@ -4,7 +4,7 @@
  */
 
 import {assert_xy, endpoint, PathSegment} from "./coordinates.js";
-import {decimate} from "../mapping/pathutilities.js";
+import {decimate, INFINITE_PLANE, isClosed} from "../mapping/pathutilities.js";
 import {angleSign, arcCenter} from "./geometry.js";
 
 /**
@@ -16,6 +16,8 @@ import {angleSign, arcCenter} from "./geometry.js";
  * @param offset the distance; positive for dilation and negative for erosion.
  */
 export function offset(path: PathSegment[], offset: number): PathSegment[] {
+	if (!isClosed(path, INFINITE_PLANE))
+		throw new Error("I can't currently offset curves that aren't closed.");
 	if (offset === 0)
 		return path;
 
@@ -29,13 +31,8 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
 	let i = null;
 	for (let j = 0; j <= path.length; j ++) {
 		if (j >= path.length || path[j].type === 'M') {
-			if (i !== null) {
-				const start = endpoint(path[i]);
-				const end = endpoint(path[j - 1]);
-				if (start.s !== end.s || start.t !== end.t)
-					throw new Error("I can't currently offset curves that aren't closed.");
+			if (i !== null)
 				ogSections.push(path.slice(i, j));
-			}
 			i = j;
 		}
 	}

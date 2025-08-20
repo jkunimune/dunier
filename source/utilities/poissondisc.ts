@@ -6,9 +6,9 @@
 import {generic, PathSegment} from "./coordinates.js";
 import {
 	calculatePathBounds,
-	contains,
+	contains, doublePath,
 	getAllCombCrossings,
-	INFINITE_PLANE, reversePath, rotatePath,
+	INFINITE_PLANE, rotatePath,
 	Rule,
 	Side
 } from "../mapping/pathutilities.js";
@@ -80,7 +80,7 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 		for (const diameter of feasibleRegion.keys()) {
 			forbiddenRegions[l].set(
 				diameter,
-				offset(walls[l], diameter/2).concat(offset(reversePath(walls[l]), diameter/2)));
+				offset(doublePath(walls[l]), diameter/2));
 			cellForbidenness[l].set(
 				diameter,
 				rasterInclusion(forbiddenRegions[l].get(diameter), grid, Rule.POSITIVE));

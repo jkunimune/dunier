@@ -1273,10 +1273,11 @@ export function polygonize(path: PathSegment[], precision=6): PathSegment[] {
 			const θ0 = Math.atan2(start.y - c.y, start.x - c.x);
 			const nSegments = Math.ceil(precision*Math.abs(Δθ));
 			const lineApprox = [];
-			for (let j = 1; j <= nSegments; j ++)
+			for (let j = 1; j < nSegments; j ++)
 				lineApprox.push({type: 'L', args: [
 						c.x + r*Math.cos(θ0 + Δθ*j/nSegments),
 						c.y + r*Math.sin(θ0 + Δθ*j/nSegments)]});
+			lineApprox.push({type: 'L', args: [end.x, end.y]});
 			newPath.push(...lineApprox);
 		}
 		else
@@ -1394,6 +1395,27 @@ export function reversePath(segments: PathSegment[]): PathSegment[] {
 		}
 		else {
 			throw new Error(`I haven't implemented reversePath() for segments of type '${segments[i].type}'.`);
+		}
+	}
+	return output;
+}
+
+/**
+ * return a copy of this path where at the end of every section it doubles back and retraces its step
+ * back to the last moveto, thus creating a closed path of area zero.
+ */
+export function doublePath(segments: PathSegment[]): PathSegment[] {
+	const output: PathSegment[] = [];
+	let i = null;
+	for (let j = 0; j <= segments.length; j ++) {
+		if (j >= segments.length || segments[j].type === 'M') {
+			if (i !== null) {
+				const forwardSection = segments.slice(i, j);
+				output.push(...forwardSection);
+				const reverseSection = reversePath(forwardSection).slice(1);
+				output.push(...reverseSection);
+			}
+			i = j;
 		}
 	}
 	return output;
