@@ -161,6 +161,7 @@ function generateFantasyMap(args: any[]): void {
 		factbook = applyFactbook(map, mappedCivs, tidallyLocked, language, style);
 
 	postMessage([
+		Math.max(lastUpdated, target),
 		surface.parameterize(18),
 		(terrainMap !== null) ? toXML(terrainMap) : null,
 		(historyMap !== null) ? toXML(historyMap) : null,
