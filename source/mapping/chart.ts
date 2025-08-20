@@ -58,7 +58,7 @@ const COLOR_SCHEMES = new Map([
 		waterStroke: '#302d28',
 		secondaryStroke: '#5a554c',
 		waterFill: 'none',
-		landFill: '#FAF2E4',
+		landFill: '#faf2e4',
 		iceFill: 'none',
 	}],
 	['white', {
@@ -74,7 +74,7 @@ const COLOR_SCHEMES = new Map([
 		waterStroke: '#4c473f',
 		secondaryStroke: '#5a554c',
 		waterFill: '#d4cdbf',
-		landFill: '#FAF2E4',
+		landFill: '#faf2e4',
 		iceFill: 'none',
 	}],
 	['black', {
@@ -82,7 +82,7 @@ const COLOR_SCHEMES = new Map([
 		waterStroke: '#302d28',
 		secondaryStroke: '#302d28',
 		waterFill: '#302d28',
-		landFill: '#FAF2E4',
+		landFill: '#faf2e4',
 		iceFill: 'none',
 	}],
 	['sepia', {
@@ -105,8 +105,8 @@ const COLOR_SCHEMES = new Map([
 		primaryStroke: '#302d28',
 		waterStroke: '#5A7ECA',
 		secondaryStroke: '#5a554c',
-		waterFill: '#cceeff',
-		landFill: '#FAF2E4',
+		waterFill: '#d8ecf6',
+		landFill: '#faf2e4',
 		iceFill: 'none',
 	}],
 	['physical', {
