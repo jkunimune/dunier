@@ -547,6 +547,10 @@ describe("getCombCrossings", () => {
 });
 
 describe("contains", () => {
+	test("illegal point", () => {
+		const region: PathSegment[] = [];
+		expect(() => contains(region, {s: -9, t: 8}, geoid)).toThrow();
+	});
 	describe("normal region", () => {
 		const region = [
 			{type: 'M', args: [4, 0]},
@@ -700,6 +704,9 @@ describe("contains", () => {
 			{type: 'M', args: [.5, π]},
 			{type: 'Φ', args: [.5, -π]},
 			{type: 'L', args: [.5, π]},
+			{type: 'M', args: [-.5, -π]},
+			{type: 'Φ', args: [-.5, π]},
+			{type: 'L', args: [-.5, -π]},
 		];
 		test("inside", () => {
 			expect(contains(region, {s: 0, t: 2}, geoid))
@@ -843,13 +850,31 @@ describe("contains", () => {
 			expect(contains(region, {s: -3, t: -1}, geoid))
 				.toBe(Side.IN);
 		});
-		test("outside", () => {
-			expect(contains(region, {s: -4, t: -1}, geoid))
-				.toBe(Side.OUT);
-		});
 		test("borderline", () => {
 			expect(contains(region, {s: -π, t: -1}, geoid))
 				.toBe(Side.BORDERLINE);
+		});
+	});
+	describe("periodic region is domain boundary", () => {
+		const region = [
+			{type: 'M', args: [π, π]},
+			{type: 'Φ', args: [π, -π]},
+			{type: 'L', args: [π, π]},
+			{type: 'M', args: [-π, -π]},
+			{type: 'Φ', args: [-π, π]},
+			{type: 'L', args: [-π, -π]},
+		];
+		test("inside", () => {
+			expect(contains(region, {s: 0, t: 2}, geoid))
+				.toBe(Side.IN);
+		});
+		test("on the antiequator", () => {
+			expect(contains(region, {s: -π, t: 2}, geoid))
+				.toBe(Side.BORDERLINE);
+		});
+		test("on the antimeridian", () => {
+			expect(contains(region, {s: 0, t: -π}, geoid))
+				.toBe(Side.IN);
 		});
 	});
 	test("null region", () => {

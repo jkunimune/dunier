@@ -574,6 +574,8 @@ export function encompasses(polygon: PathSegment[], points: PathSegment[], domai
 export function contains(polygon: PathSegment[], point: Point, domain=INFINITE_PLANE, rule=Rule.LEFT, successGuaranteed=false): Side {
 	if (rule !== Rule.LEFT && domain.isPeriodic())
 		throw new Error(`the fill-rule ${rule} is not defined for polygons on geographic domains.`);
+	if (point.s < domain.sMin || point.s > domain.sMax || point.t < domain.tMin || point.t > domain.tMax)
+		throw new Error(`the point (${point.s}, ${point.t}) is not on the domain s ∈ [${domain.sMin}, ${domain.sMax}] ∩ t ∈ [${domain.tMin}, ${domain.tMax}]`);
 
 	let lastM = -Infinity;
 	let lastCurve = -Infinity;
@@ -1128,7 +1130,7 @@ export function getAllHorizontalLineCrossings(path: PathSegment[], t: number, do
 					s = startWeight*start.s + (1 - startWeight)*end.s;
 				}
 				if (domain.isPeriodic())
-					s = localizeInRange(s, domain.sMin, domain.sMax);
+					s = localizeInRange(s, domain.sMin, domain.sMax, true);
 				crossings.push({i: i, s: s, goingEast: goingRight});
 			}
 		}
