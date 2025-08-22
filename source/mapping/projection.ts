@@ -80,6 +80,11 @@ export class MapProjection {
 			(this.φMin + this.φMax)/2 - Math.PI + 2*Math.PI, // this weird phrasing is to ensure the diff is always 2π even when there's roundoff
 			this.λMin, this.λMax,
 			(point) => this.surface.isOnEdge(assert_φλ(point)));
+
+		if (this.φMin < this.domain.sMin) // but sometimes it causes roundoff issues so make sure φMin and φMax are always in bounds
+			this.φMin = this.φRef[0] = this.domain.sMin;
+		if (this.φMax > this.domain.sMax)
+			this.φMax = this.φRef[this.φRef.length - 1] = this.domain.sMax;
 	}
 
 	/**
