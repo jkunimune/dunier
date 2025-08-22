@@ -1094,7 +1094,7 @@ export function getAllCombCrossings(path: PathSegment[], t0: number, Δt: number
  * unlike getEdgeCrossings, this function will endeavor to make crossings unique.
  * @return a list of intersections, each marked by an s-coordinate, the index of the path segment, and a direction (true if the path is increasing in t at that point, and false otherwise)
  */
-export function getAllHorizontalLineCrossings(path: PathSegment[], t: number, domain: Domain): {i: number, s: number, goingEast: boolean}[] {
+function getAllHorizontalLineCrossings(path: PathSegment[], t: number, domain: Domain): {i: number, s: number, goingEast: boolean}[] {
 	const crossings: {i: number, s: number, goingEast: boolean}[] = [];
 
 	// iterate around the polygon
@@ -1146,19 +1146,23 @@ export function getAllHorizontalLineCrossings(path: PathSegment[], t: number, do
 			const discriminant = Math.pow(radius, 2) - Math.pow(t - center.y, 2);
 			if (discriminant >= 0) {
 				for (let sign of [-1, 1]) {
-					const x = center.x + sign*Math.sqrt(discriminant);
-					const vy = (sweepDirection > 0) ? x - center.x : center.x - x;
+					let intersect = {x: center.x + sign*Math.sqrt(discriminant), y: t};
+					if (intersect.y === q0.y && (intersect.x < center.x) === (q0.x < center.x)) // check for roundoff
+						intersect = q0;
+					else if (intersect.y === q1.y && (intersect.x < center.x) === (q1.x < center.x))
+						intersect = q1;
+					const vy = (sweepDirection > 0) ? intersect.x - center.x : center.x - intersect.x;
 					if (vy !== 0) { // (ignore tangencies)
 						// make sure the intersection is on or between the endpoints
-						const pointSign = -angleSign(q0, {x: x, y: t}, q1); // negate this because of the left-handed coordinate system
+						const pointSign = -angleSign(q0, intersect, q1); // negate this because of the left-handed coordinate system
 						if (pointSign === 0 || (pointSign < 0) === (sweepDirection > 0)) {
 							// discard it if it's on an endpoint and the rest of the arc is below the endpoint (for consistency with linetos)
-							if (t === q0.y && vy > 0)
+							if (intersect.x === q0.x && intersect.y === q0.y && vy > 0)
 								continue;
-							if (t === q1.y && vy < 0)
+							if (intersect.x === q1.x && intersect.y === q1.y && vy < 0)
 								continue;
 							// otherwise add it to the list
-							crossings.push({i: i, s: x, goingEast: vy > 0});
+							crossings.push({i: i, s: intersect.x, goingEast: vy > 0});
 						}
 					}
 				}
