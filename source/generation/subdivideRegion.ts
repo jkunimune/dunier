@@ -13,7 +13,7 @@ import Queue from "../utilities/external/tinyqueue.js";
  * and they will be delineated by oceans and isthmuses
  */
 export function subdivideLand(tiles: Iterable<Tile>, targetNumContinents: number, connectionDistance: number): Set<Tile>[] {
-	const land = filterSet(tiles, t => !t.isSaltWater());
+	const land = filterSet(tiles, t => !t.isSaltWater() && !t.isIceCovered());
 	if (land.size === 0)
 		return []; // if there is no land, then there are no continents
 
