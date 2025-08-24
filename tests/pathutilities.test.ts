@@ -943,6 +943,15 @@ describe("contains", () => {
 			});
 		});
 	});
+	test("point slightly above a small arc", () => {
+		const region = [
+			{type: 'M', args: [-368.67239788855727,-578.0988182358551]},
+			{type: 'A', args: [3826.6684255896325,3826.6684255896325,0,0,1,-414.2758161882544,-582.7888094995683]},
+			{type: 'L', args: [-421.67283704881993,-531.3248962207613]},
+			{type: 'L', args: [-368.67239788855727,-578.0988182358551]},
+		];
+		expect(contains(region, {s: -476.5620387373164, t: -582.7888094995687}, INFINITE_PLANE)).toBe(Side.OUT);
+	});
 });
 
 describe("encompasses", () => {

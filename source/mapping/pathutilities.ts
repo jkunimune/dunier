@@ -1139,8 +1139,14 @@ function getAllHorizontalLineCrossings(path: PathSegment[], t: number, domain: D
 					const vy = (sweepDirection > 0) ? intersect.x - center.x : center.x - intersect.x;
 					if (vy !== 0) { // (ignore tangencies)
 						// make sure the intersection is on or between the endpoints
-						const pointSign = -angleSign(q0, intersect, q1); // negate this because of the left-handed coordinate system
-						if (pointSign === 0 || (pointSign < 0) === (sweepDirection > 0)) {
+						// note: there's a shortcut to do this with a single cross-product by looking at the triangle
+						// formed by the three points on the arc, but we don't use it because it's much more susceptible
+						// to roundoff error than this method.
+						const sweepSign = (sweepDirection === 0) ? 1 : -1;
+						const afterQ0 = sweepSign*angleSign(q0, center, intersect) >= 0;
+						const beforeQ1 = sweepSign*angleSign(intersect, center, q1) >= 0;
+						const onArc = (largeArc > 0) ? afterQ0 || beforeQ1 : afterQ0 && beforeQ1;
+						if (onArc) {
 							// discard it if it's on an endpoint and the rest of the arc is below the endpoint (for consistency with linetos)
 							if (intersect.x === q0.x && intersect.y === q0.y && vy > 0)
 								continue;
