@@ -22,7 +22,7 @@ import {toXML, VNode} from "./virtualdom.js";
 
 
 const MIN_SIZE_TO_LIST = 6;
-const MAX_COUNTRIES_TO_LIST = 20;
+const MAX_COUNTRIES_TO_LIST = 10;
 const FONT_SIZE = 8; // pt
 
 enum Layer {

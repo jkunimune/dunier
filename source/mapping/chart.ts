@@ -336,8 +336,8 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 
 	// determine the appropriate scale to make this have the correct area
 	const scale = Math.sqrt(area/rawBbox.area); // mm/km
-	// expand the Chart dimensions by half a millimeter on each side to give the edge some breathing room
-	const margin = Math.max(0.5, rawBbox.diagonal*scale/100);
+	// expand the Chart dimensions by a couple millimeters on each side to give the edge some breathing room
+	const margin = Math.max(2.1, rawBbox.diagonal*scale/100);
 
 	// adjust the bounding box to account for rotation, scale, and margin
 	const bbox = rawBbox.rotate(orientation).scale(scale).offset(margin);
@@ -481,7 +481,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	// add some horizontal hatching around the coast
 	if (seaTexture) {
 		hatchCoast(
-			filterSet(surface.tiles, t => !t.isWater()), transform, createSVGGroup(svg, "sea-texture"),
+			filterSet(surface.tiles, t => !sea.has(t)), transform, createSVGGroup(svg, "sea-texture"),
 			(colorScheme.waterStroke !== colorScheme.waterFill) ?
 				colorScheme.waterStroke : colorScheme.secondaryStroke,
 			0.35, 1.2, 3.0);
@@ -1127,7 +1127,7 @@ function drawOuterBorder(bbox: Dimensions, transform: Transform, svg: VNode, fil
 	draw(paperEdge.concat(reversePath(outerBorder)), svg).attributes.style =
 		`fill: ${fillColor}; stroke: white; stroke-width: ${strokeWidth/2};`;
 	draw(outerBorder, svg).attributes.style =
-		`fill: none; stroke: ${strokeColor}; stroke-width: ${strokeWidth}; stroke-linejoin: miter;`;
+		`fill: none; stroke: ${strokeColor}; stroke-width: ${strokeWidth}; stroke-linejoin: miter; stroke-miterlimit: 2;`;
 }
 
 /**
