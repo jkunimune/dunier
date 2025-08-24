@@ -129,15 +129,16 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 export function localizeInRange(value: number, min: number, max: number, inclusive=false): number {
 	if (max <= min)
 		throw new Error(`you can't localize into this range because its invalid because ${min} should be less than ${max}.`);
-	const anser = value - Math.floor((value - min)/(max - min))*(max - min);
-	if (Math.abs(anser - max)%(max - min) < 2*Number.EPSILON*(max - min)) { // this is to make it resistant to roundoff error
-		if (inclusive && value > (min + max)/2)
+	if (value > min && value < max)
+		return value;
+	else if (Math.abs(value - max)%(max - min) < 2*Number.EPSILON*(max - min)) { // this is to make it resistant to roundoff error
+		if (inclusive && value >= max)
 			return max;
 		else
 			return min;
 	}
 	else
-		return anser;
+		return value - Math.floor((value - min)/(max - min))*(max - min);
 }
 
 /**

@@ -307,7 +307,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	// put the region of interest in the correct coordinate system
 	const transformedRegionOfInterest = intersection(
 		transformInput(
-			projection.φMin, projection.λMin,
+			projection.domain,
 			convertToGreebledPath(outline(regionOfInterest), Layer.GEO, 1e-6)),
 		rectangle(
 			projection.φMax, projection.λMax,
@@ -973,12 +973,11 @@ function drawGraticule(surface: Surface, extent: {φMin: number, φMax: number, 
 	let Δφ = GRATICULE_SPACING/latitudeScale;
 	Δφ = Math.PI/2/Math.max(1, Math.round(Math.PI/2/Δφ));
 	const φInit = Math.ceil(extent.φMin/Δφ)*Δφ;
-	for (let φ = φInit; φ <= extent.φMax; φ += Δφ) {
+	for (let φ = φInit; φ <= extent.φMax; φ += Δφ)
 		draw(transformPath([
 			{type: 'M', args: [φ, extent.λMin]},
 			{type: 'Φ', args: [φ, extent.λMax]},
 		], transform, false), svg);
-	}
 	let Δλ = GRATICULE_SPACING/longitudeScale;
 	Δλ = Math.PI/2/Math.max(1, Math.round(Math.PI/2/Δλ));
 	const λInit = Math.ceil((extent.λMin - transform.projection.λCenter)/Δλ)*Δλ + transform.projection.λCenter;
@@ -1156,7 +1155,7 @@ function draw(segments: PathSegment[], svg: VNode): VNode {
  */
 function transformPath(segments: PathSegment[], transform: Transform, closePath=false, cleanUpPath=true): PathSegment[] {
 	const croppedToGeoRegion = intersection(
-		transformInput(transform.projection.φMin, transform.projection.λMin, segments),
+		transformInput(transform.projection.domain, segments),
 		transform.geoEdges,
 		transform.projection.domain, closePath,
 	);

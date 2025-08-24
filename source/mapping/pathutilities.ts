@@ -96,17 +96,16 @@ export const INFINITE_PLANE = new Domain(-Infinity, Infinity, -Infinity, Infinit
  * it just shifts them to and fro by multiples of 2π to put them in the right range.
  * this function can't go in MapProjection.projectPoint because it often must be called
  * before the path is intersected with the geoEdges.
- * @param φMin the lower bound defining the range of latitudes to use
- * @param λMin the western bound defining the range of longitudes to use
+ * @param domain the range of latitudes and longitudes to use
  * @param segments the jeograffickal imputs in absolute coordinates
  * @returns the relative outputs in transformed coordinates
  */
-export function transformInput(φMin: number, λMin: number, segments: PathSegment[]): PathSegment[] {
+export function transformInput(domain: Domain, segments: PathSegment[]): PathSegment[] {
 	const output: PathSegment[] = [];
 	for (const segment of segments) {
 		let [φ, λ] = segment.args;
-		φ = localizeInRange(φ, φMin, φMin + 2*π, true); // snap the latitude into the right domain
-		λ = localizeInRange(λ, λMin, λMin + 2*π, true); // snap the longitude into the right domain
+		φ = localizeInRange(φ, domain.sMin, domain.sMax, true); // snap the latitude into the right domain
+		λ = localizeInRange(λ, domain.tMin, domain.tMax, true); // snap the longitude into the right domain
 		output.push({type: segment.type, args: [φ, λ]});
 	}
 	return output;
@@ -169,7 +168,7 @@ export function applyProjectionToPath(
 					if (bounds !== null)
 						bothPointsOffTheMap = contains(bounds, generic(lastOutPoint)) === Side.OUT && contains(bounds, generic(nextOutPoint)) === Side.OUT;
 					// if it's short and finite, or out of bounds
-					if (distance < precision || bothPointsOffTheMap) {
+					if (distance < precision || bothPointsOffTheMap || numIntermediatePoints > 10000) {
 						completedInPoints.push(nextInPoint); // accept it as is
 						outPoints.push({type: 'L', args: [nextOutPoint.x, nextOutPoint.y]});
 					}
@@ -182,10 +181,8 @@ export function applyProjectionToPath(
 						pendingInPoints.push(intermediateInPoint);
 						numIntermediatePoints += 1;
 
-						if (numIntermediatePoints > 10000) {
+						if (numIntermediatePoints === 10000)
 							console.error(`we've put an absurd number of points between [${lastInPoint.φ},${lastInPoint.λ}]=>[${lastOutPoint.x},${lastOutPoint.y}] and [${nextInPoint.φ},${nextInPoint.λ}]=>[${nextOutPoint.x},${nextOutPoint.y}], but they're still over ${precision} apart.`);
-							break;
-						}
 					}
 				}
 			}
@@ -281,8 +278,6 @@ export function intersection(segments: PathSegment[], edges: PathSegment[], doma
 			}
 
 			if (crossings.length === 0) { // if there's no interruption or we discarded them all
-				if (encompasses(edges, [lastSegment], domain) !== encompasses(edges, [lastSegment], domain))
-					throw new Error(`you failed to detect a crossing between ${lastSegment.type}${lastSegment.args.join(',')} and ${thisSegment.type}${thisSegment.args.join(',')}.`);
 				currentSection.push(thisSegment); // move the points from the queue to the section
 			}
 			else { // if there is, the line jumps across an interruption
