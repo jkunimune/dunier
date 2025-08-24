@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {
-	angleSign,
+	angleSign, arcCenter,
 	checkVoronoiPolygon,
 	crossingSign,
 	lineArcIntersections, lineSegmentDistance, orthogonalBasis,
@@ -37,6 +37,25 @@ describe("angleSign()", () => {
 	});
 	test("degenerate", () => {
 		expect(angleSign({x: 0, y: 0}, {x: 1, y: 1}, {x: 2, y: 2})).toBeCloseTo(0);
+	});
+});
+
+describe("arcCenter()", () => {
+	test("on the right", () => {
+		expect(arcCenter({x: 0, y: -1}, {x: 1, y: 0}, 1, true)).toEqual(
+			{x: expect.closeTo(0), y: expect.closeTo(0)});
+	});
+	test("on the left", () => {
+		expect(arcCenter({x: 0, y: -1}, {x: 1, y: 0}, 1, false)).toEqual(
+			{x: expect.closeTo(1), y: expect.closeTo(-1)});
+	});
+	test("180°", () => {
+		expect(arcCenter({x: 0, y: 0}, {x: 2, y: -2}, Math.sqrt(2), true)).toEqual(
+			{x: expect.closeTo(1), y: expect.closeTo(-1)});
+	});
+	test("a little bit too short", () => {
+		expect(arcCenter({x: 0, y: 0}, {x: 2.000001, y: -2.000001}, Math.sqrt(2), true)).toEqual(
+			{x: expect.closeTo(1), y: expect.closeTo(-1)});
 	});
 });
 

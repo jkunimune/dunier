@@ -73,7 +73,7 @@ export function circumcenter(points: XYPoint[]): XYPoint {
  */
 export function arcCenter(a: XYPoint, b: XYPoint, r: number, onTheRight: boolean): XYPoint {
 	const d = Math.hypot(b.x - a.x, b.y - a.y);
-	let l = Math.sqrt(r*r - d*d/4);
+	let l = Math.sqrt(Math.max(0, r*r - d*d/4));
 	if (onTheRight) l *= -1;
 	const sin_θ =  (b.y - a.y)/d;
 	const cos_θ = -(b.x - a.x)/d;
