@@ -50,7 +50,7 @@ export class World {
 		this.cataclysms = cataclysms;
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
-		this.nextID = 0;
+		this.nextID = 1;
 
 		// clear these variables, which may be carried over from previous Worlds
 		for (const tile of planet.tiles) {

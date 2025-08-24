@@ -12,7 +12,7 @@ import {Surface, Tile} from "../generation/surface/surface.js";
 import {Random} from "../utilities/random.js";
 import {generateTerrain} from "../generation/terrain.js";
 import {subdivideLand} from "../generation/subdivideRegion.js";
-import {Chart} from "../mapping/chart.js";
+import {depict} from "../mapping/chart.js";
 import {World} from "../generation/world.js";
 import {format, localize} from "./internationalization.js";
 import {filterSet} from "../utilities/miscellaneus.js";
@@ -252,15 +252,16 @@ function applyTerrain(seed: number, numContinents: number, seaLevel: number, tem
 
 	console.log("grafa...");
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
-	const mapper = new Chart(
-		projection, surface, surface.tiles,
-		"north", 62500,
-		resources, characterWidthMap);
-	const {map} = mapper.depict(surface,
+	const {map} = depict(
+		surface,
 		continents,
 		null,
+		projection, surface.tiles,
+		"north", 62500,
 		'physical',
-		true, false, true);
+		resources, characterWidthMap,
+		true, false, true,
+	);
 
 	console.log("fina!");
 	return [continents, map];
@@ -285,16 +286,17 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 
 	console.log("grafa...");
 	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
-	const mapper = new Chart(
-		projection, surface,
-		filterSet(surface.tiles, (t) => !t.isWater() && !t.isIceCovered()),
-		"north", 62500,
-		resources, characterWidthMap);
-	const {map} = mapper.depict(surface,
+	const {map} = depict(
+		surface,
 		null,
 		world,
+		projection,
+		filterSet(surface.tiles, (t) => !t.isWater() && !t.isIceCovered()),
+		"north", 62500,
 		'political',
-		false, true, false);
+		resources, characterWidthMap,
+		false, true, false,
+		);
 
 	console.log("fina!");
 	return [world, map];
@@ -400,16 +402,15 @@ function applyMap(
 		throw new Error(`invalid focusSpecifier: '${focusSpecifier}'`);
 
 	// now you can construct and call the Chart object
-	const chart = new Chart(
-		surface.isFlat() ? "orthographic" : projectionName,
-		surface, regionOfInterest,
-		orientation, width*height,
-		resources, characterWidthMap);
-	const {map, mappedCivs} = chart.depict(
+	const {map, mappedCivs} = depict(
 		surface,
 		continents,
 		world,
+		surface.isFlat() ? "orthographic" : projectionName,
+		regionOfInterest,
+		orientation, width*height,
 		colorSchemeName,
+		resources, characterWidthMap,
 		rivers,
 		borders,
 		graticule,

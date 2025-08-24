@@ -25,7 +25,7 @@ import {
 	Point,
 	PathSegment,
 	ΦΛPoint,
-	XYPoint
+	XYPoint, generic
 } from "../utilities/coordinates.js";
 import {
 	angleSign,
@@ -120,7 +120,7 @@ export function transformInput(φMin: number, λMin: number, segments: PathSegme
  * @param bounds the rectangle inside which precision is needed (outside of that rectangle there will be no infill)
  */
 export function applyProjectionToPath(
-	projection: MapProjection, inPoints: PathSegment[], precision: number, bounds: {left: number, right: number, top: number, bottom: number} = null): PathSegment[] {
+	projection: MapProjection, inPoints: PathSegment[], precision: number, bounds: PathSegment[] = null): PathSegment[] {
 	// check for NaNs because they can really mess things up
 	for (const segment of inPoints)
 		for (const arg of segment.args)
@@ -165,21 +165,11 @@ export function applyProjectionToPath(
 				else {
 					// if the segment is real, we need to decide whether to project its midpoint
 					const distance = Math.hypot(nextOutPoint.x - lastOutPoint.x, nextOutPoint.y - lastOutPoint.y);
-					let lastOutPointIsOffTheMap, nextOutPointIsOffTheMap;
-					if (bounds !== null) {
-						lastOutPointIsOffTheMap =
-							lastOutPoint.x <= bounds.left || lastOutPoint.x >= bounds.right ||
-							lastOutPoint.y <= bounds.top || lastOutPoint.y >= bounds.bottom;
-						nextOutPointIsOffTheMap =
-							nextOutPoint.x <= bounds.left || nextOutPoint.x >= bounds.right ||
-							nextOutPoint.y <= bounds.top || nextOutPoint.y >= bounds.bottom;
-					}
-					else {
-						lastOutPointIsOffTheMap = false;
-						nextOutPointIsOffTheMap = false;
-					}
+					let bothPointsOffTheMap = false;
+					if (bounds !== null)
+						bothPointsOffTheMap = contains(bounds, generic(lastOutPoint)) === Side.OUT && contains(bounds, generic(nextOutPoint)) === Side.OUT;
 					// if it's short and finite, or out of bounds
-					if (distance < precision || (lastOutPointIsOffTheMap && nextOutPointIsOffTheMap)) {
+					if (distance < precision || bothPointsOffTheMap) {
 						completedInPoints.push(nextInPoint); // accept it as is
 						outPoints.push({type: 'L', args: [nextOutPoint.x, nextOutPoint.y]});
 					}
