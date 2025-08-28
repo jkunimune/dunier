@@ -113,15 +113,16 @@ export function findRoot(
 		// calculate the step
 		let step = -value/slope;
 
+		// if the step is in the wrong direction, set it to an arbitrary amount in the right direction
+		if (Math.sign(step) !== -Math.sign(value))
+			step = -Math.sign(value)*(rightBound - leftBound)/4;
+
 		// check if it's trying really hard to step out of bounds
 		if (gess === leftBound && step < 0)
 			return leftBound;
 		else if (gess === rightBound && step > 0)
 			return rightBound;
 
-		// if the step is in the wrong direction, set it to an arbitrary amount in the right direction
-		if (Math.sign(step) !== -Math.sign(value))
-			step = -Math.sign(value)*(rightBound - leftBound)/4;
 
 		// take the step
 		gess += step;

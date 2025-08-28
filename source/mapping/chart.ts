@@ -1486,17 +1486,22 @@ function adjustMapCentering(regionOfInterest: Iterable<Tile>, projection: MapPro
 		}
 		return {
 			value: -(min.x + max.x)/2,
-			slope: -(rotatedProjection.gradient(min).λ.x + rotatedProjection.gradient(max).λ.x)/2,
+			slope: (rotatedProjection.gradient(min).λ.x + rotatedProjection.gradient(max).λ.x)/2,
 		};
 	}
-	
-	return findRoot(
-		centroid,
-		projection.λCenter,
-		geoExtent.tMin,
-		geoExtent.tMax,
-		(mapExtent.sMax - mapExtent.sMin)*0.001,
-	);
+
+	try {
+		return findRoot(
+			centroid,
+			projection.λCenter,
+			geoExtent.tMin,
+			geoExtent.tMax,
+			(mapExtent.sMax - mapExtent.sMin)*0.01,
+		);
+	} catch {
+		console.error("I couldn't center this map properly for some reason.");
+		return projection.λCenter;
+	}
 }
 
 
