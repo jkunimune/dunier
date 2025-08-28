@@ -328,7 +328,8 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	// if it's a Bonne projection, re-generate it with these new bounds in case you need to adjust the curvature
 	if (projectionName === 'bonne')
 		projection = MapProjection.bonne(
-			surface, φMin, centralParallel, φMax, centralMeridian, λMax - λMin); // the only thing that changes here is projection.yCenter
+			surface, φMin, centralParallel, φMax,
+			projection.λCenter, λMax - λMin); // the only thing that changes here is projection.yCenter
 
 	// establish the Cartesian bounds of the map
 	const {xRight, xLeft, yBottom, yTop, mapEdges} = chooseMapBounds(
@@ -341,13 +342,14 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 
 	// determine the appropriate scale to make this have the correct area
 	const scale = Math.sqrt(area/rawBbox.area); // mm/km
+
+	const transform = new Transform(projection, geoEdges, mapEdges, orientation, scale);
+
 	// expand the Chart dimensions by a couple millimeters on each side to give the edge some breathing room
 	const margin = Math.max(2.1, rawBbox.diagonal*scale/100);
 
 	// adjust the bounding box to account for rotation, scale, and margin
 	const bbox = rawBbox.rotate(orientation).scale(scale).offset(margin);
-
-	const transform = new Transform(projection, geoEdges, mapEdges, orientation, scale);
 
 	let colorScheme = COLOR_SCHEMES.get(colorSchemeName);
 	if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
@@ -1700,11 +1702,11 @@ function calculateStringLength(characterWidthMap: Map<string, number>, text: str
 
 /** an object that contains all the information you need to transform points from the globe to the map */
 class Transform {
-	projection: MapProjection;
-	geoEdges: PathSegment[];
-	mapEdges: PathSegment[];
-	orientation: number;
-	scale: number;
+	public readonly projection: MapProjection;
+	public readonly geoEdges: PathSegment[];
+	public readonly mapEdges: PathSegment[];
+	public readonly orientation: number;
+	public readonly scale: number;
 
 	constructor(projection: MapProjection, geoEdges: PathSegment[], mapEdges: PathSegment[], orientation: number, scale: number) {
 		this.projection = projection;
