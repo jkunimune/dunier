@@ -17,6 +17,21 @@ describe("on a sphere", () => {
 			expect(projection.projectPoint({φ: 1, λ: -1})).toEqual(
 				{x: expect.closeTo(-Math.cos(1)), y: expect.closeTo(-Math.PI/2 - 1)});
 		});
+		test("gradient()", () => {
+			const rO = projection.projectPoint({φ: 1, λ: -1});
+			const rS = projection.projectPoint({φ: 0.999, λ: -1});
+			const rE = projection.projectPoint({φ: 1, λ: -0.999});
+			expect(projection.gradient({φ: 1, λ: -1})).toEqual({
+				φ: {
+					x: expect.closeTo((rO.x - rS.x)/.001),
+					y: expect.closeTo((rO.y - rS.y)/.001),
+				},
+				λ: {
+					x: expect.closeTo((rE.x - rO.x)/.001),
+					y: expect.closeTo((rE.y - rO.y)/.001),
+				},
+			});
+		});
 		test("inverseProjectPoint()", () => {
 			expect(projection.inverseProjectPoint({x: -Math.cos(1), y: -Math.PI/2 - 1})).toEqual(
 				{φ: expect.closeTo(1), λ: expect.closeTo(-1)});
@@ -74,6 +89,21 @@ describe("on a sphere", () => {
 			test("consistency of antimeridian", () => {
 				expect(projection.projectPoint({φ: -1, λ: Math.PI})).toEqual(
 					projection.projectPoint({φ: -1, λ: -Math.PI}));
+			});
+		});
+		test("gradient()", () => {
+			const rO = projection.projectPoint({φ: 1, λ: -1});
+			const rS = projection.projectPoint({φ: 0.999, λ: -1});
+			const rE = projection.projectPoint({φ: 1, λ: -0.999});
+			expect(projection.gradient({φ: 1, λ: -1})).toEqual({
+				φ: {
+					x: expect.closeTo((rO.x - rS.x)/.001),
+					y: expect.closeTo((rO.y - rS.y)/.001),
+				},
+				λ: {
+					x: expect.closeTo((rE.x - rO.x)/.001),
+					y: expect.closeTo((rE.y - rO.y)/.001),
+				},
 			});
 		});
 		describe("inverseProjectPoint()", () => {
@@ -217,6 +247,21 @@ describe("on a sphere", () => {
 		const projection = MapProjection.conformalConic(sphere, -Math.PI/2, Math.PI/6, Math.PI/2, 0);
 		test("projectPoint()", () => {
 			expect(projection.projectPoint({φ: Math.PI/2, λ: 1})).toEqual({x: 0, y: 0});
+		});
+		test("gradient()", () => {
+			const rO = projection.projectPoint({φ: 1, λ: -1});
+			const rS = projection.projectPoint({φ: 0.999, λ: -1});
+			const rE = projection.projectPoint({φ: 1, λ: -0.999});
+			expect(projection.gradient({φ: 1, λ: -1})).toEqual({
+				φ: {
+					x: expect.closeTo((rO.x - rS.x)/.001),
+					y: expect.closeTo((rO.y - rS.y)/.001),
+				},
+				λ: {
+					x: expect.closeTo((rE.x - rO.x)/.001),
+					y: expect.closeTo((rE.y - rO.y)/.001),
+				},
+			});
 		});
 		test("inverseProjectPoint()", () => {
 			expect(projection.inverseProjectPoint({x: 0, y: 0})).toEqual({φ: Math.PI/2, λ: NaN});

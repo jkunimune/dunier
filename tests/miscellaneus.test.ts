@@ -5,7 +5,7 @@
 import {
 	arctanh,
 	argmax,
-	binarySearch, cumulativeIntegral, decodeBase37, filterSet, isBetween,
+	binarySearch, cumulativeIntegral, decodeBase37, filterSet, findRoot, isBetween,
 	legendreP2,
 	legendreP4,
 	legendreP6,
@@ -102,6 +102,18 @@ describe("binarySearch()", () => {
 	});
 	test("greater than all", () => {
 		expect(binarySearch([0, 1, 2], x => x >= 3)).toEqual(3);
+	});
+});
+
+describe("findRoot()", () => {
+	test("simple function", () => {
+		expect(findRoot(
+			(x) => {
+				return {value: x**2 - 1, slope: 2*x};
+			},
+			2, 0, 3,
+			1e-6,
+		)).toBeCloseTo(1, 5);
 	});
 });
 

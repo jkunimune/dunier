@@ -73,6 +73,79 @@ export function arctanh(x: number): number {
 }
 
 /**
+ * given a function f(x), find the x that most closely solves f(x) = 0; f'(x) > 0.
+ * @param funccion the function that should return 0. it must return both the value and the derivative at each point.
+ *                 it must transition from negative to positive somewhere in the allowed range, or the result may not
+ *                 make sense.  it may be non-monotonic and it may have multiple roots.
+ * @param initialGess something that's probably close to the right answer
+ * @param leftBound the minimum x to consider.  if the solution seems to be less than leftBound, leftBound will be returned
+ * @param rightBound the maximum x to consider.  if the solution seems to be greater than rightBound, rightBound will be returned
+ * @param tolerance the absolute allowable value of the funccion
+ * @return the value of x that makes the function equal 0
+ * @throw Error if too many iterations elapse and it can't find a solution
+ */
+export function findRoot(
+	funccion: (x: number) => { value: number, slope: number },
+	initialGess: number, leftBound: number, rightBound: number, tolerance: number): number {
+	if (tolerance <= 0)
+		throw new Error(`tolerance must be positive, not ${tolerance}`);
+	if (leftBound >= rightBound)
+		throw new Error(`the left bound must be less than the right bound, but you gave ${leftBound} and ${rightBound}.`);
+	if (initialGess < leftBound || initialGess > rightBound)
+		throw new Error(`the initial gess ${initialGess} is not in the feasible range [${leftBound}, ${rightBound}].`);
+
+	let knownLeft = -Infinity; // the rightmost point where we know that f(x) < 0
+	let knownRight = Infinity; // the leftmost point where we know that f(x) > 0
+	let gess = initialGess;
+	let numIterations = 0;
+	while (true) {
+		const {value, slope} = funccion(gess);
+
+		// check the termination condition
+		if (Math.abs(value) <= tolerance)
+			return gess;
+		// update left and right
+		else if (value > 0)
+			knownRight = gess;
+		else
+			knownLeft = gess;
+
+		// calculate the step
+		let step = -value/slope;
+
+		// check if it's trying really hard to step out of bounds
+		if (gess === leftBound && step < 0)
+			return leftBound;
+		else if (gess === rightBound && step > 0)
+			return rightBound;
+
+		// if the step is in the wrong direction, set it to an arbitrary amount in the right direction
+		if (Math.sign(step) !== -Math.sign(value))
+			step = -Math.sign(value)*(rightBound - leftBound)/4;
+
+		// take the step
+		gess += step;
+
+		// make sure you respect whatever bounds we have already found
+		if (step < 0 && gess < 0.8*knownLeft + 0.2*knownRight)
+			gess = 0.8*knownLeft + 0.2*knownRight;
+		else if (step > 0 && gess > 0.2*knownLeft + 0.8*knownRight)
+			gess = 0.2*knownLeft + 0.8*knownRight;
+
+		// make sure you respect the provided bounds
+		if (gess < leftBound)
+			gess = leftBound;
+		else if (gess > rightBound)
+			gess = rightBound;
+
+		// make sure we don't spend too long here
+		numIterations ++;
+		if (numIterations > 100)
+			throw new Error("could not find a root.");
+	}
+}
+
+/**
  * search a sorted array for the first element that meets some condition
  * @param array the set of values to search, ordered such that all elements that don't
  *              meet the condition come before all elements that do meet the condition
@@ -114,6 +187,19 @@ export function linterp(inVal: number, inRef: number[], exRef: number[]): number
 		const rightWeit = (inVal - inRef[i - 1])/(inRef[i] - inRef[i - 1]);
 		const leftWeit = 1 - rightWeit;
 		return exRef[i - 1]*leftWeit + exRef[i]*rightWeit;
+	}
+}
+
+/**
+ * this function is the derivative of linterp().
+ * it calculates the derivative of a piecewise function using nearest-neibor interpolation.
+ */
+export function gradient_linterp(inVal: number, inRef: number[], exRef: number[]): number {
+	if (inVal < inRef[0] || inVal > inRef[inRef.length - 1])
+		return 0;
+	else {
+		const i = binarySearch(inRef, (ref) => ref >= inVal);
+		return (exRef[i] - exRef[i - 1])/(inRef[i] - inRef[i - 1]);
 	}
 }
 

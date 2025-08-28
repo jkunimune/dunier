@@ -4,14 +4,14 @@
  */
 import {Edge, EmptySpace, outline, Surface, Tile, Vertex} from "../generation/surface/surface.js";
 import {
-	filterSet, localizeInRange,
+	filterSet, findRoot, localizeInRange,
 	pathToString,
 } from "../utilities/miscellaneus.js";
 import {World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
-import {assert_φλ, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordinates.js";
+import {assert_φλ, endpoint, PathSegment, XYPoint, ΦΛPoint} from "../utilities/coordinates.js";
 import {Vector} from "../utilities/geometry.js";
 import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
@@ -304,6 +304,11 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		throw new Error(`no jana metode da graflance: '${projectionName}'.`);
 	}
 
+	if (rectangularBounds) {
+		const newCentralMeridian = adjustMapCentering(regionOfInterest, projection);
+		projection = projection.recenter(newCentralMeridian);
+	}
+
 	// put the region of interest in the correct coordinate system
 	const transformedRegionOfInterest = intersection(
 		transformInput(
@@ -315,7 +320,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		projection.domain, true);
 
 	// establish the geographic bounds of the region
-	let {φMin, φMax, λMin, λMax, geoEdges} = chooseGeoBounds(
+	const {φMin, φMax, λMin, λMax, geoEdges} = chooseGeoBounds(
 		transformedRegionOfInterest,
 		projection,
 		rectangularBounds);
@@ -326,7 +331,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			surface, φMin, centralParallel, φMax, centralMeridian, λMax - λMin); // the only thing that changes here is projection.yCenter
 
 	// establish the Cartesian bounds of the map
-	let {xRight, xLeft, yBottom, yTop, mapEdges} = chooseMapBounds(
+	const {xRight, xLeft, yBottom, yTop, mapEdges} = chooseMapBounds(
 		transformedRegionOfInterest,
 		projection,
 		rectangularBounds,
@@ -1371,7 +1376,7 @@ function weShouldGreeble(edge: Edge, layer: Layer): boolean {
 }
 
 /**
- * identify the meridian that is the farthest from this path on the globe
+ * identify the meridian and parallel that are most centered on this region
  */
 function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface): { centralMeridian: number, centralParallel: number, meanRadius: number } {
 	// start by calculating the mean radius of the region, for pseudocylindrical standard parallels
@@ -1455,6 +1460,47 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 
 
 /**
+ * identify the central meridian for this map projection that centers this region horizontally
+ */
+function adjustMapCentering(regionOfInterest: Iterable<Tile>, projection: MapProjection): number {
+	const landOfInterest = filterSet(regionOfInterest, tile => !tile.isWater());
+	const coastline = transformInput(projection.domain, convertToGreebledPath(outline(landOfInterest), Layer.KULTUR, 1e-6));
+	const geoExtent = calculatePathBounds(coastline);
+	const mapExtent = calculatePathBounds(applyProjectionToPath(projection, coastline, Infinity));
+
+	if (coastline.length === 0)
+		throw new Error("how can I adjust the map centering when there's noting to center?");
+
+	function centroid(λCenter: number): {value: number, slope: number} {
+		const rotatedProjection = projection.recenter(λCenter);
+		let min: {x: number, φ: number, λ: number} = null;
+		let max: {x: number, φ: number, λ: number} = null;
+		for (const segment of coastline) {
+			const rawVertex = assert_φλ(endpoint(segment));
+			rawVertex.λ = localizeInRange(rawVertex.λ, rotatedProjection.λMin, rotatedProjection.λMax);
+			const vertex = rotatedProjection.projectPoint(rawVertex);
+			if (min === null || vertex.x < min.x)
+				min = {x: vertex.x, φ: rawVertex.φ, λ: rawVertex.λ};
+			if (max === null || vertex.x > max.x)
+				max = {x: vertex.x, φ: rawVertex.φ, λ: rawVertex.λ};
+		}
+		return {
+			value: -(min.x + max.x)/2,
+			slope: -(rotatedProjection.gradient(min).λ.x + rotatedProjection.gradient(max).λ.x)/2,
+		};
+	}
+	
+	return findRoot(
+		centroid,
+		projection.λCenter,
+		geoExtent.tMin,
+		geoExtent.tMax,
+		(mapExtent.sMax - mapExtent.sMin)*0.001,
+	);
+}
+
+
+/**
  * determine the Cartesian coordinate bounds of this region on the map.
  * @param regionOfInterest the region that must be enclosed entirely within the returned bounding box
  * @param projection the projection being used to map this region from a Surface to the plane
@@ -1477,8 +1523,8 @@ function chooseMapBounds(
 	const margin = 0.05*Math.sqrt(
 		(projectedBounds.sMax - projectedBounds.sMin)*
 		(projectedBounds.tMax - projectedBounds.tMin));
-	let xLeft = projectedBounds.sMin - margin;
-	let xRight = projectedBounds.sMax + margin;
+	let xLeft = Math.min(projectedBounds.sMin, -projectedBounds.sMax) - margin;
+	let xRight = -xLeft;
 	let yTop = projectedBounds.tMin - margin;
 	let yBottom = projectedBounds.tMax + margin;
 	// but if the poles are super far away, put some global limits on the map extent

@@ -8,7 +8,13 @@ import {
 	ΦΛPoint,
 	XYPoint, assert_φλ
 } from "../utilities/coordinates.js";
-import {binarySearch, cumulativeIntegral, linterp, localizeInRange} from "../utilities/miscellaneus.js";
+import {
+	binarySearch,
+	cumulativeIntegral,
+	gradient_linterp,
+	linterp,
+	localizeInRange
+} from "../utilities/miscellaneus.js";
 import {Domain} from "./pathutilities.js";
 
 
@@ -88,6 +94,14 @@ export class MapProjection {
 	}
 
 	/**
+	 * return a new map projection based on this one with a different central meridian
+	 */
+	public recenter(λCenter: number): MapProjection {
+		return new MapProjection(
+			this.surface, this.φStandard, this.φRef, this.yRef, this.dx_dλRef, this.yCenter, λCenter);
+	}
+
+	/**
 	 * transform the given geographic coordinates to Cartesian ones.
 	 * @param point the latitude and longitude in radians, in the range [-π, π]
 	 * @return the x and y coordinates in km
@@ -107,6 +121,35 @@ export class MapProjection {
 		}
 		else
 			return {x: this.dx_dλ(point.φ)*(point.λ - this.λCenter), y: this.y(point.φ)};
+	}
+
+	public gradient(point: ΦΛPoint): { φ: XYPoint, λ: XYPoint } {
+		if (isFinite(this.yCenter)) {
+			const r = this.y(point.φ) - this.yCenter;
+			let Δλ = point.λ - this.λCenter;
+			if (point.λ === this.λMin || point.λ === this.λMax)
+				Δλ = Math.sign(Δλ)*Math.PI; // set longitude to exactly ±π if it seems like it should be
+			const dr_dφ = this.dy_dφ(point.φ);
+			const ds_dλ = this.dx_dλ(point.φ);
+			const θ = (r !== 0) ? ds_dλ/r*Δλ : 0;
+			const ds_dφ = this.dx2_dλdφ(point.φ)*Δλ - dr_dφ*θ;
+			return {
+				φ: {
+					x: dr_dφ*Math.sin(θ) + ds_dφ*Math.cos(θ),
+					y: dr_dφ*Math.cos(θ) - ds_dφ*Math.sin(θ),
+				},
+				λ: {
+					x: ds_dλ*Math.cos(θ),
+					y: -ds_dλ*Math.sin(θ),
+				},
+			};
+		}
+		else {
+			return {
+				φ: { x: this.dx2_dλdφ(point.φ)*point.λ, y: this.dy_dφ(point.φ) },
+				λ: { x: this.dx_dλ(point.φ), y: 0 },
+			};
+		}
 	}
 
 	/**
@@ -301,6 +344,24 @@ export class MapProjection {
 	 */
 	private dx_dλ(φ: number): number {
 		return linterp(φ, this.φRef, this.dx_dλRef);
+	}
+
+	/**
+	 * calculate the spacing between parallels along the central meridian at the given latitude
+	 * @param φ the latitude in radians
+	 * @private the derivative of y in kilometers/radian
+	 */
+	private dy_dφ(φ: number): number {
+		return gradient_linterp(φ, this.φRef, this.yRef);
+	}
+
+	/**
+	 * calculate the rate of change of spacing between meridians with latitude
+	 * @param φ the latitude in radians
+	 * @private the derivative of y in kilometers/radian
+	 */
+	private dx2_dλdφ(φ: number): number {
+		return gradient_linterp(φ, this.φRef, this.dx_dλRef);
 	}
 
 	/**
