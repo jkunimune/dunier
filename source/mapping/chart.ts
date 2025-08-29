@@ -1609,12 +1609,6 @@ function chooseGeoBounds(
 	const ds_dλ = projection.surface.rz((φMin + φMax)/2).r;
 	let λMin = Math.max(projection.λMin, regionBounds.tMin - 0.05*(yMax - yMin)/ds_dλ);
 	let λMax = Math.min(projection.λMax, regionBounds.tMax + 0.05*(yMax - yMin)/ds_dλ);
-	// cut out the poles if desired
-	const longitudesWrapAround = projection.wrapsAround() && λMax - λMin === 2*Math.PI;
-	if (northPoleIsDistant || (northPoleIsPoint && !longitudesWrapAround))
-		φMax = Math.max(Math.min(φMax, projection.φMax - 10/180*Math.PI), φMin);
-	if (southPoleIsDistant || (southPoleIsPoint && !longitudesWrapAround))
-		φMin = Math.min(Math.max(φMin, projection.φMin + 10/180*Math.PI), φMax);
 
 	// if we want a rectangular map
 	if (rectangularBounds) {
@@ -1627,19 +1621,32 @@ function chooseGeoBounds(
 			}
 		}
 		// then expand the longitude bounds as much as possible without self-intersection
-		let limitingΔλ = Infinity;
+		let limitingΔλ = 2*Math.PI;
 		for (let i = 0; i <= 50; i ++) {
 			const φ = φMin + i/50*(φMax - φMin);
 			const parallelCurvature = projection.parallelCurvature(φ);
 			limitingΔλ = Math.min(limitingΔλ, 2*Math.PI/Math.abs(parallelCurvature));
 		}
-		λMin = Math.max(Math.min(λMin, projection.λCenter - limitingΔλ/2), projection.λMin);
-		λMax = Math.min(Math.max(λMax, projection.λCenter + limitingΔλ/2), projection.λMax);
+		if (limitingΔλ === 2*Math.PI) {
+			λMin = projection.λMin;
+			λMax = projection.λMax;
+		}
+		else {
+			λMin = Math.max(Math.min(λMin, projection.λCenter - limitingΔλ/2), projection.λMin);
+			λMax = Math.min(Math.max(λMax, projection.λCenter + limitingΔλ/2), projection.λMax);
+		}
 	}
+
+	// cut out the poles if desired
+	const longitudesWrapAround = projection.wrapsAround() && λMin === projection.λMin && λMax === projection.λMax;
+	if (northPoleIsDistant || (northPoleIsPoint && !longitudesWrapAround))
+		φMax = Math.max(Math.min(φMax, projection.φMax - 10/180*Math.PI), φMin);
+	if (southPoleIsDistant || (southPoleIsPoint && !longitudesWrapAround))
+		φMin = Math.min(Math.max(φMin, projection.φMin + 10/180*Math.PI), φMax);
 
 	// set the geographic limits of the mapped area
 	let geoEdges;
-	if (λMax - λMin === 2*Math.PI && projection.wrapsAround())
+	if (longitudesWrapAround)
 		geoEdges = [
 			{type: 'M', args: [φMax, λMax]},
 			{type: 'Φ', args: [φMax, λMin]},
