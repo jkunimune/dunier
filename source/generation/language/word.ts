@@ -29,7 +29,7 @@ export class Word {
 	 */
 	toString(style: string = '(default)'): string {
 		if (style === '(default)')
-			return transcribe(this.parts, this.language.defaultStyle);
+			return transcribe(this.parts, this.language.defaultTranscriptionStyle);
 		else
 			return transcribe(this.parts, style);
 	}

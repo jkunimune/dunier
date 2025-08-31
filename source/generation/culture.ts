@@ -119,7 +119,7 @@ export class Culture {
 			this.klas.add("free");
 
 		if (parent === null) {
-			this.lect = new ProtoLect(birthYear, homeland.index.toString(), rng); // create a new language from scratch
+			this.lect = new ProtoLect(birthYear, homeland.index, rng); // create a new language from scratch
 			for (const aspect of KULTUR_ASPECTS) { // make up a whole new culture
 				if (rng.probability(aspect.chance)) {
 					const featureList = [];
@@ -136,7 +136,7 @@ export class Culture {
 			}
 		}
 		else {
-			this.lect = new Dialect(parent.lect, birthYear, homeland.index.toString(), rng);
+			this.lect = new Dialect(parent.lect, birthYear, homeland.index, rng);
 			for (let i = 0; i < KULTUR_ASPECTS.length; i ++) {
 				let featureList;
 				if (parent.featureLists[i] === null) {

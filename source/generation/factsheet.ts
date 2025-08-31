@@ -4,7 +4,7 @@
  */
 import {Civ} from "./civ.js";
 import {format, formatList, localize} from "../gui/internationalization.js";
-import {WordType} from "./language/lect.js";
+import {MAX_NUM_NAME_PARTS, WordType} from "./language/lect.js";
 import {Culture, KULTUR_ASPECTS} from "./culture.js";
 import {argmax} from "../utilities/miscellaneus.js";
 import {compare} from "./language/script.js";
@@ -13,9 +13,11 @@ import {Vector} from "../utilities/geometry.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
 import TECHNOLOGIES from "../../resources/tech_tree.js";
 import {cloneNode, h, VNode} from "../gui/virtualdom.js";
+import {Random} from "../utilities/random.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
+const NUM_NAMES_TO_LIST = 3;
 const PRINT_DEBUGGING_INFORMATION = false;
 
 
@@ -379,14 +381,6 @@ function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, lan
 				region = tidalLock ? "dayleft" : "southwest";
 		}
 
-		let relatedLect = null;
-		for (const otherLect of topic.world.getLects()) {
-			if (otherLect !== culture.lect && culture.lect.getAncestor(10_000) === otherLect.getAncestor(10_000)) {
-				relatedLect = otherLect;
-				break;
-			}
-		}
-
 		const populationSentence = format(
 			localize(
 				(populationFraction < 2/3) ?
@@ -404,6 +398,14 @@ function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, lan
 				language),
 			Math.round(populationFraction*100),
 			topic.getName().toString(style));
+
+		let relatedLect = null;
+		for (const otherLect of topic.world.getLects()) {
+			if (otherLect !== culture.lect && culture.lect.getAncestor(10_000) === otherLect.getAncestor(10_000)) {
+				relatedLect = otherLect;
+				break;
+			}
+		}
 
 		let languageSentence;
 		if (relatedLect === null)
@@ -440,7 +442,7 @@ function describe(culture: Culture, language: string, style: string): string {
 			let madeUpWord;
 			if (logaIndex !== null)
 				madeUpWord = culture.lect
-					.getWord(featureList[logaIndex].key, WordType.OTHER)
+					.getWord(featureList[logaIndex].key, WordType.GENERIC)
 					.toString(style);
 			else
 				madeUpWord = null;
@@ -454,6 +456,21 @@ function describe(culture: Culture, language: string, style: string): string {
 				...args, madeUpWord); // slotting in the specifick attributes and a randomly generated word in case we need it
 		}
 	}
+
+	// add in a list of some common names
+	const names: string[] = [];
+	const rng = new Random(culture.homeland.index);
+	for (let i = 0; i < NUM_NAMES_TO_LIST; i ++) {
+		const seeds = [];
+		for (let j = 0; j < MAX_NUM_NAME_PARTS; j ++)
+			seeds.push(Math.floor(rng.uniform(0, 5*NUM_NAMES_TO_LIST)));
+		names.push(format(localize('grammar.mention', language), `${culture.lect.getFullName(seeds).toString(style)}`));
+	}
+	str += format(
+		localize('factbook.demography.common_names', language),
+		culture.getName().toString(style),
+		formatList(names, language));
+
 	return str.trim();
 }
 

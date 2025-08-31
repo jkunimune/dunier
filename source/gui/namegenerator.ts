@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Random} from "../utilities/random.js";
-import {Dialect, Lect, ProtoLect, WordType} from "../generation/language/lect.js";
+import {Dialect, Lect, MAX_NUM_NAME_PARTS, ProtoLect} from "../generation/language/lect.js";
 import {DOM} from "./dom.js";
 
 
@@ -18,32 +18,25 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
 	console.log("jena nam...");
 
 	const rng = new Random(seed);
-	let bax: Lect = new ProtoLect(0, '0', rng);
+	let bax: Lect = new ProtoLect(0, 0, rng);
 	for (let i = 0; i < 30; i ++)
-		bax = new Dialect(bax, 0, '0', rng);
-
-	const type = rng.probability(.5) ? 1 : rng.probability(.33) ? 0 : -1;
+		bax = new Dialect(bax, 0, 0, rng);
 
 	let nameSeed = 0;
 	for (const nameList of [DOM.elm('name-list-1'), DOM.elm('name-list-2')]) {
 		nameList.textContent = '';
-		for (let i = 0; i < NUM_ROWS; i++) {
-			const givenName = bax.getWord(`firstname${nameSeed}`, WordType.OTHER);
-			const familyName = bax.getWord(`lastname${nameSeed}`, WordType.FAMILY);
-			let fullName;
-			if (type === 1)
-				fullName = `${givenName} ${familyName}`;
-			else if (type === 0)
-				fullName = `${givenName}`;
-			else
-				fullName = `${familyName} ${givenName}`;
-			
+		for (let i = 0; i < NUM_ROWS; i ++) {
+			const seeds = [];
+			for (let j = 0; j < MAX_NUM_NAME_PARTS; j ++)
+				seeds.push(nameSeed + j);
+			const fullName = bax.getFullName(seeds);
+
 			const listem = document.createElement('li'); // start by creating the text element
 			listem.setAttribute('class', 'list-group-item');
-			listem.textContent = fullName;
+			listem.textContent = fullName.toString();
 			nameList.append(listem);
 
-			nameSeed += 1;
+			nameSeed += MAX_NUM_NAME_PARTS;
 		}
 	}
 

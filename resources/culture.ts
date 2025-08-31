@@ -10,7 +10,7 @@ export default [
     ]
   },
   {
-    "key": "skill", "chance": 1.0, "features": [
+    "key": "skill", "chance": 0.5, "features": [
       {
         "key": "skill", "newWord": true, "values": [
           { "key": "painting", "klas": "none", "conditions": [] },
@@ -68,7 +68,7 @@ export default [
     ]
   },
   {
-    "key": "clothes", "chance": 0.3, "features": [
+    "key": "clothes", "chance": 0.2, "features": [
       {
         "key": "person", "newWord": false, "values": [
           { "key": "people", "klas": "none", "conditions": [] },
@@ -200,7 +200,7 @@ export default [
     ]
   },
   {
-    "key": "food", "chance": 0.3, "features": [
+    "key": "food", "chance": 0.2, "features": [
       {
         "key": "attribute", "newWord": false, "values": [
           { "key": "bland", "klas": "none", "conditions": [] },
@@ -244,7 +244,7 @@ export default [
     ]
   },
   {
-    "key": "drug", "chance": 0.3, "features": [
+    "key": "drug", "chance": 0.2, "features": [
       {
         "key": "time", "newWord": false, "values": [
           { "key": "often", "klas": "none", "conditions": [] },
@@ -279,7 +279,7 @@ export default [
     ]
   },
   {
-    "key": "house", "chance": 0.3, "features": [
+    "key": "house", "chance": 0.2, "features": [
       {
         "key": "wall", "newWord": false, "values": [
           { "key": "pelt", "klas": "none", "conditions": ["+nomadic"] },
@@ -311,7 +311,7 @@ export default [
     ]
   },
   {
-    "key": "building", "chance": 0.3, "features": [
+    "key": "building", "chance": 0.2, "features": [
       {
         "key": "feature", "newWord": false, "values": [
           { "key": "color", "klas": "colorful_building", "conditions": [] },
@@ -405,7 +405,7 @@ export default [
     ]
   },
   {
-    "key": "art", "chance": 0.3, "features": [
+    "key": "art", "chance": 0.2, "features": [
       {
         "key": "style", "newWord": false, "values": [
         { "key": "squares", "klas": "none", "conditions": [] },
@@ -455,7 +455,7 @@ export default [
     ]
   },
   {
-    "key": "music", "chance": 0.3, "features": [
+    "key": "music", "chance": 0.2, "features": [
       {
         "key": "feature", "newWord": false, "values": [
           { "key": "tetratonic", "klas": "none", "conditions": [] },
@@ -520,7 +520,7 @@ export default [
     ]
   },
   {
-    "key": "sport", "chance": 0.3, "features": [
+    "key": "sport", "chance": 0.2, "features": [
       {
         "key": "act", "newWord": false, "values": [
           { "key": "push", "klas": "push", "conditions": [] },
@@ -583,7 +583,7 @@ export default [
     ]
   },
   {
-    "key": "custom", "chance": 0.3, "features": [
+    "key": "custom", "chance": 0.2, "features": [
       {
         "key": "event", "newWord": false, "values": [
           { "key": "coronation", "klas": "none", "conditions": [] },
