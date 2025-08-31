@@ -95,8 +95,8 @@ export class Culture {
 			this.klas.add("cold");
 		if ([Biome.JUNGLE, Biome.STEAMLAND].includes(this.homeland.biome))
 			this.klas.add("humid");
-		if ([Biome.DESERT].includes(this.homeland.biome))
-			this.klas.add("dry");
+		if ([Biome.DESERT, Biome.TUNDRA].includes(this.homeland.biome))
+			this.klas.add("arid");
 		if ([Biome.DESERT, Biome.GRASSLAND].includes(this.homeland.biome))
 			this.klas.add("plains");
 		if ([Biome.DESERT, Biome.STEAMLAND].includes(this.homeland.biome))

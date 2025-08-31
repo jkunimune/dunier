@@ -44,7 +44,7 @@ export default [
           { "key": "woodworking", "klas": "none", "conditions": [] },
           { "key": "glassworking", "klas": "none", "conditions": ["tech>-2500"] },
           { "key": "fireworks", "klas": "none", "conditions": ["tech>1110"] },
-          { "key": "horseback", "klas": "none", "conditions": [] },
+          { "key": "horseback", "klas": "none", "conditions": ["+nomadic"] },
           { "key": "elephant", "klas": "none", "conditions": ["-cold", "-barren"] },
           { "key": "seafaring", "klas": "none", "conditions": ["tech>-2100", "+coastal"] },
           { "key": "flying", "klas": "none", "conditions": ["tech>1903"] },
@@ -62,7 +62,9 @@ export default [
           { "key": "knots", "klas": "none", "conditions": [] },
           { "key": "fabric", "klas": "none", "conditions": [] },
           { "key": "fishing", "klas": "none", "conditions": ["+coastal"] },
-          { "key": "bluntness", "klas": "none", "conditions": [] }
+          { "key": "bluntness", "klas": "none", "conditions": [] },
+          { "key": "appetite", "klas": "none", "conditions": [] },
+          { "key": "vegetarianism", "klas": "none", "conditions": ["-nomadic"] }
         ]
       }
     ]
@@ -226,7 +228,7 @@ export default [
       {
         "key": "base", "newWord": true, "values": [
           { "key": "cereal", "klas": "none", "conditions": ["-cold"] },
-          { "key": "rice", "klas": "none", "conditions": ["-dry"] },
+          { "key": "rice", "klas": "none", "conditions": ["-arid"] },
           { "key": "tuber", "klas": "none", "conditions": ["+cold"] },
           { "key": "corn", "klas": "none", "conditions": ["+plains"] },
           { "key": "meat", "klas": "none", "conditions": [] },
@@ -341,6 +343,7 @@ export default [
           { "key": "garden", "klas": "none", "conditions": [] },
           { "key": "fountain", "klas": "fountain", "conditions": [] },
           { "key": "sculpture", "klas": "none", "conditions": [] },
+          { "key": "tomb", "klas": "none", "conditions": ["-nomadic"] },
           { "key": "stucco", "klas": "none", "conditions": ["tech>200"] },
           { "key": "glass", "klas": "none", "conditions": [] },
           { "key": "utilitarianism", "klas": "utilitarian_building", "conditions": [] },
@@ -380,7 +383,7 @@ export default [
           { "key": "plants", "klas": "none", "conditions": [] },
           { "key": "animals", "klas": "none", "conditions": [] },
           { "key": "birds", "klas": "none", "conditions": [] },
-          { "key": "fish", "klas": "none", "conditions": ["-dry"] },
+          { "key": "fish", "klas": "none", "conditions": ["-arid"] },
           { "key": "serpents", "klas": "none", "conditions": [] },
           { "key": "cats", "klas": "none", "conditions": [] },
           { "key": "dragons", "klas": "none", "conditions": [] },
@@ -568,15 +571,15 @@ export default [
           { "key": "rhythm", "klas": "none", "conditions": [] },
           { "key": "bat", "klas": "none", "conditions": ["+hit"] },
           { "key": "racket", "klas": "none", "conditions": ["+hit"] },
-          { "key": "lacrosse", "klas": "none", "conditions": ["-push"] },
+          { "key": "lacrosse", "klas": "none", "conditions": ["-push", "-roll", "-hit", "-kick"] },
           { "key": "hip", "klas": "none", "conditions": ["+hit"] },
-          { "key": "salmon", "klas": "none", "conditions": [] },
+          { "key": "salmon", "klas": "none", "conditions": ["-arid"] },
           { "key": "judge", "klas": "none", "conditions": [] },
           { "key": "telekinesis", "klas": "none", "conditions": [] },
           { "key": "broomstick", "klas": "none", "conditions": [] },
           { "key": "spoon", "klas": "none", "conditions": [] },
-          { "key": "skating", "klas": "none", "conditions": ["+cold", "-dry"] },
-          { "key": "swimming", "klas": "none", "conditions": ["+coastal", "-cold", "-dry", "-roll"] },
+          { "key": "skating", "klas": "none", "conditions": ["-hot", "-arid"] },
+          { "key": "swimming", "klas": "none", "conditions": ["+coastal", "-cold", "-arid", "-roll"] },
           { "key": "phone", "klas": "none", "conditions": ["tech>2000"] }
         ]
       }
@@ -611,13 +614,15 @@ export default [
         "key": "act", "newWord": false, "values": [
           { "key": "drinking", "klas": "none", "conditions": [] },
           { "key": "feast", "klas": "none", "conditions": [] },
+          { "key": "fast", "klas": "none", "conditions": [] },
           { "key": "animals", "klas": "none", "conditions": [] },
           { "key": "humans", "klas": "none", "conditions": [] },
           { "key": "sweets", "klas": "none", "conditions": [] },
           { "key": "bitters", "klas": "none", "conditions": [] },
           { "key": "pastries", "klas": "none", "conditions": [] },
           { "key": "rocks", "klas": "none", "conditions": [] },
-          { "key": "dances", "klas": "none", "conditions": [] },
+          { "key": "ceremonial_dances", "klas": "none", "conditions": [] },
+          { "key": "ecstatic_dances", "klas": "none", "conditions": [] },
           { "key": "screaming", "klas": "none", "conditions": [] },
           { "key": "tournament", "klas": "none", "conditions": ["-sports"] },
           { "key": "fireworks", "klas": "none", "conditions": ["tech>1110"] },
