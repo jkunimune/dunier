@@ -1393,7 +1393,7 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 	const meanRadius = rSum/count;
 
 	// turn the region into a proper closed polygon in the [-π, π) domain
-	const landOfInterest = filterSet(regionOfInterest, tile => !tile.isWater());
+	const landOfInterest = filterSet(regionOfInterest, tile => !tile.isWater() && !tile.isIceCovered());
 	const coastline = intersection(
 		convertToGreebledPath(outline(landOfInterest), Layer.KULTUR, 1e-6),
 		rectangle(
@@ -1403,13 +1403,35 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 		           (point) => surface.isOnEdge(assert_φλ(point))),
 		true,
 	);
+	const centralMeridian = chooseCentralMeridian(regionOfInterest, coastline);
+
+	// find the average latitude of the region
+	let centralParallel;
+	if (regionOfInterest === surface.tiles && surface.φMax - surface.φMin < 2*Math.PI) {
+		// if it's a whole-world map and non-periodic in latitude, always use the equator
+		centralParallel = (surface.φMin + surface.φMax)/2;
+	}
+	else {
+		centralParallel = chooseCentralMeridian(regionOfInterest, rotatePath(coastline, 90));
+	}
+
+	return {
+		centralMeridian: centralMeridian,
+		centralParallel: centralParallel,
+		meanRadius: meanRadius};
+}
+
+
+/**
+ * identify the meridian that is most centered on this region
+ */
+function chooseCentralMeridian(region: Iterable<Tile>, regionBoundary: PathSegment[]): number {
 	// find the longitude with the most empty space on either side of it
-	let centralMeridian;
 	const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
-	for (let i = 0; i < coastline.length; i ++) {
-		if (coastline[i].type !== 'M') {
-			const λ1 = coastline[i - 1].args[1];
-			const λ2 = coastline[i].args[1];
+	for (let i = 0; i < regionBoundary.length; i ++) {
+		if (regionBoundary[i].type !== 'M') {
+			const λ1 = regionBoundary[i - 1].args[1];
+			const λ2 = regionBoundary[i].args[1];
 			if (Math.abs(λ1 - λ2) < Math.PI) { // and then remove the space corresponding to each segment
 				emptyLongitudes.remove(Math.min(λ1, λ2), Math.max(λ1, λ2));
 			}
@@ -1420,7 +1442,7 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 		}
 	}
 	if (emptyLongitudes.getCenter(true).location !== null) {
-		centralMeridian = localizeInRange(
+		return localizeInRange(
 			emptyLongitudes.getCenter(true).location + Math.PI,
 			-Math.PI, Math.PI);
 	}
@@ -1428,36 +1450,12 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 		// if there are no empty longitudes, do a periodic mean over the land part of the region of interest
 		let xCenter = 0;
 		let yCenter = 0;
-		for (const tile of landOfInterest) {
+		for (const tile of region) {
 			xCenter += Math.cos(tile.λ);
 			yCenter += Math.sin(tile.λ);
 		}
-		centralMeridian = Math.atan2(yCenter, xCenter);
+		return Math.atan2(yCenter, xCenter);
 	}
-
-	// find the average latitude of the region
-	let centralParallel;
-	if (regionOfInterest === surface.tiles && surface.φMax - surface.φMin < 2*Math.PI) {
-		// if it's a whole-world map and non-periodic in latitude, always use the equator
-		centralParallel = (surface.φMin + surface.φMax)/2;
-	}
-	else {
-		// otherwise do a periodic mean of latitude to get the standard parallel
-		let ξCenter = 0;
-		let υCenter = 0;
-		for (const tile of regionOfInterest) {
-			if (!tile.isWater()) {
-				ξCenter += Math.cos(tile.φ);
-				υCenter += Math.sin(tile.φ);
-			}
-		}
-		centralParallel = Math.atan2(υCenter, ξCenter);
-	}
-
-	return {
-		centralMeridian: centralMeridian,
-		centralParallel: centralParallel,
-		meanRadius: meanRadius};
 }
 
 
