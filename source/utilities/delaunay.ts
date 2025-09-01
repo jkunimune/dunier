@@ -49,7 +49,7 @@ export function delaunayTriangulate(points: Vector[],
 	for (let i = 0; i < sample.length; i ++)
 		nodos.push(new DelaunayNodo(i - sample.length, sample[i], sampleNormals[i%sampleNormals.length]));
 	const partitionTriangles = partition.map((t: number[]) =>
-		new DelaunayTriangle(nodos[t[0]], nodos[t[1]], nodos[t[2]], true));
+		new DelaunayTriangle(nodos[t[0]], nodos[t[1]], nodos[t[2]]));
 
 	const triangles = partitionTriangles.slice(); // then set up the full triangle array
 	for (let i = 0; i < points.length; i ++)
@@ -304,23 +304,11 @@ function findSmallestEncompassing(node: DelaunayNodo, triangles: Iterable<Delaun
 	let bestDistance: number = Infinity;
 	for (const triangle of triangles) {
 		if (contains(triangle, node)) {
-			const d2 = /*(triangle.basic) ?*/ distanceSqr(triangle, node);// : 0; // we need to check the distance in case there are multiple candies
+			const d2 = distanceSqr(triangle, node); // we need to check the distance in case there are multiple candies
 			if (d2 < bestDistance)
 				[bestDistance, bestTriangle] = [d2, triangle];
 		}
 	}
-
-	// for (const triangle of triangles) {
-	// 	console.log(`[`);
-	// 	for (let i = 0; i <= 3; i ++) {
-	// 		const a = (i < 3) ? triangle.nodos[i] : node;
-	// 		console.log(`[${a.r.x}, ${a.r.y}, ${a.r.z}, ${a.n.x}, ${a.n.y}, ${a.n.z}],`);
-	// 	}
-	// 	if (contains(triangle, node))
-	// 		console.log(`[0,0,0,0,0,0]],`);
-	// 	else
-	// 		console.log(`[1,1,1,1,1,1]],`);
-	// }
 
 	if (bestTriangle === null)
 		throw new RangeError("no eureka tingon da indu");
@@ -455,15 +443,16 @@ export class DelaunayNodo {
  * a delaunay triangle (voronoi vertex)
  */
 class DelaunayTriangle {
+	/** the three nodes that form its vertices */
 	public readonly nodos: DelaunayNodo[];
+	/** any triangles that came after this one and overlap it at all */
 	public children: DelaunayTriangle[];
-	public readonly basic: boolean;
+	/** the triangle's normal vector */
 	public readonly n: Vector;
 
-	constructor(a: DelaunayNodo, b: DelaunayNodo, c: DelaunayNodo, basic = false) {
+	constructor(a: DelaunayNodo, b: DelaunayNodo, c: DelaunayNodo) {
 		this.nodos = [a, b, c];
 		this.children = null;
-		this.basic = basic;
 		for (const v of this.nodos)
 			v.triangles.add(this);
 		this.n = b.r.minus(a.r).cross(c.r.minus(a.r));
