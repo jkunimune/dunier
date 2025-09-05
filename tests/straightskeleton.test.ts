@@ -22,7 +22,17 @@ test("triangle", () => {
 	);
 });
 test("reversed", () => {
-	expect(() => straightSkeleton(triangle.slice().reverse())).toThrow();
+	expect(straightSkeleton(triangle.slice().reverse())).toEqual(
+		expect.objectContaining({
+			value: expect.objectContaining({x: 0, y: Math.sqrt(3)/2}),
+			parent: expect.objectContaining({
+				value: expect.objectContaining({
+					x: expect.closeTo((Math.sqrt(3) - 1)/4),
+					y: expect.closeTo((Math.sqrt(3) - 1)/4)
+				}),
+			}),
+		}),
+	);
 });
 const rectangle = [{x: -2, y: -1}, {x: 2, y: -1}, {x: 2, y: 1}, {x: -2, y: 1}];
 test("rectangle", () => {
@@ -65,4 +75,28 @@ test("trapezoid", () => {
 			}),
 		}),
 	);
+});
+const utah = [{x: -2, y: -1}, {x: 2, y: -1}, {x: 2, y: 1}, {x: -1.8, y: 1}, {x: -1.8, y: 0.8}, {x: -2, y: 0.8}];
+test("concave", () => {
+	expect(straightSkeleton(utah)).toEqual(
+		expect.objectContaining({
+			value: expect.objectContaining({x: expect.closeTo(-2), y: expect.closeTo(-1)}),
+			parent: expect.objectContaining({
+				value: expect.objectContaining({x: expect.closeTo(-1.1), y: expect.closeTo(-0.1)}),
+				parent: expect.objectContaining({
+					value: expect.objectContaining({x: expect.closeTo(-0.9), y: expect.closeTo(-0.1)}),
+					parent: expect.objectContaining({
+						value: expect.objectContaining({x: expect.closeTo(-0.8), y: expect.closeTo(0)}),
+						parent: expect.objectContaining({
+							value: expect.objectContaining({x: expect.closeTo(1), y: expect.closeTo(0)}),
+						}),
+					}),
+				}),
+			}),
+		}),
+	);
+});
+const spiky = [{x: -123.1397656277029, y: 57.707032738777876}, {x: 12.991144269083025, y: -201.4169278574795}, {x: 11.85127222929715, y: -186.19413041339828}, {x: 14.456793518365282, y: -196.1088095791851}, {x: 16.686895793162808, y: -183.45502258411253}, {x: 59.93873571694265, y: -98.0019270863268}, {x: 8.904811218900601, y: 44.68705717409662}];
+test("split in two", () => {
+	expect(() => straightSkeleton(spiky)).not.toThrow();
 });
