@@ -285,9 +285,9 @@ export function resamplePath(path: PathSegment[]): PathSegment[] {
 	}
 
 	// now purge any degenerate sections
-	for (let i = path.length - 1; i >= 3; i --) {
+	for (let i = path.length - 1; i >= 0; i --) {
 		for (let j = i - 1; j >= i - 3; j --) {
-			if (path[i].type === 'M' && path[j].type === 'M') {
+			if (j >= 0 && path[i].type === 'M' && path[j].type === 'M') {
 				path.splice(j, i - j);
 				break;
 			}
