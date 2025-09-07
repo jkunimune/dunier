@@ -1412,7 +1412,7 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 		centralParallel = (surface.φMin + surface.φMax)/2;
 	}
 	else {
-		centralParallel = chooseCentralMeridian(regionOfInterest, rotatePath(coastline, 90));
+		centralParallel = chooseCentralMeridian(regionOfInterest, rotatePath(coastline, 270));
 	}
 
 	return {
