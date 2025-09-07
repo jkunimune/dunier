@@ -99,8 +99,8 @@ export class Disc extends Surface {
 		return place.φ === this.φMax;
 	}
 
-	isFlat(): boolean {
-		return true;
+	maximumCurvature(): number {
+		return 0;
 	}
 	
 	computeEdgeVertexLocation(tileL: Tile, tileR: Tile): { pos: Vector; coordinates: ΦΛPoint } {

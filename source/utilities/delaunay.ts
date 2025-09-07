@@ -96,6 +96,7 @@ export function delaunayTriangulate(points: Vector[],
 		.map((n: DelaunayNodo) => n.parents.map((n: DelaunayNodo) => n.i));
 	const betweenIdx = nodos.filter((n: DelaunayNodo) => n.i >= 0)
 		.map((n: DelaunayNodo) => n.between.map((ns: DelaunayNodo[]) => [ns[0].i, ns[1].i]));
+
 	return {triangles: triangleIdx, parentage: parentIdx, between: betweenIdx}; // convert all to indices and return
 }
 
@@ -116,11 +117,8 @@ function removeNode(node: DelaunayNodo): DelaunayTriangle[] {
 		let next;
 		try {
 			next = triangleOf(node, med);
-		} catch {
-			next = null;
 		}
-
-		if (next === null) { // if you come up short,
+		catch { // if you come up short,
 			while (true) { // do the same thing in the other direction
 				let prev = oldTriangles[0];
 				let med = widershinsOf(node, prev);
@@ -135,14 +133,18 @@ function removeNode(node: DelaunayNodo): DelaunayTriangle[] {
 					break;
 				else
 					oldTriangles.splice(0, 0, next);
+				if (oldTriangles.length > allOldTriangles.length)
+					throw new Error("the graph is messed up here.");
 			}
 			return removeNodeHull(node, oldTriangles); // and call the exterior node function
 		}
 
-		else if (next === oldTriangles[0]) // otherwise go until you get back to whence you started
+		if (next === oldTriangles[0]) // otherwise go until you get back to whence you started
 			break;
 		else
 			oldTriangles.push(next);
+		if (oldTriangles.length > allOldTriangles.length)
+			throw new Error("the graph is messed up here.");
 	}
 	return removeNodeInterior(node, oldTriangles); // and then call the embedded node function
 }
@@ -233,6 +235,8 @@ export function flipEdges(queue: DelaunayEdge[], triangles: DelaunayTriangle[],
 		}
 		const b = widershinsOf(a, abc);
 		const d = widershinsOf(c, cda);
+		if (isAdjacentTo(b, d))
+			continue; // don't try to flip a tetrahedron, tho, as that will create an invalid mesh
 
 		const [ap, bp, cp, dp] = flatten(a, b, c, d); // project their positions into the normal plane
 		if (!isDelaunay(ap, bp, cp, dp)) { // and check for non-Delaunay edges

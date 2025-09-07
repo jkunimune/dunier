@@ -69,7 +69,7 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 			// look for cells that could contain the smallest discs; make sure they're also in the plain region (that last check is necessary because my offsets are janky)
 			if (cellFeasibility.get(minDistance)[i][j] !== Side.OUT && cellFeasibility.get(0)[i][j] !== Side.OUT)
 				feasibleCells.push({i: i, j: j});
-	shuffle(feasibleCells, rng);
+	rng.shuffle(feasibleCells);
 
 	// decide on any additional areas where you definitely can't sample
 	const forbiddenRegions: Map<number, PathSegment[]>[] = [];
@@ -254,21 +254,6 @@ function floodFill<T>(matrix: (T | null)[][], iStart: number, jStart: number, va
 			if (j + 1 < matrix[i].length)
 				queue.push({i: i, j: j + 1});
 		}
-	}
-}
-
-
-/**
- * randomly shuffle an array in-place using the "forward" version of the Fisher–Yates algorithm
- * https://possiblywrong.wordpress.com/2020/12/10/the-fisher-yates-shuffle-is-backward/
- */
-function shuffle<T>(array: T[], rng: Random): void {
-	for (let i = 0; i < array.length; i ++) {
-		const j = Math.floor(rng.uniform(0, i + 1));
-		const a = array[i];
-		const b = array[j];
-		array[j] = a;
-		array[i] = b;
 	}
 }
 

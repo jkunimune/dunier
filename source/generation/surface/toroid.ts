@@ -153,7 +153,7 @@ export class Toroid extends Surface {
 		return false;
 	}
 
-	isFlat(): boolean {
-		return false;
+	maximumCurvature(): number {
+		return 1/(this.minorRadius*this.elongation**2);
 	}
 }

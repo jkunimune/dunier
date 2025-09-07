@@ -52,6 +52,7 @@ export function straightSkeleton(polygon: XYPoint[]): Tree<XYPoint> {
 	}
 
 	// then advance the wavefronts
+	let numIterations = 0;
 	while (!upcomingMergers.empty()) {
 		const { left, rite, time, place } = upcomingMergers.pop(); // take the next merger coming up
 		if (contains(polygonPath, generic(place), INFINITE_PLANE, Rule.ODD) !== Side.IN) // this should never happen ideally
@@ -77,10 +78,14 @@ export function straightSkeleton(polygon: XYPoint[]): Tree<XYPoint> {
 			try {
 				upcomingMergers.push(new Merger(newNodo, newNodo.riteNeibor));
 			} catch {}
+
+			numIterations ++;
+			if (numIterations > polygon.length)
+				throw new Error("something went rong.");
 		}
 	}
 
-	throw new Error("the straight skeleton algorithm failed.  I don't fully understand how that's possible, but is this polygon by chance concave?");
+	throw new Error("the straight skeleton algorithm failed.  I don't fully understand how that's possible, but is this polygon by chance self-intersecting?");
 }
 
 

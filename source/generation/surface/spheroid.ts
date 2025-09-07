@@ -173,7 +173,7 @@ export class Spheroid extends Surface {
 		return false;
 	}
 
-	isFlat(): boolean {
-		return false;
+	maximumCurvature(): number {
+		return this.aspectRatio**2/this.radius;
 	}
 }

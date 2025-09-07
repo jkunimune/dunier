@@ -148,28 +148,66 @@ describe("orthogonalBasis()", () => {
 });
 
 describe("checkVoronoiPolygon()", () => {
-	test("fine", () => {
-		const originalPolygon = [{x: 1, y: 0}, {x: 0, y: 2}, {x: -3, y: -4}];
-		expect(checkVoronoiPolygon(originalPolygon)).toEqual(originalPolygon);
+	describe("full loop", () => {
+		test("fine", () => {
+			const originalPolygon = [
+				{x: 1, y: 0},
+				{x: 0, y: 2},
+				{x: -3, y: -4},
+			];
+			expect(checkVoronoiPolygon(originalPolygon)).toEqual([
+				expect.objectContaining({x: 1, y: 0}),
+				expect.objectContaining({x: 0, y: 2}),
+				expect.objectContaining({x: -3, y: -4}),
+			]);
+		});
+		test("one segment backwards", () => {
+			const originalPolygon = [
+				{x: 1, y: 0},
+				{x: 0, y: 2},
+				{x: -3, y: -0.1},
+				{x: -3, y: 0.1},
+				{x: 0, y: -4},
+			];
+			expect(checkVoronoiPolygon(originalPolygon)).toEqual([
+				expect.objectContaining({x: 1, y: 0}),
+				expect.objectContaining({x: 0, y: 2}),
+				expect.objectContaining({x: -3, y: 0.1}),
+				expect.objectContaining({x: -3, y: -0.1}),
+				expect.objectContaining({x: 0, y: -4}),
+			]);
+		});
+		test("two segments backwards", () => {
+			const originalPolygon = [
+				{x: 1, y: 0},
+				{x: 0, y: 2},
+				{x: -3, y: -0.1},
+				{x: -3, y: 0},
+				{x: -3, y: 0.1},
+				{x: 0, y: -4},
+			];
+			expect(checkVoronoiPolygon(originalPolygon)).toEqual([
+				expect.objectContaining({x: 1, y: 0}),
+				expect.objectContaining({x: 0, y: 2}),
+				expect.objectContaining({x: -3, y: 0.1}),
+				expect.objectContaining({x: -3, y: 0}),
+				expect.objectContaining({x: -3, y: -0.1}),
+				expect.objectContaining({x: 0, y: -4}),
+			]);
+		});
 	});
-	test("incomplete", () => {
-		const originalPolygon = [{x: 1, y: 0}, {x: 3, y: 4}, {x: 0, y: 2}];
-		expect(checkVoronoiPolygon(originalPolygon)).toEqual(originalPolygon);
-	});
-	test("backwards", () => {
-		const originalPolygon = [{x: 1, y: 0}, {x: -3, y: -4}, {x: 0, y: 2}];
-		expect(checkVoronoiPolygon(originalPolygon)).toEqual([originalPolygon[1], originalPolygon[0], originalPolygon[2]]);
-	});
-	test("real life", () => {
-		const originalPolygon = [
-			{x: 13.8, y: -111.3},
-			{x: 173.2, y: -91.1},
-			{x: 180.10, y: -23.48},
-			{x: -97.201, y: 186.889},
-			{x: -97.168, y: 186.779},
-			{x: -135.0, y: 162.4},
-			{x: 0.4, y: -99.5},
-		];
-		expect(checkVoronoiPolygon(originalPolygon)).toEqual(originalPolygon);
+	describe("incomplete", () => {
+		test("fine", () => {
+			const originalPolygon = [
+				{x: 1, y: 0},
+				{x: 3, y: 4},
+				{x: 0, y: 2},
+			];
+			expect(checkVoronoiPolygon(originalPolygon)).toEqual([
+				expect.objectContaining({x: 1, y: 0}),
+				expect.objectContaining({x: 3, y: 4}),
+				expect.objectContaining({x: 0, y: 2}),
+			]);
+		});
 	});
 });

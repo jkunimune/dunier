@@ -251,7 +251,7 @@ function applyTerrain(seed: number, numContinents: number, seaLevel: number, tem
 	continents.sort((tilesA, tilesB) => tilesB.size - tilesA.size);
 
 	console.log("grafa...");
-	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
+	const projection = (surface.maximumCurvature() === 0) ? "orthographic" : "equal_earth";
 	const {map} = depict(
 		surface,
 		continents,
@@ -285,7 +285,7 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 		rng); // create the terrain!
 
 	console.log("grafa...");
-	const projection = surface.isFlat() ? "orthographic" : "equal_earth";
+	const projection = (surface.maximumCurvature() === 0) ? "orthographic" : "equal_earth";
 	const {map} = depict(
 		surface,
 		null,
@@ -406,7 +406,7 @@ function applyMap(
 		surface,
 		continents,
 		world,
-		surface.isFlat() ? "orthographic" : projectionName,
+		(surface.maximumCurvature() === 0) ? "orthographic" : projectionName,
 		regionOfInterest,
 		orientation, width*height,
 		colorSchemeName,

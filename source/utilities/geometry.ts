@@ -3,6 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {XYPoint} from "./coordinates.js";
+import {localizeInRange} from "./miscellaneus.js";
 
 /**
  * calculate the sign of this triangle
@@ -222,29 +223,34 @@ export function lineSegmentDistance(a: XYPoint, b: XYPoint, point: XYPoint): num
 /**
  * copy and edit a polygon so that if its vertices are approximately orderd
  * counterclockwise from the POV of the origin, then they are rearranged to be
- * exactly orderd widdershins from the POV of the origin
- * @return the reorderd polygon
+ * exactly orderd widdershins from the POV of the origin (in a right-handed coordinate system)
+ * @return the reorderd copy of the polygon
  */
 export function checkVoronoiPolygon(vertexes: XYPoint[]): XYPoint[] {
-	// start by copying the polygon (a deep copy would be better but I don't think the points will get modified)
-	vertexes = vertexes.slice();
-	const origen = { x: 0, y: 0 };
-	// for each vertex
+	// convert the point positions to angles
+	const measuredVertexes: { x: number, y: number, θ: number }[] = [];
+	for (const {x, y} of vertexes)
+		measuredVertexes.push({x: x, y: y, θ: Math.atan2(y, x)});
+
+	// find the largest gap between two vertices
+	let largestGap = {i: -1, span: -Infinity};
 	for (let i = 0; i < vertexes.length; i ++) {
-		// if the next one seems to be clockwise from it
-		const j = (i + 1)%vertexes.length;
-		if (angleSign(vertexes[i], origen, vertexes[j]) > 0) {
-			// see if the following one would be widershins
-			const k = (i + 2)%vertexes.length;
-			// if so, reverse them
-			if (angleSign(vertexes[i], origen, vertexes[k]) <= 0) {
-				const vertex = vertexes[i];
-				vertexes[i] = vertexes[j];
-				vertexes[j] = vertex;
-			}
-		}
+		const last = measuredVertexes[i];
+		const next = measuredVertexes[(i + 1)%vertexes.length];
+		const span = Math.abs(localizeInRange(next.θ - last.θ, -Math.PI, Math.PI));
+		if (span > largestGap.span)
+			largestGap = {i: i, span: span};
 	}
-	return vertexes;
+	// fix that gap as the boundary
+	const end = measuredVertexes[largestGap.i].θ;
+	for (let i = 0; i < vertexes.length; i ++)
+		measuredVertexes[i].θ = localizeInRange(measuredVertexes[i].θ, end - 2*Math.PI, end, true);
+
+	// sort the angles
+	measuredVertexes.sort((a, b) => a.θ - b.θ);
+	// rearrange so that the break occurs at the same index as before
+	return measuredVertexes.slice(vertexes.length - 1 - largestGap.i).concat(
+		measuredVertexes.slice(0, vertexes.length - 1 - largestGap.i));
 }
 
 

@@ -143,6 +143,20 @@ export class Random {
 	}
 
 	/**
+	 * randomly shuffle an array in-place using the "forward" version of the Fisher–Yates algorithm
+	 * https://possiblywrong.wordpress.com/2020/12/10/the-fisher-yates-shuffle-is-backward/
+	 */
+	shuffle<T>(array: T[]): void {
+		for (let i = 0; i < array.length; i ++) {
+			const j = Math.floor(this.uniform(0, i + 1));
+			const a = array[i];
+			const b = array[j];
+			array[j] = a;
+			array[i] = b;
+		}
+	}
+
+	/**
 	 * return a new Random based on this one. it will be seeded by a random number
 	 * dependent on this.seed, but the values it produces will be pseudo-independent of
 	 * the values of this one. this may be useful if one wants to produce multiple static

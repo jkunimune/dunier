@@ -189,16 +189,29 @@ export abstract class Surface {
 	/**
 	 * return a list of however many tiles are needed to populate this Surface, uniformly
 	 * sampled from the Surface using the given random number generator.
+	 * Latin hypercube sampling is used to ensure the points are somewhat evenly spaced.
 	 */
 	randomlySubdivide(rng: Random): Tile[] {
 		// generate the tiles
-		const tiles: Tile[] = []; // remember to clear the old tiles, if necessary
-		for (let i = 0; i < Math.max(100, this.area/TILE_AREA); i ++) {
-			const λ = rng.uniform(-Math.PI, Math.PI);
-			const A = rng.uniform(0, this.cumulAreas[this.cumulAreas.length-1]);
+		const tileArea = Math.min(TILE_AREA, 1/(4*this.maximumCurvature()**2));
+		const numTiles = Math.max(50, Math.round(this.area/tileArea));
+		// first, generate evenly spaced latitudes and longitudes
+		const longitudes: number[] = [];
+		const latitudes: number[] = [];
+		for (let i = 0; i < numTiles; i ++) {
+			const λ = -Math.PI + (2*Math.PI)*(i + 0.5)/numTiles;
+			longitudes.push(λ);
+			const A = this.cumulAreas[this.cumulAreas.length-1]*(i + 0.5)/numTiles;
 			const φ = linterp(A, this.cumulAreas, this.refLatitudes);
-			tiles.push(new Tile(i, {φ: φ, λ: λ}, this)); // push a bunch of new ones
+			latitudes.push(φ);
 		}
+		// then shuffle them each separately
+		rng.shuffle(longitudes);
+		rng.shuffle(latitudes);
+		// then build the tiles from those in their new order
+		const tiles: Tile[] = [];
+		for (let i = 0; i < numTiles; i ++)
+			tiles.push(new Tile(i, {φ: latitudes[i], λ: longitudes[i]}, this));
 		return tiles;
 	}
 
@@ -339,9 +352,9 @@ export abstract class Surface {
 	abstract isOnEdge(place: ΦΛPoint): boolean;
 
 	/**
-	 * whether the curvature of this surface is globally 0
+	 * return the peak linear curvature in km^-1
 	 */
-	abstract isFlat(): boolean;
+	abstract maximumCurvature(): number;
 }
 
 
