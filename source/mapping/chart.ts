@@ -1403,7 +1403,7 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 		           (point) => surface.isOnEdge(assert_φλ(point))),
 		true,
 	);
-	const centralMeridian = chooseCentralMeridian(regionOfInterest, coastline);
+	const centralMeridian = chooseCentralMeridian(landOfInterest, coastline);
 
 	// find the average latitude of the region
 	let centralParallel;
@@ -1412,7 +1412,9 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 		centralParallel = (surface.φMin + surface.φMax)/2;
 	}
 	else {
-		centralParallel = chooseCentralMeridian(regionOfInterest, rotatePath(coastline, 270));
+		centralParallel = chooseCentralMeridian(
+			[...landOfInterest].map(point => ({φ: -point.λ, λ: point.φ})),
+			rotatePath(coastline, 270));
 	}
 
 	return {
@@ -1425,14 +1427,15 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 /**
  * identify the meridian that is most centered on this region
  */
-function chooseCentralMeridian(region: Iterable<Tile>, regionBoundary: PathSegment[]): number {
+function chooseCentralMeridian(region: Iterable<ΦΛPoint>, regionBoundary: PathSegment[]): number {
 	// find the longitude with the most empty space on either side of it
 	const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
 	for (let i = 0; i < regionBoundary.length; i ++) {
 		if (regionBoundary[i].type !== 'M') {
 			const λ1 = regionBoundary[i - 1].args[1];
 			const λ2 = regionBoundary[i].args[1];
-			if (Math.abs(λ1 - λ2) < Math.PI) { // and then remove the space corresponding to each segment
+			const wraps = Math.abs(λ1 - λ2) > Math.PI && regionBoundary[i].type !== 'Φ';
+			if (!wraps) { // and then remove the space corresponding to each segment
 				emptyLongitudes.remove(Math.min(λ1, λ2), Math.max(λ1, λ2));
 			}
 			else {
