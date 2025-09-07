@@ -291,7 +291,7 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 		null,
 		world,
 		projection,
-		filterSet(surface.tiles, (t) => !t.isWater() && !t.isIceCovered()),
+		filterSet(surface.tiles, (t) => !t.isWater()),
 		"north", 62500,
 		'political',
 		resources, characterWidthMap,
@@ -374,7 +374,7 @@ function applyMap(
 	// then interpret it into an actual region
 	let regionOfInterest: Set<Tile>;
 	if (focusSpecifier === "world") {
-		regionOfInterest = filterSet(surface.tiles, t => !t.isIceCovered() && !t.isWater());
+		regionOfInterest = filterSet(surface.tiles, t => !t.isWater());
 		if (regionOfInterest.size === 0)
 			regionOfInterest = surface.tiles;
 	}
