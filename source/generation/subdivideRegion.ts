@@ -28,16 +28,33 @@ export function subdivideLand(tiles: Iterable<Tile>, targetNumContinents: number
 	// now calculate the "drainage divides" of this distance function
 	const basins = calculateInvertedDrainageBasins(land, distanceMap);
 
-	// combine neiboring ones that are too small
 	const totalLandArea = [...land].map(t => t.getArea()).reduce((a, b) => a + b);
 	const targetContinentArea = totalLandArea/targetNumContinents;
-	const minimumContinentArea = targetContinentArea/3;
-	const regions = combineAdjacentRegions(
-		basins, targetContinentArea, minimumContinentArea);
+	const minimumContinentArea = targetContinentArea/6;
+	let fudgeFactor = 1;
+	let numTries = 0;
+	let continents;
+	while (true) { // it may take a few tries to get this next part right
 
-	// then remove small ones and expand the bigger ones to cover them
-	const continents = makeContinentsComprehensive(
-		land, regions, minimumContinentArea, connectionDistance);
+		// combine neiboring ones that are too small
+		const regions = combineAdjacentRegions(
+			basins, targetContinentArea*fudgeFactor, minimumContinentArea*fudgeFactor);
+
+		// then remove small ones and expand the bigger ones to cover them
+		continents = makeContinentsComprehensive(
+			land, regions, minimumContinentArea, connectionDistance);
+
+		// aim for between 2 and 2×target continents
+		numTries ++;
+		if (numTries > 3)
+			break;
+		else if (regions.length < 2)
+			fudgeFactor /= 2;
+		else if (regions.length > 2*targetNumContinents)
+			fudgeFactor *= 2;
+		else
+			break;
+	}
 
 	return continents.map(continent => continent.tiles);
 }
@@ -183,7 +200,7 @@ function combineAdjacentRegions(
 				});
 
 	const remainingRegions = new Set(regions);
-	const minimumAcceptableQuality = Math.sqrt((8*Math.PI/3 + Math.sqrt(3))/targetArea); // this coefficient is the L/A of a standard double bubble
+	const minimumAcceptableQuality = Math.sqrt(2/targetArea);
 
 	// create a priority cue of merges
 	const queue = new Queue<{a: Region, b: Region, priority: number}>(

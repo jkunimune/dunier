@@ -247,7 +247,7 @@ function applyTerrain(seed: number, numContinents: number, seaLevel: number, tem
 
 	// break the landmasses up into continents
 	const continents = subdivideLand(
-		surface.tiles, 3, 500);
+		surface.tiles, 4, 500);
 	continents.sort((tilesA, tilesB) => tilesB.size - tilesA.size);
 
 	console.log("grafa...");
