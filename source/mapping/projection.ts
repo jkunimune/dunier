@@ -255,6 +255,18 @@ export class MapProjection {
 	}
 
 	/**
+	 * are all of the meridians completely straight lines?
+	 */
+	hasStraightMeridians(): boolean {
+		const φ0 = (this.φMin + this.φMax)/2;
+		const θ = this.dx_dλ(φ0)/(this.y(φ0) - this.yCenter);
+		for (let i = 0; i < this.φRef.length; i ++)
+			if (Math.abs(this.dx_dλRef[i]/(this.yRef[i] - this.yCenter) - θ) > 1e-8)
+				return false;
+		return true;
+	}
+
+	/**
 	 * quantify how nondifferentiable the prime meridian is at this latitude, if at all
 	 * @param φ either the maximum latitude of this surface or the minimum latitude, in radians
 	 * @return a number near 1 if the prime meridian is smooth at that point,

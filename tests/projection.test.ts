@@ -56,7 +56,10 @@ describe("on a sphere", () => {
 			});
 		});
 		test("wrapsAround()", () => {
-			expect(projection.wrapsAround()).toEqual(false);
+			expect(projection.wrapsAround()).toBe(false);
+		});
+		test("hasStraightMeridians()", () => {
+			expect(projection.hasStraightMeridians()).toBe(false);
 		});
 		describe("differentiability()", () => {
 			test("north pole", () => {
@@ -156,7 +159,10 @@ describe("on a sphere", () => {
 			});
 		});
 		test("wrapsAround()", () => {
-			expect(projection.wrapsAround()).toEqual(true);
+			expect(projection.wrapsAround()).toBe(true);
+		});
+		test("hasStraightMeridians()", () => {
+			expect(projection.hasStraightMeridians()).toBe(true);
 		});
 		describe("differentiability()", () => {
 			test("north pole", () => {
@@ -228,7 +234,10 @@ describe("on a sphere", () => {
 			]);
 		});
 		test("wrapsAround()", () => {
-			expect(projection.wrapsAround()).toEqual(false);
+			expect(projection.wrapsAround()).toBe(false);
+		});
+		test("hasStraightMeridians()", () => {
+			expect(projection.hasStraightMeridians()).toBe(true);
 		});
 		describe("differentiability()", () => {
 			test("north pole", () => {
@@ -267,7 +276,10 @@ describe("on a sphere", () => {
 			expect(projection.inverseProjectPoint({x: 0, y: 0})).toEqual({φ: Math.PI/2, λ: NaN});
 		});
 		test("wrapsAround()", () => {
-			expect(projection.wrapsAround()).toEqual(false);
+			expect(projection.wrapsAround()).toBe(false);
+		});
+		test("hasStraightMeridians()", () => {
+			expect(projection.hasStraightMeridians()).toBe(true);
 		});
 		describe("differentiability()", () => {
 			test("north pole", () => {
@@ -304,7 +316,10 @@ describe("on a disc", () => {
 			});
 		});
 		test("wrapsAround()", () => {
-			expect(projection.wrapsAround()).toEqual(true);
+			expect(projection.wrapsAround()).toBe(true);
+		});
+		test("hasStraightMeridians()", () => {
+			expect(projection.hasStraightMeridians()).toBe(true);
 		});
 		describe("differentiability()", () => {
 			test("south pole", () => {

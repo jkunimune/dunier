@@ -1636,15 +1636,15 @@ function chooseGeoBounds(
 	}
 
 	// cut out the poles if desired
-	const longitudesWrapAround = projection.wrapsAround() && λMin === projection.λMin && λMax === projection.λMax;
-	if (northPoleIsDistant || (northPoleIsPoint && !longitudesWrapAround))
-		φMax = Math.max(Math.min(φMax, projection.φMax - 10/180*Math.PI), φMin);
-	if (southPoleIsDistant || (southPoleIsPoint && !longitudesWrapAround))
-		φMin = Math.min(Math.max(φMin, projection.φMin + 10/180*Math.PI), φMax);
+	const straightMeridians = projection.hasStraightMeridians();
+	if (northPoleIsDistant || (northPoleIsPoint && !straightMeridians))
+		φMax = Math.max(Math.min(φMax, projection.φMax - 5/180*Math.PI), φMin);
+	if (southPoleIsDistant || (southPoleIsPoint && !straightMeridians))
+		φMin = Math.min(Math.max(φMin, projection.φMin + 5/180*Math.PI), φMax);
 
 	// set the geographic limits of the mapped area
 	let geoEdges;
-	if (longitudesWrapAround)
+	if (projection.wrapsAround() && λMin === projection.λMin && λMax === projection.λMax)
 		geoEdges = [
 			{type: 'M', args: [φMax, λMax]},
 			{type: 'Φ', args: [φMax, λMin]},
