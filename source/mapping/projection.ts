@@ -260,9 +260,16 @@ export class MapProjection {
 	hasStraightMeridians(): boolean {
 		const φ0 = (this.φMin + this.φMax)/2;
 		const θ = this.dx_dλ(φ0)/(this.y(φ0) - this.yCenter);
-		for (let i = 0; i < this.φRef.length; i ++)
-			if (Math.abs(this.dx_dλRef[i]/(this.yRef[i] - this.yCenter) - θ) > 1e-8)
-				return false;
+		if (θ !== 0) {
+			for (let i = 0; i < this.φRef.length; i++)
+				if (Math.abs(this.dx_dλRef[i]/(this.yRef[i] - this.yCenter) - θ) > 1e-8)
+					return false;
+		}
+		else {
+			for (let i = 1; i < this.φRef.length; i ++)
+				if (this.dx_dλRef[i] !== this.dx_dλRef[0])
+					return false;
+		}
 		return true;
 	}
 
