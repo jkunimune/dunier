@@ -375,8 +375,6 @@ export class PhraseProcess {
 }
 
 
-export const DEFAULT_STRESS = new StressPlacement(true, 1, 1, 'lapse', false);
-
 export const WORD_PROCESS_OPTIONS: {chanse: number, proces: WordProcess}[] = [];
 export const PHRASE_PROCESS_OPTIONS: {chanse: number, proces: PhraseProcess}[] = [];
 for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phonological processes
@@ -453,13 +451,13 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 				new Harmony(parseFeature(leftPole), parseFeature(rightPole), parseFeature(scope))});
 	}
 	else if (type === 'acente') {
-		const [reverse, headSize] = code.split(" ");
+		const [direction, headSize] = code.split(" ");
 		for (let attractors = 1; attractors <= 3; attractors ++)
 			for (const tailMode of ['clash', 'lapse', 'none'])
 				for (const lengthen of [true, false])
 					WORD_PROCESS_OPTIONS.push({chanse: chance/18., proces:
 							new StressPlacement(
-								reverse === "true",
+								direction === "right",
 								Number.parseInt(headSize),
 								attractors, tailMode, lengthen)});
 	}

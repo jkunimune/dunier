@@ -208,7 +208,7 @@ export class Culture {
 	}
 
 	public getName(): Word {
-		return this.lect.getWord(
+		return this.lect.getProperWord(
 			this.homeland.index.toString(), WordType.PEOPLE);
 	}
 }

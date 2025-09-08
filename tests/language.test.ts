@@ -3,7 +3,6 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {
-	DEFAULT_STRESS,
 	Harmony,
 	SoundChange, StressPlacement,
 	Syllabicization,
@@ -255,6 +254,7 @@ describe("sound", () => {
 test("all together", () => {
 	const rng = new Random(0);
 	const phonemes = ipa("mnŋptkqʔbdɡfsxhzlrjwaiueoæɪʊɛɔyɯə");
+	const DEFAULT_STRESS = new StressPlacement(true, 1, 1, "lapse", true);
 	const DEFAULT_SYLLABIFICATION = new Syllabicization(0, -Infinity);
 	for (let i = 0; i < 100; i ++) {
 		let word: Sound[] = [];

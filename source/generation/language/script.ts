@@ -228,7 +228,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		}
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
 			for (let i = 0; i < sounds.length; i ++) // for this flag, go thru the original phonemick representacion
-				if (sounds[i].is(Quality.HIGH)
+				if (sounds[i].is(Quality.GLIDE)
 					&& (i + 1 >= sounds.length || sounds[i + 1].is(Silabia.NONSYLLABIC))) // find glides in codas
 					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]); // and change them to vowels
 		}
@@ -555,7 +555,12 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		allSymbols.push(symbols);
 	}
 
-	return allSymbols.join(TO_TEXT.get(style).get("word break"));
+	return allSymbols.join(TO_TEXT.get(style).get("morpheme break"));
+}
+
+
+export function getWordSeparator(style: string): string {
+	return TO_TEXT.get(style).get("word break");
 }
 
 

@@ -4,7 +4,7 @@
  */
 import {Random} from "../../utilities/random.js";
 import {Sound} from "./sound.js";
-import {DEFAULT_STRESS, WordProcess, PhraseProcess, WORD_PROCESS_OPTIONS, PHRASE_PROCESS_OPTIONS} from "./process.js";
+import {WordProcess, PhraseProcess, WORD_PROCESS_OPTIONS, PHRASE_PROCESS_OPTIONS, StressPlacement} from "./process.js";
 import {ipa} from "./script.js";
 import {Word} from "./word.js";
 import {Enumify} from "../../utilities/external/enumify.js";
@@ -72,7 +72,7 @@ function rollNewToponymClassifierStyle(rng: Random): ToponymClassifierStyle {
 		return { country: WordType.COUNTRY, people: WordType.GENERIC, language: WordType.LANGUAGE };
 	else if (p < 2/3)
 		return { country: WordType.COUNTRY, people: WordType.PEOPLE, language: WordType.GENERIC };
-	else if (p < 5/3)
+	else if (p < 5/6)
 		return { country: WordType.COUNTRY, people: WordType.ADJECTIVE, language: WordType.ADJECTIVE };
 	else
 		return { country: WordType.COUNTRY, people: WordType.PEOPLE, language: WordType.LANGUAGE };
@@ -103,7 +103,7 @@ function rollNewNameStyle(rng: Random, parent: NameStyle = null): NameStyle {
 	else
 		parentName = parent.parentName;
 	if (parent === null || rng.probability(DRIFT_RATE))
-		numFamilyNames = rng.probability(1/3) ? 0 : (rng.probability(3/4) ? 1 : 2);
+		numFamilyNames = rng.probability(1/2) ? 0 : (rng.probability(2/3) ? 1 : 2);
 	else
 		numFamilyNames = parent.numFamilyNames;
 	if (parent === null || rng.probability(DRIFT_RATE))
@@ -149,7 +149,7 @@ export abstract class Lect {
 	 * @param index the pseudorandom seed of the word
 	 * @param tipo the type of word
 	 */
-	abstract getWord(index: string, tipo: WordType): Word;
+	abstract getProperWord(index: string, tipo: WordType): Word;
 
 	/**
 	 * get the language that this was n timesteps ago
@@ -161,37 +161,39 @@ export abstract class Lect {
 	 * get a full personal name given a set of random seeds
 	 * @param seeds
 	 */
-	getFullName(seeds: number[]): Word {
+	getFullName(seeds: number[]): Word[] {
 		if (seeds.length !== MAX_NUM_NAME_PARTS)
 			throw new Error("wrong number of seeds");
 		// put in whatever components we want
-		const nameParts: Sound[][][] = [];
+		const nameParts: Word[] = [];
 		let seedIndex = 0;
 		for (let i = 0; i < this.nameStyle.numGivenNames; i ++) {
-			nameParts.push(this.getWord(`name${seeds[seedIndex]}`, WordType.GENERIC).parts);
+			nameParts.push(this.getProperWord(`name${seeds[seedIndex]}`, WordType.GENERIC));
 			seedIndex ++;
 		}
 		if (this.nameStyle.parentName) {
-			nameParts.push(this.getWord(`name${seeds[seedIndex]}`, WordType.PARENTAGE).parts);
+			nameParts.push(this.getProperWord(`name${seeds[seedIndex]}`, WordType.PARENTAGE));
 			seedIndex ++;
 		}
 		for (let i = 0; i < this.nameStyle.numFamilyNames; i ++) {
-			nameParts.push(this.getWord(`family${seeds[seedIndex]}`, WordType.FAMILY).parts);
+			nameParts.push(this.getProperWord(`family${seeds[seedIndex]}`, WordType.FAMILY));
 			seedIndex ++;
 		}
-		if (this.nameStyle.originName) {
-			nameParts.push(this.getWord("of", WordType.GRAMMATICAL_PARTICLE).parts);
-			nameParts.push(this.getWord(`place${seeds[seedIndex]}`, WordType.CITY).parts);
+		if (this.nameStyle.originName) { // this one requires "of" to be connected to the city name TODO use a real city name
+			const part = [
+				this.getProperWord("of", WordType.GRAMMATICAL_PARTICLE).parts[0],
+				[].concat(...this.getProperWord(`place${seeds[seedIndex]}`, WordType.CITY).parts),
+			];
+			if (!this.nameStyle.givenFirst)
+				part.reverse();
+			nameParts.push(new Word(part, this));
 		}
 
 		// account for variable name order
 		if (!this.nameStyle.givenFirst)
 			nameParts.reverse();
 
-		// remove spaces in individual components
-		const names = nameParts.map((parts) => [].concat(...parts));
-
-		return new Word(names, this);
+		return nameParts;
 	}
 
 	/**
@@ -204,7 +206,7 @@ export abstract class Lect {
 	}
 
 	getName(): Word {
-		return this.getWord(`place${this.homelandIndex}`, WordType.LANGUAGE);
+		return this.getProperWord(`place${this.homelandIndex}`, WordType.LANGUAGE);
 	}
 }
 
@@ -213,27 +215,29 @@ export abstract class Lect {
  */
 export class ProtoLect extends Lect {
 	private static VOWELS = ipa("aiueoəɛɔyø");
-	private static CONSON = ipa("mnptksljwhfbdɡrzŋʃʔxqvɣθʙ");
-	private static MEDIAL = ipa("ljwr");
-	private static R_INDEX = ProtoLect.CONSON.indexOf(ipa("r")[0]); // note the index of r, because it's phonotactically important
+	private static CONSON = ipa("mnptkshfbdɡzŋʃʔxqvɣθʙ");
+	private static MEDIAL = ipa("jwlr");
 
 	private static P_ONSET = 0.8;
-	private static P_MEDIAL = 0.4;
-	private static P_NUCLEUS = 2.0;
-	private static P_CODA = 0.4;
+	private static P_MEDIAL = 0.3;
+	private static P_CODA = 0.5;
 
 	/** whether this language prefers prefixen */
 	private readonly prefixing: boolean;
+	/** what stress rule does this language use */
+	private readonly stressRule: StressPlacement;
 	/** what kinds of suffixes to use for names of countries, peoples, and languages */
 	private readonly toponymAffixStyle: ToponymClassifierStyle;
 	/** the typical number of lexical suffixes used for one type of word */
 	private readonly diversity: number;
-	/** the number of consonants in this language */
-	private readonly nConson: number;
-	/** the number of vowels in this langugage */
-	private readonly nVowel: number;
-	/** the numer of medials in this language */
-	private readonly nMedial: number;
+	/** the onset consonants in this language */
+	private readonly onsets: Sound[];
+	/** the vowels in this language */
+	private readonly vowels: Sound[];
+	/** the medial consonants in this language */
+	private readonly medials: Sound[];
+	/** the codas in this language */
+	private readonly codas: Sound[];
 	/** the approximate amount of information in one syllable */
 	private readonly complexity: number;
 	/** the word references of each type */
@@ -242,6 +246,8 @@ export class ProtoLect extends Lect {
 	private readonly classifiers: Map<WordType, Sound[][]>;
 	/** the noun endings */
 	private readonly affixes: Map<PartOfSpeech, Sound[][]>;
+	/** the random number seed to use when composing original words */
+	private readonly seed: number;
 
 	constructor(year: number, homelandIndex: number, rng: Random) {
 		super(
@@ -249,24 +255,43 @@ export class ProtoLect extends Lect {
 			rollNewNameStyle(rng),
 			year,
 			homelandIndex);
+		this.seed = rng.next();
 		this.macrolanguage = this;
 
 		this.prefixing = rng.probability(0.2);
 		this.toponymAffixStyle = rollNewToponymClassifierStyle(rng);
 
-		this.nConson = 7 + rng.binomial(18, .5); // choose how many consonants the protolanguage will have
-		this.nVowel = 5 + rng.binomial(5, .1); // choose how many nuclei it will have
-		this.nMedial = (this.nConson > ProtoLect.R_INDEX) ? 4 : 0;
-		this.complexity = 2*Math.log10(1 + this.nConson)
-			+ Math.log10(1 + this.nMedial) + Math.log10(1 + this.nVowel);
+		// choose how many consonants the protolanguage will have
+		this.onsets = ProtoLect.CONSON.slice(0, 6 + rng.binomial(15, .4));
+		// choose how many nuclei it will have
+		this.vowels = ProtoLect.VOWELS.slice(0, 3 + rng.binomial(7, .3));
+		// choose how many medials it will have, and whether they can be used as medials
+		const medials = ProtoLect.MEDIAL.slice(0, 2 + rng.binomial(2, .5));
+		if (rng.probability(1/3)) {
+			this.onsets.push(...medials);
+			this.medials = [];
+		}
+		else {
+			this.medials = medials;
+		}
+		// choose whether syllables can have codas
+		if (rng.probability(2/3))
+			this.codas = this.onsets;
+		else
+			this.codas = [];
+		this.complexity = (
+			Math.log10(1 + this.onsets.length)*ProtoLect.P_ONSET +
+			Math.log10(1 + this.medials.length)*ProtoLect.P_MEDIAL +
+			Math.log10(this.vowels.length) +
+			Math.log10(1 + this.codas.length)*ProtoLect.P_CODA);
 
+		const numGenders = rng.probability(1/2) ? 0 : rng.discrete(2, 6);
 		this.affixes = new Map<PartOfSpeech, Sound[][]>();
 		for (let partOfSpeech = 0; partOfSpeech < 3; partOfSpeech ++) {
 			const affixes: Sound[][] = [];
 			if (partOfSpeech !== PartOfSpeech.NONE) {
-				const numGenders = rng.probability(1/2) ? 0 : rng.discrete(2, 6);
-				for (let i = 0; i < numGenders; i++) // choose how much basic suffixing to do
-					affixes.push(this.noveMul('fmncrh'[i], 0.5));
+				for (let i = 0; i < numGenders; i ++) // choose how much basic suffixing to do
+					affixes.push(this.getRoot('fmncrh'[i] + partOfSpeech.toString(), 0.6));
 			}
 			this.affixes.set(partOfSpeech, affixes);
 		}
@@ -279,16 +304,18 @@ export class ProtoLect extends Lect {
 			const classifiers: Sound[][] = [];
 			const numClassifiers = Math.round(this.diversity*(<WordType>wordType).numClassifiers);
 			for (let i = 0; i < numClassifiers; i++) { // TODO countries can be named after cities
-				classifiers.push(this.noveLoga(
-					`${classifierSeed}`, Math.max(1, 1.5/this.complexity),
+				classifiers.push(this.getCommonWord(
+					`${classifierSeed}`, Math.max(1, 3/this.complexity),
 					(<WordType>wordType).partOfSpeech));
 				classifierSeed++;
 			}
 			this.classifiers.set(<WordType>wordType, classifiers);
 		}
+
+		this.stressRule = new StressPlacement(!this.prefixing, 1, 1, 'lapse', false);
 	}
 
-	getWord(index: string, tipo: WordType): Word {
+	getProperWord(index: string, tipo: WordType): Word {
 		if (!this.word.get(tipo).has(index)) {
 			// decide what kind of classifier we should use (usually the one that directly corresponds to tipo but the toponym style can differ)
 			if (tipo === WordType.COUNTRY)
@@ -307,10 +334,10 @@ export class ProtoLect extends Lect {
 				baseForm = PartOfSpeech.NONE;
 
 			// get the base
-			const size = (tipo === WordType.GRAMMATICAL_PARTICLE) ? 1.0 : 4/this.complexity;
-			const base = this.noveLoga(index, Math.max(1, size), baseForm);
+			const size = (tipo === WordType.GRAMMATICAL_PARTICLE) ? 1 : Math.max(1, 5/this.complexity);
+			const base = this.getCommonWord(index, Math.max(1, size), baseForm);
 			if (base.length === 0)
-				throw new Error(`this new word is empty; it was supposed to have ${4/this.complexity} syllables`);
+				throw new Error(`this new word is empty; it was supposed to have ${size} syllables`);
 
 			// choose a classifier
 			let wordParts;
@@ -339,18 +366,18 @@ export class ProtoLect extends Lect {
 	 * @param syllables the number of syllables in the root
 	 * @param partOfSpeech the type of word to determine what if any ending it should get
 	 */
-	noveLoga(index: string, syllables: number, partOfSpeech: PartOfSpeech): Sound[] {
-		const root = this.noveMul(index, syllables);
+	getCommonWord(index: string, syllables: number, partOfSpeech: PartOfSpeech): Sound[] {
+		const root = this.getRoot(index, syllables);
 		if (this.affixes.get(partOfSpeech).length === 0)
-			return DEFAULT_STRESS.apply(root);
+			return this.stressRule.apply(root);
 		else {
 			const seed = decodeBase37(index);
 			const rng = new Random(seed);
 			const affix = rng.choice(this.affixes.get(partOfSpeech));
 			if (this.prefixing)
-				return DEFAULT_STRESS.apply(affix.concat(root));
+				return this.stressRule.apply(affix.concat(root));
 			else
-				return DEFAULT_STRESS.apply(root.concat(affix));
+				return this.stressRule.apply(root.concat(affix));
 		}
 	}
 
@@ -359,21 +386,27 @@ export class ProtoLect extends Lect {
 	 * @param index the pseudorandom seed for this root as a lowercase base-36 string
 	 * @param syllables the number of syllables in this root
 	 */
-	noveMul(index: string, syllables: number): Sound[] {
-		const seed = decodeBase37(index);
+	getRoot(index: string, syllables: number): Sound[] {
+		const seed = this.seed + decodeBase37(index);
 		const rng = new Random(seed);
-		const syllableNumber = Math.ceil(syllables);
-		const syllableSize = syllables/syllableNumber;
+		let syllableNumber, multiplier;
+		if (syllables > 1) {
+			syllableNumber = Math.round(syllables + rng.uniform(-1/2, 1/2));
+			multiplier = 1;
+		}
+		else {
+			syllableNumber = 1;
+			multiplier = syllables;
+		}
 		let mul = [];
-		for (let i = 0; i < syllableNumber; i++) {
-			if (rng.probability(ProtoLect.P_ONSET*syllableSize))
-				mul.push(rng.choice(ProtoLect.CONSON.slice(0, this.nConson)));
-			if (this.nMedial > 0 && rng.probability(ProtoLect.P_MEDIAL*syllableSize))
-				mul.push(rng.choice(ProtoLect.MEDIAL.slice(0, this.nMedial)));
-			if (rng.probability(ProtoLect.P_NUCLEUS*syllableSize))
-				mul.push(rng.choice(ProtoLect.VOWELS.slice(0, this.nVowel)));
-			if (rng.probability(ProtoLect.P_CODA*syllableSize))
-				mul.push(rng.choice(ProtoLect.CONSON.slice(0, this.nConson)));
+		for (let i = 0; i < syllableNumber; i ++) {
+			if (rng.probability(ProtoLect.P_ONSET*multiplier))
+				mul.push(rng.choice(this.onsets));
+			if (this.medials.length > 0 && rng.probability(ProtoLect.P_MEDIAL*multiplier))
+				mul.push(rng.choice(this.medials));
+			mul.push(rng.choice(this.vowels));
+			if (this.codas.length > 0 && rng.probability(ProtoLect.P_CODA*multiplier))
+				mul.push(rng.choice(this.codas));
 		}
 		return mul;
 	}
@@ -396,7 +429,9 @@ export class Dialect extends Lect {
 	private readonly phraseProcesses: PhraseProcess[];
 
 	constructor(parent: Lect, year: number, homelandIndex: number, rng: Random) {
-		super(parent.defaultTranscriptionStyle, rollNewNameStyle(rng, parent.nameStyle), year, homelandIndex);
+		super(
+			parent.defaultTranscriptionStyle, rollNewNameStyle(rng, parent.nameStyle),
+			year, homelandIndex);
 		this.parent = parent;
 		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 
@@ -410,8 +445,8 @@ export class Dialect extends Lect {
 				this.phraseProcesses.push(proces);
 	}
 
-	getWord(index: string, tipo: WordType) {
-		return this.applyChanges(this.parent.getWord(index, tipo));
+	getProperWord(index: string, tipo: WordType) {
+		return this.applyChanges(this.parent.getProperWord(index, tipo));
 	}
 
 	applyChanges(lekse: Word): Word {

@@ -372,7 +372,7 @@ export class Civ {
 	}
 
 	getName(): Word {
-		return this.language.getWord(
+		return this.language.getProperWord(
 			this.capital.index.toString(), WordType.COUNTRY);
 	}
 

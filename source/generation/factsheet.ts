@@ -14,6 +14,7 @@ import {Biome, BIOME_NAMES} from "./terrain.js";
 import TECHNOLOGIES from "../../resources/tech_tree.js";
 import {cloneNode, h, VNode} from "../gui/virtualdom.js";
 import {Random} from "../utilities/random.js";
+import {transcribePhrase} from "./language/word.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
@@ -442,7 +443,7 @@ function describe(culture: Culture, language: string, style: string): string {
 			let madeUpWord;
 			if (logaIndex !== null)
 				madeUpWord = culture.lect
-					.getWord(featureList[logaIndex].key, WordType.GENERIC)
+					.getProperWord(featureList[logaIndex].key, WordType.GENERIC)
 					.toString(style);
 			else
 				madeUpWord = null;
@@ -464,7 +465,9 @@ function describe(culture: Culture, language: string, style: string): string {
 		const seeds = [];
 		for (let j = 0; j < MAX_NUM_NAME_PARTS; j ++)
 			seeds.push(Math.floor(rng.uniform(0, 5*NUM_NAMES_TO_LIST)));
-		names.push(format(localize('grammar.mention', language), `${culture.lect.getFullName(seeds).toString(style)}`));
+		names.push(format(
+			localize('grammar.mention', language),
+			transcribePhrase(culture.lect.getFullName(seeds), style)));
 	}
 	str += format(
 		localize('factbook.demography.common_names', language),

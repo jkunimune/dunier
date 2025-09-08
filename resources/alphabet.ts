@@ -249,8 +249,10 @@ export default {
   "suprasegmentals": [
     { "name": "syllable break",
       "symbols": [".",  "",   "",   "",   "",   "",   "",   "",   "",   "",   ""] },
+    { "name": "morpheme break",
+      "symbols": [" ",  " ",  " ",  " ",  "-",  "・",  " ",  " ",  " ",  "",  "-"] },
     { "name": "word break",
-      "symbols": [" ",  " ",  " ",  " ",  "-",  "・",  " ",  " ",  " ",  " ",  "-"] }
+      "symbols": [" ",  " ",  " ",  " ",  " ",  "・",  " ",  " ",  " ",  " ",  " "] }
   ],
   "modifiers": [
     { "name": "long",
