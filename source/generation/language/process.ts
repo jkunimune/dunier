@@ -37,8 +37,9 @@ export class SoundChange implements WordProcess {
 	private readonly idx: number[]; // reference indices for target phones
 	private readonly pre: Klas[]; // requisite predecessor
 	private readonly post: Klas[]; // requisite follow-up
+	private readonly oneTimeUse: boolean; // whether it must only be applied to a word once
 
-	constructor(from: Klas[], to: Klas[], idx: number[], after: Klas[], before: Klas[]) {
+	constructor(from: Klas[], to: Klas[], idx: number[], after: Klas[], before: Klas[], oneTimeUse: boolean) {
 		if (idx.length !== to.length)
 			throw RangeError(`The pa array must be properly indexed: ${from} > ${to} / ${after} _ ${before}`);
 		this.pattern = from;
@@ -46,6 +47,7 @@ export class SoundChange implements WordProcess {
 		this.idx = idx;
 		this.pre = after;
 		this.post = before;
+		this.oneTimeUse = oneTimeUse;
 	}
 
 	/**
@@ -79,7 +81,12 @@ export class SoundChange implements WordProcess {
 					else
 						drowWen.push(this.result[j].apply()); // or drawing new segments from thin air
 				}
-				i -= this.pattern.length; // and jump to the next set of consonants
+				if (this.oneTimeUse) {
+					drowWen.push(...oldWord.slice(0, i - this.pattern.length).reverse());
+					break; // if we mustn't continue, skip to the end
+				}
+				else
+					i -= this.pattern.length; // otherwise, jump to the next set of consonants
 			}
 			else { // if not
 				i -= 1;
@@ -442,8 +449,9 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 				throw RangeError(`unintelligible symbol in '${code}': '${token}'`);
 			}
 		}
+		const oneTimeUse = code.includes("#");
 		WORD_PROCESS_OPTIONS.push({chanse: chance, proces:
-				new SoundChange(ca, pa, idx, bada, chena)});
+				new SoundChange(ca, pa, idx, bada, chena, oneTimeUse)});
 	}
 	else if (type === 'harmonia') {
 		const [leftPole, _, rightPole, scope] = code.split(" ");

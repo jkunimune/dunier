@@ -446,20 +446,17 @@ export class Dialect extends Lect {
 	}
 
 	getProperWord(index: string, tipo: WordType) {
-		return this.applyChanges(this.parent.getProperWord(index, tipo));
-	}
-
-	applyChanges(lekse: Word): Word {
+		const oldWord = this.parent.getProperWord(index, tipo);
 		const newParts = [];
-		for (let part of lekse.parts) {
+		for (let part of oldWord.parts) {
 			for (const change of this.wordProcesses)
 				part = change.apply(part);
 			newParts.push(part);
 		}
-		let newLekse = new Word(newParts, lekse.language);
+		let newWord = new Word(newParts, oldWord.language);
 		for (const change of this.phraseProcesses)
-			newLekse = change.apply(newLekse);
-		return newLekse;
+			newWord = change.apply(newWord);
+		return newWord;
 	}
 
 	getAncestor(n: number): Lect {

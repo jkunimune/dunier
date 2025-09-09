@@ -20,7 +20,7 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
 
 	const rng = new Random(seed);
 	let bax: Lect = new ProtoLect(0, 0, rng);
-	for (let i = 0; i < 30; i ++)
+	for (let i = 0; i < 40; i ++)
 		bax = new Dialect(bax, 0, 0, rng);
 
 	let nameSeed = 0;

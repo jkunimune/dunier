@@ -227,9 +227,11 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 					sounds[i + 1] = new Klas([Quality.MID]).apply(sounds[i + 1]); // and change it to ao
 		}
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
-			for (let i = 0; i < sounds.length; i ++) // for this flag, go thru the original phonemick representacion
-				if (sounds[i].is(Quality.GLIDE)
-					&& (i + 1 >= sounds.length || sounds[i + 1].is(Silabia.NONSYLLABIC))) // find glides in codas
+			for (let i = 1; i < sounds.length; i ++) // for this flag, go thru the original phonemick representacion
+				if (sounds[i - 1].is(Quality.VOWEL) && sounds[i].is(Quality.GLIDE)
+					&& (i + 1 >= sounds.length || sounds[i + 1].is(Silabia.NONSYLLABIC)) // find glides in codas
+					&& (sounds[i - 1].loke !== sounds[i].loke || sounds[i - 1].mode !== sounds[i].mode || sounds[i - 1].minorLoke !== sounds[i].minorLoke) // that differe from the preceeding vowel
+				)
 					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]); // and change them to vowels
 		}
 		if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
