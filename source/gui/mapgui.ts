@@ -354,16 +354,24 @@ function enforceAspectRatio(fixed: string, unit: string) {
 	const heightSpinner = DOM.elm(`map-height-${unit}`) as HTMLInputElement;
 	if (fixed === "width") {
 		const width = Number.parseFloat(widthSpinner.value);
-		heightSpinner.value = (Math.round(width/aspectRatio)).toString();
+		heightSpinner.value = Math.round(width/aspectRatio).toString();
 	}
 	else if (fixed === "height") {
 		const height = Number.parseFloat(heightSpinner.value);
-		widthSpinner.value = (Math.round(height*aspectRatio)).toString();
+		widthSpinner.value = Math.round(height*aspectRatio).toString();
 	}
 	else {
-		const area = Number.parseFloat(widthSpinner.value)*Number.parseFloat(heightSpinner.value);
-		widthSpinner.value = (Math.round(Math.sqrt(area*aspectRatio))).toString();
-		heightSpinner.value = (Math.round(Math.sqrt(area/aspectRatio))).toString();
+		const length = Math.max(
+			Number.parseFloat(widthSpinner.value),
+			Number.parseFloat(heightSpinner.value));
+		if (aspectRatio > 1) {
+			widthSpinner.value = length.toString();
+			heightSpinner.value = Math.round(length/aspectRatio).toString();
+		}
+		else {
+			heightSpinner.value = length.toString();
+			widthSpinner.value = Math.round(length*aspectRatio).toString();
+		}
 	}
 }
 

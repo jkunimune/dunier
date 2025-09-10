@@ -227,7 +227,7 @@ enum Layer {
  * @param projectionName the type of projection to choose – one of "equal_earth", "bonne", "conformal_conic", "mercator", or "orthographic"
  * @param regionOfInterest the map focus, for the purposes of tailoring the map projection and setting the bounds
  * @param orientationName the cardinal direction that should correspond to up – one of "north", "south", "east", or "west"
- * @param area the desired bounding box area in mm²
+ * @param maxDimension the bounding box size in mm
  * @param colorSchemeName the color scheme
  * @param rivers whether to add rivers
  * @param borders whether to add state borders
@@ -245,7 +245,7 @@ enum Layer {
  */
 export function depict(surface: Surface, continents: Set<Tile>[] | null, world: World | null,
                        projectionName: string, regionOfInterest: Set<Tile>,
-                       orientationName: string, area: number,
+                       orientationName: string, maxDimension: number,
                        colorSchemeName: string,
                        resources: Map<string, string>, characterWidthMap: Map<string, number>,
                        rivers = false, borders = false,
@@ -340,13 +340,13 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 
 	const rawBbox = new Dimensions(xLeft, xRight, yTop, yBottom);
 
+	// expand the Chart dimensions by a couple millimeters on each side to give the edge some breathing room
+	const margin = Math.max(2.1, maxDimension/50);
+
 	// determine the appropriate scale to make this have the correct area
-	const scale = Math.sqrt(area/rawBbox.area); // mm/km
+	const scale = (maxDimension - 2*margin)/Math.max(rawBbox.width, rawBbox.height); // mm/km
 
 	const transform = new Transform(projection, geoEdges, mapEdges, orientation, scale);
-
-	// expand the Chart dimensions by a couple millimeters on each side to give the edge some breathing room
-	const margin = Math.max(2.1, rawBbox.diagonal*scale/100);
 
 	// adjust the bounding box to account for rotation, scale, and margin
 	const bbox = rawBbox.rotate(orientation).scale(scale).offset(margin);
