@@ -42,12 +42,14 @@ enum Layer {
 	FACTBOOK
 }
 
-/** which level of the model currently has all input changes applied */
-let lastUpdated = Layer.NONE;
+/** which levels of the model are up to date */
+let latestUpdated = Layer.NONE;
+/** which levels of the model will be up to date if the current model succeeds */
+let latestUpdating = Layer.NONE;
 /** whether the plotly image is up to date with the model */
 let planetRendered = false;
 /** whether a process is currently running */
-let inProgress: boolean = false; // TODO; I can't remember why this is here; if I click forward in the tabs while it's loading, does everything update?
+let inProgress: boolean = false;
 /** the number of alerts that have been posted */
 let alertCounter: number = 0;
 
@@ -62,9 +64,13 @@ const worker = new Worker("/source/gui/mapgenerator.js", {type: "module"});
 
 
 function updateEverythingUpTo(target: Layer) {
+	if (inProgress) // don't ask the worker to do multiple things at once, or the state will get confused.
+		return; // just wait and let the user click the update button agen.
+
 	disableButtons();
 
-	const planetType = DOM.val('planet-type'); // read input
+	// get all the inputs
+	const planetType = DOM.val('planet-type');
 	const tidallyLocked = DOM.checked('planet-locked');
 	const radius = Number(DOM.val('planet-size')) / (2*Math.PI);
 	const gravity = Number(DOM.val('planet-gravity')) * 9.8;
@@ -93,8 +99,12 @@ function updateEverythingUpTo(target: Layer) {
 	const civLabels = DOM.checked('map-political-labels');
 	const style = DOM.val('map-spelling');
 
+	// preemptively determine how up to date the model will be when this finishes
+	latestUpdating = Math.max(latestUpdated, target);
+
+	// send them to the worker thread and start waiting
 	worker.postMessage([
-		LANGUAGE, lastUpdated, target,
+		LANGUAGE, latestUpdated, target,
 		planetType, tidallyLocked, radius, gravity, spinRate, obliquity,
 		terrainSeed, numContinents, seaLevel, temperature,
 		historySeed, cataclysms, year,
@@ -106,18 +116,12 @@ function updateEverythingUpTo(target: Layer) {
 
 
 worker.onmessage = (message) => {
-	let planetData: { x: number[][], y: number[][], z: number[][], I: number[][] };
-	let terrainMap: string;
-	let historyMap: string;
-	let map: string;
-	let factbook: string;
-	let focusOptions: {value: string, label: string}[];
-	let selectedFocusOption: string;
-	[
-		lastUpdated,
+	let [
 		planetData, terrainMap, historyMap, map, factbook,
 		focusOptions, selectedFocusOption,
 	] = message.data;
+
+	latestUpdated = latestUpdating; // update the state
 
 	if (planetData !== null && !planetRendered && !DOM.elm('planet-panel').hasAttribute("hidden")) {
 		// show a 3D model of the planet
@@ -456,32 +460,28 @@ for (const suffix of ['apply', 'tab']) {
 	 * When the planet button is clicked, call its function.
 	 */
 	DOM.elm(`planet-${suffix}`).addEventListener('click', () => {
-		if (!inProgress)
-			updateEverythingUpTo(Layer.PLANET);
+		updateEverythingUpTo(Layer.PLANET);
 	});
 
 	/**
 	 * When the terrain tab or button is clicked, do its thing
 	 */
 	DOM.elm(`terrain-${suffix}`).addEventListener('click', () => {
-		if (!inProgress)
-			updateEverythingUpTo(Layer.TERRAIN);
+		updateEverythingUpTo(Layer.TERRAIN);
 	});
 
 	/**
 	 * When the history tab or button is clicked, activate its purpose.
 	 */
 	DOM.elm(`history-${suffix}`).addEventListener('click', () => {
-		if (!inProgress)
-			updateEverythingUpTo(Layer.HISTORY);
+		updateEverythingUpTo(Layer.HISTORY);
 	});
 
 	/**
 	 * When the map tab or button is clicked, reveal its true form.
 	 */
 	DOM.elm(`map-${suffix}`).addEventListener('click', () => {
-		if (!inProgress)
-			updateEverythingUpTo(Layer.MAP);
+		updateEverythingUpTo(Layer.MAP);
 	});
 }
 
@@ -489,8 +489,7 @@ for (const suffix of ['apply', 'tab']) {
  * When the factbook tab is clicked, generate the factbook.
  */
 DOM.elm('factbook-tab').addEventListener('click', () => {
-	if (!inProgress)
-		updateEverythingUpTo(Layer.FACTBOOK);
+	updateEverythingUpTo(Layer.FACTBOOK);
 });
 
 /**
@@ -567,8 +566,9 @@ for (const { layer, name } of tabs) {
 		const tagName = element.tagName.toLowerCase();
 		if (tagName === 'input' || tagName === 'select') {
 			element.addEventListener('change', () => {
-				lastUpdated = Math.min(lastUpdated, layer - 1);
-				if (lastUpdated < Layer.PLANET)
+				latestUpdated = Math.min(latestUpdated, layer - 1);
+				latestUpdating = Math.min(latestUpdating, layer - 1);
+				if (layer <= Layer.PLANET)
 					planetRendered = false;
 			});
 		}
@@ -582,6 +582,5 @@ for (const { layer, name } of tabs) {
 document.addEventListener("DOMContentLoaded", () => {
 	console.log("measuring the map font...");
 	characterWidthMap = measureAllCharacters();
-	console.log("ready!");
 	(DOM.elm('map-tab') as HTMLElement).click();
 }); // TODO: warn before leaving page

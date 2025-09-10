@@ -77,10 +77,11 @@ loadSVGResources(
 	"textures/shrub_0", "textures/shrub_1", "textures/shrub_2", "textures/shrub_3",
 	"textures/spruce_0", "textures/spruce_1", "textures/spruce_2", "textures/spruce_3",
 ).then(() => {
+	ready = true;
+	console.log("ready!");
 	// when you're done, retroactively deal with any messages we've received and cached
 	for (const message of messageQueue)
 		generateFantasyMap(message.data);
-	ready = true;
 });
 
 
@@ -161,7 +162,6 @@ function generateFantasyMap(args: any[]): void {
 		factbook = applyFactbook(map, mappedCivs, tidallyLocked, language, style);
 
 	postMessage([
-		Math.max(lastUpdated, target),
 		surface.parameterize(18),
 		(terrainMap !== null) ? toXML(terrainMap) : null,
 		(historyMap !== null) ? toXML(historyMap) : null,
