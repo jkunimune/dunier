@@ -532,13 +532,10 @@ export default [
     "code": "[ +OBSTR ] > [ +TENUIS ] / _ [ -VOICE ]"
   }, {
     "chance": 0.020, "type": "mute", "comment": "get rid of voiceless sonorants",
-    "code": "[ -VOICE +SONOR ] > [ +FRIC ] /"
+    "code": "[ -VOICE +SONOR -VOCOID ] > [ +FRIC ] /"
   }, {
     "chance": 0.020, "type": "mute", "comment": "get rid of voiceless sonorants",
     "code": "[ -VOICE +SONOR ] > [ +VOICE ] /"
-  }, {
-    "chance": 0.020, "type": "mute", "comment": "get rid of voiceless sonorants",
-    "code": "[ -VOICE +SONOR ] > [ +TENUIS +GLOT +FRIC ] /"
   }, {
     "chance": 0.005, "type": "mute", "comment": "r-dropping",
     "code": "[ -SYLLAB +RHOTIC ] > ə̯ / _ [ -VOWEL ]"

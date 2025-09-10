@@ -173,9 +173,15 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
 					graf = graf.replace('x', x);
 				}
 			}
-			if (diacritic.includes('Y')) {
+			if (diacritic.includes('Y') || diacritic.includes('y')) {
 				let Y = lookUp(baziFon[1], style, i + 1);
 				graf = graf.replace('Y', Y);
+				if (diacritic.includes('y')) {
+					let y = Y.slice(0, 1);
+					if (baziFon[1].mode === Mode.AFFRICATE)
+						y = lookUp(baziFon[1].with(Mode.STOP), style, i + 1).slice(0, 1);
+					graf = graf.replace('y', y);
+				}
 			}
 			return graf;
 		}
@@ -299,6 +305,13 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		}
 		// apply latin spelling rules
 		if (style === 'la') {
+			// apply these special rules to try to make ʃ and t͡ʃ look nice
+			symbols = symbols.replace(/š([eij])/g, "sc$1");
+			symbols = symbols.replace(/š([aou])/g, "sci$1");
+			symbols = symbols.replace(/š/g, "s");
+			symbols = symbols.replace(/č([eij])/g, "c$1");
+			symbols = symbols.replace(/č([aou])/g, "ci$1");
+			symbols = symbols.replace(/č/g, "s");
 			// forbid double j
 			symbols = symbols.replace(/jj/g, "j");
 			// forbid double v
@@ -313,6 +326,11 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			// change v to u adjacent to consonants
 			symbols = symbols.replace(/([^aeijouv̄])v/g, "$1u");
 			symbols = symbols.replace(/v([^aeijouv̄])/g, "u$1");
+			// make things look like latin words if it's convenient to do so
+			symbols = symbols.replace(/[uo]$/g, "um");
+			symbols = symbols.replace(/[e]$/g, "a");
+			symbols = symbols.replace(/[i]$/g, "ia");
+			symbols = symbols.replace(/[o]s$/g, "us");
 		}
 		// apply spanish spelling rules
 		if (style === 'es') {

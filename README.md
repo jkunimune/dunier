@@ -40,7 +40,7 @@ This repository contains the following files and directories, among others.
 - `resources/` – all other files used by the webpage at runtime
   - `style.css` – the main stylesheet
   - `processes.ts` – the list of phonological changes languages can undergo
-  - `alphabet.ts` – the table of graphemes defining the different transcription styles
+  - `alphabet.ts` – the table of graphemes defining the different transcription styles' basic character mappings
   - `rules_en.ts` – the list of special rules needed for the "English" transcription style
   - `rules_ja.ts` – the katakana table, to be used for the "English" transcription style
   - `culture.ts` – the specification of how to construct and describe fictional cultures
