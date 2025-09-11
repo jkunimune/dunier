@@ -341,7 +341,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	const rawBbox = new Dimensions(xLeft, xRight, yTop, yBottom);
 
 	// expand the Chart dimensions by a couple millimeters on each side to give the edge some breathing room
-	const margin = Math.max(2.1, maxDimension/50);
+	const margin = Math.max(1.2, maxDimension/50);
 
 	// determine the appropriate scale to make this have the correct area
 	const scale = (maxDimension - 2*margin)/Math.max(rawBbox.width, rawBbox.height); // mm/km
@@ -406,7 +406,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		areaFeatures.push(...fillMultiple(
 			[...surface.tiles].map(tile => new Set([tile])), COUNTRY_COLORS, null, null,
 			transform, createSVGGroup(svg, "tiles"), Layer.GEO,
-			colorScheme.waterStroke, 0.35));
+			colorScheme.waterStroke, 0.2));
 	}
 	else if (colorSchemeName === 'physical') {
 		// color the land by biome
@@ -444,7 +444,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	if (rivers) {
 		lineFeatures.push(drawRivers(
 			surface.rivers, RIVER_DISPLAY_FACTOR/scale**2,
-			transform, svg, colorScheme.waterStroke, 1.4, Layer.GEO));
+			transform, svg, colorScheme.waterStroke, 0.8, Layer.GEO));
 	}
 
 	// also color in sea-ice if desired
@@ -459,7 +459,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		if (world === null)
 			throw new Error("this Chart was asked to draw political borders but the provided World was null");
 		lineFeatures.push(...drawBorders(
-			world.getCivs(), transform, createSVGGroup(svg, "borders"), colorScheme.primaryStroke, 0.7));
+			world.getCivs(), transform, createSVGGroup(svg, "borders"), colorScheme.primaryStroke, 0.4));
 	}
 
 	// add relief shadows
@@ -478,11 +478,11 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		areaFeatures.push(...fillChoropleth(
 			sea, n => -n.height, DEPTH_STEP, DEPTH_COLORS,
 			transform, createSVGGroup(svg, "sea-contours"), Layer.GEO)); // TODO: enforce contiguity of shallow ocean?
-		fill(sea, transform, svg, "none", Layer.GEO, colorScheme.waterStroke, 0.7);
+		fill(sea, transform, svg, "none", Layer.GEO, colorScheme.waterStroke, 0.4);
 	}
 	else {
 		// color in the sea with a uniform color
-		fill(sea, transform, svg, colorScheme.waterFill, Layer.GEO, colorScheme.waterStroke, 0.7);
+		fill(sea, transform, svg, colorScheme.waterFill, Layer.GEO, colorScheme.waterStroke, 0.4);
 	}
 
 	// add some horizontal hatching around the coast
@@ -491,7 +491,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			filterSet(surface.tiles, t => !sea.has(t)), transform, createSVGGroup(svg, "sea-texture"),
 			(colorScheme.waterStroke !== colorScheme.waterFill) ?
 				colorScheme.waterStroke : colorScheme.secondaryStroke,
-			0.35, 1.2, 3.0);
+			0.3, 1.0, 3.0);
 	}
 
 	// add some terrain elements for texture
@@ -499,7 +499,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		drawTexture(
 			surface.tiles, lineFeatures, areaFeatures,
 			transform, createSVGGroup(svg, "land-texture"),
-			colorScheme.landFill, colorScheme.secondaryStroke, 0.35,
+			colorScheme.landFill, colorScheme.secondaryStroke, 0.3,
 			resources);
 	}
 
@@ -507,7 +507,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	if (graticule) {
 		drawGraticule(
 			surface, {φMin, φMax, λMin, λMax},
-			transform, createSVGGroup(svg, "graticule"), colorScheme.primaryStroke, 0.35);
+			transform, createSVGGroup(svg, "graticule"), colorScheme.primaryStroke, 0.2);
 	}
 
 	// label everything
@@ -535,7 +535,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	}
 
 	// add a margin and outline to the whole thing
-	drawOuterBorder(bbox, transform, svg, "white", "black", 1.4);
+	drawOuterBorder(bbox, transform, svg, "white", "black", 0.8);
 
 	// add the windrose
 	if (windrose) {
