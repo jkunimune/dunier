@@ -173,7 +173,7 @@ function lookUp(sound: Sound, style: string, level: number = 0): string {
 					graf = graf.replace('x', x);
 				}
 			}
-			if (diacritic.includes('Y') || diacritic.includes('y')) {
+			if (baziFon.length >= 2 && (diacritic.includes('Y') || diacritic.includes('y'))) {
 				let Y = lookUp(baziFon[1], style, i + 1);
 				graf = graf.replace('Y', Y);
 				if (diacritic.includes('y')) {

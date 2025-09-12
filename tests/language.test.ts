@@ -20,7 +20,8 @@ describe("process", () => {
 				[new Klas([Voze.VOICED])],
 				[0],
 				[new Klas([Quality.VOCOID])],
-				[new Klas([Quality.VOCOID])]);
+				[new Klas([Quality.VOCOID])],
+				false);
 			const word = ipa("tadalatat");
 			const result = change.apply(word);
 			expect(transcribe([result], "ipa")).toEqual("ta.da.la.dat");
@@ -30,7 +31,7 @@ describe("process", () => {
 				[new Klas([Silabia.NONSYLLABIC])],
 				[new Klas([], [], ["minorLoke"])],
 				[0],
-				[new Klas([Quality.VOWEL]), new Klas([Quality.CORONAL])], []);
+				[new Klas([Quality.VOWEL]), new Klas([Quality.CORONAL])], [], false);
 			const word = ipa("uɫtw");
 			const result = change.apply(word);
 			expect(transcribe([result], "ipa")).toEqual("uɫtˠw");
@@ -40,7 +41,7 @@ describe("process", () => {
 				[new Klas([Quality.OBSTRUENT])],
 				[new Klas([], [], ["voze"])],
 				[0],
-				[], [new Klas([Quality.OBSTRUENT]), new Klas([Quality.VOWEL])]);
+				[], [new Klas([Quality.OBSTRUENT]), new Klas([Quality.VOWEL])], false);
 			const word = ipa("stɡa");
 			const result = change.apply(word);
 			expect(transcribe([result], "ipa")).toEqual("sdɡa");
@@ -50,7 +51,7 @@ describe("process", () => {
 				[new Klas([]), new Klas([])],
 				[new Klas([], [], ["loke"]), new Klas([], [], ["loke"])],
 				[0, 1],
-				[], []);
+				[], [], false);
 			const word = ipa("ms");
 			const result = change.apply(word);
 			expect(transcribe([result], "ipa")).toEqual("nɸ");
@@ -60,7 +61,7 @@ describe("process", () => {
 				[new Klas([]), new Klas([])],
 				[new Klas([], [], ["loke"]), new Klas([], [], ["loke"])],
 				[1, 0],
-				[], []);
+				[], [], false);
 			const word = ipa("ms");
 			const result = change.apply(word);
 			expect(transcribe([result], "ipa")).toEqual("ɸn");
@@ -169,7 +170,7 @@ describe("script", () => {
 			expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Вивигягвагвигагифафикаки-Тиейт");
 		});
 		test("la", () => {
-			expect(transcribe(words, "la")).toEqual("Nsctarc Nuijen Jūn Vivigiaguaguigagithathicaci Tieit");
+			expect(transcribe(words, "la")).toEqual("Nstarc Nuijen Jūn Vivigiaguaguigagithathicacia Tieit");
 		});
 	});
 });
