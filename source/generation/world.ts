@@ -129,7 +129,7 @@ export class World {
 						if (!invader.tileTree.has(neighbor)) {
 							time = time + rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
 							if (time <= stop_time) {
-								invasions.push({time: time, invader: invader, start: end, end: neighbor});
+								invasions.push({time: time, invader: invader, start: conquerdLand, end: neighbor});
 							}
 						}
 					}

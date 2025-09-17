@@ -289,7 +289,7 @@ export class Civ {
 	}
 
 	/**
-	 * get all of the tiles that fall anywhere below this one on the tile tree.
+	 * get all of the tiles that fall anywhere below this one on the tile tree, including itself.
 	 * if this tile falls, all of these children will fall with it.
 	 */
 	getAllChildrenOf(tile: Tile): Iterable<Tile> {
