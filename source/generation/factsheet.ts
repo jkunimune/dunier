@@ -193,11 +193,13 @@ function addGeographySection(page: VNode, topic: Civ, tidalLock: boolean, langua
 	const adjacentLand: Set<Tile> = new Set();
 	const adjacentWater: Set<Tile> = new Set();
 	for (const borderTile of topic.border.keys()) {
-		for (const adjacentTile of topic.border.get(borderTile)) {
-			if (borderTile.isWater() || adjacentTile.isWater())
-				adjacentWater.add(adjacentTile);
-			else
-				adjacentLand.add(adjacentTile);
+		for (const adjacentTile of borderTile.neighbors.keys()) {
+			if (topic !== adjacentTile.government) {
+				if (borderTile.isWater() || adjacentTile.isWater())
+					adjacentWater.add(adjacentTile);
+				else
+					adjacentLand.add(adjacentTile);
+			}
 		}
 	}
 	const numLandBorders = adjacentLand.size;

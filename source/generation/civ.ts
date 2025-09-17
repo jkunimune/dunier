@@ -32,7 +32,7 @@ export class Civ {
 	/** the tiles it owns (maybe some it doesn't) from least to most densely populated */
 	public readonly sortedTiles: Queue<Tile>;
 	/** the set of tiles it owns that are adjacent to tiles it doesn't */
-	public readonly border: Map<Tile, Set<Tile>>;
+	public readonly border: Set<Tile>;
 	public readonly world: World;
 	/** the language last spoken by this Civ's ruling class */
 	public language: Lect;
@@ -62,13 +62,13 @@ export class Civ {
 	 * @param rng th random number generator to use to set Civ properties
 	 * @param technology the starting technological multiplier
 	 */
-	constructor(capital: Tile, id: number, world: World, birthYear: number, rng: Random, technology: number = 1) {
+	constructor(capital: Tile, id: number, world: World, birthYear: number, rng: Random, technology: number) {
 		this.world = world;
 		this.id = id;
 		this.tileTree = new Map<Tile, {parent: Tile | null, children: Set<Tile>}>();
 		this.sortedTiles = new Queue<Tile>(
 			[], (a, b) => b.arableArea - a.arableArea);
-		this.border = new Map<Tile, Set<Tile>>();
+		this.border = new Set<Tile>();
 
 		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
 		this.technology = technology;
@@ -111,22 +111,7 @@ export class Civ {
 		this._conquer(tile, from, loser, year);
 
 		if (loser !== null)
-			loser.lose(tile); // do the opposite upkeep for the other gy
-
-		for (const newLand of this.getAllChildrenOf(tile)) {
-			for (const neighbor of newLand.neighbors.keys()) {
-				if (this.border.has(neighbor) && this.border.get(neighbor).has(newLand)) {
-					this.border.get(neighbor).delete(newLand);
-					if (this.border.get(neighbor).size === 0)
-						this.border.delete(neighbor);
-				}
-				else if (!this.tileTree.has(neighbor)) {
-					if (!this.border.has(newLand))
-						this.border.set(newLand, new Set<Tile>()); // finally, adjust the border map as necessary
-					this.border.get(newLand).add(neighbor);
-				}
-			}
-		}
+			loser.lose(tile, year); // do the opposite upkeep for the other gy
 
 		if (this.getLandArea() >= this.peak.landArea) {
 			this.peak = {year: year, landArea: this.getLandArea()};
@@ -137,11 +122,32 @@ export class Civ {
 	 * do all the parts of conquer that happen recursively
 	 */
 	_conquer(tile: Tile, from: Tile | null, loser: Civ, year: number) {
+		// update tile.government, this.tileTree, and this.sortedTiles
 		tile.government = this;
 		this.tileTree.set(tile, {parent: from, children: new Set()}); // add it to this.tileTree
 		if (from !== null)
 			this.tileTree.get(from).children.add(tile); // add it to from's children
 		this.sortedTiles.push(tile);
+
+		// update this.border
+		let numForenNeibors = 0;
+		for (const neibor of tile.neighbors.keys())
+			if (this !== neibor.government)
+				numForenNeibors ++;
+		if (numForenNeibors > 0)
+			this.border.add(tile);
+		for (const neibor of tile.neighbors.keys()) {
+			if (this.border.has(neibor)) {
+				let numForenNeibors = 0;
+				for (const neiborNeibor of neibor.neighbors.keys())
+					if (this !== neiborNeibor.government)
+						numForenNeibors ++;
+				if (numForenNeibors === 0)
+					this.border.delete(neibor);
+			}
+		}
+
+		// update this.totalArea
 		this.totalArea += tile.getArea();
 		if (!tile.isSaltWater())
 			this.landArea += tile.getArea();
@@ -178,28 +184,14 @@ export class Civ {
 	/**
 	 * do the upkeep required for this to officially lose tile.
 	 * @param tile the land being taken
+	 * @param year the year the land was taken
 	 */
-	lose(tile: Tile) {
+	lose(tile: Tile, year: number) {
 		if (!this.tileTree.has(tile))
 			throw new Error("You tried to make a Civ lose a tile that it does not have.");
-		for (const lostLand of this.getAllChildrenOf(tile)) { // start by going thru and updating the border map
-			if (this === lostLand.government) // and update the global political map
-				lostLand.government = null;
-		}
-		for (const lostLand of this.getAllChildrenOf(tile)) { // adjust the border map
-			for (const neighbor of lostLand.neighbors.keys()) {
-				if (this === neighbor.government) {
-					if (!this.border.has(neighbor))
-						this.border.set(neighbor, new Set<Tile>());
-					this.border.get(neighbor).add(lostLand);
-				}
-			}
-			this.border.delete(lostLand);
-		}
-
-		this._lose(tile); // remove it and all its children from this.tiles
+		this._lose(tile, year); // remove it and all its children from this.tiles
 		while (!this.sortedTiles.empty() && !this.tileTree.has(this.sortedTiles.peek()))
-			this.sortedTiles.pop(); // remove it from this.sortedTiles as well if it happens to be on top
+			this.sortedTiles.pop(); // remove them from this.sortedTiles as well if they happen to be on top
 		if (this.tileTree.size === 0)
 			this.arableArea = 0;
 	}
@@ -207,14 +199,32 @@ export class Civ {
 	/**
 	 * do all the parts of lose that happen recursively
 	 */
-	_lose(tile: Tile) {
+	_lose(tile: Tile, year: number) {
+		// start by propagating this call to all children
 		const {parent, children} = this.tileTree.get(tile);
-		for (const child of children)
-			this._lose(child);
+		for (const child of children) {
+			// when we propagate to something that has not yet been claimed, spawn a new civ
+			if (child.government === this && child.arableArea > 0)
+				this.world.addCiv(child, year, this.technology);
+			// otherwise just lose the child tiles
+			else
+				this._lose(child, year);
+		}
+		// update this.tileTree and tile.government
 		if (parent !== null)
 			this.tileTree.get(parent).children.delete(tile);
 		this.tileTree.delete(tile);
+		if (this === tile.government)
+			tile.government = null;
 
+		// update this.border
+		if (this.border.has(tile))
+			this.border.delete(tile);
+		for (const neibor of tile.neighbors.keys())
+			if (this === neibor.government && !this.border.has(neibor))
+				this.border.add(neibor);
+
+		// updated this.totalArea
 		this.totalArea -= tile.getArea();
 		if (!tile.isSaltWater())
 			this.landArea -= tile.getArea();

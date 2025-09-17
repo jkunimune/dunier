@@ -279,11 +279,10 @@ function applyHistory(seed: number, cataclysms: number, year: number): [World, V
 	console.log("jena histore...");
 	const world = new World(
 		cataclysms,
-		surface);
-	let rng = new Random(seed); // use the random seed
+		surface,
+		seed);
 	world.generateHistory(
-		year,
-		rng); // create the terrain!
+		year); // create the terrain!
 
 	console.log("grafa...");
 	const projection = (surface.maximumCurvature() === 0) ? "orthographic" : "equal_earth";

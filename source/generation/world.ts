@@ -43,13 +43,15 @@ export class World {
 	public readonly cataclysms: number;
 	public planet: Surface;
 	private readonly civs: Set<Civ>;
+	private readonly rng: Random;
 	private nextID: number;
 
 
-	constructor(cataclysms: number, planet: Surface) {
+	constructor(cataclysms: number, planet: Surface, seed: number) {
 		this.cataclysms = cataclysms;
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
+		this.rng = new Random(seed);
 		this.nextID = 1;
 
 		// clear these variables, which may be carried over from previous Worlds
@@ -62,39 +64,36 @@ export class World {
 	/**
 	 * populate the World with all the civs and stuff.
 	 * @param year the number of years to simulate
-	 * @param rng the random number generator to use
 	 */
-	generateHistory(year: number, rng: Random) {
+	generateHistory(year: number) {
 		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
-			this.spawnCivs(t, rng); // TODO: build cities
-			this.spreadCivs(t, t + TIME_STEP, rng);
+			this.spawnCivs(t); // TODO: build cities
+			this.spreadCivs(t, t + TIME_STEP);
 			this.spreadIdeas();
 			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
-				this.haveCataclysm(t + TIME_STEP, rng);
+				this.haveCataclysm(t + TIME_STEP);
 			for (const civ of this.civs)
 				if (civ.tileTree.size > 0)
-					civ.update(t + TIME_STEP, rng);
+					civ.update(t + TIME_STEP, this.rng);
 		}
 	}
 
 	/**
 	 * generate a few new civs in uninhabited territory
 	 * @param year the end of the time-step in which these are spawning
-	 * @param rng the random number generator to use
 	 */
-	spawnCivs(year: number, rng: Random) {
+	spawnCivs(year: number) {
 		for (const tile of this.planet.tiles) {
 			const demomultia = POPULATION_DENSITY*tile.arableArea;
 			const ruler = tile.government;
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
-				if (rng.probability(CIVILIZATION_RATE*TIME_STEP*demomultia))
-					this.civs.add(new Civ(tile, this.nextID, this, year, rng));
+				if (this.rng.probability(CIVILIZATION_RATE*TIME_STEP*demomultia))
+					this.addCiv(tile, year, 1);
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
-				if (rng.probability(REBELLION_RATE*TIME_STEP*demomultia)) // use the population without technology correction for balancing
-					this.civs.add(new Civ(tile, this.nextID, this, year, rng, ruler.technology));
+				if (this.rng.probability(REBELLION_RATE*TIME_STEP*demomultia)) // use the population without technology correction for balancing
+					this.addCiv(tile, year, ruler.technology);
 			}
-			this.nextID ++;
 		}
 	}
 
@@ -102,17 +101,18 @@ export class World {
 	 * expand the territories of expansionist civs
 	 * @param start_time the year in which we start this timestep
 	 * @param stop_time the year in which we freeze the borders
-	 * @param rng the random number generator to use
 	 */
-	spreadCivs(start_time: number, stop_time: number, rng: Random) {
+	spreadCivs(start_time: number, stop_time: number) {
 		const invasions: Queue<{time: number, invader: Civ, start: Tile, end: Tile}> = new Queue(
 			[], (a, b) => a.time - b.time); // keep track of all current invasions
 		for (const invader of this.civs) {
 			for (const ourTile of invader.border.keys()) { // each civ initiates all its invasions
-				for (const theirTile of invader.border.get(ourTile)) {
-					const time = start_time + rng.exponential(invader.estimateInvasionTime(ourTile, theirTile)); // figure out when they will be done
-					if (time <= stop_time) // if that goal is within reach
-						invasions.push({time: time, invader: invader, start: ourTile, end: theirTile}); // start on it
+				for (const theirTile of ourTile.neighbors.keys()) {
+					if (invader !== theirTile.government) {
+						const time = start_time + this.rng.exponential(invader.estimateInvasionTime(ourTile, theirTile)); // figure out when they will be done
+						if (time <= stop_time) // if that goal is within reach
+							invasions.push({time: time, invader: invader, start: ourTile, end: theirTile}); // start on it
+					}
 				}
 			}
 		}
@@ -149,10 +149,10 @@ export class World {
 		const visibleTechnology: Map<Civ, number> = new Map(); // how much advanced technology can they access?
 		for (const civ of this.civs) {
 			visibleTechnology.set(civ, civ.technology); // well, any technology they _have_, for one
-			for (const tiles of civ.border.values()) { // check our borders
-				for (const tile of tiles) {
+			for (const borderTile of civ.border) { // check our borders
+				for (const tile of borderTile.neighbors.keys()) {
 					const other = tile.government;
-					if (other !== null && other.technology > visibleTechnology.get(civ)) { // if they have something we don't
+					if (other !== null && other !== civ && other.technology > visibleTechnology.get(civ)) { // if they have something we don't
 						visibleTechnology.set(civ, other.technology); // if so, we can access their technology
 					}
 				}
@@ -169,12 +169,12 @@ export class World {
 	 * devastate the entire world. the details of how are fuzzy, but in a nutshell half of all people die (well, more
 	 * accurately, 80% of all provinces are depopulated, and 80% of all technologies are lost.
 	 */
-	haveCataclysm(year: number, rng: Random) {
+	haveCataclysm(year: number) {
 		for (const civ of this.civs) {
 			for (const tile of [...civ.tileTree.keys()])
-				if (civ.tileTree.has(tile) && !rng.probability(APOCALYPSE_SURVIVAL_RATE))
-					civ.lose(tile);
-			civ.technology *= rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE)*2, 1);
+				if (civ.tileTree.has(tile) && !this.rng.probability(APOCALYPSE_SURVIVAL_RATE))
+					civ.lose(tile, year);
+			civ.technology *= this.rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE)*2, 1);
 		}
 		for (const civ of this.civs) {
 			if (civ.isDead())
@@ -214,6 +214,14 @@ export class World {
 		if (minSize > 0)
 			output = output.filter((c) => c.tileTree.size >= minSize);
 		return output;
+	}
+
+	/**
+	 * spawn a new civ
+	 */
+	addCiv(tile: Tile, year: number, technology: number): void {
+		this.civs.add(new Civ(tile, this.nextID, this, year, this.rng, technology));
+		this.nextID ++;
 	}
 
 	/**
