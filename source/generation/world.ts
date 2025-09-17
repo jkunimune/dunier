@@ -26,7 +26,7 @@ export const POPULATION_DENSITY = .20;
 /** the rate at which ideas spread across borders (/y) */
 export const TECH_SPREAD_RATE = .01;
 /** the fraction of the populacion a country gets to keep after a cataclysm (not accounting for domino effects) */
-export const APOCALYPSE_SURVIVAL_RATE = .80;
+export const APOCALYPSE_SURVIVAL_RATE = .50;
 /** the time it takes for an empire's might to decay by 2.7 (y) */
 export const MEAN_EMPIRE_LIFETIME = 1000;
 /** the time it takes to erase a people's language (y) */
@@ -167,15 +167,14 @@ export class World {
 
 	/**
 	 * devastate the entire world. the details of how are fuzzy, but in a nutshell half of all people die (well, more
-	 * accurately, 80% of all provinces are depopulated, and 80% of all technologies are lost.
+	 * accurately, 50% of all provinces are depopulated, and 50% of all technologies are lost.
 	 */
 	haveCataclysm(year: number) {
-		for (const civ of this.civs) {
-			for (const tile of [...civ.tileTree.keys()])
-				if (civ.tileTree.has(tile) && !this.rng.probability(APOCALYPSE_SURVIVAL_RATE))
-					civ.lose(tile, year);
+		for (const tile of this.planet.tiles)
+			if (tile.government !== null && !this.rng.probability(APOCALYPSE_SURVIVAL_RATE))
+				tile.government.lose(tile, year);
+		for (const civ of this.civs)
 			civ.technology *= this.rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE)*2, 1);
-		}
 		for (const civ of this.civs) {
 			if (civ.isDead())
 				this.civs.delete(civ); // clear out any Civs that no longer exist
