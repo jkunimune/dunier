@@ -87,6 +87,7 @@ loadSVGResources(
 
 // I don't understand what this block is but it makes the error handling work correctly
 self.addEventListener('unhandledrejection', (event) => {
+	console.trace(event.reason);
 	throw event.reason;
 });
 
