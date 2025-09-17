@@ -117,7 +117,7 @@ export class World {
 			}
 		}
 		while (!invasions.empty()) {
-			let {time, invader, start, end} = invasions.pop(); // as invasions finish
+			const {time, invader, start, end} = invasions.pop(); // as invasions finish
 			const invadee = end.government;
 			const invaderStrength = invader.getStrength();
 			const invadeeStrength = (invadee !== null) ? invadee.getStrength() : 0;
@@ -127,9 +127,9 @@ export class World {
 				for (const conquerdLand of invader.getAllChildrenOf(end)) { // and set up new invasions that bild off of it
 					for (const neighbor of conquerdLand.neighbors.keys()) {
 						if (!invader.tileTree.has(neighbor)) {
-							time = time + rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
-							if (time <= stop_time) {
-								invasions.push({time: time, invader: invader, start: conquerdLand, end: neighbor});
+							const nextTime = time + this.rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
+							if (nextTime <= stop_time) {
+								invasions.push({time: nextTime, invader: invader, start: conquerdLand, end: neighbor});
 							}
 						}
 					}
