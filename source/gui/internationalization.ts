@@ -39,21 +39,38 @@ export function localize(key: string, language: string): string {
  * @param language
  */
 export function formatList(items: string[], language: string): string {
+	let depth = 1 + Math.max(...items.map(item => inferListDepth(item, language)));
+	if (depth > 2)
+		throw new Error("I'm not equipped to do triply-nested lists (and it's a bad idea anyway).");
 	if (items.length === 0)
 		throw new Error("this sentence needs to be rephrased if there are zero items.");
+	// lists of 1 are trivial
 	else if (items.length === 1)
 		return items[0].toString();
+	// lists of two use a single separator
 	else if (items.length === 2) {
-		let and = localize('grammar.and', language);
+		let and = localize(`grammar.and.${depth}`, language);
 		return items[0] + and + items[1];
 	}
+	// lists of three or more use one separator for all but the last boundary, and a different one for the last
 	else {
 		const first_parts = items.slice(0, items.length - 1);
-		const first_separator = localize('grammar.comma', language);
+		const first_separator = localize(`grammar.comma.${depth}`, language);
 		const last_part = items[items.length - 1];
-		let last_separator = localize( 'grammar.comma_and', language);
+		const last_separator = localize( `grammar.comma_and.${depth}`, language);
 		return first_parts.join(first_separator) + last_separator + last_part;
 	}
+}
+
+/**
+ * deduce how many lists deep this list goes (if it's even a list)
+ * @return 2 if it's a list of lists, 1 if it's just a normal list, or 0 if it's not a list.
+ */
+function inferListDepth(list: string, language: string): number {
+	for (let i = 2; i > 0; i --)
+		if (list.includes(localize(`grammar.comma.${i}`, language)))
+			return i;
+	return 0;
 }
 
 /**
@@ -63,7 +80,7 @@ export function formatList(items: string[], language: string): string {
  * @param sentence the encompassing phrase
  * @param args the data to fill into the template.
  */
-export function format(sentence: string, ...args: (string|number|string[]|null)[]): string {
+export function format(sentence: string, ...args: (string|number|null)[]): string {
 	for (let i = 0; i < args.length; i ++) { // loop thru the args and format each one
 		let convertedArg: string;
 		if (args[i] === null || args[i] === undefined) {
@@ -72,10 +89,13 @@ export function format(sentence: string, ...args: (string|number|string[]|null)[
 			continue;
 		}
 		else if (typeof args[i] === 'string') {
-			convertedArg = <string>args[i]; // look up strings in the resource file
+			convertedArg = <string>args[i]; // look up strings in the resource files
 		}
 		else if (typeof args[i] == 'number') {
 			convertedArg = formatNumber(<number>args[i]);
+		}
+		else {
+			throw new Error(`unsupported format argument: ${typeof args[i]}`);
 		}
 		sentence = sentence.replaceAll(`{${i}}`, convertedArg); // then slot it in
 	}
