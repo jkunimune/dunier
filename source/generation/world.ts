@@ -177,9 +177,9 @@ export class World {
 	haveCataclysm(year: number) {
 		for (const tile of this.planet.tiles) {
 			if (tile.government !== null && !this.rng.probability(APOCALYPSE_SURVIVAL_RATE)) {
-				tile.government.lose(tile, year);
 				if (LOG_LAND_CLAIMS)
 					console.log(`${year.toFixed(0)}: ${tile.government.getName()} loses tile ${tile.index}`);
+				tile.government.lose(tile, year);
 			}
 		}
 		for (const civ of this.civs)
