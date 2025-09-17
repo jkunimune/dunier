@@ -423,7 +423,7 @@ export default {
 	"factbook.history.assimilation": "En el año {0}, políticas de integración del gobierno había extinguido el dialecto {1} dialect de la lengua {2}.  ",
 	"factbook.history.cataclysm": "{1} se devastó por el Gran Cataclismo de {0}.  ",
 	"factbook.history.civil_war": "En el año {0}, una guerra civil resultó en que un nuevo gobierno, {1}, tomó {2}.  ",
-	"factbook.history.confederation": "El país tiene orígenes en el pueblo {1} antiguo, que apareció acerca del año {0}.  ",
+	"factbook.history.confederation": "El país tiene orígenes en el pueblo {2} antiguo, que apareció en {1} acerca del año {0}.  ",
 	"factbook.history.conquest": "En el año {0}, {1} conquistó {2}.  ",
 	"factbook.history.coup": "En el año {0}, un golpe de estado resultó en un nuevo gobierno.  ",
 	"factbook.history.independence": "{1} declaró la independencia de {2} en el año {0}.  ",

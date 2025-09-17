@@ -424,7 +424,7 @@ export default {
 	"factbook.history.assimilation": "{0}年には、政府の同化政策のせいで{2}語の{1}弁が消えた。",
 	"factbook.history.cataclysm": "{0}年の大災難は{1}を荒らした。",
 	"factbook.history.civil_war": "{0}年には、内戦が{1}の反乱政府に{2}を乗っ取らせた。",
-	"factbook.history.confederation": "この国が基づく{1}民は{0}年ぐらい、{2}にいた。",
+	"factbook.history.confederation": "この国が基づく{2}民は{0}年ぐらいから、{1}にいた。",
 	"factbook.history.conquest": "{0}年には、{1}が{2}を乗っ取った。",
 	"factbook.history.coup": "{0}年には、クーデターが政府を改めた。",
 	"factbook.history.independence": "{0}年に{1}は{2}から独立を宣言した。",

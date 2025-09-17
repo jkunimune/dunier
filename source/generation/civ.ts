@@ -86,7 +86,7 @@ export class Civ {
 		// record how it came to be in its history
 		if (capital.government === null)
 			this.history = [
-				{type: "confederation", year: birthYear, participants: [this.capital.culture, this]}];
+				{type: "confederation", year: birthYear, participants: [this, this.capital.culture]}];
 		else {
 			const parent = capital.government;
 			this.history = [

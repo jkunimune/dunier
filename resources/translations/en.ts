@@ -426,7 +426,7 @@ export default {
 	"factbook.history.assimilation": "By {0}, government assimilation policies had rendered the {1} dialect of the {2} language extinct.  ",
 	"factbook.history.cataclysm": "{1} was devastated by the Great Cataclysm of {0}.  ",
 	"factbook.history.civil_war": "In {0}, a civil war resulted in a new government, {1}, taking over {2}.  ",
-	"factbook.history.confederation": "The country traces its origins back to the ancient {1} people, who appeared in {2} around {0}.  ",
+	"factbook.history.confederation": "The country traces its origins back to the ancient {2} people, who appeared in {1} around {0}.  ",
 	"factbook.history.conquest": "In {0}, {1} conquered {2}.  ",
 	"factbook.history.coup": "In {0}, a coup d'etat installed a new government.  ",
 	"factbook.history.independence": "{1} declared independence from {2} in {0}.  ",

@@ -171,8 +171,8 @@ function addHistorySection(page: VNode, topic: Civ, language: string, style: str
 			else
 				args.push(participant);
 		}
-		// add a note if the first name mentioned is different from the current name
-		if (text.length === 0 && args[0] !== topic.getName().toString(style))
+		// add a note if the first country name mentioned is different from the current country name
+		if (event === history[0] && event.participants[0] instanceof Civ && args[0] !== topic.getName().toString(style))
 			args[0] = format(
 				localize('factbook.history.predecessor_clarification', language),
 				args[0], topic.getName().toString(style));
