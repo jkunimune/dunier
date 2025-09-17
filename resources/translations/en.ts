@@ -507,6 +507,7 @@ export default {
 	"factbook.music.type.vocals": "vocal elements",
 	"factbook.music.type.wind": "wind instruments",
 	"factbook.outline.lede.none": "This map depicts a barren world with no civilization to speak of.",
+	"factbook.outline.lede.one": "This document provides basic historical, geographic, and cultural information about {0}, the civilization that dominates the region shown by this map.",
 	"factbook.outline.lede.some": "This document provides basic historical, geographic, and cultural information about {0} of the countries on the map: {1}.",
 	"factbook.outline.section_header": "{0}",
 	"factbook.outline.title": "World Factbook",

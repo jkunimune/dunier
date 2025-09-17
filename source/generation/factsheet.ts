@@ -54,11 +54,15 @@ function chooseMostImportantCivs(civs: Civ[], transcriptionStyle: string): Civ[]
 	const listedCivs = [];
 	const unlistedCivs = civs.slice();
 	// make sure we include the Civ with the most advanced technology
-	const mostAdvancedIndex = argmax(unlistedCivs.map(c => c.technology));
-	listedCivs.push(...unlistedCivs.splice(mostAdvancedIndex, 1));
+	if (unlistedCivs.length > 0) {
+		const mostAdvancedIndex = argmax(unlistedCivs.map(c => c.technology));
+		listedCivs.push(...unlistedCivs.splice(mostAdvancedIndex, 1));
+	}
 	// make sure we include the Civ with the largest population
-	const mostPopulusIndex = argmax(unlistedCivs.map(c => c.getPopulation()));
-	listedCivs.push(...unlistedCivs.splice(mostPopulusIndex, 1));
+	if (unlistedCivs.length > 0) {
+		const mostPopulusIndex = argmax(unlistedCivs.map(c => c.getPopulation()));
+		listedCivs.push(...unlistedCivs.splice(mostPopulusIndex, 1));
+	}
 	// then add the 8 remaining Civs with the largest area
 	listedCivs.push(...unlistedCivs.slice(0, NUM_CIVS_TO_DESCRIBE - 2));
 	// sort alphabetically before you leave
@@ -85,12 +89,18 @@ function generateTitlePage(doc: VNode, map: VNode, civs: Civ[], language: string
 		localize('factbook.outline.title', language),
 		page, 'h1');
 
-	if (civs.length > 0)
+	if (civs.length >= 2)
 		addParagraph(
 			format(
 				localize('factbook.outline.lede.some', language),
 				civs.length,
 				formatList(civs.map(c => c.getName().toString(transcriptionStyle)), language)),
+			page, 'p');
+	else if (civs.length === 1)
+		addParagraph(
+			format(
+				localize('factbook.outline.lede.one', language),
+				civs[0].getName().toString(transcriptionStyle)),
 			page, 'p');
 	else
 		addParagraph(

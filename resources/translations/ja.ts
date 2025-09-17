@@ -504,6 +504,7 @@ export default {
 	"factbook.music.type.vocals": "歌手",
 	"factbook.music.type.wind": "管楽器",
 	"factbook.outline.lede.none": "この地図は文明がない殺風景な世界を示す。",
+	"factbook.outline.lede.one": "このドキュメントは地図上の{0}の歴史、地理、文化特質をざっくり伝える。",
 	"factbook.outline.lede.some": "このドキュメントは地図上の国の歴史、地理、文化特質をざっくり伝える。以降の{0}ヶ国が含まれる：{1}。",
 	"factbook.outline.section_header": "{0}",
 	"factbook.outline.title": "世界インフォブック",

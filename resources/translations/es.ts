@@ -504,6 +504,7 @@ export default {
 	"factbook.music.type.vocals": "las voces acompañadas",
 	"factbook.music.type.wind": "los instrumentos de viento acompañados",
 	"factbook.outline.lede.none": "Este mundo es yermo y no tiene ninguna civilización.",
+	"factbook.outline.lede.one": "Este documento proporciona información básica sobre las historias, geografías, y culturas de {0}, la civilización que domina la región de este mapa.",
 	"factbook.outline.lede.some": "Este documento proporciona información básica sobre las historias, geografías, y culturas de {0} países en el mapa: {1}.",
 	"factbook.outline.section_header": "{0}",
 	"factbook.outline.title": "Hojas de datos detallados",
