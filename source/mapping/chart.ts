@@ -36,6 +36,7 @@ const SHOW_TILE_INDICES = false; // label each tile with its number
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
 const COLOR_BY_TILE = false; // color each tile a different color
+const SHOW_TECH_LEVEL = false; // caption each country with its current technology level
 const SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
 const SHOW_BACKGROUND = false; // have a big red rectangle under the map
 
@@ -521,6 +522,8 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	}
 
 	if (SHOW_TILE_INDICES) {
+		const g = createSVGGroup(svg, "indices");
+		g.attributes.style = "text-anchor: middle; dominant-baseline: middle";
 		for (const tile of surface.tiles) {
 			const text = h('text'); // start by creating the text element
 			const location = transformPoint(tile, transform);
@@ -529,7 +532,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 				text.attributes["y"] = `${location.y}`;
 				text.attributes["font-size"] = "0.2em";
 				text.textContent = `${tile.index}`;
-				svg.children.push(text);
+				g.children.push(text);
 			}
 		}
 	}
@@ -1014,7 +1017,11 @@ function placeLabels(civs: Civ[], style: string, haloInfo: null | Map<number, st
 		for (const civ of civs) {
 			if (civ.getPopulation() > 0) {
 				const tiles = [...civ.tileTree.keys()].filter(n => !n.isSaltWater()); // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
-				const label = civ.getName().toString(style).toUpperCase();
+				let label;
+				if (SHOW_TECH_LEVEL)
+					label = (Math.log(civ.technology)*1400 - 3000).toFixed(0);
+				else
+					label = civ.getName().toString(style).toUpperCase();
 				let haloColor;
 				if (haloInfo === null)
 					haloColor = null;
@@ -1023,7 +1030,10 @@ function placeLabels(civs: Civ[], style: string, haloInfo: null | Map<number, st
 				else
 					haloColor = haloInfo.get(0);
 
-				placeLabel(tiles, label, transform, svg, minFontSize, maxFontSize, haloColor, labelIndex, characterWidthMap);
+				placeLabel(
+					tiles, label, transform, svg,
+					minFontSize, maxFontSize, haloColor,
+					labelIndex, characterWidthMap);
 				labelIndex += 1;
 			}
 		}
@@ -1699,10 +1709,11 @@ function createSVGGroup(parent: VNode, id: string): VNode {
 function calculateStringLength(characterWidthMap: Map<string, number>, text: string): number {
 	let length = 0;
 	for (let i = 0; i < text.length; i ++) {
-		if (characterWidthMap.has(text[i]))
-			length += characterWidthMap.get(text[i]);
-		else
-			throw new Error(`unrecognized character: '${text[i]}'`);
+		if (!characterWidthMap.has(text[i])) {
+			console.error(`unrecognized character: 1${text[i]}'`);
+			characterWidthMap.set(text[i], characterWidthMap.get("m"));
+		}
+		length += characterWidthMap.get(text[i]);
 	}
 	return length;
 }

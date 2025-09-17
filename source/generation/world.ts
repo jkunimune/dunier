@@ -9,6 +9,9 @@ import {Civ} from "./civ.js";
 import {Lect} from "./language/lect.js";
 
 
+/** a debug option to print detailed information about territory changes */
+const LOG_LAND_CLAIMS = false;
+
 /** the year at which civilization starts */
 export const START_OF_HUMAN_HISTORY = -3200;
 /** the smallest time interval to simulate (year) */
@@ -133,6 +136,8 @@ export class World {
 							}
 						}
 					}
+					if (LOG_LAND_CLAIMS)
+						console.log(`${time.toFixed(0)}: ${invader.getName()} takes tile ${conquerdLand.index} from ${(invadee !== null) ? invadee.getName() : "no one"} via tile ${invader.tileTree.get(conquerdLand).parent.index}.`);
 				}
 			}
 		}
@@ -170,9 +175,13 @@ export class World {
 	 * accurately, 50% of all provinces are depopulated, and 50% of all technologies are lost.
 	 */
 	haveCataclysm(year: number) {
-		for (const tile of this.planet.tiles)
-			if (tile.government !== null && !this.rng.probability(APOCALYPSE_SURVIVAL_RATE))
+		for (const tile of this.planet.tiles) {
+			if (tile.government !== null && !this.rng.probability(APOCALYPSE_SURVIVAL_RATE)) {
 				tile.government.lose(tile, year);
+				if (LOG_LAND_CLAIMS)
+					console.log(`${year.toFixed(0)}: ${tile.government.getName()} loses tile ${tile.index}`);
+			}
+		}
 		for (const civ of this.civs)
 			civ.technology *= this.rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE)*2, 1);
 		for (const civ of this.civs) {
@@ -221,6 +230,8 @@ export class World {
 	addCiv(tile: Tile, year: number, technology: number): void {
 		this.civs.add(new Civ(tile, this.nextID, this, year, this.rng, technology));
 		this.nextID ++;
+		if (LOG_LAND_CLAIMS)
+			console.log(`${year.toFixed(0)}: ${tile.government.getName()} is founded on tile ${tile.index}`);
 	}
 
 	/**
