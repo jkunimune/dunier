@@ -47,7 +47,7 @@ export class World {
 	public planet: Surface;
 	private readonly civs: Set<Civ>;
 	private readonly rng: Random;
-	private nextID: number;
+	private lastID: number;
 
 
 	constructor(cataclysms: number, planet: Surface, seed: number) {
@@ -55,7 +55,7 @@ export class World {
 		this.planet = planet;
 		this.civs = new Set(); // list of countries in the world
 		this.rng = new Random(seed);
-		this.nextID = 1;
+		this.lastID = 0;
 
 		// clear these variables, which may be carried over from previous Worlds
 		for (const tile of planet.tiles) {
@@ -228,8 +228,8 @@ export class World {
 	 * spawn a new civ
 	 */
 	addCiv(tile: Tile, year: number, technology: number): void {
-		this.civs.add(new Civ(tile, this.nextID, this, year, this.rng, technology));
-		this.nextID ++;
+		this.lastID ++;
+		this.civs.add(new Civ(tile, this.lastID, this, year, this.rng, technology));
 		if (LOG_LAND_CLAIMS)
 			console.log(`${year.toFixed(0)}: ${tile.government.getName()} is founded on tile ${tile.index}`);
 	}
