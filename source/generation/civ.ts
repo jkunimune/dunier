@@ -10,7 +10,7 @@ import {
 	MEAN_ASSIMILATION_TIME,
 	SLOPE_FACTOR, CONQUEST_RATE,
 	TECH_ADVANCEMENT_RATE,
-	MEAN_EMPIRE_LIFETIME,
+	MAX_DYNASTY_LIFETIME,
 	TIME_STEP,
 	World
 } from "./world.js";
@@ -42,6 +42,8 @@ export class Civ {
 
 	/** base military strength */
 	public militarism: number;
+	/** negative rate of change of militarism */
+	public militarismDecayRate: number;
 	/** technological military modifier */
 	public technology: number;
 	/** the current total area (including ocean) in km^2 */
@@ -59,7 +61,7 @@ export class Civ {
 	 * @param id a nonnegative integer unique to this civ
 	 * @param world the world in which this civ lives
 	 * @param birthYear the exact year in which this Civ is born
-	 * @param rng th random number generator to use to set Civ properties
+	 * @param rng the random number generator to use to set Civ properties
 	 * @param technology the starting technological multiplier
 	 */
 	constructor(capital: Tile, id: number, world: World, birthYear: number, rng: Random, technology: number) {
@@ -71,6 +73,7 @@ export class Civ {
 		this.border = new Set<Tile>();
 
 		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
+		this.militarismDecayRate = this.militarism/MAX_DYNASTY_LIFETIME;
 		this.technology = technology;
 		this.totalArea = 0;
 		this.landArea = 0;
@@ -258,7 +261,7 @@ export class Civ {
 		}
 
 		this.language = rulingCulture.lect;
-		this.militarism *= Math.exp(-TIME_STEP / MEAN_EMPIRE_LIFETIME);
+		this.militarism = Math.max(0, this.militarism - this.militarismDecayRate*TIME_STEP);
 		const densestPopulation = POPULATION_DENSITY*this.sortedTiles.peek().arableArea;
 		this.technology += TECH_ADVANCEMENT_RATE*TIME_STEP*densestPopulation*this.technology;
 	}

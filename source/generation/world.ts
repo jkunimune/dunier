@@ -31,7 +31,7 @@ export const TECH_SPREAD_RATE = .01;
 /** the fraction of the populacion a country gets to keep after a cataclysm (not accounting for domino effects) */
 export const APOCALYPSE_SURVIVAL_RATE = .50;
 /** the time it takes for an empire's might to decay by 2.7 (y) */
-export const MEAN_EMPIRE_LIFETIME = 1000;
+export const MAX_DYNASTY_LIFETIME = 2000;
 /** the time it takes to erase a people's language (y) */
 export const MEAN_ASSIMILATION_TIME = 160;
 /** multiplier on vertical distances */
