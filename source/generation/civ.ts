@@ -4,7 +4,6 @@
  */
 import {Tile} from "./surface/surface.js";
 import {Lect, WordType} from "./language/lect.js";
-import {Random} from "../utilities/random.js";
 import {
 	POPULATION_DENSITY,
 	MEAN_ASSIMILATION_TIME,
@@ -26,7 +25,7 @@ import {Dequeue} from "../utilities/dequeue.js";
 export class Civ {
 	public readonly id: number;
 	/** the capital city */
-	public readonly capital: Tile;
+	public capital: Tile;
 	/** the tiles it owns and the order in which it acquired them (also stores the normalized population) */
 	public readonly tileTree: Map<Tile, {parent: Tile | null, children: Set<Tile>}>;
 	/** the tiles it owns (maybe some it doesn't) from least to most densely populated */
@@ -34,8 +33,6 @@ export class Civ {
 	/** the set of tiles it owns that are adjacent to tiles it doesn't */
 	public readonly border: Set<Tile>;
 	public readonly world: World;
-	/** the language last spoken by this Civ's ruling class */
-	public language: Lect;
 
 	/** everything interesting that has happened in this Civ's history */
 	public history: Event[];
@@ -57,14 +54,12 @@ export class Civ {
 
 	/**
 	 * create a new civilization
-	 * @param capital the home tile, with which this empire starts
 	 * @param id a nonnegative integer unique to this civ
 	 * @param world the world in which this civ lives
 	 * @param birthYear the exact year in which this Civ is born
-	 * @param rng the random number generator to use to set Civ properties
-	 * @param technology the starting technological multiplier
+	 * @param predecessor the country in which this one is founded, if any
 	 */
-	constructor(capital: Tile, id: number, world: World, birthYear: number, rng: Random, technology: number) {
+	constructor(id: number, world: World, birthYear: number, predecessor: Civ = null) {
 		this.world = world;
 		this.id = id;
 		this.tileTree = new Map<Tile, {parent: Tile | null, children: Set<Tile>}>();
@@ -72,33 +67,16 @@ export class Civ {
 			[], (a, b) => b.arableArea - a.arableArea);
 		this.border = new Set<Tile>();
 
-		this.militarism = rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
+		this.militarism = this.world.rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
 		this.militarismDecayRate = this.militarism/MAX_DYNASTY_LIFETIME;
-		this.technology = technology;
+		this.technology = (predecessor !== null) ? predecessor.technology : 1;
 		this.totalArea = 0;
 		this.landArea = 0;
 		this.arableArea = 0;
 		this.peak = {year: birthYear, landArea: 0};
 
-		this.capital = capital;
-		if (capital.government === null) { // if this is a wholly new civilization
-			capital.culture = new Culture(null, capital, null, technology, birthYear, rng.next() + 1); // make up a proto-culture (offset the seed to increase variability)
-		}
-		this.language = this.capital.culture.lect;
-
-		// record how it came to be in its history
-		if (capital.government === null)
-			this.history = [
-				{type: "confederation", year: birthYear, participants: [this, this.capital.culture]}];
-		else {
-			const parent = capital.government;
-			this.history = [
-				{type: "independence", year: birthYear, participants: [this, parent]}];
-			parent.history.push(
-				{type: "secession", year: birthYear, participants: [parent, this]});
-		}
-
-		this.conquer(capital, null, birthYear);
+		// don't set the capital until you're sure we're strong enuff to take it
+		this.capital = null;
 	}
 
 	/**
@@ -111,11 +89,28 @@ export class Civ {
 	conquer(tile: Tile, from: Tile | null, year: number) {
 		const loser = tile.government;
 
+		// if this is our first tile, establish it as our capital
+		if (this.capital === null) {
+			this.capital = tile;
+			// record this moment in history
+			if (loser === null)
+				this.history = [
+					{type: "confederation", year: year, participants: [this, this.capital.culture]}];
+			else {
+				this.history = [
+					{type: "independence", year: year, participants: [this, loser]}];
+				loser.history.push(
+					{type: "secession", year: year, participants: [loser, this]});
+			}
+		}
+
+		// do the recursive stuff
 		this._conquer(tile, from, loser, year);
 
 		if (loser !== null)
 			loser.lose(tile, year); // do the opposite upkeep for the other gy
 
+		// update peak if relevant
 		if (this.getLandArea() >= this.peak.landArea) {
 			this.peak = {year: year, landArea: this.getLandArea()};
 		}
@@ -160,14 +155,11 @@ export class Civ {
 		if (loser !== null && tile === loser.capital) {
 			const lastEvent = this.history[this.history.length - 1]; // figure out how to spin it: coup, civil war, or conquest?
 			const finishingAShortCivilWar = lastEvent.type === "independence" && lastEvent.year >= year - 100 && lastEvent.participants[1] === loser && this.capital.culture === tile.culture;
-			const quashingRecentRebellion = lastEvent.type === "secession" && lastEvent.year >= year - 100 && lastEvent.participants[1] === loser;
-			if (quashingRecentRebellion)
-				this.history.pop(); // if we're just quashing a recent rebellion, it doesn't even need to be mentioned at all
-			else if (finishingAShortCivilWar) {
+			if (finishingAShortCivilWar) {
 				this.history = loser.history.filter(({type}) => !["conquest", "secession"].includes(type)); // if we just recently came from this country, make their history our own
 				if (tile === this.capital)
 					this.history.push({type: "coup", year: year, participants: [this, loser]});
-				else if (this.language.isIntelligible(loser.language))
+				else
 					this.history.push({type: "civil_war", year: year, participants: [this, loser]});
 			}
 			else
@@ -179,7 +171,10 @@ export class Civ {
 				if (child.arableArea > 0)
 					this._conquer(child, tile, loser, year);
 		}
-		else {
+		else { // perpetuate the ruling culture
+			// make up a proto-culture if we don't have one yet (offset the seed to increase variability)
+			if (this.capital.culture === null)
+				this.capital.culture = new Culture(null, this.capital, null, this.technology, year, this.world.rng.next() + 1);
 			tile.culture = this.capital.culture; // perpetuate the ruling culture
 		}
 	}
@@ -207,8 +202,10 @@ export class Civ {
 		const {parent, children} = this.tileTree.get(tile);
 		for (const child of children) {
 			// when we propagate to something that has not yet been claimed, spawn a new civ
-			if (child.government === this && child.arableArea > 0)
-				this.world.addCiv(child, year, this.technology);
+			if (child.government === this && child.arableArea > 0) {
+				const civ = this.world.addNewCiv(this, year);
+				civ.conquer(child, null, year);
+			}
 			// otherwise just lose the child tiles
 			else
 				this._lose(child, year);
@@ -237,21 +234,20 @@ export class Civ {
 	/**
 	 * change with the passing of the centuries
 	 * @param year the current year
-	 * @param rng the random number generator to use for the update
 	 */
-	update(year: number, rng: Random) {
-		const rulingCulture = new Culture(this.capital.culture, this.capital, null, this.technology, year, rng.next()); // start by updating the capital, tying it to the new homeland
+	update(year: number) {
+		const rulingCulture = new Culture(this.capital.culture, this.capital, null, this.technology, year, this.world.rng.next()); // start by updating the capital, tying it to the new homeland
 		const newKultur: Map<Lect, Culture> = new Map(); // TODO: cultures should transcend boundaries
 		newKultur.set(
 			this.capital.culture.lect.macrolanguage,
 			rulingCulture);
 		for (const tile of this.tileTree.keys()) { // update the culture of each tile in the empire in turn
-			if (rng.probability(TIME_STEP/MEAN_ASSIMILATION_TIME)) { // if the province fails its heritage saving throw
+			if (this.world.rng.probability(TIME_STEP/MEAN_ASSIMILATION_TIME)) { // if the province fails its heritage saving throw
 				tile.culture = rulingCulture; // its culture gets overritten
 			}
 			else { // otherwise update it normally
 				if (!newKultur.has(tile.culture.lect.macrolanguage)) { // if you encounter a culture that hasn't been updated and added to the Map yet
-					const updatedCulture = new Culture(tile.culture, tile.culture.homeland, rulingCulture, this.technology, year, rng.next() + 1);
+					const updatedCulture = new Culture(tile.culture, tile.culture.homeland, rulingCulture, this.technology, year, this.world.rng.next() + 1);
 					newKultur.set(
 						tile.culture.lect.macrolanguage,
 						updatedCulture); // update that culture, treating it as a diaspora
@@ -260,7 +256,6 @@ export class Civ {
 			}
 		}
 
-		this.language = rulingCulture.lect;
 		this.militarism = Math.max(0, this.militarism - this.militarismDecayRate*TIME_STEP);
 		const densestPopulation = POPULATION_DENSITY*this.sortedTiles.peek().arableArea;
 		this.technology += TECH_ADVANCEMENT_RATE*TIME_STEP*densestPopulation*this.technology;
@@ -385,7 +380,7 @@ export class Civ {
 	}
 
 	getName(): Word {
-		return this.language.getProperWord(
+		return this.capital.culture.lect.getProperWord(
 			this.capital.index.toString(), WordType.COUNTRY);
 	}
 

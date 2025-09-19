@@ -44,9 +44,9 @@ export const SLOPE_FACTOR = 100; // TODO: express it as the minimum slope that a
 export class World {
 	/** [1/y] the rate at which the apocalypse happens */
 	public readonly cataclysms: number;
+	public readonly rng: Random;
 	public planet: Surface;
 	private readonly civs: Set<Civ>;
-	private readonly rng: Random;
 	private lastID: number;
 
 
@@ -77,7 +77,7 @@ export class World {
 				this.haveCataclysm(t + TIME_STEP);
 			for (const civ of this.civs)
 				if (civ.tileTree.size > 0)
-					civ.update(t + TIME_STEP, this.rng);
+					civ.update(t + TIME_STEP);
 		}
 	}
 
@@ -90,12 +90,17 @@ export class World {
 			const demomultia = POPULATION_DENSITY*tile.arableArea;
 			const ruler = tile.government;
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
-				if (this.rng.probability(CIVILIZATION_RATE*TIME_STEP*demomultia))
-					this.addCiv(tile, year, 1);
+				if (this.rng.probability(CIVILIZATION_RATE*TIME_STEP*demomultia)) {
+					const civ = this.addNewCiv(null, year);
+					civ.conquer(tile, null, year);
+				}
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
-				if (this.rng.probability(REBELLION_RATE*TIME_STEP*demomultia)) // use the population without technology correction for balancing
-					this.addCiv(tile, year, ruler.technology);
+				if (this.rng.probability(REBELLION_RATE*TIME_STEP*demomultia)) { // use the population without technology correction for balancing
+					const civ = this.addNewCiv(ruler, year);
+					if (civ.militarism > ruler.militarism) // make sure the rebellion is strong enuff to succeed
+						civ.conquer(tile, null, year);
+				}
 			}
 		}
 	}
@@ -200,7 +205,7 @@ export class World {
 		const lects = [];
 		// start with the national languages
 		for (const civ of this.getCivs(true))
-			lects.push(civ.language);
+			lects.push(civ.capital.culture.lect);
 		// then add in the minority languages
 		for (const civ of this.getCivs(true))
 			for (const {culture} of civ.getCultures().slice(1))
@@ -227,11 +232,11 @@ export class World {
 	/**
 	 * spawn a new civ
 	 */
-	addCiv(tile: Tile, year: number, technology: number): void {
+	addNewCiv(predecessor: Civ, year: number): Civ {
 		this.lastID ++;
-		this.civs.add(new Civ(tile, this.lastID, this, year, this.rng, technology));
-		if (LOG_LAND_CLAIMS)
-			console.log(`${year.toFixed(0)}: ${tile.government.getName()} is founded on tile ${tile.index}`);
+		const civ = new Civ(this.lastID, this, year, predecessor)
+		this.civs.add(civ);
+		return civ;
 	}
 
 	/**
