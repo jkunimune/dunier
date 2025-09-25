@@ -7,6 +7,7 @@ import {Tile, Surface} from "./surface/surface.js";
 import {Random} from "../utilities/random.js";
 import {Civ} from "./civ.js";
 import {Lect} from "./language/lect.js";
+import {factorial} from "../utilities/miscellaneus.js";
 
 
 /** a debug option to print detailed information about territory changes */
@@ -26,7 +27,7 @@ export const CONQUEST_RATE = 2e-1;
 export const TECH_ADVANCEMENT_RATE = 5e-8;
 /** the density of people that can live in one unit of arable land with entry-level technology (/km^2) */
 export const POPULATION_DENSITY = .20;
-/** the rate at which ideas spread across borders (/y) */
+/** the rate at which ideas diffuse across borders (/y) */
 export const TECH_SPREAD_RATE = .01;
 /** the fraction of the populacion a country gets to keep after a cataclysm (not accounting for domino effects) */
 export const APOCALYPSE_SURVIVAL_RATE = .50;
@@ -156,22 +157,40 @@ export class World {
 	 * have that they don't
 	 */
 	spreadIdeas() {
-		const visibleTechnology: Map<Civ, number> = new Map(); // how much advanced technology can they access?
-		for (const civ of this.civs) {
-			visibleTechnology.set(civ, civ.technology); // well, any technology they _have_, for one
-			for (const borderTile of civ.border) { // check our borders
-				for (const tile of borderTile.neighbors.keys()) {
-					const other = tile.government;
-					if (other !== null && other !== civ && other.technology > visibleTechnology.get(civ)) { // if they have something we don't
-						visibleTechnology.set(civ, other.technology); // if so, we can access their technology
+		// go from smartest countries to dumbest, to ensure we apply the greatest possible final tech level to each Civ
+		const queue = new Queue<{civ: Civ, newTechLevel: number, sourceTechLevels: number[]}>(
+			[...this.civs].map(civ => ({civ: civ, newTechLevel: civ.technology, sourceTechLevels: []})), // by default, try assigning each Civ its current tech level
+			(a, b) => b.newTechLevel - a.newTechLevel,
+		);
+		const visited = new Set<Civ>();
+		while (!queue.empty()) {
+			const {civ, newTechLevel, sourceTechLevels} = queue.pop();
+			if (!visited.has(civ)) { // if we haven't already advanced this one
+				// apply it
+				civ.technology = newTechLevel;
+				visited.add(civ);
+				const previusTechLevels = sourceTechLevels.concat([civ.technology]);
+				// then look to our neibors
+				const neibors = new Set<Civ>();
+				for (const borderTile of civ.border)
+					for (const tile of borderTile.neighbors.keys())
+						if (tile.government !== null && tile.government !== civ)
+							neibors.add(tile.government);
+				// diffuse our technology to our dumber neibors
+				for (const neibor of neibors) {
+					if (!visited.has(neibor)) {
+						let neiborsNewTechLevel = neibor.technology +
+							(previusTechLevels[0] - neibor.technology)*(1 - Math.exp(-TIME_STEP*TECH_SPREAD_RATE));
+						for (let i = 1; i < previusTechLevels.length; i ++)
+							neiborsNewTechLevel -= (-TIME_STEP*TECH_SPREAD_RATE)**i/factorial(i)*
+								(previusTechLevels[previusTechLevels.length - i] - previusTechLevels[0]); // this summation is the solution to this multivariate diffusion equation
+						queue.push({civ: neibor, newTechLevel: neiborsNewTechLevel, sourceTechLevels: previusTechLevels});
+						// NOTE: I think it's possible in theory for a civ to surpass its neibor, which makes the math
+						// considerably more complicated, but I assume that's unlikely enuff to happen within a timestep
+						// that it's not a big deal.
 					}
 				}
 			}
-		}
-		const spreadFraction = 1 - Math.exp(-TIME_STEP*TECH_SPREAD_RATE);
-		for (const civ of this.civs) {
-			if (visibleTechnology.get(civ) > civ.technology)
-				civ.technology += (visibleTechnology.get(civ) - civ.technology)*spreadFraction;
 		}
 	}
 

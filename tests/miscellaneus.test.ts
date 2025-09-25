@@ -5,7 +5,7 @@
 import {
 	arctanh,
 	argmax,
-	binarySearch, cumulativeIntegral, decodeBase37, filterSet, findRoot, isBetween,
+	binarySearch, cumulativeIntegral, decodeBase37, factorial, filterSet, findRoot, isBetween,
 	legendreP2,
 	legendreP4,
 	legendreP6,
@@ -30,6 +30,24 @@ describe("argmax()", () => {
 	});
 	test("duplicates", () => {
 		expect(argmax([-1, 2, 2])).toEqual(1);
+	});
+});
+
+describe("factorial()", () => {
+	test("0", () => {
+		expect(factorial(0)).toBeCloseTo(1);
+	});
+	test("1", () => {
+		expect(factorial(1)).toBeCloseTo(1);
+	});
+	test("2", () => {
+		expect(factorial(2)).toBeCloseTo(2);
+	});
+	test("3", () => {
+		expect(factorial(3)).toBeCloseTo(6);
+	});
+	test("5", () => {
+		expect(factorial(5)).toBeCloseTo(120);
 	});
 });
 

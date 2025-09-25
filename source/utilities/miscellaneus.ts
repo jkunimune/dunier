@@ -36,6 +36,21 @@ export function argmin(arr: number[]): number {
 }
 
 /**
+ * compute the factorial.  Stirling's approximation will be used for n >= 1e6
+ */
+export function factorial(n: number): number {
+	if (n < 1000000) {
+		let value = 1;
+		for (let i = 1; i <= n; i ++)
+			value *= i;
+		return value;
+	}
+	else {
+		return Math.sqrt(2*Math.PI*n)*(n/Math.E)**n;
+	}
+}
+
+/**
  * second Legendre polynomial.
  */
 export function legendreP2(y: number): number {
