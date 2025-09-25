@@ -92,6 +92,10 @@ export class Civ {
 		// if this is our first tile, establish it as our capital
 		if (this.capital === null) {
 			this.capital = tile;
+			// make up a proto-culture if we don't have one yet (offset the seed to increase variability)
+			if (this.capital.culture === null)
+				this.capital.culture = new Culture(
+					null, this.capital, null, this.technology, year, this.world.rng.next() + 1);
 			// record this moment in history
 			if (loser === null)
 				this.history = [
@@ -172,9 +176,6 @@ export class Civ {
 					this._conquer(child, tile, loser, year);
 		}
 		else { // perpetuate the ruling culture
-			// make up a proto-culture if we don't have one yet (offset the seed to increase variability)
-			if (this.capital.culture === null)
-				this.capital.culture = new Culture(null, this.capital, null, this.technology, year, this.world.rng.next() + 1);
 			tile.culture = this.capital.culture; // perpetuate the ruling culture
 		}
 	}
