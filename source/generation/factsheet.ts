@@ -473,10 +473,15 @@ function describe(culture: Culture, language: string, style: string): string {
 	// add in a list of some common names
 	const names: string[] = [];
 	const rng = new Random(culture.homeland.index);
+	const unusedSeeds = new Set<number>();
+	for (let i = 0; i < 2*NUM_NAMES_TO_LIST*MAX_NUM_NAME_PARTS; i ++)
+		unusedSeeds.add(i); // make sure the same seed isn't used multiple times
 	for (let i = 0; i < NUM_NAMES_TO_LIST; i ++) {
 		const seeds = [];
-		for (let j = 0; j < MAX_NUM_NAME_PARTS; j ++)
-			seeds.push(Math.floor(rng.uniform(0, 5*NUM_NAMES_TO_LIST)));
+		for (let j = 0; j < MAX_NUM_NAME_PARTS; j ++) {
+			seeds.push(rng.choice([...unusedSeeds]));
+			unusedSeeds.delete(seeds[j]);
+		}
 		names.push(format(
 			localize('grammar.mention', language),
 			transcribePhrase(culture.lect.getFullName(seeds), style)));
