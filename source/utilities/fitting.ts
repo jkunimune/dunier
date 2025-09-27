@@ -164,7 +164,8 @@ export function fitLevenbergMarquardt(
 				throw new Error("the line search did not converge");
 		}
 
-		λ *= 4e-4; // decrement line search parameter
+		if (λ > 1e-17)
+			λ *= 4e-4; // decrement line search parameter
 
 		iter += 1; // check iterations
 		if (iter > 10000)
