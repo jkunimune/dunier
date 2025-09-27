@@ -1728,7 +1728,7 @@ function calculateStringLength(characterWidthMap: Map<string, number>, text: str
 	let length = 0;
 	for (let i = 0; i < text.length; i ++) {
 		if (!characterWidthMap.has(text[i])) {
-			console.error(`unrecognized character: 1${text[i]}'`);
+			console.error(`unrecognized character: '${text[i]}'`);
 			characterWidthMap.set(text[i], characterWidthMap.get("m"));
 		}
 		length += characterWidthMap.get(text[i]);

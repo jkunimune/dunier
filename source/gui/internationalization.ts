@@ -85,7 +85,7 @@ export function format(sentence: string, ...args: (string|number|null)[]): strin
 		let convertedArg: string;
 		if (args[i] === null || args[i] === undefined) {
 			if (sentence.includes(`{${i}}`))
-				throw new Error(`${args[i]} was passd as the ${i}° argument.  this is only allowd when the argument is absent from the format string, which was not the case here.`);
+				throw new Error(`${args[i]} was passd as the ${i}° argument to '${sentence}'.  this is only allowd when the argument is absent from the format string, which was not the case here.`);
 			continue;
 		}
 		else if (typeof args[i] === 'string') {
