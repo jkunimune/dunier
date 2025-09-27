@@ -273,8 +273,8 @@ export class Civ {
 		for (const neibor of end.neighbors.keys())
 			if (this === neibor.government)
 				numOwnedNeighbors ++;
-		// if we own most of its neibors, we should gain it instantly
-		if (numOwnedNeighbors > end.neighbors.size/2)
+		// if we already mostly surround a tile, we should gain it instantly
+		if (numOwnedNeighbors >= 2/3*end.neighbors.size)
 			return 0;
 
 		// otherwise, calculate how long it will take us to fill it with our armies

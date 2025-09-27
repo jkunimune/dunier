@@ -118,17 +118,17 @@ export const BIOME_NAMES = [
 ];
 
 export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
-	[Biome.OCEAN,     0.1],
-	[Biome.JUNGLE,    0.1],
+	[Biome.OCEAN,     0.3],
+	[Biome.JUNGLE,    0.3],
 	[Biome.FOREST,    1.0],
 	[Biome.LAKE,      3.0],
 	[Biome.TAIGA,     1.0],
 	[Biome.STEAMLAND, 0.3],
 	[Biome.GRASSLAND, 3.0],
-	[Biome.DESERT,    0.1],
+	[Biome.DESERT,    0.3],
 	[Biome.TUNDRA,    0.3],
-	[Biome.LAND_ICE,  0.1],
-	[Biome.SEA_ICE,   0.1],
+	[Biome.LAND_ICE,  0.3],
+	[Biome.SEA_ICE,   0.3],
 ]);
 export const ARABILITY = new Map([ // terrain modifiers for civ spawning and population growth
 	[Biome.OCEAN,     0.00],
