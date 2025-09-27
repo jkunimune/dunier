@@ -26,11 +26,12 @@ const PRINT_DEBUGGING_INFORMATION = false;
  * initialize an HTML document and fill it out with a comprehensive description
  * @param map the complete SVG code of the map
  * @param civs the list of Civs that will be described later in the document
+ * @param currentYear today's date
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
  * @param language the language in which to write the factbook
  * @param transcriptionStyle the spelling style to use for the proper nouns
  */
-export function generateFactbook(map: VNode, civs: Civ[], tidalLock: boolean, language: string, transcriptionStyle: string): VNode {
+export function generateFactbook(map: VNode, civs: Civ[], currentYear: number, tidalLock: boolean, language: string, transcriptionStyle: string): VNode {
 	const listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
 	const title = h('title');
 	title.textContent = localize('parameter.factbook', language);
@@ -40,7 +41,7 @@ export function generateFactbook(map: VNode, civs: Civ[], tidalLock: boolean, la
 	const body = h('body');
 	generateTitlePage(body, map, listedCivs, language, transcriptionStyle);
 	for (const civ of listedCivs)
-		generateFactSheet(body, civ, tidalLock, language, transcriptionStyle);
+		generateFactSheet(body, civ, currentYear, tidalLock, language, transcriptionStyle);
 	return h('html', {}, head, body);
 }
 
@@ -118,11 +119,12 @@ function generateTitlePage(doc: VNode, map: VNode, civs: Civ[], language: string
  * add a page to this document with all the interesting informacion about the given Civ
  * @param doc the document into which to write this page
  * @param topic the Civ being described on this page
+ * @param currentYear today's date
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
  * @param language the language in which to write the factbook
  * @param style the spelling style to use for the loanwords
  */
-function generateFactSheet(doc: VNode, topic: Civ, tidalLock: boolean, language: string, style: string) {
+function generateFactSheet(doc: VNode, topic: Civ, currentYear: number, tidalLock: boolean, language: string, style: string) {
 	const page = h('div', {style: 'break-after: page'});
 	doc.children.push(page);
 
@@ -146,14 +148,14 @@ function generateFactSheet(doc: VNode, topic: Civ, tidalLock: boolean, language:
 
 	addDemographicsSection(page, topic, tidalLock, language, style);
 
-	addHistorySection(page, topic, language, style);
+	addHistorySection(page, topic, currentYear, language, style);
 }
 
 
 /**
  * add some paragraphs to this page recounting the history of the given country
  */
-function addHistorySection(page: VNode, topic: Civ, language: string, style: string) {
+function addHistorySection(page: VNode, topic: Civ, currentYear: number, language: string, style: string) {
 	let history: {type: string, year: number, participants: (Civ | Culture | number)[]}[] = topic.history;
 
 	// add in the time of peak area if that's interesting
@@ -179,7 +181,7 @@ function addHistorySection(page: VNode, topic: Civ, language: string, style: str
 		// write it out into the history paragraph
 		text += format(
 			localize(`factbook.history.${event.type}`, language),
-			event.year, ...args);
+			currentYear - event.year, ...args);
 	}
 	addParagraph(text, page, 'p');
 }
@@ -448,7 +450,7 @@ function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, lan
  */
 function describe(culture: Culture, language: string, style: string): string {
 	let str = "";
-	for (let i = 0; i < culture.featureLists.length; i ++) { // rite each sentence about a cultural facette TODO: only show some informacion for each country
+	for (let i = 0; i < culture.featureLists.length; i ++) { // rite each sentence about a cultural facette
 		const featureList = culture.featureLists[i];
 		const logaIndex = KULTUR_ASPECTS[i].logaIndex;
 		if (featureList !== null) {

@@ -160,7 +160,7 @@ function generateFantasyMap(args: any[]): void {
 			colorSchemeName, rivers, borders, graticule, windrose, landTexture, seaTexture, shading,
 			civLabels, style);
 	if (target >= Layer.FACTBOOK && lastUpdated < Layer.FACTBOOK)
-		factbook = applyFactbook(map, mappedCivs, tidallyLocked, language, style);
+		factbook = applyFactbook(map, mappedCivs, year, tidallyLocked, language, style);
 
 	postMessage([
 		surface.parameterize(18),
@@ -432,15 +432,17 @@ function applyMap(
  * Generate a nicely typeset document giving all the information about the mapped countries
  * @param map the map being described
  * @param mappedCivs the list of Civs of which to write descriptions
+ * @param currentYear today's date
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
  * @param language the language in which to write the factbook
  * @param style the spelling style to use for the proper nouns
  */
-function applyFactbook(map: VNode, mappedCivs: Civ[], tidalLock: boolean, language: string, style: string): VNode {
+function applyFactbook(map: VNode, mappedCivs: Civ[], currentYear: number, tidalLock: boolean, language: string, style: string): VNode {
 	console.log("jena factbook...");
 	const doc = generateFactbook(
 		map,
 		mappedCivs,
+		currentYear,
 		tidalLock,
 		language,
 		style,
