@@ -36,6 +36,7 @@ const SHOW_TILE_INDICES = false; // label each tile with its number
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
 const COLOR_BY_TILE = false; // color each tile a different color
+const SHOW_SEA_BORDERS = false; // include ocean territory in each country's border
 const SHOW_TECH_LEVEL = false; // caption each country with its current technology level
 const SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
 const SHOW_BACKGROUND = false; // have a big red rectangle under the map
@@ -504,6 +505,11 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			resources);
 	}
 
+	if (borders && SHOW_SEA_BORDERS && world !== null) {
+		lineFeatures.push(...drawBorders(
+			world.getCivs(), transform, createSVGGroup(svg, "borders"), colorScheme.primaryStroke, 0.4, true));
+	}
+
 	// add the graticule
 	if (graticule) {
 		drawGraticule(
@@ -559,6 +565,15 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	}
 	else {
 		visible = null;
+	}
+
+	// log some info for the debug modes
+	if (SHOW_TECH_LEVEL && world !== null) {
+		let maxTechnology = 0;
+		for (const civ of world.getCivs())
+			if (civ.technology > maxTechnology)
+				maxTechnology = civ.technology;
+		console.log(`the most advanced civ in the world has tech equivalent to ${(Math.log(maxTechnology)*1400 - 3000)}`);
 	}
 
 	return {map: svg, mappedCivs: visible};
@@ -685,15 +700,18 @@ function drawRivers(rivers: Set<(Tile | Vertex)[]>, riverDisplayThreshold: numbe
  * @param civs
  * @param transform the projection, extent, scale, and orientation information
  * @param svg SVG object on which to put the Paths
- * @param color
- * @param width
+ * @param color the color of the borderlines
+ * @param width the line width
+ * @param includeSea whether to include sea borders as well
  */
-function drawBorders(civs: Civ[], transform: Transform, svg: VNode, color: string, width: number): PathSegment[][] {
+function drawBorders(civs: Civ[], transform: Transform, svg: VNode, color: string, width: number, includeSea=false): PathSegment[][] {
 	const lineFeatures = [];
 	for (const civ of civs) {
+		let tiles = new Set(civ.tileTree.keys());
+		if (!includeSea)
+			tiles = filterSet(civ.tileTree.keys(), n => !n.isWater());
 		const line = fill(
-			filterSet(civ.tileTree.keys(), n => !n.isWater()),
-			transform, svg, 'none', Layer.KULTUR, color, width);
+			tiles, transform, svg, 'none', Layer.KULTUR, color, width);
 		lineFeatures.push(line);
 	}
 	return lineFeatures;
