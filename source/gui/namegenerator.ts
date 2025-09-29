@@ -19,9 +19,9 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
 	console.log("jena nam...");
 
 	const rng = new Random(seed);
-	let bax: Lect = new ProtoLect(0, 0, rng);
+	let bax: Lect = new ProtoLect(0, rng);
 	for (let i = 0; i < 40; i ++)
-		bax = new Dialect(bax, 0, 0, rng);
+		bax = new Dialect(bax, 0, rng);
 
 	let nameSeed = 0;
 	for (const nameList of [DOM.elm('name-list-1'), DOM.elm('name-list-2')]) {

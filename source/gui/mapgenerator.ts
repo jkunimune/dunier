@@ -19,6 +19,7 @@ import {filterSet} from "../utilities/miscellaneus.js";
 import {Civ} from "../generation/civ.js";
 import {LockedDisc} from "../generation/surface/lockeddisc.js";
 import {toXML, VNode} from "./virtualdom.js";
+import {Lect} from "../generation/language/lect.js";
 
 
 const MIN_SIZE_TO_LIST = 6;
@@ -160,7 +161,7 @@ function generateFantasyMap(args: any[]): void {
 			colorSchemeName, rivers, borders, graticule, windrose, landTexture, seaTexture, shading,
 			civLabels, style);
 	if (target >= Layer.FACTBOOK && lastUpdated < Layer.FACTBOOK)
-		factbook = applyFactbook(map, mappedCivs, year, tidallyLocked, language, style);
+		factbook = applyFactbook(map, mappedCivs, world.getLects(), year, tidallyLocked, language, style);
 
 	postMessage([
 		surface.parameterize(18),
@@ -434,14 +435,16 @@ function applyMap(
  * @param mappedCivs the list of Civs of which to write descriptions
  * @param currentYear today's date
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
+ * @param lects the list of languages of which to be aware, from most to least important
  * @param language the language in which to write the factbook
  * @param style the spelling style to use for the proper nouns
  */
-function applyFactbook(map: VNode, mappedCivs: Civ[], currentYear: number, tidalLock: boolean, language: string, style: string): VNode {
+function applyFactbook(map: VNode, mappedCivs: Civ[], lects: Lect[], currentYear: number, tidalLock: boolean, language: string, style: string): VNode {
 	console.log("jena factbook...");
 	const doc = generateFactbook(
 		map,
 		mappedCivs,
+		lects,
 		currentYear,
 		tidalLock,
 		language,

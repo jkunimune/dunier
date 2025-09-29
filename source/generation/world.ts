@@ -8,6 +8,7 @@ import {Random} from "../utilities/random.js";
 import {Civ} from "./civ.js";
 import {Lect} from "./language/lect.js";
 import {factorial} from "../utilities/miscellaneus.js";
+import {Culture} from "./culture.js";
 
 
 /** a debug option to print detailed information about territory changes */
@@ -48,13 +49,15 @@ export class World {
 	public readonly rng: Random;
 	public planet: Surface;
 	private readonly civs: Set<Civ>;
+	private readonly cultures: Set<Culture>;
 	private lastID: number;
 
 
 	constructor(cataclysms: number, planet: Surface, seed: number) {
 		this.cataclysms = cataclysms;
 		this.planet = planet;
-		this.civs = new Set(); // list of countries in the world
+		this.civs = new Set<Civ>(); // list of countries in the world
+		this.cultures = new Set<Culture>();
 		this.rng = new Random(seed);
 		this.lastID = 0;
 
@@ -76,9 +79,18 @@ export class World {
 			this.spreadIdeas();
 			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
 				this.haveCataclysm(t + TIME_STEP);
-			for (const civ of this.civs)
-				if (civ.tileTree.size > 0)
-					civ.update(t + TIME_STEP);
+			for (const civ of this.civs) {
+				if (!civ.isDead())
+					civ.update(TIME_STEP); // handle technological development, militaristic decay, etc.
+				else
+					this.civs.delete(civ); // clear out any Civs that no longer have population
+			}
+			for (const culture of this.cultures) {
+				if (culture.tiles.size > 0)
+					culture.update(); // handle linguistic development, societal change, etc.
+				else
+					this.cultures.delete(culture); // clear out any Cultures that are extinct
+			}
 		}
 	}
 
@@ -147,9 +159,6 @@ export class World {
 				}
 			}
 		}
-		for (const civ of this.civs)
-			if (civ.isDead())
-				this.civs.delete(civ); // clear out any Civs that no longer exist
 	}
 
 	/**
@@ -204,6 +213,7 @@ export class World {
 				if (LOG_LAND_CLAIMS)
 					console.log(`${year.toFixed(0)}: ${tile.government.getName()} loses tile ${tile.index}`);
 				tile.government.lose(tile, year);
+				tile.culture.recedeFrom(tile);
 			}
 		}
 		for (const civ of this.civs)
@@ -221,15 +231,17 @@ export class World {
 	 * there may be duplicates.
 	 */
 	getLects(): Lect[] {
-		const lects = [];
-		// start with the national languages
-		for (const civ of this.getCivs(true))
-			lects.push(civ.capital.culture.lect);
-		// then add in the minority languages
-		for (const civ of this.getCivs(true))
-			for (const {culture} of civ.getCultures().slice(1))
-				lects.push(culture.lect);
-		return lects;
+		const cultures = [...this.cultures].sort((a, b) => {
+			// put national languages before minority languages
+			if (a.hasNationState() && !b.hasNationState())
+				return -1;
+			if (b.hasNationState() && !a.hasNationState())
+				return 1;
+			// put languages with many speakers before languages with few speakers
+			else
+				return b.getPopulation() - a.getPopulation();
+		});
+		return cultures.map(culture => culture.lect);
 	}
 
 	/**
@@ -253,7 +265,7 @@ export class World {
 	 */
 	addNewCiv(predecessor: Civ, year: number): Civ {
 		this.lastID ++;
-		const civ = new Civ(this.lastID, this, year, predecessor)
+		const civ = new Civ(this.lastID, this, year, predecessor);
 		this.civs.add(civ);
 		return civ;
 	}
@@ -266,5 +278,13 @@ export class World {
 			if (civ.id === id)
 				return civ;
 		throw new RangeError(`there is no civ with id ${id}`);
+	}
+
+	/**
+	 * add a Culture to the list.  unlike addNewCiv() you have to initialize the Culture yourself.
+	 * @param culture
+	 */
+	addCulture(culture: Culture): void {
+		this.cultures.add(culture);
 	}
 }

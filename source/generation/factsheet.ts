@@ -4,7 +4,7 @@
  */
 import {Civ} from "./civ.js";
 import {format, formatList, localize} from "../gui/internationalization.js";
-import {MAX_NUM_NAME_PARTS, WordType} from "./language/lect.js";
+import {Lect, MAX_NUM_NAME_PARTS, WordType} from "./language/lect.js";
 import {Culture, KULTUR_ASPECTS} from "./culture.js";
 import {argmax} from "../utilities/miscellaneus.js";
 import {compare} from "./language/script.js";
@@ -19,19 +19,19 @@ import {transcribePhrase} from "./language/word.js";
 
 const NUM_CIVS_TO_DESCRIBE = 10;
 const NUM_NAMES_TO_LIST = 3;
-const PRINT_DEBUGGING_INFORMATION = false;
 
 
 /**
  * initialize an HTML document and fill it out with a comprehensive description
  * @param map the complete SVG code of the map
  * @param civs the list of Civs that will be described later in the document
+ * @param lects the list of languages of which to be aware, from most to least important
  * @param currentYear today's date
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
  * @param language the language in which to write the factbook
  * @param transcriptionStyle the spelling style to use for the proper nouns
  */
-export function generateFactbook(map: VNode, civs: Civ[], currentYear: number, tidalLock: boolean, language: string, transcriptionStyle: string): VNode {
+export function generateFactbook(map: VNode, civs: Civ[], lects: Lect[], currentYear: number, tidalLock: boolean, language: string, transcriptionStyle: string): VNode {
 	const listedCivs = chooseMostImportantCivs(civs, transcriptionStyle);
 	const title = h('title');
 	title.textContent = localize('parameter.factbook', language);
@@ -41,7 +41,7 @@ export function generateFactbook(map: VNode, civs: Civ[], currentYear: number, t
 	const body = h('body');
 	generateTitlePage(body, map, listedCivs, language, transcriptionStyle);
 	for (const civ of listedCivs)
-		generateFactSheet(body, civ, currentYear, tidalLock, language, transcriptionStyle);
+		generateFactSheet(body, civ, lects, currentYear, tidalLock, language, transcriptionStyle);
 	return h('html', {}, head, body);
 }
 
@@ -121,10 +121,11 @@ function generateTitlePage(doc: VNode, map: VNode, civs: Civ[], language: string
  * @param topic the Civ being described on this page
  * @param currentYear today's date
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
+ * @param listOfLects a presorted list of all of the Lects of which to be aware in order of prominence
  * @param language the language in which to write the factbook
  * @param style the spelling style to use for the loanwords
  */
-function generateFactSheet(doc: VNode, topic: Civ, currentYear: number, tidalLock: boolean, language: string, style: string) {
+function generateFactSheet(doc: VNode, topic: Civ, listOfLects: Lect[], currentYear: number, tidalLock: boolean, language: string, style: string) {
 	const page = h('div', {style: 'break-after: page'});
 	doc.children.push(page);
 
@@ -146,7 +147,7 @@ function generateFactSheet(doc: VNode, topic: Civ, currentYear: number, tidalLoc
 
 	addGeographySection(page, topic, tidalLock, language, style);
 
-	addDemographicsSection(page, topic, tidalLock, language, style);
+	addDemographicsSection(page, topic, listOfLects, tidalLock, language, style);
 
 	addHistorySection(page, topic, currentYear, language, style);
 }
@@ -334,7 +335,7 @@ function addGeographySection(page: VNode, topic: Civ, tidalLock: boolean, langua
 /**
  * add some paragraphs to this page listing and describing the peoples of the given country
  */
-function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, language: string, style: string) {
+function addDemographicsSection(page: VNode, topic: Civ, listOfLects: Lect[], tidalLock: boolean, language: string, style: string) {
 	// write a bit about the technology level
 	const techDescriptors = new Map<string, string>();
 	for (const technology of TECHNOLOGIES)
@@ -415,7 +416,7 @@ function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, lan
 			topic.getName().toString(style));
 
 		let relatedLect = null;
-		for (const otherLect of topic.world.getLects()) {
+		for (const otherLect of listOfLects) {
 			if (otherLect !== culture.lect && culture.lect.getAncestor(10_000) === otherLect.getAncestor(10_000)) {
 				relatedLect = otherLect;
 				break;
@@ -436,11 +437,6 @@ function addDemographicsSection(page: VNode, topic: Civ, tidalLock: boolean, lan
 		addParagraph(
 			populationSentence + languageSentence + describe(culture, language, style),
 			page, 'p');
-
-		if (PRINT_DEBUGGING_INFORMATION)
-			addParagraph(
-				`that culture has the following classes: [${[...culture.klas].join(", ")}]`,
-				page, 'p');
 	}
 }
 

@@ -3,14 +3,13 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Tile} from "./surface/surface.js";
-import {Lect, WordType} from "./language/lect.js";
+import {WordType} from "./language/lect.js";
 import {
 	POPULATION_DENSITY,
 	MEAN_ASSIMILATION_TIME,
 	SLOPE_FACTOR, CONQUEST_RATE,
 	TECH_ADVANCEMENT_RATE,
 	MAX_DYNASTY_LIFETIME,
-	TIME_STEP,
 	World
 } from "./world.js";
 import {Culture} from "./culture.js";
@@ -92,10 +91,11 @@ export class Civ {
 		// if this is our first tile, establish it as our capital
 		if (this.capital === null) {
 			this.capital = tile;
-			// make up a proto-culture if we don't have one yet (offset the seed to increase variability)
-			if (this.capital.culture === null)
-				this.capital.culture = new Culture(
-					null, this.capital, null, this.technology, year, this.world.rng.next() + 1);
+			// define a new national identity (offset the seed to increase variability)
+			const culture = new Culture(
+				this.capital.culture, this.capital, this.technology, this.world.rng.next() + 1);
+			culture.spreadTo(this.capital);
+			this.world.addCulture(culture);
 			// record this moment in history
 			if (loser === null)
 				this.history = [
@@ -172,12 +172,12 @@ export class Civ {
 
 		if (loser !== null) {
 			for (const child of loser.tileTree.get(tile).children) // then recurse
-				if (child.arableArea > 0)
+				if (child.arableArea > 0) // unless you hit uninhabited land
 					this._conquer(child, tile, loser, year);
 		}
-		else { // perpetuate the ruling culture
-			tile.culture = this.capital.culture; // perpetuate the ruling culture
-		}
+		if (tile.arableArea > 0)
+			if (tile.culture === null || tile.culture.lect.isIntelligible(this.capital.culture.lect)) // perpetuate the ruling culture
+				this.capital.culture.spreadTo(tile);
 	}
 
 	/**
@@ -234,32 +234,18 @@ export class Civ {
 
 	/**
 	 * change with the passing of the centuries
-	 * @param year the current year
+	 * @param timeStep the number of years to pass
 	 */
-	update(year: number) {
-		const rulingCulture = new Culture(this.capital.culture, this.capital, null, this.technology, year, this.world.rng.next()); // start by updating the capital, tying it to the new homeland
-		const newKultur: Map<Lect, Culture> = new Map(); // TODO: cultures should transcend boundaries
-		newKultur.set(
-			this.capital.culture.lect.macrolanguage,
-			rulingCulture);
-		for (const tile of this.tileTree.keys()) { // update the culture of each tile in the empire in turn
-			if (this.world.rng.probability(TIME_STEP/MEAN_ASSIMILATION_TIME)) { // if the province fails its heritage saving throw
-				tile.culture = rulingCulture; // its culture gets overritten
-			}
-			else { // otherwise update it normally
-				if (!newKultur.has(tile.culture.lect.macrolanguage)) { // if you encounter a culture that hasn't been updated and added to the Map yet
-					const updatedCulture = new Culture(tile.culture, tile.culture.homeland, rulingCulture, this.technology, year, this.world.rng.next() + 1);
-					newKultur.set(
-						tile.culture.lect.macrolanguage,
-						updatedCulture); // update that culture, treating it as a diaspora
-				}
-				tile.culture = newKultur.get(tile.culture.lect.macrolanguage); // then make the assinement
-			}
-		}
+	update(timeStep: number) {
+		// assimilate cultures
+		for (const tile of this.tileTree.keys())
+			if (tile.arableArea > 0) // if anyone lives here
+				if (this.world.rng.probability(timeStep/MEAN_ASSIMILATION_TIME)) // if the province fails its heritage saving throw
+					this.capital.culture.spreadTo(tile); // its culture gets overritten
 
-		this.militarism = Math.max(0, this.militarism - this.militarismDecayRate*TIME_STEP);
+		this.militarism = Math.max(0, this.militarism - this.militarismDecayRate*timeStep);
 		const densestPopulation = POPULATION_DENSITY*this.sortedTiles.peek().arableArea;
-		this.technology += TECH_ADVANCEMENT_RATE*TIME_STEP*densestPopulation*this.technology;
+		this.technology += TECH_ADVANCEMENT_RATE*timeStep*densestPopulation*this.technology;
 	}
 
 	/**
@@ -368,10 +354,11 @@ export class Civ {
 		const output = [];
 		for (const culture of cultureList) {
 			const {population, tiles} = cultureMap.get(culture);
-			output.push({
-				culture: culture,
-				populationFraction: population/this.arableArea,
-				inhabitedTiles: tiles});
+			if (population > 0)
+				output.push({
+					culture: culture,
+					populationFraction: population/this.arableArea,
+					inhabitedTiles: tiles});
 		}
 		return output;
 	}

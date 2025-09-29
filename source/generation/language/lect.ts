@@ -131,16 +131,13 @@ export abstract class Lect {
 	public readonly nameStyle: NameStyle;
 	/** the proto-language for the set of lects intelligible to this one */
 	public macrolanguage: Lect;
-	/** the year in which this language was spoken */
-	public readonly year: number;
 	/** the seed we use to get the name of this Language's people/place of origin */
 	private readonly homelandIndex: number;
 
 	protected constructor(defaultTranscriptionStyle: string, nameStyle: NameStyle,
-	                      year: number, homelandIndex: number) {
+	                      homelandIndex: number) {
 		this.defaultTranscriptionStyle = defaultTranscriptionStyle;
 		this.nameStyle = nameStyle;
-		this.year = year;
 		this.homelandIndex = homelandIndex;
 	}
 
@@ -200,8 +197,6 @@ export abstract class Lect {
 	 * is this language actually a dialect of lang?
 	 */
 	isIntelligible(lang: Lect): boolean {
-		if (this.year !== lang.year)
-			throw new Error("these languages were never contemporary so we shouldn't be comparing them.");
 		return this.macrolanguage === lang.macrolanguage;
 	}
 
@@ -249,11 +244,10 @@ export class ProtoLect extends Lect {
 	/** the random number seed to use when composing original words */
 	private readonly seed: number;
 
-	constructor(year: number, homelandIndex: number, rng: Random) {
+	constructor(homelandIndex: number, rng: Random) {
 		super(
 			`native${rng.discrete(0, 4)}`,
 			rollNewNameStyle(rng),
-			year,
 			homelandIndex);
 		this.seed = rng.next();
 		this.macrolanguage = this;
@@ -414,10 +408,6 @@ export class ProtoLect extends Lect {
 	getAncestor(_n: number): Lect {
 		return this;
 	}
-
-	isIntelligible(lang: Lect): boolean {
-		return this === lang;
-	}
 }
 
 /**
@@ -428,10 +418,10 @@ export class Dialect extends Lect {
 	private readonly wordProcesses: WordProcess[];
 	private readonly phraseProcesses: PhraseProcess[];
 
-	constructor(parent: Lect, year: number, homelandIndex: number, rng: Random) {
+	constructor(parent: Lect, homelandIndex: number, rng: Random) {
 		super(
 			parent.defaultTranscriptionStyle, rollNewNameStyle(rng, parent.nameStyle),
-			year, homelandIndex);
+			homelandIndex);
 		this.parent = parent;
 		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 

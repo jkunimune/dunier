@@ -3,7 +3,7 @@ export default [
     "key": "type", "chance": 1.0, "features": [
       {
         "key": "type", "newWord": false, "values": [
-          { "key": "nomadic", "klas": "nomadic", "conditions": ["+plains", "+free"] },
+          { "key": "nomadic", "klas": "nomadic", "conditions": ["+plains"] },
           { "key": "sedentary", "klas": "sedentary", "conditions": [] }
         ]
       }

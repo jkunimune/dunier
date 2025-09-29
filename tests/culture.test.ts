@@ -24,7 +24,7 @@ describe("culture.json", () => {
 	});
 	describe("condition classes are all defined", () => {
 		const definedClasses = [
-			"day_night_cycle", "four_seasons", "nation_state", "free",
+			"day_night_cycle", "four_seasons", "nation_state",
 			"coastal", "mountainous", "hot", "cold", "humid", "arid", "plains", "barren", "sandy"];
 		for (const aspect of UNPARSED_KULTUR_ASPECTS) {
 			for (const feature of aspect.features) {
