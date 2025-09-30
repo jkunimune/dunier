@@ -317,20 +317,22 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			// forbid double v
 			symbols = symbols.replace(/vv/g, "v");
 			// remove j between a consonant and i
-			symbols = symbols.replace(/([^aeijouv̄])ji/g, "$1i");
+			symbols = symbols.replace(/([^aæeijoœuvȳ])ji/g, "$1i");
+			symbols = symbols.replace(/ij([^aæeioœuy])/g, "ī$1");
 			// remove v between a consonant and u
-			symbols = symbols.replace(/([^aeijouv̄])vu/g, "$1u");
+			symbols = symbols.replace(/([^aæeijoœuvȳ])vu/g, "$1u");
+			symbols = symbols.replace(/uv([^aæeioœuy])/g, "ū$1");
 			// change j to i adjacent to consonants
-			symbols = symbols.replace(/([^aeijouv̄])j/g, "$1i");
-			symbols = symbols.replace(/j([^aeijouv̄])/g, "i$1");
+			symbols = symbols.replace(/([^aæeijoœuvȳ])j/g, "$1i");
+			symbols = symbols.replace(/j([^aæeijoœuvȳ])/g, "i$1");
 			// change v to u adjacent to consonants
-			symbols = symbols.replace(/([^aeijouv̄])v/g, "$1u");
-			symbols = symbols.replace(/v([^aeijouv̄])/g, "u$1");
+			symbols = symbols.replace(/([^aæeijoœuvȳ])v/g, "$1u");
+			symbols = symbols.replace(/v([^aæeijoœuvȳ])/g, "u$1");
 			// make things look like latin words if it's convenient to do so
-			symbols = symbols.replace(/[uo]$/g, "um");
-			symbols = symbols.replace(/[e]$/g, "a");
-			symbols = symbols.replace(/[i]$/g, "ia");
-			symbols = symbols.replace(/[o]s$/g, "us");
+			symbols = symbols.replace(/om$/g, "um");
+			symbols = symbols.replace(/e$/g, "a");
+			symbols = symbols.replace(/i$/g, "ia");
+			symbols = symbols.replace(/os$/g, "us");
 		}
 		// apply spanish spelling rules
 		if (style === 'es') {
