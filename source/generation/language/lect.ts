@@ -201,7 +201,7 @@ export abstract class Lect {
 	}
 
 	getName(): Word {
-		return this.getProperWord(`place${this.homelandIndex}`, WordType.LANGUAGE);
+		return this.getProperWord(this.homelandIndex.toString(), WordType.LANGUAGE);
 	}
 }
 
@@ -223,8 +223,6 @@ export class ProtoLect extends Lect {
 	private readonly stressRule: StressPlacement;
 	/** what kinds of suffixes to use for names of countries, peoples, and languages */
 	private readonly toponymAffixStyle: ToponymClassifierStyle;
-	/** the typical number of lexical suffixes used for one type of word */
-	private readonly diversity: number;
 	/** the onset consonants in this language */
 	private readonly onsets: Sound[];
 	/** the vowels in this language */
@@ -279,6 +277,8 @@ export class ProtoLect extends Lect {
 			Math.log10(this.vowels.length) +
 			Math.log10(1 + this.codas.length)*ProtoLect.P_CODA);
 
+		this.stressRule = new StressPlacement(!this.prefixing, 1, 1, 'lapse', false);
+
 		const numGenders = rng.probability(1/2) ? 0 : rng.discrete(2, 6);
 		this.affixes = new Map<PartOfSpeech, Sound[][]>();
 		for (let partOfSpeech = 0; partOfSpeech < 3; partOfSpeech ++) {
@@ -296,17 +296,15 @@ export class ProtoLect extends Lect {
 		for (const wordType of WordType) {
 			this.word.set(<WordType>wordType, new Map<string, Word>());
 			const classifiers: Sound[][] = [];
-			const numClassifiers = Math.round(this.diversity*(<WordType>wordType).numClassifiers);
+			const numClassifiers = Math.round((<WordType>wordType).numClassifiers);
 			for (let i = 0; i < numClassifiers; i++) { // TODO countries can be named after cities
 				classifiers.push(this.getCommonWord(
 					`${classifierSeed}`, Math.max(1, 3/this.complexity),
 					(<WordType>wordType).partOfSpeech));
-				classifierSeed++;
+				classifierSeed ++;
 			}
 			this.classifiers.set(<WordType>wordType, classifiers);
 		}
-
-		this.stressRule = new StressPlacement(!this.prefixing, 1, 1, 'lapse', false);
 	}
 
 	getProperWord(index: string, tipo: WordType): Word {

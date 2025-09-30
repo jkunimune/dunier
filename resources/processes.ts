@@ -1273,7 +1273,7 @@ export default [
     "chance": 0.002, "type": "acente", "comment": "",
     "code": "left 2"
   }, {
-    "chance": 0.010, "type": "compounding", "comment": "elision of pauses",
+    "chance": 0.050, "type": "compounding", "comment": "elision of pauses",
     "code": ""
   }, {
     "chance": 1.000, "type": "mute", "comment": "loss of gemination in onset",
