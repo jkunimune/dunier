@@ -338,6 +338,8 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			symbols = symbols.replace(/e$/g, "a");
 			symbols = symbols.replace(/i$/g, "ia");
 			symbols = symbols.replace(/os$/g, "us");
+			// use q
+			symbols = symbols.replace(/cu([aæeioœy])/, "qu$1");
 		}
 		// apply spanish spelling rules
 		if (style === 'es') {
@@ -394,7 +396,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			symbols = "#" + symbols + "#";
 			for (const vise of ENGLISH_REPLACEMENTS) {
 				for (const pattern of vise.patterns) { // look through the replacements in ENGLI_VISE
-					for (let i = symbols.length; i >= 1; i --) { // ang go through the string
+					for (let i = symbols.length; i >= 1; i --) { // and go through the string
 						if (i - pattern.length >= 0 && symbols.substring(i - pattern.length, i) === pattern)
 							symbols = symbols.substring(0, i - pattern.length) + vise.result + symbols.substring(i);
 					}
@@ -405,13 +407,7 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 			if (symbols[symbols.length - 1] === 'ɦ' && '*–aeiouyw'.includes(symbols[symbols.length - 2]))
 				symbols = symbols.substring(0, symbols.length - 1) + "gh"; // replace word-final <h> with <gh>
 			else if ('bcdfgjklmnpqrstvz'.includes(symbols[symbols.length - 1]) && symbols[symbols.length - 2] === '-')
-				symbols += 'ia'; // add <ia> when the last vowel needs to be long
-
-			if (symbols.length >= 3 &&
-				'cfd'.includes(symbols.charAt(symbols.length - 1)) &&
-				'*' === symbols.charAt(symbols.length - 2) &&
-				(symbols.length < 4 || !'aeiou'.includes(symbols.charAt(symbols.length - 4)))) // double the final consonant if the word ends in a single short vowel followd by <c>, <f>, or <d>
-				symbols += symbols.charAt(symbols.length - 1);
+				symbols += 'e'; // add <e> when the last vowel needs to be long
 
 			let newSymbol = "";
 			for (let i = 0; i < symbols.length; i++) {

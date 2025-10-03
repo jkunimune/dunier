@@ -150,30 +150,30 @@ describe("script", () => {
 		expect(transcribe([word], "es")).toEqual("Ananás");
 	});
 	describe("transcribe", () => {
-		const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ"), ipa("wiwiɡjaɡwaɡwiɡaɡiθaθikaki"), ipa("tjiejt")];
+		const words = [ipa("ʃtaʀk"), ipa("ŋwijən"), ipa("jʊŋ"), ipa("wikwiɡjaɡwaɡwiɡaɡiθaθikaki"), ipa("tjiejt")];
 		words[0][0] = words[0][0].with(Nosia.NASALIZED).with(Mode.AFFRICATE);
 		words[2][0] = words[2][0].with(Nosia.NASALIZED);
 		words[2][1] = words[2][1].with(Nosia.NASALIZED).with(Longia.LONG);
 		test("ipa", () => {
-			expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwi.jən j̃ʊ̃ːŋ wi.wiɡ.jaɡ.waɡ.wi.ɡa.ɡi.θa.θi.ka.ki tji.ejt");
+			expect(transcribe(words, "ipa")).toEqual("n͡t͡ʃtaʀk ŋwi.jən j̃ʊ̃ːŋ wik.wiɡ.jaɡ.waɡ.wi.ɡa.ɡi.θa.θi.ka.ki tji.ejt");
 		});
 		test("en", () => {
-			expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung Wewegiagwagwegageethathecacky Teaeet");
+			expect(transcribe(words, "en")).toEqual("Nchtark Ngweun Yung Weequegiagwagwegageethathecacky Teaeet");
 		});
 		test("ja", () => {
-			expect(transcribe(words, "ja")).toEqual("ンチタルク・グイヤン・ユーング・ウィウィギャグワグイガギサシカキ・ティイエイト");
+			expect(transcribe(words, "ja")).toEqual("ンチタルク・グイヤン・ユーング・ウィクイギャグワグイガギサシカキ・ティイエイト");
 		});
 		test("es", () => {
-			expect(transcribe(words, "es")).toEqual("Nchtarc Nuiyen Yun Huihuiguiaguagüigaguizacicaqui Tieit");
+			expect(transcribe(words, "es")).toEqual("Nchtarc Nuiyen Yun Huicuiguiaguagüigaguizacicaqui Tieit");
 		});
 		test("ru", () => {
-			expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Вивигягвагвигагифафикаки-Тиейт");
+			expect(transcribe(words, "ru")).toEqual("Нчтарк-Нгвиян-Юнг-Виквигягвагвигагифафикаки-Тиейт");
 		});
 		test("la", () => {
-			expect(transcribe(words, "la")).toEqual("Nstarc Nuijen Jūn Vivigiaguaguigagithathicacia Tieit");
+			expect(transcribe(words, "la")).toEqual("Nstarc Nuijen Jūn Viquigiaguaguigagithathicacia Tieit");
 		});
 		test("simple", () => {
-			expect(transcribe(words, "simple")).toEqual("Nchtark Ngwiyan Yung Wiwigyagwagwigagithathikaki Tyieit");
+			expect(transcribe(words, "simple")).toEqual("Nchtark Ngwiyan Yung Wikwigyagwagwigagithathikaki Tyieit");
 		});
 	});
 });
