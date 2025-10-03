@@ -161,9 +161,7 @@ export class Civ {
 			const finishingAShortCivilWar = lastEvent.type === "independence" && lastEvent.year >= year - 100 && lastEvent.participants[1] === loser && this.capital.culture === tile.culture;
 			if (finishingAShortCivilWar) {
 				this.history = loser.history.filter(({type}) => !["conquest", "secession"].includes(type)); // if we just recently came from this country, make their history our own
-				if (tile === this.capital)
-					this.history.push({type: "coup", year: year, participants: [this, loser]});
-				else
+				if (tile !== this.capital)
 					this.history.push({type: "civil_war", year: year, participants: [this, loser]});
 			}
 			else
