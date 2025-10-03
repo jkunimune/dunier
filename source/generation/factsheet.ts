@@ -397,6 +397,14 @@ function addDemographicsSection(page: VNode, topic: Civ, listOfLects: Lect[], ti
 				region = tidalLock ? "dayleft" : "southwest";
 		}
 
+		let roundedPopulationPercentage;
+		if (populationFraction > .05)
+			roundedPopulationPercentage = Math.round(populationFraction*20)*5;
+		else if (populationFraction > .01)
+			roundedPopulationPercentage = Math.round(populationFraction*100);
+		else
+			roundedPopulationPercentage = 1.;
+
 		const populationSentence = format(
 			localize(
 				(populationFraction < 2/3) ?
@@ -412,7 +420,7 @@ function addDemographicsSection(page: VNode, topic: Civ, listOfLects: Lect[], ti
 			localize(
 				`factbook.direction.${region}`,
 				language),
-			Math.round(populationFraction*100),
+			roundedPopulationPercentage,
 			topic.getName().toString(style));
 
 		let relatedLect = null;
