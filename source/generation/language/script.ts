@@ -282,6 +282,11 @@ export function transcribe(allSounds: Sound[][], style: string): string {
 		// join the syllables with the appropriate separator
 		let symbols = symbol_syllables.join(TO_TEXT.get(style).get("syllable break"));
 
+		// apply this one "simplified latin" rule
+		if (style === 'simple') {
+			// add a diacritic to word-final e so English-speakers know it's not silent
+			symbols = symbols.replace(/e\b/, "ë");
+		}
 		// apply russian spelling rules
 		if (style === 'ru') {
 			// forbid double й or ь

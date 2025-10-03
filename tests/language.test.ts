@@ -172,6 +172,9 @@ describe("script", () => {
 		test("la", () => {
 			expect(transcribe(words, "la")).toEqual("Nstarc Nuijen Jūn Vivigiaguaguigagithathicacia Tieit");
 		});
+		test("simple", () => {
+			expect(transcribe(words, "simple")).toEqual("Nchtark Ngwiyan Yung Wiwigyagwagwigagithathikaki Tyieit");
+		});
 	});
 });
 
