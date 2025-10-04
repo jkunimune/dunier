@@ -108,10 +108,11 @@ function generateTitlePage(doc: VNode, map: VNode, civs: Civ[], language: string
 			localize('factbook.outline.lede.none', language),
 			page, 'p');
 
+	const mapContainer = h('div', {style: "display:flex; width:100%; height:6.5in;"});
 	const importedMap = cloneNode(map);
-	importedMap.attributes.width = "100%";
-	importedMap.attributes.height = "6.5in";
-	page.children.push(importedMap);
+	importedMap.attributes.style = "max-width:100%; max-height:100%; margin:auto;";
+	mapContainer.children.push(importedMap);
+	page.children.push(mapContainer);
 }
 
 
