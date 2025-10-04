@@ -422,8 +422,11 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			throw new Error("this Chart was asked to color land politicly but the provided World was null");
 		const biggestCivs = world.getCivs(true);
 		const biggestCivExtents = [];
-		for (const civ of biggestCivs)
+		for (const civ of biggestCivs) {
+			if (civ.tileTree.size === 1 && civ.getPopulation()/civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
+				continue; // skip really small countries
 			biggestCivExtents.push(filterSet(civ.tileTree.keys(), n => !n.isWater()));
+		}
 		const drawnCivs = fillMultiple(
 			biggestCivExtents, COUNTRY_COLORS, surface.tiles, colorScheme.landFill,
 			transform, createSVGGroup(svg, "countries"), Layer.KULTUR);
@@ -707,6 +710,8 @@ function drawRivers(rivers: Set<(Tile | Vertex)[]>, riverDisplayThreshold: numbe
 function drawBorders(civs: Civ[], transform: Transform, svg: VNode, color: string, width: number, includeSea=false): PathSegment[][] {
 	const lineFeatures = [];
 	for (const civ of civs) {
+		if (civ.tileTree.size === 1 && civ.getPopulation()/civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
+			continue; // skip really small countries
 		let tiles = new Set(civ.tileTree.keys());
 		if (!includeSea)
 			tiles = filterSet(civ.tileTree.keys(), n => !n.isWater());
