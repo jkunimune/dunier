@@ -39,8 +39,6 @@ interface Meaning {
 	type: RootType,
 }
 
-const PEOPLE_WORD = {english: "people", type: RootType.COMMON};
-const LANGUAGE_WORD = {english: "language", type: RootType.COMMON};
 const PEOPLE_AFFIX = {english: "people", type: RootType.SHORT};
 const LANGUAGE_AFFIX = {english: "language", type: RootType.SHORT};
 const COUNTRY_AFFIX = {english: "land", type: RootType.SHORT};
@@ -125,8 +123,6 @@ export abstract class Lect {
 		people: Meaning | null,
 		language: Meaning | null,
 		adjective: Meaning | null };
-	/** whether this language uses lots of compound words (instead of using phrases */
-	private readonly compounding: boolean;
 	/** whether this language prefers prefixen */
 	protected readonly prefixing: boolean;
 	/** the proto-language for the set of lects intelligible to this one */
@@ -156,32 +152,26 @@ export abstract class Lect {
 
 		if (parent === null || rng.probability(DRIFT_RATE)) {
 			const p = rng.random();
-			if (p < 1/6) {
-				this.compounding = false;
+			if (p < 1/6)
 				this.affixes = {
-					country: null, people: PEOPLE_WORD, language: LANGUAGE_WORD, adjective: null};
-			}
-			else {
-				this.compounding = true;
-				if (p < 1/3)
-					this.affixes = {
-						country: null, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX, adjective: ADJECTIVE_AFFIX};
-				else if (p < 1/2)
-					this.affixes = {
-						country: null, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX, adjective: null};
-				else if (p < 2/3)
-					this.affixes = {
-						country: COUNTRY_AFFIX, people: null, language: LANGUAGE_AFFIX, adjective: null};
-				else if (p < 5/6)
-					this.affixes = {
-						country: COUNTRY_AFFIX, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX, adjective: ADJECTIVE_AFFIX};
-				else
-					this.affixes = {
-						country: COUNTRY_AFFIX, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX, adjective: PEOPLE_AFFIX};
-			}
+					country: null, people: null, language: null, adjective: null};
+			else if (p < 1/3)
+				this.affixes = {
+					country: null, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX, adjective: ADJECTIVE_AFFIX};
+			else if (p < 1/2)
+				this.affixes = {
+					country: null, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX, adjective: null};
+			else if (p < 2/3)
+				this.affixes = {
+					country: COUNTRY_AFFIX, people: null, language: LANGUAGE_AFFIX, adjective: null};
+			else if (p < 5/6)
+				this.affixes = {
+					country: COUNTRY_AFFIX, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX, adjective: ADJECTIVE_AFFIX};
+			else
+				this.affixes = {
+					country: COUNTRY_AFFIX, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX, adjective: PEOPLE_AFFIX};
 		}
 		else {
-			this.compounding = parent.compounding;
 			this.affixes = parent.affixes;
 		}
 
@@ -306,24 +296,8 @@ export abstract class Lect {
 		if (affix === null) {
 			return new Phrase([this.getWord([base])], this);
 		}
-		else if (this.compounding) {
-			return new Phrase([this.getWord([base, affix])], this);
-		}
 		else {
-			let components;
-			if (this.genders.length > 0)
-				components = [
-					this.getWord([base, this.getGender(affix)]),
-					this.getWord([affix]),
-				];
-			else
-				components = [
-					this.getWord([base]),
-					this.getWord([affix]),
-				];
-			if (this.prefixing)
-				components.reverse();
-			return new Phrase(components, this);
+			return new Phrase([this.getWord([base, affix])], this);
 		}
 	}
 
