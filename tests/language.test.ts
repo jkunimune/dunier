@@ -24,7 +24,7 @@ describe("process", () => {
 				false);
 			const word = ipa("tadalatat");
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("ta.da.la.dat");
+			expect(transcribe(result)).toEqual("ta.da.la.dat");
 		});
 		test("referencing from preceding context", () => {
 			const change = new SoundChange(
@@ -34,7 +34,7 @@ describe("process", () => {
 				[new Klas([Quality.VOWEL]), new Klas([Quality.CORONAL])], [], false);
 			const word = ipa("uɫtw");
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("uɫtˠw");
+			expect(transcribe(result)).toEqual("uɫtˠw");
 		});
 		test("referencing from following context", () => {
 			const change = new SoundChange(
@@ -44,7 +44,7 @@ describe("process", () => {
 				[], [new Klas([Quality.OBSTRUENT]), new Klas([Quality.VOWEL])], false);
 			const word = ipa("stɡa");
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("sdɡa");
+			expect(transcribe(result)).toEqual("sdɡa");
 		});
 		test("referencing in pattern", () => {
 			const change = new SoundChange(
@@ -54,7 +54,7 @@ describe("process", () => {
 				[], [], false);
 			const word = ipa("ms");
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("nɸ");
+			expect(transcribe(result)).toEqual("nɸ");
 		});
 		test("metathesis", () => {
 			const change = new SoundChange(
@@ -64,31 +64,31 @@ describe("process", () => {
 				[], [], false);
 			const word = ipa("ms");
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("ɸn");
+			expect(transcribe(result)).toEqual("ɸn");
 		});
 	});
 	test("Harmony", () => {
 		const change = new Harmony(Loke.PALATAL, Loke.VELAR, Quality.VOWEL);
 		const word = ipa("uaiauai");
 		const result = change.apply([word])[0];
-		expect(transcribe(result, "ipa")).toEqual("u.a.ɯ.a.u.a.ɯ");
+		expect(transcribe(result)).toEqual("u.a.ɯ.a.u.a.ɯ");
 	});
 	describe("Syllabicization", () => {
 		const word = ipa("jwtjtntwj");
 		test("forward bias", () => {
 			const change = new Syllabicization(+1, Mode.CLOSE.sonority);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("ju.ti.tən.twi");
+			expect(transcribe(result)).toEqual("ju.ti.tən.twi");
 		});
 		test("backward bias", () => {
 			const change = new Syllabicization(0, Mode.CLOSE.sonority);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("i.u.ti.tən.tu.i");
+			expect(transcribe(result)).toEqual("i.u.ti.tən.tu.i");
 		});
 		test("backward bias", () => {
 			const change = new Syllabicization(-1, Mode.CLOSE.sonority);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("iw.ti.tən.tuj");
+			expect(transcribe(result)).toEqual("iw.ti.tən.tuj");
 		});
 	});
 	describe("StressPlacement", () => {
@@ -97,37 +97,37 @@ describe("process", () => {
 			const change = new StressPlacement(
 				false, 0, Infinity, "none", false);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("ˈda.da.da.dan.da.dan");
+			expect(transcribe(result)).toEqual("ˈda.da.da.dan.da.dan");
 		});
 		test("penultimate", () => {
 			const change = new StressPlacement(
 				true, 1, Infinity, "none", false);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("da.da.da.dan.ˈda.dan");
+			expect(transcribe(result)).toEqual("da.da.da.dan.ˈda.dan");
 		});
 		test("penultimate or last heavy", () => {
 			const change = new StressPlacement(
 				true, 1, 1, "none", false);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("da.da.da.ˌdan.da.ˈdan");
+			expect(transcribe(result)).toEqual("da.da.da.ˌdan.da.ˈdan");
 		});
 		test("lapse", () => {
 			const change = new StressPlacement(
 				false, 0, 1, "lapse", false);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("ˈda.da.da.ˌdan.da.ˌdan");
+			expect(transcribe(result)).toEqual("ˈda.da.da.ˌdan.da.ˌdan");
 		});
 		test("clash", () => {
 			const change = new StressPlacement(
 				false, 0, 1, "clash", false);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("ˈda.da.ˌda.ˌdan.da.ˌdan");
+			expect(transcribe(result)).toEqual("ˈda.da.ˌda.ˌdan.da.ˌdan");
 		});
 		test("lengthening", () => {
 			const change = new StressPlacement(
 				false, 0, 1, "clash", true);
 			const result = change.apply([word])[0];
-			expect(transcribe(result, "ipa")).toEqual("ˈdaː.da.ˌdaː.ˌdan.da.ˌdan");
+			expect(transcribe(result)).toEqual("ˈdaː.da.ˌdaː.ˌdan.da.ˌdan");
 		});
 	});
 });
@@ -292,7 +292,7 @@ test("all together", () => {
 					numPrimaryStresses ++;
 			if (numPrimaryStresses !== 1) {
 				console.log(proces.toString());
-				console.log(transcribe(word, "ipa"));
+				console.log(transcribe(word));
 			}
 			expect(numPrimaryStresses).toEqual(1);
 			expect(() => transcribe(word, "ja")).not.toThrow();

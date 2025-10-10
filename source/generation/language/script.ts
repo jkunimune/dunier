@@ -218,7 +218,7 @@ function syllabate(sounds: Sound[]): Sound[][] {
  * @param style the transcription style to use.
  *              don't pass "(default)" for native spelling; that won't work.  you need to call Word.toString for that.
  */
-export function transcribe(sounds: Sound[], style: string): string {
+export function transcribe(sounds: Sound[], style: string = "ipa"): string {
 	if (!ORTHOGRAPHIC_FLAGS.has(style))
 		throw new Error(`there is no such transcription style as '${style}'.`);
 
@@ -551,7 +551,7 @@ export function transcribe(sounds: Sound[], style: string): string {
 				newSymbols.push(symbols[i]);
 			}
 			else {
-				throw new Error(`invalid romaji input: /${transcribe(sounds, "ipa")}/ -> '${symbols.slice(0, i)}[${symbols[i]}]${symbols.slice(i + 1)}'`);
+				throw new Error(`invalid romaji input: /${transcribe(sounds)}/ -> '${symbols.slice(0, i)}[${symbols[i]}]${symbols.slice(i + 1)}'`);
 			}
 			i --;
 		}

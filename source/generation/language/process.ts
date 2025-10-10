@@ -280,7 +280,7 @@ export class Syllabicization extends LocalProcess {
 			}
 			throw new Error(
 				`if you got this far, it means there are no syllables in ` +
-				`[${transcribe(newWord, "ipa")}]`);
+				`[${transcribe(newWord)}]`);
 		}
 		else
 			return newWord;

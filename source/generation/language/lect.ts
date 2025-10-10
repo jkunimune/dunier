@@ -5,10 +5,13 @@
 import {Random} from "../../utilities/random.js";
 import {Sound} from "./sound.js";
 import {Process, PROCESS_OPTIONS, StressPlacement} from "./process.js";
-import {ipa} from "./script.js";
+import {ipa, transcribe} from "./script.js";
 import {Phrase, Word} from "./word.js";
 import {decodeBase37} from "../../utilities/miscellaneus.js";
 
+
+/** print out debug statements whenever the language generation does anything */
+const LOG_ETYMOLOGIES = false;
 
 /** the maximum number of names a person can have */
 export const MAX_NUM_NAME_PARTS = 4;
@@ -429,8 +432,12 @@ export class ProtoLect extends Lect {
 		// adjust the order if this language is head-initial
 		if (this.prefixing)
 			morphemes.reverse();
+		// add some stress
+		const result = new Word(this.stressRule.apply(morphemes), this);
 		// return the result
-		return new Word(this.stressRule.apply(morphemes), this);
+		if (LOG_ETYMOLOGIES)
+			console.log(`new word: [${result.morphemes.map(m => transcribe(m)).join("-")}] means '${meaning.map(m => m.english).join("-")}'.`);
+		return result;
 	}
 
 	/**
@@ -441,6 +448,7 @@ export class ProtoLect extends Lect {
 	 */
 	getRoot(meaning: Meaning): Sound[] {
 		if (!this.roots.has(meaning)) {
+			// decide how many syllables and how heavy to make each syllable
 			let length;
 			if (meaning.type === RootType.GRAMMATICAL)
 				length = 1/this.complexity; // grammatical affixes
@@ -459,6 +467,7 @@ export class ProtoLect extends Lect {
 				syllableNumber = 1;
 				multiplier = length;
 			}
+			// generate one syllable at a time
 			let mul = [];
 			for (let i = 0; i < syllableNumber; i ++) {
 				if (rng.probability(ProtoLect.P_ONSET*multiplier))
@@ -469,7 +478,11 @@ export class ProtoLect extends Lect {
 				if (this.codas.length > 0 && rng.probability(ProtoLect.P_CODA*multiplier))
 					mul.push(rng.choice(this.codas));
 			}
+			// save it in our cache
 			this.roots.set(meaning, mul);
+			// print some debug messages, if desired
+			if (LOG_ETYMOLOGIES)
+				console.log(`new root: [${transcribe(mul)}] means '${meaning.english}'.`);
 		}
 		return this.roots.get(meaning);
 	}
@@ -506,6 +519,9 @@ export class Dialect extends Lect {
 		for (const change of this.processes)
 			morphemes = change.apply(morphemes);
 		let newWord = new Word(morphemes, this);
+		if (LOG_ETYMOLOGIES)
+			if (newWord.toString("ipa") !== oldWord.toString("ipa"))
+				console.log(`    ${oldWord.toString("ipa")} -> ${newWord.toString("ipa")}`);
 		return newWord;
 	}
 
