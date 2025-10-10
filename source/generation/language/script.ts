@@ -214,376 +214,388 @@ function syllabate(sounds: Sound[]): Sound[][] {
 
 /**
  * convert a phonetic word to a unicode string somehow.
- * @param allSounds the array of sound-strings.
+ * @param sounds the array of sounds.
  * @param style the transcription style to use.
  *              don't pass "(default)" for native spelling; that won't work.  you need to call Word.toString for that.
  */
-export function transcribe(allSounds: Sound[][], style: string): string {
+export function transcribe(sounds: Sound[], style: string): string {
 	if (!ORTHOGRAPHIC_FLAGS.has(style))
 		throw new Error(`there is no such transcription style as '${style}'.`);
-	let allSymbols = [];
-	for (let sounds of allSounds) {
-		// start by making our own copy of each part
-		sounds = sounds.slice();
 
-		// handle some common orthographickal rules
-		if (ORTHOGRAPHIC_FLAGS.get(style).get('au as ao')) {
-			for (let i = 0; i < sounds.length - 1; i ++) // for this flag, go thru the original phonemick representacion
-				if (sounds[i].is(Quality.LOW) && new Klas([Loke.VELAR, Quality.HIGH, Silabia.NONSYLLABIC]).matches(sounds[i + 1])) // find the sequence aw
-					sounds[i + 1] = new Klas([Quality.MID]).apply(sounds[i + 1]); // and change it to ao
-		}
-		if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
-			for (let i = 1; i < sounds.length; i ++) // for this flag, go thru the original phonemick representacion
-				if (sounds[i - 1].is(Quality.VOWEL) && sounds[i].is(Quality.GLIDE)
-					&& (i + 1 >= sounds.length || sounds[i + 1].is(Silabia.NONSYLLABIC)) // find glides in codas
-					&& (sounds[i - 1].loke !== sounds[i].loke || sounds[i - 1].mode !== sounds[i].mode || sounds[i - 1].minorLoke !== sounds[i].minorLoke) // that differe from the preceeding vowel
-				)
-					sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]); // and change them to vowels
-		}
-		if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
-			for (let i = 0; i < sounds.length - 1; i ++)
-				if (sounds[i].is(Loke.VELAR) && sounds[i].is(Mode.NASAL)
-					&& sounds[i + 1].is(Loke.VELAR) && sounds[i + 1].is(Quality.OCCLUSIVE)) // find velar nasals followd by velar stops
-					sounds[i] = new Klas([Loke.ALVEOLAR]).apply(sounds[i]); // and change them to be coronal
-		}
-		if (ORTHOGRAPHIC_FLAGS.get(style).get('chain nasalized vocoids')) {
-			for (let i = 0; i < sounds.length - 1; i ++)
-				if (sounds[i].is(Quality.VOCOID) && sounds[i].is(Nosia.NASALIZED) && sounds[i + 1].is(Quality.NASAL)) // find nasalized vocoids followd by other nasal sounds
-					sounds[i] = new Klas([Nosia.ORAL]).apply(sounds[i]); // and change them to be not nasalized
-		}
+	// start by making our own copy of the part
+	sounds = sounds.slice();
 
-		// remove stress markers from any monosyllabic words
-		let syllables = [];
-		for (let i = 0; i < sounds.length; i ++)
-			if (sounds[i].is(Quality.SYLLABIC))
-				syllables.push(i);
-		if (syllables.length === 1)
-			sounds[syllables[0]] = new Klas([Silabia.UNSTRESSED]).apply(sounds[syllables[0]]);
-
-		// syllabate the word
-		const sound_syllables = syllabate(sounds);
-
-		// form the inicial spelling by reading the transcripcion out of the table
-		const symbol_syllables: string[] = [];
-		for (const syllable of sound_syllables)
-			symbol_syllables.push(syllable.map(sound => lookUp(sound, style)).join(""));
-
-		// apply IPA suprasegmental markings
-		if (style === 'ipa') {
-			// move all stress symbols to the start of the respective syllable
-			for (let i = 0; i < symbol_syllables.length; i ++) {
-				if (symbol_syllables[i].includes("ˈ"))
-					symbol_syllables[i] = "ˈ" + symbol_syllables[i].replace("ˈ", "");
-				else if (symbol_syllables[i].includes("ˌ"))
-					symbol_syllables[i] = "ˌ" + symbol_syllables[i].replace("ˌ", "");
-			}
-		}
-
-		// join the syllables with the appropriate separator
-		let symbols = symbol_syllables.join(TO_TEXT.get(style).get("syllable break"));
-
-		// apply this one "simplified latin" rule
-		if (style === 'simple') {
-			// add a diacritic to word-final e so English-speakers know it's not silent
-			symbols = symbols.replace(/e\b/, "ë");
-		}
-		// apply russian spelling rules
-		if (style === 'ru') {
-			// forbid double й or ь
-			symbols = symbols.replace(/([йь])[йь]/g, "$1");
-			// a soft-sign turns ш into щ
-			symbols = symbols.replace(/шь/g, "щь");
-			// a soft-sign or й merges with a following vowel
-			symbols = symbols.replace(/[йь][ая]/g, "я");
-			symbols = symbols.replace(/[йь][эе]/g, "е");
-			symbols = symbols.replace(/[йь][оё]/g, "ё");
-			symbols = symbols.replace(/[йь][ыи]/g, "и");
-			symbols = symbols.replace(/[йь][ую]/g, "ю");
-			// an и softens the following vowel (except э and ы)
-			symbols = symbols.replace(/и(́?)а/g, "и$1я");
-			symbols = symbols.replace(/и(́?)о/g, "и$1ё");
-			symbols = symbols.replace(/и(́?)у/g, "и$1ю");
-			// й must follow a vowel or becomes и
-			symbols = symbols.replace(/([^аеёиоуыэюя])й/g, "$1и");
-			// э is only used at the starts of words
-			symbols = symbols.replace(/(.)э/g, "$1е");
-		}
-		// apply latin spelling rules
-		if (style === 'la') {
-			// apply these special rules to try to make ʃ and t͡ʃ look nice
-			symbols = symbols.replace(/š([eij])/g, "sc$1");
-			symbols = symbols.replace(/š([aou])/g, "sci$1");
-			symbols = symbols.replace(/š/g, "s");
-			symbols = symbols.replace(/č([eij])/g, "c$1");
-			symbols = symbols.replace(/č([aou])/g, "ci$1");
-			symbols = symbols.replace(/č/g, "s");
-			// forbid double j
-			symbols = symbols.replace(/jj/g, "j");
-			// forbid double v
-			symbols = symbols.replace(/vv/g, "v");
-			// remove j between a consonant and i
-			symbols = symbols.replace(/([^aæeijoœuvȳ])ji/g, "$1i");
-			symbols = symbols.replace(/ij([^aæeioœuy])/g, "ī$1");
-			// remove v between a consonant and u
-			symbols = symbols.replace(/([^aæeijoœuvȳ])vu/g, "$1u");
-			symbols = symbols.replace(/uv([^aæeioœuy])/g, "ū$1");
-			// change j to i adjacent to consonants
-			symbols = symbols.replace(/([^aæeijoœuvȳ])j/g, "$1i");
-			symbols = symbols.replace(/j([^aæeijoœuvȳ])/g, "i$1");
-			// change v to u adjacent to consonants
-			symbols = symbols.replace(/([^aæeijoœuvȳ])v/g, "$1u");
-			symbols = symbols.replace(/v([^aæeijoœuvȳ])/g, "u$1");
-			// make things look like latin words if it's convenient to do so
-			symbols = symbols.replace(/om$/g, "um");
-			symbols = symbols.replace(/e$/g, "a");
-			symbols = symbols.replace(/i$/g, "ia");
-			symbols = symbols.replace(/os$/g, "us");
-			// use q
-			symbols = symbols.replace(/cu([aæeioœy])/, "qu$1");
-		}
-		// apply spanish spelling rules
-		if (style === 'es') {
-			// remove duplicate letters
-			for (let i = symbols.length - 1; i >= 1; i--)
-				if (symbols[i - 1] === symbols[i])
-					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
-			for (let i = symbols.length - 1; i >= 2; i--)
-				if (symbols[i - 1] === "́" && symbols[i - 2] === symbols[i]) // watch out for the combining diacritics
-					symbols = symbols.slice(0, i) + symbols.slice(i + 1);
-			// change y to i adjacent to consonants
-			symbols = symbols.replace(/([^aeioú])y/g, "$1i");
-			symbols = symbols.replace(/y([^aeioú])/g, "i$1");
-			// this may create double is, so remove those
-			symbols = symbols.replace(/ii/g, "i");
-			// change combining diacritics to special characters (because ú should behave differently from u)
-			symbols = symbols.replace(/á/g, "á");
-			symbols = symbols.replace(/é/g, "é");
-			symbols = symbols.replace(/í/g, "í");
-			symbols = symbols.replace(/ó/g, "ó");
-			symbols = symbols.replace(/ú/g, "ú");
-			// add a consonant before prevocalic u and i
-			symbols = symbols.replace(/^([iu][aeiouáéíóú])/g, "h$1");
-			symbols = symbols.split("").reverse().join("")
-				.replace(/([aeiouáéíóú][iu])([aeiouáéíóú])/g, "$1h$2")
-				.split("").reverse().join(""); // (this part needs to be done back-to-front, hence the reversal)
-			// change gui to güi, gi to gui, ci to qui, and zi to ci
-			symbols = symbols.replace(/gu([ieíé])/g, "gü$1");
-			symbols = symbols.replace(/g([ieíé])/g, "gu$1");
-			symbols = symbols.replace(/c([ieíé])/g, "qu$1");
-			symbols = symbols.replace(/z([ieíé])/g, "c$1");
-			// now try to guess where the regular stress falls
-			let seenAnything = false;
-			let seenAConsonantCluster = false;
-			let seenAPreConsonantVowelCluster = false;
-			for (let i = symbols.length - 1; i >= 0; i--) {
-				if (seenAnything && "áéíóú".includes(symbols[i])) {
-					symbols = symbols.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u");
-					break;
-				}
-				if (i === symbols.length - 1 && "ns".includes(symbols[i]))
-					continue;
-				seenAnything = true;
-				if (!"aeiouáéíóú".includes(symbols[i]))
-					seenAConsonantCluster = true;
-				if (seenAConsonantCluster && "aeiouáéíóú".includes(symbols[i]))
-					seenAPreConsonantVowelCluster = true;
-				if (seenAPreConsonantVowelCluster && !"aeiouáéíóú".includes(symbols[i]))
-					break;
-			}
-		}
-		// apply english spelling rules
-		else if (style === 'en') {
-			symbols = "#" + symbols + "#";
-			for (const vise of ENGLISH_REPLACEMENTS) {
-				for (const pattern of vise.patterns) { // look through the replacements in ENGLI_VISE
-					for (let i = symbols.length; i >= 1; i --) { // and go through the string
-						if (i - pattern.length >= 0 && symbols.substring(i - pattern.length, i) === pattern)
-							symbols = symbols.substring(0, i - pattern.length) + vise.result + symbols.substring(i);
-					}
-				}
-			}
-			symbols = symbols.substring(1, symbols.length - 1);
-
-			if (symbols[symbols.length - 1] === 'ɦ' && '*–aeiouyw'.includes(symbols[symbols.length - 2]))
-				symbols = symbols.substring(0, symbols.length - 1) + "gh"; // replace word-final <h> with <gh>
-			else if ('bcdfgjklmnpqrstvz'.includes(symbols[symbols.length - 1]) && symbols[symbols.length - 2] === '-')
-				symbols += 'e'; // add <e> when the last vowel needs to be long
-
-			let newSymbol = "";
-			for (let i = 0; i < symbols.length; i++) {
-				if (symbols[i] === "c" &&
-					((i + 1 < symbols.length && 'eiy'.includes(symbols[i + 1])) || i + 1 === symbols.length)) // use <k> before front vowels and at the ends of words
-					newSymbol += "k";
-				else if (i + 1 < symbols.length && symbols[i] === "j" && 'eiy'.includes(symbols[i + 1])) { // use <g> before front vowels when it is the last consonant in the word
-					let harfe = "g";
-					for (let j = i + 1; j < symbols.length; j++) {
-						if (!'aeiouy'.includes(symbols[j])) {
-							harfe = "j";
-							break;
-						}
-					}
-					newSymbol += harfe;
-				} else if (symbols[i] === "ɦ" &&
-					((i + 1 < symbols.length && !'aeiouyw'.includes(symbols[i + 1])) || (i - 1 >= 0 && !'*–aeiouyw'.includes(symbols[i - 1])))) // remove <h> in consonant clusters
-					newSymbol += "";
-				else if (symbols[i] === "y") {
-					if (i + 1 === symbols.length || (i + 1 < symbols.length && symbols[i + 1] === "i") || (i - 1 >= 0 && symbols[i - 1] === "i")) // use <y> at the ends of words and adjacent to <i>
-						newSymbol += "y";
-					else if ((i + 1 < symbols.length && !'aeiou'.includes(symbols[i + 1])) || (i - 1 >= 0 && !'aeiou'.includes(symbols[i - 1]))) // use <i> adjacent to consonants
-						newSymbol += "i";
-					else
-						newSymbol += "y";
-				} else if (i + 1 < symbols.length && symbols[i] === "w" && !"aeiouy".includes(symbols[i + 1])) // use <u> after vowels before consonants
-					newSymbol += "u";
-				else if (symbols[i] === '–') {
-					if ((i + 1 < symbols.length && symbols[i + 1] === 'ɦ') ||
-						(i + 2 < symbols.length && !'aeiouy'.includes(symbols[i + 1]) && !'aeiouy'.includes(symbols[i + 2])) ||
-						(i + 2 === symbols.length && !'aeiouy'.includes(symbols[i + 1]))) // lengthen long vowels that look short
-						newSymbol += (symbols[i - 1] === 'a') ? 'i' : (symbols[i - 1] === 'o') ? 'u' : (symbols[i - 1] === 'i') ? '' : 'e';
-				} else if (symbols[i] === '*') {
-					// if (i+2 < graphs.length && !'aeiouy'.includes(graphs[i+1]) && 'aeiouy'.includes(graphs[i+2]))
-					// 	muti += (graphs[i+1] === 'k') ? 'c' : (graphs[i+1] === 'j') ? '' : (graphs[i+1] === 'h') ? '' : graphs[i+1];
-					// else if (i+1 < graphs.length && graphs[i] === 'i' && 'aeiouy'.includes(graphs[i+1])) // double consonants when short vowels look long
-					// 	muti = muti.substring(0, muti.length-1) + 'e';
-				} else
-					newSymbol += symbols[i];
-			}
-			symbols = newSymbol;
-
-			// make some final replacements
-			for (const [ca, pa] of [[/cw/g, "qu"], [/[ck]s/g, "x"], [/yy/g, "y"], [/ww/g, "w"], [/sh[ck]/g, "sc"], [/ɦw/g, "wh"], [/ɦ/g, "h"]])
-				symbols = symbols.replace(ca, <string>pa);
-		}
-		// apply japanese spelling rules
-		else if (style === "ja") {
-			// long nasalized vowels will end in ンー by default; the ン already makes it long so drop the ー
-			symbols = symbols.replace(/ンー/g, "ン");
-			// convert iy and uw to long vowels
-			for (let i = 2; i < symbols.length + 1; i ++) {
-				if (i >= symbols.length || !"aiueo".includes(symbols[i])) {
-					if (symbols[i - 2] === "i" && symbols[i - 1] === "y")
-						symbols = symbols.slice(0, i - 1) + "ー" + symbols.slice(i);
-					else if (symbols[i - 2] === "u" && symbols[i - 1] === "w")
-						symbols = symbols.slice(0, i - 1) + "ー" + symbols.slice(i);
-				}
-			}
-			// if there happen to be double consonants, replace them with ッ
-			for (let i = symbols.length - 1; i >= 1; i --) {
-				if (symbols[i - 1] === symbols[i])
-					if (!"aiueo".includes(symbols[i]))
-						symbols = symbols.slice(0, i - 1) + "ッ" + symbols.slice(i);
-			}
-			// ッ is only valid between a vowel and an obstruent
-			for (let i = symbols.length; i >= 1; i --) {
-				if (symbols[i - 1] === "ッ") {
-					if (i - 2 < 0 || !"aiueoy".includes(symbols[i - 2]) || i >= symbols.length)
-						symbols = symbols.slice(0, i - 1) + symbols.slice(i);
-					else if ("yrwvッンー".includes(symbols[i]))
-						symbols = symbols.slice(0, i - 1) + symbols.slice(i);
-					else if ("nm".includes(symbols[i]))
-						symbols = symbols.slice(0, i - 1) + "ン" + symbols.slice(i);
-				}
-			}
-			// superscript n means add an ン if it's after a vowel but omit it otherwise
-			for (let i = symbols.length - 1; i >= 0; i --) {
-				if (symbols[i] === "ⁿ") {
-					if (i - 1 >= 0 && "aiueoywー".includes(symbols[i - 1]))
-						symbols = symbols.slice(0, i) + "ン" + symbols.slice(i + 1);
-					else
-						symbols = symbols.slice(0, i) + symbols.slice(i + 1);
-				}
-			}
-			// convert excess n to ン
-			for (let i = 1; i < symbols.length + 1; i ++)
-				if (symbols[i - 1] === "n" && (i >= symbols.length || !"aiueoy".includes(symbols[i])))
-					symbols = symbols.slice(0, i - 1) + "ン" + symbols.slice(i);
-			// insert vowels between adjacent consonants
-			for (let i = symbols.length; i >= 1; i --) {
-				if (!"aiueoyッンー".includes(symbols[i - 1]) && (i >= symbols.length || !"aiueoy".includes(symbols[i]))) {
-					let vowel;
-					if (i < symbols.length && symbols[i] === "w" && (i + 1 >= symbols.length || symbols[i + 1] !== "a"))
-						vowel = "u"; // u if we're going to need to use it as a stand-in for w
-					else if ("tdh".includes(symbols[i - 1]))
-						vowel = "o"; // o if it's after t
-					else if ("qj".includes(symbols[i - 1]))
-						vowel = "i"; // i if it's after ch or j
-					else
-						vowel = "u"; // u for everything else
-					symbols = symbols.slice(0, i) + vowel + symbols.slice(i);
-				}
-			}
-			// expand eligible small ャ, ュ, ョ, and ェ
-			for (let i = symbols.length - 1; i >= 2; i --) {
-				if (!"aiueotdcfywvッンー".includes(symbols[i - 2]) && symbols[i - 1] === "y" && "aiueo".includes(symbols[i])) {
-					const nucleus = KATAKANA.get("ʸ").get(symbols[i]);
-					symbols = symbols.slice(0, i - 1) + "i" + nucleus + symbols.slice(i + 1);
-				}
-			}
-			// convert invalid y to i or remove it
-			for (let i = symbols.length; i >= 1; i --) {
-				if (symbols[i - 1] === "y") {
-					if (i >= symbols.length || !"aiueo".includes(symbols[i]))
-						symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i);
-					else if (i - 2 >= 0 && !"aiueoンー".includes(symbols[i - 2]))
-						symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i - 1);
-				}
-			}
-			// remove glides to prevent superfluus compound characters (e.g. iye -> ie)
-			for (let i = symbols.length - 1; i >= 2; i --) {
-				if (symbols[i - 2] === "u" && symbols[i - 1] === "w" && "ieo".includes(symbols[i]))
-					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
-				else if (symbols[i - 2] === "i" && symbols[i - 1] === "y" && symbols[i] === "e")
-					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
-			}
-			// convert the romaji to katakana
-			let i = symbols.length - 1;
-			let newSymbols = [];
-			while (i >= 0) {
-				if ("aiueo".includes(symbols[i])) {
-					const vowel = symbols[i];
-					let consonant = "";
-					if (KATAKANA.has(symbols[i - 1])) {
-						i--;
-						consonant = symbols[i];
-					}
-					newSymbols.push(KATAKANA.get(consonant).get(vowel));
-				}
-				else if ("ッンーャュェョ".includes(symbols[i])) {
-					newSymbols.push(symbols[i]);
-				}
-				else {
-					throw new Error(`invalid romaji input: /${transcribe([sounds], "ipa")}/ -> '${symbols.slice(0, i)}[${symbols[i]}]${symbols.slice(i + 1)}'`);
-				}
-				i --;
-			}
-			symbols = newSymbols.reverse().join("");
-		}
-
-		// remove triplicate letters (note the exception for Japanese: syllables are different)
-		if (style !== "ja")
-			for (let i = symbols.length - 1; i >= 2; i--)
-				if (symbols[i - 2] === symbols[i - 1] && symbols[i - 1] === symbols[i])
-					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
-
-		// finally, capitalize
-		if (ORTHOGRAPHIC_FLAGS.get(style).get('capitalization')) {
-			for (let i = 0; i < symbols.length; i ++)
-				if (symbols[i] !== symbols[i].toUpperCase()) {
-					symbols = symbols.slice(0, i) + symbols[i].toUpperCase() + symbols.slice(i + 1);
-					break;
-				}
-		}
-
-		// add it to the main output
-		allSymbols.push(symbols);
+	// handle some common orthographickal rules
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('au as ao')) {
+		for (let i = 0; i < sounds.length - 1; i ++) // for this flag, go thru the original phonemick representacion
+			if (sounds[i].is(Quality.LOW) && new Klas([Loke.VELAR, Quality.HIGH, Silabia.NONSYLLABIC]).matches(sounds[i + 1])) // find the sequence aw
+				sounds[i + 1] = new Klas([Quality.MID]).apply(sounds[i + 1]); // and change it to ao
+	}
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('diphthong as hiatus')) {
+		for (let i = 1; i < sounds.length; i ++) // for this flag, go thru the original phonemick representacion
+			if (sounds[i - 1].is(Quality.VOWEL) && sounds[i].is(Quality.GLIDE)
+				&& (i + 1 >= sounds.length || sounds[i + 1].is(Silabia.NONSYLLABIC)) // find glides in codas
+				&& (sounds[i - 1].loke !== sounds[i].loke || sounds[i - 1].mode !== sounds[i].mode || sounds[i - 1].minorLoke !== sounds[i].minorLoke) // that differe from the preceeding vowel
+			)
+				sounds[i] = new Klas([Silabia.UNSTRESSED]).apply(sounds[i]); // and change them to vowels
+	}
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('velar nasal as coronal')) {
+		for (let i = 0; i < sounds.length - 1; i ++)
+			if (sounds[i].is(Loke.VELAR) && sounds[i].is(Mode.NASAL)
+				&& sounds[i + 1].is(Loke.VELAR) && sounds[i + 1].is(Quality.OCCLUSIVE)) // find velar nasals followd by velar stops
+				sounds[i] = new Klas([Loke.ALVEOLAR]).apply(sounds[i]); // and change them to be coronal
+	}
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('chain nasalized vocoids')) {
+		for (let i = 0; i < sounds.length - 1; i ++)
+			if (sounds[i].is(Quality.VOCOID) && sounds[i].is(Nosia.NASALIZED) && sounds[i + 1].is(Quality.NASAL)) // find nasalized vocoids followd by other nasal sounds
+				sounds[i] = new Klas([Nosia.ORAL]).apply(sounds[i]); // and change them to be not nasalized
 	}
 
-	return allSymbols.join(TO_TEXT.get(style).get("morpheme break"));
+	// remove stress markers from any monosyllabic words
+	let syllables = [];
+	for (let i = 0; i < sounds.length; i ++)
+		if (sounds[i].is(Quality.SYLLABIC))
+			syllables.push(i);
+	if (syllables.length === 1)
+		sounds[syllables[0]] = new Klas([Silabia.UNSTRESSED]).apply(sounds[syllables[0]]);
+
+	// syllabate the word
+	const sound_syllables = syllabate(sounds);
+
+	// form the inicial spelling by reading the transcripcion out of the table
+	const symbol_syllables: string[] = [];
+	for (const syllable of sound_syllables)
+		symbol_syllables.push(syllable.map(sound => lookUp(sound, style)).join(""));
+
+	// apply IPA suprasegmental markings
+	if (style === 'ipa') {
+		// move all stress symbols to the start of the respective syllable
+		for (let i = 0; i < symbol_syllables.length; i ++) {
+			if (symbol_syllables[i].includes("ˈ"))
+				symbol_syllables[i] = "ˈ" + symbol_syllables[i].replace("ˈ", "");
+			else if (symbol_syllables[i].includes("ˌ"))
+				symbol_syllables[i] = "ˌ" + symbol_syllables[i].replace("ˌ", "");
+		}
+	}
+
+	// join the syllables with the appropriate separator
+	let symbols = symbol_syllables.join(TO_TEXT.get(style).get("syllable break"));
+
+	// apply this one "simplified latin" rule
+	if (style === 'simple') {
+		// add a diacritic to word-final e so English-speakers know it's not silent
+		symbols = symbols.replace(/e\b/, "ë");
+	}
+	// apply russian spelling rules
+	if (style === 'ru') {
+		// forbid double й or ь
+		symbols = symbols.replace(/([йь])[йь]/g, "$1");
+		// a soft-sign turns ш into щ
+		symbols = symbols.replace(/шь/g, "щь");
+		// a soft-sign or й merges with a following vowel
+		symbols = symbols.replace(/[йь][ая]/g, "я");
+		symbols = symbols.replace(/[йь][эе]/g, "е");
+		symbols = symbols.replace(/[йь][оё]/g, "ё");
+		symbols = symbols.replace(/[йь][ыи]/g, "и");
+		symbols = symbols.replace(/[йь][ую]/g, "ю");
+		// an и softens the following vowel (except э and ы)
+		symbols = symbols.replace(/и(́?)а/g, "и$1я");
+		symbols = symbols.replace(/и(́?)о/g, "и$1ё");
+		symbols = symbols.replace(/и(́?)у/g, "и$1ю");
+		// й must follow a vowel or becomes и
+		symbols = symbols.replace(/([^аеёиоуыэюя])й/g, "$1и");
+		// э is only used at the starts of words
+		symbols = symbols.replace(/(.)э/g, "$1е");
+	}
+	// apply latin spelling rules
+	if (style === 'la') {
+		// apply these special rules to try to make ʃ and t͡ʃ look nice
+		symbols = symbols.replace(/š([eij])/g, "sc$1");
+		symbols = symbols.replace(/š([aou])/g, "sci$1");
+		symbols = symbols.replace(/š/g, "s");
+		symbols = symbols.replace(/č([eij])/g, "c$1");
+		symbols = symbols.replace(/č([aou])/g, "ci$1");
+		symbols = symbols.replace(/č/g, "s");
+		// forbid double j
+		symbols = symbols.replace(/jj/g, "j");
+		// forbid double v
+		symbols = symbols.replace(/vv/g, "v");
+		// remove j between a consonant and i
+		symbols = symbols.replace(/([^aæeijoœuvȳ])ji/g, "$1i");
+		symbols = symbols.replace(/ij([^aæeioœuy])/g, "ī$1");
+		// remove v between a consonant and u
+		symbols = symbols.replace(/([^aæeijoœuvȳ])vu/g, "$1u");
+		symbols = symbols.replace(/uv([^aæeioœuy])/g, "ū$1");
+		// change j to i adjacent to consonants
+		symbols = symbols.replace(/([^aæeijoœuvȳ])j/g, "$1i");
+		symbols = symbols.replace(/j([^aæeijoœuvȳ])/g, "i$1");
+		// change v to u adjacent to consonants
+		symbols = symbols.replace(/([^aæeijoœuvȳ])v/g, "$1u");
+		symbols = symbols.replace(/v([^aæeijoœuvȳ])/g, "u$1");
+		// make things look like latin words if it's convenient to do so
+		symbols = symbols.replace(/om$/g, "um");
+		symbols = symbols.replace(/e$/g, "a");
+		symbols = symbols.replace(/i$/g, "ia");
+		symbols = symbols.replace(/os$/g, "us");
+		// use q
+		symbols = symbols.replace(/cu([aæeioœy])/, "qu$1");
+	}
+	// apply spanish spelling rules
+	if (style === 'es') {
+		// remove duplicate letters
+		for (let i = symbols.length - 1; i >= 1; i--)
+			if (symbols[i - 1] === symbols[i])
+				symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+		for (let i = symbols.length - 1; i >= 2; i--)
+			if (symbols[i - 1] === "́" && symbols[i - 2] === symbols[i]) // watch out for the combining diacritics
+				symbols = symbols.slice(0, i) + symbols.slice(i + 1);
+		// change y to i adjacent to consonants
+		symbols = symbols.replace(/([^aeioú])y/g, "$1i");
+		symbols = symbols.replace(/y([^aeioú])/g, "i$1");
+		// this may create double is, so remove those
+		symbols = symbols.replace(/ii/g, "i");
+		// change combining diacritics to special characters (because ú should behave differently from u)
+		symbols = symbols.replace(/á/g, "á");
+		symbols = symbols.replace(/é/g, "é");
+		symbols = symbols.replace(/í/g, "í");
+		symbols = symbols.replace(/ó/g, "ó");
+		symbols = symbols.replace(/ú/g, "ú");
+		// add a consonant before prevocalic u and i
+		symbols = symbols.replace(/^([iu][aeiouáéíóú])/g, "h$1");
+		symbols = symbols.split("").reverse().join("")
+			.replace(/([aeiouáéíóú][iu])([aeiouáéíóú])/g, "$1h$2")
+			.split("").reverse().join(""); // (this part needs to be done back-to-front, hence the reversal)
+		// change gui to güi, gi to gui, ci to qui, and zi to ci
+		symbols = symbols.replace(/gu([ieíé])/g, "gü$1");
+		symbols = symbols.replace(/g([ieíé])/g, "gu$1");
+		symbols = symbols.replace(/c([ieíé])/g, "qu$1");
+		symbols = symbols.replace(/z([ieíé])/g, "c$1");
+		// now try to guess where the regular stress falls
+		let seenAnything = false;
+		let seenAConsonantCluster = false;
+		let seenAPreConsonantVowelCluster = false;
+		for (let i = symbols.length - 1; i >= 0; i--) {
+			if (seenAnything && "áéíóú".includes(symbols[i])) {
+				symbols = symbols.replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u");
+				break;
+			}
+			if (i === symbols.length - 1 && "ns".includes(symbols[i]))
+				continue;
+			seenAnything = true;
+			if (!"aeiouáéíóú".includes(symbols[i]))
+				seenAConsonantCluster = true;
+			if (seenAConsonantCluster && "aeiouáéíóú".includes(symbols[i]))
+				seenAPreConsonantVowelCluster = true;
+			if (seenAPreConsonantVowelCluster && !"aeiouáéíóú".includes(symbols[i]))
+				break;
+		}
+	}
+	// apply english spelling rules
+	else if (style === 'en') {
+		symbols = "#" + symbols + "#";
+		for (const vise of ENGLISH_REPLACEMENTS) {
+			for (const pattern of vise.patterns) { // look through the replacements in ENGLI_VISE
+				for (let i = symbols.length; i >= 1; i --) { // and go through the string
+					if (i - pattern.length >= 0 && symbols.substring(i - pattern.length, i) === pattern)
+						symbols = symbols.substring(0, i - pattern.length) + vise.result + symbols.substring(i);
+				}
+			}
+		}
+		symbols = symbols.substring(1, symbols.length - 1);
+
+		if (symbols[symbols.length - 1] === 'ɦ' && '*–aeiouyw'.includes(symbols[symbols.length - 2]))
+			symbols = symbols.substring(0, symbols.length - 1) + "gh"; // replace word-final <h> with <gh>
+		else if ('bcdfgjklmnpqrstvz'.includes(symbols[symbols.length - 1]) && symbols[symbols.length - 2] === '-')
+			symbols += 'e'; // add <e> when the last vowel needs to be long
+
+		let newSymbol = "";
+		for (let i = 0; i < symbols.length; i++) {
+			if (symbols[i] === "c" &&
+				((i + 1 < symbols.length && 'eiy'.includes(symbols[i + 1])) || i + 1 === symbols.length)) // use <k> before front vowels and at the ends of words
+				newSymbol += "k";
+			else if (i + 1 < symbols.length && symbols[i] === "j" && 'eiy'.includes(symbols[i + 1])) { // use <g> before front vowels when it is the last consonant in the word
+				let harfe = "g";
+				for (let j = i + 1; j < symbols.length; j++) {
+					if (!'aeiouy'.includes(symbols[j])) {
+						harfe = "j";
+						break;
+					}
+				}
+				newSymbol += harfe;
+			} else if (symbols[i] === "ɦ" &&
+				((i + 1 < symbols.length && !'aeiouyw'.includes(symbols[i + 1])) || (i - 1 >= 0 && !'*–aeiouyw'.includes(symbols[i - 1])))) // remove <h> in consonant clusters
+				newSymbol += "";
+			else if (symbols[i] === "y") {
+				if (i + 1 === symbols.length || (i + 1 < symbols.length && symbols[i + 1] === "i") || (i - 1 >= 0 && symbols[i - 1] === "i")) // use <y> at the ends of words and adjacent to <i>
+					newSymbol += "y";
+				else if ((i + 1 < symbols.length && !'aeiou'.includes(symbols[i + 1])) || (i - 1 >= 0 && !'aeiou'.includes(symbols[i - 1]))) // use <i> adjacent to consonants
+					newSymbol += "i";
+				else
+					newSymbol += "y";
+			} else if (i + 1 < symbols.length && symbols[i] === "w" && !"aeiouy".includes(symbols[i + 1])) // use <u> after vowels before consonants
+				newSymbol += "u";
+			else if (symbols[i] === '–') {
+				if ((i + 1 < symbols.length && symbols[i + 1] === 'ɦ') ||
+					(i + 2 < symbols.length && !'aeiouy'.includes(symbols[i + 1]) && !'aeiouy'.includes(symbols[i + 2])) ||
+					(i + 2 === symbols.length && !'aeiouy'.includes(symbols[i + 1]))) // lengthen long vowels that look short
+					newSymbol += (symbols[i - 1] === 'a') ? 'i' : (symbols[i - 1] === 'o') ? 'u' : (symbols[i - 1] === 'i') ? '' : 'e';
+			} else if (symbols[i] === '*') {
+				// if (i+2 < graphs.length && !'aeiouy'.includes(graphs[i+1]) && 'aeiouy'.includes(graphs[i+2]))
+				// 	muti += (graphs[i+1] === 'k') ? 'c' : (graphs[i+1] === 'j') ? '' : (graphs[i+1] === 'h') ? '' : graphs[i+1];
+				// else if (i+1 < graphs.length && graphs[i] === 'i' && 'aeiouy'.includes(graphs[i+1])) // double consonants when short vowels look long
+				// 	muti = muti.substring(0, muti.length-1) + 'e';
+			} else
+				newSymbol += symbols[i];
+		}
+		symbols = newSymbol;
+
+		// make some final replacements
+		for (const [ca, pa] of [[/cw/g, "qu"], [/[ck]s/g, "x"], [/yy/g, "y"], [/ww/g, "w"], [/sh[ck]/g, "sc"], [/ɦw/g, "wh"], [/ɦ/g, "h"]])
+			symbols = symbols.replace(ca, <string>pa);
+	}
+	// apply japanese spelling rules
+	else if (style === "ja") {
+		// long nasalized vowels will end in ンー by default; the ン already makes it long so drop the ー
+		symbols = symbols.replace(/ンー/g, "ン");
+		// convert iy and uw to long vowels
+		for (let i = 2; i < symbols.length + 1; i ++) {
+			if (i >= symbols.length || !"aiueo".includes(symbols[i])) {
+				if (symbols[i - 2] === "i" && symbols[i - 1] === "y")
+					symbols = symbols.slice(0, i - 1) + "ー" + symbols.slice(i);
+				else if (symbols[i - 2] === "u" && symbols[i - 1] === "w")
+					symbols = symbols.slice(0, i - 1) + "ー" + symbols.slice(i);
+			}
+		}
+		// if there happen to be double consonants, replace them with ッ
+		for (let i = symbols.length - 1; i >= 1; i --) {
+			if (symbols[i - 1] === symbols[i])
+				if (!"aiueo".includes(symbols[i]))
+					symbols = symbols.slice(0, i - 1) + "ッ" + symbols.slice(i);
+		}
+		// ッ is only valid between a vowel and an obstruent
+		for (let i = symbols.length; i >= 1; i --) {
+			if (symbols[i - 1] === "ッ") {
+				if (i - 2 < 0 || !"aiueoy".includes(symbols[i - 2]) || i >= symbols.length)
+					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+				else if ("yrwvッンー".includes(symbols[i]))
+					symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+				else if ("nm".includes(symbols[i]))
+					symbols = symbols.slice(0, i - 1) + "ン" + symbols.slice(i);
+			}
+		}
+		// superscript n means add an ン if it's after a vowel but omit it otherwise
+		for (let i = symbols.length - 1; i >= 0; i --) {
+			if (symbols[i] === "ⁿ") {
+				if (i - 1 >= 0 && "aiueoywー".includes(symbols[i - 1]))
+					symbols = symbols.slice(0, i) + "ン" + symbols.slice(i + 1);
+				else
+					symbols = symbols.slice(0, i) + symbols.slice(i + 1);
+			}
+		}
+		// convert excess n to ン
+		for (let i = 1; i < symbols.length + 1; i ++)
+			if (symbols[i - 1] === "n" && (i >= symbols.length || !"aiueoy".includes(symbols[i])))
+				symbols = symbols.slice(0, i - 1) + "ン" + symbols.slice(i);
+		// insert vowels between adjacent consonants
+		for (let i = symbols.length; i >= 1; i --) {
+			if (!"aiueoyッンー".includes(symbols[i - 1]) && (i >= symbols.length || !"aiueoy".includes(symbols[i]))) {
+				let vowel;
+				if (i < symbols.length && symbols[i] === "w" && (i + 1 >= symbols.length || symbols[i + 1] !== "a"))
+					vowel = "u"; // u if we're going to need to use it as a stand-in for w
+				else if ("tdh".includes(symbols[i - 1]))
+					vowel = "o"; // o if it's after t
+				else if ("qj".includes(symbols[i - 1]))
+					vowel = "i"; // i if it's after ch or j
+				else
+					vowel = "u"; // u for everything else
+				symbols = symbols.slice(0, i) + vowel + symbols.slice(i);
+			}
+		}
+		// expand eligible small ャ, ュ, ョ, and ェ
+		for (let i = symbols.length - 1; i >= 2; i --) {
+			if (!"aiueotdcfywvッンー".includes(symbols[i - 2]) && symbols[i - 1] === "y" && "aiueo".includes(symbols[i])) {
+				const nucleus = KATAKANA.get("ʸ").get(symbols[i]);
+				symbols = symbols.slice(0, i - 1) + "i" + nucleus + symbols.slice(i + 1);
+			}
+		}
+		// convert invalid y to i or remove it
+		for (let i = symbols.length; i >= 1; i --) {
+			if (symbols[i - 1] === "y") {
+				if (i >= symbols.length || !"aiueo".includes(symbols[i]))
+					symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i);
+				else if (i - 2 >= 0 && !"aiueoンー".includes(symbols[i - 2]))
+					symbols = symbols.slice(0, i - 1) + "i" + symbols.slice(i - 1);
+			}
+		}
+		// remove glides to prevent superfluus compound characters (e.g. iye -> ie)
+		for (let i = symbols.length - 1; i >= 2; i --) {
+			if (symbols[i - 2] === "u" && symbols[i - 1] === "w" && "ieo".includes(symbols[i]))
+				symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+			else if (symbols[i - 2] === "i" && symbols[i - 1] === "y" && symbols[i] === "e")
+				symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+		}
+		// convert the romaji to katakana
+		let i = symbols.length - 1;
+		let newSymbols = [];
+		while (i >= 0) {
+			if ("aiueo".includes(symbols[i])) {
+				const vowel = symbols[i];
+				let consonant = "";
+				if (KATAKANA.has(symbols[i - 1])) {
+					i--;
+					consonant = symbols[i];
+				}
+				newSymbols.push(KATAKANA.get(consonant).get(vowel));
+			}
+			else if ("ッンーャュェョ".includes(symbols[i])) {
+				newSymbols.push(symbols[i]);
+			}
+			else {
+				throw new Error(`invalid romaji input: /${transcribe(sounds, "ipa")}/ -> '${symbols.slice(0, i)}[${symbols[i]}]${symbols.slice(i + 1)}'`);
+			}
+			i --;
+		}
+		symbols = newSymbols.reverse().join("");
+	}
+
+	// remove triplicate letters (note the exception for Japanese: syllables are different)
+	if (style !== "ja")
+		for (let i = symbols.length - 1; i >= 2; i--)
+			if (symbols[i - 2] === symbols[i - 1] && symbols[i - 1] === symbols[i])
+				symbols = symbols.slice(0, i - 1) + symbols.slice(i);
+
+	return symbols;
 }
 
+/**
+ * capitalize the first letter of a word, skipping any initial non-cased letters
+ * @param word
+ */
+export function capitalize(word: string): string {
+	for (let i = 0; i < word.length; i ++)
+		if (word[i].toLowerCase() !== word[i].toUpperCase())
+			return word.slice(0, i) + word[i].toUpperCase() + word.slice(i + 1);
+	return word;
+}
 
-export function getWordSeparator(style: string): string {
-	return TO_TEXT.get(style).get("word break");
+/**
+ * convert a word to a unicode string somehow.
+ */
+export function transcribeWord(morphemes: Sound[][], style: string): string {
+	let parts = morphemes.map(morpheme => transcribe(morpheme, style));
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('intraword capitalization'))
+		parts = parts.map(morpheme => capitalize(morpheme));
+	return parts.join(TO_TEXT.get(style).get("morpheme break"));
+}
+
+/**
+ * convert a phrase to a unicode string somehow.
+ */
+export function transcribePhrase(words: Sound[][][], style: string): string {
+	let parts = words.map(word => transcribeWord(word, style));
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('interword capitalization'))
+		parts = parts.map(morpheme => capitalize(morpheme));
+	return parts.join(TO_TEXT.get(style).get("word break"));
 }
 
 

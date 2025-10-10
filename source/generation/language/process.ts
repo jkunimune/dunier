@@ -17,21 +17,55 @@ import {
 	Voze, parseFeature
 } from "./sound.js";
 import {ipaSymbol, transcribe} from "./script.js";
-import {Word} from "./word.js";
 
 import UNPARSED_PROCESS_OPTIONS from "../../../resources/processes.js";
 
 /**
  * a process by which words change over time
  */
-export interface WordProcess {
-	apply(old: Sound[]): Sound[];
+export interface Process {
+	apply(old: Sound[][]): Sound[][];
+}
+
+/**
+ * a process that applies to the sounds within a morpheme
+ */
+abstract class LocalProcess implements Process {
+	apply(old: Sound[][]): Sound[][] {
+		const nue: Sound[][] = [];
+		for (const oldPart of old)
+			nue.push(this.applyToSounds(oldPart));
+		return nue;
+	}
+
+	abstract applyToSounds(old: Sound[]): Sound[];
+}
+
+/**
+ * a process that applies to all sounds, ignoring morpheme boundaries
+ */
+abstract class GlobalProcess implements Process {
+	apply(old: Sound[][]): Sound[][] {
+		const allOld = [].concat(...old);
+		const allNew = this.applyToSounds(allOld);
+		const nue: Sound[][] = [];
+		let j = 0;
+		for (let i = 0; i < old.length; i ++) {
+			nue.push(allNew.slice(j, j + old[i].length));
+			j += old[i].length;
+		}
+		if (j !== allNew.length)
+			throw new Error("global processes aren't allowed to change the number of sounds in a word.");
+		return nue;
+	}
+
+	abstract applyToSounds(old: Sound[]): Sound[];
 }
 
 /**
  * a process that causes segments to change according to a rule
  */
-export class SoundChange implements WordProcess {
+export class SoundChange extends LocalProcess {
 	private readonly pattern: Klas[]; // original value
 	private readonly result: Klas[]; // target value
 	private readonly idx: number[]; // reference indices for target phones
@@ -40,6 +74,7 @@ export class SoundChange implements WordProcess {
 	private readonly oneTimeUse: boolean; // whether it must only be applied to a word once
 
 	constructor(from: Klas[], to: Klas[], idx: number[], after: Klas[], before: Klas[], oneTimeUse: boolean) {
+		super();
 		if (idx.length !== to.length)
 			throw RangeError(`The pa array must be properly indexed: ${from} > ${to} / ${after} _ ${before}`);
 		this.pattern = from;
@@ -54,7 +89,7 @@ export class SoundChange implements WordProcess {
 	 * go through the word and apply this sound change.
 	 * @param oldWord
 	 */
-	apply(oldWord: Sound[]): Sound[] {
+	applyToSounds(oldWord: Sound[]): Sound[] {
 		const drowWen: Sound[] = []; // build the neWword in reverse
 		let i = oldWord.length;
 		while (i >= 0) {
@@ -138,7 +173,7 @@ export class SoundChange implements WordProcess {
 /**
  * a process that causes sounds in the same word to share a feature
  */
-export class Harmony implements WordProcess {
+export class Harmony extends GlobalProcess {
 	private readonly poles: Feature[];
 	private readonly affected: Feature;
 
@@ -149,11 +184,12 @@ export class Harmony implements WordProcess {
 	 * @param affected the class of sounds that are affected by this harmony
 	 */
 	constructor(leftPole: Feature, rightPole: Feature, affected: Feature) {
+		super();
 		this.affected = affected;
 		this.poles = [leftPole, rightPole];
 	}
 
-	apply(oldWord: Sound[]): Sound[] {
+	applyToSounds(oldWord: Sound[]): Sound[] {
 		const newWord: Sound[] = new Array<Sound>(oldWord.length);
 		let val: Feature = null;
 		for (let i = 0; i < oldWord.length; i ++) { // iterate backwards through the word
@@ -177,7 +213,7 @@ export class Harmony implements WordProcess {
 /**
  * a process that places syllables according to the sonority sequencing constraint
  */
-export class Syllabicization implements WordProcess {
+export class Syllabicization extends LocalProcess {
 	/** amount to prefer earlier or later syllables */
 	private readonly bias: number;
 	/** minimum allowable sonority of a nucleus */
@@ -191,11 +227,12 @@ export class Syllabicization implements WordProcess {
 	 *                    a schwa will be inserted
 	 */
 	constructor(bias: number, minSonority: number) {
+		super();
 		this.bias = bias;
 		this.minSonority = minSonority;
 	}
 
-	apply(oldWord: Sound[]): Sound[] {
+	applyToSounds(oldWord: Sound[]): Sound[] {
 		const sonority = [];
 		for (const sound of oldWord) // first calculate the sonorities
 			sonority.push(sound.getSonority());
@@ -243,7 +280,7 @@ export class Syllabicization implements WordProcess {
 			}
 			throw new Error(
 				`if you got this far, it means there are no syllables in ` +
-				`[${transcribe([newWord], "ipa")}]`);
+				`[${transcribe(newWord, "ipa")}]`);
 		}
 		else
 			return newWord;
@@ -254,7 +291,7 @@ export class Syllabicization implements WordProcess {
 /**
  * a process that places stress according to certain rules
  */
-export class StressPlacement implements WordProcess {
+export class StressPlacement extends GlobalProcess {
 	/** whether the primary stress is on the right */
 	private readonly reverse: boolean;
 	/** the number of unstressed syllables to put between the word edge and the initial stress */
@@ -279,6 +316,7 @@ export class StressPlacement implements WordProcess {
 	 * @param lengthen whether to lengthen stressed open syllables
 	 */
 	constructor(reverse: boolean, headSize: number, attractors: number, tailMode: string, lengthen: boolean) {
+		super();
 		this.reverse = reverse;
 		this.headSize = headSize;
 		this.attractors = attractors;
@@ -286,7 +324,8 @@ export class StressPlacement implements WordProcess {
 		this.lengthen = lengthen;
 	}
 
-	apply(oldWord: Sound[]): Sound[] {
+	applyToSounds(oldWord: Sound[]): Sound[] {
+		// stress doesn't care about morpheme boundaries, so start by flattening these
 		let nuclei: {i: number, weight: number}[] = [];
 		let numC = 1;
 		for (let i = oldWord.length - 1; i >= 0; i --) { // first, tally up the syllables
@@ -349,41 +388,16 @@ export class StressPlacement implements WordProcess {
 
 
 /**
- * a process that applies to a whole phrase; not just a single word
+ * a process that removes all morpheme boundaries
  */
-export class PhraseProcess {
-	private readonly name: string;
-
-	/**
-	 * create a new change; just specify the name and we'll know what to do.
-	 */
-	constructor(name: string) {
-		this.name = name;
-	}
-
-	apply(old: Word): Word {
-		if (this.name === "compounding") {
-			// string all of the parts together without pauses, and make sure there's only one primary stress
-			const compoundWord = [];
-			for (let i = 0; i < old.parts.length - 1; i ++) {
-				for (const segment of old.parts[i]) {
-					if (segment.silabia !== Silabia.PRIMARY_STRESSED)
-						compoundWord.push(segment);
-					else
-						compoundWord.push(segment.with(Silabia.SECONDARY_STRESSED));
-				}
-			}
-			compoundWord.push(...old.parts[old.parts.length - 1]);
-			return new Word([compoundWord], old.language);
-		}
-		else
-			throw new Error(`the special process ${this.name} is not implemented.`);
+class Fusion implements Process {
+	apply(old: Sound[][]): Sound[][] {
+		return [[].concat(...old)];
 	}
 }
 
 
-export const WORD_PROCESS_OPTIONS: {chanse: number, proces: WordProcess}[] = [];
-export const PHRASE_PROCESS_OPTIONS: {chanse: number, proces: PhraseProcess}[] = [];
+export const PROCESS_OPTIONS: {chanse: number, proces: Process}[] = [];
 for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phonological processes
 	if (type === 'mute') {
 		const ca: Klas[] = [], pa: Klas[] = [], bada: Klas[] = [], chena: Klas[] = [];
@@ -450,12 +464,12 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 			}
 		}
 		const oneTimeUse = code.includes("#");
-		WORD_PROCESS_OPTIONS.push({chanse: chance, proces:
+		PROCESS_OPTIONS.push({chanse: chance, proces:
 				new SoundChange(ca, pa, idx, bada, chena, oneTimeUse)});
 	}
 	else if (type === 'harmonia') {
 		const [leftPole, _, rightPole, scope] = code.split(" ");
-		WORD_PROCESS_OPTIONS.push({chanse: chance, proces:
+		PROCESS_OPTIONS.push({chanse: chance, proces:
 				new Harmony(parseFeature(leftPole), parseFeature(rightPole), parseFeature(scope))});
 	}
 	else if (type === 'acente') {
@@ -463,7 +477,7 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 		for (let attractors = 1; attractors <= 3; attractors ++)
 			for (const tailMode of ['clash', 'lapse', 'none'])
 				for (const lengthen of [true, false])
-					WORD_PROCESS_OPTIONS.push({chanse: chance/18., proces:
+					PROCESS_OPTIONS.push({chanse: chance/18., proces:
 							new StressPlacement(
 								direction === "right",
 								Number.parseInt(headSize),
@@ -472,11 +486,10 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 	else if (type === 'silabe') {
 		const minSilabia = Number.parseInt(code);
 		for (let bias = -1; bias <= 1; bias ++)
-			WORD_PROCESS_OPTIONS.push({chanse: chance/3, proces:
+			PROCESS_OPTIONS.push({chanse: chance/3, proces:
 					new Syllabicization(bias, minSilabia)});
 	}
-	else {
-		PHRASE_PROCESS_OPTIONS.push({chanse: chance, proces:
-			new PhraseProcess(type)});
+	else if (type === 'fusion') {
+		PROCESS_OPTIONS.push({chanse: chance, proces: new Fusion()});
 	}
 }

@@ -4,7 +4,7 @@
  */
 import {Civ} from "./civ.js";
 import {format, formatList, localize} from "../gui/internationalization.js";
-import {Lect, MAX_NUM_NAME_PARTS, WordType} from "./language/lect.js";
+import {Lect, MAX_NUM_NAME_PARTS} from "./language/lect.js";
 import {Culture, KULTUR_ASPECTS} from "./culture.js";
 import {argmax} from "../utilities/miscellaneus.js";
 import {compare} from "./language/script.js";
@@ -14,7 +14,6 @@ import {Biome, BIOME_NAMES} from "./terrain.js";
 import TECHNOLOGIES from "../../resources/tech_tree.js";
 import {cloneNode, h, VNode} from "../gui/virtualdom.js";
 import {Random} from "../utilities/random.js";
-import {transcribePhrase} from "./language/word.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
@@ -462,7 +461,7 @@ function describe(culture: Culture, language: string, style: string): string {
 			let madeUpWord;
 			if (logaIndex !== null)
 				madeUpWord = culture.lect
-					.getProperWord(featureList[logaIndex].key, WordType.GENERIC)
+					.getCommonNoun(featureList[logaIndex].key)
 					.toString(style);
 			else
 				madeUpWord = null;
@@ -491,7 +490,7 @@ function describe(culture: Culture, language: string, style: string): string {
 		}
 		names.push(format(
 			localize('grammar.mention', language),
-			transcribePhrase(culture.lect.getFullName(seeds), style)));
+			culture.lect.getFullName(seeds).toString(style)));
 	}
 	str += format(
 		localize('factbook.demography.common_names', language),

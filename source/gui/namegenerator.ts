@@ -5,7 +5,6 @@
 import {Random} from "../utilities/random.js";
 import {Dialect, Lect, MAX_NUM_NAME_PARTS, ProtoLect} from "../generation/language/lect.js";
 import {DOM} from "./dom.js";
-import {transcribePhrase} from "../generation/language/word.js";
 
 
 const NUM_ROWS = 12;
@@ -34,7 +33,7 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
 
 			const listem = document.createElement('li'); // start by creating the text element
 			listem.setAttribute('class', 'list-group-item');
-			listem.textContent = transcribePhrase(fullName);
+			listem.textContent = fullName.toString();
 			nameList.append(listem);
 
 			nameSeed += MAX_NUM_NAME_PARTS;

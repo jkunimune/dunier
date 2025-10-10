@@ -4,10 +4,9 @@
  */
 import {Random} from "../../utilities/random.js";
 import {Sound} from "./sound.js";
-import {WordProcess, PhraseProcess, WORD_PROCESS_OPTIONS, PHRASE_PROCESS_OPTIONS, StressPlacement} from "./process.js";
+import {Process, PROCESS_OPTIONS, StressPlacement} from "./process.js";
 import {ipa} from "./script.js";
-import {Word} from "./word.js";
-import {Enumify} from "../../utilities/external/enumify.js";
+import {Phrase, Word} from "./word.js";
 import {decodeBase37} from "../../utilities/miscellaneus.js";
 
 
@@ -16,67 +15,51 @@ export const MAX_NUM_NAME_PARTS = 4;
 /** the number of centuries that two dialects must evolve independently before they're considered separate languages */
 const DEVIATION_TIME = 2;
 /** the rate at which suprasegmental linguistic details change per century */
-const DRIFT_RATE = .05;
+const DRIFT_RATE = .02;
 
-/**
- * different types of word ending
- */
-enum PartOfSpeech {
-	NOUN, ADJECTIVE, NONE,
+enum RootType { // TODO: have proper words also that get capitalized
+	/** normal words */
+	COMMON,
+	/** words used as common affixes, but that are words in their own rite */
+	SHORT,
+	/** affixen that do not stand alone as words, or grammatical particles */
+	GRAMMATICAL,
 }
 
 /**
- * different types of nym
+ * an object used to describe morphemes
  */
-export class WordType extends Enumify {
-	public readonly numClassifiers: number;
-	public readonly partOfSpeech: PartOfSpeech;
-
-	static GENERIC = new WordType(0, PartOfSpeech.NOUN);
-	static PEOPLE = new WordType(1, PartOfSpeech.NOUN);
-	static LANGUAGE = new WordType(1, PartOfSpeech.NOUN);
-	static CITY = new WordType(4, PartOfSpeech.NOUN);
-	static COUNTRY = new WordType(3, PartOfSpeech.NOUN);
-	static FAMILY = new WordType(6, PartOfSpeech.NOUN);
-	static PARENTAGE = new WordType(1, PartOfSpeech.NOUN);
-	static ADJECTIVE = new WordType(2, PartOfSpeech.ADJECTIVE);
-	static GRAMMATICAL_PARTICLE = new WordType(1, PartOfSpeech.NONE);
-	static _ = WordType.closeEnum();
-
-	constructor(numClassifiers: number, partOfSpeech: PartOfSpeech) {
-		super();
-		this.numClassifiers = numClassifiers;
-		this.partOfSpeech = partOfSpeech;
-	}
+interface Meaning {
+	/** a pseudorandom seed that uniquely identifies it; by convention it should be an english word */
+	english: string,
+	/** roughly how many letters should go into the word for this (depending on how much information is contained in each letter */
+	type: RootType,
 }
 
-/**
- * arrangement of suffixes in words for peoples, places, and languages
- */
-interface ToponymClassifierStyle {
-	country: WordType;
-	people: WordType;
-	language: WordType;
-}
-
-/**
- * randomly generate a new system of toponym suffixes
- */
-function rollNewToponymClassifierStyle(rng: Random): ToponymClassifierStyle {
-	const p = rng.random();
-	if (p < 1/6)
-		return { country: WordType.GENERIC, people: WordType.ADJECTIVE, language: WordType.ADJECTIVE };
-	else if (p < 1/3)
-		return { country: WordType.GENERIC, people: WordType.PEOPLE, language: WordType.LANGUAGE };
-	else if (p < 1/2)
-		return { country: WordType.COUNTRY, people: WordType.GENERIC, language: WordType.LANGUAGE };
-	else if (p < 2/3)
-		return { country: WordType.COUNTRY, people: WordType.PEOPLE, language: WordType.GENERIC };
-	else if (p < 5/6)
-		return { country: WordType.COUNTRY, people: WordType.ADJECTIVE, language: WordType.ADJECTIVE };
-	else
-		return { country: WordType.COUNTRY, people: WordType.PEOPLE, language: WordType.LANGUAGE };
-}
+const PEOPLE_WORD = {english: "people", type: RootType.COMMON};
+const LANGUAGE_WORD = {english: "language", type: RootType.COMMON};
+const PEOPLE_AFFIX = {english: "people", type: RootType.SHORT};
+const LANGUAGE_AFFIX = {english: "language", type: RootType.SHORT};
+const COUNTRY_AFFIX = {english: "land", type: RootType.SHORT};
+const DESCENDANT_AFFIX = {english: "son", type: RootType.SHORT};
+const ADJECTIVE_AFFIX = {english: "y", type: RootType.GRAMMATICAL};
+const OCCUPATION_AFFIXES = [
+	{english: "er", type: RootType.SHORT},
+	{english: "ist", type: RootType.SHORT},
+	{english: "professional", type: RootType.SHORT},
+];
+const CITY_AFFIXES = [
+	{english: "ton", type: RootType.SHORT},
+	{english: "ham", type: RootType.SHORT},
+	{english: "burg", type: RootType.SHORT},
+];
+const GENDERS = [ // the five genders
+	{english: "woman", type: RootType.GRAMMATICAL},
+	{english: "man", type: RootType.GRAMMATICAL},
+	{english: "neither", type: RootType.GRAMMATICAL},
+	{english: "vegetable", type: RootType.GRAMMATICAL},
+	{english: "long_object", type: RootType.GRAMMATICAL},
+];
 
 /**
  * different components to personal names
@@ -125,72 +108,202 @@ function rollNewNameStyle(rng: Random, parent: NameStyle = null): NameStyle {
  * an immutable definition of a language's vocabulary
  */
 export abstract class Lect {
+	/** this language 100 years ago, or null if this language materialized from the ether */
+	protected readonly parent: Lect | null;
 	/** this language's preferd romanization style */
 	public readonly defaultTranscriptionStyle: string;
 	/** how names are set up in this language */
 	public readonly nameStyle: NameStyle;
+	/** the untranslated allowable noun endings, or [] if nouns can end in anything */
+	protected readonly genders: Meaning[];
+	/** the untranslated word to put on the ends of country, people, and language names */
+	private readonly affixes: { country: Meaning | null, people: Meaning | null, language: Meaning | null };
+	/** whether this language uses lots of compound words (instead of using phrases */
+	private readonly compounding: boolean;
+	/** whether this language prefers prefixen */
+	protected readonly prefixing: boolean;
 	/** the proto-language for the set of lects intelligible to this one */
-	public macrolanguage: Lect;
+	private readonly macrolanguage: Lect;
 	/** the seed we use to get the name of this Language's people/place of origin */
 	private readonly homelandIndex: number;
 
-	protected constructor(defaultTranscriptionStyle: string, nameStyle: NameStyle,
-	                      homelandIndex: number) {
-		this.defaultTranscriptionStyle = defaultTranscriptionStyle;
-		this.nameStyle = nameStyle;
+	protected constructor(parent: Lect | null, homelandIndex: number, rng: Random) {
+		this.parent = parent;
 		this.homelandIndex = homelandIndex;
+
+		if (parent === null || rng.probability(DRIFT_RATE))
+			this.defaultTranscriptionStyle = `native${rng.discrete(0, 4)}`;
+		else
+			this.defaultTranscriptionStyle = parent.defaultTranscriptionStyle;
+
+		this.nameStyle = rollNewNameStyle(rng, (parent !== null) ? parent.nameStyle : null);
+
+		if (parent === null || rng.probability(DRIFT_RATE)) {
+			if (rng.probability(1/3))
+				this.genders = GENDERS.slice(rng.discrete(2, 5));
+			else
+				this.genders = [];
+		}
+		else
+			this.genders = parent.genders;
+
+		if (parent === null || rng.probability(DRIFT_RATE)) {
+			const p = rng.random();
+			if (p < 1/6) {
+				this.compounding = false;
+				this.affixes = {country: null, people: PEOPLE_WORD, language: LANGUAGE_WORD};
+			}
+			else {
+				this.compounding = true;
+				if (p < 1/3)
+					this.affixes = {country: null, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX};
+				else if (p < 1/2)
+					this.affixes = {country: null, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX};
+				else if (p < 2/3)
+					this.affixes = {country: COUNTRY_AFFIX, people: null, language: LANGUAGE_AFFIX};
+				else if (p < 5/6)
+					this.affixes = {country: COUNTRY_AFFIX, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX};
+				else
+					this.affixes = {country: COUNTRY_AFFIX, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX};
+			}
+		}
+		else {
+			this.compounding = parent.compounding;
+			this.affixes = parent.affixes;
+		}
+
+		if (parent === null || rng.probability(DRIFT_RATE))
+			this.prefixing = rng.probability(1/5);
+		else
+			this.prefixing = parent.prefixing;
+
+		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
 	}
 
 	/**
-	 * get a word from this language. the style of word and valid indices depend on the WordType:
-	 * @param index the pseudorandom seed of the word
-	 * @param tipo the type of word
+	 * pull a word from this language
+	 * @param meaning the english words getting translated.  if there are multiple, this will be a compound word,
+	 *                and they should be given in tail-head order (so if this is a prefixing language they'll be reversed).
+	 *                the length of each meaning string will be proportional to the number of syllables in the translated morpheme.
+	 *                other than that the exact content of each meaning doesn't matter; it's just a pseudorandom seed.
+	 *                make sure you include the gender ending, if applicable.
 	 */
-	abstract getProperWord(index: string, tipo: WordType): Word;
+	abstract getWord(meaning: Meaning[]): Word;
 
 	/**
-	 * get the language that this was n timesteps ago
-	 * @param n the number of steps backward, in centuries.
+	 * get the gender suffix that typically goes with this concept
+	 * @throws if this language lacks gender
 	 */
-	abstract getAncestor(n: number): Lect;
+	abstract getGender(meaning: Meaning): Meaning;
+
+	/**
+	 * pull a common noun from this language.
+	 * this is the same as getWord basicly; it just saves the user from having to import RootType.
+	 * @param english the english meaning
+	 */
+	getCommonNoun(english: string): Word {
+		return this.getWord([{english: english, type: RootType.COMMON}]);
+	}
+
+	/**
+	 * get the name of a place in this language
+	 * @param index the index of the tile being named
+	 */
+	getToponym(index: number): Phrase {
+		return this.compound({english: `tile${index}`, type: RootType.COMMON}, this.affixes.country);
+	}
+
+	/**
+	 * get the name of a people in this language
+	 * @param index the index of the tile where these people live
+	 */
+	getEthnonym(index: number): Phrase {
+		return this.compound({english: `tile${index}`, type: RootType.COMMON}, this.affixes.people);
+	}
+
+	/**
+	 * get the name of a language in this language
+	 * @param index the index of the tile where this language is spoken
+	 */
+	getGlossonym(index: number): Phrase {
+		return this.compound({english: `tile${index}`, type: RootType.COMMON}, this.affixes.language);
+	}
 
 	/**
 	 * get a full personal name given a set of random seeds
 	 * @param seeds
 	 */
-	getFullName(seeds: number[]): Word[] {
+	getFullName(seeds: number[]): Phrase {
 		if (seeds.length !== MAX_NUM_NAME_PARTS)
 			throw new Error("wrong number of seeds");
 		// put in whatever components we want
 		const nameParts: Word[] = [];
 		let seedIndex = 0;
 		for (let i = 0; i < this.nameStyle.numGivenNames; i ++) {
-			nameParts.push(this.getProperWord(`name${seeds[seedIndex]}`, WordType.GENERIC));
+			nameParts.push(this.getWord([
+				{english: `person${seeds[seedIndex]}`, type: RootType.COMMON}]));
 			seedIndex ++;
 		}
 		if (this.nameStyle.parentName) {
-			nameParts.push(this.getProperWord(`name${seeds[seedIndex]}`, WordType.PARENTAGE));
+			nameParts.push(this.getWord([
+				{english: `person${seeds[seedIndex]}`, type: RootType.COMMON},
+				DESCENDANT_AFFIX]));
 			seedIndex ++;
 		}
 		for (let i = 0; i < this.nameStyle.numFamilyNames; i ++) {
-			nameParts.push(this.getProperWord(`family${seeds[seedIndex]}`, WordType.FAMILY));
+			nameParts.push(this.getWord([
+				{english: `occupation${seeds[seedIndex]}`, type: RootType.COMMON},
+				OCCUPATION_AFFIXES[seeds[seedIndex]%OCCUPATION_AFFIXES.length]]));
 			seedIndex ++;
 		}
 		if (this.nameStyle.originName) { // this one requires "of" to be connected to the city name TODO use a real city name
-			const part = [
-				this.getProperWord("of", WordType.GRAMMATICAL_PARTICLE).parts[0],
-				[].concat(...this.getProperWord(`place${seeds[seedIndex]}`, WordType.CITY).parts),
+			const partParts = [
+				this.getWord([
+					{english: "of", type: RootType.GRAMMATICAL}]),
+				this.getWord([
+					{english: `city${seeds[seedIndex]}`, type: RootType.COMMON},
+					CITY_AFFIXES[seeds[seedIndex]%CITY_AFFIXES.length]]),
 			];
 			if (!this.nameStyle.givenFirst)
-				part.reverse();
-			nameParts.push(new Word(part, this));
+				partParts.reverse();
+			nameParts.push(new Word(partParts[0].morphemes.concat(partParts[1].morphemes), this)); // fuse "of" at the last second so that it doesn't get eaten by phonological processes
 		}
 
 		// account for variable name order
 		if (!this.nameStyle.givenFirst)
 			nameParts.reverse();
 
-		return nameParts;
+		return new Phrase(nameParts, this);
+	}
+
+	/**
+	 * translate and combine two components according to our preferred order and amount of spacing
+	 * @param base the content of the compound word
+	 * @param affix the head to stick before or after it, or null if the base is actually fine on its own
+	 */
+	compound(base: Meaning, affix: Meaning): Phrase {
+		if (affix === null) {
+			return new Phrase([this.getWord([base])], this);
+		}
+		else if (this.compounding) {
+			return new Phrase([this.getWord([base, affix])], this);
+		}
+		else {
+			let components;
+			if (this.genders.length > 0)
+				components = [
+					this.getWord([base, this.getGender(affix)]),
+					this.getWord([affix]),
+				];
+			else
+				components = [
+					this.getWord([base]),
+					this.getWord([affix]),
+				];
+			if (this.prefixing)
+				components.reverse();
+			return new Phrase(components, this);
+		}
 	}
 
 	/**
@@ -200,8 +313,19 @@ export abstract class Lect {
 		return this.macrolanguage === lang.macrolanguage;
 	}
 
-	getName(): Word {
-		return this.getProperWord(this.homelandIndex.toString(), WordType.LANGUAGE);
+	/**
+	 * get the language that this was n timesteps ago
+	 * @param n the number of steps backward, in centuries.
+	 */
+	getAncestor(n: number): Lect {
+		if (n <= 0 || this.parent === null)
+			return this;
+		else
+			return this.parent.getAncestor(n - 1);
+	};
+
+	getName(): Phrase {
+		return this.getGlossonym(this.homelandIndex);
 	}
 }
 
@@ -217,12 +341,8 @@ export class ProtoLect extends Lect {
 	private static P_MEDIAL = 0.3;
 	private static P_CODA = 0.5;
 
-	/** whether this language prefers prefixen */
-	private readonly prefixing: boolean;
 	/** what stress rule does this language use */
 	private readonly stressRule: StressPlacement;
-	/** what kinds of suffixes to use for names of countries, peoples, and languages */
-	private readonly toponymAffixStyle: ToponymClassifierStyle;
 	/** the onset consonants in this language */
 	private readonly onsets: Sound[];
 	/** the vowels in this language */
@@ -234,24 +354,13 @@ export class ProtoLect extends Lect {
 	/** the approximate amount of information in one syllable */
 	private readonly complexity: number;
 	/** the word references of each type */
-	private readonly word: Map<WordType, Map<string, Word>>;
-	/** the noun classifiers */
-	private readonly classifiers: Map<WordType, Sound[][]>;
-	/** the noun endings */
-	private readonly affixes: Map<PartOfSpeech, Sound[][]>;
+	private readonly roots: Map<Meaning, Sound[]>;
 	/** the random number seed to use when composing original words */
 	private readonly seed: number;
 
 	constructor(homelandIndex: number, rng: Random) {
-		super(
-			`native${rng.discrete(0, 4)}`,
-			rollNewNameStyle(rng),
-			homelandIndex);
+		super(null, homelandIndex, rng);
 		this.seed = rng.next();
-		this.macrolanguage = this;
-
-		this.prefixing = rng.probability(0.2);
-		this.toponymAffixStyle = rollNewToponymClassifierStyle(rng);
 
 		// choose how many consonants the protolanguage will have
 		this.onsets = ProtoLect.CONSON.slice(0, 6 + rng.binomial(15, .4));
@@ -279,132 +388,82 @@ export class ProtoLect extends Lect {
 
 		this.stressRule = new StressPlacement(!this.prefixing, 1, 1, 'lapse', false);
 
-		const numGenders = rng.probability(1/2) ? 0 : rng.discrete(2, 6);
-		this.affixes = new Map<PartOfSpeech, Sound[][]>();
-		for (let partOfSpeech = 0; partOfSpeech < 3; partOfSpeech ++) {
-			const affixes: Sound[][] = [];
-			if (partOfSpeech !== PartOfSpeech.NONE) {
-				for (let i = 0; i < numGenders; i ++) // choose how much basic suffixing to do
-					affixes.push(this.getRoot('fmncrh'[i] + partOfSpeech.toString(), 0.6));
-			}
-			this.affixes.set(partOfSpeech, affixes);
-		}
-
-		this.word = new Map<WordType, Map<string, Word>>();
-		this.classifiers = new Map<WordType, Sound[][]>();
-		let classifierSeed = 0;
-		for (const wordType of WordType) {
-			this.word.set(<WordType>wordType, new Map<string, Word>());
-			const classifiers: Sound[][] = [];
-			const numClassifiers = Math.round((<WordType>wordType).numClassifiers);
-			for (let i = 0; i < numClassifiers; i++) { // TODO countries can be named after cities
-				classifiers.push(this.getCommonWord(
-					`${classifierSeed}`, Math.max(1, 3/this.complexity),
-					(<WordType>wordType).partOfSpeech));
-				classifierSeed ++;
-			}
-			this.classifiers.set(<WordType>wordType, classifiers);
-		}
+		this.roots = new Map<Meaning, Sound[]>();
 	}
 
-	getProperWord(index: string, tipo: WordType): Word {
-		if (!this.word.get(tipo).has(index)) {
-			// decide what kind of classifier we should use (usually the one that directly corresponds to tipo but the toponym style can differ)
-			if (tipo === WordType.COUNTRY)
-				tipo = this.toponymAffixStyle.country;
-			else if (tipo === WordType.PEOPLE)
-				tipo = this.toponymAffixStyle.people;
-			else if (tipo === WordType.LANGUAGE)
-				tipo = this.toponymAffixStyle.language;
-			const availableClassifiers = this.classifiers.get(tipo);
-
-			// decide whether the base needs a word ending (or if this is a compound word)
-			let baseForm;
-			if (availableClassifiers.length === 0)
-				baseForm = tipo.partOfSpeech;
-			else
-				baseForm = PartOfSpeech.NONE;
-
-			// get the base
-			const size = (tipo === WordType.GRAMMATICAL_PARTICLE) ? 1 : Math.max(1, 5/this.complexity);
-			const base = this.getCommonWord(index, Math.max(1, size), baseForm);
-			if (base.length === 0)
-				throw new Error(`this new word is empty; it was supposed to have ${size} syllables`);
-
-			// choose a classifier
-			let wordParts;
-			if (availableClassifiers.length > 0) {
-				const seed = decodeBase37(index) + 100;
-				const rng = new Random(seed);
-				const classifierOptions = this.classifiers.get(tipo);
-				const classifier = rng.choice(classifierOptions);
-
-				if (this.prefixing)
-					wordParts = [classifier, base];
+	getWord(meaning: Meaning[]): Word {
+		// add the gender ending if one was not explicitly passed
+		if (this.genders.length > 0 && meaning[meaning.length - 1].type !== RootType.GRAMMATICAL)
+			meaning.push(this.getGender(meaning[meaning.length - 1]));
+		// translate each morpheme
+		const morphemes: Sound[][] = [];
+		for (const partMeaning of meaning)
+			morphemes.push(this.getRoot(partMeaning));
+		// fuse grammatical morphemes with neibors
+		for (let i = 1; i < morphemes.length; i ++) {
+			if (meaning[i].type === RootType.GRAMMATICAL) {
+				if (!this.prefixing)
+					morphemes.splice(i - 1, 2, morphemes[i - 1].concat(morphemes[i]));
 				else
-					wordParts = [base, classifier];
+					morphemes.splice(i - 1, 2, morphemes[i].concat(morphemes[i - 1]));
 			}
-			else
-				wordParts = [base];
-
-			this.word.get(tipo).set(index, new Word(wordParts, this));
 		}
-		return this.word.get(tipo).get(index);
-	}
-
-	/**
-	 * generate a new random word, including a gender affix
-	 * @param index the pseudorandom seed for this root
-	 * @param syllables the number of syllables in the root
-	 * @param partOfSpeech the type of word to determine what if any ending it should get
-	 */
-	getCommonWord(index: string, syllables: number, partOfSpeech: PartOfSpeech): Sound[] {
-		const root = this.getRoot(index, syllables);
-		if (this.affixes.get(partOfSpeech).length === 0)
-			return this.stressRule.apply(root);
-		else {
-			const seed = decodeBase37(index);
-			const rng = new Random(seed);
-			const affix = rng.choice(this.affixes.get(partOfSpeech));
-			if (this.prefixing)
-				return this.stressRule.apply(affix.concat(root));
-			else
-				return this.stressRule.apply(root.concat(affix));
-		}
+		// adjust the order if this language is head-initial
+		if (this.prefixing)
+			morphemes.reverse();
+		// return the result
+		return new Word(this.stressRule.apply(morphemes), this);
 	}
 
 	/**
 	 * generate a new random word root
-	 * @param index the pseudorandom seed for this root as a lowercase base-36 string
-	 * @param syllables the number of syllables in this root
+	 * @param meaning the english translation of this root.  the length of this string will be proportional to the
+	 *                length of the resulting root.  other than that, the exact content of the string doesn't matter;
+	 *                it's essentially a pseudorandom seed.
 	 */
-	getRoot(index: string, syllables: number): Sound[] {
-		const seed = this.seed + decodeBase37(index);
-		const rng = new Random(seed);
-		let syllableNumber, multiplier;
-		if (syllables > 1) {
-			syllableNumber = Math.round(syllables + rng.uniform(-1/2, 1/2));
-			multiplier = 1;
+	getRoot(meaning: Meaning): Sound[] {
+		if (!this.roots.has(meaning)) {
+			let length;
+			if (meaning.type === RootType.GRAMMATICAL)
+				length = 1/this.complexity; // grammatical affixes
+			else if (meaning.type === RootType.SHORT)
+				length = 2/this.complexity; // basic words used for compounds
+			else
+				length = 5/this.complexity; // other roots
+			const seed = this.seed + decodeBase37(meaning.english);
+			const rng = new Random(seed);
+			let syllableNumber, multiplier;
+			if (length > 1) {
+				syllableNumber = Math.round(length + rng.uniform(-1/2, 1/2));
+				multiplier = 1;
+			}
+			else {
+				syllableNumber = 1;
+				multiplier = length;
+			}
+			let mul = [];
+			for (let i = 0; i < syllableNumber; i ++) {
+				if (rng.probability(ProtoLect.P_ONSET*multiplier))
+					mul.push(rng.choice(this.onsets));
+				if (this.medials.length > 0 && rng.probability(ProtoLect.P_MEDIAL*multiplier))
+					mul.push(rng.choice(this.medials));
+				mul.push(rng.choice(this.vowels));
+				if (this.codas.length > 0 && rng.probability(ProtoLect.P_CODA*multiplier))
+					mul.push(rng.choice(this.codas));
+			}
+			this.roots.set(meaning, mul);
 		}
-		else {
-			syllableNumber = 1;
-			multiplier = syllables;
-		}
-		let mul = [];
-		for (let i = 0; i < syllableNumber; i ++) {
-			if (rng.probability(ProtoLect.P_ONSET*multiplier))
-				mul.push(rng.choice(this.onsets));
-			if (this.medials.length > 0 && rng.probability(ProtoLect.P_MEDIAL*multiplier))
-				mul.push(rng.choice(this.medials));
-			mul.push(rng.choice(this.vowels));
-			if (this.codas.length > 0 && rng.probability(ProtoLect.P_CODA*multiplier))
-				mul.push(rng.choice(this.codas));
-		}
-		return mul;
+		return this.roots.get(meaning);
 	}
 
-	getAncestor(_n: number): Lect {
-		return this;
+	getGender(meaning: Meaning): Meaning | null {
+		if (this.genders.length === null)
+			throw new Error("um actually this language doesn't have grammatical gender.");
+		else {
+			const seed = this.seed + decodeBase37(meaning.english) + 1;
+			const rng = new Random(seed);
+			return rng.choice(this.genders);
+		}
 	}
 }
 
@@ -412,45 +471,27 @@ export class ProtoLect extends Lect {
  * a Lect derived from a ProtoLect with phonological processes
  */
 export class Dialect extends Lect {
-	private readonly parent: Lect;
-	private readonly wordProcesses: WordProcess[];
-	private readonly phraseProcesses: PhraseProcess[];
+	private readonly processes: Process[];
 
 	constructor(parent: Lect, homelandIndex: number, rng: Random) {
-		super(
-			parent.defaultTranscriptionStyle, rollNewNameStyle(rng, parent.nameStyle),
-			homelandIndex);
-		this.parent = parent;
-		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
+		super(parent, homelandIndex, rng);
 
-		this.wordProcesses = [];
-		this.phraseProcesses = [];
-		for (const {chanse, proces} of WORD_PROCESS_OPTIONS)
+		this.processes = [];
+		for (const {chanse, proces} of PROCESS_OPTIONS)
 			if (rng.probability(chanse))
-				this.wordProcesses.push(proces);
-		for (const {chanse, proces} of PHRASE_PROCESS_OPTIONS)
-			if (rng.probability(chanse))
-				this.phraseProcesses.push(proces);
+				this.processes.push(proces);
 	}
 
-	getProperWord(index: string, tipo: WordType) {
-		const oldWord = this.parent.getProperWord(index, tipo);
-		const newParts = [];
-		for (let part of oldWord.parts) {
-			for (const change of this.wordProcesses)
-				part = change.apply(part);
-			newParts.push(part);
-		}
-		let newWord = new Word(newParts, oldWord.language);
-		for (const change of this.phraseProcesses)
-			newWord = change.apply(newWord);
+	getWord(meaning: Meaning[]): Word {
+		const oldWord = this.parent.getWord(meaning);
+		let morphemes = oldWord.morphemes;
+		for (const change of this.processes)
+			morphemes = change.apply(morphemes);
+		let newWord = new Word(morphemes, this);
 		return newWord;
 	}
 
-	getAncestor(n: number): Lect {
-		if (n <= 0)
-			return this;
-		else
-			return this.parent.getAncestor(n - 1);
+	getGender(meaning: Meaning): Meaning | null {
+		return this.parent.getGender(meaning);
 	}
 }

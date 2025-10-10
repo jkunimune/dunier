@@ -3,9 +3,9 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Random} from "../utilities/random.js";
-import {Dialect, Lect, WordType, ProtoLect} from "./language/lect.js";
+import {Dialect, Lect, ProtoLect} from "./language/lect.js";
 import {Tile} from "./surface/surface.js";
-import {Word} from "./language/word.js";
+import {Phrase} from "./language/word.js";
 import {Biome} from "./terrain.js";
 
 import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";
@@ -217,9 +217,8 @@ export class Culture {
 		return Math.round(totalPopulation);
 	}
 
-	public getName(): Word {
-		return this.lect.getProperWord(
-			this.homeland.index.toString(), WordType.PEOPLE);
+	public getName(): Phrase {
+		return this.lect.getEthnonym(this.homeland.index);
 	}
 }
 

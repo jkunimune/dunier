@@ -250,7 +250,7 @@ export default {
     { "name": "syllable break",
       "symbols": [".",  "",   "",   "",   "",   "",   "",   "",   "",   "",   ""] },
     { "name": "morpheme break",
-      "symbols": [" ",  " ",  " ",  " ",  "-",  "・",  " ",  " ",  " ",  "",   "-"] },
+      "symbols": [".",  "",   "",   "",   "-",  "",   "",   "",   "",   "",   "-"] },
     { "name": "word break",
       "symbols": [" ",  " ",  " ",  " ",  " ",  "・",  " ",  " ",  " ",  " ",  " "] }
   ],
@@ -297,8 +297,10 @@ export default {
       "symbols": ["X̞",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X"] }
   ],
   "flags": [
-    { "name": "capitalization",
+    { "name": "interword capitalization",
       "values": [false, true, true, true, true, false, true, true, true, true, true] },
+    { "name": "intraword capitalization",
+      "values": [false, false, false, false, true, false, false, false, false, true, true] },
     { "name": "au as ao",
       "values": [false, false, false, false, false, false, false, false, true, false, false] },
     { "name": "diphthong as hiatus",

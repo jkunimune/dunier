@@ -3,7 +3,6 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Tile} from "./surface/surface.js";
-import {WordType} from "./language/lect.js";
 import {
 	POPULATION_DENSITY,
 	MEAN_ASSIMILATION_TIME,
@@ -13,7 +12,7 @@ import {
 	World
 } from "./world.js";
 import {Culture} from "./culture.js";
-import {Word} from "./language/word.js";
+import {Phrase} from "./language/word.js";
 import Queue from "../utilities/external/tinyqueue.js";
 import {Dequeue} from "../utilities/dequeue.js";
 
@@ -365,9 +364,8 @@ export class Civ {
 		return Math.round(POPULATION_DENSITY*this.technology*this.arableArea);
 	}
 
-	getName(): Word {
-		return this.capital.culture.lect.getProperWord(
-			this.capital.index.toString(), WordType.COUNTRY);
+	getName(): Phrase {
+		return this.capital.culture.lect.getToponym(this.capital.index);
 	}
 
 }
