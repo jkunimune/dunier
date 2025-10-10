@@ -220,6 +220,10 @@ export class Culture {
 	public getName(): Phrase {
 		return this.lect.getEthnonym(this.homeland.index);
 	}
+
+	public getAdjective(): Phrase {
+		return this.lect.getTopoAdjective(this.homeland.index);
+	}
 }
 
 /**

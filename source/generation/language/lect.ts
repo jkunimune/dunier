@@ -117,7 +117,11 @@ export abstract class Lect {
 	/** the untranslated allowable noun endings, or [] if nouns can end in anything */
 	protected readonly genders: Meaning[];
 	/** the untranslated word to put on the ends of country, people, and language names */
-	private readonly affixes: { country: Meaning | null, people: Meaning | null, language: Meaning | null };
+	private readonly affixes: {
+		country: Meaning | null,
+		people: Meaning | null,
+		language: Meaning | null,
+		adjective: Meaning | null };
 	/** whether this language uses lots of compound words (instead of using phrases */
 	private readonly compounding: boolean;
 	/** whether this language prefers prefixen */
@@ -151,20 +155,26 @@ export abstract class Lect {
 			const p = rng.random();
 			if (p < 1/6) {
 				this.compounding = false;
-				this.affixes = {country: null, people: PEOPLE_WORD, language: LANGUAGE_WORD};
+				this.affixes = {
+					country: null, people: PEOPLE_WORD, language: LANGUAGE_WORD, adjective: null};
 			}
 			else {
 				this.compounding = true;
 				if (p < 1/3)
-					this.affixes = {country: null, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX};
+					this.affixes = {
+						country: null, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX, adjective: ADJECTIVE_AFFIX};
 				else if (p < 1/2)
-					this.affixes = {country: null, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX};
+					this.affixes = {
+						country: null, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX, adjective: null};
 				else if (p < 2/3)
-					this.affixes = {country: COUNTRY_AFFIX, people: null, language: LANGUAGE_AFFIX};
+					this.affixes = {
+						country: COUNTRY_AFFIX, people: null, language: LANGUAGE_AFFIX, adjective: null};
 				else if (p < 5/6)
-					this.affixes = {country: COUNTRY_AFFIX, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX};
+					this.affixes = {
+						country: COUNTRY_AFFIX, people: ADJECTIVE_AFFIX, language: ADJECTIVE_AFFIX, adjective: ADJECTIVE_AFFIX};
 				else
-					this.affixes = {country: COUNTRY_AFFIX, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX};
+					this.affixes = {
+						country: COUNTRY_AFFIX, people: PEOPLE_AFFIX, language: LANGUAGE_AFFIX, adjective: PEOPLE_AFFIX};
 			}
 		}
 		else {
@@ -230,7 +240,15 @@ export abstract class Lect {
 	}
 
 	/**
-	 * get a full personal name given a set of random seeds
+	 * get the adjective to describe things from a place in this language
+	 * @param index the index of the tile that the thing is from
+	 */
+	getTopoAdjective(index: number): Phrase {
+		return this.compound({english: `tile${index}`, type: RootType.COMMON}, this.affixes.adjective);
+	}
+
+	/**
+	 * get a full anthroponym given a set of random seeds
 	 * @param seeds
 	 */
 	getFullName(seeds: number[]): Phrase {

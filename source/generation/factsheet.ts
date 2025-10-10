@@ -492,9 +492,12 @@ function describe(culture: Culture, language: string, style: string): string {
 			localize('grammar.mention', language),
 			culture.lect.getFullName(seeds).toString(style)));
 	}
+	let nameDescriptor = culture.getAdjective().toString(style);
+	if (language === "es")
+		nameDescriptor = nameDescriptor.toLowerCase();
 	str += format(
 		localize('factbook.demography.common_names', language),
-		culture.getName().toString(style),
+		nameDescriptor,
 		formatList(names, language));
 
 	return str.trim();
