@@ -583,7 +583,7 @@ export class Klas {
 			((voze === Voze.VOICED || voze === Voze.BREATHY || voze === Voze.EJECTIVE) && loke === Loke.GLOTTAL) ||
 			(mode === Mode.TAP && loke.foner !== Foner.CORONA && loke !== Loke.LABIODENTAL) ||
 			(mode === Mode.TRILL && loke !== Loke.BILABIAL && loke !== Loke.DENTAL && loke !== Loke.UVULAR) ||
-			(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke.foner !== Foner.DORSUM) ||
+			(latia === Latia.LATERAL && loke.foner !== Foner.CORONA && loke !== Loke.PALATAL && loke !== Loke.VELAR) ||
 			(mode.sonority > Mode.CLOSE.sonority && loke.foner !== Foner.DORSUM)) // if this change is impossible for whatever reason
 			return sound; // cancel it
 		else // otherwise
