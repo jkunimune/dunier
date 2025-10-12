@@ -585,7 +585,10 @@ export function transcribeWord(morphemes: Sound[][], style: string): string {
 	let parts = morphemes.map(morpheme => transcribe(morpheme, style));
 	if (ORTHOGRAPHIC_FLAGS.get(style).get('intraword capitalization'))
 		parts = parts.map(morpheme => capitalize(morpheme));
-	return parts.join(TO_TEXT.get(style).get("morpheme break"));
+	let whole =  parts.join(TO_TEXT.get(style).get("morpheme break"));
+	if (ORTHOGRAPHIC_FLAGS.get(style).get('interword capitalization'))
+		whole = capitalize(whole);
+	return whole;
 }
 
 /**
@@ -593,8 +596,6 @@ export function transcribeWord(morphemes: Sound[][], style: string): string {
  */
 export function transcribePhrase(words: Sound[][][], style: string): string {
 	let parts = words.map(word => transcribeWord(word, style));
-	if (ORTHOGRAPHIC_FLAGS.get(style).get('interword capitalization'))
-		parts = parts.map(morpheme => capitalize(morpheme));
 	return parts.join(TO_TEXT.get(style).get("word break"));
 }
 
