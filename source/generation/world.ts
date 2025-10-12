@@ -241,7 +241,13 @@ export class World {
 			else
 				return b.getPopulation() - a.getPopulation();
 		});
-		return cultures.map(culture => culture.lect);
+		const lects = cultures.map(culture => culture.lect.standardRegister);
+		// remove duplicates
+		for (let i = 1; i < lects.length; i ++)
+			for (let j = 0; j < i; j ++)
+				if (lects[i] === lects[j])
+					lects.splice(i, 1);
+		return lects;
 	}
 
 	/**

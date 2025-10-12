@@ -173,7 +173,7 @@ export class Civ {
 					this._conquer(child, tile, loser, year);
 		}
 		if (tile.arableArea > 0)
-			if (tile.culture === null || tile.culture.lect.isIntelligible(this.capital.culture.lect)) // perpetuate the ruling culture
+			if (tile.culture === null || tile.culture.areSiblings(this.capital.culture)) // perpetuate the ruling culture
 				this.capital.culture.spreadTo(tile);
 	}
 
@@ -365,7 +365,7 @@ export class Civ {
 	}
 
 	getName(): Phrase {
-		return this.capital.culture.lect.getToponym(this.capital.index);
+		return this.capital.culture.lect.standardRegister.getToponym(this.capital.index);
 	}
 
 }

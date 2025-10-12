@@ -423,9 +423,10 @@ function addDemographicsSection(page: VNode, topic: Civ, listOfLects: Lect[], ti
 			roundedPopulationPercentage,
 			topic.getName().toString(style));
 
+		const standardLect = culture.lect.standardRegister;
 		let relatedLect = null;
 		for (const otherLect of listOfLects) {
-			if (otherLect !== culture.lect && culture.lect.getAncestor(10_000) === otherLect.getAncestor(10_000)) {
+			if (otherLect !== standardLect && standardLect.getAncestor(10_000) === otherLect.getAncestor(10_000)) {
 				relatedLect = otherLect;
 				break;
 			}
@@ -435,11 +436,11 @@ function addDemographicsSection(page: VNode, topic: Civ, listOfLects: Lect[], ti
 		if (relatedLect === null)
 			languageSentence = format(
 				localize('factbook.demography.language_isolate', language),
-				culture.lect.getName().toString(style));
+				standardLect.getName().toString(style));
 		else
 			languageSentence = format(
 				localize('factbook.demography.language_related', language),
-				culture.lect.getName().toString(style),
+				standardLect.getName().toString(style),
 				relatedLect.getName().toString(style));
 
 		addParagraph(

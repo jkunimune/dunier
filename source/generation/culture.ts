@@ -12,7 +12,10 @@ import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";
 import {POPULATION_DENSITY} from "./world.js";
 
 
-const DRIFT_RATE = .05; // fraccion of minor attributes that change each century
+/** the number of centuries it takes for two cultures to really consider themselves separate */
+const IDENTITY_FORMATION_TIME = 2;
+/** fraccion of minor attributes that change each century */
+const DRIFT_RATE = .05;
 
 
 // define the types that define a culture
@@ -69,6 +72,7 @@ for (const {key, chance, features} of UNPARSED_KULTUR_ASPECTS) {
  * a class that contains factoids about a people group.
  */
 export class Culture {
+	private readonly parent: Culture;
 	public readonly homeland: Tile;
 	public readonly tiles: Set<Tile>;
 	public readonly rng: Random;
@@ -84,6 +88,7 @@ export class Culture {
 	 * @param seed a random number seed
 	 */
 	constructor(parent: Culture | null, homeland: Tile, technology: number, seed: number) {
+		this.parent = parent;
 		this.rng = new Random(seed);
 		this.featureLists = [];
 		this.homeland = homeland;
@@ -217,12 +222,29 @@ export class Culture {
 		return Math.round(totalPopulation);
 	}
 
+	/**
+	 * are these two cultures so recently diverged that they're basically the same?
+	 */
+	public areSiblings(that: Culture): boolean {
+		return this.getAncestor(IDENTITY_FORMATION_TIME) === that.getAncestor(IDENTITY_FORMATION_TIME);
+	}
+
+	/**
+	 * get the culture that this was n timesteps ago
+	 */
+	getAncestor(n: number): Culture {
+		if (n <= 0 || this.parent === null)
+			return this;
+		else
+			return this.parent.getAncestor(n - 1);
+	};
+
 	public getName(): Phrase {
-		return this.lect.getEthnonym(this.homeland.index);
+		return this.lect.standardRegister.getEthnonym(this.homeland.index);
 	}
 
 	public getAdjective(): Phrase {
-		return this.lect.getTopoAdjective(this.homeland.index);
+		return this.lect.standardRegister.getTopoAdjective(this.homeland.index);
 	}
 }
 

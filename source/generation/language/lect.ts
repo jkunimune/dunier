@@ -16,7 +16,7 @@ const LOG_ETYMOLOGIES = false;
 /** the maximum number of names a person can have */
 export const MAX_NUM_NAME_PARTS = 4;
 /** the number of centuries that two dialects must evolve independently before they're considered separate languages */
-const DEVIATION_TIME = 2;
+const DEVIATION_TIME = 5;
 /** the rate at which suprasegmental linguistic details change per century */
 const DRIFT_RATE = .02;
 
@@ -126,7 +126,7 @@ export abstract class Lect {
 	/** whether this language prefers prefixen */
 	protected readonly prefixing: boolean;
 	/** the proto-language for the set of lects intelligible to this one */
-	private readonly macrolanguage: Lect;
+	public readonly standardRegister: Lect;
 	/** the seed we use to get the name of this Language's people/place of origin */
 	private readonly homelandIndex: number;
 
@@ -180,7 +180,7 @@ export abstract class Lect {
 		else
 			this.prefixing = parent.prefixing;
 
-		this.macrolanguage = this.getAncestor(DEVIATION_TIME);
+		this.standardRegister = this.getAncestor(DEVIATION_TIME);
 	}
 
 	/**
@@ -302,15 +302,7 @@ export abstract class Lect {
 	}
 
 	/**
-	 * is this language actually a dialect of lang?
-	 */
-	isIntelligible(lang: Lect): boolean {
-		return this.macrolanguage === lang.macrolanguage;
-	}
-
-	/**
 	 * get the language that this was n timesteps ago
-	 * @param n the number of steps backward, in centuries.
 	 */
 	getAncestor(n: number): Lect {
 		if (n <= 0 || this.parent === null)
