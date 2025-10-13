@@ -190,7 +190,7 @@ const COUNTRY_COLORS = [
 ];
 
 /** spacing between topographic contours */
-const ALTITUDE_STEP = 0.5;
+const ALTITUDE_STEP = 1.0;
 /** colormap for above-sea-level elevation */
 const ALTITUDE_COLORS = [
 	'rgb(114, 184, 91)',
@@ -204,10 +204,12 @@ const ALTITUDE_COLORS = [
 const DEPTH_STEP = 1.0;
 /** coloramp for below-sea-level elevation */
 const DEPTH_COLORS = [
-	'rgb(85, 165, 178)',
-	'rgb(37, 138, 178)',
-	'rgb(42, 106, 171)',
-	'rgb(59, 72, 151)',
+	'rgb( 84,  166,  175)',
+	'rgb( 53,  137,  175)',
+	'rgb( 46,  105,  174)',
+	'rgb( 63,  71,  152)',
+	'rgb( 51,  50,  92)',
+	'rgb( 31,  29,  43)',
 ];
 
 /** a type of area feature with a particular greebling profile */

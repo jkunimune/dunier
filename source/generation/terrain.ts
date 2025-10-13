@@ -48,24 +48,24 @@ const BRINE_PERMAFREEZE_TEMP = -20;
 /** the minimum edge length that can separate two rivers without them merging (km) */
 const RIVER_WIDTH = 10;
 /** the maximum amount that a river can flow uphill (km) */
-const CANYON_DEPTH = 0.1;
+const CANYON_DEPTH = 0.2;
 /** the depth threshold needed to form a large lake (km) */
-const LAKE_THRESH = -0.07;
+const LAKE_THRESH = .15;
 
 /** the average altitude difference between oceanic crust and continental crust (km) */
 const OCEAN_DEPTH = 4;
 /** the magnitude of random altitude variation on continents (km) */
-const CONTINENT_VARIATION = .5;
+const CONTINENT_VARIATION = 1.0;
 /** the magnitude of random depth variation in oceans (km) */
-const OCEANIC_VARIATION = 1;
+const OCEANIC_VARIATION = 0.5;
 /** the typical height of mountain ranges formed by continental collisions (km) */
-const MOUNTAIN_HEIGHT = 4;
+const MOUNTAIN_HEIGHT = 6.0;
 /** the typical height of mountain ranges formed over subduction zones (km) */
-const VOLCANO_HEIGHT = 2.3;
+const VOLCANO_HEIGHT = 3.0;
 /** the typical height of mid-oceanic ridges (km) */
 const RIDGE_HEIGHT = 1.5;
 /** the typical depth of subduction trenches (km) */
-const TRENCH_DEPTH = 4;
+const TRENCH_DEPTH = 6.0;
 /** the typical width of mountain ranges (km) */
 const MOUNTAIN_WIDTH = 400;
 /** the typical width of subduction trenches (km) */
@@ -77,7 +77,7 @@ const RIDGE_WIDTH = 100;
 /** the typical width of inter-continental oceans, as a fraction of continental length scale */
 const OCEAN_SIZE = 0.2;
 /** the amount of depression to apply to the edges of continents near passive margins */
-const CONTINENTAL_CONVEXITY = 0.05; // between 0 and 1
+const CONTINENTAL_CONVEXITY = 0.5; // between 0 and 1
 
 /** terrestrial ecoregion classifications */
 export enum Biome {
@@ -201,10 +201,8 @@ function generateContinents(numPlates: number, surf: Surface, rng: Random): void
 	}
 
 	for (const tile of surf.tiles) { // once that's done, add in the plate altitude baselines
-		if (tile.plateIndex%2 === 0)
-			tile.height += OCEAN_DEPTH/2; // order them so that adding and removing plates results in minimal change
-		else
-			tile.height -= OCEAN_DEPTH/2;
+		if (tile.plateIndex%2 !== 0)
+			tile.height -= OCEAN_DEPTH; // order them so that adding and removing plates results in minimal change
 	}
 }
 
@@ -266,8 +264,8 @@ function movePlates(surf: Surface, rng: Random): void {
 			const relSpeed = relPosition.normalized().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
 			if (relSpeed < 0) {
 				// continental collisions make himalaya-type plateaus
-				if (tile.height > 0 && fault.height > 0) {
-					const width = -relSpeed*MOUNTAIN_WIDTH;
+				if (tile.height > -OCEAN_DEPTH/2 && fault.height > 0) {
+					const width = Math.sqrt(-relSpeed)*MOUNTAIN_WIDTH;
 					queue.push({
 						tile: tile, distance: minDistance/2,
 						maxDistance: width*Math.sqrt(2),
@@ -281,40 +279,38 @@ function movePlates(surf: Surface, rng: Random): void {
 					queue.push({
 						tile: tile, distance: minDistance/2,
 						maxDistance: TRENCH_WIDTH*Math.sqrt(2),
-						priority: 1,
-						heightFunction: (distance) => -relSpeed * TRENCH_DEPTH *
-							digibbalCurve(distance/TRENCH_WIDTH) * wibbleCurve(distance/TRENCH_WIDTH, 1/6),
+						priority: -relSpeed,
+						heightFunction: (distance) => -Math.sqrt(-relSpeed) * TRENCH_DEPTH *
+							digibbalCurve(distance/TRENCH_WIDTH),
 					});
 				// anything on top of of ocean forms andean-type ranges or island chains
 				else
 					queue.push({
 						tile: tile, distance: minDistance/2,
 						maxDistance: MOUNTAIN_WIDTH*Math.sqrt(2),
-						priority: 1,
-						heightFunction: (distance) => -relSpeed * VOLCANO_HEIGHT *
+						priority: -relSpeed,
+						heightFunction: (distance) => Math.sqrt(-relSpeed) * VOLCANO_HEIGHT *
 							digibbalCurve(distance/MOUNTAIN_WIDTH) * wibbleCurve(distance/MOUNTAIN_WIDTH, 1),
 					});
 			}
 			else {
 				// separating oceans form mid-oceanic rifts
-				if (tile.height < 0)
+				if (tile.height < -OCEAN_DEPTH/2)
 					queue.push({
 						tile: tile, distance: minDistance/2,
-						maxDistance: relSpeed*RIDGE_WIDTH*2,
-						priority: 1,
-						heightFunction: (distance) => {
-							const x0 = Math.min(0, relSpeed*oceanWidth - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
-							const xR = (distance - x0) / RIDGE_WIDTH;
-							return RIDGE_HEIGHT * Math.exp(-xR);
-						},
+						maxDistance: relSpeed*RIDGE_WIDTH*Math.sqrt(2),
+						priority: relSpeed,
+						heightFunction: (distance) => RIDGE_HEIGHT *
+							Math.exp(-distance/RIDGE_WIDTH),
 					});
-				else
+				// separating continents form ocean basins
+				else {
+					const width = relSpeed*oceanWidth; // passive margins are kind of complicated
 					queue.push({
 						tile: tile, distance: minDistance/2,
-						maxDistance: 2*relSpeed*oceanWidth,
+						maxDistance: width*Math.sqrt(2),
 						priority: Infinity,
 						heightFunction: (distance) => {
-							const width = relSpeed*oceanWidth; // passive margins are kind of complicated
 							const x0 = Math.min(0, width - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
 							const xS = (width - distance) / SLOPE_WIDTH;
 							const xR = (distance - x0) / RIDGE_WIDTH;
@@ -323,6 +319,7 @@ function movePlates(surf: Surface, rng: Random): void {
 								-OCEAN_DEPTH/2 / (1 + Math.exp(-xS/2.)/CONTINENTAL_CONVEXITY));
 						},
 					});
+				}
 			}
 		}
 	}
@@ -555,10 +552,11 @@ function addRivers(surf: Surface): void {
 			surf.rivers.add([vertex, vertex.downstream]);
 	}
 
+	// now add lakes
 	const lageQueue = [...surf.tiles].filter((t: Tile) => !surf.edge.has(t));
 	queue:
 	while (lageQueue.length > 0) { // now look at the tiles
-		const tile = lageQueue.pop(); // TODO: make lakes more likely to appear on large rivers
+		const tile = lageQueue.pop();
 		if (tile.isWater() || tile.temperature < PERMAFREEZE_TEMP)
 			continue; // ignoring things that are already water or too cold for this
 
@@ -593,8 +591,8 @@ function addRivers(surf: Surface): void {
 			if (outflow === null || riverOrder.get(vertex) <= riverOrder.get(outflow)) // i.e. the vertex with the most ultimate flow
 				outflow = vertex;
 
-		if (outflow !== null && outflow.downstream instanceof Vertex &&
-			outflow.height - outflow.downstream.height < LAKE_THRESH) { // if we made it through all that, make an altitude check
+		if (outflow !== null && outflow.downstream instanceof Vertex && outflow.flow > 0 &&
+			outflow.downstream.height > outflow.height + LAKE_THRESH) { // if we made it through all that, make an altitude check
 			tile.biome = Biome.LAKE; // and assign lake status. you've earned it, tile.
 			for (const neighbor of tile.neighbors.keys())
 				lageQueue.push(neighbor); // tell your friends.
