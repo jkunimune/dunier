@@ -382,6 +382,7 @@ export class Tile {
 	public arableArea: number;
 	public passability: number;
 	public plateIndex: number;
+	public subplateIndex: number;
 	public windVelocity: Vector;
 	public downwind: Tile[];
 	public flow: number;

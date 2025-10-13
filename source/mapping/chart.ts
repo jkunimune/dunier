@@ -34,6 +34,7 @@ const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 const SHOW_TILE_INDICES = false; // label each tile with its number
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
+const COLOR_BY_SUBPLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
 const COLOR_BY_TILE = false; // color each tile a different color
 const SHOW_SEA_BORDERS = false; // include ocean territory in each country's border
@@ -356,7 +357,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	const bbox = rawBbox.rotate(orientation).scale(scale).offset(margin);
 
 	let colorScheme = COLOR_SCHEMES.get(colorSchemeName);
-	if (COLOR_BY_PLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
+	if (COLOR_BY_PLATE || COLOR_BY_SUBPLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
 		colorScheme = COLOR_SCHEMES.get('debug');
 
 	const svg = h('svg', {
@@ -396,10 +397,14 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 
 	// color in the land
 	if (COLOR_BY_PLATE) {
-		// color the land (and the sea (don't worry, we'll still trace coastlines later)) by plate index
 		areaFeatures.push(...fillChoropleth(
 			surface.tiles, n => n.plateIndex, 1, COUNTRY_COLORS,
 			transform, createSVGGroup(svg, "plates"), Layer.GEO));
+	}
+	else if (COLOR_BY_SUBPLATE) {
+		areaFeatures.push(...fillChoropleth(
+			surface.tiles, n => n.subplateIndex, 1, COUNTRY_COLORS,
+			transform, createSVGGroup(svg, "subplates"), Layer.GEO));
 	}
 	else if (COLOR_BY_CONTINENT && continents !== null) {
 		areaFeatures.push(...fillMultiple(

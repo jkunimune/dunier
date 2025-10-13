@@ -5,7 +5,7 @@
 import Queue from '../utilities/external/tinyqueue.js';
 import {Surface, Vertex, Tile, EmptySpace} from "./surface/surface.js";
 import {Random} from "../utilities/random.js";
-import {argmin, union} from "../utilities/miscellaneus.js";
+import {argmin, filterSet, union} from "../utilities/miscellaneus.js";
 import {Vector} from "../utilities/geometry.js";
 
 
@@ -66,6 +66,8 @@ const VOLCANO_HEIGHT = 3.0;
 const RIDGE_HEIGHT = 1.5;
 /** the typical depth of subduction trenches (km) */
 const TRENCH_DEPTH = 6.0;
+/** the typical depth of a continental rift */
+const RIFT_DEPTH = 1.5;
 /** the typical width of mountain ranges (km) */
 const MOUNTAIN_WIDTH = 400;
 /** the typical width of subduction trenches (km) */
@@ -168,27 +170,47 @@ export function generateTerrain(numContinents: number, seaLevel: number, meanTem
  */
 function generateContinents(numPlates: number, surf: Surface, rng: Random): void {
 	const maxScale = MAX_NOISE_SCALE*Math.sqrt(surf.area);
-	for (const tile of surf.tiles) { // start by assigning plates
+	// start by assigning plates
+	for (const tile of surf.tiles) {
 		if (tile.index < numPlates) {
 			tile.plateIndex = tile.index; // the first few are seeds
 			tile.height = 0;
 			rng.next(); // but call rng anyway to keep things consistent
 		}
-		else { // and the rest with a method similar to that above
-			const prefParents: Tile[] = [];
+		else { // and the rest get assigned a parent's plate
+			const prefParents = new Set<Tile>();
 			for (const pair of tile.between) { // if this tile is directly between two tiles
 				if (pair[0].plateIndex === pair[1].plateIndex) { // of the same plate
-					if (!prefParents.includes(pair[0]))
-						prefParents.push(pair[0]); // try to have it take the plate from one of them, to keep that plate together
-					if (!prefParents.includes(pair[1]))
-						prefParents.push(pair[1]);
+					prefParents.add(pair[0]); // try to have it take the plate from one of them, to keep that plate together
+					prefParents.add(pair[1]);
 				}
 			}
-			const options = (prefParents.length > 0) ? prefParents : tile.parents;
+			const options = (prefParents.size > 0) ? [...prefParents] : tile.parents;
 			let distances = [];
 			for (const parent of options)
 				distances.push(surf.distance(tile, parent));
 			tile.plateIndex = options[argmin(distances)].plateIndex;
+		}
+
+		// do the same thing but for subplates
+		if (tile.index < 2*numPlates) {
+			tile.subplateIndex = tile.index;
+			rng.next();
+		}
+		else {
+			const samePlateParents = tile.parents.filter(parent => parent.plateIndex === tile.plateIndex);
+			const prefParents = new Set<Tile>();
+			for (const pair of tile.between) { // if this tile is directly between two tiles
+				if (pair[0].plateIndex === tile.plateIndex && pair[0].subplateIndex === pair[1].subplateIndex) { // of the same plate
+					prefParents.add(pair[0]); // try to have it take the plate from one of them, to keep that plate together
+					prefParents.add(pair[1]);
+				}
+			}
+			let options = (prefParents.size > 0) ? [...prefParents] : samePlateParents;
+			let distances = [];
+			for (const parent of options)
+				distances.push(surf.distance(tile, parent));
+			tile.subplateIndex = options[argmin(distances)].subplateIndex;
 		}
 	}
 
@@ -215,14 +237,34 @@ function movePlates(surf: Surface, rng: Random): void {
 	for (const tile of surf.tiles) { // start by counting up all the plates
 		if (tile.plateIndex >= velocities.length) // and assigning them random velocities // TODO allow for plate rotation in the tangent plane
 			velocities.push(
-				tile.east.times(rng.normal(0, Math.sqrt(.5))).plus(
-				tile.north.times(rng.normal(0, Math.sqrt(.5))))); // orthogonal to the normal at their seeds
+				tile.east.times(rng.normal(0, 1/Math.sqrt(2))).plus(
+				tile.north.times(rng.normal(0, 1/Math.sqrt(2))))); // orthogonal to the normal at their seeds
 		else
 			break;
 	}
-
 	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
+	moveCertainPlates(surf.tiles, tile => tile.plateIndex, velocities, true, oceanWidth);
 
+	const subvelocities = [];
+	for (const tile of surf.tiles) { // start by counting up all the plates
+		if (tile.subplateIndex >= subvelocities.length) // and assigning them random velocities // TODO allow for plate rotation in the tangent plane
+			subvelocities.push(
+				tile.east.times(rng.normal(0, 0.3/Math.sqrt(2))).plus(
+				tile.north.times(rng.normal(0, 0.3/Math.sqrt(2))))); // orthogonal to the normal at their seeds
+		else
+			break;
+	}
+	for (let plateIndex = 0; plateIndex < velocities.length; plateIndex ++)
+		moveCertainPlates(
+			filterSet(surf.tiles, tile => tile.plateIndex === plateIndex),
+			tile => tile.subplateIndex, subvelocities, false);
+}
+
+
+/**
+ * apply plate tectonics given the velocities for all the plates.
+ */
+function moveCertainPlates(tiles: Set<Tile>, getPlate: (tile: Tile) => number, velocities: Vector[], affectOcean: boolean, oceanWidth: number = 0) {
 	// create a queue to propagate the fault line effects
 	const queue = new Queue<{tile: Tile, distance: number, maxDistance: number, priority: number, heightFunction: (distance: number) => number}>(
 		[], (a, b) => {
@@ -232,11 +274,14 @@ function movePlates(surf: Surface, rng: Random): void {
 				return a.distance - b.distance;
 		},
 	);
-	for (const tile of surf.tiles) { // now for phase 2:
+	for (const tile of tiles) {
+		if (!affectOcean && tile.height < -OCEAN_DEPTH/2)
+			continue; // skip anything oceanic
+
 		let fault = null;
 		let minDistance = Infinity;
 		for (const neighbor of tile.neighbors.keys()) { // look for adjacent tiles
-			if (neighbor.plateIndex !== tile.plateIndex) { // that are on different plates
+			if (tiles.has(neighbor) && getPlate(neighbor) !== getPlate(tile)) { // that are on different plates
 				const distance = tile.neighbors.get(neighbor).getDistance();
 				if (fault === null || distance < minDistance) {
 					fault = neighbor;
@@ -250,21 +295,21 @@ function movePlates(surf: Surface, rng: Random): void {
 			let faultPos = new Vector(0, 0, 0);
 			let tileMass = 0, faultMass = 0;
 			for (const t of union(tile.neighbors.keys(), fault.neighbors.keys())) {
-				if (t.plateIndex === tile.plateIndex) {
+				if (getPlate(t) === getPlate(tile)) {
 					tilePos = tilePos.plus(t.pos);
 					tileMass ++;
 				}
-				else if (t.plateIndex === fault.plateIndex) {
+				else if (getPlate(t) === getPlate(fault)) {
 					faultPos = faultPos.plus(t.pos);
 					faultMass ++;
 				}
 			}
 			const relPosition = tilePos.over(tileMass).minus(faultPos.over(faultMass));
-			const relVelocity = velocities[tile.plateIndex].minus(velocities[fault.plateIndex]);
+			const relVelocity = velocities[getPlate(tile)].minus(velocities[getPlate(fault)]);
 			const relSpeed = relPosition.normalized().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
 			if (relSpeed < 0) {
 				// continental collisions make himalaya-type plateaus
-				if (tile.height > -OCEAN_DEPTH/2 && fault.height > 0) {
+				if (tile.height >= -OCEAN_DEPTH/2 && fault.height > 0) {
 					const width = Math.sqrt(-relSpeed)*MOUNTAIN_WIDTH;
 					queue.push({
 						tile: tile, distance: minDistance/2,
@@ -298,27 +343,44 @@ function movePlates(surf: Surface, rng: Random): void {
 				if (tile.height < -OCEAN_DEPTH/2)
 					queue.push({
 						tile: tile, distance: minDistance/2,
-						maxDistance: relSpeed*RIDGE_WIDTH*Math.sqrt(2),
+						maxDistance: RIDGE_WIDTH*2,
 						priority: relSpeed,
 						heightFunction: (distance) => RIDGE_HEIGHT *
 							Math.exp(-distance/RIDGE_WIDTH),
 					});
-				// separating continents form ocean basins
 				else {
-					const width = relSpeed*oceanWidth; // passive margins are kind of complicated
-					queue.push({
-						tile: tile, distance: minDistance/2,
-						maxDistance: width*Math.sqrt(2),
-						priority: Infinity,
-						heightFunction: (distance) => {
-							const x0 = Math.min(0, width - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
-							const xS = (width - distance) / SLOPE_WIDTH;
-							const xR = (distance - x0) / RIDGE_WIDTH;
-							return Math.min(
-								OCEAN_DEPTH * (Math.exp(-xS) - 1) + RIDGE_HEIGHT * Math.exp(-xR),
-								-OCEAN_DEPTH/2 / (1 + Math.exp(-xS/2.)/CONTINENTAL_CONVEXITY));
-						},
-					});
+					// separating continents form ocean basins
+					if (affectOcean) {
+						const width = relSpeed*oceanWidth; // passive margins are kind of complicated
+						queue.push({
+							tile: tile, distance: minDistance/2,
+							maxDistance: width + 2*SLOPE_WIDTH,
+							priority: Infinity,
+							heightFunction: (distance) => {
+								const x0 = Math.min(0, width - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
+								const xS = (width - distance)/SLOPE_WIDTH;
+								const xR = (distance - x0)/RIDGE_WIDTH;
+								return Math.min(
+									OCEAN_DEPTH*(Math.exp(-xS) - 1) + RIDGE_HEIGHT*Math.exp(-xR),
+									-OCEAN_DEPTH/2/(1 + Math.exp(-xS/2.)/CONTINENTAL_CONVEXITY));
+							},
+						});
+					}
+					// unless we're doing subplates in which case they form rift valleys
+					else {
+						const width = Math.sqrt(relSpeed)*MOUNTAIN_WIDTH;
+						queue.push({
+							tile: tile, distance: minDistance/2,
+							maxDistance: width + 2*RIDGE_WIDTH,
+							priority: relSpeed,
+							heightFunction: (distance) => {
+								if (distance < width)
+									return -Math.sqrt(relSpeed)*RIFT_DEPTH;
+								else
+									return RIDGE_HEIGHT*Math.exp(-(distance - width)/RIDGE_WIDTH)*wibbleCurve(distance/RIDGE_HEIGHT, 1/6);
+							}
+						});
+					}
 				}
 			}
 		}
@@ -336,7 +398,7 @@ function movePlates(surf: Surface, rng: Random): void {
 
 		visited.add(tile); // mark this tile
 		for (const neighbor of tile.neighbors.keys()) // and add its neighbors to the queue
-			if (neighbor.plateIndex === tile.plateIndex)
+			if (getPlate(neighbor) === getPlate(tile))
 				queue.push({
 					tile: neighbor,
 					distance: distance + tile.neighbors.get(neighbor).getDistance(),
@@ -719,7 +781,7 @@ function evaporation_rate(T: number): number {
 }
 
 function bellCurve(x: number): number {
-	return (1 - x*x*(1 - x*x/4));
+	return 1 - x*x*(1 - x*x/4);
 }
 
 function digibbalCurve(x: number): number {
