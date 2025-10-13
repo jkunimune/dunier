@@ -385,7 +385,6 @@ export class Tile {
 	public windVelocity: Vector;
 	public downwind: Tile[];
 	public flow: number;
-	public flag: boolean;
 	private area: number;
 	public government: Civ | null;
 	public culture: Culture | null;

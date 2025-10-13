@@ -79,15 +79,6 @@ const OCEAN_SIZE = 0.2;
 /** the amount of depression to apply to the edges of continents near passive margins */
 const CONTINENTAL_CONVEXITY = 0.05; // between 0 and 1
 
-/** different ways two plates can interact at a given fault */
-enum FaultType {
-	CONTINENT_COLLISION,
-	SEA_TRENCH,
-	ISLAND_ARC,
-	OCEANIC_RIFT,
-	RIFT_WITH_SLOPE,
-}
-
 /** terrestrial ecoregion classifications */
 export enum Biome {
 	OCEAN,
@@ -234,9 +225,15 @@ function movePlates(surf: Surface, rng: Random): void {
 
 	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
 
-	// create a high- and low-priority queue to propagate the fault line effects
-	const hpQueue: Queue<{tile: Tile, distance: number, width: number, speed: number, type: FaultType}> = new Queue([], (a, b) => a.distance - b.distance);
-	const lpQueue: Queue<{tile: Tile, distance: number, width: number, speed: number, type: FaultType}> = new Queue([], (a, b) => a.distance - b.distance);
+	// create a queue to propagate the fault line effects
+	const queue = new Queue<{tile: Tile, distance: number, maxDistance: number, priority: number, heightFunction: (distance: number) => number}>(
+		[], (a, b) => {
+			if (Number.isFinite(a.priority) || Number.isFinite(b.priority))
+				return a.distance/a.priority - b.distance/b.priority;
+			else
+				return a.distance - b.distance;
+		},
+	);
 	for (const tile of surf.tiles) { // now for phase 2:
 		let fault = null;
 		let minDistance = Infinity;
@@ -267,93 +264,92 @@ function movePlates(surf: Surface, rng: Random): void {
 			const relPosition = tilePos.over(tileMass).minus(faultPos.over(faultMass));
 			const relVelocity = velocities[tile.plateIndex].minus(velocities[fault.plateIndex]);
 			const relSpeed = relPosition.normalized().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
-			let type, width; // and whether these are both continents or if this is a top or a bottom or what
-			if (relSpeed < 0) { // TODO: make relSpeed also depend on adjacent tiles to smooth out the fault lines and make better oceans
+			if (relSpeed < 0) {
+				// continental collisions make himalaya-type plateaus
 				if (tile.height > 0 && fault.height > 0) {
-					type = FaultType.CONTINENT_COLLISION; // continental collision
-					width = -relSpeed*MOUNTAIN_WIDTH*Math.sqrt(2);
+					const width = -relSpeed*MOUNTAIN_WIDTH;
+					queue.push({
+						tile: tile, distance: minDistance/2,
+						maxDistance: width*Math.sqrt(2),
+						priority: Infinity,
+						heightFunction: (distance) => Math.sqrt(-relSpeed) * MOUNTAIN_HEIGHT* // continent-continent ranges are even
+							bellCurve(distance/width) * wibbleCurve(distance/width, 1/6),
+					});
 				}
-				else if (tile.height < fault.height) {
-					type = FaultType.SEA_TRENCH; // deep sea trench
-					width = TRENCH_WIDTH*Math.sqrt(2);
-				}
-				else {
-					type = FaultType.ISLAND_ARC; // island arc
-					width = MOUNTAIN_WIDTH*Math.sqrt(2);
-				}
+				// oceans subduct under continents forming deep sea trenches
+				else if (tile.height < fault.height)
+					queue.push({
+						tile: tile, distance: minDistance/2,
+						maxDistance: TRENCH_WIDTH*Math.sqrt(2),
+						priority: 1,
+						heightFunction: (distance) => -relSpeed * TRENCH_DEPTH *
+							digibbalCurve(distance/TRENCH_WIDTH) * wibbleCurve(distance/TRENCH_WIDTH, 1/6),
+					});
+				// anything on top of of ocean forms andean-type ranges or island chains
+				else
+					queue.push({
+						tile: tile, distance: minDistance/2,
+						maxDistance: MOUNTAIN_WIDTH*Math.sqrt(2),
+						priority: 1,
+						heightFunction: (distance) => -relSpeed * VOLCANO_HEIGHT *
+							digibbalCurve(distance/MOUNTAIN_WIDTH) * wibbleCurve(distance/MOUNTAIN_WIDTH, 1),
+					});
 			}
 			else {
-				if (tile.height < 0) {
-					type = FaultType.OCEANIC_RIFT; // mid-oceanic rift
-					width = relSpeed*RIDGE_WIDTH*2; // TODO: this would be easier to read if I used lambda functions instead of an enum
-				}
-				else {
-					type = FaultType.RIFT_WITH_SLOPE; // mid-oceanic rift plus continental slope (plus a little bit of convexity)
-					width = 2*relSpeed*oceanWidth;
-				}
+				// separating oceans form mid-oceanic rifts
+				if (tile.height < 0)
+					queue.push({
+						tile: tile, distance: minDistance/2,
+						maxDistance: relSpeed*RIDGE_WIDTH*2,
+						priority: 1,
+						heightFunction: (distance) => {
+							const x0 = Math.min(0, relSpeed*oceanWidth - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
+							const xR = (distance - x0) / RIDGE_WIDTH;
+							return RIDGE_HEIGHT * Math.exp(-xR);
+						},
+					});
+				else
+					queue.push({
+						tile: tile, distance: minDistance/2,
+						maxDistance: 2*relSpeed*oceanWidth,
+						priority: Infinity,
+						heightFunction: (distance) => {
+							const width = relSpeed*oceanWidth; // passive margins are kind of complicated
+							const x0 = Math.min(0, width - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
+							const xS = (width - distance) / SLOPE_WIDTH;
+							const xR = (distance - x0) / RIDGE_WIDTH;
+							return Math.min(
+								OCEAN_DEPTH * (Math.exp(-xS) - 1) + RIDGE_HEIGHT * Math.exp(-xR),
+								-OCEAN_DEPTH/2 / (1 + Math.exp(-xS/2.)/CONTINENTAL_CONVEXITY));
+						},
+					});
 			}
-			const queueElement = {
-				tile: tile, distance: minDistance/2, width: width,
-				speed: Math.abs(relSpeed), type: type}; // add it to the queue
-			if (type === FaultType.RIFT_WITH_SLOPE || type === FaultType.CONTINENT_COLLISION)
-				hpQueue.push(queueElement); // continental plate boundaries have high priority
-			else
-				lpQueue.push(queueElement); // other plate boundaries have low priority
 		}
-
-		tile.flag = false; // also set up these temporary flags
 	}
 
-	for (const queue of [hpQueue, lpQueue]) { // now, we iterate through the queues
-		while (!queue.empty()) { // in order of priority
-			const {tile, distance, width, speed, type} = queue.pop(); // each element of the queue is a tile waiting to be affected by plate tectonics
-			if (tile.flag)  continue; // some of them may have already come up
-			if (distance > width)   continue; // there's also always a possibility we are out of the range of influence of this fault
-			if (type === FaultType.CONTINENT_COLLISION) { // based on the type, find the height change as a function of distance
-				const x = distance / (speed*MOUNTAIN_WIDTH);
-				tile.height += Math.sqrt(speed) * MOUNTAIN_HEIGHT * // continent-continent ranges are even
-					bellCurve(x) * wibbleCurve(x, 1/6); // (the sinusoidal term makes it a little more rugged)
-			}
-			else if (type === FaultType.SEA_TRENCH) {
-				const x = distance / TRENCH_WIDTH;
-				tile.height -= speed * TRENCH_DEPTH *
-					digibbalCurve(x) * wibbleCurve(x, 1/6); // while subductive faults are odd
-			}
-			else if (type === FaultType.ISLAND_ARC) {
-				const x = distance / MOUNTAIN_WIDTH;
-				tile.height += speed * VOLCANO_HEIGHT *
-					digibbalCurve(x) * wibbleCurve(x, 1);
-			}
-			else if (type === FaultType.OCEANIC_RIFT) {
-				const width = speed*oceanWidth;
-				const x0 = Math.min(0, width - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
-				const xR = (distance - x0) / RIDGE_WIDTH;
-				tile.height += RIDGE_HEIGHT * Math.exp(-xR);
-			}
-			else if (type === FaultType.RIFT_WITH_SLOPE) {
-				const width = speed*oceanWidth; // passive margins are kind of complicated
-				const x0 = Math.min(0, width - 2*SLOPE_WIDTH - 2*RIDGE_WIDTH);
-				const xS = (width - distance) / SLOPE_WIDTH;
-				const xR = (distance - x0) / RIDGE_WIDTH;
-				tile.height += Math.min(
-					OCEAN_DEPTH * (Math.exp(-xS) - 1) + RIDGE_HEIGHT * Math.exp(-xR),
-					-OCEAN_DEPTH/2 / (1 + Math.exp(-xS/2.)/CONTINENTAL_CONVEXITY));
-			}
-			else {
-				throw new Error("Unrecognized fault type");
-			}
+	const visited = new Set<Tile>();
+	while (!queue.empty()) { // now, we iterate through the queue in order of priority
+		const {tile, distance, maxDistance, priority, heightFunction} = queue.pop(); // each element of the queue is a tile waiting to be affected by plate tectonics
+		if (visited.has(tile))
+			continue; // some of them may have already come up
+		if (distance > maxDistance)
+			continue; // there's also always a possibility we are out of the range of influence of this fault
 
-			tile.flag = true; // mark this tile
-			for (const neighbor of tile.neighbors.keys()) // and add its neighbors to the queue
-				if (neighbor.plateIndex === tile.plateIndex)
-					queue.push({
-						tile: neighbor,
-						distance: distance + tile.neighbors.get(neighbor).getDistance(),
-						width: width, speed: speed, type: type
-					});
-		}
+		tile.height += heightFunction(distance);
+
+		visited.add(tile); // mark this tile
+		for (const neighbor of tile.neighbors.keys()) // and add its neighbors to the queue
+			if (neighbor.plateIndex === tile.plateIndex)
+				queue.push({
+					tile: neighbor,
+					distance: distance + tile.neighbors.get(neighbor).getDistance(),
+					maxDistance: maxDistance,
+					priority: priority,
+					heightFunction: heightFunction,
+				});
 	}
 }
+
 
 
 /**
