@@ -16,9 +16,9 @@ const BARXE_NOISE_LEVEL = 0.3;
 /** the maximum number of planet radii at which random variation is correlated */
 const MAX_NOISE_SCALE = 1/8;
 /** the decay parameter for temperature as a function of altitude (km) */
-const ATMOSPHERE_THICKNESS = 12;
+const ATMOSPHERE_THICKNESS = 25;
 /** the minimum mountain heit needed to cast a rain shadow (km) */
-const CLOUD_HEIGHT = 2;
+const CLOUD_HEIGHT = 3;
 /** the strength of rain shadows */
 const OROGRAPHIC_MAGNITUDE = 1;
 /** the maximum distance from the ocean at which rain shadows can happen (km) */
@@ -31,7 +31,7 @@ const EVAPORATION_INTERCEPT = -15;
 /** the exponent for the evaporation rate */
 const EVAPORATION_POWER = 4/3;
 /** the prefactor for the evaporation rate */
-const EVAPORATION_COEFFICIENT = 0.01;
+const EVAPORATION_COEFFICIENT = 0.009;
 /** the temperature threshold between taiga and temperate forest (°C) */
 const TAIGA_TEMP = -5;
 /** the temperature threshold between grassland and steamland (°C) */
