@@ -136,7 +136,7 @@ export const ARABILITY = new Map([ // terrain modifiers for civ spawning and pop
 	[Biome.LAND_ICE,  0.00],
 	[Biome.SEA_ICE,   0.00],
 ]);
-export const RIVER_UTILITY_THRESHOLD = 1e6; // [km^2] size of watershed needed to produce a river that supports large cities
+export const RIVER_UTILITY_THRESHOLD = 2e5; // [km^2] size of watershed needed to produce a river that supports large cities
 export const FRESHWATER_UTILITY = 20; // [km] width of highly populated region near river
 export const SALTWATER_UTILITY = 50; // [km] width of highly populated region near coast
 
@@ -598,11 +598,9 @@ function addRivers(surf: Surface): void {
 		if (vertex.downstream instanceof Vertex) {
 			for (const tile of vertex.tiles) { // compute the sum of rainfall and inflow (with some adjustments)
 				if (tile instanceof Tile) {
-					let nadasle = (1 // base river yield is 1 per tile
-						+ tile.rainfall // add in climate factor
+					let nadasle = tile.rainfall
 						- evaporation_rate(tile.temperature) // subtract out evaporation
-						+ tile.height/CLOUD_HEIGHT // add in mountain sources
-					);
+						+ tile.height/CLOUD_HEIGHT; // add in mountain sources
 					if (nadasle > 0 && tile.temperature >= PERMAFREEZE_TEMP) // this could lead to evaporation, but I'm not doing that because it would look ugly
 						vertex.flow += nadasle*unitArea/tile.neighbors.size;
 				}
