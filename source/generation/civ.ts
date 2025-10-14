@@ -9,7 +9,7 @@ import {
 	SLOPE_FACTOR, CONQUEST_RATE,
 	TECH_ADVANCEMENT_RATE,
 	MAX_DYNASTY_LIFETIME,
-	World
+	World, BOAT_CHANCE, BOAT_FACTOR
 } from "./world.js";
 import {Culture} from "./culture.js";
 import {Phrase} from "./language/word.js";
@@ -36,9 +36,11 @@ export class Civ {
 	public history: Event[];
 
 	/** base military strength */
-	public militarism: number;
+	private militarism: number;
 	/** negative rate of change of militarism */
-	public militarismDecayRate: number;
+	private readonly militarismDecayRate: number;
+	/** whether we're especially good at sailing */
+	private readonly thalassocratic: boolean;
 	/** technological military modifier */
 	public technology: number;
 	/** the current total area (including ocean) in km^2 */
@@ -54,10 +56,11 @@ export class Civ {
 	 * create a new civilization
 	 * @param id a nonnegative integer unique to this civ
 	 * @param world the world in which this civ lives
+	 * @param location the site of its (hopefully) future capital
 	 * @param birthYear the exact year in which this Civ is born
 	 * @param predecessor the country in which this one is founded, if any
 	 */
-	constructor(id: number, world: World, birthYear: number, predecessor: Civ = null) {
+	constructor(id: number, world: World, location: Tile, birthYear: number, predecessor: Civ = null) {
 		this.world = world;
 		this.id = id;
 		this.tileTree = new Map<Tile, {parent: Tile | null, children: Set<Tile>}>();
@@ -67,6 +70,7 @@ export class Civ {
 
 		this.militarism = this.world.rng.erlang(4, 1); // TODO have naval military might separate from terrestrial
 		this.militarismDecayRate = this.militarism/MAX_DYNASTY_LIFETIME;
+		this.thalassocratic = this.world.rng.probability(BOAT_CHANCE) && location.coastal;
 		this.technology = (predecessor !== null) ? predecessor.technology : 1;
 		this.totalArea = 0;
 		this.landArea = 0;
@@ -201,7 +205,7 @@ export class Civ {
 		for (const child of children) {
 			// when we propagate to something that has not yet been claimed, spawn a new civ
 			if (child.government === this && child.arableArea > 0) {
-				const civ = this.world.addNewCiv(this, year);
+				const civ = this.world.addNewCiv(this, child, year);
 				civ.conquer(child, null, year);
 			}
 			// otherwise just lose the child tiles
@@ -262,8 +266,8 @@ export class Civ {
 
 		// otherwise, calculate how long it will take us to fill it with our armies
 		const invadee = end.government;
-		const momentum = this.getStrength();
-		const resistance = (invadee !== null) ? invadee.getStrength() : 0;
+		const momentum = this.getStrength(end);
+		const resistance = (invadee !== null) ? invadee.getStrength(end) : 0;
 		const distance = end.getArea()/start.neighbors.get(end).getLength();
 		const elevation = start.height - end.height;
 		const distanceEff = Math.hypot(distance, SLOPE_FACTOR*elevation)/end.passability;
@@ -307,10 +311,21 @@ export class Civ {
 	}
 
 	/**
-	 * how strong the Civ's military is
+	 * how strong the Civ's military is in this terrain
 	 */
-	getStrength() : number {
-		return this.militarism*this.technology;
+	getStrength(location: Tile) : number {
+		let terrainMultiplier;
+		if (this.thalassocratic) {
+			if (location.isWater())
+				terrainMultiplier = BOAT_FACTOR;
+			else if (location.coastal)
+				terrainMultiplier = Math.sqrt(BOAT_FACTOR);
+			else
+				terrainMultiplier = 1;
+		}
+		else
+			terrainMultiplier = 1;
+		return terrainMultiplier*this.militarism*this.technology;
 	}
 
 	/**

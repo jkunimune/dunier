@@ -146,9 +146,8 @@ export class Culture {
 			classes.add("barren");
 		if (this.homeland.biome === Biome.DESERT)
 			classes.add("sandy");
-		for (const neibor of this.homeland.neighbors.keys())
-			if (neibor.biome === Biome.OCEAN)
-				classes.add("coastal");
+		if (this.homeland.coastal)
+			classes.add("coastal");
 		if (this.homeland.height > 3)
 			classes.add("mountainous"); // TODO: someday mountainousness will be independent of altitude
 		if (this.homeland.surface.hasDayNightCycle)

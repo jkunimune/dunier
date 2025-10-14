@@ -30,6 +30,10 @@ export const TECH_ADVANCEMENT_RATE = 3.2e-8;
 export const POPULATION_DENSITY = .20;
 /** the rate at which ideas diffuse across borders (/y) */
 export const TECH_SPREAD_RATE = .02;
+/** the fraction of countries that are especially good at sailing */
+export const BOAT_CHANCE = 0.05;
+/** how much better a sailing-specialist country is at sailing */
+export const BOAT_FACTOR = 10;
 /** the fraction of the populacion a country gets to keep after a cataclysm (not accounting for domino effects) */
 export const APOCALYPSE_SURVIVAL_RATE = .50;
 /** the time it takes for an empire's might to decay by 2.7 (y) */

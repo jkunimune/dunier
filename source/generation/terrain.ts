@@ -447,6 +447,15 @@ function fillOcean(level: number, surf: Surface): void {
 
 	for (const tile of surf.tiles) // and redefine altitude so sea level is 0
 		tile.height -= level;
+
+	// set the coastal flag
+	for (const tile of surf.tiles) {
+		tile.coastal = false;
+		if (!tile.isSaltWater())
+			for (const neibor of tile.neighbors.keys())
+				if (neibor.isSaltWater())
+					tile.coastal = true;
+	}
 }
 
 
