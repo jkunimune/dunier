@@ -108,14 +108,14 @@ export class World {
 			const ruler = tile.government;
 			if (ruler === null) { // if it is uncivilized, the limiting factor is the difficulty of establishing a unified state
 				if (this.rng.probability(CIVILIZATION_RATE*TIME_STEP*demomultia)) {
-					const civ = this.addNewCiv(null, year);
+					const civ = this.addNewCiv(null, tile, year);
 					civ.conquer(tile, null, year);
 				}
 			}
 			else { // if it is already civilized, the limiting factor is the difficulty of starting a revolution
 				if (this.rng.probability(REBELLION_RATE*TIME_STEP*demomultia)) { // use the population without technology correction for balancing
-					const civ = this.addNewCiv(ruler, year);
-					if (civ.militarism > ruler.militarism) // make sure the rebellion is strong enuff to succeed
+					const civ = this.addNewCiv(ruler, tile, year);
+					if (civ.getStrength(tile) > ruler.getStrength(tile)) // make sure the rebellion is strong enuff to succeed
 						civ.conquer(tile, null, year);
 				}
 			}
@@ -144,8 +144,8 @@ export class World {
 		while (!invasions.empty()) {
 			const {time, invader, start, end} = invasions.pop(); // as invasions finish
 			const invadee = end.government;
-			const invaderStrength = invader.getStrength();
-			const invadeeStrength = (invadee !== null) ? invadee.getStrength() : 0;
+			const invaderStrength = invader.getStrength(end);
+			const invadeeStrength = (invadee !== null) ? invadee.getStrength(end) : 0;
 			if (invader.tileTree.has(start) && !invader.tileTree.has(end) &&
 					invaderStrength > invadeeStrength) { // check that they're still doable
 				invader.conquer(end, start, time); // update the game state
@@ -273,9 +273,9 @@ export class World {
 	/**
 	 * spawn a new civ
 	 */
-	addNewCiv(predecessor: Civ, year: number): Civ {
+	addNewCiv(predecessor: Civ, location: Tile, year: number): Civ {
 		this.lastID ++;
-		const civ = new Civ(this.lastID, this, year, predecessor);
+		const civ = new Civ(this.lastID, this, location, year, predecessor);
 		this.civs.add(civ);
 		return civ;
 	}
