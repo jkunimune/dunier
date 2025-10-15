@@ -23,7 +23,7 @@ const NUM_NAMES_TO_LIST = 3;
 /**
  * initialize an HTML document and fill it out with a comprehensive description
  * @param map the complete SVG code of the map
- * @param civs the list of Civs that will be described later in the document
+ * @param civs the list of Civs that may be described later in the document
  * @param lects the list of languages of which to be aware, from most to least important
  * @param currentYear today's date
  * @param tidalLock whether the planet is tidally locked (if so that changes the names of the cardinal directions)
@@ -63,7 +63,8 @@ function chooseMostImportantCivs(civs: Civ[], transcriptionStyle: string): Civ[]
 		const mostPopulusIndex = argmax(unlistedCivs.map(c => c.getPopulation()));
 		listedCivs.push(...unlistedCivs.splice(mostPopulusIndex, 1));
 	}
-	// then add the 8 remaining Civs with the largest area
+	// then add the 8 remaining Civs with the largest area, including water
+	unlistedCivs.sort((a: Civ, b: Civ) => b.getTotalArea() - a.getTotalArea());
 	listedCivs.push(...unlistedCivs.slice(0, NUM_CIVS_TO_DESCRIBE - 2));
 	// sort alphabetically before you leave
 	return listedCivs.sort(
