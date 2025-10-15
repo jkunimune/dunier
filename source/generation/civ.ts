@@ -261,7 +261,7 @@ export class Civ {
 			if (this === neibor.government)
 				numOwnedNeighbors ++;
 		// if we already mostly surround a tile, we should gain it instantly
-		if (numOwnedNeighbors >= 2/3*end.neighbors.size)
+		if (numOwnedNeighbors > end.neighbors.size/2)
 			return 0;
 
 		// otherwise, calculate how long it will take us to fill it with our armies
