@@ -582,11 +582,21 @@ export function capitalize(word: string): string {
  * convert a word to a unicode string somehow.
  */
 export function transcribeWord(morphemes: Sound[][], style: string): string {
+	const morphemeBreak = TO_TEXT.get(style).get("morpheme break");
+	const intrawordCapitalization = ORTHOGRAPHIC_FLAGS.get(style).get('intraword capitalization');
+	const interwordCapitalization = ORTHOGRAPHIC_FLAGS.get(style).get('interword capitalization');
+	// if this style doesn't account for morphemes, then remove morpheme boundaries to apply spelling rules more effectively
+	if (!intrawordCapitalization && morphemeBreak === "")
+		morphemes = [[].concat(...morphemes)];
+	// then transcribe each morpheme
 	let parts = morphemes.map(morpheme => transcribe(morpheme, style));
-	if (ORTHOGRAPHIC_FLAGS.get(style).get('intraword capitalization'))
+	// capitalize each morpheme, if desired
+	if (intrawordCapitalization)
 		parts = parts.map(morpheme => capitalize(morpheme));
-	let whole =  parts.join(TO_TEXT.get(style).get("morpheme break"));
-	if (ORTHOGRAPHIC_FLAGS.get(style).get('interword capitalization'))
+	// combine the morphemes
+	let whole =  parts.join(morphemeBreak);
+	// capitalize the whole thing, if desired
+	if (interwordCapitalization)
 		whole = capitalize(whole);
 	return whole;
 }
