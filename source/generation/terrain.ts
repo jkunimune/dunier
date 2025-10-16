@@ -65,13 +65,13 @@ const VOLCANO_HEIGHT = 3.0;
 /** the typical height of mid-oceanic ridges (km) */
 const RIDGE_HEIGHT = 1.5;
 /** the typical depth of subduction trenches (km) */
-const TRENCH_DEPTH = 6.0;
+const TRENCH_DEPTH = 3.0;
 /** the typical depth of a continental rift */
 const RIFT_DEPTH = 1.5;
 /** the typical width of mountain ranges (km) */
 const MOUNTAIN_WIDTH = 400;
 /** the typical width of subduction trenches (km) */
-const TRENCH_WIDTH = 100;
+const TRENCH_WIDTH = 200;
 /** the typical depth of continental slopes (km) */
 const SLOPE_WIDTH = 200;
 /** the typical width of mid-oceanic ridges (km) */
@@ -249,8 +249,8 @@ function movePlates(surf: Surface, rng: Random): void {
 	for (const tile of surf.tiles) { // start by counting up all the plates
 		if (tile.subplateIndex >= subvelocities.length) // and assigning them random velocities // TODO allow for plate rotation in the tangent plane
 			subvelocities.push(
-				tile.east.times(rng.normal(0, 0.3/Math.sqrt(2))).plus(
-				tile.north.times(rng.normal(0, 0.3/Math.sqrt(2))))); // orthogonal to the normal at their seeds
+				tile.east.times(rng.normal(0, 0.2/Math.sqrt(2))).plus(
+				tile.north.times(rng.normal(0, 0.2/Math.sqrt(2))))); // orthogonal to the normal at their seeds
 		else
 			break;
 	}
@@ -377,7 +377,7 @@ function moveCertainPlates(tiles: Set<Tile>, getPlate: (tile: Tile) => number, v
 								if (distance < width)
 									return -Math.sqrt(relSpeed)*RIFT_DEPTH;
 								else
-									return RIDGE_HEIGHT*Math.exp(-(distance - width)/RIDGE_WIDTH)*wibbleCurve(distance/RIDGE_HEIGHT, 1/6);
+									return Math.sqrt(relSpeed)*RIDGE_HEIGHT*Math.exp(-(distance - width)/RIDGE_WIDTH)*wibbleCurve(distance/RIDGE_HEIGHT, 1/6);
 							}
 						});
 					}
