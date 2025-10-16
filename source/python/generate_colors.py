@@ -2,16 +2,14 @@
 This work by Justin Kunimune is marked with CC0 1.0 Universal.
 To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
 """
-from colormath.color_objects import LabColor, sRGBColor
-from colormath.color_conversions import convert_color
-from colormath.color_diff import delta_e_cie2000
+from colour import convert
 import numpy as np
 import matplotlib.pyplot as plt
 
 N = 36
-min_L = 70
-max_L = 90
-r = 25
+min_L = .75
+max_L = .90
+r = .09
 ɸ = 0
 # Z_PERIOD = np.linspace(3, 9, 601)
 Z_PERIOD = [3.89]
@@ -25,19 +23,24 @@ for z_period in Z_PERIOD:
 		θ = i*2*np.pi*(1 + np.sqrt(5))/2 + ɸ
 		z = (i+1)/z_period%1
 		z = z*(max_L - min_L) + min_L
-		color = LabColor(z, r*np.cos(θ), r*np.sin(θ))
+		x = r*np.cos(θ)
+		y = r*np.sin(θ)
+		oklab = (z, x, y)
 
-		rgb = convert_color(color, sRGBColor)
+		if np.cos(θ - np.radians(229)) > .8 and z > .85:
+			continue  # skip light blues
+
+		rgb = convert((z, x, y), "Oklab", "sRGB")
 		if len(Z_PERIOD) == 1:
 			print("'rgb({:.0f}, {:.0f}, {:.0f})',".format(
-				256*rgb.rgb_r, 256*rgb.rgb_g, 256*rgb.rgb_b))
+				256*rgb[0], 256*rgb[1], 256*rgb[2]))
 
 		angles.append(np.degrees(θ)%360)
 		heights.append(z)
-		colors.append(color)
+		colors.append(oklab)
 	badness = 0
-	for i in range(1, N):
-		badness += 1/np.min([delta_e_cie2000(colors[i], colors[j]) for j in range(N) if j < i])
+	for i in range(1, len(colors)):
+		badness += 1/np.min([np.sqrt(np.sum((np.subtract(colors[i], colors[j]))**2)) for j in range(len(colors)) if j < i])
 	badnesses.append(badness)
 
 if len(Z_PERIOD) > 1:
