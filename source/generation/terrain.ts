@@ -309,7 +309,7 @@ function moveCertainPlates(tiles: Set<Tile>, getPlate: (tile: Tile) => number, v
 			const relSpeed = relPosition.normalized().dot(relVelocity); // determine the relSpeed at which they are moving away from each other
 			if (relSpeed < 0) {
 				// continental collisions make himalaya-type plateaus
-				if (tile.height >= -OCEAN_DEPTH/2 && fault.height > 0) {
+				if (tile.height >= -OCEAN_DEPTH/2 && fault.height >= -OCEAN_DEPTH/2) {
 					const width = Math.sqrt(-relSpeed)*MOUNTAIN_WIDTH;
 					queue.push({
 						tile: tile, distance: minDistance/2,
@@ -320,7 +320,7 @@ function moveCertainPlates(tiles: Set<Tile>, getPlate: (tile: Tile) => number, v
 					});
 				}
 				// oceans subduct under continents forming deep sea trenches
-				else if (tile.height < fault.height)
+				else if (tile.height < -OCEAN_DEPTH/2 && (fault.height >= -OCEAN_DEPTH/2 || getPlate(tile) < getPlate(fault)))
 					queue.push({
 						tile: tile, distance: minDistance/2,
 						maxDistance: TRENCH_WIDTH*Math.sqrt(2),
