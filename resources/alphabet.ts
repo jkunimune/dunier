@@ -10,7 +10,7 @@ export default {
     { "features": ["bilabial", "fricate", "voiceless"],
       "symbols": ["ɸ",  "f",  "f",  "f",  "ф",  "f",  "f",  "ph", "f",  "f",  "f"] },
     { "features": ["bilabial", "fricate"],
-      "symbols": ["β",  "b",  "b",  "v",  "в",  "v",  "v",  "bh", "v",  "v",  "v"] },
+      "symbols": ["β",  "b",  "b",  "v",  "в",  "b",  "v",  "bh", "v",  "v",  "v"] },
     { "features": ["bilabial", "trill"],
       "symbols": ["ʙ",  "b",  "br", "pbr","бв", "bur","br", "bb", "br", "bb", "blr"] },
     { "features": ["bilabial", "trill", "breathy"],

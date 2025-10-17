@@ -156,7 +156,7 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "ʒ > ʂ",
     "code": "[ +VOICE +POSTALV ] > [ +TENUIS +RETRO ] /"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "ʃ > ɬ",
+    "chance": 0.0002, "type": "mute", "comment": "ʃ > ɬ",
     "code": "[ +POSTALV ] > [ +LATERAL ] /"
   }, {
     "chance": 0.002, "type": "mute", "comment": "ɬ > ʃ",
@@ -180,10 +180,10 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "retraction before back vowels",
     "code": "[ +VELAR ] > [ +UVULAR ] / _ [ +VELAR +VOCOID ]"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "linguolabials",
+    "chance": 0.0001, "type": "mute", "comment": "linguolabials",
     "code": "[ +LABIAL -VOCOID ] > [ +LINGUOLAB ] /"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "",
+    "chance": 0.0001, "type": "mute", "comment": "",
     "code": "[ +CORON -VOCOID ] > [ +LINGUOLAB ] / [ +LABIAL ] _"
   }, {
     "chance": 0.020, "type": "mute", "comment": "",
@@ -318,10 +318,10 @@ export default [
     "chance": 0.010, "type": "mute", "comment": "",
     "code": "[ +RHOTIC ] > [ +ALVEO +TRILL ] /"
   }, {
-    "chance": 0.005, "type": "mute", "comment": "",
+    "chance": 0.002, "type": "mute", "comment": "",
     "code": "[ +RHOTIC ] > [ +UVULAR +TRILL ] /"
   }, {
-    "chance": 0.005, "type": "mute", "comment": "",
+    "chance": 0.002, "type": "mute", "comment": "",
     "code": "[ +RHOTIC ] > [ +RETRO +CLOSE ] /"
   }, {
     "chance": 0.005, "type": "mute", "comment": "r-fortition",
@@ -393,10 +393,10 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "mn > mr",
     "code": "[ -LIQ +CORON +OCCL ] > [ +TAP ] / [ +SPOKEN -VOCOID -CORON ]"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "click genesis",
-    "code": "[ +NONSYLLAB -VOCOID ] [ +NONSYLLAB -VOCOID -GUTTURAL ] > [ +CLICK ]1 /"
+    "chance": 0.0001, "type": "mute", "comment": "click genesis",
+    "code": "[ +NONSYLLAB -VOCOID ] [ +NONSYLLAB -VOCOID -GUTTURAL -BILAB -LABIODENT ] > [ +CLICK ]1 /"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "click genesis",
+    "chance": 0.0001, "type": "mute", "comment": "click genesis",
     "code": "[ +NONSYLLAB +OCCL ] [ +NONSYLLAB +CORON ] > [ +CLICK ]1 /"
   }, {
     "chance": 0.005, "type": "mute", "comment": "dm > nm",
@@ -408,10 +408,10 @@ export default [
     "chance": 0.001, "type": "mute", "comment": "nasal vowels become nasal consonants",
     "code": "[ +NASAL ] > [ +NASAL ] /"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "ʙʙʙʙʙʙ",
+    "chance": 0.0001, "type": "mute", "comment": "ʙʙʙʙʙʙ",
     "code": "[ +VOICE +BILAB +STOP ] > [ +NASALIZ +TRILL ] / _ [ +VELAR +VOCOID ]"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "ʙʙʙʙʙʙ",
+    "chance": 0.0001, "type": "mute", "comment": "ʙʙʙʙʙʙ",
     "code": "[ +LABIAL +VOWEL ] > [ +BILAB +TRILL ] / [ +STOP ] _"
   }, {
     "chance": 0.010, "type": "mute", "comment": "falling diphthong reduction",
@@ -464,9 +464,6 @@ export default [
   }, {
     "chance": 0.005, "type": "mute", "comment": "tl > tj",
     "code": "[ +LATERAL +CLOSE ] > [ +MEDIAN +PALATAL ] / [ +STOP ] _"
-  }, {
-    "chance": 0.100, "type": "mute", "comment": "t͡ʃl > ʃl",
-    "code": "[ +AFFR ] > [ +FRIC ] / _ [ +LIQ ]"
   }, {
     "chance": 0.002, "type": "mute", "comment": "lu > ɻu",
     "code": "[ +LATERAL +CORON ] > [ +RETRO +MEDIAN ] / _ [ -PALATAL ]"
@@ -564,7 +561,7 @@ export default [
     "chance": 0.010, "type": "mute", "comment": "",
     "code": "[ +PALATALIZ ] > j [ +UNROUND ] / [ -PALATAL ] _"
   }, {
-    "chance": 0.005, "type": "mute", "comment": "form Czech trill-fricative",
+    "chance": 0.002, "type": "mute", "comment": "form Czech trill-fricative",
     "code": "[ +PALATALIZ +TRILL ] > [ +BREATHY +UNROUND +TRILL ] /"
   }, {
     "chance": 0.020, "type": "mute", "comment": "break up Czech trill-fricative",
@@ -636,10 +633,10 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "tenuis to aspirated",
     "code": "[ +TENUIS +OCCL ] > [ +ASPIR ] / # _"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "tenuis to ejective",
+    "chance": 0.0001, "type": "mute", "comment": "tenuis to ejective",
     "code": "[ +TENUIS +OCCL ] > [ +EJECT ] / _ [ -CONT ]"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "aspirated to ejective",
+    "chance": 0.0001, "type": "mute", "comment": "aspirated to ejective",
     "code": "[ +ASPIR ] > [ +EJECT ] /"
   }, {
     "chance": 0.005, "type": "mute", "comment": "tenuis to voiced",
@@ -750,13 +747,13 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "fronting before palatals",
     "code": "[ +VOWEL ] > [ +PALATAL ] / _ [ +PALATAL ]"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "rhoticization after nonpalatal",
+    "chance": 0.0002, "type": "mute", "comment": "rhoticization after nonpalatal",
     "code": "[ +PALATAL +HIGH ] > [ +RETRO ] / [ -PALATAL -VELAR +NONSYLLAB ] _"
   }, {
-    "chance": 0.020, "type": "mute", "comment": "rhoticization after retroflex",
+    "chance": 0.005, "type": "mute", "comment": "rhoticization after retroflex",
     "code": "[ +PALATAL +HIGH ] > [ +RETRO ] / [ +RETRO ] _"
   }, {
-    "chance": 0.020, "type": "mute", "comment": "centralizacion before retroflex",
+    "chance": 0.010, "type": "mute", "comment": "centralizacion before retroflex",
     "code": "[ +PALATAL +VOWEL ] > [ +CENTRAL ] / _ [ +RETRO ]"
   }, {
     "chance": 0.005, "type": "mute", "comment": "retraction after velars",
@@ -822,37 +819,37 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "amj > emj",
     "code": "[ +VOWEL ] > [ +RAISED ] / _ [ ] [ +UNROUND +CLOSE +GLIDE ]"
   }, {
-    "chance": 0.005, "type": "mute", "comment": "double articulation",
+    "chance": 0.002, "type": "mute", "comment": "double articulation",
     "code": "[ +VELAR +OCCL +LABIAL ] > [ +LABIOVELAR ] /"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "double articulation",
+    "chance": 0.0001, "type": "mute", "comment": "double articulation",
     "code": "[ +VELAR +OCCL ] > [ +LABIOVELAR ] / _ [ +LABIAL ]"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "double articulation",
+    "chance": 0.0001, "type": "mute", "comment": "double articulation",
     "code": "[ +SHORT +VELAR +OCCL ] > [ +LABIOVELAR ] / [ +LABIAL ] _ #"
   }, {
-    "chance": 0.005, "type": "mute", "comment": "double articulation",
+    "chance": 0.002, "type": "mute", "comment": "double articulation",
     "code": "[ +CORON +OCCL +LABIAL ] > [ +LABIOCORON ] /"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "double articulation",
+    "chance": 0.0001, "type": "mute", "comment": "double articulation",
     "code": "[ +CORON +OCCL ] > [ +LABIOCORON ] / _ [ +LABIAL ]"
   }, {
-    "chance": 0.001, "type": "mute", "comment": "double articulation",
+    "chance": 0.0001, "type": "mute", "comment": "double articulation",
     "code": "[ +SHORT +CORON +OCCL ] > [ +LABIOCORON ] / [ +LABIAL ] _ #"
   }, {
-    "chance": 0.002, "type": "mute", "comment": "labialization of dorsals",
+    "chance": 0.001, "type": "mute", "comment": "labialization of dorsals",
     "code": "[ +DORSAL ] > [ +LABIALIZ ] / _ [ +LABIAL +VOCOID ]"
   }, {
     "chance": 0.001, "type": "mute", "comment": "labialization",
     "code": "[ ] > [ +LABIALIZ ] / _ [ +LABIAL +VOCOID ]"
   }, {
-    "chance": 0.002, "type": "mute", "comment": "labialization",
+    "chance": 0.001, "type": "mute", "comment": "labialization",
     "code": "[ ] > [ +LABIALIZ ] / [ +LABIAL +VOCOID ] _"
   }, {
     "chance": 0.001, "type": "mute", "comment": "palatalization",
     "code": "[ -VOCOID ] > [ +PALATALIZ ] / _ [ +PALATAL +VOCOID ]"
   }, {
-    "chance": 0.002, "type": "mute", "comment": "palatalization",
+    "chance": 0.001, "type": "mute", "comment": "palatalization",
     "code": "[ -VOCOID ] > [ +PALATALIZ ] / [ +PALATAL +VOCOID ] _"
   }, {
     "chance": 0.001, "type": "mute", "comment": "velarization",
@@ -957,6 +954,9 @@ export default [
     "chance": 0.100, "type": "mute", "comment": "ft͡ʃ > fʃ",
     "code": "[ +AFFR ] > [ +FRIC ] / [ +FRIC ] _"
   }, {
+    "chance": 0.100, "type": "mute", "comment": "t͡ʃl > ʃl",
+    "code": "[ +AFFR ] > [ +FRIC ] / _ [ +LATERAL ]"
+  }, {
     "chance": 0.005, "type": "mute", "comment": "gn > ɲ",
     "code": "[ -SYLLAB +DORSAL +OCCL ] [ +ALVEO ] > [ +PALATAL ]1 /"
   }, {
@@ -977,9 +977,6 @@ export default [
   }, {
     "chance": 0.001, "type": "mute", "comment": "lt > ɬ",
     "code": "[ +LATERAL ] [ -SYLLAB +TENUIS +CORON ] > [ +TENUIS +FRIC ]0 /"
-  }, {
-    "chance": 0.001, "type": "mute", "comment": "t͡ʃl > t͡ɬ",
-    "code": "[ +POSTALV ] [ -SYLLAB +LATERAL ] > [ +LATERAL ]0 /"
   }, {
     "chance": 0.005, "type": "mute", "comment": "aɫ > oː",
     "code": "[ +LOW +VOWEL ] [ -SYLLAB +VELAR +CLOSE ] > [ +LONG +MID +VELAR +LABIALIZ ]0 /"
@@ -1126,8 +1123,8 @@ export default [
     "chance": 0.005, "type": "mute", "comment": "sr > str",
     "code": "[ +SIBILANT ] > [ +SHORT ] [ +SHORT +NONSYLLAB +STOP ] / _ [ +RHOTIC ]"
   }, {
-    "chance": 0.005, "type": "mute", "comment": "fill hiatus with l",
-    "code": "> l / [ +VOWEL ] _ [ +VOWEL ]"
+    "chance": 0.002, "type": "mute", "comment": "fill hiatus with l",
+    "code": "> ɾ / [ +VOWEL ] _ [ +VOWEL ]"
   }, {
     "chance": 0.001, "type": "mute", "comment": "#ra > #ara",
     "code": "[ +TAP ] [ +VOCOID ] > [ +SHORT +UNSTRESS ]1 [ ]0 [ ]1 / [ -VOCOID ] _"
@@ -1137,6 +1134,9 @@ export default [
   }, {
     "chance": 0.005, "type": "mute", "comment": "final er > ere",
     "code": "> ə / [ +RHOTIC ] _ #"
+  }, {
+    "chance": 0.100, "type": "mute", "comment": "tl > təl",
+    "code": "> ə / [ +CORON +OCCL ] _ [ +NONSYLLAB +CORON +LIQ ]"
   }, {
     "chance": 0.005, "type": "mute", "comment": "final i > iɴ",
     "code": "> ɴ / [ +HIGH +PALATAL +STRESS ] _ #"

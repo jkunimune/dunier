@@ -112,6 +112,7 @@ export default [
           { "key": "chestwrap", "klas": "fabric", "conditions": ["+hot"] },
           { "key": "waistwrap", "klas": "fabric", "conditions": ["+hot"] },
           { "key": "wings", "klas": "none", "conditions": [] },
+          { "key": "horns", "klas": "none", "conditions": [] },
           { "key": "hat", "klas": "none", "conditions": [] },
           { "key": "big_hat", "klas": "none", "conditions": [] },
           { "key": "small_hat", "klas": "none", "conditions": [] },
@@ -227,15 +228,15 @@ export default [
       },
       {
         "key": "base", "newWord": true, "values": [
-          { "key": "cereal", "klas": "none", "conditions": ["-cold"] },
-          { "key": "rice", "klas": "none", "conditions": ["-arid"] },
-          { "key": "tuber", "klas": "none", "conditions": ["+cold"] },
-          { "key": "corn", "klas": "none", "conditions": ["+plains"] },
+          { "key": "cereal", "klas": "none", "conditions": ["-cold", "-nomadic"] },
+          { "key": "rice", "klas": "none", "conditions": ["-arid", "-nomadic"] },
+          { "key": "tuber", "klas": "none", "conditions": ["+cold", "-nomadic"] },
+          { "key": "corn", "klas": "none", "conditions": ["+plains", "-nomadic"] },
           { "key": "meat", "klas": "none", "conditions": [] },
           { "key": "fish", "klas": "none", "conditions": ["+coastal"] },
           { "key": "fruit", "klas": "none", "conditions": [] },
           { "key": "nuts", "klas": "none", "conditions": [] },
-          { "key": "beans", "klas": "none", "conditions": [] },
+          { "key": "beans", "klas": "none", "conditions": ["-nomadic"] },
           { "key": "cheese", "klas": "none", "conditions": [] },
           { "key": "fermented", "klas": "none", "conditions": [] },
           { "key": "insect", "klas": "none", "conditions": [] },
@@ -578,7 +579,7 @@ export default [
           { "key": "telekinesis", "klas": "none", "conditions": [] },
           { "key": "broomstick", "klas": "none", "conditions": [] },
           { "key": "spoon", "klas": "none", "conditions": [] },
-          { "key": "skating", "klas": "none", "conditions": ["-hot", "-arid"] },
+          { "key": "skating", "klas": "none", "conditions": ["+cold", "-arid"] },
           { "key": "swimming", "klas": "none", "conditions": ["+coastal", "-cold", "-arid", "-roll"] },
           { "key": "phone", "klas": "none", "conditions": ["tech>2000"] }
         ]
@@ -633,7 +634,8 @@ export default [
           { "key": "acid", "klas": "none", "conditions": [] },
           { "key": "clothes", "klas": "none", "conditions": [] },
           { "key": "grass", "klas": "none", "conditions": ["+plains"] },
-          { "key": "prayer", "klas": "none", "conditions": [] }
+          { "key": "prayer", "klas": "none", "conditions": [] },
+          { "key": "jack_o_lantern", "klas": "none", "conditions": ["-nomadic", "-barren"] }
         ]
       },
       {
