@@ -62,6 +62,22 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 			cellContent[i].push(null);
 	}
 
+	// rule out any additional areas where you definitely can't sample
+	const forbiddenRegion = new Map<number, PathSegment[]>();
+	const doubledWalls = [].concat(...walls.map(wall => doublePath(wall)));
+	for (const diameter of feasibleRegion.keys()) {
+		forbiddenRegion.set(diameter, offset(doubledWalls, diameter/2));
+		const cellForbidenness = rasterInclusion(forbiddenRegion.get(diameter), grid, Rule.POSITIVE);
+		for (let i = 0; i < numX; i ++) {
+			for (let j = 0; j < numY; j ++) {
+				if (cellForbidenness[i][j] === Side.IN)
+					cellFeasibility.get(diameter)[i][j] = Side.OUT;
+				else if (cellForbidenness[i][j] === Side.BORDERLINE && cellFeasibility.get(diameter)[i][j] !== Side.OUT)
+					cellFeasibility.get(diameter)[i][j] = Side.BORDERLINE;
+			}
+		}
+	}
+
 	// decide on the order in which you will test each cell
 	const feasibleCells: {i: number, j: number}[] = [];
 	for (let i = 0; i < numX; i ++)
@@ -70,22 +86,6 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 			if (cellFeasibility.get(minDistance)[i][j] !== Side.OUT && cellFeasibility.get(0)[i][j] !== Side.OUT)
 				feasibleCells.push({i: i, j: j});
 	rng.shuffle(feasibleCells);
-
-	// decide on any additional areas where you definitely can't sample
-	const forbiddenRegions: Map<number, PathSegment[]>[] = [];
-	const cellForbidenness: Map<number, Side[][]>[] = [];
-	for (let l = 0; l < walls.length; l ++) {
-		forbiddenRegions.push(new Map<number, PathSegment[]>());
-		cellForbidenness.push(new Map<number, Side[][]>());
-		for (const diameter of feasibleRegion.keys()) {
-			forbiddenRegions[l].set(
-				diameter,
-				offset(doublePath(walls[l]), diameter/2));
-			cellForbidenness[l].set(
-				diameter,
-				rasterInclusion(forbiddenRegions[l].get(diameter), grid, Rule.POSITIVE));
-		}
-	}
 
 	// prepare to randomly choose types for each sample
 	const cumulativeProbability = [0];
@@ -154,20 +154,13 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 			);
 			if (candidateFeasibility === Side.OUT)
 				continue;
-		}
-		// make sure it's not clipping thru a wall
-		for (let l = 0; l < forbiddenRegions.length; l ++) {
-			if (cellForbidenness[l].get(candidate.diameter)[index.i][index.j] === Side.IN)
-				continue candidateGeneration;
-			else if (cellForbidenness[l].get(candidate.diameter)[index.i][index.j] === Side.BORDERLINE) {
-				const candidateForbiddenness = contains(
-					forbiddenRegions[l].get(candidate.diameter),
-					generic(candidate),
-					INFINITE_PLANE, Rule.POSITIVE,
-				);
-				if (candidateForbiddenness === Side.IN)
-					continue candidateGeneration;
-			}
+			const candidateForbiddenness = contains(
+				forbiddenRegion.get(candidate.diameter),
+				generic(candidate),
+				INFINITE_PLANE, Rule.POSITIVE,
+			);
+			if (candidateForbiddenness === Side.IN)
+				continue;
 		}
 		// if it passes all tests, add it to the list and mark this cell
 		cellContent[index.i][index.j] = points.length;
