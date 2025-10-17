@@ -317,9 +317,9 @@ export class Civ {
 		let terrainMultiplier;
 		if (this.thalassocratic) {
 			if (location.isWater())
-				terrainMultiplier = BOAT_FACTOR**2;
-			else if (location.coastal)
 				terrainMultiplier = BOAT_FACTOR;
+			else if (location.coastal)
+				terrainMultiplier = 1;
 			else
 				terrainMultiplier = 1/BOAT_FACTOR;
 		}

@@ -19,11 +19,11 @@ export const START_OF_HUMAN_HISTORY = -3200;
 /** the smallest time interval to simulate (year) */
 export const TIME_STEP = 100; // [year]
 /** the rate at which people coalesce into kingdoms (/year/km^2) */
-export const CIVILIZATION_RATE = 5e-8;
+export const CIVILIZATION_RATE = 2e-8;
 /** the rate at which people start revolutions (/year/km^2) */
 export const REBELLION_RATE = 2e-7;
 /** the rate at which people conquer with entry-level technology (km/y) */
-export const CONQUEST_RATE = 2e-2;
+export const CONQUEST_RATE = 3e-2;
 /** the rate at which a person has good ideas (/y) */
 export const TECH_ADVANCEMENT_RATE = 3.2e-8;
 /** the density of people that can live in one unit of arable land with entry-level technology (/km^2) */
@@ -31,9 +31,9 @@ export const POPULATION_DENSITY = .20;
 /** the rate at which ideas diffuse across borders (/y) */
 export const TECH_SPREAD_RATE = .02;
 /** the fraction of countries that are especially good at sailing */
-export const BOAT_CHANCE = 0.02;
+export const BOAT_CHANCE = 0.1;
 /** how much better a sailing-specialist country is at sailing */
-export const BOAT_FACTOR = 3;
+export const BOAT_FACTOR = 5;
 /** the fraction of the populacion a country gets to keep after a cataclysm (not accounting for domino effects) */
 export const APOCALYPSE_SURVIVAL_RATE = .50;
 /** the time it takes for an empire's might to decay by 2.7 (y) */
