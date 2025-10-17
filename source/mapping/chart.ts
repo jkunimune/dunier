@@ -371,6 +371,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		'.halo {\n' +
 		`  fill: none;\n` +
 		'  stroke-width: 1.4;\n' +
+		'  stroke-miterlimit: 2;\n' +
 		'  opacity: 0.7;\n' +
 		'}\n';
 	svg.children.push(styleSheet);
