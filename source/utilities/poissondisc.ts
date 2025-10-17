@@ -238,13 +238,13 @@ function floodFill<T>(matrix: (T | null)[][], iStart: number, jStart: number, va
 		const {i, j} = queue.pop();
 		if (matrix[i][j] === null) {
 			matrix[i][j] = value;
-			if (i - 1 >= 0)
+			if (i - 1 >= 0 && matrix[i - 1][j] === null)
 				queue.push({i: i - 1, j: j});
-			if (i + 1 < matrix.length)
+			if (i + 1 < matrix.length && matrix[i + 1][j] === null)
 				queue.push({i: i + 1, j: j});
-			if (j - 1 >= 0)
+			if (j - 1 >= 0 && matrix[i][j - 1] === null)
 				queue.push({i: i, j: j - 1});
-			if (j + 1 < matrix[i].length)
+			if (j + 1 < matrix[i].length && matrix[i][j + 1] === null)
 				queue.push({i: i, j: j + 1});
 		}
 	}
