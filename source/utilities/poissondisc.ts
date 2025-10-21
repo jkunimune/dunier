@@ -154,14 +154,15 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 			);
 			if (candidateFeasibility === Side.OUT)
 				continue;
-			const candidateForbiddenness = contains(
-				forbiddenRegion.get(candidate.diameter),
-				generic(candidate),
-				INFINITE_PLANE, Rule.POSITIVE,
-			);
-			if (candidateForbiddenness === Side.IN)
-				continue;
 		}
+		// make sure it's not too close to a wall
+		const candidateForbiddenness = contains(
+			forbiddenRegion.get(candidate.diameter),
+			generic(candidate),
+			INFINITE_PLANE, Rule.POSITIVE,
+		);
+		if (candidateForbiddenness === Side.IN)
+			continue;
 		// if it passes all tests, add it to the list and mark this cell
 		cellContent[index.i][index.j] = points.length;
 		points.push(candidate);
