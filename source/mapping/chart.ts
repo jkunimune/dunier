@@ -17,7 +17,7 @@ import {Biome, BIOME_NAMES} from "../generation/terrain.js";
 import {
 	applyProjectionToPath, calculatePathBounds, contains,
 	convertPathClosuresToZ, Domain, getAllCombCrossings, INFINITE_PLANE,
-	intersection, polygonize, removeLoosePoints, reversePath, rotatePath, Rule, scalePath,
+	intersection, polygonize, rectangle, removeLoosePoints, reversePath, rotatePath, Rule, scalePath,
 	transformInput,
 } from "./pathutilities.js";
 import {chooseLabelLocation} from "./labeling.js";
@@ -721,7 +721,8 @@ function drawBorders(civs: Civ[], transform: Transform, svg: VNode, color: strin
 			tiles = filterSet(civ.tileTree.keys(), n => !n.isWater());
 		const line = fill(
 			tiles, transform, svg, 'none', Layer.KULTUR, color, width);
-		lineFeatures.push(line);
+		if (line.length > 0)
+			lineFeatures.push(line);
 	}
 	return lineFeatures;
 }
@@ -757,10 +758,10 @@ function hatchCoast(land: Set<Tile>, transform: Transform, svg: VNode,
 	const intersections: {x: number, downward: boolean, trueCoast: boolean}[][] = [];
 	for (let j = 0; j < numLines; j ++)
 		intersections.push([]);
-	for (const {s, j, goingEast} of getAllCombCrossings(shape, yMin, spacing, INFINITE_PLANE))
-		intersections[j].push({x: s, downward: goingEast, trueCoast: true});
-	for (const {s, j, goingEast} of getAllCombCrossings(dilatedShape, yMin, spacing, INFINITE_PLANE))
-		intersections[j].push({x: s, downward: goingEast, trueCoast: false});
+	for (const {s, lineIndex, goingEast} of getAllCombCrossings(shape, yMin, spacing, INFINITE_PLANE))
+		intersections[lineIndex].push({x: s, downward: goingEast, trueCoast: true});
+	for (const {s, lineIndex, goingEast} of getAllCombCrossings(dilatedShape, yMin, spacing, INFINITE_PLANE))
+		intersections[lineIndex].push({x: s, downward: goingEast, trueCoast: false});
 
 	// select the ones that should be the endpoints of line segments
 	const endpoints: number[][] = [];
@@ -1697,28 +1698,6 @@ function chooseGeoBounds(
 		geoEdges = rectangle(φMax, λMax, φMin, λMin, true);
 
 	return {φMin, φMax, λMin, λMax, geoEdges};
-}
-
-/**
- * create a Path that delineate a rectangular region in either Cartesian or latitude/longitude space
- */
-function rectangle(s0: number, t0: number, s2: number, t2: number, geographic: boolean): PathSegment[] {
-	if (!geographic)
-		return [
-			{type: 'M', args: [s0, t0]},
-			{type: 'L', args: [s0, t2]},
-			{type: 'L', args: [s2, t2]},
-			{type: 'L', args: [s2, t0]},
-			{type: 'L', args: [s0, t0]},
-		];
-	else
-		return [
-			{type: 'M', args: [s0, t0]},
-			{type: 'Φ', args: [s0, t2]},
-			{type: 'Λ', args: [s2, t2]},
-			{type: 'Φ', args: [s2, t0]},
-			{type: 'Λ', args: [s0, t0]},
-		];
 }
 
 /**

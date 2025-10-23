@@ -13,10 +13,10 @@ import {
 	localizeInRange, longestShortestPath, Matrix, pathToString,
 	tanh, union, weightedAverage
 } from "../source/utilities/miscellaneus.js";
-import {poissonDiscSample, rasterInclusion} from "../source/utilities/poissondisc.js";
+import {poissonDiscSample, containsRaster} from "../source/utilities/poissondisc.js";
 import {Random} from "../source/utilities/random.js";
 import {offset} from "../source/utilities/offset.js";
-import {Rule, Side} from "../source/mapping/pathutilities.js";
+import {Side} from "../source/mapping/pathutilities.js";
 
 describe("argmax()", () => {
 	test("empty", () => {
@@ -412,14 +412,25 @@ test("rasterInclusion", () => {
 		{type: 'L', args: [4.75, 4.75]},
 		{type: 'L', args: [5.25, 0.25]},
 	];
-	expect(rasterInclusion(path, grid, Rule.LEFT)).toEqual([
+	const clusion = [
 		[Side.OUT,        Side.OUT,        Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE],
 		[Side.OUT,        Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
 		[Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
 		[Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.IN,         Side.BORDERLINE, Side.OUT],
 		[Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.OUT],
 		[Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.OUT,        Side.OUT,        Side.OUT],
-	]);
+	];
+	const expectedResult = [];
+	for (let i = 0; i < clusion.length; i ++) {
+		expectedResult.push([]);
+		for (let j = 0; j < clusion[i].length; j ++) {
+			if (clusion[i][j] === Side.BORDERLINE)
+				expectedResult[i].push({clusion: clusion[i][j], regionIndexes: new Set([0])});
+			else
+				expectedResult[i].push({clusion: clusion[i][j], regionIndexes: null});
+		}
+	}
+	expect(containsRaster([path], grid)).toEqual(expectedResult);
 });
 
 describe("offset()", () => {

@@ -44,7 +44,7 @@ const π = Math.PI;
  * whether something is contained in a region or not
  */
 export enum Side {
-	OUT, IN, BORDERLINE
+	OUT, BORDERLINE, IN
 }
 
 /**
@@ -1052,10 +1052,10 @@ function getParallelCrossing(
  * @param t0 the position of the line at index zero
  * @param Δt the spacing between adjacent lines
  * @param domain the topology of the space on which these points' coordinates are defined
- * @return a list of intersections, each marked by an s-coordinate, the segment index i, the line index j, and a direction (true if the path is increasing in t at that point, and false otherwise)
+ * @return a list of intersections, each marked by an s-coordinate, the segment index, the line index, and a direction (true if the path is increasing in t at that point, and false otherwise)
  */
-export function getAllCombCrossings(path: PathSegment[], t0: number, Δt: number, domain: Domain): {i: number, s: number, j: number, goingEast: boolean}[] {
-	const crossings: { s: number, i: number, j: number, goingEast: boolean }[] = [];
+export function getAllCombCrossings(path: PathSegment[], t0: number, Δt: number, domain: Domain): {segmentIndex: number, s: number, lineIndex: number, goingEast: boolean}[] {
+	const crossings: { s: number, segmentIndex: number, lineIndex: number, goingEast: boolean }[] = [];
 	for (let i = 1; i < path.length; i ++) {
 		const segmentStart = endpoint(path[i - 1]);
 		const segmentAsPath = [{type: 'M', args: [segmentStart.s, segmentStart.t]}, path[i]];
@@ -1066,7 +1066,7 @@ export function getAllCombCrossings(path: PathSegment[], t0: number, Δt: number
 		for (let j = jMin; j <= jMax; j ++) {
 			const tCrossings = getAllHorizontalLineCrossings(segmentAsPath, t0 + j*Δt, domain);
 			for (const {s, i, goingEast} of tCrossings)
-				crossings.push({s: s, i: i, j: j, goingEast: goingEast});
+				crossings.push({s: s, segmentIndex: i, lineIndex: j, goingEast: goingEast});
 		}
 	}
 	return crossings;
@@ -1551,4 +1551,26 @@ function reflectDomain(domain: Domain): Domain {
 	return new Domain(
 		domain.sMin, domain.sMax, -domain.tMax, -domain.tMin,
 		(place) => domain.isOnEdge({s: place.s, t: -place.t}));
+}
+
+/**
+ * create a Path that delineate a rectangular region in either Cartesian or latitude/longitude space
+ */
+export function rectangle(s0: number, t0: number, s2: number, t2: number, geographic=false): PathSegment[] {
+	if (!geographic)
+		return [
+			{type: 'M', args: [s0, t0]},
+			{type: 'L', args: [s0, t2]},
+			{type: 'L', args: [s2, t2]},
+			{type: 'L', args: [s2, t0]},
+			{type: 'L', args: [s0, t0]},
+		];
+	else
+		return [
+			{type: 'M', args: [s0, t0]},
+			{type: 'Φ', args: [s0, t2]},
+			{type: 'Λ', args: [s2, t2]},
+			{type: 'Φ', args: [s2, t0]},
+			{type: 'Λ', args: [s0, t0]},
+		];
 }
