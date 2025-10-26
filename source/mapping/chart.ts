@@ -500,7 +500,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			filterSet(surface.tiles, t => !sea.has(t)), transform, createSVGGroup(svg, "sea-texture"),
 			(colorScheme.waterStroke !== colorScheme.waterFill) ?
 				colorScheme.waterStroke : colorScheme.secondaryStroke,
-			0.3, 1.0, 3.0);
+			0.2, 1.0, 3.0);
 	}
 
 	// add some terrain elements for texture
@@ -508,7 +508,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		drawTexture(
 			surface.tiles, lineFeatures, areaFeatures,
 			transform, createSVGGroup(svg, "land-texture"),
-			colorScheme.landFill, colorScheme.secondaryStroke, 0.3,
+			colorScheme.landFill, colorScheme.secondaryStroke, 0.2,
 			resources);
 	}
 
