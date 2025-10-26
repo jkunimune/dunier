@@ -376,6 +376,9 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		'}\n';
 	svg.children.push(styleSheet);
 
+	const defs = h('defs');
+	svg.children.push(defs);
+
 	if (SHOW_BACKGROUND) {
 		const rectangle = h('rect', {
 			x: bbox.left.toFixed(3),
@@ -506,8 +509,8 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	// add some terrain elements for texture
 	if (landTexture) {
 		drawTexture(
-			surface.tiles, lineFeatures, areaFeatures,
-			transform, createSVGGroup(svg, "land-texture"),
+			surface.tiles, lineFeatures, areaFeatures, transform,
+			createSVGGroup(svg, "land-texture"), defs,
 			colorScheme.landFill, colorScheme.secondaryStroke, 0.2,
 			resources);
 	}
@@ -818,13 +821,13 @@ function hatchCoast(land: Set<Tile>, transform: Transform, svg: VNode,
  * @param areaFeatures any regions on the map whose color we might have to match
  * @param transform the projection, extent, scale, and orientation information
  * @param svg SVG object on which to put the drawings
- * @param fillColor the fill color to give each picture by default
+@param defs a separate SVG object in which to put references * @param fillColor the fill color to give each picture by default
  * @param strokeColor the color for the lines
  * @param strokeWidth the thickness of the lines
  * @param resources a map containing all of the predrawn pictures to use for the texture
  */
 function drawTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][], areaFeatures: {path: PathSegment[], color: string}[],
-                     transform: Transform, svg: VNode, fillColor: string,
+                     transform: Transform, svg: VNode, defs: VNode, fillColor: string,
                      strokeColor: string, strokeWidth: number, resources: Map<string, string>): void {
 	const textureMixLookup = new Map<string, {name: string, density: number, diameter: number}[]>();
 	for (const {name, components} of TEXTURE_MIXES)
@@ -902,8 +905,6 @@ function drawTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][], areaFeatur
 		textureNames.add(symbol.name);
 
 	// add all the relevant textures to the <defs/>
-	const defs = h('defs');
-	svg.children.splice(0, 0, defs);
 	for (const textureName of textureNames) {
 		if (!resources.has(`textures/${textureName}`))
 			throw new Error(`I couldn't find the texture textures/${textureName}.svg!`);
