@@ -876,7 +876,7 @@ function drawTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][], areaFeatur
 	});
 
 	const rng = new Random(0);
-	const symbols: {x: number, y: number, name: string}[] = [];
+	const symbols: {x: number, y: number, name: string, flipped: boolean}[] = [];
 	// for each texture region you identified
 	for (const {region, components} of textureRegions) {
 		const polygon = transformedOutline(region, Layer.BIO, transform);
@@ -890,7 +890,7 @@ function drawTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][], areaFeatur
 			const locations = scaledLocations.map(({x, y, type}) => ({x: x, y: y*sinθ, type: type}));
 			// and then divvy those locations up among the different components of the texture
 			for (const {x, y, type} of locations)
-				symbols.push({x: x, y: y, name: components[type].name});
+				symbols.push({x: x, y: y, name: components[type].name, flipped: rng.probability(1/2)});
 		}
 	}
 
@@ -907,16 +907,23 @@ function drawTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][], areaFeatur
 	for (const textureName of textureNames) {
 		if (!resources.has(`textures/${textureName}`))
 			throw new Error(`I couldn't find the texture textures/${textureName}.svg!`);
+		// include both the original texture
 		const texture = h('g', {id: `texture-${textureName}`});
 		texture.textContent = resources.get(`textures/${textureName}`);
 		defs.children.push(texture);
+		// and a horizontally flipped version
+		const flippedTexture = h('use', {id: `texture-${textureName}-flip`});
+		flippedTexture.attributes.href = `#texture-${textureName}`;
+		flippedTexture.attributes.transform = "scale(-1, 1)";
+		defs.children.push(flippedTexture);
 	}
 
 	// then add the things to the map
 	svg.attributes.style =
 		`stroke:${strokeColor}; stroke-width:${strokeWidth}; stroke-linejoin:round; stroke-linecap: round;`;
-	for (const {x, y, name} of symbols) {
-		const picture = h('use', {href: `#texture-${name}`, x: `${x}`, y: `${y}`, fill: fillColor});
+	for (const {x, y, name, flipped} of symbols) {
+		const referenceID = `#texture-${name}` + (flipped ? "-flip" : "");
+		const picture = h('use', {href: referenceID, x: `${x}`, y: `${y}`, fill: fillColor});
 		for (const region of areaFeatures) { // check if it should inherit color from a base fill
 			if (contains(region.path, {s: x, t: y}, INFINITE_PLANE, Rule.POSITIVE)) {
 				picture.attributes.fill = region.color;
