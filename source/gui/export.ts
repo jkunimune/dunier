@@ -50,5 +50,6 @@ export function convertXMLToBlob(xml: HTMLHtmlElement | SVGSVGElement, type: str
  */
 export function serialize(element: Node): string {
 	const serializer = new XMLSerializer();
-	return serializer.serializeToString(element);
+	const minimalString = serializer.serializeToString(element);
+	return minimalString.replace(/>\s*/g, ">\n");
 }

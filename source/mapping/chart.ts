@@ -357,7 +357,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		colorScheme = COLOR_SCHEMES.get('debug');
 
 	const svg = h('svg', {
-		viewBox: `${bbox.left} ${bbox.top} ${bbox.width} ${bbox.height}`,
+		viewBox: `${bbox.left.toFixed(3)} ${bbox.top.toFixed(3)} ${bbox.width.toFixed(3)} ${bbox.height.toFixed(3)}`,
 	});
 
 	// set the basic overarching styles
@@ -378,10 +378,10 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 
 	if (SHOW_BACKGROUND) {
 		const rectangle = h('rect', {
-			x: `${bbox.left}`,
-			y: `${bbox.top}`,
-			width: `${bbox.width}`,
-			height: `${bbox.height}`,
+			x: bbox.left.toFixed(3),
+			y: bbox.top.toFixed(3),
+			width: bbox.width.toFixed(3),
+			height: bbox.height.toFixed(3),
 			style: 'fill: red; stroke: black; stroke-width: 10px',
 		});
 		svg.children.push(rectangle);
@@ -541,8 +541,8 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			const text = h('text'); // start by creating the text element
 			const location = transformPoint(tile, transform);
 			if (location !== null) {
-				text.attributes["x"] = `${location.x}`;
-				text.attributes["y"] = `${location.y}`;
+				text.attributes["x"] = location.x.toFixed(3);
+				text.attributes["y"] = location.y.toFixed(3);
 				text.attributes["font-size"] = "0.2em";
 				text.textContent = `${tile.index}`;
 				g.children.push(text);
@@ -923,7 +923,7 @@ function drawTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][], areaFeatur
 		`stroke:${strokeColor}; stroke-width:${strokeWidth}; stroke-linejoin:round; stroke-linecap: round;`;
 	for (const {x, y, name, flipped} of symbols) {
 		const referenceID = `#texture-${name}` + (flipped ? "-flip" : "");
-		const picture = h('use', {href: referenceID, x: `${x}`, y: `${y}`, fill: fillColor});
+		const picture = h('use', {href: referenceID, x: x.toFixed(3), y: y.toFixed(3), fill: fillColor});
 		for (const region of areaFeatures) { // check if it should inherit color from a base fill
 			if (contains(region.path, {s: x, t: y}, INFINITE_PLANE, Rule.POSITIVE)) {
 				picture.attributes.fill = region.color;
@@ -1126,7 +1126,7 @@ function placeLabel(tiles: Tile[], label: string, transform: Transform, svg: VNo
 
 	// create the text element
 	const textGroup = h('text', {
-		style: `font-size: ${fontSize}px; letter-spacing: ${location.letterSpacing*.5}em;`}); // this .5em is just a guess at the average letter width
+		style: `font-size: ${fontSize.toFixed(1)}px; letter-spacing: ${(location.letterSpacing*.5).toFixed(1)}em;`}); // this .5em is just a guess at the average letter width
 	const textPath = h('textPath', {
 		class: 'label',
 		startOffset: '50%',
@@ -1186,7 +1186,7 @@ function drawOuterBorder(bbox: Dimensions, transform: Transform, svg: VNode, fil
  * convert the series of segments to an HTML path element and add it to the Element
  */
 function draw(segments: PathSegment[], svg: VNode): VNode {
-	const path = h('path', {d: pathToString(segments)});
+	const path = h('path', {d: pathToString(segments, 3)});
 	if (segments.length > 0)
 		svg.children.push(path); // put it in the SVG
 	return path;

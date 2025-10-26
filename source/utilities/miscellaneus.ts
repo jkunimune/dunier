@@ -386,11 +386,18 @@ export function decodeBase37(string: string): number {
 /**
  * convert a path to an SVG path string that can be input to an SVG file
  */
-export function pathToString(path: PathSegment[]): string {
+export function pathToString(path: PathSegment[], precision=3): string {
 	let str = ''; // create the d string
-	for (let i = 0; i < path.length; i ++)
-		str += path[i].type + path[i].args.join(',') + ' ';
+	for (let i = 0; i < path.length; i ++) {
+		const formattedArgs = path[i].args.map(formatPathArg);
+		str += path[i].type + formattedArgs.join(',') + ' ';
+	}
 	return str.trim();
+}
+
+function formatPathArg(arg: number): string {
+	const formatter = Intl.NumberFormat("en-US", {maximumFractionDigits: 3});
+	return formatter.format(arg);
 }
 
 /**
