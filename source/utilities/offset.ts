@@ -11,7 +11,12 @@ import {angleSign, arcCenter} from "./geometry.js";
  * take a closed SVG path and generate another one that encloses the same space that the input path encloses,
  * plus all of the points within a certain distance of it.
  * the resulting path won't necessarily be nice; there may be a lot of self-intersection.
- * but if you just use a nonzero fill winding it _will_ contain the correct set of points.
+ * but if you just use a positive winding fill rule it _will_ contain the correct set of points.
+ * note that the direction of the input curve matters.
+ * it's assumed that the input path uses a positive fill rule,
+ * so this isn't _super_ well defined for inside-out curves, though it will work for holes.
+ * if a path has zero area (like a linear feature that doubles back on itself) it will be interpreted as rightside-out,
+ * so you can use such a doubled-back path with a positive offset to get the area surrounding the path itself.
  * @param path the shape to be offset.  it may have multiple parts, but it must be closed.
  * @param offset the distance; positive for dilation and negative for erosion.
  */
@@ -66,7 +71,7 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
 					y: y + offset/radius*(y - yC),
 				};
 				offSection.push({type: 'A*', args: [
-					radius + offset,
+					Math.abs(radius + offset)*Math.sign(radius),
 					xC, yC,
 					offsetVertex1.x, offsetVertex1.y,
 				]});
@@ -102,17 +107,31 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
 
 			// put down the arc linking this segment and the next
 			if (offsetVertex1.x !== offsetVertex2.x || offsetVertex1.y !== offsetVertex2.y) {
+				const isConvex = angleSign(offsetVertex1, vertex, offsetVertex2) >= 0; // note that this treats 180° turns as convex
 				offSection.push({type: 'A*', args: [
-					offset,
+					isConvex ? Math.abs(offset) : -Math.abs(offset),
 					vertex.x, vertex.y,
 					offsetVertex2.x, offsetVertex2.y,
 				]});
 			}
 		}
 
-		// finally, add the initial M
+		// add the initial M
 		const start = assert_xy(endpoint(offSection[offSection.length - 1]));
 		offSection.splice(0, 0, {type: 'M', args: [start.x, start.y]});
+
+		// finally, add a little loop at the end.  it's a little hacky, but what this does is ensure that if this
+		// section happens to be inside-out, that we don't accidentally reverse its polarity with the offset.
+		if (offSection[offSection.length - 1].type === 'A*' && offSection[offSection.length - 1].args[0] === -offset) {
+			// if you were already ending with an arc in the wrong direction, merge them since they'll partially cancel out and we want to avoid degeneracy
+			offSection[offSection.length - 1].args[0] = offset;
+		}
+		else {
+			const startVertex = assert_xy(endpoint(ogSection[ogSection.length - 1]));
+			offSection.push(
+				{type: 'A*', args: [offset, startVertex.x, startVertex.y, start.x, start.y]});
+		}
+
 		offSections.push(offSection);
 	}
 
@@ -126,6 +145,7 @@ export function offset(path: PathSegment[], offset: number): PathSegment[] {
  * 'A*' is a special command defined just in this file that represents an arc,
  * but rather than the standard SVG arc arguments, its arguments are
  * [signed_radius, x_center, y_center, x_1, y_1].
+ * for 'A*' commands, an arc where start and end are the same is interpreted as the full 360°.
  */
 function parameterize(path: PathSegment[]): PathSegment[] {
 	const output = [];
@@ -133,13 +153,15 @@ function parameterize(path: PathSegment[]): PathSegment[] {
 		if (path[i].type === 'A') {
 			const start = assert_xy(endpoint(path[i - 1]));
 			const [rx, ry, , largeArcFlag, sweepFlag, xEnd, yEnd] = path[i].args;
-			const r = (sweepFlag === 0) ?
-				(rx + ry)/2 :
-				-(rx + ry)/2;
-			const center = arcCenter(start, {x: xEnd, y: yEnd}, Math.abs(r), largeArcFlag !== sweepFlag);
-			output.push({
-				type: 'A*', args: [r, center.x, center.y, xEnd, yEnd],
-			});
+			if (start.x !== xEnd || start.y !== yEnd) {
+				const r = (sweepFlag === 0) ?
+					(rx + ry)/2 :
+					-(rx + ry)/2;
+				const center = arcCenter(start, {x: xEnd, y: yEnd}, Math.abs(r), largeArcFlag !== sweepFlag);
+				output.push({
+					type: 'A*', args: [r, center.x, center.y, xEnd, yEnd],
+				});
+			}
 		}
 		else
 			output.push(path[i]);
@@ -156,18 +178,26 @@ function deparameterize(path: PathSegment[]): PathSegment[] {
 		if (path[i].type === 'A*') {
 			const start = assert_xy(endpoint(path[i - 1]));
 			let [r, xCenter, yCenter, xEnd, yEnd] = path[i].args;
-			let largeArc = angleSign(start, {x: xCenter, y: yCenter}, {x: xEnd, y: yEnd}) < 0;
+			const largeArc = Math.sign(r)*angleSign(start, {x: xCenter, y: yCenter}, {x: xEnd, y: yEnd}) < 0;
 			let sweepFlag;
 			if (r < 0) {
 				r = Math.abs(r);
-				largeArc = !largeArc;
 				sweepFlag = 1;
 			}
 			else
 				sweepFlag = 0;
-			output.push({
-				type: 'A', args: [r, r, 0, largeArc ? 1 : 0, sweepFlag, xEnd, yEnd],
-			});
+			// if the arc is a full 360°, then we need to break it up because 'A' arcs will become degenerate
+			if (start.x === xEnd && start.y === yEnd) {
+				output.push(
+					{type: 'A', args: [r, r, 0, 0, sweepFlag, 2*xCenter - xEnd, 2*yCenter - yEnd]},
+					{type: 'A', args: [r, r, 0, 0, sweepFlag, xEnd, yEnd]},
+				);
+			}
+			// otherwise, just write it as a regular 'A' arc
+			else
+				output.push(
+					{type: 'A', args: [r, r, 0, largeArc ? 1 : 0, sweepFlag, xEnd, yEnd]},
+				);
 		}
 		else
 			output.push(path[i]);
