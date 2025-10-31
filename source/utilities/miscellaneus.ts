@@ -386,7 +386,7 @@ export function decodeBase37(string: string): number {
 /**
  * convert a path to an SVG path string that can be input to an SVG file
  */
-export function pathToString(path: PathSegment[], precision=3): string {
+export function pathToString(path: PathSegment[]): string {
 	let str = ''; // create the d string
 	for (let i = 0; i < path.length; i ++) {
 		const formattedArgs = path[i].args.map(formatPathArg);

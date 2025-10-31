@@ -821,7 +821,8 @@ function hatchCoast(land: Set<Tile>, transform: Transform, svg: VNode,
  * @param areaFeatures any regions on the map whose color we might have to match
  * @param transform the projection, extent, scale, and orientation information
  * @param svg SVG object on which to put the drawings
-@param defs a separate SVG object in which to put references * @param fillColor the fill color to give each picture by default
+ * @param defs a separate SVG object in which to put references
+ * @param fillColor the fill color to give each picture by default
  * @param strokeColor the color for the lines
  * @param strokeWidth the thickness of the lines
  * @param resources a map containing all of the predrawn pictures to use for the texture
@@ -1187,7 +1188,7 @@ function drawOuterBorder(bbox: Dimensions, transform: Transform, svg: VNode, fil
  * convert the series of segments to an HTML path element and add it to the Element
  */
 function draw(segments: PathSegment[], svg: VNode): VNode {
-	const path = h('path', {d: pathToString(segments, 3)});
+	const path = h('path', {d: pathToString(segments)});
 	if (segments.length > 0)
 		svg.children.push(path); // put it in the SVG
 	return path;

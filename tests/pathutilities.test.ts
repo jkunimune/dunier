@@ -529,8 +529,8 @@ describe("getCombCrossings", () => {
 			{type: 'L', args: [2, 2]},
 		];
 		expect(getAllCombCrossings(path, 0, 1, INFINITE_PLANE)).toEqual([
-			{i: 1, s: 1, j: 1, goingEast: true},
-			{i: 1, s: 2, j: 2, goingEast: true},
+			{segmentIndex: 1, s: 1, lineIndex: 1, goingEast: true},
+			{segmentIndex: 1, s: 2, lineIndex: 2, goingEast: true},
 		]);
 	});
 	test("arc", () => {
@@ -539,9 +539,9 @@ describe("getCombCrossings", () => {
 			{type: 'A', args: [5, 5, 0, 0, 1, 1, 3]},
 		];
 		expect(getAllCombCrossings(path, 0, 1, INFINITE_PLANE)).toEqual([
-			{i: 1, s: Math.sqrt(21) - 4, j: 1, goingEast: true},
-			{i: 1, s: Math.sqrt(24) - 4, j: 2, goingEast: true},
-			{i: 1, s: 1, j: 3, goingEast: true},
+			{segmentIndex: 1, s: Math.sqrt(21) - 4, lineIndex: 1, goingEast: true},
+			{segmentIndex: 1, s: Math.sqrt(24) - 4, lineIndex: 2, goingEast: true},
+			{segmentIndex: 1, s: 1, lineIndex: 3, goingEast: true},
 		]);
 	});
 });
