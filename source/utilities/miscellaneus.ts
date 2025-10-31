@@ -395,9 +395,11 @@ export function pathToString(path: PathSegment[]): string {
 	return str.trim();
 }
 
+/**
+ * format a number with no more than three decimal places and no trailing zeros
+ */
 function formatPathArg(arg: number): string {
-	const formatter = Intl.NumberFormat("en-US", {maximumFractionDigits: 3});
-	return formatter.format(arg);
+	return arg.toFixed(3).replace(/\.?0*$/, "");
 }
 
 /**
