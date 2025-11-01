@@ -1440,18 +1440,19 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 		           (point) => surface.isOnEdge(assert_φλ(point))),
 		true,
 	);
-	const centralMeridian = chooseCentralMeridian(landOfInterest, coastline);
+	const longitudeInformation = chooseCentralMeridian(landOfInterest, coastline);
+	const centralMeridian = longitudeInformation.center;
+	const regionWidth = longitudeInformation.width;
 
 	// find the average latitude of the region
-	let centralParallel;
-	if (regionOfInterest === surface.tiles && surface.φMax - surface.φMin < 2*Math.PI) {
-		// if it's a whole-world map and non-periodic in latitude, always use the equator
-		centralParallel = (surface.φMin + surface.φMax)/2;
-	}
-	else {
-		centralParallel = chooseCentralMeridian(
-			[...landOfInterest].map(point => ({φ: -point.λ, λ: point.φ})),
-			rotatePath(coastline, 270));
+	let centralParallel = chooseCentralMeridian(
+		[...landOfInterest].map(point => ({φ: -point.λ, λ: point.φ})),
+		rotatePath(coastline, 270)).center;
+	if (regionWidth > 3*Math.PI/2 && surface.φMax - surface.φMin < 2*Math.PI) {
+		// if it's a whole-world map and non-periodic in latitude, try to use the equator
+		const equator = (surface.φMin + surface.φMax)/2;
+		if (Math.abs(centralParallel - equator) < 0.5)
+			centralParallel = equator;
 	}
 
 	return {
@@ -1462,9 +1463,9 @@ function chooseMapCentering(regionOfInterest: Iterable<Tile>, surface: Surface):
 
 
 /**
- * identify the meridian that is most centered on this region
+ * identify the meridian that is most centered on this region, and the longitudinal width of the region about that center.
  */
-function chooseCentralMeridian(region: Iterable<ΦΛPoint>, regionBoundary: PathSegment[]): number {
+function chooseCentralMeridian(region: Iterable<ΦΛPoint>, regionBoundary: PathSegment[]): { center: number, width: number } {
 	// find the longitude with the most empty space on either side of it
 	const emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
 	for (let i = 0; i < regionBoundary.length; i ++) {
@@ -1482,9 +1483,13 @@ function chooseCentralMeridian(region: Iterable<ΦΛPoint>, regionBoundary: Path
 		}
 	}
 	if (emptyLongitudes.getCenter(true).location !== null) {
-		return localizeInRange(
-			emptyLongitudes.getCenter(true).location + Math.PI,
-			-Math.PI, Math.PI);
+		const biggestGap = emptyLongitudes.getCenter(true);
+		return {
+			center: localizeInRange(
+				biggestGap.location + Math.PI,
+				-Math.PI, Math.PI),
+			width: 2*Math.PI - 2*biggestGap.radius,
+		};
 	}
 	else {
 		// if there are no empty longitudes, do a periodic mean over the land part of the region of interest
@@ -1494,7 +1499,10 @@ function chooseCentralMeridian(region: Iterable<ΦΛPoint>, regionBoundary: Path
 			xCenter += Math.cos(tile.λ);
 			yCenter += Math.sin(tile.λ);
 		}
-		return Math.atan2(yCenter, xCenter);
+		return {
+			center: Math.atan2(yCenter, xCenter),
+			width: 2*Math.PI,
+		};
 	}
 }
 
