@@ -422,13 +422,12 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		// color the land by country
 		if (world === null)
 			throw new Error("this Chart was asked to color land politicly but the provided World was null");
-		const biggestCivs = world.getCivs(true);
+		let biggestCivs = world.getCivs(true);
+		biggestCivs = biggestCivs.filter( // skip really small countries
+			civ => civ.tileTree.size > 1 || civ.getPopulation()/civ.getTotalArea() >= BORDER_SPECIFY_THRESHOLD);
 		const biggestCivExtents = [];
-		for (const civ of biggestCivs) {
-			if (civ.tileTree.size === 1 && civ.getPopulation()/civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
-				continue; // skip really small countries
+		for (const civ of biggestCivs)
 			biggestCivExtents.push(filterSet(civ.tileTree.keys(), n => !n.isWater()));
-		}
 		const drawnCivs = fillMultiple(
 			biggestCivExtents, COUNTRY_COLORS, surface.tiles, colorScheme.landFill,
 			transform, createSVGGroup(svg, "countries"), Layer.KULTUR);
