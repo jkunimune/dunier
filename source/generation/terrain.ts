@@ -112,7 +112,7 @@ export const BIOME_NAMES = [
 
 export const PASSABILITY = new Map([ // terrain modifiers for invasion speed
 	[Biome.OCEAN,     0.3],
-	[Biome.JUNGLE,    0.3],
+	[Biome.JUNGLE,    1.0],
 	[Biome.FOREST,    1.0],
 	[Biome.LAKE,      3.0],
 	[Biome.TAIGA,     1.0],
