@@ -421,7 +421,7 @@ export class ProtoLect extends Lect {
 			else if (meaning.type === RootType.SHORT)
 				length = 2/this.complexity; // basic words used for compounds
 			else
-				length = 5/this.complexity; // other roots
+				length = 4/this.complexity; // other roots
 			const seed = this.seed + decodeBase37(meaning.english);
 			const rng = new Random(seed);
 			let syllableNumber, multiplier;

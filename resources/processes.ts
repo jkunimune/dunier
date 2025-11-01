@@ -891,8 +891,11 @@ export default [
     "chance": 0.100, "type": "mute", "comment": "assimilation of semivowels",
     "code": "[ +GLIDE ] [ +GLIDE ] > [ ±minorLoke ]0 /"
   }, {
-    "chance": 0.050, "type": "mute", "comment": "assimilation of ij",
+    "chance": 0.050, "type": "mute", "comment": "assimilation of uj to yː",
     "code": "[ +HIGH +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG ±loke ]0 /"
+  }, {
+    "chance": 0.050, "type": "mute", "comment": "assimilation of uj to iː",
+    "code": "[ +HIGH +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG ±silabia ]1 /"
   }, {
     "chance": 0.020, "type": "mute", "comment": "assimilation of ew to iː",
     "code": "[ +MID +VOWEL ] [ +HIGH +GLIDE ] > [ +LONG +HIGH ±loke ]0 /"
@@ -1008,7 +1011,7 @@ export default [
     "chance": 0.020, "type": "mute", "comment": "raising dissimilation",
     "code": "[ +VOWEL ] > [ +RAISED ] / _ [ +LOW ]"
   }, {
-    "chance": 0.020, "type": "mute", "comment": "lowering dissimilation",
+    "chance": 0.050, "type": "mute", "comment": "lowering dissimilation",
     "code": "[ -HIGH +VOWEL ] > [ +LOWERED ] / _ [ -LOW ]"
   },
   {
@@ -1112,16 +1115,16 @@ export default [
     "code": "[ +VOCOID ] [ +OBSTR ] > [ ]0 [ ]1 [ +SHORT +UNSTRESS ]0 / _ [ -CONT ]"
   }, {
     "chance": 0.020, "type": "mute", "comment": "mr > mbr",
-    "code": "[ +!NASAL ] > [ ] [ +SHORT +NONSYLLAB +STOP ] / _ [ +LIQ ]"
+    "code": "[ +!NASAL ] > [ ] [ +SHORT +NONSYLLAB +STOP ] / [ -STOP ] _ [ +LIQ ]"
   }, {
     "chance": 0.020, "type": "mute", "comment": "md > mbd",
-    "code": "[ -CORON +!NASAL ] > [ +SHORT ] [ ±voze +SHORT +NONSYLLAB +STOP ] / _ [ +CORON +STOP ]"
+    "code": "[ -CORON +!NASAL ] > [ +SHORT ] [ ±voze +SHORT +NONSYLLAB +STOP ] / [ -STOP ] _ [ +CORON +STOP ]"
   }, {
     "chance": 0.005, "type": "mute", "comment": "ms > mbs",
-    "code": "[ +!NASAL ] > [ +SHORT ] [ +SHORT +NONSYLLAB +STOP ] / _ [ +FRIC ]"
+    "code": "[ +!NASAL ] > [ +SHORT ] [ +SHORT +NONSYLLAB +STOP ] / [ -STOP ] _ [ +FRIC ]"
   }, {
     "chance": 0.005, "type": "mute", "comment": "sr > str",
-    "code": "[ +SIBILANT ] > [ +SHORT ] [ +SHORT +NONSYLLAB +STOP ] / _ [ +RHOTIC ]"
+    "code": "[ +SIBILANT ] > [ +SHORT ] [ +SHORT +NONSYLLAB +STOP ] / [ -STOP ] _ [ +RHOTIC ]"
   }, {
     "chance": 0.002, "type": "mute", "comment": "fill hiatus with l",
     "code": "> ɾ / [ +VOWEL ] _ [ +VOWEL ]"
@@ -1176,6 +1179,9 @@ export default [
   }, {
     "chance": 0.500, "type": "mute", "comment": "loss of central glides",
     "code": "[ +CENTRAL +GLIDE ] > / _ [ +SPOKEN ]"
+  }, {
+    "chance": 0.010, "type": "mute", "comment": "aja > iː",
+    "code": "[ -STRESS +VOWEL ] [ +GLIDE ] [ -STRESS +VOWEL ] > [ +LONG +UNSTRESS ]1"
   }, {
     "chance": 0.005, "type": "mute", "comment": "ija > ja",
     "code": "[ -STRESS +VOWEL ] [ +GLIDE ] > [ ]1 / [ -GLIDE ] _ [ +VOWEL ]"
@@ -1240,20 +1246,35 @@ export default [
     "chance": 0.020, "type": "mute", "comment": "simplification of big clusters",
     "code": "[ +SHORT +NONSYLLAB ] > / [ +NONSYLLAB ] _ [ +NONSYLLAB ]"
   }, {
-    "chance": 0.050, "type": "silabe", "comment": "",
-    "code": "4"
+    "chance": 0.020, "type": "silabe", "comment": "",
+    "code": "-1 4"
   }, {
     "chance": 0.020, "type": "silabe", "comment": "",
-    "code": "3"
+    "code": "+1 4"
   }, {
     "chance": 0.010, "type": "silabe", "comment": "",
-    "code": "2"
+    "code": "-1 3"
+  }, {
+    "chance": 0.010, "type": "silabe", "comment": "",
+    "code": "+1 3"
   }, {
     "chance": 0.005, "type": "silabe", "comment": "",
-    "code": "1"
+    "code": "-1 2"
+  }, {
+    "chance": 0.005, "type": "silabe", "comment": "",
+    "code": "+1 2"
   }, {
     "chance": 0.002, "type": "silabe", "comment": "",
-    "code": "0"
+    "code": "-1 1"
+  }, {
+    "chance": 0.002, "type": "silabe", "comment": "",
+    "code": "+1 1"
+  }, {
+    "chance": 0.001, "type": "silabe", "comment": "",
+    "code": "-1 0"
+  }, {
+    "chance": 0.001, "type": "silabe", "comment": "",
+    "code": "+1 0"
   }, {
     "chance": 0.001, "type": "acente", "comment": "",
     "code": "right 0"

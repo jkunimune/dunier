@@ -484,10 +484,9 @@ for (const {chance, type, code} of UNPARSED_PROCESS_OPTIONS) { // load the phono
 								attractors, tailMode, lengthen)});
 	}
 	else if (type === 'silabe') {
-		const minSilabia = Number.parseInt(code);
-		for (let bias = -1; bias <= 1; bias ++)
-			PROCESS_OPTIONS.push({chanse: chance/3, proces:
-					new Syllabicization(bias, minSilabia)});
+		const [minSilabia, bias] = code.split(" ");
+		PROCESS_OPTIONS.push({chanse: chance, proces:
+				new Syllabicization(Number.parseInt(bias), Number.parseFloat(minSilabia))});
 	}
 	else if (type === 'fusion') {
 		PROCESS_OPTIONS.push({chanse: chance, proces: new Fusion()});
