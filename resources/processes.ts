@@ -1118,7 +1118,7 @@ export default [
     "code": "[ +!NASAL ] > [ ] [ +SHORT +NONSYLLAB +STOP ] / [ -STOP ] _ [ +LIQ ]"
   }, {
     "chance": 0.020, "type": "mute", "comment": "md > mbd",
-    "code": "[ -CORON +!NASAL ] > [ +SHORT ] [ ±voze +SHORT +NONSYLLAB +STOP ] / [ -STOP ] _ [ +CORON +STOP ]"
+    "code": "[ -CORON +!NASAL ] > [ +SHORT ] [ ±voze +SHORT +NONSYLLAB +STOP ] / _ [ +CORON +STOP ]"
   }, {
     "chance": 0.005, "type": "mute", "comment": "ms > mbs",
     "code": "[ +!NASAL ] > [ +SHORT ] [ +SHORT +NONSYLLAB +STOP ] / [ -STOP ] _ [ +FRIC ]"
