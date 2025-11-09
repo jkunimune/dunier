@@ -81,11 +81,11 @@ export class World {
 	generateHistory(year: number) {
 		const cataclysmicFactor = Math.exp(-this.cataclysms*APOCALYPSE_ACCUMULATION_RATE);
 		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
+			if (Math.floor(t*this.cataclysms) > Math.floor((t - TIME_STEP)*this.cataclysms))
+				this.haveCataclysm(t, cataclysmicFactor);
 			this.spawnCivs(t); // TODO: build cities
 			this.spreadCivs(t, t + TIME_STEP);
 			this.spreadIdeas();
-			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
-				this.haveCataclysm(t + TIME_STEP, cataclysmicFactor);
 			for (const civ of this.civs) {
 				if (!civ.isDead())
 					civ.update(TIME_STEP); // handle technological development, militaristic decay, etc.
