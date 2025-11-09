@@ -159,7 +159,8 @@ export function poissonDiscSample(region: PathSegment[], walls: PathSegment[][],
 
 
 /**
- * determine whether each cell of a grid is wholly contained by any of the given regions, using a positive fill rule
+ * determine whether each cell of a grid is wholly contained by any of the given regions, using a positive fill rule.
+ * for the purposes of this function, a cell contains points on its upper and left edges.
  * @param regions the set of regions that might contain each cell
  * @param grid the parameters defining the gric cell sizes and locations
  * @return a 2D array indexed by the horizontal index and then the vertical index,

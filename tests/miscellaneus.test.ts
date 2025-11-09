@@ -404,33 +404,63 @@ test("poissonDisc()", () => {
 	}
 });
 
-test("rasterInclusion", () => {
-	const grid = {xMin: 0., numX: 6, Δx: 1., yMin: 0., numY: 6, Δy: 1.};
-	const path = [
-		{type: 'M', args: [5.25, 0.25]},
-		{type: 'L', args: [0.25, 5.25]},
-		{type: 'L', args: [4.75, 4.75]},
-		{type: 'L', args: [5.25, 0.25]},
-	];
-	const clusion = [
-		[Side.OUT,        Side.OUT,        Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE],
-		[Side.OUT,        Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
-		[Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
-		[Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.IN,         Side.BORDERLINE, Side.OUT],
-		[Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.OUT],
-		[Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.OUT,        Side.OUT,        Side.OUT],
-	];
-	const expectedResult = [];
-	for (let i = 0; i < clusion.length; i ++) {
-		expectedResult.push([]);
-		for (let j = 0; j < clusion[i].length; j ++) {
-			if (clusion[i][j] === Side.BORDERLINE)
-				expectedResult[i].push({clusion: clusion[i][j], regionIndexes: new Set([0])});
-			else
-				expectedResult[i].push({clusion: clusion[i][j], regionIndexes: null});
+describe("rasterInclusion", () => {
+	test("triangle", () => {
+		const grid = {xMin: 0., numX: 6, Δx: 1., yMin: 0., numY: 6, Δy: 1.};
+		const path = [
+			{type: 'M', args: [5.25, 0.25]},
+			{type: 'L', args: [0.25, 5.25]},
+			{type: 'L', args: [4.75, 4.75]},
+			{type: 'L', args: [5.25, 0.25]},
+		];
+		const clusion = [
+			[Side.OUT,        Side.OUT,        Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE],
+			[Side.OUT,        Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
+			[Side.OUT,        Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
+			[Side.OUT,        Side.BORDERLINE, Side.BORDERLINE, Side.IN,         Side.BORDERLINE, Side.OUT],
+			[Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.OUT],
+			[Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.OUT,        Side.OUT,        Side.OUT],
+		];
+		const expectedResult = [];
+		for (let i = 0; i < clusion.length; i++) {
+			expectedResult.push([]);
+			for (let j = 0; j < clusion[i].length; j++) {
+				if (clusion[i][j] === Side.BORDERLINE)
+					expectedResult[i].push({clusion: clusion[i][j], regionIndexes: new Set([0])});
+				else
+					expectedResult[i].push({clusion: clusion[i][j], regionIndexes: null});
+			}
 		}
-	}
-	expect(containsRaster([path], grid)).toEqual(expectedResult);
+		expect(containsRaster([path], grid)).toEqual(expectedResult);
+	});
+	test("along gridlines", () => {
+		const grid = {xMin: 0., numX: 5, Δx: 1., yMin: 0, numY: 5, Δy: 1.};
+		const path = [
+			{type: 'M', args: [1., 1.]},
+			{type: 'L', args: [1., 4.]},
+			{type: 'L', args: [4., 4.]},
+			{type: 'L', args: [4., 1.]},
+			{type: 'L', args: [1., 1.]},
+		];
+		const clusion = [
+			[Side.OUT, Side.OUT,        Side.OUT,        Side.OUT,        Side.OUT],
+			[Side.OUT, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
+			[Side.OUT, Side.BORDERLINE, Side.IN,         Side.IN,         Side.BORDERLINE],
+			[Side.OUT, Side.BORDERLINE, Side.IN,         Side.IN,         Side.BORDERLINE],
+			[Side.OUT, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE, Side.BORDERLINE],
+		];
+		const expectedResult = [];
+		for (let i = 0; i < clusion.length; i++) {
+			expectedResult.push([]);
+			for (let j = 0; j < clusion[i].length; j++) {
+				if (clusion[i][j] === Side.BORDERLINE)
+					expectedResult[i].push({clusion: clusion[i][j], regionIndexes: new Set([0])});
+				else
+					expectedResult[i].push({clusion: clusion[i][j], regionIndexes: null});
+			}
+		}
+		expect(containsRaster([path], grid)).toEqual(expectedResult);
+	});
 });
 
 describe("offset()", () => {
