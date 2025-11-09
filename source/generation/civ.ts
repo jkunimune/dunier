@@ -15,6 +15,7 @@ import {Culture} from "./culture.js";
 import {Phrase} from "./language/word.js";
 import Queue from "../utilities/external/tinyqueue.js";
 import {Dequeue} from "../utilities/dequeue.js";
+import {Lect} from "./language/lect.js";
 
 
 /**
@@ -24,6 +25,8 @@ export class Civ {
 	public readonly id: number;
 	/** the capital city */
 	public capital: Tile;
+	/** the official language */
+	public language: Lect;
 	/** the tiles it owns and the order in which it acquired them (also stores the normalized population) */
 	public readonly tileTree: Map<Tile, {parent: Tile | null, children: Set<Tile>}>;
 	/** the tiles it owns (maybe some it doesn't) from least to most densely populated */
@@ -99,6 +102,8 @@ export class Civ {
 				this.capital.culture, this.capital, this.technology, this.world.rng.next() + 1);
 			culture.spreadTo(this.capital);
 			this.world.addCulture(culture);
+			// save the language so we have it in case the capital is destroyed
+			this.language = culture.lect;
 			// record this moment in history
 			if (loser === null)
 				this.history = [
@@ -380,7 +385,7 @@ export class Civ {
 	}
 
 	getName(): Phrase {
-		return this.capital.culture.lect.standardRegister.getToponym(this.capital.index);
+		return this.language.standardRegister.getToponym(this.capital.index);
 	}
 
 }
