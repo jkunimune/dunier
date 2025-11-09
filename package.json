@@ -1,6 +1,6 @@
 {
   "name": "dunier",
-  "version": "beta",
+  "version": "1.0",
   "description": "A webapp to generate realistic fictional maps, for fantasy and sci-fi settings.",
   "directories": {
     "test": "test"
