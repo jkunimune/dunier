@@ -217,7 +217,8 @@ export class World {
 				if (LOG_LAND_CLAIMS)
 					console.log(`${year.toFixed(0)}: ${tile.government.getName()} loses tile ${tile.index}`);
 				tile.government.lose(tile, year);
-				tile.culture.recedeFrom(tile);
+				if (tile.arableArea > 0)
+					tile.culture.recedeFrom(tile);
 			}
 		}
 		for (const civ of this.civs)
