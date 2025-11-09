@@ -158,7 +158,7 @@
           <form>
             <div class="form-group">
               <label for="terrain-seed">{parameter.seed}</label>
-              {Build type="spinner" value="0" min="0" max="99999999" step="1" id="terrain-seed"}
+              {Build type="spinner" value="0" min="0" max="999999999999" step="1" id="terrain-seed"}
             </div>
             <div class="form-group">
               <label for="terrain-continents">{parameter.terrain.continents}</label>
@@ -207,7 +207,7 @@
           <form>
             <div class="form-group">
               <label for="history-seed">{parameter.seed}</label>
-              {Build type="spinner" value="0" min="0" max="99999999" step="1" id="history-seed"}
+              {Build type="spinner" value="0" min="0" max="999999999999" step="1" id="history-seed"}
             </div>
             <div class="form-group">
               <label for="history-year">{parameter.history.year}</label>
@@ -242,10 +242,35 @@
     <div class="tab-pane active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
       <div class="row mt-2">
         <div class="scrolling-sidebar">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <button type="button" class="btn btn-primary mt-2" id="back">
+                ◀
+              </button>
+            </div>
+            <div class="input-group-append input-group-main">
+              <button type="button" class="btn btn-primary mt-2" id="reroll" disabled>
+                <span id="reroll-ready" style="display: none">
+                  {menu.reroll}
+                </span>
+                <span id="reroll-loading" role="status">
+                  <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                  {menu.loading}
+                </span>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-block btn-secondary" id="map-download-png">
+            {menu.download.png}
+          </button>
+          <button type="button" class="btn btn-block btn-secondary" id="map-download-svg">
+            {menu.download.svg}
+          </button>
+          <h4>{menu.options}</h4>
           <form id="accordion">
             <div class="card">
               <div class="card-header">
-                <h5 class="mb-0">
+                <h5 class="mt-0 mb-0">
                   <button type="button" id="map-content-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
                     {parameter.map.content}
                   </button>
@@ -286,7 +311,7 @@
             </div>
             <div class="card">
               <div class="card-header">
-                <h5 class="mb-0">
+                <h5 class="mt-0 mb-0">
                   <button type="button" id="map-style-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-style-collapse">
                     {parameter.map.style}
                   </button>
@@ -360,7 +385,7 @@
             </div>
             <div class="card">
               <div class="card-header">
-                <h5 class="mb-0">
+                <h5 class="mt-0 mb-0">
                   <button type="button" id="map-formatting-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-formatting-collapse">
                     {parameter.map.formatting}
                   </button>
@@ -407,12 +432,6 @@
                 <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
                 {menu.loading}
               </span>
-            </button>
-            <button type="button" class="btn btn-block btn-secondary" id="map-download-png">
-              {menu.download.png}
-            </button>
-            <button type="button" class="btn btn-block btn-secondary" id="map-download-svg">
-              {menu.download.svg}
             </button>
           </form>
         </div>

@@ -34,7 +34,6 @@ img {
 }
 
 h1, h2, h3, h4, h5 {
-    margin-top: 0;
     margin-bottom:.5rem;
     font-weight: 500;
     line-height: 1.2;
@@ -444,6 +443,15 @@ iframe {
     margin-left: -1px;
 }
 
+.input-group-main {
+    flex: 1 1 auto;
+    width: 1%;
+}
+
+.input-group-main > .btn {
+    width: 100%;
+}
+
 .list-group {
     display: flex;
     flex-direction: column;
@@ -579,6 +587,16 @@ a.btn.disabled {
 
 .btn-block + .btn-block {
     margin-top: .5rem;
+}
+
+.input-group + .btn-block {
+    margin-top: .5rem;
+}
+
+.btn-rest {
+    display: block;
+    width: 1%;
+    flex: 1 1 auto;
 }
 
 .lang-dropdown {
@@ -719,6 +737,10 @@ button.close {
 
 .p-2 {
     padding: .5rem !important;
+}
+
+.mt-0 {
+    margin-top: 0 !important;;
 }
 
 .mt-2 {

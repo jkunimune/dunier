@@ -266,6 +266,10 @@ function disableButtons() {
 		DOM.elm(`${tab}-loading`).style.display = null;
 		DOM.elm(`${tab}-map-container`).style.opacity = '50%';
 	}
+	DOM.elm(`back`).toggleAttribute('disabled', true);
+	DOM.elm(`reroll`).toggleAttribute('disabled', true);
+	DOM.elm(`reroll-ready`).style.display = 'none';
+	DOM.elm(`reroll-loading`).style.display = null;
 }
 
 
@@ -277,7 +281,10 @@ function enableButtons() {
 		DOM.elm(`${tab}-loading`).style.display = 'none';
 		DOM.elm(`${tab}-map-container`).style.opacity = '100%';
 	}
-
+	DOM.elm(`back`).toggleAttribute('disabled', false);
+	DOM.elm(`reroll`).toggleAttribute('disabled', false);
+	DOM.elm(`reroll-ready`).style.display = null;
+	DOM.elm(`reroll-loading`).style.display = 'none';
 }
 
 
@@ -500,6 +507,20 @@ DOM.elm('factbook-tab').addEventListener('click', () => {
 	updateEverythingUpTo(Layer.FACTBOOK);
 });
 
+DOM.elm('reroll').addEventListener('click', () => {
+	DOM.set('terrain-seed', String(Number(DOM.val('terrain-seed')) + 1));
+	DOM.set('history-seed', String(Number(DOM.val('history-seed')) + 1));
+	DOM.elm('terrain-seed').dispatchEvent(new Event('change')); // make sure to trigger the event listener so it knows to actually update everything
+	updateEverythingUpTo(Layer.MAP);
+});
+
+DOM.elm('back').addEventListener('click', () => {
+	DOM.set('terrain-seed', String(Number(DOM.val('terrain-seed')) - 1));
+	DOM.set('history-seed', String(Number(DOM.val('history-seed')) - 1));
+	DOM.elm('terrain-seed').dispatchEvent(new Event('change')); // make sure to trigger the event listener so it knows to actually update everything
+	updateEverythingUpTo(Layer.MAP);
+});
+
 /**
  * When the download button is clicked, export and download the map as an SVG
  */
@@ -584,10 +605,20 @@ for (const { layer, name } of tabs) {
 }
 
 
+function dateToInt(datetime: Date): number {
+	return ((((datetime.getFullYear()%100*100 + datetime.getMonth() + 1)*100 +
+		datetime.getDate())*100 + datetime.getHours())*100 +
+		datetime.getMinutes())*100 + datetime.getSeconds();
+}
+
+
 /**
  * Once the page is ready, start the algorithm!
  */
 document.addEventListener("DOMContentLoaded", () => {
+	const seed = dateToInt(new Date());
+	DOM.set('terrain-seed', `${seed}`);
+	DOM.set('history-seed', `${seed}`);
 	console.log("measuring the map font...");
 	characterWidthMap = measureAllCharacters();
 	(DOM.elm('map-tab') as HTMLElement).click();

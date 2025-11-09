@@ -7,16 +7,17 @@
 
   <div class="row p-2">
     <div id="xef-kolum" class="col-md">
-      <form>
-        <button type="button" class="btn btn-block btn-primary" id="names-apply">
-          <span id="names-ready">
-            {menu.generate}
-          </span>
-          <span id="names-loading" style="display: none" role="status">
-            <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
-            {menu.loading}
-          </span>
-        </button>
+      <form class="input-group">
+        <div class="input-group-prepend">
+          <button type="button" class="btn btn-primary mt-2" id="back">
+            ◀
+          </button>
+        </div>
+        <div class="input-group-append input-group-main">
+          <button type="button" class="btn btn-primary mt-2" id="reroll" disabled>
+            {menu.reroll}
+          </button>
+        </div>
       </form>
     </div>
   </div>
