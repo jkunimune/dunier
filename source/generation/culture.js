@@ -268,7 +268,7 @@ var Culture = /** @class */ (function () {
         tile.culture = null;
     };
     Culture.prototype.hasNationState = function () {
-        return this.homeland === this.homeland.government.capital;
+        return this.homeland.government !== null && this.homeland.government.capital === this.homeland;
     };
     Culture.prototype.getPopulation = function () {
         var e_8, _a;

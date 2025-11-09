@@ -84,6 +84,8 @@ var Civ = /** @class */ (function () {
             var culture = new Culture(this.capital.culture, this.capital, this.technology, this.world.rng.next() + 1);
             culture.spreadTo(this.capital);
             this.world.addCulture(culture);
+            // save the language so we have it in case the capital is destroyed
+            this.language = culture.lect;
             // record this moment in history
             if (loser === null)
                 this.history = [
@@ -470,7 +472,7 @@ var Civ = /** @class */ (function () {
         return Math.round(POPULATION_DENSITY * this.technology * this.arableArea);
     };
     Civ.prototype.getName = function () {
-        return this.capital.culture.lect.standardRegister.getToponym(this.capital.index);
+        return this.language.standardRegister.getToponym(this.capital.index);
     };
     return Civ;
 }());

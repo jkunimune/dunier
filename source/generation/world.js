@@ -66,6 +66,8 @@ export var BOAT_CHANCE = 0.1;
 export var BOAT_FACTOR = 5;
 /** the fraction of the populacion a country gets to keep after a cataclysm (not accounting for domino effects) */
 export var APOCALYPSE_SURVIVAL_RATE = .50;
+/** the amount of time to prepare an apocalypse. if the time between cataclysms is less than this, they will be weakened in power (y) */
+export var APOCALYPSE_ACCUMULATION_RATE = 200;
 /** the time it takes for an empire's might to decay by 2.7 (y) */
 export var MAX_DYNASTY_LIFETIME = 2000;
 /** the time it takes to erase a people's language (y) */
@@ -106,12 +108,13 @@ var World = /** @class */ (function () {
      */
     World.prototype.generateHistory = function (year) {
         var e_2, _a, e_3, _b;
+        var cataclysmicFactor = Math.exp(-this.cataclysms * APOCALYPSE_ACCUMULATION_RATE);
         for (var t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
+            if (Math.floor(t * this.cataclysms) > Math.floor((t - TIME_STEP) * this.cataclysms))
+                this.haveCataclysm(t, cataclysmicFactor);
             this.spawnCivs(t); // TODO: build cities
             this.spreadCivs(t, t + TIME_STEP);
             this.spreadIdeas();
-            if (Math.floor((t + TIME_STEP) * this.cataclysms) > Math.floor((t) * this.cataclysms))
-                this.haveCataclysm(t + TIME_STEP);
             try {
                 for (var _c = (e_2 = void 0, __values(this.civs)), _d = _c.next(); !_d.done; _d = _c.next()) {
                     var civ = _d.value;
@@ -347,17 +350,22 @@ var World = /** @class */ (function () {
     /**
      * devastate the entire world. the details of how are fuzzy, but in a nutshell half of all people die (well, more
      * accurately, 50% of all provinces are depopulated, and 50% of all technologies are lost.
+     * @param year what yer it is (for record-keeping purposes)
+     * @param power a multiplier for the cataclysm's level of destruction
      */
-    World.prototype.haveCataclysm = function (year) {
+    World.prototype.haveCataclysm = function (year, power) {
         var e_13, _a, e_14, _b, e_15, _c;
+        var survivalRate = Math.pow(APOCALYPSE_SURVIVAL_RATE, power);
+        console.log(survivalRate);
         try {
             for (var _d = __values(this.planet.tiles), _e = _d.next(); !_e.done; _e = _d.next()) {
                 var tile = _e.value;
-                if (tile.government !== null && !this.rng.probability(APOCALYPSE_SURVIVAL_RATE)) {
+                if (tile.government !== null && !this.rng.probability(survivalRate)) {
                     if (LOG_LAND_CLAIMS)
                         console.log("".concat(year.toFixed(0), ": ").concat(tile.government.getName(), " loses tile ").concat(tile.index));
                     tile.government.lose(tile, year);
-                    tile.culture.recedeFrom(tile);
+                    if (tile.arableArea > 0)
+                        tile.culture.recedeFrom(tile);
                 }
             }
         }
@@ -371,7 +379,7 @@ var World = /** @class */ (function () {
         try {
             for (var _f = __values(this.civs), _g = _f.next(); !_g.done; _g = _f.next()) {
                 var civ = _g.value;
-                civ.technology *= this.rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE) * 2, 1);
+                civ.technology *= this.rng.uniform(1 - (1 - survivalRate) * 2, 1);
             }
         }
         catch (e_14_1) { e_14 = { error: e_14_1 }; }
