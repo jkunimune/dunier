@@ -18,6 +18,7 @@ import {Random} from "../utilities/random.js";
 
 const NUM_CIVS_TO_DESCRIBE = 10;
 const NUM_NAMES_TO_LIST = 3;
+const NUM_CONQUESTS_TO_MENTION = 3;
 
 
 /**
@@ -158,11 +159,20 @@ function generateFactSheet(doc: VNode, topic: Civ, listOfLects: Lect[], currentY
  * add some paragraphs to this page recounting the history of the given country
  */
 function addHistorySection(page: VNode, topic: Civ, currentYear: number, language: string, style: string) {
-	let history: {type: string, year: number, participants: (Civ | Culture | number)[]}[] = topic.history;
+	let history: { type: string, year: number, participants: (Civ | Culture | number)[] }[] = topic.history.slice();
 
+	// remove all but the last three conquests
+	let numConquests = 0;
+	for (let i = history.length - 1; i >= 0; i--) {
+		if (history[i].type === "conquest") {
+			if (numConquests >= NUM_CONQUESTS_TO_MENTION)
+				history.splice(i, 1);
+			numConquests ++;
+		}
+	}
 	// add in the time of peak area if that's interesting
 	if (topic.peak.landArea > 2*topic.getLandArea())
-		history = [...history, {type: "peak", year: topic.peak.year, participants: [topic, topic.peak.landArea]}];
+		history.push({type: "peak", year: topic.peak.year, participants: [topic, topic.peak.landArea]});
 	history.sort((a, b) => a.year - b.year);
 
 	let text = "";
