@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="/resources/style.css">
+
+    <title>Generador de mapas fantásticos &ndash; Dunier</title>
+
+    <link rel="icon" type="image/svg" href="/resources/logo.svg" />
+  </head>
+
+  <body>
+    <header>
+      <nav class="navbar navbar-expand-md">
+        <div class="container-lg">
+
+          <a class="navbar-brand" href="#">
+            <img src="/resources/logo.svg" width="32" height="32" alt="">
+            dunier<sup class="text-muted">beta</sup>
+          </a>
+
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="Pasar barra de navegación" onclick="document.getElementById('toggle-navbar').classList.toggle('show');">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="toggle-navbar">
+            <div class="navbar-nav">
+              <a class="nav-item nav-link" href="./index.html">Mapas<span class="sr-only">(actual)</span></a>
+              <a class="nav-item nav-link" href="./nam.html">Nombres</a>
+              <a class="nav-item nav-link" href="./tema.html">Sobre</a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">Contáctanos</a>
+            </div>
+
+            <div class="navbar-nav ml-auto">
+              <div class="nav-item dropdown">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="Idioma" onchange="if (this.value !== 'es') window.location = `/${this.value}/index.html`; else this.value = 'none';">
+                  <option value="none" disabled selected></option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main role="main">
+      <!-- generation scripts -->
+<script src="/source/gui/mapgui.js" type="module" defer></script>
+
+<!-- UI functions -->
+<script>
+  /** grey out the day length and obliquity when the planet is tidally locked */
+  function disableRotationParams(locked) {
+    document.getElementById('planet-day').toggleAttribute('disabled', locked); // rotation period
+    document.getElementById('planet-tilt').toggleAttribute('disabled', locked); // and obliquity are both irrelevant
+
+    // also change the labels in the orientation window
+    if (locked)
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">A la sombra arriba</option>\n' +
+              '<option value="south">Al sol arriba</option>\n' +
+              '<option value="east">La diestra arriba</option>\n' +
+              '<option value="west">La siniestra arriba</option>\n';
+    else
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">El norte arriba</option>\n' +
+              '<option value="south">El sur arriba</option>\n' +
+              '<option value="east">El este arriba</option>\n' +
+              '<option value="west">El oeste arriba</option>\n';
+  }
+
+  /** hide the map projection selection for flat geoids */
+  function hideProjectionSelection(type) {
+    const selection = document.getElementById('map-projection-form');
+    if (type === 'plane')
+      selection.style.display = "none";
+    else
+      selection.style.display = "block";
+  }
+
+  /** change the description of the currently selected map projection */
+  function updateProjectionDescription(projection) {
+    if (projection === "bonne")
+      document.getElementById('map-projection-description').innerHTML = "Proyección de áreas iguales con paralelos concéntricos.  Es igual con la proyección sinusoidal en casos de mapas ecuatoriales.  Se adecua para vibra antigua y pseudo-ptolemaica.";
+    else if (projection === "conformal_conic")
+      document.getElementById('map-projection-description').innerHTML = "Proyección conforme con meridianos derechos.  Es igual con la proyección de Mercator en casos de mapas ecuatoriales.  Representa los ángulos con exactitud pero distorsiona las áreas.";
+    else if (projection === "equal_earth")
+      document.getElementById('map-projection-description').innerHTML = "Proyección de áreas iguales con paralelos derechos.  Se adecua para mapas del mundo entero.";
+    else if (projection === "mercator")
+      document.getElementById('map-projection-description').innerHTML = "Proyección conforme con una cuadrícula rectangular.  Se usa para navegación.";
+    else {
+      document.getElementById('map-projection-description').innerHTML = "?????";
+      console.error(`unrecognized map projeccion: '${projection}'`);
+    }
+  }
+
+  /** show or hide the tooltip, and position it appropriately */
+  function toggleTooltip(id) {
+    const tooltip = document.getElementById(id);
+    const tippedTool = document.getElementById(id + "-icon");
+    if (tippedTool.matches(":hover") || tippedTool.matches(":focus") || (tooltip.style.opacity > 0 && tooltip.matches(":hover"))) {
+      // make it visible
+      tooltip.style.opacity = "1";
+      tooltip.style.pointerEvents = "auto";
+      // locate it at the (i) icon
+      const toolLocation = tippedTool.getBoundingClientRect();
+      tooltip.style.top = `${(toolLocation.top + toolLocation.bottom)/2}px`;
+      tooltip.style.left = `${toolLocation.right}px`;
+      // adjust its location to keep it from clipping off the right edge of the screen
+      const tooltipDimensions = tooltip.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      if (tooltipDimensions.right > screenWidth) {
+        tooltip.style.left = `${screenWidth - tooltipDimensions.width}px`;
+      }
+    }
+    else {
+      // make it invisible
+      tooltip.style.opacity = "0";
+      tooltip.style.pointerEvents = "none";
+    }
+  }
+</script>
+
+<div id="test-text" style="position: absolute; opacity: 0; font-size: 20px; font-family: 'Noto Serif','Times New Roman','Times',serif;"></div>
+
+<div class="container-lg mt-3 mb-3">
+  <div id="alert-box">
+  </div>
+
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link" id="planet-tab" data-toggle="tab" role="tab" aria-controls="planet-panel" aria-selected="false">Planeta</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link" id="terrain-tab" data-toggle="tab" role="tab" aria-controls="terrain-panel" aria-selected="false">Terreno</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link" id="history-tab" data-toggle="tab" role="tab" aria-controls="history-panel" aria-selected="false">Historia</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link active" id="map-tab" data-toggle="tab" role="tab" aria-controls="map-panel" aria-selected="true">Mapa</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link" id="factbook-tab" data-toggle="tab" role="tab" aria-controls="factbook-panel" aria-selected="false">Hojas de datos</button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <div class="tab-pane" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <form>
+            <div class="form-group">
+              <label for="planet-type">Forma</label>
+              <select id="planet-type" onchange="hideProjectionSelection(this.value);">
+                <option selected value="spheroid">Esferoide</option>
+                <option value="toroid">Toroide</option>
+                <option value="plane">Plano</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <div class="custom-checkbox">
+                <input type="checkbox" id="planet-locked" onchange="disableRotationParams(this.checked);">
+                <label for="planet-locked">Acoplado por mareas</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="planet-size">Circunferencia</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="planet-size" value="20000.0" data-decimals="0" min="1000.0" max="80000.0" step="1000.0"/>
+  <div class="input-group-append">    <span class="input-group-text">km</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="planet-gravity">Gravedad ecuatorial</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="planet-gravity" value="1.0" data-decimals="2" min="0.1" max="10.0" step="0.1"/>
+  <div class="input-group-append">    <span class="input-group-text"><i>g</i></span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="planet-day">Periodo de rotación</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="planet-day" value="24.0" data-decimals="2" min="1.0" max="100.0" step="1.0"/>
+  <div class="input-group-append">    <span class="input-group-text">horas</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="planet-tilt">Inclinación axial</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="planet-tilt" value="23.5" data-decimals="1" min="0.0" max="90.0" step="5.0"/>
+  <div class="input-group-append">    <span class="input-group-text">°</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
+              <span id="planet-ready" style="display: none">
+                Aplicar
+              </span>
+              <span id="planet-loading" role="status">
+                <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                Trabajando…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map" id="planet-map-container">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <form>
+            <div class="form-group">
+              <label for="terrain-seed">Semilla aleatoria</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="terrain-seed" value="0.0" data-decimals="0" min="0.0" max="999999999999.0" step="1.0"/>
+  <div class="input-group-append">    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="terrain-continents">Número de placas</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="terrain-continents" value="6.0" data-decimals="0" min="1.0" max="20.0" step="1.0"/>
+  <div class="input-group-append">    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="terrain-sea-level">Nivel de mar</label>
+              <select id="terrain-sea-level">
+                <option value="2.0">Extremadamente alto</option>
+                <option value="0.5">Muy alto</option>
+                <option value="-0.5">Alto</option>
+                <option selected value="-1.0">Normal</option>
+                <option value="-1.5">Bajo</option>
+                <option value="-2.5">Muy bajo</option>
+                <option value="-4.0">Extremadamente bajo</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="terrain-temperature">Temperatura media</label>
+              <select id="terrain-temperature">
+                <option value="35">Alta</option>
+                <option selected value="15">Normal</option>
+                <option value="-5">Baja</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="terrain-apply" disabled>
+              <span id="terrain-ready" style="display: none">
+                Aplicar
+              </span>
+              <span id="terrain-loading" role="status">
+                <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                Trabajando…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map" id="terrain-map-container">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <form>
+            <div class="form-group">
+              <label for="history-seed">Semilla aleatoria</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="history-seed" value="0.0" data-decimals="0" min="0.0" max="999999999999.0" step="1.0"/>
+  <div class="input-group-append">    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="history-year">Año</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="history-year" value="1000.0" data-decimals="0" min="-3000.0" max="1500.0" step="100.0"/>
+  <div class="input-group-append">    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="history-meteors">Cataclismos</label>
+              <select id="history-meteors">
+                <option selected value="0">Nunca</option>
+                <option value="1e-4">Una vez</option>
+                <option value="1e-3">Una por milenio</option>
+                <option value="1e-2">Una por siglo</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="history-apply" disabled>
+              <span id="history-ready" style="display: none">
+                Aplicar
+              </span>
+              <span id="history-loading" role="status">
+                <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                Trabajando…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map" id="history-map-container">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <button type="button" class="btn btn-primary mt-2" id="back" disabled>
+                ◀
+              </button>
+            </div>
+            <div class="input-group-append input-group-main">
+              <button type="button" class="btn btn-primary mt-2" id="reroll" disabled>
+                <span id="reroll-ready" style="display: none">
+                  Generar de nuevo
+                </span>
+                <span id="reroll-loading" role="status">
+                  <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                  Trabajando…
+                </span>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-block btn-secondary" id="map-download-png">
+            Descargar PNG
+          </button>
+          <button type="button" class="btn btn-block btn-secondary" id="map-download-svg">
+            Descargar SVG
+          </button>
+          <h4>Opciones:</h4>
+          <form id="accordion">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mt-0 mb-0">
+                  <button type="button" id="map-content-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
+                    Contenido
+                  </button>
+                </h5>
+              </div>
+              <div id="map-content-collapse" class="collapse" aria-labelledby="map-content-heading" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-jung">Centro</label>
+                    <select id="map-jung">
+                      <option value="world">Mundo entero</option>
+                      <option selected value="continent0">Continente {0}</option>
+                    </select>
+                  </div>
+                  <div class="form-group" id="map-projection-form">
+                    <label for="map-projection">Proyección</label>
+                    <div class="input-group">
+                      <select id="map-projection" class="form-control" onchange="updateProjectionDescription(this.value);">
+                        <option value="bonne">Bonne</option>
+                        <option value="equal_earth">Equal Earth</option>
+                        <option selected value="conformal_conic">Conforme cónica de Lambert</option>
+                        <option value="mercator">Mercator</option>
+                      </select>
+                      <button type="button" class="info-icon" id="map-projection-description-icon" aria-label="Descripción detallada" aria-describedby="map-projection-description" onfocus="toggleTooltip('map-projection-description');" onblur="toggleTooltip('map-projection-description');" onmouseenter="toggleTooltip('map-projection-description');" onmouseleave="toggleTooltip('map-projection-description');">🛈</button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-orientation">Orientación</label>
+                    <select id="map-orientation">
+                      <option selected value="north">El norte arriba</option>
+                      <option value="south">El sur arriba</option>
+                      <option value="east">El este arriba</option>
+                      <option value="west">El oeste arriba</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mt-0 mb-0">
+                  <button type="button" id="map-style-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-style-collapse">
+                    Estilo
+                  </button>
+                </h5>
+              </div>
+              <div id="map-style-collapse" class="collapse" aria-labelledby="map-style-heading" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-color">Color</label>
+                    <select id="map-color">
+                      <option value="white">Blanco</option>
+                      <option value="gray">Gris y blanco</option>
+                      <option value="black">Negro y blanco</option>
+                      <option value="wikipedia">Azul y amarillo</option>
+                      <option value="sepia">Sepia</option>
+                      <option value="physical">Biomas</option>
+                      <option selected value="political">Naciones</option>
+                      <option value="heightmap">Altitudes</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-land-texture" checked>
+                      <label for="map-land-texture">Textura de tierra</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-sea-texture" checked>
+                      <label for="map-sea-texture">Textura de coast</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-shading">
+                      <label for="map-shading">Relieve sombreado</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-rivers">
+                      <label for="map-rivers">Ríos</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-borders" checked>
+                      <label for="map-borders">Fronteras</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-graticule" checked>
+                      <label for="map-graticule">Retícula</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-windrose">
+                      <label for="map-windrose">Rosa de los vientos</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-political-labels" checked>
+                      <label for="map-political-labels">Etiquetas políticas</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mt-0 mb-0">
+                  <button type="button" id="map-formatting-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-formatting-collapse">
+                    Formateo
+                  </button>
+                </h5>
+              </div>
+              <div id="map-formatting-collapse" class="collapse" aria-labelledby="map-formatting-heading" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-spelling">Transcripción</label>
+                    <select id="map-spelling">
+                      <option value="(default)">Latina (nátiva)</option>
+                      <option value="simple" >Latina (simple)</option>
+                      <option value="en">Latina (anglicanizada)</option>
+                      <option value="es"  selected >Latina (hispanizada)</option>
+                      <option value="la">Latina (latinizada)</option>
+                      <option value="ja" >Katakana</option>
+                      <option value="ru">Cirílica</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-width-mm">Anchura</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-mm" value="210.0" data-decimals="0" min="50.0" max="1000.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-mm">Altura</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-mm" value="148.0" data-decimals="0" min="50.0" max="1000.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-width-px">Anchura de PNG</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-px" value="1280.0" data-decimals="0" min="100.0" max="8000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-px">Altura de PNG</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-px" value="800.0" data-decimals="0" min="100.0" max="8000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-block btn-primary mt-2" id="map-apply" disabled>
+              <span id="map-ready" style="display: none">
+                Aplicar
+              </span>
+              <span id="map-loading" role="status">
+                <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                Trabajando…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map" id="map-map-container">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="factbook-panel" role="tabpanel" aria-labelledby="factbook-factbook">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <form>
+            <button type="button" class="btn btn-block btn-secondary" id="factbook-download-html">
+              Descargar HTML
+            </button>
+            <button type="button" class="btn btn-block btn-secondary" id="factbook-print">
+              Imprimir
+            </button>
+          </form>
+        </div>
+
+        <div class="map justify-content-center">
+          <iframe id="factbook-embed" title="Hojas de datos">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">Proyección conforme con meridianos derechos.  Es igual con la proyección de Mercator en casos de mapas ecuatoriales.  Representa los ángulos con exactitud pero distorsiona las áreas.</div>
+
+    </main>
+
+    <footer>
+      <div class="container-lg">
+        <div class="row">
+
+          <div class="col-lg">
+            <p>
+              Dunier de Justin Kunimune se marca con <!--
+           --><span style="white-space: nowrap">
+                <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.es" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
+                  CC0 1.0<!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="(Creative Commons logo)"><!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="">
+                </a><!--
+             -->.
+              </span>
+            </p>
+          </div>
+
+          <div class="col-sm">
+            <h5>Páginas</h5>
+            <ul class="list-unstyled text-small">
+              <li><a class="text-muted" href="./index.html">Mapas</a></li>
+              <li><a class="text-muted" href="./nam.html">Nombres</a></li>
+              <li><a class="text-muted" href="./tema.html">Sobre</a></li>
+              <li><a class="text-muted" href="https://kunimune.home.blog/contact/">Contáctanos</a></li>
+            </ul>
+          </div>
+
+          <div class="col-sm">
+            <h5>Idiomas</h5>
+            <ul class="list-unstyled text-small">
+              <li lang="en"><a class="text-muted" href="/en/index.html">English</a></li>
+              <li lang="es"><a class="text-muted" href="/es/index.html">español</a></li>
+              <li lang="ja"><a class="text-muted" href="/ja/index.html">日本語</a></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </footer>
+
+    <div id="bash" style="display: none;">es</div>
+
+    <!-- rendering scripts: Bootstrap Input Spinner -->
+    <script src="/source/utilities/external/bootstrap-input-spinner.js"></script>
+    <script>
+      // apply the bootstrap-input-spinner script to every input spinner
+      for (const spinner of document.querySelectorAll(".fancy-spinner"))
+        // noinspection JSUnresolvedReference
+        activateInputSpinner(spinner);
+    </script>
+  </body>
+</html>

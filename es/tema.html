@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="/resources/style.css">
+
+    <title>Sobre &ndash; Dunier</title>
+
+    <link rel="icon" type="image/svg" href="/resources/logo.svg" />
+  </head>
+
+  <body>
+    <header>
+      <nav class="navbar navbar-expand-md">
+        <div class="container-lg">
+
+          <a class="navbar-brand" href="#">
+            <img src="/resources/logo.svg" width="32" height="32" alt="">
+            dunier<sup class="text-muted">beta</sup>
+          </a>
+
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="Pasar barra de navegación" onclick="document.getElementById('toggle-navbar').classList.toggle('show');">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="toggle-navbar">
+            <div class="navbar-nav">
+              <a class="nav-item nav-link" href="./index.html">Mapas</a>
+              <a class="nav-item nav-link" href="./nam.html">Nombres</a>
+              <a class="nav-item nav-link" href="./tema.html">Sobre<span class="sr-only">(actual)</span></a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">Contáctanos</a>
+            </div>
+
+            <div class="navbar-nav ml-auto">
+              <div class="nav-item dropdown">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="Idioma" onchange="if (this.value !== 'es') window.location = `/${this.value}/tema.html`; else this.value = 'none';">
+                  <option value="none" disabled selected></option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main role="main">
+      <div class="container-md mt-3 mb-4">
+	<h2>Sobre Dunier</h2>
+	<p>Dunier es herramienta para ayudar autores, directores de juegos, y creadores de lenguas construidas fabricar realistas mundos en el cual sus creaciones pueden desarrollarse bien. Él toma semilla aleatoria y unos parámetros, y produce un estilizado mapa, una cronología historial, y hojas informativas por cada país y lengua.  Aunque no programa de computadora puede reemplazar la alegría y creatividad del proceso del entero proceso de creación de mundos, Dunier puede llevar las partes que no todos seres humanos pueden o quieren hacer.</p> <p>Dunier está inspirado por generadores de mapas fantásticos anterior, como <a href=\"https://azgaar.github.io/Fantasy-Map-Generator\">ese de Azgaar</a>, pero tiene más hincapié en realismo.  Él no es tan interactivo como otros, y él no genera tantos finos detalles, como las ubicaciones de las minas y relaciones diplomáticas.  Sin embargo, él sí tiene en cuenta varias características que otros generadores falta, tal como curvatura planetaria, tectónica de placas, y cambio lingüístico.</p><p>El código fuente de Dunier se puede encontrar en <a href=\"https://github.com/jkunimune/dunier\">github.com/jkunimune/dunier</a>.</p>
+	<h3>Créditos</h3>
+	<p>Dunier se hace por Justin Kunimune, un editor de Wikipedia y entusiasta de la lingüística.  Se deja inspirar mucho por <a href="https://azgaar.github.io/Fantasy-Map-Generator">Fantasy Map Generator</a> de Azgaar.  En adición, usa <a href="https://github.com/mourner/tinyqueue">Tinyqueue</a> de Vladimir Agaforkin, <a href="https://github.com/shaack/bootstrap-input-spinner">Bootstrap Input Spinner</a> de Stefan Haack, <a href="https://2ality.com/2020/01/enum-pattern.html">Enumify</a> de Axel Rauschmayer, <a href="https://plotly.com">Plotly</a>, y <a href="https://getbootstrap.com">Bootstrap</a>.</p>
+	<h3>Licencia</h3>
+	<p>Dunier en sí se dedica al dominio público por la licencia <a href="https://creativecommons.org/publicdomain/zero/1.0/en">CC0 1.0 Universal</a>.  Los mapas que cree con Dunier ya están en el dominio público porque se crearon por un programa informático y no tienen bastante autoría humana.  Por lo tanto, se los permite copiar, modificar, y distribuir ambos – también para fines comerciales – sin pedirme permisión.</p>
+</div>
+
+    </main>
+
+    <footer>
+      <div class="container-lg">
+        <div class="row">
+
+          <div class="col-lg">
+            <p>
+              Dunier de Justin Kunimune se marca con <!--
+           --><span style="white-space: nowrap">
+                <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.es" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
+                  CC0 1.0<!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="(Creative Commons logo)"><!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="">
+                </a><!--
+             -->.
+              </span>
+            </p>
+          </div>
+
+          <div class="col-sm">
+            <h5>Páginas</h5>
+            <ul class="list-unstyled text-small">
+              <li><a class="text-muted" href="./index.html">Mapas</a></li>
+              <li><a class="text-muted" href="./nam.html">Nombres</a></li>
+              <li><a class="text-muted" href="./tema.html">Sobre</a></li>
+              <li><a class="text-muted" href="https://kunimune.home.blog/contact/">Contáctanos</a></li>
+            </ul>
+          </div>
+
+          <div class="col-sm">
+            <h5>Idiomas</h5>
+            <ul class="list-unstyled text-small">
+              <li lang="en"><a class="text-muted" href="/en/tema.html">English</a></li>
+              <li lang="es"><a class="text-muted" href="/es/tema.html">español</a></li>
+              <li lang="ja"><a class="text-muted" href="/ja/tema.html">日本語</a></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </footer>
+
+    <div id="bash" style="display: none;">es</div>
+
+    <!-- rendering scripts: Bootstrap Input Spinner -->
+    <script src="/source/utilities/external/bootstrap-input-spinner.js"></script>
+    <script>
+      // apply the bootstrap-input-spinner script to every input spinner
+      for (const spinner of document.querySelectorAll(".fancy-spinner"))
+        // noinspection JSUnresolvedReference
+        activateInputSpinner(spinner);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,715 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="/resources/style.css">
+
+    <title>ファンタジーマップ生成器・ドゥンハマル</title>
+
+    <link rel="icon" type="image/svg" href="/resources/logo.svg" />
+  </head>
+
+  <body>
+    <header>
+      <nav class="navbar navbar-expand-md">
+        <div class="container-lg">
+
+          <a class="navbar-brand" href="#">
+            <img src="/resources/logo.svg" width="32" height="32" alt="">
+            dunier<sup class="text-muted">beta</sup>
+          </a>
+
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="ナビゲーションのトグル" onclick="document.getElementById('toggle-navbar').classList.toggle('show');">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="toggle-navbar">
+            <div class="navbar-nav">
+              <a class="nav-item nav-link" href="./index.html">地図生成<span class="sr-only">（現行）</span></a>
+              <a class="nav-item nav-link" href="./nam.html">名生成</a>
+              <a class="nav-item nav-link" href="./tema.html">dunierについて</a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">問い合わせ</a>
+            </div>
+
+            <div class="navbar-nav ml-auto">
+              <div class="nav-item dropdown">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="言語" onchange="if (this.value !== 'ja') window.location = `/${this.value}/index.html`; else this.value = 'none';">
+                  <option value="none" disabled selected></option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main role="main">
+      <!-- generation scripts -->
+<script src="/source/gui/mapgui.js" type="module" defer></script>
+
+<!-- UI functions -->
+<script>
+  /** grey out the day length and obliquity when the planet is tidally locked */
+  function disableRotationParams(locked) {
+    document.getElementById('planet-day').toggleAttribute('disabled', locked); // rotation period
+    document.getElementById('planet-tilt').toggleAttribute('disabled', locked); // and obliquity are both irrelevant
+
+    // also change the labels in the orientation window
+    if (locked)
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">陰方が上</option>\n' +
+              '<option value="south">陽方が上</option>\n' +
+              '<option value="east">右方が上</option>\n' +
+              '<option value="west">左方が上</option>\n';
+    else
+      document.getElementById('map-orientation').innerHTML =
+              '<option selected value="north">北が上</option>\n' +
+              '<option value="south">南が上</option>\n' +
+              '<option value="east">東が上</option>\n' +
+              '<option value="west">西が上</option>\n';
+  }
+
+  /** hide the map projection selection for flat geoids */
+  function hideProjectionSelection(type) {
+    const selection = document.getElementById('map-projection-form');
+    if (type === 'plane')
+      selection.style.display = "none";
+    else
+      selection.style.display = "block";
+  }
+
+  /** change the description of the currently selected map projection */
+  function updateProjectionDescription(projection) {
+    if (projection === "bonne")
+      document.getElementById('map-projection-description').innerHTML = "同心円の緯線を示す正積図法である。赤道中心地図の場合はサンソン図法になる。プトレマイオス的、昔風な感じである。";
+    else if (projection === "conformal_conic")
+      document.getElementById('map-projection-description').innerHTML = "直線の経線を示す正角図法である。赤道中心地図の場合はメルカトル図法になる。中世に流行ったが、面積を歪める傾向がある。";
+    else if (projection === "equal_earth")
+      document.getElementById('map-projection-description').innerHTML = "真直な緯線を示す正積図法である。全世界地図によく似合う。";
+    else if (projection === "mercator")
+      document.getElementById('map-projection-description').innerHTML = "直方の経緯線網を示す正格図法である。航海のためによく使用される。";
+    else {
+      document.getElementById('map-projection-description').innerHTML = "?????";
+      console.error(`unrecognized map projeccion: '${projection}'`);
+    }
+  }
+
+  /** show or hide the tooltip, and position it appropriately */
+  function toggleTooltip(id) {
+    const tooltip = document.getElementById(id);
+    const tippedTool = document.getElementById(id + "-icon");
+    if (tippedTool.matches(":hover") || tippedTool.matches(":focus") || (tooltip.style.opacity > 0 && tooltip.matches(":hover"))) {
+      // make it visible
+      tooltip.style.opacity = "1";
+      tooltip.style.pointerEvents = "auto";
+      // locate it at the (i) icon
+      const toolLocation = tippedTool.getBoundingClientRect();
+      tooltip.style.top = `${(toolLocation.top + toolLocation.bottom)/2}px`;
+      tooltip.style.left = `${toolLocation.right}px`;
+      // adjust its location to keep it from clipping off the right edge of the screen
+      const tooltipDimensions = tooltip.getBoundingClientRect();
+      const screenWidth = window.innerWidth;
+      if (tooltipDimensions.right > screenWidth) {
+        tooltip.style.left = `${screenWidth - tooltipDimensions.width}px`;
+      }
+    }
+    else {
+      // make it invisible
+      tooltip.style.opacity = "0";
+      tooltip.style.pointerEvents = "none";
+    }
+  }
+</script>
+
+<div id="test-text" style="position: absolute; opacity: 0; font-size: 20px; font-family: 'Noto Serif','Times New Roman','Times',serif;"></div>
+
+<div class="container-lg mt-3 mb-3">
+  <div id="alert-box">
+  </div>
+
+  <ul class="nav nav-tabs" role="tablist">
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link" id="planet-tab" data-toggle="tab" role="tab" aria-controls="planet-panel" aria-selected="false">惑星</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link" id="terrain-tab" data-toggle="tab" role="tab" aria-controls="terrain-panel" aria-selected="false">地形</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link" id="history-tab" data-toggle="tab" role="tab" aria-controls="history-panel" aria-selected="false">歴史</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link active" id="map-tab" data-toggle="tab" role="tab" aria-controls="map-panel" aria-selected="true">地図</button>
+    </li>
+    <li class="nav-item">
+      <button type="button" class="btn btn-link nav-link" id="factbook-tab" data-toggle="tab" role="tab" aria-controls="factbook-panel" aria-selected="false">インフォ</button>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    <div class="tab-pane" id="planet-panel" role="tabpanel" aria-labelledby="planet-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <form>
+            <div class="form-group">
+              <label for="planet-type">形態</label>
+              <select id="planet-type" onchange="hideProjectionSelection(this.value);">
+                <option selected value="spheroid">扁球</option>
+                <option value="toroid">環状</option>
+                <option value="plane">平面</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <div class="custom-checkbox">
+                <input type="checkbox" id="planet-locked" onchange="disableRotationParams(this.checked);">
+                <label for="planet-locked">同期自転</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="planet-size">円周</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="planet-size" value="20000.0" data-decimals="0" min="1000.0" max="80000.0" step="1000.0"/>
+  <div class="input-group-append">    <span class="input-group-text">km</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="planet-gravity">表面重力</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="planet-gravity" value="1.0" data-decimals="2" min="0.1" max="10.0" step="0.1"/>
+  <div class="input-group-append">    <span class="input-group-text"><i>g</i></span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="planet-day">日間</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="planet-day" value="24.0" data-decimals="2" min="1.0" max="100.0" step="1.0"/>
+  <div class="input-group-append">    <span class="input-group-text">時間</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="planet-tilt">赤道傾斜角</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="planet-tilt" value="23.5" data-decimals="1" min="0.0" max="90.0" step="5.0"/>
+  <div class="input-group-append">    <span class="input-group-text">°</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="planet-apply" disabled>
+              <span id="planet-ready" style="display: none">
+                適用
+              </span>
+              <span id="planet-loading" role="status">
+                <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                お待ちください…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map" id="planet-map-container">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="terrain-panel" role="tabpanel" aria-labelledby="terrain-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <form>
+            <div class="form-group">
+              <label for="terrain-seed">擬似乱数列の初期値</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="terrain-seed" value="0.0" data-decimals="0" min="0.0" max="999999999999.0" step="1.0"/>
+  <div class="input-group-append">    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="terrain-continents">プレートの数</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="terrain-continents" value="6.0" data-decimals="0" min="1.0" max="20.0" step="1.0"/>
+  <div class="input-group-append">    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="terrain-sea-level">海面</label>
+              <select id="terrain-sea-level">
+                <option value="2.0">超高</option>
+                <option value="0.5">特高</option>
+                <option value="-0.5">高</option>
+                <option selected value="-1.0">中</option>
+                <option value="-1.5">低</option>
+                <option value="-2.5">特低</option>
+                <option value="-4.0">超低</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="terrain-temperature">表面温度</label>
+              <select id="terrain-temperature">
+                <option value="35">高</option>
+                <option selected value="15">中</option>
+                <option value="-5">低</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="terrain-apply" disabled>
+              <span id="terrain-ready" style="display: none">
+                適用
+              </span>
+              <span id="terrain-loading" role="status">
+                <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                お待ちください…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map" id="terrain-map-container">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="history-panel" role="tabpanel" aria-labelledby="history-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <form>
+            <div class="form-group">
+              <label for="history-seed">擬似乱数列の初期値</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="history-seed" value="0.0" data-decimals="0" min="0.0" max="999999999999.0" step="1.0"/>
+  <div class="input-group-append">    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="history-year">時代</label>
+              <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="history-year" value="1000.0" data-decimals="0" min="-3000.0" max="1500.0" step="100.0"/>
+  <div class="input-group-append">    <span class="input-group-text">年</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+            </div>
+            <div class="form-group">
+              <label for="history-meteors">大変革</label>
+              <select id="history-meteors">
+                <option selected value="0">無</option>
+                <option value="1e-4">一つ</option>
+                <option value="1e-3">一つ毎年</option>
+                <option value="1e-2">一つ毎百年</option>
+              </select>
+            </div>
+            <button type="button" class="btn btn-block btn-primary" id="history-apply" disabled>
+              <span id="history-ready" style="display: none">
+                適用
+              </span>
+              <span id="history-loading" role="status">
+                <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                お待ちください…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map" id="history-map-container">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane active" id="map-panel" role="tabpanel" aria-labelledby="map-tab">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <div class="input-group">
+            <div class="input-group-prepend">
+              <button type="button" class="btn btn-primary mt-2" id="back" disabled>
+                ◀
+              </button>
+            </div>
+            <div class="input-group-append input-group-main">
+              <button type="button" class="btn btn-primary mt-2" id="reroll" disabled>
+                <span id="reroll-ready" style="display: none">
+                  再生
+                </span>
+                <span id="reroll-loading" role="status">
+                  <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                  お待ちください…
+                </span>
+              </button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-block btn-secondary" id="map-download-png">
+            PNGダウンロード
+          </button>
+          <button type="button" class="btn btn-block btn-secondary" id="map-download-svg">
+            SVGダウンロード
+          </button>
+          <h4>設定</h4>
+          <form id="accordion">
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mt-0 mb-0">
+                  <button type="button" id="map-content-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-projection-collapse">
+                    内容
+                  </button>
+                </h5>
+              </div>
+              <div id="map-content-collapse" class="collapse" aria-labelledby="map-content-heading" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-jung">中心</label>
+                    <select id="map-jung">
+                      <option value="world">全世界</option>
+                      <option selected value="continent0">第{0}の大陸</option>
+                    </select>
+                  </div>
+                  <div class="form-group" id="map-projection-form">
+                    <label for="map-projection">図法</label>
+                    <div class="input-group">
+                      <select id="map-projection" class="form-control" onchange="updateProjectionDescription(this.value);">
+                        <option value="bonne">ボンネ</option>
+                        <option value="equal_earth">イコール・アース</option>
+                        <option selected value="conformal_conic">ランベルト正角円錐</option>
+                        <option value="mercator">メルカトル</option>
+                      </select>
+                      <button type="button" class="info-icon" id="map-projection-description-icon" aria-label="説明" aria-describedby="map-projection-description" onfocus="toggleTooltip('map-projection-description');" onblur="toggleTooltip('map-projection-description');" onmouseenter="toggleTooltip('map-projection-description');" onmouseleave="toggleTooltip('map-projection-description');">🛈</button>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-orientation">方向</label>
+                    <select id="map-orientation">
+                      <option selected value="north">北が上</option>
+                      <option value="south">南が上</option>
+                      <option value="east">東が上</option>
+                      <option value="west">西が上</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mt-0 mb-0">
+                  <button type="button" id="map-style-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-style-collapse">
+                    様式
+                  </button>
+                </h5>
+              </div>
+              <div id="map-style-collapse" class="collapse" aria-labelledby="map-style-heading" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-color">色彩</label>
+                    <select id="map-color">
+                      <option value="white">白色</option>
+                      <option value="gray">白色と灰色</option>
+                      <option value="black">白色と黒色</option>
+                      <option value="wikipedia">黄色と水色</option>
+                      <option value="sepia">セピア色</option>
+                      <option value="physical">物理</option>
+                      <option selected value="political">政治</option>
+                      <option value="heightmap">高度</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-land-texture" checked>
+                      <label for="map-land-texture">地の模様</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-sea-texture" checked>
+                      <label for="map-sea-texture">岸の模様</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-shading">
+                      <label for="map-shading">地形の影</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-rivers">
+                      <label for="map-rivers">川</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-borders" checked>
+                      <label for="map-borders">国境</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-graticule" checked>
+                      <label for="map-graticule">経緯線網</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-windrose">
+                      <label for="map-windrose">羅針図</label>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="custom-checkbox">
+                      <input type="checkbox" id="map-political-labels" checked>
+                      <label for="map-political-labels">国名札</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h5 class="mt-0 mb-0">
+                  <button type="button" id="map-formatting-heading" class="btn btn-link collapsed" aria-expanded="false" aria-controls="map-formatting-collapse">
+                    言語とサイズ
+                  </button>
+                </h5>
+              </div>
+              <div id="map-formatting-collapse" class="collapse" aria-labelledby="map-formatting-heading" data-parent="#accordion">
+                <div class="card-body">
+                  <div class="form-group">
+                    <label for="map-spelling">翻字</label>
+                    <select id="map-spelling">
+                      <option value="(default)">ローマ字（土着）</option>
+                      <option value="simple" >ローマ字（簡）</option>
+                      <option value="en">ローマ字（英式）</option>
+                      <option value="es" >ローマ字（スペーン式）</option>
+                      <option value="la">ローマ字（ラテン式）</option>
+                      <option value="ja"  selected >かたかな</option>
+                      <option value="ru">キリル字</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-width-mm">地図の幅</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-mm" value="210.0" data-decimals="0" min="50.0" max="1000.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-mm">地図の高さ</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-mm" value="148.0" data-decimals="0" min="50.0" max="1000.0" step="10.0"/>
+  <div class="input-group-append">    <span class="input-group-text">mm</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-width-px">PNGの幅</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-width-px" value="1280.0" data-decimals="0" min="100.0" max="8000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="map-height-px">PNGの高さ</label>
+                    <div class="input-group fancy-spinner">
+  <div class="input-group-prepend">
+    <button style="min-width:2.5rem" class="btn btn-decrement btn-outline-secondary" type="button">
+      <strong>&minus;</strong>
+    </button>
+  </div>
+  <input type="number" inputmode="decimal" style="text-align:center" class="form-control" id="map-height-px" value="800.0" data-decimals="0" min="100.0" max="8000.0" step="50.0"/>
+  <div class="input-group-append">    <span class="input-group-text">px</span>
+    <button style="min-width:2.5rem" class="btn btn-increment btn-outline-secondary" type="button">
+      <strong>&plus;</strong>
+    </button>
+  </div>
+</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-block btn-primary mt-2" id="map-apply" disabled>
+              <span id="map-ready" style="display: none">
+                適用
+              </span>
+              <span id="map-loading" role="status">
+                <img src="/resources/lada.gif" height="20" aria-hidden="true" alt="">
+                お待ちください…
+              </span>
+            </button>
+          </form>
+        </div>
+
+        <div class="map" id="map-map-container">
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-pane" id="factbook-panel" role="tabpanel" aria-labelledby="factbook-factbook">
+      <div class="row mt-2">
+        <div class="scrolling-sidebar">
+          <form>
+            <button type="button" class="btn btn-block btn-secondary" id="factbook-download-html">
+              HTMLダウンロード
+            </button>
+            <button type="button" class="btn btn-block btn-secondary" id="factbook-print">
+              印刷
+            </button>
+          </form>
+        </div>
+
+        <div class="map justify-content-center">
+          <iframe id="factbook-embed" title="インフォ">
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">直線の経線を示す正角図法である。赤道中心地図の場合はメルカトル図法になる。中世に流行ったが、面積を歪める傾向がある。</div>
+
+    </main>
+
+    <footer>
+      <div class="container-lg">
+        <div class="row">
+
+          <div class="col-lg">
+            <p>
+              国宗ジャスティンのdunierは <!--
+           --><span style="white-space: nowrap">
+                <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.ja" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
+                  CC0 1.0<!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="(Creative Commons logo)"><!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="">
+                </a><!--
+             --> マークである。
+              </span>
+            </p>
+          </div>
+
+          <div class="col-sm">
+            <h5>ページ</h5>
+            <ul class="list-unstyled text-small">
+              <li><a class="text-muted" href="./index.html">地図生成</a></li>
+              <li><a class="text-muted" href="./nam.html">名生成</a></li>
+              <li><a class="text-muted" href="./tema.html">dunierについて</a></li>
+              <li><a class="text-muted" href="https://kunimune.home.blog/contact/">問い合わせ</a></li>
+            </ul>
+          </div>
+
+          <div class="col-sm">
+            <h5>言語</h5>
+            <ul class="list-unstyled text-small">
+              <li lang="en"><a class="text-muted" href="/en/index.html">English</a></li>
+              <li lang="es"><a class="text-muted" href="/es/index.html">español</a></li>
+              <li lang="ja"><a class="text-muted" href="/ja/index.html">日本語</a></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </footer>
+
+    <div id="bash" style="display: none;">ja</div>
+
+    <!-- rendering scripts: Bootstrap Input Spinner -->
+    <script src="/source/utilities/external/bootstrap-input-spinner.js"></script>
+    <script>
+      // apply the bootstrap-input-spinner script to every input spinner
+      for (const spinner of document.querySelectorAll(".fancy-spinner"))
+        // noinspection JSUnresolvedReference
+        activateInputSpinner(spinner);
+    </script>
+  </body>
+</html>

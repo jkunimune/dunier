@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <link rel="stylesheet" href="/resources/style.css">
+
+    <title>ファンタジーの名生成器・ドゥンハマル</title>
+
+    <link rel="icon" type="image/svg" href="/resources/logo.svg" />
+  </head>
+
+  <body>
+    <header>
+      <nav class="navbar navbar-expand-md">
+        <div class="container-lg">
+
+          <a class="navbar-brand" href="#">
+            <img src="/resources/logo.svg" width="32" height="32" alt="">
+            dunier<sup class="text-muted">beta</sup>
+          </a>
+
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#toggle-navbar" aria-controls="toggle-navbar" aria-expanded="false" aria-label="ナビゲーションのトグル" onclick="document.getElementById('toggle-navbar').classList.toggle('show');">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="toggle-navbar">
+            <div class="navbar-nav">
+              <a class="nav-item nav-link" href="./index.html">地図生成</a>
+              <a class="nav-item nav-link" href="./nam.html">名生成<span class="sr-only">（現行）</span></a>
+              <a class="nav-item nav-link" href="./tema.html">dunierについて</a>
+              <a class="nav-item nav-link" href="https://kunimune.home.blog/contact/">問い合わせ</a>
+            </div>
+
+            <div class="navbar-nav ml-auto">
+              <div class="nav-item dropdown">
+                <select id="lang-dropdown" class="lang-dropdown" aria-label="言語" onchange="if (this.value !== 'ja') window.location = `/${this.value}/nam.html`; else this.value = 'none';">
+                  <option value="none" disabled selected></option>
+                  <option value="en">🇬🇧 English</option>
+                  <option value="es">🇪🇸 español</option>
+                  <option value="ja">🇯🇵 日本語</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+    </header>
+
+    <main role="main">
+      <!-- generation scripts -->
+<script src="/source/gui/namegenerator.js" type="module" defer></script>
+
+<div class="container-lg mt-3 mb-4">
+  <div id="alert-box">
+  </div>
+
+  <div class="row p-2">
+    <div id="xef-kolum" class="col-md">
+      <form class="input-group">
+        <div class="input-group-prepend">
+          <button type="button" class="btn btn-primary mt-2" id="back">
+            ◀
+          </button>
+        </div>
+        <div class="input-group-append input-group-main">
+          <button type="button" class="btn btn-primary mt-2" id="reroll" disabled>
+            再生
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="row p-2">
+    <div id="column-1" class="col-md">
+      <ul id="name-list-1" class="list-group">
+      </ul>
+    </div>
+    <div id="column-2" class="col-md">
+      <ul id="name-list-2" class="list-group">
+      </ul>
+    </div>
+  </div>
+</div>
+
+    </main>
+
+    <footer>
+      <div class="container-lg">
+        <div class="row">
+
+          <div class="col-lg">
+            <p>
+              国宗ジャスティンのdunierは <!--
+           --><span style="white-space: nowrap">
+                <a href="https://creativecommons.org/publicdomain/zero/1.0/deed.ja" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
+                  CC0 1.0<!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="(Creative Commons logo)"><!--
+               --><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/zero.svg?ref=chooser-v1" alt="">
+                </a><!--
+             --> マークである。
+              </span>
+            </p>
+          </div>
+
+          <div class="col-sm">
+            <h5>ページ</h5>
+            <ul class="list-unstyled text-small">
+              <li><a class="text-muted" href="./index.html">地図生成</a></li>
+              <li><a class="text-muted" href="./nam.html">名生成</a></li>
+              <li><a class="text-muted" href="./tema.html">dunierについて</a></li>
+              <li><a class="text-muted" href="https://kunimune.home.blog/contact/">問い合わせ</a></li>
+            </ul>
+          </div>
+
+          <div class="col-sm">
+            <h5>言語</h5>
+            <ul class="list-unstyled text-small">
+              <li lang="en"><a class="text-muted" href="/en/nam.html">English</a></li>
+              <li lang="es"><a class="text-muted" href="/es/nam.html">español</a></li>
+              <li lang="ja"><a class="text-muted" href="/ja/nam.html">日本語</a></li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </footer>
+
+    <div id="bash" style="display: none;">ja</div>
+
+    <!-- rendering scripts: Bootstrap Input Spinner -->
+    <script src="/source/utilities/external/bootstrap-input-spinner.js"></script>
+    <script>
+      // apply the bootstrap-input-spinner script to every input spinner
+      for (const spinner of document.querySelectorAll(".fancy-spinner"))
+        // noinspection JSUnresolvedReference
+        activateInputSpinner(spinner);
+    </script>
+  </body>
+</html>
