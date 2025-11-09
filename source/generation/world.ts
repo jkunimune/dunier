@@ -36,6 +36,8 @@ export const BOAT_CHANCE = 0.1;
 export const BOAT_FACTOR = 5;
 /** the fraction of the populacion a country gets to keep after a cataclysm (not accounting for domino effects) */
 export const APOCALYPSE_SURVIVAL_RATE = .50;
+/** the amount of time to prepare an apocalypse. if the time between cataclysms is less than this, they will be weakened in power (y) */
+export const APOCALYPSE_ACCUMULATION_RATE = 200;
 /** the time it takes for an empire's might to decay by 2.7 (y) */
 export const MAX_DYNASTY_LIFETIME = 2000;
 /** the time it takes to erase a people's language (y) */
@@ -77,12 +79,13 @@ export class World {
 	 * @param year the number of years to simulate
 	 */
 	generateHistory(year: number) {
+		const cataclysmicFactor = Math.exp(-this.cataclysms*APOCALYPSE_ACCUMULATION_RATE);
 		for (let t = START_OF_HUMAN_HISTORY; t < year; t += TIME_STEP) {
+			if (Math.floor(t*this.cataclysms) > Math.floor((t - TIME_STEP)*this.cataclysms))
+				this.haveCataclysm(t, cataclysmicFactor);
 			this.spawnCivs(t); // TODO: build cities
 			this.spreadCivs(t, t + TIME_STEP);
 			this.spreadIdeas();
-			if (Math.floor((t+TIME_STEP)*this.cataclysms) > Math.floor((t)*this.cataclysms))
-				this.haveCataclysm(t + TIME_STEP);
 			for (const civ of this.civs) {
 				if (!civ.isDead())
 					civ.update(TIME_STEP); // handle technological development, militaristic decay, etc.
@@ -210,18 +213,23 @@ export class World {
 	/**
 	 * devastate the entire world. the details of how are fuzzy, but in a nutshell half of all people die (well, more
 	 * accurately, 50% of all provinces are depopulated, and 50% of all technologies are lost.
+	 * @param year what yer it is (for record-keeping purposes)
+	 * @param power a multiplier for the cataclysm's level of destruction
 	 */
-	haveCataclysm(year: number) {
+	haveCataclysm(year: number, power: number) {
+		const survivalRate = Math.pow(APOCALYPSE_SURVIVAL_RATE, power);
+		console.log(survivalRate);
 		for (const tile of this.planet.tiles) {
-			if (tile.government !== null && !this.rng.probability(APOCALYPSE_SURVIVAL_RATE)) {
+			if (tile.government !== null && !this.rng.probability(survivalRate)) {
 				if (LOG_LAND_CLAIMS)
 					console.log(`${year.toFixed(0)}: ${tile.government.getName()} loses tile ${tile.index}`);
 				tile.government.lose(tile, year);
-				tile.culture.recedeFrom(tile);
+				if (tile.arableArea > 0)
+					tile.culture.recedeFrom(tile);
 			}
 		}
 		for (const civ of this.civs)
-			civ.technology *= this.rng.uniform(1 - (1 - APOCALYPSE_SURVIVAL_RATE)*2, 1);
+			civ.technology *= this.rng.uniform(1 - (1 - survivalRate)*2, 1);
 		for (const civ of this.civs) {
 			if (civ.isDead())
 				this.civs.delete(civ); // clear out any Civs that no longer exist

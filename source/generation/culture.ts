@@ -211,7 +211,7 @@ export class Culture {
 	}
 
 	public hasNationState(): boolean {
-		return this.homeland === this.homeland.government.capital;
+		return this.homeland.government !== null && this.homeland.government.capital === this.homeland;
 	}
 
 	public getPopulation(): number {
