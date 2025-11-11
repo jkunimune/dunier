@@ -35,7 +35,7 @@ export class Spheroid extends Surface {
 
 		// this polynomial is based on some fitting done in source/python/simulate_perspective.py, assuming a uniformly dense fluid body.
 		// it doesn't quite match the Earth's flattening because the Earth is not uniformly dense.
-		this.aspectRatio = 1 + 1.25*w - 0.550*w*w + 7.362*w*w*w;
+		this.aspectRatio = 1 + 1.25*w + 0.019*w*w + 6.142*w*w*w;
 		this.flattening = 1 - 1/this.aspectRatio;
 		this.eccentricity = Math.sqrt(1 - Math.pow(this.aspectRatio, -2));
 		this.obliquity = obliquity;
