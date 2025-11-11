@@ -8,10 +8,10 @@ from scipy.special import jv, jn_zeros
 import scipy.optimize as opt
 
 MODE = 'toroid'
-PARAM_SWEEP = np.linspace(1, 3.5, 51)
+PARAM_SWEEP = np.linspace(1, 3.5, 101)
 
 RES = 20
-MAX_ASPECT_RATIO = 3.5
+MAX_ASPECT_RATIO = 4.0
 BOUNDARY_EXCESS = 3
 EIGEN_RES = 40
 INTEGRATION_RES = 8
@@ -128,7 +128,7 @@ elongations = np.array(elongations)
 print(rotation_parameters)
 print(aspect_ratios)
 print(elongations)
-valid = np.isfinite(aspect_ratios)
+valid = np.isfinite(aspect_ratios) & (rotation_parameters < 0.55)  # these results don't seem reliable for rotation parameters > 0.5
 if MODE == 'ellipsoid':
 	# the first-order coefficient is 5/4, as can be found from differential analysis
 	# (see R. Fitzpatrick's "Introduction to Celestial Mechanics" (2012), 2nd edition available at
@@ -145,7 +145,7 @@ else:
 	e_fit_params, err = opt.curve_fit(lambda x, a, b: 1+b*x+a*x**2, rotation_parameters[valid], elongations[valid])
 	e_fit = 1 + e_fit_params[1]*rotation_parameters + e_fit_params[0]*rotation_parameters**2
 	print("e = 1 + {1:.3f}*Rω^2/g + {0:.3f}*(Rω^2/g)^2".format(*e_fit_params))
-plt.clf()
+plt.figure()
 plt.plot(rotation_parameters[valid], aspect_ratios[valid], 'o')
 plt.plot(rotation_parameters[valid], α_fit[valid], '--')
 plt.xlabel("R*ω^2/g")

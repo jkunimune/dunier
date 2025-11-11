@@ -329,7 +329,7 @@ function fixDayLength() {
 		locking.toggleAttribute('disabled', true); // and disable it
 		// make sure it's not spinning too fast or too slow
 		const minDayLength = Math.ceil(2*Math.PI/Math.sqrt(0.50*gravity/(radius*1000))/3600*10)/10;
-		const maxDayLength = Math.floor(2*Math.PI/Math.sqrt(0.15*gravity/(radius*1000))/3600*10)/10;
+		const maxDayLength = Math.floor(2*Math.PI/Math.sqrt(0.17*gravity/(radius*1000))/3600*10)/10;
 		DOM.set(
 			"planet-day",
 			String(Math.max(minDayLength, Math.min(maxDayLength, Number(DOM.val("planet-day"))))));

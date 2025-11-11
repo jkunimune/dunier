@@ -17,7 +17,7 @@ export class LockedDisc extends Disc {
 	}
 
 	insolation(φ: number): number {
-		return 2.0/Math.pow(1 + Math.pow(Math.tan(φ), -2), 3/2.);
+		return -2.0*Math.pow(Math.sin(φ), 3);
 	}
 
 	hasSeasons(_: number): boolean {
@@ -25,6 +25,6 @@ export class LockedDisc extends Disc {
 	}
 	
 	windConvergence(φ: number): number {
-		return Math.pow(Math.sin(φ), 2);
+		return 2.0*Math.pow(Math.sin(φ), 2);
 	}
 }
