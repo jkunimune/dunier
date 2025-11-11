@@ -42,7 +42,7 @@ var Spheroid = /** @class */ (function (_super) {
             throw new RangeError("Too fast to sustain an ellipsoidal planet.");
         // this polynomial is based on some fitting done in source/python/simulate_perspective.py, assuming a uniformly dense fluid body.
         // it doesn't quite match the Earth's flattening because the Earth is not uniformly dense.
-        _this.aspectRatio = 1 + 1.25 * w - 0.550 * w * w + 7.362 * w * w * w;
+        _this.aspectRatio = 1 + 1.25 * w + 0.019 * w * w + 6.142 * w * w * w;
         _this.flattening = 1 - 1 / _this.aspectRatio;
         _this.eccentricity = Math.sqrt(1 - Math.pow(_this.aspectRatio, -2));
         _this.obliquity = obliquity;

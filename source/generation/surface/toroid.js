@@ -48,10 +48,10 @@ var Toroid = /** @class */ (function (_super) {
         var w = (radius * 1000) * omega * omega / gravity; // this dimensionless parameter determines the aspect ratio
         if (w > 0.5) // 0.5 corresponds to an aspect ratio of about 1.5
             throw new RangeError("Too fast to sustain a toroidal planet.");
-        if (w < 0.15) // 0.15 corresponds to an aspect ratio of about 6.0
+        if (w < 0.17) // 0.15 corresponds to an aspect ratio of about 6.0
             throw new RangeError("Too slow to sustain a toroidal planet.");
-        var aspectRatio = 1 / (1.010 * w + 0.618 * w * w); // numerically determined formula for aspect ratio
-        _this.elongation = 1 / (1 - 0.204 * w + 4.436 * w * w); // numerically determined formula for elongation
+        var aspectRatio = 1 / (0.806 * w + 0.991 * w * w); // numerically determined formula for aspect ratio
+        _this.elongation = 1 / (1 - 0.929 * w + 5.788 * w * w); // numerically determined formula for elongation
         if (!Number.isFinite(aspectRatio))
             throw new RangeError("The toroid must be rotating.");
         _this.majorRadius = radius / (1 + 1 / aspectRatio);

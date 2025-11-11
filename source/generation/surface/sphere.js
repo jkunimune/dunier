@@ -39,10 +39,10 @@ var Sphere = /** @class */ (function (_super) {
         return false;
     };
     Sphere.prototype.windConvergence = function (φ) {
-        return Math.pow((1 - Math.sin(φ)) / 2, 2);
+        return Math.pow((1 - Math.sin(φ)) / Math.sqrt(2), 2);
     };
     Sphere.prototype.windVelocity = function (φ) {
-        return { north: ((1 - Math.sin(φ)) / 2) * Math.cos(φ), east: 0 };
+        return { north: ((1 - Math.sin(φ)) / Math.sqrt(2)) * Math.cos(φ), east: 0 };
     };
     Sphere.prototype.xyz = function (place) {
         var _a = _super.prototype.xyz.call(this, place), x = _a.x, y = _a.y, z = _a.z;

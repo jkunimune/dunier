@@ -31,13 +31,13 @@ var LockedDisc = /** @class */ (function (_super) {
         return _super.call(this, radius, NaN, false, 2) || this;
     }
     LockedDisc.prototype.insolation = function (φ) {
-        return 2.0 / Math.pow(1 + Math.pow(Math.tan(φ), -2), 3 / 2.);
+        return -2.0 * Math.pow(Math.sin(φ), 3);
     };
     LockedDisc.prototype.hasSeasons = function (_) {
         return false;
     };
     LockedDisc.prototype.windConvergence = function (φ) {
-        return Math.pow(Math.sin(φ), 2);
+        return 2.0 * Math.pow(Math.sin(φ), 2);
     };
     return LockedDisc;
 }(Disc));
