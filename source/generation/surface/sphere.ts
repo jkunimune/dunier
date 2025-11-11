@@ -28,11 +28,11 @@ export class Sphere extends Spheroid {
 	}
 
 	windConvergence(φ: number): number {
-		return Math.pow((1 - Math.sin(φ))/2, 2);
+		return Math.pow((1 - Math.sin(φ))/Math.sqrt(2), 2);
 	}
 
 	windVelocity(φ: number): {north: number, east: number} {
-		return {north: ((1 - Math.sin(φ))/2)*Math.cos(φ), east: 0};
+		return {north: ((1 - Math.sin(φ))/Math.sqrt(2))*Math.cos(φ), east: 0};
 	}
 
 	xyz(place: ΦΛPoint): Vector { // rotate the surface in 3-space so the planet plot is more intuitive

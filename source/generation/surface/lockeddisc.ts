@@ -25,6 +25,6 @@ export class LockedDisc extends Disc {
 	}
 	
 	windConvergence(φ: number): number {
-		return Math.pow(Math.sin(φ), 2);
+		return 2.0*Math.pow(Math.sin(φ), 2);
 	}
 }
