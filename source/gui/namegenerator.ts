@@ -9,13 +9,24 @@ import {DOM} from "./dom.js";
 
 const NUM_ROWS = 12;
 
-let seed = 0; // TODO the actual version should use the current time.
+let seed = new Date().getTime();
+
+DOM.elm('reroll').addEventListener('click', () => {
+	seed += 1;
+	generateNames();
+});
+
+DOM.elm('back').addEventListener('click', () => {
+	seed -= 1;
+	generateNames();
+});
+
 
 /**
- * Generate the planet and its mean temperature (not yet accounting for altitude)
+ * generate a list of random names in a random language
  */
-DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
-	console.log("jena nam...");
+function generateNames() {
+	console.log(`jena nam (seed = ${seed})...`);
 
 	const rng = new Random(seed);
 	let bax: Lect = new ProtoLect(0, rng);
@@ -40,10 +51,8 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
 		}
 	}
 
-	seed += 1;
-
 	console.log("fina!");
-});
+}
 
 
 /**
@@ -51,5 +60,5 @@ DOM.elm('names-apply').addEventListener('click', () => { // TODO: back button
  */
 document.addEventListener("DOMContentLoaded", () => {
 	console.log("ready!");
-	(DOM.elm('names-apply') as HTMLElement).click();
+	(DOM.elm('reroll') as HTMLElement).click();
 });
