@@ -17,13 +17,21 @@ import { Random } from "../utilities/random.js";
 import { Dialect, MAX_NUM_NAME_PARTS, ProtoLect } from "../generation/language/lect.js";
 import { DOM } from "./dom.js";
 var NUM_ROWS = 12;
-var seed = 0; // TODO the actual version should use the current time.
+var seed = new Date().getTime();
+DOM.elm('reroll').addEventListener('click', function () {
+    seed += 1;
+    generateNames();
+});
+DOM.elm('back').addEventListener('click', function () {
+    seed -= 1;
+    generateNames();
+});
 /**
- * Generate the planet and its mean temperature (not yet accounting for altitude)
+ * generate a list of random names in a random language
  */
-DOM.elm('names-apply').addEventListener('click', function () {
+function generateNames() {
     var e_1, _a;
-    console.log("jena nam...");
+    console.log("jena nam (seed = ".concat(seed, ")..."));
     var rng = new Random(seed);
     var bax = new ProtoLect(0, rng);
     for (var i = 0; i < 40; i++)
@@ -53,14 +61,13 @@ DOM.elm('names-apply').addEventListener('click', function () {
         }
         finally { if (e_1) throw e_1.error; }
     }
-    seed += 1;
     console.log("fina!");
-});
+}
 /**
  * Once the page is ready, start the algorithm!
  */
 document.addEventListener("DOMContentLoaded", function () {
     console.log("ready!");
-    DOM.elm('names-apply').click();
+    DOM.elm('reroll').click();
 });
 //# sourceMappingURL=namegenerator.js.map
