@@ -3,7 +3,7 @@
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import {Random} from "../../utilities/random.js";
-import {binarySearch, linterp, noisyProfile} from "../../utilities/miscellaneus.js";
+import {binarySearch, linterp, localizeInRange, noisyProfile} from "../../utilities/miscellaneus.js";
 import {Culture} from "../culture.js";
 import {Biome} from "../terrain.js";
 import {ΦΛPoint, XYPoint} from "../../utilities/coordinates.js";
@@ -641,6 +641,8 @@ export class Edge {
 	public vertex1: Vertex;
 	public readonly vertex0: Vertex;
 
+	private readonly surface: Surface;
+
 	public flow: number;
 
 	/** distance between the centers of the Tiles this separates */
@@ -670,6 +672,8 @@ export class Edge {
 		this.tileR = tileR;
 		this.vertex1 = vertex1;
 		this.distance = distance;
+
+		this.surface = tileL.surface;
 
 		tileL.neighbors.set(tileR, this);
 		tileR.neighbors.set(tileL, this);
@@ -707,7 +711,10 @@ export class Edge {
 		if (this.paths.length === 0) {
 			if (this.vertex0 === null || this.vertex1 === null)
 				throw new Error(`I cannot currently greeble paths that are on the edge of the map.`);
-			this.paths.push({resolution: this.getLength(), points: [this.vertex0, this.vertex1]});
+			this.paths.push({
+				resolution: this.getLength(),
+				points: Edge.minimallyResolve([this.vertex0, this.vertex1], this.surface),
+			});
 			this.finestPathPointsInEdgeCoords = [{x: 0, y: 0}, {x: this.getLength(), y: 0}];
 			this.currentResolution = this.getLength();
 		}
@@ -723,10 +730,16 @@ export class Edge {
 			// put it in the correct coordinate system
 			newPathPointsInGeoCoords.push(this.vertex0);
 			for (let i = 1; i < newPathPointsInEdgeCoords.length - 1; i ++)
-				newPathPointsInGeoCoords.push(this.tileL.surface.φλ(this.fromEdgeCoords(newPathPointsInEdgeCoords[i])));
+				newPathPointsInGeoCoords.push(this.surface.φλ(this.fromEdgeCoords(newPathPointsInEdgeCoords[i])));
 			newPathPointsInGeoCoords.push(this.vertex1);
+			// add in any midpoints necessary to limit distortion from coordinate system curvature
+			const newPathPointsInResolvedGeoCoords = Edge.minimallyResolve(
+				newPathPointsInGeoCoords, this.surface);
 			// save it to this.paths
-			this.paths.push({resolution: this.currentResolution, points: newPathPointsInGeoCoords});
+			this.paths.push({
+				resolution: this.currentResolution,
+				points: newPathPointsInResolvedGeoCoords,
+			});
 			this.finestPathPointsInEdgeCoords = newPathPointsInEdgeCoords;
 		}
 
@@ -738,6 +751,31 @@ export class Edge {
 			                `greebled the paths to ${this.currentResolution}.`);
 		else
 			return this.paths[pathIndex].points;
+	}
+
+	/**
+	 * for the 3D math in this file, straight lines are expected to be roughly geodesic.
+	 * but in the mapping files, they are expected to be straight in equirectangular coordinates.
+	 * the mismatch doesn't usually matter, but near the pole when the difference is greatest it can
+	 * cause Voronoi polygons to intersect themselves or turn inside-out.  thus, we need to limit
+	 * the amount of distortion in our Edges by adding intermediate nodes when this happens.
+	 */
+	private static minimallyResolve(oldPoints: ΦΛPoint[], surface: Surface): ΦΛPoint[] {
+		const newPoints = oldPoints.slice();
+		for (let i = 1; i < newPoints.length;) {
+			const Δλ = localizeInRange(
+				newPoints[i].λ - newPoints[i - 1].λ,
+				-Math.PI, Math.PI);
+
+			if (Math.abs(Δλ) > Math.PI/2) {
+				const midpoint = surface.φλ(
+					surface.xyz(newPoints[i - 1]).plus(surface.xyz(newPoints[i])).over(2));
+				newPoints.splice(i, 0, midpoint);
+			}
+			else
+				i ++;
+		}
+		return newPoints;
 	}
 
 	/** distance between the Vertices this connects */

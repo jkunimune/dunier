@@ -1363,17 +1363,18 @@ function convertToGreebledPath(points: Iterable<ΦΛPoint[]>, greeble: Layer, sc
 				if (start.neighbors.has(end))
 					edge = start.neighbors.get(end);
 			let step: ΦΛPoint[];
-			// if there is an edge and it should be greebled, greeble it
-			if (edge !== null && weShouldGreeble(edge, greeble)) {
-				const path = edge.getPath(GREEBLE_SCALE/scale);
+			// if this is an edge or something, just use a strait line
+			if (edge === null)
+				step = [end];
+			// if there is an edge, greeble it
+			else {
+				// if it's not a precise edge, tho, then greeble minimally
+				const edgeScale = weShouldGreeble(edge, greeble) ? scale : 0;
+				const path = edge.getPath(GREEBLE_SCALE/edgeScale);
 				if (edge.vertex0 === start)
 					step = path.slice(1);
 				else
 					step = path.slice(0, path.length - 1).reverse();
-			}
-			// otherwise, draw a strait line
-			else {
-				step = [end];
 			}
 			console.assert(step[step.length - 1].φ === end.φ && step[step.length - 1].λ === end.λ, step, "did not end at", end);
 
