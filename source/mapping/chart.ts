@@ -37,6 +37,8 @@ const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than 
 const COLOR_BY_SUBPLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
 const COLOR_BY_TILE = false; // color each tile a different color
+const COLOR_BY_TEMPERATURE = false; // color each tile based on its mean annual temperature
+const COLOR_BY_RAINFALL = false; // color each tile based on its mean annual rainfall
 const SHOW_SEA_BORDERS = false; // include ocean territory in each country's border
 const SHOW_TECH_LEVEL = false; // caption each country with its current technology level
 const SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
@@ -199,6 +201,40 @@ const DEPTH_COLORS = [
 	'rgb( 51,  50,  92)',
 	'rgb( 31,  29,  43)',
 ];
+/** colormap for rainfall */
+const RAINFALL_COLORS = [
+	'#ffffff',
+	'#e5eddb',
+	'#c9dcb7',
+	'#a5cd9f',
+	'#81bf95',
+	'#5bb090',
+	'#3d9e8e',
+	'#288c8b',
+	'#167a87',
+	'#046782',
+	'#02557d',
+	'#104075',
+	'#19296d',
+	'#1f0769',
+];
+/** colormap for temperature and insolation */
+export const TEMPERATURE_COLORS = [
+	'rgb(251, 254, 248)',
+	'rgb(216, 231, 245)',
+	'rgb(164, 215, 237)',
+	'rgb(104, 203, 206)',
+	'rgb( 68, 185, 156)',
+	'rgb( 54, 167, 105)',
+	'rgb( 64, 145,  47)',
+	'rgb( 92, 116,  11)',
+	'rgb(100,  89,   5)',
+	'rgb( 99,  62,   1)',
+	'rgb( 91,  33,   1)',
+	'rgb( 75,   2,   6)',
+	'rgb( 41,   4,   5)',
+	'rgb(  7,   0,   0)',
+];
 
 /** a type of area feature with a particular greebling profile */
 enum Layer {
@@ -344,7 +380,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	const bbox = rawBbox.rotate(orientation).scale(scale).offset(margin);
 
 	let colorScheme = COLOR_SCHEMES.get(colorSchemeName);
-	if (COLOR_BY_PLATE || COLOR_BY_SUBPLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
+	if (COLOR_BY_PLATE || COLOR_BY_SUBPLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE || COLOR_BY_TEMPERATURE || COLOR_BY_RAINFALL)
 		colorScheme = COLOR_SCHEMES.get('debug');
 
 	const svg = h('svg', {
@@ -407,6 +443,16 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			[...surface.tiles].map(tile => new Set([tile])), COUNTRY_COLORS, null, null,
 			transform, createSVGGroup(svg, "tiles"), Layer.GEO,
 			colorScheme.waterStroke, 0.2));
+	}
+	else if (COLOR_BY_TEMPERATURE) {
+		areaFeatures.push(...fillChoropleth(
+			surface.tiles, n => n.temperature, 6, TEMPERATURE_COLORS,
+			transform, createSVGGroup(svg, "choropleth"), Layer.GEO, -35));
+	}
+	else if (COLOR_BY_RAINFALL) {
+		areaFeatures.push(...fillChoropleth(
+			surface.tiles, n => n.rainfall, 0.25, RAINFALL_COLORS,
+			transform, createSVGGroup(svg, "choropleth"), Layer.GEO));
 	}
 	else if (colorSchemeName === 'physical') {
 		// color the land by biome
@@ -628,19 +674,20 @@ function fillMultiple(regions: Set<Tile>[], colors: string[], tiles: Set<Tile> |
  * @param tiles the tiles to color in
  * @param valuator the function that is used to determine in which bin each tile goes
  * @param binSize the size of each interval to color together
+ * @param binOffset the minimum value of the lowest bin
  * @param colors the color for each value bin
  * @param transform the projection, extent, scale, and orientation information
  * @param svg object on which to put the Paths
  * @param greeble what kind of edge it is for the purposes of greebling
  */
 function fillChoropleth(tiles: Set<Tile>, valuator: (t: Tile) => number, binSize: number, colors: string[],
-                        transform: Transform, svg: VNode, greeble: Layer): {path: PathSegment[], color: string}[] {
+                        transform: Transform, svg: VNode, greeble: Layer, binOffset=0): {path: PathSegment[], color: string}[] {
 	const contours = [];
 	for (let i = 0; i < colors.length; i ++) {
 		if (colors[i] === "none")
 			continue;
-		const min = (i !== 0) ? i * binSize : -Infinity;
-		const max = (i !== colors.length - 1) ? (i + 1) * binSize : Infinity;
+		const min = (i !== 0) ? binOffset + i*binSize : -Infinity;
+		const max = (i !== colors.length - 1) ? binOffset + (i + 1)*binSize : Infinity;
 		const path = fill(
 			filterSet(tiles, n => valuator(n) >= min && valuator(n) < max),
 			transform, svg, colors[i], greeble);
