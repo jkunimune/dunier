@@ -586,6 +586,7 @@ export class Vertex {
 		this.edges = [null, null, null]; // edges a-b, b-c, and c-a
 		this.neighbors = new Map(); // connected vertices
 		this.surface = a.surface;
+		this.flow = 0;
 
 		for (let i = 0; i < 3; i ++) { // check each non-empty pair to see if they are already connected
 			const tileR = this.tiles[i], tileL = this.tiles[(i+1)%3];
@@ -686,6 +687,7 @@ export class Edge {
 		this.length = null;
 		this.i = null;
 		this.j = null;
+		this.flow = 0;
 
 		// make a random number generator with a garanteed-uneke seed
 		const index = tileL.index*tileL.surface.tiles.size + tileR.index;

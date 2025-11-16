@@ -592,12 +592,6 @@ function addRivers(surf: Surface): void {
 		}
 	}
 
-	for (const vertex of surf.vertices) {
-		vertex.flow = 0; // define this temporary variable real quick...
-		for (const edge of vertex.neighbors.values())
-			edge.flow = 0;
-	}
-
 	surf.rivers = new Set();
 
 	// now we need to propagate water downhill to calculate flow rates
