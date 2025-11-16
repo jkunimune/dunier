@@ -570,13 +570,13 @@ export class MapProjection {
 	}
 
 	/**
-	 * a function on the domain 0 <= x <= 1 that determines the shape of this equal-area pseudocylindrical map
+	 * a function on the domain 0 <= x that determines the shape of this equal-area pseudocylindrical map
 	 * by mapping ds/dλ on the globe at a given latitude to dx/dλ on the map at the same latitude.
 	 * f(x) = x would correspond to the sinusoidal projection.  f(0) > 0 corresponds to a pole-line projection.
 	 * f(1) should = 1 to ensure that the distortion goes down as the surface becomes more cylindrical, not that it
 	 * terribly matters since cylinder isn't a map option (maybe it should be... :thinking:)
-	 * @param x the normalized radius on the surface (i.e. the real length of the parallel divided by 2π)
-	 * @return the normalized horizontal scale on the map (i.e. the mapped length of the parallel divided by 2π)
+	 * @param x the normalized radius on the surface (i.e. the real length of this parallel divided by that of the average parallel)
+	 * @return the normalized horizontal scale on the map (i.e. the mapped length of this parallel divided by that of the average parallel)
 	 */
 	private static equalEarthShapeFunction(x: number): number {
 		return 1 - Math.sqrt(.29) + Math.sqrt(.04 + .25*x*x);

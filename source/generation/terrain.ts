@@ -245,8 +245,9 @@ function movePlates(surf: Surface, rng: Random): void {
 	const oceanWidth = OCEAN_SIZE*Math.sqrt(surf.area/velocities.length); // do a little dimensional analysis on the ocean scale
 	moveCertainPlates(surf.tiles, tile => tile.plateIndex, velocities, true, oceanWidth);
 
+	// then repeat for subplates
 	const subvelocities = [];
-	for (const tile of surf.tiles) { // start by counting up all the plates
+	for (const tile of surf.tiles) { // start by counting up all the subplates
 		if (tile.subplateIndex >= subvelocities.length) // and assigning them random velocities // TODO allow for plate rotation in the tangent plane
 			subvelocities.push(
 				tile.east.times(rng.normal(0, 0.2/Math.sqrt(2))).plus(
@@ -495,7 +496,7 @@ function generateClimate(avgTerme: number, surf: Surface, rng: Random): void {
 		if (tile.biome === Biome.OCEAN) // also seed the orographic effect in the oceans
 			queue.push({tile: tile, moisture: OROGRAPHIC_MAGNITUDE});
 		if (tile.height > CLOUD_HEIGHT) // and also remove some moisture from mountains
-			tile.rainfall -= OROGRAPHIC_MAGNITUDE/2;
+			tile.rainfall -= OROGRAPHIC_MAGNITUDE/2; // TODO: this should be more linear.  if altitude is high enough there is no water period.
 	}
 	while (queue.length > 0) {
 		const {tile, moisture} = queue.pop(); // wet air blows from upwind
