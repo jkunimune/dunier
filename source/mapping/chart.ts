@@ -33,6 +33,7 @@ import {offset} from "../utilities/offset.js";
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 const SHOW_TILE_INDICES = false; // label each tile with its number
+const SHOW_STRAIGHT_SKELETONS = false; // draw the straight skeleton of every tile
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_SUBPLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
@@ -573,20 +574,12 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			characterWidthMap);
 	}
 
+	if (SHOW_STRAIGHT_SKELETONS) {
+		drawStraightSkeletons(surface, transform, createSVGGroup(svg, "spooky_scary_skeletons"));
+	}
+
 	if (SHOW_TILE_INDICES) {
-		const g = createSVGGroup(svg, "indices");
-		g.attributes.style = "text-anchor: middle; dominant-baseline: middle";
-		for (const tile of surface.tiles) {
-			const text = h('text'); // start by creating the text element
-			const location = transformPoint(tile, transform);
-			if (location !== null) {
-				text.attributes["x"] = location.x.toFixed(3);
-				text.attributes["y"] = location.y.toFixed(3);
-				text.attributes["font-size"] = "0.2em";
-				text.textContent = `${tile.index}`;
-				g.children.push(text);
-			}
-		}
+		placeTileLabels(surface.tiles, transform, createSVGGroup(svg, "indices"));
 	}
 
 	// add a margin and outline to the whole thing
@@ -1184,6 +1177,46 @@ function placeLabel(tiles: Tile[], label: string, transform: Transform, svg: VNo
 
 	textGroup.children.push(textPath);
 	svg.children.push(textGroup);
+}
+
+/**
+ * as a debugging tool, put a text box on every Tile showing its index
+ */
+function placeTileLabels(tiles: Set<Tile>, transform: Transform, svg: VNode) {
+	svg.attributes.style = "text-anchor: middle; dominant-baseline: middle";
+	for (const tile of tiles) {
+		const text = h('text'); // start by creating the text element
+		const location = transformPoint(tile, transform);
+		if (location !== null) {
+			text.attributes["x"] = location.x.toFixed(3);
+			text.attributes["y"] = location.y.toFixed(3);
+			text.attributes["font-size"] = "0.2em";
+			text.textContent = `${tile.index}`;
+			svg.children.push(text);
+		}
+	}
+}
+
+/**
+ * as a debugging tool, draw the straight skeleton of every tile
+ */
+function drawStraightSkeletons(surface: Surface, transform: Transform, svg: VNode) {
+	const edges = new Set<Edge>();
+	for (const tile of surface.tiles)
+		for (const edge of tile.neighbors.values())
+			edges.add(edge);
+	const path = [];
+	for (const edge of edges) {
+		edge.setCoordinatesAndBounds();
+		const edgeCoordsPolygon = [edge.vertex0.pos].concat(edge.leftBoundCartesian, [edge.vertex1.pos], edge.rightBoundCartesian);
+		const geoCoordsPolygon = edgeCoordsPolygon.map(surface.φλ, surface);
+		const start = geoCoordsPolygon[geoCoordsPolygon.length - 1];
+		path.push({type: 'M', args: [start.φ, start.λ]});
+		for (let i = 0; i < geoCoordsPolygon.length; i ++)
+			path.push({type: 'L', args: [geoCoordsPolygon[i].φ, geoCoordsPolygon[i].λ]});
+	}
+	svg.attributes.style = "fill: none; stroke: #302d2877; stroke-width: 0.2px; stroke-linecap: round; stroke-linejoin: round";
+	draw(transformPath(path, transform), svg);
 }
 
 /**
