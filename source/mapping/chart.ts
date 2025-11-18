@@ -594,7 +594,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 
 	// add the windrose
 	if (windrose) {
-		placeWindrose(bbox, resources.get("windrose"), createSVGGroup(svg, "compass-rose"));
+		placeWindrose(bbox.offset(-margin), resources.get("windrose"), createSVGGroup(svg, "compass-rose"));
 	}
 
 	let visible;
@@ -1188,7 +1188,7 @@ function placeLabel(tiles: Tile[], label: string, transform: Transform, svg: VNo
 
 /**
  *
- * @param bbox
+ * @param bbox the spacial extent of the map area
  * @param content
  * @param svg SVG object on which to put the content
  */
