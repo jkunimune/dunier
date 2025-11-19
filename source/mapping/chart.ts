@@ -7,7 +7,7 @@ import {
 	filterSet, findRoot, localizeInRange,
 	pathToString,
 } from "../utilities/miscellaneus.js";
-import {World} from "../generation/world.js";
+import {Region, World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
@@ -23,10 +23,10 @@ import {
 import {chooseLabelLocation} from "./labeling.js";
 import {cloneNode, h, VNode} from "../gui/virtualdom.js";
 import {poissonDiscSample} from "../utilities/poissondisc.js";
-
-import TEXTURE_MIXES from "../../resources/texture_mixes.js";
 import {Random} from "../utilities/random.js";
 import {offset} from "../utilities/offset.js";
+
+import TEXTURE_MIXES from "../../resources/texture_mixes.js";
 
 
 // DEBUG OPTIONS
@@ -37,6 +37,7 @@ const SHOW_STRAIGHT_SKELETONS = false; // draw the straight skeleton of every ti
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_SUBPLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
+const COLOR_BY_CULTURE = false; // base the political borders off of cultures instead of civs
 const COLOR_BY_TILE = false; // color each tile a different color
 const COLOR_BY_TEMPERATURE = false; // color each tile based on its mean annual temperature
 const COLOR_BY_RAINFALL = false; // color each tile based on its mean annual rainfall
@@ -445,6 +446,13 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			transform, createSVGGroup(svg, "tiles"), Layer.GEO,
 			colorScheme.waterStroke, 0.2));
 	}
+	else if (COLOR_BY_CULTURE && world !== null) {
+		areaFeatures.push(...fillMultiple(
+			world.getCultures(true).map(culture => culture.tiles), COUNTRY_COLORS,
+			surface.tiles, colorScheme.landFill,
+			transform, createSVGGroup(svg, "cultures"), Layer.KULTUR,
+			colorScheme.primaryStroke, 0.4));
+	}
 	else if (COLOR_BY_TEMPERATURE) {
 		areaFeatures.push(...fillChoropleth(
 			surface.tiles, n => n.temperature, 6, TEMPERATURE_COLORS,
@@ -467,10 +475,10 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			throw new Error("this Chart was asked to color land politicly but the provided World was null");
 		let biggestCivs = world.getCivs(true);
 		biggestCivs = biggestCivs.filter( // skip really small countries
-			civ => civ.tileTree.size > 1 || civ.getPopulation()/civ.getTotalArea() >= BORDER_SPECIFY_THRESHOLD);
+			civ => civ.getTiles().size > 1 || civ.getPopulation()/civ.getTotalArea() >= BORDER_SPECIFY_THRESHOLD);
 		const biggestCivExtents = [];
 		for (const civ of biggestCivs)
-			biggestCivExtents.push(filterSet(civ.tileTree.keys(), n => !n.isWater()));
+			biggestCivExtents.push(filterSet(civ.getTiles(), n => !n.isWater()));
 		const drawnCivs = fillMultiple(
 			biggestCivExtents, COUNTRY_COLORS, surface.tiles, colorScheme.landFill,
 			transform, createSVGGroup(svg, "countries"), Layer.KULTUR);
@@ -568,10 +576,16 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	if (civLabels) {
 		if (world === null)
 			throw new Error("this Chart was asked to label countries but the provided World was null");
-		placeLabels(
-			world.getCivs(), style, (landTexture) ? politicalColorMap : null,
-			transform, createSVGGroup(svg, "labels"), fontSize, 3*fontSize,
-			characterWidthMap);
+		if (COLOR_BY_CULTURE)
+			placeLabels(
+				world.getCultures(), style, null,
+				transform, createSVGGroup(svg, "labels"), fontSize, 3*fontSize,
+				characterWidthMap);
+		else
+			placeLabels(
+				world.getCivs(), style, (landTexture) ? politicalColorMap : null,
+				transform, createSVGGroup(svg, "labels"), fontSize, 3*fontSize,
+				characterWidthMap);
 	}
 
 	if (SHOW_STRAIGHT_SKELETONS) {
@@ -597,7 +611,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		visible = [];
 		for (const civ of world.getCivs(true))
 			if (transformedOutline(
-				[...civ.tileTree.keys()].filter(n => !n.isWater()),
+				filterSet(civ.getTiles(), n => !n.isWater()),
 				Layer.KULTUR, transform
 			).length > 0)
 				visible.push(civ);
@@ -747,11 +761,11 @@ function drawRivers(rivers: Set<(Tile | Vertex)[]>, riverDisplayThreshold: numbe
 function drawBorders(civs: Civ[], transform: Transform, svg: VNode, color: string, width: number, includeSea=false): PathSegment[][] {
 	const lineFeatures = [];
 	for (const civ of civs) {
-		if (civ.tileTree.size === 1 && civ.getPopulation()/civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
+		if (civ.getTiles().size === 1 && civ.getPopulation()/civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
 			continue; // skip really small countries
-		let tiles = new Set(civ.tileTree.keys());
+		let tiles = civ.getTiles();
 		if (!includeSea)
-			tiles = filterSet(civ.tileTree.keys(), n => !n.isWater());
+			tiles = filterSet(tiles, n => !n.isWater());
 		const line = fill(
 			tiles, transform, svg, 'none', Layer.KULTUR, color, width);
 		if (line.length > 0)
@@ -1078,31 +1092,31 @@ function drawGraticule(surface: Surface, extent: {φMin: number, φMax: number, 
  *                    a bigger label, it will appear at this font size
  * @param characterWidthMap a table containing the width of every possible character, for label length calculation purposes
  */
-function placeLabels(civs: Civ[], style: string, haloInfo: null | Map<number, string>, transform: Transform, svg: VNode,
+function placeLabels(civs: Region[], style: string, haloInfo: null | Map<number, string>, transform: Transform, svg: VNode,
                      minFontSize: number, maxFontSize: number, characterWidthMap: Map<string, number>): void {
 		let labelIndex = 0;
 		for (const civ of civs) {
-			if (civ.getPopulation() > 0) {
-				const tiles = [...civ.tileTree.keys()].filter(n => !n.isSaltWater()); // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
-				let label;
-				if (SHOW_TECH_LEVEL)
-					label = (Math.log(civ.technology)*1400 - 3000).toFixed(0);
-				else
-					label = civ.getName().toString(style).toUpperCase();
-				let haloColor;
-				if (haloInfo === null)
-					haloColor = null;
-				else if (haloInfo.has(civ.id))
-					haloColor = haloInfo.get(civ.id);
-				else
-					haloColor = haloInfo.get(0);
+			const tiles = [...civ.getTiles()].filter(n => !n.isSaltWater()); // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
+			if (tiles.length < 0)
+				throw new Error("you seem to have passed a nonexistent Civ to placeLabels.");
+			let label;
+			if (SHOW_TECH_LEVEL && civ instanceof Civ)
+				label = (Math.log(civ.technology)*1400 - 3000).toFixed(0);
+			else
+				label = civ.getName().toString(style).toUpperCase();
+			let haloColor;
+			if (haloInfo === null)
+				haloColor = null;
+			else if (haloInfo.has(civ.id))
+				haloColor = haloInfo.get(civ.id);
+			else
+				haloColor = haloInfo.get(0);
 
-				placeLabel(
-					tiles, label, transform, svg,
-					minFontSize, maxFontSize, haloColor,
-					labelIndex, characterWidthMap);
-				labelIndex += 1;
-			}
+			placeLabel(
+				tiles, label, transform, svg,
+				minFontSize, maxFontSize, haloColor,
+				labelIndex, characterWidthMap);
+			labelIndex += 1;
 		}
 	}
 

@@ -9,6 +9,7 @@ import {Civ} from "./civ.js";
 import {Lect} from "./language/lect.js";
 import {factorial} from "../utilities/miscellaneus.js";
 import {Culture} from "./culture.js";
+import {Phrase} from "./language/word.js";
 
 
 /** a debug option to print detailed information about territory changes */
@@ -46,6 +47,13 @@ export const MEAN_ASSIMILATION_TIME = 160;
 export const SLOPE_FACTOR = 100; // TODO: express it as the minimum slope that a military can traverse instead
 
 
+export interface Region {
+	id: number;
+	getTiles(): Set<Tile>;
+	getName(): Phrase;
+}
+
+
 /**
  * a mutable collection of civilizations and cultures that goes on a Surface
  */
@@ -56,7 +64,8 @@ export class World {
 	public planet: Surface;
 	private readonly civs: Set<Civ>;
 	private readonly cultures: Set<Culture>;
-	private lastID: number;
+	private lastCivID: number;
+	private lastCultureID: number;
 
 
 	constructor(cataclysms: number, planet: Surface, seed: number) {
@@ -65,7 +74,8 @@ export class World {
 		this.civs = new Set<Civ>(); // list of countries in the world
 		this.cultures = new Set<Culture>();
 		this.rng = new Random(seed);
-		this.lastID = 0;
+		this.lastCivID = 0;
+		this.lastCultureID = 0;
 
 		// clear these variables, which may be carried over from previous Worlds
 		for (const tile of planet.tiles) {
@@ -149,12 +159,12 @@ export class World {
 			const invadee = end.government;
 			const invaderStrength = invader.getStrength(end);
 			const invadeeStrength = (invadee !== null) ? invadee.getStrength(end) : 0;
-			if (invader.tileTree.has(start) && !invader.tileTree.has(end) &&
+			if (invader.getTiles().has(start) && !invader.getTiles().has(end) &&
 					invaderStrength > invadeeStrength) { // check that they're still doable
 				invader.conquer(end, start, time); // update the game state
 				for (const conquerdLand of invader.getAllChildrenOf(end)) { // and set up new invasions that bild off of it
 					for (const neighbor of conquerdLand.neighbors.keys()) {
-						if (!invader.tileTree.has(neighbor)) {
+						if (!invader.getTiles().has(neighbor)) {
 							const nextTime = time + this.rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
 							if (nextTime <= stop_time) {
 								invasions.push({time: nextTime, invader: invader, start: conquerdLand, end: neighbor});
@@ -162,7 +172,7 @@ export class World {
 						}
 					}
 					if (LOG_LAND_CLAIMS)
-						console.log(`${time.toFixed(0)}: ${invader.getName()} takes tile ${conquerdLand.index} from ${(invadee !== null) ? invadee.getName() : "no one"} via tile ${invader.tileTree.get(conquerdLand).parent.index}.`);
+						console.log(`${time.toFixed(0)}: ${invader.getName()} takes tile ${conquerdLand.index} from ${(invadee !== null) ? invadee.getName() : "no one"} via tile ${start.index}.`);
 				}
 			}
 		}
@@ -263,18 +273,27 @@ export class World {
 	}
 
 	/**
-	 * get a copied list of the id of every country currently in this world
+	 * get a copied list of every country currently in this world
 	 * @param sorted if true, return items sorted from largest to smallest
 	 * @param minSize exclude all countries with fewer than minSize tiles
 	 */
 	getCivs(sorted: boolean = false, minSize: number = 0): Civ[] {
-		let output = [];
-		for (const civ of this.civs)
-			output.push(civ);
+		let output = [...this.civs];
 		if (sorted)
 			output.sort((a, b) => b.getLandArea() - a.getLandArea());
 		if (minSize > 0)
-			output = output.filter((c) => c.tileTree.size >= minSize);
+			output = output.filter((c) => c.getTiles().size >= minSize);
+		return output;
+	}
+
+	/**
+	 * get a copied list of every culture that exists anywhere in this world
+	 * @param sorted if true, return items sorted from largest to smallest
+	 */
+	getCultures(sorted: boolean = false): Culture[] {
+		let output = [...this.cultures];
+		if (sorted)
+			output.sort((a, b) => b.getTiles().size - a.getTiles().size);
 		return output;
 	}
 
@@ -282,8 +301,8 @@ export class World {
 	 * spawn a new civ
 	 */
 	addNewCiv(predecessor: Civ, location: Tile, year: number): Civ {
-		this.lastID ++;
-		const civ = new Civ(this.lastID, this, location, year, predecessor);
+		this.lastCivID ++;
+		const civ = new Civ(this.lastCivID, this, location, year, predecessor);
 		this.civs.add(civ);
 		return civ;
 	}
@@ -299,10 +318,13 @@ export class World {
 	}
 
 	/**
-	 * add a Culture to the list.  unlike addNewCiv() you have to initialize the Culture yourself.
-	 * @param culture
+	 * spawn a new Culture
 	 */
-	addCulture(culture: Culture): void {
+	addNewCulture(location: Tile, technology: number): Culture {
+		this.lastCultureID ++;
+		const culture = new Culture(
+			location.culture, this.lastCultureID, location, technology, this.rng.next() + 1);
 		this.cultures.add(culture);
+		return culture;
 	}
 }

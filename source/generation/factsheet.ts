@@ -11,9 +11,10 @@ import {compare} from "./language/script.js";
 import {Tile} from "./surface/surface.js";
 import {Vector} from "../utilities/geometry.js";
 import {Biome, BIOME_NAMES} from "./terrain.js";
-import TECHNOLOGIES from "../../resources/tech_tree.js";
 import {cloneNode, h, VNode} from "../gui/virtualdom.js";
 import {Random} from "../utilities/random.js";
+import {Region} from "./world.js";
+import TECHNOLOGIES from "../../resources/tech_tree.js";
 
 
 const NUM_CIVS_TO_DESCRIBE = 10;
@@ -159,7 +160,7 @@ function generateFactSheet(doc: VNode, topic: Civ, listOfLects: Lect[], currentY
  * add some paragraphs to this page recounting the history of the given country
  */
 function addHistorySection(page: VNode, topic: Civ, currentYear: number, language: string, style: string) {
-	let history: { type: string, year: number, participants: (Civ | Culture | number)[] }[] = topic.history.slice();
+	let history: { type: string, year: number, participants: (Region | number)[] }[] = topic.history.slice();
 
 	// remove all but the last three conquests
 	let numConquests = 0;
@@ -182,8 +183,10 @@ function addHistorySection(page: VNode, topic: Civ, currentYear: number, languag
 		for (const participant of event.participants) {
 			if (participant instanceof Civ || participant instanceof Culture)
 				args.push(participant.getName().toString(style));
-			else
+			else if (typeof participant === "number")
 				args.push(participant);
+			else
+				throw new Error(`invalid type: ${typeof participant}`);
 		}
 		// add a note if the first country name mentioned is different from the current country name
 		if (event === history[0] && event.participants[0] instanceof Civ && args[0] !== topic.getName().toString(style))
@@ -309,7 +312,7 @@ function addGeographySection(page: VNode, topic: Civ, tidalLock: boolean, langua
 
 	// tally up all the biomes in this country
 	const biomeCounter: number[] = [];
-	for (const tile of topic.tileTree.keys()) {
+	for (const tile of topic.getTiles()) {
 		while (biomeCounter.length <= tile.biome)
 			biomeCounter.push(0);
 		biomeCounter[tile.biome] += tile.getArea();
@@ -366,9 +369,9 @@ function addDemographicsSection(page: VNode, topic: Civ, listOfLects: Lect[], ti
 
 	// calculate the centroid of the whole country
 	let civCentroid = new Vector(0, 0, 0);
-	for (const tile of topic.tileTree.keys())
+	for (const tile of topic.getTiles())
 		civCentroid = civCentroid.plus(tile.pos);
-	civCentroid = civCentroid.over(topic.tileTree.size);
+	civCentroid = civCentroid.over(topic.getTiles().size);
 
 	// for each culture in this civ
 	for (const {culture, populationFraction, inhabitedTiles} of topic.getCultures()) {
@@ -424,7 +427,7 @@ function addDemographicsSection(page: VNode, topic: Civ, listOfLects: Lect[], ti
 				language),
 			culture.getName().toString(style),
 			localize(
-				(inhabitedTiles.size <= topic.tileTree.size/2) ?
+				(inhabitedTiles.size <= topic.getTiles().size/2) ?
 					`factbook.demography.part` :
 					`factbook.demography.whole`,
 				language),

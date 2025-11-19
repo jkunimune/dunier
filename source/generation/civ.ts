@@ -9,7 +9,7 @@ import {
 	SLOPE_FACTOR, CONQUEST_RATE,
 	TECH_ADVANCEMENT_RATE,
 	MAX_DYNASTY_LIFETIME,
-	World, BOAT_CHANCE, BOAT_FACTOR
+	World, BOAT_CHANCE, BOAT_FACTOR, Region
 } from "./world.js";
 import {Culture} from "./culture.js";
 import {Phrase} from "./language/word.js";
@@ -21,14 +21,14 @@ import {Lect} from "./language/lect.js";
 /**
  * a mutable collection of information defining a political entity
  */
-export class Civ {
+export class Civ implements Region {
 	public readonly id: number;
 	/** the capital city */
 	public capital: Tile;
 	/** the official language */
 	public language: Lect;
 	/** the tiles it owns and the order in which it acquired them (also stores the normalized population) */
-	public readonly tileTree: Map<Tile, {parent: Tile | null, children: Set<Tile>}>;
+	private readonly tileTree: Map<Tile, {parent: Tile | null, children: Set<Tile>}>;
 	/** the tiles it owns (maybe some it doesn't) from least to most densely populated */
 	public readonly sortedTiles: Queue<Tile>;
 	/** the set of tiles it owns that are adjacent to tiles it doesn't */
@@ -98,10 +98,9 @@ export class Civ {
 		if (this.capital === null) {
 			this.capital = tile;
 			// define a new national identity (offset the seed to increase variability)
-			const culture = new Culture(
-				this.capital.culture, this.capital, this.technology, this.world.rng.next() + 1);
+			const culture = this.world.addNewCulture(
+				this.capital, this.technology);
 			culture.spreadTo(this.capital);
-			this.world.addCulture(culture);
 			// save the language so we have it in case the capital is destroyed
 			this.language = culture.lect;
 			// record this moment in history
@@ -348,6 +347,13 @@ export class Civ {
 	}
 
 	/**
+	 * get an iterable over all controlld tiles.
+	 */
+	getTiles(): Set<Tile> {
+		return new Set(this.tileTree.keys());
+	}
+
+	/**
 	 * list the cultures present in this country, along with the set of tiles occupied by each's share of the
 	 * population and the tiles occupied by each, starting with the ruling class and then in descending
 	 * order by pop.
@@ -394,5 +400,5 @@ export class Civ {
 interface Event {
 	type: string;
 	year: number;
-	participants: (Civ | Culture)[];
+	participants: Region[];
 }

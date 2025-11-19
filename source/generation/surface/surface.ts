@@ -700,6 +700,7 @@ export class Edge {
 	 * scale, the more vertices will be generated.  the result will be cashed to ensure consistent
 	 * and fast execution of later mappings.  in addition, if this edge ever needs to be rendered at
 	 * an even finer scale, it will bild off of what it has generated here today.
+	 * @param resolution the longest permissible segment length
 	 */
 	getPath(resolution: number): ΦΛPoint[] {
 		// you'll crash the browser if the resolution is too fine

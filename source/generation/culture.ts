@@ -9,7 +9,7 @@ import {Phrase} from "./language/word.js";
 import {Biome} from "./terrain.js";
 
 import UNPARSED_KULTUR_ASPECTS from "../../resources/culture.js";
-import {POPULATION_DENSITY} from "./world.js";
+import {POPULATION_DENSITY, Region} from "./world.js";
 
 
 /** the number of centuries it takes for two cultures to really consider themselves separate */
@@ -71,8 +71,9 @@ for (const {key, chance, features} of UNPARSED_KULTUR_ASPECTS) {
 /**
  * a class that contains factoids about a people group.
  */
-export class Culture {
+export class Culture implements Region {
 	private readonly parent: Culture;
+	public readonly id: number;
 	public readonly homeland: Tile;
 	public readonly tiles: Set<Tile>;
 	public readonly rng: Random;
@@ -83,12 +84,14 @@ export class Culture {
 	/**
 	 * base a culture off of some ancestor culture, with some changes
 	 * @param parent the proto-culture off of which this one is based
+	 * @param id a nonnegative integer unique to this culture
 	 * @param homeland the place that will serve as the new cultural capital
 	 * @param technology the current technology level to which these people have access
 	 * @param seed a random number seed
 	 */
-	constructor(parent: Culture | null, homeland: Tile, technology: number, seed: number) {
+	constructor(parent: Culture | null, id: number, homeland: Tile, technology: number, seed: number) {
 		this.parent = parent;
+		this.id = id;
 		this.rng = new Random(seed);
 		this.featureLists = [];
 		this.homeland = homeland;
@@ -237,6 +240,10 @@ export class Culture {
 		else
 			return this.parent.getAncestor(n - 1);
 	};
+
+	public getTiles(): Set<Tile> {
+		return this.tiles;
+	}
 
 	public getName(): Phrase {
 		return this.lect.standardRegister.getEthnonym(this.homeland.index);
