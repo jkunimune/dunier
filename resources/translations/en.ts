@@ -703,6 +703,8 @@ export default {
 	"menu.tema": "About",
 	"menu.toggle_navbar": "Toggle navigation bar",
 	"menu.update": "Update",
+	"meta.description": "A tool to help authors, gamemasters, and conlangers construct realistic fictional worlds in which their creations can thrive",
+	"meta.logo_alt": "Dunier logo",
 	"parameter.factbook": "Factbook",
 	"parameter.history": "History",
 	"parameter.history.meteors": "Cataclysms",
