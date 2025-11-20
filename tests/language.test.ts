@@ -140,7 +140,7 @@ describe("script", () => {
 	});
 	describe("capitalize", () => {
 		test("cased initial", () => {
-			expect(capitalize("hawaiʻi")).toEqual("Hawaiʻi")
+			expect(capitalize("hawaiʻi")).toEqual("Hawaiʻi");
 		});
 		test("non-cased initial", () => {
 			expect(capitalize("ʻōlelo")).toEqual("ʻŌlelo");
