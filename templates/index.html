@@ -464,3 +464,12 @@
 </div>
 
 <div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">{parameter.map.type.conformal_conic.description}</div>
+
+<!-- rendering scripts: Bootstrap Input Spinner -->
+<script src="/source/utilities/external/bootstrap-input-spinner.js"></script>
+<script>
+  // apply the bootstrap-input-spinner script to every input spinner
+  for (const spinner of document.querySelectorAll(".fancy-spinner"))
+    // noinspection JSUnresolvedReference
+    activateInputSpinner(spinner);
+</script>

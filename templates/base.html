@@ -3,7 +3,7 @@
   <head>
     <!-- metadata -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta property="og:title" content="{title.{.name}}" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://dunier.kunimune.blog/{.language}/{.name}.html" />
@@ -101,14 +101,5 @@
     </footer>
 
     <div id="bash" style="display: none;">{.language}</div>
-
-    <!-- rendering scripts: Bootstrap Input Spinner -->
-    <script src="/source/utilities/external/bootstrap-input-spinner.js"></script>
-    <script>
-      // apply the bootstrap-input-spinner script to every input spinner
-      for (const spinner of document.querySelectorAll(".fancy-spinner"))
-        // noinspection JSUnresolvedReference
-        activateInputSpinner(spinner);
-    </script>
   </body>
 </html>
