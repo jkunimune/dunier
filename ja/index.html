@@ -3,7 +3,7 @@
   <head>
     <!-- metadata -->
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta property="og:title" content="ファンタジーマップ生成器・dunier" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://dunier.kunimune.blog/ja/index.html" />
@@ -664,6 +664,15 @@
 
 <div class="tooltip fade" role="tooltip" id="map-projection-description" onmouseleave="toggleTooltip('map-projection-description');">直線の経線を示す正角図法である。赤道中心地図の場合はメルカトル図法になる。中世に流行ったが、面積を歪める傾向がある。</div>
 
+<!-- rendering scripts: Bootstrap Input Spinner -->
+<script src="/source/utilities/external/bootstrap-input-spinner.js"></script>
+<script>
+  // apply the bootstrap-input-spinner script to every input spinner
+  for (const spinner of document.querySelectorAll(".fancy-spinner"))
+    // noinspection JSUnresolvedReference
+    activateInputSpinner(spinner);
+</script>
+
     </main>
 
     <footer>
@@ -708,14 +717,5 @@
     </footer>
 
     <div id="bash" style="display: none;">ja</div>
-
-    <!-- rendering scripts: Bootstrap Input Spinner -->
-    <script src="/source/utilities/external/bootstrap-input-spinner.js"></script>
-    <script>
-      // apply the bootstrap-input-spinner script to every input spinner
-      for (const spinner of document.querySelectorAll(".fancy-spinner"))
-        // noinspection JSUnresolvedReference
-        activateInputSpinner(spinner);
-    </script>
   </body>
 </html>
