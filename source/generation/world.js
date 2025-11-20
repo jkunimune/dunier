@@ -42,6 +42,7 @@ import Queue from '../utilities/external/tinyqueue.js';
 import { Random } from "../utilities/random.js";
 import { Civ } from "./civ.js";
 import { factorial } from "../utilities/miscellaneus.js";
+import { Culture } from "./culture.js";
 /** a debug option to print detailed information about territory changes */
 var LOG_LAND_CLAIMS = false;
 /** the year at which civilization starts */
@@ -85,7 +86,8 @@ var World = /** @class */ (function () {
         this.civs = new Set(); // list of countries in the world
         this.cultures = new Set();
         this.rng = new Random(seed);
-        this.lastID = 0;
+        this.lastCivID = 0;
+        this.lastCultureID = 0;
         try {
             // clear these variables, which may be carried over from previous Worlds
             for (var _b = __values(planet.tiles), _c = _b.next(); !_c.done; _c = _b.next()) {
@@ -237,7 +239,7 @@ var World = /** @class */ (function () {
             var invadee = end.government;
             var invaderStrength = invader.getStrength(end);
             var invadeeStrength = (invadee !== null) ? invadee.getStrength(end) : 0;
-            if (invader.tileTree.has(start) && !invader.tileTree.has(end) &&
+            if (invader.getTiles().has(start) && !invader.getTiles().has(end) &&
                 invaderStrength > invadeeStrength) { // check that they're still doable
                 invader.conquer(end, start, time); // update the game state
                 try {
@@ -246,7 +248,7 @@ var World = /** @class */ (function () {
                         try {
                             for (var _q = (e_9 = void 0, __values(conquerdLand.neighbors.keys())), _r = _q.next(); !_r.done; _r = _q.next()) {
                                 var neighbor = _r.value;
-                                if (!invader.tileTree.has(neighbor)) {
+                                if (!invader.getTiles().has(neighbor)) {
                                     var nextTime = time + this.rng.exponential(invader.estimateInvasionTime(conquerdLand, neighbor));
                                     if (nextTime <= stop_time) {
                                         invasions.push({ time: nextTime, invader: invader, start: conquerdLand, end: neighbor });
@@ -262,7 +264,7 @@ var World = /** @class */ (function () {
                             finally { if (e_9) throw e_9.error; }
                         }
                         if (LOG_LAND_CLAIMS)
-                            console.log("".concat(time.toFixed(0), ": ").concat(invader.getName(), " takes tile ").concat(conquerdLand.index, " from ").concat((invadee !== null) ? invadee.getName() : "no one", " via tile ").concat(invader.tileTree.get(conquerdLand).parent.index, "."));
+                            console.log("".concat(time.toFixed(0), ": ").concat(invader.getName(), " takes tile ").concat(conquerdLand.index, " from ").concat((invadee !== null) ? invadee.getName() : "no one", " via tile ").concat(start.index, "."));
                     }
                 }
                 catch (e_8_1) { e_8 = { error: e_8_1 }; }
@@ -430,19 +432,50 @@ var World = /** @class */ (function () {
         return lects;
     };
     /**
-     * get a copied list of the id of every country currently in this world
+     * get a copied list of every country currently in this world
      * @param sorted if true, return items sorted from largest to smallest
      * @param minSize exclude all countries with fewer than minSize tiles
      */
     World.prototype.getCivs = function (sorted, minSize) {
-        var e_16, _a;
         if (sorted === void 0) { sorted = false; }
         if (minSize === void 0) { minSize = 0; }
-        var output = [];
+        var output = __spreadArray([], __read(this.civs), false);
+        if (sorted)
+            output.sort(function (a, b) { return b.getLandArea() - a.getLandArea(); });
+        if (minSize > 0)
+            output = output.filter(function (c) { return c.getTiles().size >= minSize; });
+        return output;
+    };
+    /**
+     * get a copied list of every culture that exists anywhere in this world
+     * @param sorted if true, return items sorted from largest to smallest
+     */
+    World.prototype.getCultures = function (sorted) {
+        if (sorted === void 0) { sorted = false; }
+        var output = __spreadArray([], __read(this.cultures), false);
+        if (sorted)
+            output.sort(function (a, b) { return b.getTiles().size - a.getTiles().size; });
+        return output;
+    };
+    /**
+     * spawn a new civ
+     */
+    World.prototype.addNewCiv = function (predecessor, location, year) {
+        this.lastCivID++;
+        var civ = new Civ(this.lastCivID, this, location, year, predecessor);
+        this.civs.add(civ);
+        return civ;
+    };
+    /**
+     * get the Civ from this set that has this ID
+     */
+    World.prototype.getCiv = function (id) {
+        var e_16, _a;
         try {
             for (var _b = __values(this.civs), _c = _b.next(); !_c.done; _c = _b.next()) {
                 var civ = _c.value;
-                output.push(civ);
+                if (civ.id === id)
+                    return civ;
             }
         }
         catch (e_16_1) { e_16 = { error: e_16_1 }; }
@@ -452,48 +485,16 @@ var World = /** @class */ (function () {
             }
             finally { if (e_16) throw e_16.error; }
         }
-        if (sorted)
-            output.sort(function (a, b) { return b.getLandArea() - a.getLandArea(); });
-        if (minSize > 0)
-            output = output.filter(function (c) { return c.tileTree.size >= minSize; });
-        return output;
-    };
-    /**
-     * spawn a new civ
-     */
-    World.prototype.addNewCiv = function (predecessor, location, year) {
-        this.lastID++;
-        var civ = new Civ(this.lastID, this, location, year, predecessor);
-        this.civs.add(civ);
-        return civ;
-    };
-    /**
-     * get the Civ from this set that has this ID
-     */
-    World.prototype.getCiv = function (id) {
-        var e_17, _a;
-        try {
-            for (var _b = __values(this.civs), _c = _b.next(); !_c.done; _c = _b.next()) {
-                var civ = _c.value;
-                if (civ.id === id)
-                    return civ;
-            }
-        }
-        catch (e_17_1) { e_17 = { error: e_17_1 }; }
-        finally {
-            try {
-                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
-            }
-            finally { if (e_17) throw e_17.error; }
-        }
         throw new RangeError("there is no civ with id ".concat(id));
     };
     /**
-     * add a Culture to the list.  unlike addNewCiv() you have to initialize the Culture yourself.
-     * @param culture
+     * spawn a new Culture
      */
-    World.prototype.addCulture = function (culture) {
+    World.prototype.addNewCulture = function (location, technology) {
+        this.lastCultureID++;
+        var culture = new Culture(location.culture, this.lastCultureID, location, technology, this.rng.next() + 1);
         this.cultures.add(culture);
+        return culture;
     };
     return World;
 }());

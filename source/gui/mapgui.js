@@ -30,6 +30,7 @@ var e_1, _a, e_2, _b, e_3, _c, e_4, _d;
  * This work by Justin Kunimune is marked with CC0 1.0 Universal.
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
+import { TEMPERATURE_COLORS } from "../mapping/chart.js";
 import { DOM } from "./dom.js";
 import { localize } from "./internationalization.js";
 import { Selector } from "../utilities/selector.js";
@@ -39,22 +40,6 @@ import HARFIA_TABLE from "../../resources/alphabet.js";
 import KATAKANA_TABLE from "../../resources/rules_ja.js";
 // @ts-ignore
 var Plotly = window.Plotly;
-var TERRAIN_COLORMAP = [
-    [0.00, 'rgb(251, 254, 248)'],
-    [0.08, 'rgb(216, 231, 245)'],
-    [0.15, 'rgb(164, 215, 237)'],
-    [0.23, 'rgb(104, 203, 206)'],
-    [0.31, 'rgb( 68, 185, 156)'],
-    [0.38, 'rgb( 54, 167, 105)'],
-    [0.46, 'rgb( 64, 145,  47)'],
-    [0.54, 'rgb( 92, 116,  11)'],
-    [0.62, 'rgb(100,  89,   5)'],
-    [0.69, 'rgb( 99,  62,   1)'],
-    [0.77, 'rgb( 91,  33,   1)'],
-    [0.85, 'rgb( 75,   2,   6)'],
-    [0.92, 'rgb( 41,   4,   5)'],
-    [1.00, 'rgb(  7,   0,   0)'],
-];
 var LANGUAGE = DOM.elm("bash").textContent;
 var Layer;
 (function (Layer) {
@@ -206,6 +191,10 @@ function renderPlanet(planetData) {
         for (var j = 0; j < I[i].length; j++)
             color[i].push(Math.pow(I[i][j], 3) * (3 * I[i][j] * I[i][j] - 15 * I[i][j] + 20) / 8);
     }
+    // set up a colormap object
+    var temperatureColormap = [];
+    for (var i = 0; i < TEMPERATURE_COLORS.length; i++)
+        temperatureColormap.push([i / (TEMPERATURE_COLORS.length - 1), TEMPERATURE_COLORS[i]]);
     Plotly.react(DOM.elm("planet-map-container"), [{
             type: 'surface',
             x: x,
@@ -214,7 +203,7 @@ function renderPlanet(planetData) {
             surfacecolor: color,
             cmin: 0.,
             cmax: 2.,
-            colorscale: TERRAIN_COLORMAP,
+            colorscale: temperatureColormap,
             showscale: false,
             lightposition: { x: 1000, y: 0, z: 0 },
             hoverinfo: "none",

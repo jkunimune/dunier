@@ -46,9 +46,9 @@ import { argmax } from "../utilities/miscellaneus.js";
 import { compare } from "./language/script.js";
 import { Vector } from "../utilities/geometry.js";
 import { Biome, BIOME_NAMES } from "./terrain.js";
-import TECHNOLOGIES from "../../resources/tech_tree.js";
 import { cloneNode, h } from "../gui/virtualdom.js";
 import { Random } from "../utilities/random.js";
+import TECHNOLOGIES from "../../resources/tech_tree.js";
 var NUM_CIVS_TO_DESCRIBE = 10;
 var NUM_NAMES_TO_LIST = 3;
 var NUM_CONQUESTS_TO_MENTION = 3;
@@ -184,8 +184,10 @@ function addHistorySection(page, topic, currentYear, language, style) {
                     var participant = _d.value;
                     if (participant instanceof Civ || participant instanceof Culture)
                         args.push(participant.getName().toString(style));
-                    else
+                    else if (typeof participant === "number")
                         args.push(participant);
+                    else
+                        throw new Error("invalid type: ".concat(typeof participant));
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
@@ -394,7 +396,7 @@ function addGeographySection(page, topic, tidalLock, language, style) {
     // tally up all the biomes in this country
     var biomeCounter = [];
     try {
-        for (var _z = __values(topic.tileTree.keys()), _0 = _z.next(); !_0.done; _0 = _z.next()) {
+        for (var _z = __values(topic.getTiles()), _0 = _z.next(); !_0.done; _0 = _z.next()) {
             var tile = _0.value;
             while (biomeCounter.length <= tile.biome)
                 biomeCounter.push(0);
@@ -450,7 +452,7 @@ function addDemographicsSection(page, topic, listOfLects, tidalLock, language, s
     // calculate the centroid of the whole country
     var civCentroid = new Vector(0, 0, 0);
     try {
-        for (var _g = __values(topic.tileTree.keys()), _h = _g.next(); !_h.done; _h = _g.next()) {
+        for (var _g = __values(topic.getTiles()), _h = _g.next(); !_h.done; _h = _g.next()) {
             var tile = _h.value;
             civCentroid = civCentroid.plus(tile.pos);
         }
@@ -462,7 +464,7 @@ function addDemographicsSection(page, topic, listOfLects, tidalLock, language, s
         }
         finally { if (e_14) throw e_14.error; }
     }
-    civCentroid = civCentroid.over(topic.tileTree.size);
+    civCentroid = civCentroid.over(topic.getTiles().size);
     try {
         // for each culture in this civ
         for (var _j = __values(topic.getCultures()), _k = _j.next(); !_k.done; _k = _j.next()) {
@@ -533,7 +535,7 @@ function addDemographicsSection(page, topic, listOfLects, tidalLock, language, s
                 roundedPopulationPercentage = 1.;
             var populationSentence = format(localize((populationFraction < 2 / 3) ?
                 'factbook.demography.minority' :
-                'factbook.demography.majority', language), culture.getName().toString(style), localize((inhabitedTiles.size <= topic.tileTree.size / 2) ?
+                'factbook.demography.majority', language), culture.getName().toString(style), localize((inhabitedTiles.size <= topic.getTiles().size / 2) ?
                 "factbook.demography.part" :
                 "factbook.demography.whole", language), localize("factbook.direction.".concat(region), language), roundedPopulationPercentage, topic.getName().toString(style));
             var standardLect = culture.lect.standardRegister;

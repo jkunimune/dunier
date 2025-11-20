@@ -348,9 +348,10 @@ function movePlates(surf, rng) {
     }
     var oceanWidth = OCEAN_SIZE * Math.sqrt(surf.area / velocities.length); // do a little dimensional analysis on the ocean scale
     moveCertainPlates(surf.tiles, function (tile) { return tile.plateIndex; }, velocities, true, oceanWidth);
+    // then repeat for subplates
     var subvelocities = [];
     try {
-        for (var _e = __values(surf.tiles), _f = _e.next(); !_f.done; _f = _e.next()) { // start by counting up all the plates
+        for (var _e = __values(surf.tiles), _f = _e.next(); !_f.done; _f = _e.next()) { // start by counting up all the subplates
             var tile = _f.value;
             if (tile.subplateIndex >= subvelocities.length) // and assigning them random velocities // TODO allow for plate rotation in the tangent plane
                 subvelocities.push(tile.east.times(rng.normal(0, 0.2 / Math.sqrt(2))).plus(tile.north.times(rng.normal(0, 0.2 / Math.sqrt(2))))); // orthogonal to the normal at their seeds
@@ -727,7 +728,7 @@ function generateClimate(avgTerme, surf, rng) {
             if (tile.biome === Biome.OCEAN) // also seed the orographic effect in the oceans
                 queue.push({ tile: tile, moisture: OROGRAPHIC_MAGNITUDE });
             if (tile.height > CLOUD_HEIGHT) // and also remove some moisture from mountains
-                tile.rainfall -= OROGRAPHIC_MAGNITUDE / 2;
+                tile.rainfall -= OROGRAPHIC_MAGNITUDE / 2; // TODO: this should be more linear.  if altitude is high enough there is no water period.
         }
     }
     catch (e_22_1) { e_22 = { error: e_22_1 }; }
@@ -768,15 +769,15 @@ function generateClimate(avgTerme, surf, rng) {
  * @param surf the Surface on which this takes place
  */
 function addRivers(surf) {
-    var e_25, _a, e_26, _b, e_27, _c, e_28, _d, e_29, _e, e_30, _f, e_31, _g, e_32, _h, e_33, _j, e_34, _k;
+    var e_25, _a, e_26, _b, e_27, _c, e_28, _d, e_29, _e, e_30, _f, e_31, _g, e_32, _h;
     try {
-        for (var _l = __values(surf.vertices), _m = _l.next(); !_m.done; _m = _l.next()) {
-            var vertex = _m.value;
+        for (var _j = __values(surf.vertices), _k = _j.next(); !_k.done; _k = _j.next()) {
+            var vertex = _k.value;
             var numAdjacentTiles = 0;
             var totalHeight = 0;
             try {
-                for (var _o = (e_26 = void 0, __values(vertex.tiles)), _p = _o.next(); !_p.done; _p = _o.next()) {
-                    var tile = _p.value;
+                for (var _l = (e_26 = void 0, __values(vertex.tiles)), _m = _l.next(); !_m.done; _m = _l.next()) {
+                    var tile = _m.value;
                     if (tile instanceof Tile) {
                         totalHeight += tile.height;
                         numAdjacentTiles += 1;
@@ -786,7 +787,7 @@ function addRivers(surf) {
             catch (e_26_1) { e_26 = { error: e_26_1 }; }
             finally {
                 try {
-                    if (_p && !_p.done && (_b = _o.return)) _b.call(_o);
+                    if (_m && !_m.done && (_b = _l.return)) _b.call(_l);
                 }
                 finally { if (e_26) throw e_26.error; }
             }
@@ -797,7 +798,7 @@ function addRivers(surf) {
     catch (e_25_1) { e_25 = { error: e_25_1 }; }
     finally {
         try {
-            if (_m && !_m.done && (_a = _l.return)) _a.call(_l);
+            if (_k && !_k.done && (_a = _j.return)) _a.call(_j);
         }
         finally { if (e_25) throw e_25.error; }
     }
@@ -806,8 +807,8 @@ function addRivers(surf) {
     var riverQueue = new Queue([], function (a, b) { return b.quality - a.quality; }); // start with a queue of rivers forming from their deltas
     try {
         // start by searching for vertices where a river can enter the ocean or flow off the edge
-        for (var _q = __values(surf.vertices), _r = _q.next(); !_r.done; _r = _q.next()) {
-            var vertex = _r.value;
+        for (var _o = __values(surf.vertices), _p = _o.next(); !_p.done; _p = _o.next()) {
+            var vertex = _p.value;
             for (var i = 0; i < 3; i++) { // if you can find any orientation
                 var a = vertex.tiles[i];
                 var b = vertex.tiles[(i + 1) % 3];
@@ -832,19 +833,19 @@ function addRivers(surf) {
     catch (e_27_1) { e_27 = { error: e_27_1 }; }
     finally {
         try {
-            if (_r && !_r.done && (_c = _q.return)) _c.call(_q);
+            if (_p && !_p.done && (_c = _o.return)) _c.call(_o);
         }
         finally { if (e_27) throw e_27.error; }
     }
     while (!riverQueue.empty()) { // then iteratively extend them
-        var _s = riverQueue.pop(), below = _s.below, above = _s.above, maxHeight = _s.maxHeight, uphillLength = _s.uphillLength; // pick out the steepest potential river
+        var _q = riverQueue.pop(), below = _q.below, above = _q.above, maxHeight = _q.maxHeight, uphillLength = _q.uphillLength; // pick out the steepest potential river
         if (above.downstream === null) { // if it's available
             above.downstream = below; // take it
             riverOrder.set(above, riverStack.length); // track the number of steps from the delta
             riverStack.push(above); // cue it up for the flow calculation later
             try {
-                for (var _t = (e_28 = void 0, __values(above.neighbors.keys())), _u = _t.next(); !_u.done; _u = _t.next()) { // then look for what comes next
-                    var beyond = _u.value;
+                for (var _r = (e_28 = void 0, __values(above.neighbors.keys())), _s = _r.next(); !_s.done; _s = _r.next()) { // then look for what comes next
+                    var beyond = _s.value;
                     if (beyond !== null) {
                         if (beyond.downstream === null) { // (it's a little redundant, but checking availability here as well saves some time)
                             if (beyond.height >= maxHeight - CANYON_DEPTH) {
@@ -871,37 +872,11 @@ function addRivers(surf) {
             catch (e_28_1) { e_28 = { error: e_28_1 }; }
             finally {
                 try {
-                    if (_u && !_u.done && (_d = _t.return)) _d.call(_t);
+                    if (_s && !_s.done && (_d = _r.return)) _d.call(_r);
                 }
                 finally { if (e_28) throw e_28.error; }
             }
         }
-    }
-    try {
-        for (var _v = __values(surf.vertices), _w = _v.next(); !_w.done; _w = _v.next()) {
-            var vertex = _w.value;
-            vertex.flow = 0; // define this temporary variable real quick...
-            try {
-                for (var _x = (e_30 = void 0, __values(vertex.neighbors.values())), _y = _x.next(); !_y.done; _y = _x.next()) {
-                    var edge = _y.value;
-                    edge.flow = 0;
-                }
-            }
-            catch (e_30_1) { e_30 = { error: e_30_1 }; }
-            finally {
-                try {
-                    if (_y && !_y.done && (_f = _x.return)) _f.call(_x);
-                }
-                finally { if (e_30) throw e_30.error; }
-            }
-        }
-    }
-    catch (e_29_1) { e_29 = { error: e_29_1 }; }
-    finally {
-        try {
-            if (_w && !_w.done && (_e = _v.return)) _e.call(_v);
-        }
-        finally { if (e_29) throw e_29.error; }
     }
     surf.rivers = new Set();
     // now we need to propagate water downhill to calculate flow rates
@@ -910,8 +885,8 @@ function addRivers(surf) {
         var vertex = riverStack.pop(); // at each river vertex
         if (vertex.downstream instanceof Vertex) {
             try {
-                for (var _z = (e_31 = void 0, __values(vertex.tiles)), _0 = _z.next(); !_0.done; _0 = _z.next()) { // compute the sum of rainfall and inflow (with some adjustments)
-                    var tile = _0.value;
+                for (var _t = (e_29 = void 0, __values(vertex.tiles)), _u = _t.next(); !_u.done; _u = _t.next()) { // compute the sum of rainfall and inflow (with some adjustments)
+                    var tile = _u.value;
                     if (tile instanceof Tile) {
                         var nadasle = tile.rainfall
                             - evaporation_rate(tile.temperature) // subtract out evaporation
@@ -921,12 +896,12 @@ function addRivers(surf) {
                     }
                 }
             }
-            catch (e_31_1) { e_31 = { error: e_31_1 }; }
+            catch (e_29_1) { e_29 = { error: e_29_1 }; }
             finally {
                 try {
-                    if (_0 && !_0.done && (_g = _z.return)) _g.call(_z);
+                    if (_u && !_u.done && (_e = _t.return)) _e.call(_t);
                 }
-                finally { if (e_31) throw e_31.error; }
+                finally { if (e_29) throw e_29.error; }
             }
             vertex.downstream.flow += vertex.flow; // and pass that flow onto the downstream tile
             vertex.neighbors.get(vertex.downstream).flow = vertex.flow;
@@ -944,8 +919,8 @@ function addRivers(surf) {
         var seenAnyWater = false;
         var seenRightEdge = false;
         try {
-            for (var _1 = (e_32 = void 0, __values(tile.getPolygon())), _2 = _1.next(); !_2.done; _2 = _1.next()) {
-                var vertex = _2.value.vertex;
+            for (var _v = (e_30 = void 0, __values(tile.getPolygon())), _w = _v.next(); !_w.done; _w = _v.next()) {
+                var vertex = _w.value.vertex;
                 var last = vertex.widershinsOf(tile);
                 var next = vertex.widershinsOf(last); // look at the Tiles next to it
                 if (next instanceof Tile && next.biome === Biome.OCEAN)
@@ -965,46 +940,46 @@ function addRivers(surf) {
                 }
             }
         }
-        catch (e_32_1) { e_32 = { error: e_32_1 }; }
+        catch (e_30_1) { e_30 = { error: e_30_1 }; }
         finally {
             try {
-                if (_2 && !_2.done && (_h = _1.return)) _h.call(_1);
+                if (_w && !_w.done && (_f = _v.return)) _f.call(_v);
             }
-            finally { if (e_32) throw e_32.error; }
+            finally { if (e_30) throw e_30.error; }
         }
         if (!seenAnyWater) // if there wasn't _any_ adjacent water
             continue; // then there's nothing to feed the lake
         // locate the downstreamest river flowing away
         var outflow = null;
         try {
-            for (var _3 = (e_33 = void 0, __values(tile.getPolygon())), _4 = _3.next(); !_4.done; _4 = _3.next()) {
-                var vertex = _4.value.vertex;
+            for (var _x = (e_31 = void 0, __values(tile.getPolygon())), _y = _x.next(); !_y.done; _y = _x.next()) {
+                var vertex = _y.value.vertex;
                 if (outflow === null || riverOrder.get(vertex) <= riverOrder.get(outflow)) // i.e. the vertex with the most ultimate flow
                     outflow = vertex;
             }
         }
-        catch (e_33_1) { e_33 = { error: e_33_1 }; }
+        catch (e_31_1) { e_31 = { error: e_31_1 }; }
         finally {
             try {
-                if (_4 && !_4.done && (_j = _3.return)) _j.call(_3);
+                if (_y && !_y.done && (_g = _x.return)) _g.call(_x);
             }
-            finally { if (e_33) throw e_33.error; }
+            finally { if (e_31) throw e_31.error; }
         }
         if (outflow !== null && outflow.downstream instanceof Vertex && outflow.flow > 0 &&
             outflow.downstream.height > outflow.height + LAKE_THRESH) { // if we made it through all that, make an altitude check
             tile.biome = Biome.LAKE; // and assign lake status. you've earned it, tile.
             try {
-                for (var _5 = (e_34 = void 0, __values(tile.neighbors.keys())), _6 = _5.next(); !_6.done; _6 = _5.next()) {
-                    var neighbor = _6.value;
+                for (var _z = (e_32 = void 0, __values(tile.neighbors.keys())), _0 = _z.next(); !_0.done; _0 = _z.next()) {
+                    var neighbor = _0.value;
                     lageQueue.push(neighbor);
                 } // tell your friends.
             }
-            catch (e_34_1) { e_34 = { error: e_34_1 }; }
+            catch (e_32_1) { e_32 = { error: e_32_1 }; }
             finally {
                 try {
-                    if (_6 && !_6.done && (_k = _5.return)) _k.call(_5);
+                    if (_0 && !_0.done && (_h = _z.return)) _h.call(_z);
                 }
-                finally { if (e_34) throw e_34.error; }
+                finally { if (e_32) throw e_32.error; }
             }
         }
     }
@@ -1014,7 +989,7 @@ function addRivers(surf) {
  * @param surf the surface to which we're doing this
  */
 function setBiomes(surf) {
-    var e_35, _a, e_36, _b;
+    var e_33, _a, e_34, _b;
     try {
         for (var _c = __values(surf.tiles), _d = _c.next(); !_d.done; _d = _c.next()) {
             var tile = _d.value;
@@ -1046,7 +1021,7 @@ function setBiomes(surf) {
             tile.arableArea = ARABILITY.get(tile.biome) * tile.getArea(); // start with the biome-defined habitability
             if (tile.arableArea > 0 || tile.biome === Biome.DESERT) { // if it is habitable at all or is a desert
                 try {
-                    for (var _e = (e_36 = void 0, __values(tile.neighbors.keys())), _f = _e.next(); !_f.done; _f = _e.next()) { // increase habitability based on adjacent water
+                    for (var _e = (e_34 = void 0, __values(tile.neighbors.keys())), _f = _e.next(); !_f.done; _f = _e.next()) { // increase habitability based on adjacent water
                         var neighbor = _f.value;
                         var edge = tile.neighbors.get(neighbor);
                         if (neighbor.biome === Biome.LAKE || edge.flow > RIVER_UTILITY_THRESHOLD)
@@ -1055,23 +1030,23 @@ function setBiomes(surf) {
                             tile.arableArea += SALTWATER_UTILITY * edge.getLength();
                     }
                 }
-                catch (e_36_1) { e_36 = { error: e_36_1 }; }
+                catch (e_34_1) { e_34 = { error: e_34_1 }; }
                 finally {
                     try {
                         if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
                     }
-                    finally { if (e_36) throw e_36.error; }
+                    finally { if (e_34) throw e_34.error; }
                 }
             }
             tile.passability = PASSABILITY.get(tile.biome);
         }
     }
-    catch (e_35_1) { e_35 = { error: e_35_1 }; }
+    catch (e_33_1) { e_33 = { error: e_33_1 }; }
     finally {
         try {
             if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
         }
-        finally { if (e_35) throw e_35.error; }
+        finally { if (e_33) throw e_33.error; }
     }
 }
 /**
@@ -1079,7 +1054,7 @@ function setBiomes(surf) {
  * the number of tiles that could be flooded this way.
  */
 function floodFrom(start, level) {
-    var e_37, _a;
+    var e_35, _a;
     var numFilled = 0;
     var queue = new Queue([start], function (a, b) { return a.height - b.height; }); // it shall seed our ocean
     while (!queue.empty() && queue.peek().height <= level) { // flood all available tiles
@@ -1088,17 +1063,17 @@ function floodFrom(start, level) {
             next.biome = Biome.OCEAN;
             numFilled++;
             try {
-                for (var _b = (e_37 = void 0, __values(next.neighbors.keys())), _c = _b.next(); !_c.done; _c = _b.next()) {
+                for (var _b = (e_35 = void 0, __values(next.neighbors.keys())), _c = _b.next(); !_c.done; _c = _b.next()) {
                     var neighbor = _c.value;
                     queue.push(neighbor);
                 } // spreading the water to their neighbors
             }
-            catch (e_37_1) { e_37 = { error: e_37_1 }; }
+            catch (e_35_1) { e_35 = { error: e_35_1 }; }
             finally {
                 try {
                     if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
                 }
-                finally { if (e_37) throw e_37.error; }
+                finally { if (e_35) throw e_35.error; }
             }
         }
     }
@@ -1117,7 +1092,7 @@ function floodFrom(start, level) {
  * @return the value of attr this tile should take
  */
 function getNoiseFunction(tile, parents, attr, surf, rng, maxScale, level, slope) {
-    var e_38, _a;
+    var e_36, _a;
     var scale = 0;
     var weightSum = 0;
     var value = 0;
@@ -1139,12 +1114,12 @@ function getNoiseFunction(tile, parents, attr, surf, rng, maxScale, level, slope
             value += parentValue / dist; // compute the weighted average of them
         }
     }
-    catch (e_38_1) { e_38 = { error: e_38_1 }; }
+    catch (e_36_1) { e_36 = { error: e_36_1 }; }
     finally {
         try {
             if (parents_1_1 && !parents_1_1.done && (_a = parents_1.return)) _a.call(parents_1);
         }
-        finally { if (e_38) throw e_38.error; }
+        finally { if (e_36) throw e_36.error; }
     }
     value /= weightSum; // normalize
     if (Number.isNaN(value) || scale > maxScale) { // above a certain scale (or in lieu of any parents)

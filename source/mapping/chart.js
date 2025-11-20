@@ -41,6 +41,7 @@ var __values = (this && this.__values) || function(o) {
 import { EmptySpace, outline, Vertex } from "../generation/surface/surface.js";
 import { filterSet, findRoot, localizeInRange, pathToString, } from "../utilities/miscellaneus.js";
 import { MapProjection } from "./projection.js";
+import { Civ } from "../generation/civ.js";
 import { ErodingSegmentTree } from "../utilities/erodingsegmenttree.js";
 import { assert_φλ, endpoint } from "../utilities/coordinates.js";
 import { Vector } from "../utilities/geometry.js";
@@ -49,17 +50,21 @@ import { applyProjectionToPath, calculatePathBounds, contains, convertPathClosur
 import { chooseLabelLocation } from "./labeling.js";
 import { cloneNode, h } from "../gui/virtualdom.js";
 import { poissonDiscSample } from "../utilities/poissondisc.js";
-import TEXTURE_MIXES from "../../resources/texture_mixes.js";
 import { Random } from "../utilities/random.js";
 import { offset } from "../utilities/offset.js";
+import TEXTURE_MIXES from "../../resources/texture_mixes.js";
 // DEBUG OPTIONS
 var DISABLE_GREEBLING = false; // make all lines as simple as possible
 var SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 var SHOW_TILE_INDICES = false; // label each tile with its number
+var SHOW_STRAIGHT_SKELETONS = false; // draw the straight skeleton of every tile
 var COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 var COLOR_BY_SUBPLATE = false; // choropleth the land by plate index rather than whatever else
 var COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
+var COLOR_BY_CULTURE = false; // base the political borders off of cultures instead of civs
 var COLOR_BY_TILE = false; // color each tile a different color
+var COLOR_BY_TEMPERATURE = false; // color each tile based on its mean annual temperature
+var COLOR_BY_RAINFALL = false; // color each tile based on its mean annual rainfall
 var SHOW_SEA_BORDERS = false; // include ocean territory in each country's border
 var SHOW_TECH_LEVEL = false; // caption each country with its current technology level
 var SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
@@ -217,6 +222,40 @@ var DEPTH_COLORS = [
     'rgb( 51,  50,  92)',
     'rgb( 31,  29,  43)',
 ];
+/** colormap for rainfall */
+var RAINFALL_COLORS = [
+    '#ffffff',
+    '#e5eddb',
+    '#c9dcb7',
+    '#a5cd9f',
+    '#81bf95',
+    '#5bb090',
+    '#3d9e8e',
+    '#288c8b',
+    '#167a87',
+    '#046782',
+    '#02557d',
+    '#104075',
+    '#19296d',
+    '#1f0769',
+];
+/** colormap for temperature and insolation */
+export var TEMPERATURE_COLORS = [
+    'rgb(251, 254, 248)',
+    'rgb(216, 231, 245)',
+    'rgb(164, 215, 237)',
+    'rgb(104, 203, 206)',
+    'rgb( 68, 185, 156)',
+    'rgb( 54, 167, 105)',
+    'rgb( 64, 145,  47)',
+    'rgb( 92, 116,  11)',
+    'rgb(100,  89,   5)',
+    'rgb( 99,  62,   1)',
+    'rgb( 91,  33,   1)',
+    'rgb( 75,   2,   6)',
+    'rgb( 41,   4,   5)',
+    'rgb(  7,   0,   0)',
+];
 /** a type of area feature with a particular greebling profile */
 var Layer;
 (function (Layer) {
@@ -252,7 +291,7 @@ var Layer;
  * @return the SVG on which everything has been drawn, and the list of Civs that are shown in this map
  */
 export function depict(surface, continents, world, projectionName, regionOfInterest, orientationName, maxDimension, colorSchemeName, resources, characterWidthMap, rivers, borders, graticule, windrose, landTexture, seaTexture, shading, civLabels, fontSize, style) {
-    var e_1, _a, e_2, _b, e_3, _c, e_4, _d, e_5, _e;
+    var e_1, _a, e_2, _b, e_3, _c, e_4, _d;
     if (rivers === void 0) { rivers = false; }
     if (borders === void 0) { borders = false; }
     if (graticule === void 0) { graticule = false; }
@@ -276,7 +315,7 @@ export function depict(surface, continents, world, projectionName, regionOfInter
     else
         throw new Error("I don't recognize this direction: '".concat(orientationName, "'."));
     // determine the central coordinates and thus domain of the map projection
-    var _f = chooseMapCentering(regionOfInterest, surface), centralMeridian = _f.centralMeridian, centralParallel = _f.centralParallel, meanRadius = _f.meanRadius;
+    var _e = chooseMapCentering(regionOfInterest, surface), centralMeridian = _e.centralMeridian, centralParallel = _e.centralParallel, meanRadius = _e.meanRadius;
     var southLimitingParallel = Math.max(surface.φMin, centralParallel - Math.PI);
     var northLimitingParallel = Math.min(surface.φMax, southLimitingParallel + 2 * Math.PI);
     // construct the map projection
@@ -312,12 +351,12 @@ export function depict(surface, continents, world, projectionName, regionOfInter
     // put the region of interest in the correct coordinate system
     var transformedRegionOfInterest = intersection(transformInput(projection.domain, convertToGreebledPath(outline(regionOfInterest), Layer.GEO, 1e-6)), rectangle(projection.φMax, projection.λMax, projection.φMin, projection.λMin, true), projection.domain, true);
     // establish the geographic bounds of the region
-    var _g = chooseGeoBounds(transformedRegionOfInterest, projection, rectangularBounds), φMin = _g.φMin, φMax = _g.φMax, λMin = _g.λMin, λMax = _g.λMax, geoEdges = _g.geoEdges;
+    var _f = chooseGeoBounds(transformedRegionOfInterest, projection, rectangularBounds), φMin = _f.φMin, φMax = _f.φMax, λMin = _f.λMin, λMax = _f.λMax, geoEdges = _f.geoEdges;
     // if it's a Bonne projection, re-generate it with these new bounds in case you need to adjust the curvature
     if (projectionName === 'bonne')
         projection = MapProjection.bonne(surface, φMin, centralParallel, φMax, projection.λCenter, λMax - λMin); // the only thing that changes here is projection.yCenter
     // establish the Cartesian bounds of the map
-    var _h = chooseMapBounds(transformedRegionOfInterest, projection, rectangularBounds, geoEdges), xRight = _h.xRight, xLeft = _h.xLeft, yBottom = _h.yBottom, yTop = _h.yTop, mapEdges = _h.mapEdges;
+    var _g = chooseMapBounds(transformedRegionOfInterest, projection, rectangularBounds, geoEdges), xRight = _g.xRight, xLeft = _g.xLeft, yBottom = _g.yBottom, yTop = _g.yTop, mapEdges = _g.mapEdges;
     var rawBbox = new Dimensions(xLeft, xRight, yTop, yBottom);
     // expand the Chart dimensions by a couple millimeters on each side to give the edge some breathing room
     var margin = Math.max(1.2, maxDimension / 50);
@@ -327,7 +366,7 @@ export function depict(surface, continents, world, projectionName, regionOfInter
     // adjust the bounding box to account for rotation, scale, and margin
     var bbox = rawBbox.rotate(orientation).scale(scale).offset(margin);
     var colorScheme = COLOR_SCHEMES.get(colorSchemeName);
-    if (COLOR_BY_PLATE || COLOR_BY_SUBPLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
+    if (COLOR_BY_PLATE || COLOR_BY_SUBPLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE || COLOR_BY_TEMPERATURE || COLOR_BY_RAINFALL)
         colorScheme = COLOR_SCHEMES.get('debug');
     var svg = h('svg', {
         viewBox: "".concat(bbox.left.toFixed(3), " ").concat(bbox.top.toFixed(3), " ").concat(bbox.width.toFixed(3), " ").concat(bbox.height.toFixed(3)),
@@ -376,6 +415,15 @@ export function depict(surface, continents, world, projectionName, regionOfInter
     else if (COLOR_BY_TILE) {
         areaFeatures.push.apply(areaFeatures, __spreadArray([], __read(fillMultiple(__spreadArray([], __read(surface.tiles), false).map(function (tile) { return new Set([tile]); }), COUNTRY_COLORS, null, null, transform, createSVGGroup(svg, "tiles"), Layer.GEO, colorScheme.waterStroke, 0.2)), false));
     }
+    else if (COLOR_BY_CULTURE && world !== null) {
+        areaFeatures.push.apply(areaFeatures, __spreadArray([], __read(fillMultiple(world.getCultures(true).map(function (culture) { return culture.tiles; }), COUNTRY_COLORS, surface.tiles, colorScheme.landFill, transform, createSVGGroup(svg, "cultures"), Layer.KULTUR, colorScheme.primaryStroke, 0.4)), false));
+    }
+    else if (COLOR_BY_TEMPERATURE) {
+        areaFeatures.push.apply(areaFeatures, __spreadArray([], __read(fillChoropleth(surface.tiles, function (n) { return n.temperature; }, 6, TEMPERATURE_COLORS, transform, createSVGGroup(svg, "choropleth"), Layer.GEO, -35)), false));
+    }
+    else if (COLOR_BY_RAINFALL) {
+        areaFeatures.push.apply(areaFeatures, __spreadArray([], __read(fillChoropleth(surface.tiles, function (n) { return n.rainfall; }, 0.25, RAINFALL_COLORS, transform, createSVGGroup(svg, "choropleth"), Layer.GEO)), false));
+    }
     else if (colorSchemeName === 'physical') {
         // color the land by biome
         areaFeatures.push.apply(areaFeatures, __spreadArray([], __read(fillChoropleth(surface.tiles, function (n) { return n.biome; }, 1, ORDERED_BIOME_COLORS, transform, createSVGGroup(svg, "biomes"), Layer.BIO)), false));
@@ -387,12 +435,12 @@ export function depict(surface, continents, world, projectionName, regionOfInter
         var biggestCivs = world.getCivs(true);
         biggestCivs = biggestCivs.filter(// skip really small countries
         function (// skip really small countries
-        civ) { return civ.tileTree.size > 1 || civ.getPopulation() / civ.getTotalArea() >= BORDER_SPECIFY_THRESHOLD; });
+        civ) { return civ.getTiles().size > 1 || civ.getPopulation() / civ.getTotalArea() >= BORDER_SPECIFY_THRESHOLD; });
         var biggestCivExtents = [];
         try {
             for (var biggestCivs_1 = __values(biggestCivs), biggestCivs_1_1 = biggestCivs_1.next(); !biggestCivs_1_1.done; biggestCivs_1_1 = biggestCivs_1.next()) {
                 var civ = biggestCivs_1_1.value;
-                biggestCivExtents.push(filterSet(civ.tileTree.keys(), function (n) { return !n.isWater(); }));
+                biggestCivExtents.push(filterSet(civ.getTiles(), function (n) { return !n.isWater(); }));
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -406,7 +454,7 @@ export function depict(surface, continents, world, projectionName, regionOfInter
         areaFeatures.push.apply(areaFeatures, __spreadArray([], __read(drawnCivs), false));
         try {
             for (var drawnCivs_1 = __values(drawnCivs), drawnCivs_1_1 = drawnCivs_1.next(); !drawnCivs_1_1.done; drawnCivs_1_1 = drawnCivs_1.next()) {
-                var _j = drawnCivs_1_1.value, index = _j.index, color = _j.color;
+                var _h = drawnCivs_1_1.value, index = _h.index, color = _h.color;
                 politicalColorMap.set(biggestCivs[index].id, color);
             }
         }
@@ -479,38 +527,22 @@ export function depict(surface, continents, world, projectionName, regionOfInter
     if (civLabels) {
         if (world === null)
             throw new Error("this Chart was asked to label countries but the provided World was null");
-        placeLabels(world.getCivs(), style, (landTexture) ? politicalColorMap : null, transform, createSVGGroup(svg, "labels"), fontSize, 3 * fontSize, characterWidthMap);
+        if (COLOR_BY_CULTURE)
+            placeLabels(world.getCultures(), style, null, transform, createSVGGroup(svg, "labels"), fontSize, 3 * fontSize, characterWidthMap);
+        else
+            placeLabels(world.getCivs(), style, (landTexture) ? politicalColorMap : null, transform, createSVGGroup(svg, "labels"), fontSize, 3 * fontSize, characterWidthMap);
+    }
+    if (SHOW_STRAIGHT_SKELETONS) {
+        drawStraightSkeletons(surface, transform, createSVGGroup(svg, "spooky_scary_skeletons"));
     }
     if (SHOW_TILE_INDICES) {
-        var g = createSVGGroup(svg, "indices");
-        g.attributes.style = "text-anchor: middle; dominant-baseline: middle";
-        try {
-            for (var _k = __values(surface.tiles), _l = _k.next(); !_l.done; _l = _k.next()) {
-                var tile = _l.value;
-                var text = h('text'); // start by creating the text element
-                var location_1 = transformPoint(tile, transform);
-                if (location_1 !== null) {
-                    text.attributes["x"] = location_1.x.toFixed(3);
-                    text.attributes["y"] = location_1.y.toFixed(3);
-                    text.attributes["font-size"] = "0.2em";
-                    text.textContent = "".concat(tile.index);
-                    g.children.push(text);
-                }
-            }
-        }
-        catch (e_3_1) { e_3 = { error: e_3_1 }; }
-        finally {
-            try {
-                if (_l && !_l.done && (_c = _k.return)) _c.call(_k);
-            }
-            finally { if (e_3) throw e_3.error; }
-        }
+        placeTileLabels(surface.tiles, transform, createSVGGroup(svg, "indices"));
     }
     // add a margin and outline to the whole thing
     drawOuterBorder(bbox, transform, svg, "white", "black", 0.8);
     // add the windrose
     if (windrose) {
-        placeWindrose(bbox, resources.get("windrose"), createSVGGroup(svg, "compass-rose"));
+        placeWindrose(bbox.offset(-margin), resources.get("windrose"), createSVGGroup(svg, "compass-rose"));
     }
     var visible;
     if (world !== null) {
@@ -518,18 +550,18 @@ export function depict(surface, continents, world, projectionName, regionOfInter
         // (this is somewhat inefficient, since it probably already calculated this, but it's pretty quick, so I think it's fine)
         visible = [];
         try {
-            for (var _m = __values(world.getCivs(true)), _o = _m.next(); !_o.done; _o = _m.next()) {
-                var civ = _o.value;
-                if (transformedOutline(__spreadArray([], __read(civ.tileTree.keys()), false).filter(function (n) { return !n.isWater(); }), Layer.KULTUR, transform).length > 0)
+            for (var _j = __values(world.getCivs(true)), _k = _j.next(); !_k.done; _k = _j.next()) {
+                var civ = _k.value;
+                if (transformedOutline(filterSet(civ.getTiles(), function (n) { return !n.isWater(); }), Layer.KULTUR, transform).length > 0)
                     visible.push(civ);
             }
         }
-        catch (e_4_1) { e_4 = { error: e_4_1 }; }
+        catch (e_3_1) { e_3 = { error: e_3_1 }; }
         finally {
             try {
-                if (_o && !_o.done && (_d = _m.return)) _d.call(_m);
+                if (_k && !_k.done && (_c = _j.return)) _c.call(_j);
             }
-            finally { if (e_4) throw e_4.error; }
+            finally { if (e_3) throw e_3.error; }
         }
     }
     else {
@@ -539,18 +571,18 @@ export function depict(surface, continents, world, projectionName, regionOfInter
     if (SHOW_TECH_LEVEL && world !== null) {
         var maxTechnology = 0;
         try {
-            for (var _p = __values(world.getCivs()), _q = _p.next(); !_q.done; _q = _p.next()) {
-                var civ = _q.value;
+            for (var _l = __values(world.getCivs()), _m = _l.next(); !_m.done; _m = _l.next()) {
+                var civ = _m.value;
                 if (civ.technology > maxTechnology)
                     maxTechnology = civ.technology;
             }
         }
-        catch (e_5_1) { e_5 = { error: e_5_1 }; }
+        catch (e_4_1) { e_4 = { error: e_4_1 }; }
         finally {
             try {
-                if (_q && !_q.done && (_e = _p.return)) _e.call(_p);
+                if (_m && !_m.done && (_d = _l.return)) _d.call(_l);
             }
-            finally { if (e_5) throw e_5.error; }
+            finally { if (e_4) throw e_4.error; }
         }
         console.log("the most advanced civ in the world has tech equivalent to ".concat((Math.log(maxTechnology) * 1400 - 3000)));
     }
@@ -602,18 +634,20 @@ function fillMultiple(regions, colors, tiles, baseColor, transform, svg, greeble
  * @param tiles the tiles to color in
  * @param valuator the function that is used to determine in which bin each tile goes
  * @param binSize the size of each interval to color together
+ * @param binOffset the minimum value of the lowest bin
  * @param colors the color for each value bin
  * @param transform the projection, extent, scale, and orientation information
  * @param svg object on which to put the Paths
  * @param greeble what kind of edge it is for the purposes of greebling
  */
-function fillChoropleth(tiles, valuator, binSize, colors, transform, svg, greeble) {
+function fillChoropleth(tiles, valuator, binSize, colors, transform, svg, greeble, binOffset) {
+    if (binOffset === void 0) { binOffset = 0; }
     var contours = [];
     var _loop_1 = function (i) {
         if (colors[i] === "none")
             return "continue";
-        var min = (i !== 0) ? i * binSize : -Infinity;
-        var max = (i !== colors.length - 1) ? (i + 1) * binSize : Infinity;
+        var min = (i !== 0) ? binOffset + i * binSize : -Infinity;
+        var max = (i !== colors.length - 1) ? binOffset + (i + 1) * binSize : Infinity;
         var path = fill(filterSet(tiles, function (n) { return valuator(n) >= min && valuator(n) < max; }), transform, svg, colors[i], greeble);
         contours.push({ path: path, color: colors[i] });
     };
@@ -677,28 +711,28 @@ function drawRivers(rivers, riverDisplayThreshold, transform, svg, color, width,
  * @param includeSea whether to include sea borders as well
  */
 function drawBorders(civs, transform, svg, color, width, includeSea) {
-    var e_6, _a;
+    var e_5, _a;
     if (includeSea === void 0) { includeSea = false; }
     var lineFeatures = [];
     try {
         for (var civs_1 = __values(civs), civs_1_1 = civs_1.next(); !civs_1_1.done; civs_1_1 = civs_1.next()) {
             var civ = civs_1_1.value;
-            if (civ.tileTree.size === 1 && civ.getPopulation() / civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
+            if (civ.getTiles().size === 1 && civ.getPopulation() / civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
                 continue; // skip really small countries
-            var tiles = new Set(civ.tileTree.keys());
+            var tiles = civ.getTiles();
             if (!includeSea)
-                tiles = filterSet(civ.tileTree.keys(), function (n) { return !n.isWater(); });
+                tiles = filterSet(tiles, function (n) { return !n.isWater(); });
             var line = fill(tiles, transform, svg, 'none', Layer.KULTUR, color, width);
             if (line.length > 0)
                 lineFeatures.push(line);
         }
     }
-    catch (e_6_1) { e_6 = { error: e_6_1 }; }
+    catch (e_5_1) { e_5 = { error: e_5_1 }; }
     finally {
         try {
             if (civs_1_1 && !civs_1_1.done && (_a = civs_1.return)) _a.call(civs_1);
         }
-        finally { if (e_6) throw e_6.error; }
+        finally { if (e_5) throw e_5.error; }
     }
     return lineFeatures;
 }
@@ -713,7 +747,7 @@ function drawBorders(civs, transform, svg, color, width, includeSea) {
  * @param radius the distance from the shape to draw horizontal lines
  */
 function hatchCoast(land, transform, svg, color, width, spacing, radius) {
-    var e_7, _a, e_8, _b, e_9, _c;
+    var e_6, _a, e_7, _b, e_8, _c;
     // instantiate a random number generator for feathering the edges
     var rng = new Random(0);
     var shape = transformedOutline(land, Layer.GEO, transform);
@@ -734,12 +768,12 @@ function hatchCoast(land, transform, svg, color, width, spacing, radius) {
             intersections[lineIndex].push({ x: s, downward: goingEast, trueCoast: true });
         }
     }
-    catch (e_7_1) { e_7 = { error: e_7_1 }; }
+    catch (e_6_1) { e_6 = { error: e_6_1 }; }
     finally {
         try {
             if (_e && !_e.done && (_a = _d.return)) _a.call(_d);
         }
-        finally { if (e_7) throw e_7.error; }
+        finally { if (e_6) throw e_6.error; }
     }
     try {
         for (var _g = __values(getAllCombCrossings(dilatedShape, yMin, spacing, INFINITE_PLANE)), _h = _g.next(); !_h.done; _h = _g.next()) {
@@ -747,12 +781,12 @@ function hatchCoast(land, transform, svg, color, width, spacing, radius) {
             intersections[lineIndex].push({ x: s, downward: goingEast, trueCoast: false });
         }
     }
-    catch (e_8_1) { e_8 = { error: e_8_1 }; }
+    catch (e_7_1) { e_7 = { error: e_7_1 }; }
     finally {
         try {
             if (_h && !_h.done && (_b = _g.return)) _b.call(_g);
         }
-        finally { if (e_8) throw e_8.error; }
+        finally { if (e_7) throw e_7.error; }
     }
     // select the ones that should be the endpoints of line segments
     var endpoints = [];
@@ -762,7 +796,7 @@ function hatchCoast(land, transform, svg, color, width, spacing, radius) {
         var falseWraps = 0;
         var trueWraps = 0;
         try {
-            for (var _k = (e_9 = void 0, __values(intersections[j])), _l = _k.next(); !_l.done; _l = _k.next()) {
+            for (var _k = (e_8 = void 0, __values(intersections[j])), _l = _k.next(); !_l.done; _l = _k.next()) {
                 var intersection_1 = _l.value;
                 if (intersection_1.trueCoast) {
                     if (intersection_1.downward)
@@ -785,12 +819,12 @@ function hatchCoast(land, transform, svg, color, width, spacing, radius) {
                 }
             }
         }
-        catch (e_9_1) { e_9 = { error: e_9_1 }; }
+        catch (e_8_1) { e_8 = { error: e_8_1 }; }
         finally {
             try {
                 if (_l && !_l.done && (_c = _k.return)) _c.call(_k);
             }
-            finally { if (e_9) throw e_9.error; }
+            finally { if (e_8) throw e_8.error; }
         }
         if (endpoints[j].length % 2 !== 0) {
             console.error("something went wrong in the hatching; these should always be even.");
@@ -823,7 +857,7 @@ function hatchCoast(land, transform, svg, color, width, spacing, radius) {
  * @param resources a map containing all of the predrawn pictures to use for the texture
  */
 function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fillColor, strokeColor, strokeWidth, resources) {
-    var e_10, _a, e_11, _b, e_12, _c, e_13, _d, e_14, _e, e_15, _f, e_16, _g;
+    var e_9, _a, e_10, _b, e_11, _c, e_12, _d, e_13, _e, e_14, _f, e_15, _g;
     var textureMixLookup = new Map();
     try {
         for (var TEXTURE_MIXES_1 = __values(TEXTURE_MIXES), TEXTURE_MIXES_1_1 = TEXTURE_MIXES_1.next(); !TEXTURE_MIXES_1_1.done; TEXTURE_MIXES_1_1 = TEXTURE_MIXES_1.next()) {
@@ -831,12 +865,12 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             textureMixLookup.set(name_1, components);
         }
     }
-    catch (e_10_1) { e_10 = { error: e_10_1 }; }
+    catch (e_9_1) { e_9 = { error: e_9_1 }; }
     finally {
         try {
             if (TEXTURE_MIXES_1_1 && !TEXTURE_MIXES_1_1.done && (_a = TEXTURE_MIXES_1.return)) _a.call(TEXTURE_MIXES_1);
         }
-        finally { if (e_10) throw e_10.error; }
+        finally { if (e_9) throw e_9.error; }
     }
     // get the hill texture
     var hillComponents = textureMixLookup.get("hill");
@@ -847,16 +881,16 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             hillCoverage += rock.density * Math.pow(rock.diameter, 2);
         }
     }
-    catch (e_11_1) { e_11 = { error: e_11_1 }; }
+    catch (e_10_1) { e_10 = { error: e_10_1 }; }
     finally {
         try {
             if (hillComponents_1_1 && !hillComponents_1_1.done && (_b = hillComponents_1.return)) _b.call(hillComponents_1);
         }
-        finally { if (e_11) throw e_11.error; }
+        finally { if (e_10) throw e_10.error; }
     }
     var textureRegions = [];
     var _loop_2 = function (biome) {
-        var e_17, _l, e_18, _m;
+        var e_16, _l, e_17, _m;
         if (!textureMixLookup.has(BIOME_NAMES[biome]))
             return "continue";
         var region = filterSet(tiles, function (t) { return t.biome === biome; });
@@ -865,17 +899,17 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             textureMixLookup.get(BIOME_NAMES[biome]) : [];
         var plantCoverage = 0;
         try {
-            for (var plantComponents_1 = (e_17 = void 0, __values(plantComponents)), plantComponents_1_1 = plantComponents_1.next(); !plantComponents_1_1.done; plantComponents_1_1 = plantComponents_1.next()) {
+            for (var plantComponents_1 = (e_16 = void 0, __values(plantComponents)), plantComponents_1_1 = plantComponents_1.next(); !plantComponents_1_1.done; plantComponents_1_1 = plantComponents_1.next()) {
                 var plant = plantComponents_1_1.value;
                 plantCoverage += plant.density * Math.pow(plant.diameter, 2);
             }
         }
-        catch (e_17_1) { e_17 = { error: e_17_1 }; }
+        catch (e_16_1) { e_16 = { error: e_16_1 }; }
         finally {
             try {
                 if (plantComponents_1_1 && !plantComponents_1_1.done && (_l = plantComponents_1.return)) _l.call(plantComponents_1);
             }
-            finally { if (e_17) throw e_17.error; }
+            finally { if (e_16) throw e_16.error; }
         }
         // fill the lowlands of that biome with the appropriate flora
         textureRegions.push({
@@ -887,17 +921,17 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
         var plantFactor = (totalCoverage - hillCoverage) / plantCoverage;
         var components = hillComponents.slice();
         try {
-            for (var plantComponents_2 = (e_18 = void 0, __values(plantComponents)), plantComponents_2_1 = plantComponents_2.next(); !plantComponents_2_1.done; plantComponents_2_1 = plantComponents_2.next()) {
+            for (var plantComponents_2 = (e_17 = void 0, __values(plantComponents)), plantComponents_2_1 = plantComponents_2.next(); !plantComponents_2_1.done; plantComponents_2_1 = plantComponents_2.next()) {
                 var _o = plantComponents_2_1.value, name_2 = _o.name, diameter = _o.diameter, density = _o.density;
                 components.push({ name: name_2, diameter: diameter, density: density * plantFactor });
             }
         }
-        catch (e_18_1) { e_18 = { error: e_18_1 }; }
+        catch (e_17_1) { e_17 = { error: e_17_1 }; }
         finally {
             try {
                 if (plantComponents_2_1 && !plantComponents_2_1.done && (_m = plantComponents_2.return)) _m.call(plantComponents_2);
             }
-            finally { if (e_18) throw e_18.error; }
+            finally { if (e_17) throw e_17.error; }
         }
         textureRegions.push({
             region: filterSet(region, function (t) { return t.height >= HILL_HEIGHT && t.height < MOUNTAIN_HEIGHT; }),
@@ -916,7 +950,7 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
     var rng = new Random(0);
     var symbols = [];
     var _loop_3 = function (region, components) {
-        var e_19, _p;
+        var e_18, _p;
         var polygon = transformedOutline(region, Layer.BIO, transform);
         if (polygon.length > 0) {
             // choose the locations (remember to scale vertically since we're looking down at a 45° angle)
@@ -930,17 +964,17 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             });
             try {
                 // and then divvy those locations up among the different components of the texture
-                for (var locations_1 = (e_19 = void 0, __values(locations)), locations_1_1 = locations_1.next(); !locations_1_1.done; locations_1_1 = locations_1.next()) {
+                for (var locations_1 = (e_18 = void 0, __values(locations)), locations_1_1 = locations_1.next(); !locations_1_1.done; locations_1_1 = locations_1.next()) {
                     var _q = locations_1_1.value, x = _q.x, y = _q.y, type = _q.type;
                     symbols.push({ x: x, y: y, name: components[type].name, flipped: rng.probability(1 / 2) });
                 }
             }
-            catch (e_19_1) { e_19 = { error: e_19_1 }; }
+            catch (e_18_1) { e_18 = { error: e_18_1 }; }
             finally {
                 try {
                     if (locations_1_1 && !locations_1_1.done && (_p = locations_1.return)) _p.call(locations_1);
                 }
-                finally { if (e_19) throw e_19.error; }
+                finally { if (e_18) throw e_18.error; }
             }
         }
     };
@@ -951,12 +985,12 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             _loop_3(region, components);
         }
     }
-    catch (e_12_1) { e_12 = { error: e_12_1 }; }
+    catch (e_11_1) { e_11 = { error: e_11_1 }; }
     finally {
         try {
             if (textureRegions_1_1 && !textureRegions_1_1.done && (_c = textureRegions_1.return)) _c.call(textureRegions_1);
         }
-        finally { if (e_12) throw e_12.error; }
+        finally { if (e_11) throw e_11.error; }
     }
     // make sure zorder is based on y
     symbols.sort(function (a, b) { return a.y - b.y; });
@@ -967,12 +1001,12 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             textureNames.add(symbol.name);
         }
     }
-    catch (e_13_1) { e_13 = { error: e_13_1 }; }
+    catch (e_12_1) { e_12 = { error: e_12_1 }; }
     finally {
         try {
             if (symbols_1_1 && !symbols_1_1.done && (_d = symbols_1.return)) _d.call(symbols_1);
         }
-        finally { if (e_13) throw e_13.error; }
+        finally { if (e_12) throw e_12.error; }
     }
     try {
         // add all the relevant textures to the <defs/>
@@ -991,12 +1025,12 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             defs.children.push(flippedTexture);
         }
     }
-    catch (e_14_1) { e_14 = { error: e_14_1 }; }
+    catch (e_13_1) { e_13 = { error: e_13_1 }; }
     finally {
         try {
             if (textureNames_1_1 && !textureNames_1_1.done && (_e = textureNames_1.return)) _e.call(textureNames_1);
         }
-        finally { if (e_14) throw e_14.error; }
+        finally { if (e_13) throw e_13.error; }
     }
     // then add the things to the map
     svg.attributes.style =
@@ -1007,7 +1041,7 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             var referenceID = "#texture-".concat(name_3) + (flipped ? "-flip" : "");
             var picture = h('use', { href: referenceID, x: x.toFixed(3), y: y.toFixed(3), fill: fillColor });
             try {
-                for (var areaFeatures_1 = (e_16 = void 0, __values(areaFeatures)), areaFeatures_1_1 = areaFeatures_1.next(); !areaFeatures_1_1.done; areaFeatures_1_1 = areaFeatures_1.next()) { // check if it should inherit color from a base fill
+                for (var areaFeatures_1 = (e_15 = void 0, __values(areaFeatures)), areaFeatures_1_1 = areaFeatures_1.next(); !areaFeatures_1_1.done; areaFeatures_1_1 = areaFeatures_1.next()) { // check if it should inherit color from a base fill
                     var region = areaFeatures_1_1.value;
                     if (contains(region.path, { s: x, t: y }, INFINITE_PLANE, Rule.POSITIVE)) {
                         picture.attributes.fill = region.color;
@@ -1015,22 +1049,22 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
                     }
                 }
             }
-            catch (e_16_1) { e_16 = { error: e_16_1 }; }
+            catch (e_15_1) { e_15 = { error: e_15_1 }; }
             finally {
                 try {
                     if (areaFeatures_1_1 && !areaFeatures_1_1.done && (_g = areaFeatures_1.return)) _g.call(areaFeatures_1);
                 }
-                finally { if (e_16) throw e_16.error; }
+                finally { if (e_15) throw e_15.error; }
             }
             svg.children.push(picture);
         }
     }
-    catch (e_15_1) { e_15 = { error: e_15_1 }; }
+    catch (e_14_1) { e_14 = { error: e_14_1 }; }
     finally {
         try {
             if (symbols_2_1 && !symbols_2_1.done && (_f = symbols_2.return)) _f.call(symbols_2);
         }
-        finally { if (e_15) throw e_15.error; }
+        finally { if (e_14) throw e_14.error; }
     }
 }
 /**
@@ -1040,7 +1074,7 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
  * @param svg SVG object on which to shade.
  */
 function shade(vertices, transform, svg) {
-    var e_20, _a, e_21, _b, e_22, _c, e_23, _d;
+    var e_19, _a, e_20, _b, e_21, _c, e_22, _d;
     if (!vertices)
         return;
     // first determine which triangles are wholly within the map TODO: include some nodes outside the map
@@ -1053,7 +1087,7 @@ function shade(vertices, transform, svg) {
             var t = vertices_1_1.value;
             var p = [];
             try {
-                for (var _e = (e_21 = void 0, __values(t.tiles)), _f = _e.next(); !_f.done; _f = _e.next()) {
+                for (var _e = (e_20 = void 0, __values(t.tiles)), _f = _e.next(); !_f.done; _f = _e.next()) {
                     var node = _f.value;
                     if (node instanceof EmptySpace)
                         continue triangleSearch;
@@ -1067,12 +1101,12 @@ function shade(vertices, transform, svg) {
                         maxHeight = node.height;
                 }
             }
-            catch (e_21_1) { e_21 = { error: e_21_1 }; }
+            catch (e_20_1) { e_20 = { error: e_20_1 }; }
             finally {
                 try {
                     if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
                 }
-                finally { if (e_21) throw e_21.error; }
+                finally { if (e_20) throw e_20.error; }
             }
             triangles.push(p);
             for (var i = 0; i < 3; i++) {
@@ -1082,12 +1116,12 @@ function shade(vertices, transform, svg) {
             }
         }
     }
-    catch (e_20_1) { e_20 = { error: e_20_1 }; }
+    catch (e_19_1) { e_19 = { error: e_19_1 }; }
     finally {
         try {
             if (vertices_1_1 && !vertices_1_1.done && (_a = vertices_1.return)) _a.call(vertices_1);
         }
-        finally { if (e_20) throw e_20.error; }
+        finally { if (e_19) throw e_19.error; }
     }
     var heightScale = maxEdgeLength / (maxHeight - minHeight) / 3;
     try {
@@ -1099,17 +1133,17 @@ function shade(vertices, transform, svg) {
             var slope = -n.y / n.z;
             var path = [];
             try {
-                for (var p_1 = (e_23 = void 0, __values(p)), p_1_1 = p_1.next(); !p_1_1.done; p_1_1 = p_1.next()) {
+                for (var p_1 = (e_22 = void 0, __values(p)), p_1_1 = p_1.next(); !p_1_1.done; p_1_1 = p_1.next()) {
                     var _g = p_1_1.value, x = _g.x, y = _g.y;
                     path.push({ type: 'L', args: [x, -y] });
                 } // put its values in a plottable form
             }
-            catch (e_23_1) { e_23 = { error: e_23_1 }; }
+            catch (e_22_1) { e_22 = { error: e_22_1 }; }
             finally {
                 try {
                     if (p_1_1 && !p_1_1.done && (_d = p_1.return)) _d.call(p_1);
                 }
-                finally { if (e_23) throw e_23.error; }
+                finally { if (e_22) throw e_22.error; }
             }
             path.push({ type: 'L', args: __spreadArray([], __read(path[0].args), false) });
             path[0].type = 'M';
@@ -1123,12 +1157,12 @@ function shade(vertices, transform, svg) {
                     "fill: #000; fill-opacity: ".concat(Math.min(1 - brightness, 1) * (1 - AMBIENT_LIGHT), ";");
         }
     }
-    catch (e_22_1) { e_22 = { error: e_22_1 }; }
+    catch (e_21_1) { e_21 = { error: e_21_1 }; }
     finally {
         try {
             if (triangles_1_1 && !triangles_1_1.done && (_c = triangles_1.return)) _c.call(triangles_1);
         }
-        finally { if (e_22) throw e_22.error; }
+        finally { if (e_21) throw e_21.error; }
     }
 }
 /**
@@ -1176,36 +1210,36 @@ function drawGraticule(surface, extent, transform, svg, color, width) {
  * @param characterWidthMap a table containing the width of every possible character, for label length calculation purposes
  */
 function placeLabels(civs, style, haloInfo, transform, svg, minFontSize, maxFontSize, characterWidthMap) {
-    var e_24, _a;
+    var e_23, _a;
     var labelIndex = 0;
     try {
         for (var civs_2 = __values(civs), civs_2_1 = civs_2.next(); !civs_2_1.done; civs_2_1 = civs_2.next()) {
             var civ = civs_2_1.value;
-            if (civ.getPopulation() > 0) {
-                var tiles = __spreadArray([], __read(civ.tileTree.keys()), false).filter(function (n) { return !n.isSaltWater(); }); // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
-                var label = void 0;
-                if (SHOW_TECH_LEVEL)
-                    label = (Math.log(civ.technology) * 1400 - 3000).toFixed(0);
-                else
-                    label = civ.getName().toString(style).toUpperCase();
-                var haloColor = void 0;
-                if (haloInfo === null)
-                    haloColor = null;
-                else if (haloInfo.has(civ.id))
-                    haloColor = haloInfo.get(civ.id);
-                else
-                    haloColor = haloInfo.get(0);
-                placeLabel(tiles, label, transform, svg, minFontSize, maxFontSize, haloColor, labelIndex, characterWidthMap);
-                labelIndex += 1;
-            }
+            var tiles = __spreadArray([], __read(civ.getTiles()), false).filter(function (n) { return !n.isSaltWater(); }); // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
+            if (tiles.length < 0)
+                throw new Error("you seem to have passed a nonexistent Civ to placeLabels.");
+            var label = void 0;
+            if (SHOW_TECH_LEVEL && civ instanceof Civ)
+                label = (Math.log(civ.technology) * 1400 - 3000).toFixed(0);
+            else
+                label = civ.getName().toString(style).toUpperCase();
+            var haloColor = void 0;
+            if (haloInfo === null)
+                haloColor = null;
+            else if (haloInfo.has(civ.id))
+                haloColor = haloInfo.get(civ.id);
+            else
+                haloColor = haloInfo.get(0);
+            placeLabel(tiles, label, transform, svg, minFontSize, maxFontSize, haloColor, labelIndex, characterWidthMap);
+            labelIndex += 1;
         }
     }
-    catch (e_24_1) { e_24 = { error: e_24_1 }; }
+    catch (e_23_1) { e_23 = { error: e_23_1 }; }
     finally {
         try {
             if (civs_2_1 && !civs_2_1.done && (_a = civs_2.return)) _a.call(civs_2);
         }
-        finally { if (e_24) throw e_24.error; }
+        finally { if (e_23) throw e_23.error; }
     }
 }
 /**
@@ -1272,8 +1306,90 @@ function placeLabel(tiles, label, transform, svg, minFontSize, maxFontSize, halo
     svg.children.push(textGroup);
 }
 /**
+ * as a debugging tool, put a text box on every Tile showing its index
+ */
+function placeTileLabels(tiles, transform, svg) {
+    var e_24, _a;
+    svg.attributes.style = "text-anchor: middle; dominant-baseline: middle";
+    try {
+        for (var tiles_1 = __values(tiles), tiles_1_1 = tiles_1.next(); !tiles_1_1.done; tiles_1_1 = tiles_1.next()) {
+            var tile = tiles_1_1.value;
+            var text = h('text'); // start by creating the text element
+            var location_1 = transformPoint(tile, transform);
+            if (location_1 !== null) {
+                text.attributes["x"] = location_1.x.toFixed(3);
+                text.attributes["y"] = location_1.y.toFixed(3);
+                text.attributes["font-size"] = "0.2em";
+                text.textContent = "".concat(tile.index);
+                svg.children.push(text);
+            }
+        }
+    }
+    catch (e_24_1) { e_24 = { error: e_24_1 }; }
+    finally {
+        try {
+            if (tiles_1_1 && !tiles_1_1.done && (_a = tiles_1.return)) _a.call(tiles_1);
+        }
+        finally { if (e_24) throw e_24.error; }
+    }
+}
+/**
+ * as a debugging tool, draw the straight skeleton of every tile
+ */
+function drawStraightSkeletons(surface, transform, svg) {
+    var e_25, _a, e_26, _b, e_27, _c;
+    var edges = new Set();
+    try {
+        for (var _d = __values(surface.tiles), _e = _d.next(); !_e.done; _e = _d.next()) {
+            var tile = _e.value;
+            try {
+                for (var _f = (e_26 = void 0, __values(tile.neighbors.values())), _g = _f.next(); !_g.done; _g = _f.next()) {
+                    var edge = _g.value;
+                    edges.add(edge);
+                }
+            }
+            catch (e_26_1) { e_26 = { error: e_26_1 }; }
+            finally {
+                try {
+                    if (_g && !_g.done && (_b = _f.return)) _b.call(_f);
+                }
+                finally { if (e_26) throw e_26.error; }
+            }
+        }
+    }
+    catch (e_25_1) { e_25 = { error: e_25_1 }; }
+    finally {
+        try {
+            if (_e && !_e.done && (_a = _d.return)) _a.call(_d);
+        }
+        finally { if (e_25) throw e_25.error; }
+    }
+    var path = [];
+    try {
+        for (var edges_1 = __values(edges), edges_1_1 = edges_1.next(); !edges_1_1.done; edges_1_1 = edges_1.next()) {
+            var edge = edges_1_1.value;
+            edge.setCoordinatesAndBounds();
+            var edgeCoordsPolygon = [edge.vertex0.pos].concat(edge.leftBoundCartesian, [edge.vertex1.pos], edge.rightBoundCartesian);
+            var geoCoordsPolygon = edgeCoordsPolygon.map(surface.φλ, surface);
+            var start = geoCoordsPolygon[geoCoordsPolygon.length - 1];
+            path.push({ type: 'M', args: [start.φ, start.λ] });
+            for (var i = 0; i < geoCoordsPolygon.length; i++)
+                path.push({ type: 'L', args: [geoCoordsPolygon[i].φ, geoCoordsPolygon[i].λ] });
+        }
+    }
+    catch (e_27_1) { e_27 = { error: e_27_1 }; }
+    finally {
+        try {
+            if (edges_1_1 && !edges_1_1.done && (_c = edges_1.return)) _c.call(edges_1);
+        }
+        finally { if (e_27) throw e_27.error; }
+    }
+    svg.attributes.style = "fill: none; stroke: #302d2877; stroke-width: 0.2px; stroke-linecap: round; stroke-linejoin: round";
+    draw(transformPath(path, transform), svg);
+}
+/**
  *
- * @param bbox
+ * @param bbox the spacial extent of the map area
  * @param content
  * @param svg SVG object on which to put the content
  */
@@ -1373,7 +1489,7 @@ function transformedOutline(tiles, greeble, transform) {
  * @param lines Set of lists of points to be combined and pathified.
  */
 function aggregate(lines) {
-    var e_25, _a, e_26, _b, e_27, _c, e_28, _d;
+    var e_28, _a, e_29, _b, e_30, _c, e_31, _d;
     var queue = __spreadArray([], __read(lines), false);
     var consolidated = new Set(); // first, consolidate
     var heads = new Map(); // map from points to [lines beginning with endpoint]
@@ -1381,7 +1497,7 @@ function aggregate(lines) {
     var torsos = new Map(); // map from midpoints to line containing midpoint
     while (queue.length > 0) {
         try {
-            for (var consolidated_1 = (e_25 = void 0, __values(consolidated)), consolidated_1_1 = consolidated_1.next(); !consolidated_1_1.done; consolidated_1_1 = consolidated_1.next()) {
+            for (var consolidated_1 = (e_28 = void 0, __values(consolidated)), consolidated_1_1 = consolidated_1.next(); !consolidated_1_1.done; consolidated_1_1 = consolidated_1.next()) {
                 var l = consolidated_1_1.value;
                 if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
                     throw Error("up top!");
@@ -1389,12 +1505,12 @@ function aggregate(lines) {
                     throw Error("up slightly lower!");
             }
         }
-        catch (e_25_1) { e_25 = { error: e_25_1 }; }
+        catch (e_28_1) { e_28 = { error: e_28_1 }; }
         finally {
             try {
                 if (consolidated_1_1 && !consolidated_1_1.done && (_a = consolidated_1.return)) _a.call(consolidated_1);
             }
-            finally { if (e_25) throw e_25.error; }
+            finally { if (e_28) throw e_28.error; }
         }
         var line = __spreadArray([], __read(queue.pop()), false); // check each given line (we've only shallow-copied until now, so make sure you don't alter the input lines themselves)
         var head = line[0], tail = line[line.length - 1];
@@ -1408,21 +1524,21 @@ function aggregate(lines) {
         for (var i = 1; i < line.length - 1; i++)
             torsos.set(line[i], { containing: line, index: i });
         try {
-            for (var consolidated_2 = (e_26 = void 0, __values(consolidated)), consolidated_2_1 = consolidated_2.next(); !consolidated_2_1.done; consolidated_2_1 = consolidated_2.next()) {
+            for (var consolidated_2 = (e_29 = void 0, __values(consolidated)), consolidated_2_1 = consolidated_2.next(); !consolidated_2_1.done; consolidated_2_1 = consolidated_2.next()) {
                 var l = consolidated_2_1.value;
                 if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
                     throw Error("that was quick.");
             }
         }
-        catch (e_26_1) { e_26 = { error: e_26_1 }; }
+        catch (e_29_1) { e_29 = { error: e_29_1 }; }
         finally {
             try {
                 if (consolidated_2_1 && !consolidated_2_1.done && (_b = consolidated_2.return)) _b.call(consolidated_2);
             }
-            finally { if (e_26) throw e_26.error; }
+            finally { if (e_29) throw e_29.error; }
         }
         try {
-            for (var _e = (e_27 = void 0, __values([head, tail])), _f = _e.next(); !_f.done; _f = _e.next()) { // first, on either end...
+            for (var _e = (e_30 = void 0, __values([head, tail])), _f = _e.next(); !_f.done; _f = _e.next()) { // first, on either end...
                 var endpoint_1 = _f.value;
                 if (torsos.has(endpoint_1)) { // does it run into the middle of another?
                     var _g = torsos.get(endpoint_1), containing = _g.containing, index = _g.index; // then that one must be cut in half
@@ -1442,15 +1558,15 @@ function aggregate(lines) {
                 }
             }
         }
-        catch (e_27_1) { e_27 = { error: e_27_1 }; }
+        catch (e_30_1) { e_30 = { error: e_30_1 }; }
         finally {
             try {
                 if (_f && !_f.done && (_c = _e.return)) _c.call(_e);
             }
-            finally { if (e_27) throw e_27.error; }
+            finally { if (e_30) throw e_30.error; }
         }
         try {
-            for (var consolidated_3 = (e_28 = void 0, __values(consolidated)), consolidated_3_1 = consolidated_3.next(); !consolidated_3_1.done; consolidated_3_1 = consolidated_3.next()) {
+            for (var consolidated_3 = (e_31 = void 0, __values(consolidated)), consolidated_3_1 = consolidated_3.next(); !consolidated_3_1.done; consolidated_3_1 = consolidated_3.next()) {
                 var l = consolidated_3_1.value;
                 if (!heads.has(l[0]) || !tails.has(l[l.length - 1]))
                     throw Error("i broke it ".concat(l[0].φ, " -> ").concat(l[l.length - 1].φ));
@@ -1458,12 +1574,12 @@ function aggregate(lines) {
                     throw Error("yoo broke it! ".concat(l[0].φ, " -> ").concat(l[l.length - 1].φ));
             }
         }
-        catch (e_28_1) { e_28 = { error: e_28_1 }; }
+        catch (e_31_1) { e_31 = { error: e_31_1 }; }
         finally {
             try {
                 if (consolidated_3_1 && !consolidated_3_1.done && (_d = consolidated_3.return)) _d.call(consolidated_3);
             }
-            finally { if (e_28) throw e_28.error; }
+            finally { if (e_31) throw e_31.error; }
         }
         if (tails.has(head)) { // does its beginning connect to another?
             if (heads.get(head).length === 1 && tails.get(head).length === 1) // if these fit together exclusively
@@ -1497,7 +1613,7 @@ function aggregate(lines) {
  * @param scale the map scale at which to greeble in mm/km
  */
 function convertToGreebledPath(points, greeble, scale) {
-    var e_29, _a, e_30, _b;
+    var e_32, _a, e_33, _b;
     var path = [];
     try {
         for (var points_1 = __values(points), points_1_1 = points_1.next(); !points_1_1.done; points_1_1 = points_1.next()) { // then do the conversion
@@ -1512,41 +1628,42 @@ function convertToGreebledPath(points, greeble, scale) {
                     if (start.neighbors.has(end))
                         edge = start.neighbors.get(end);
                 var step = void 0;
-                // if there is an edge and it should be greebled, greeble it
-                if (edge !== null && weShouldGreeble(edge, greeble)) {
-                    var path_1 = edge.getPath(GREEBLE_SCALE / scale);
+                // if this is an edge or something, just use a strait line
+                if (edge === null)
+                    step = [end];
+                // if there is an edge, greeble it
+                else {
+                    // if it's not a precise edge, tho, then greeble minimally
+                    var edgeScale = weShouldGreeble(edge, greeble) ? scale : 0;
+                    var path_1 = edge.getPath(GREEBLE_SCALE / edgeScale);
                     if (edge.vertex0 === start)
                         step = path_1.slice(1);
                     else
                         step = path_1.slice(0, path_1.length - 1).reverse();
                 }
-                // otherwise, draw a strait line
-                else {
-                    step = [end];
-                }
                 console.assert(step[step.length - 1].φ === end.φ && step[step.length - 1].λ === end.λ, step, "did not end at", end);
                 try {
-                    for (var step_1 = (e_30 = void 0, __values(step)), step_1_1 = step_1.next(); !step_1_1.done; step_1_1 = step_1.next()) {
+                    for (var step_1 = (e_33 = void 0, __values(step)), step_1_1 = step_1.next(); !step_1_1.done; step_1_1 = step_1.next()) {
                         var place = step_1_1.value;
                         path.push({ type: 'L', args: [place.φ, place.λ] });
                     }
                 }
-                catch (e_30_1) { e_30 = { error: e_30_1 }; }
+                catch (e_33_1) { e_33 = { error: e_33_1 }; }
                 finally {
                     try {
                         if (step_1_1 && !step_1_1.done && (_b = step_1.return)) _b.call(step_1);
                     }
-                    finally { if (e_30) throw e_30.error; }
+                    finally { if (e_33) throw e_33.error; }
                 }
             }
         }
     }
-    catch (e_29_1) { e_29 = { error: e_29_1 }; }
+    catch (e_32_1) { e_32 = { error: e_32_1 }; }
     finally {
         try {
             if (points_1_1 && !points_1_1.done && (_a = points_1.return)) _a.call(points_1);
         }
-        finally { if (e_29) throw e_29.error; }
+        finally { if (e_32) throw e_32.error; }
     }
     return path;
 }
@@ -1583,7 +1700,7 @@ function weShouldGreeble(edge, layer) {
  * identify the meridian and parallel that are most centered on this region
  */
 function chooseMapCentering(regionOfInterest, surface) {
-    var e_31, _a;
+    var e_34, _a;
     // start by calculating the mean radius of the region, for pseudocylindrical standard parallels
     var rSum = 0;
     var count = 0;
@@ -1594,12 +1711,12 @@ function chooseMapCentering(regionOfInterest, surface) {
             count += 1;
         }
     }
-    catch (e_31_1) { e_31 = { error: e_31_1 }; }
+    catch (e_34_1) { e_34 = { error: e_34_1 }; }
     finally {
         try {
             if (regionOfInterest_1_1 && !regionOfInterest_1_1.done && (_a = regionOfInterest_1.return)) _a.call(regionOfInterest_1);
         }
-        finally { if (e_31) throw e_31.error; }
+        finally { if (e_34) throw e_34.error; }
     }
     if (count === 0)
         throw new Error("I can't choose a map centering with an empty region of interest.");
@@ -1628,7 +1745,7 @@ function chooseMapCentering(regionOfInterest, surface) {
  * identify the meridian that is most centered on this region, and the longitudinal width of the region about that center.
  */
 function chooseCentralMeridian(region, regionBoundary) {
-    var e_32, _a;
+    var e_35, _a;
     // find the longitude with the most empty space on either side of it
     var emptyLongitudes = new ErodingSegmentTree(-Math.PI, Math.PI); // start with all longitudes empty
     for (var i = 0; i < regionBoundary.length; i++) {
@@ -1663,12 +1780,12 @@ function chooseCentralMeridian(region, regionBoundary) {
                 yCenter += Math.sin(tile.λ);
             }
         }
-        catch (e_32_1) { e_32 = { error: e_32_1 }; }
+        catch (e_35_1) { e_35 = { error: e_35_1 }; }
         finally {
             try {
                 if (region_1_1 && !region_1_1.done && (_a = region_1.return)) _a.call(region_1);
             }
-            finally { if (e_32) throw e_32.error; }
+            finally { if (e_35) throw e_35.error; }
         }
         return {
             center: Math.atan2(yCenter, xCenter),
@@ -1687,7 +1804,7 @@ function adjustMapCentering(regionOfInterest, projection) {
     if (coastline.length === 0)
         throw new Error("how can I adjust the map centering when there's noting to center?");
     function centroid(λCenter) {
-        var e_33, _a;
+        var e_36, _a;
         var rotatedProjection = projection.recenter(λCenter);
         var min = null;
         var max = null;
@@ -1703,12 +1820,12 @@ function adjustMapCentering(regionOfInterest, projection) {
                     max = { x: vertex.x, φ: rawVertex.φ, λ: rawVertex.λ };
             }
         }
-        catch (e_33_1) { e_33 = { error: e_33_1 }; }
+        catch (e_36_1) { e_36 = { error: e_36_1 }; }
         finally {
             try {
                 if (coastline_1_1 && !coastline_1_1.done && (_a = coastline_1.return)) _a.call(coastline_1);
             }
-            finally { if (e_33) throw e_33.error; }
+            finally { if (e_36) throw e_36.error; }
         }
         return {
             value: -(min.x + max.x) / 2,

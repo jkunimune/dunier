@@ -35,7 +35,6 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     return to.concat(ar || Array.prototype.slice.call(from));
 };
 import { POPULATION_DENSITY, MEAN_ASSIMILATION_TIME, SLOPE_FACTOR, CONQUEST_RATE, TECH_ADVANCEMENT_RATE, MAX_DYNASTY_LIFETIME, BOAT_CHANCE, BOAT_FACTOR } from "./world.js";
-import { Culture } from "./culture.js";
 import Queue from "../utilities/external/tinyqueue.js";
 import { Dequeue } from "../utilities/dequeue.js";
 /**
@@ -81,9 +80,8 @@ var Civ = /** @class */ (function () {
         if (this.capital === null) {
             this.capital = tile;
             // define a new national identity (offset the seed to increase variability)
-            var culture = new Culture(this.capital.culture, this.capital, this.technology, this.world.rng.next() + 1);
+            var culture = this.world.addNewCulture(this.capital, this.technology);
             culture.spreadTo(this.capital);
-            this.world.addCulture(culture);
             // save the language so we have it in case the capital is destroyed
             this.language = culture.lect;
             // record this moment in history
@@ -413,6 +411,12 @@ var Civ = /** @class */ (function () {
      */
     Civ.prototype.getLandArea = function () {
         return this.landArea;
+    };
+    /**
+     * get an iterable over all controlld tiles.
+     */
+    Civ.prototype.getTiles = function () {
+        return new Set(this.tileTree.keys());
     };
     /**
      * list the cultures present in this country, along with the set of tiles occupied by each's share of the

@@ -371,7 +371,7 @@ function applyMap(projectionName, orientation, width, height, focusSpecifier, co
         var i = Number.parseInt(focusSpecifier.split("-")[0].slice(7));
         try {
             var civ = world.getCiv(i);
-            regionOfInterest = filterSet(civ.tileTree.keys(), function (tile) { return !tile.isWater(); });
+            regionOfInterest = filterSet(civ.getTiles(), function (tile) { return !tile.isWater(); });
         }
         catch (_a) {
             console.error("invalid civ index: ".concat(i));

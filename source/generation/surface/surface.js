@@ -39,7 +39,7 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
  * To view a copy of this license, visit <https://creativecommons.org/publicdomain/zero/1.0>
  */
 import { Random } from "../../utilities/random.js";
-import { binarySearch, linterp, noisyProfile } from "../../utilities/miscellaneus.js";
+import { binarySearch, linterp, localizeInRange, noisyProfile } from "../../utilities/miscellaneus.js";
 import { Biome } from "../terrain.js";
 import { checkVoronoiPolygon, circumcenter, orthogonalBasis, Vector } from "../../utilities/geometry.js";
 import { straightSkeleton } from "../../utilities/straightskeleton.js";
@@ -568,6 +568,7 @@ var Vertex = /** @class */ (function () {
         this.edges = [null, null, null]; // edges a-b, b-c, and c-a
         this.neighbors = new Map(); // connected vertices
         this.surface = a.surface;
+        this.flow = 0;
         for (var i = 0; i < 3; i++) { // check each non-empty pair to see if they are already connected
             var tileR = this.tiles[i], tileL = this.tiles[(i + 1) % 3];
             if (tileR instanceof Tile && tileL instanceof Tile) {
@@ -683,6 +684,7 @@ var Edge = /** @class */ (function () {
         this.tileR = tileR;
         this.vertex1 = vertex1;
         this.distance = distance;
+        this.surface = tileL.surface;
         tileL.neighbors.set(tileR, this);
         tileR.neighbors.set(tileL, this);
         // instantiate the path (to be greebled later)
@@ -693,6 +695,7 @@ var Edge = /** @class */ (function () {
         this.length = null;
         this.i = null;
         this.j = null;
+        this.flow = 0;
         // make a random number generator with a garanteed-uneke seed
         var index = tileL.index * tileL.surface.tiles.size + tileR.index;
         this.rng = new Random(index);
@@ -703,6 +706,7 @@ var Edge = /** @class */ (function () {
      * scale, the more vertices will be generated.  the result will be cashed to ensure consistent
      * and fast execution of later mappings.  in addition, if this edge ever needs to be rendered at
      * an even finer scale, it will bild off of what it has generated here today.
+     * @param resolution the longest permissible segment length
      */
     Edge.prototype.getPath = function (resolution) {
         // you'll crash the browser if the resolution is too fine
@@ -715,7 +719,10 @@ var Edge = /** @class */ (function () {
         if (this.paths.length === 0) {
             if (this.vertex0 === null || this.vertex1 === null)
                 throw new Error("I cannot currently greeble paths that are on the edge of the map.");
-            this.paths.push({ resolution: this.getLength(), points: [this.vertex0, this.vertex1] });
+            this.paths.push({
+                resolution: this.getLength(),
+                points: Edge.minimallyResolve([this.vertex0, this.vertex1], this.surface),
+            });
             this.finestPathPointsInEdgeCoords = [{ x: 0, y: 0 }, { x: this.getLength(), y: 0 }];
             this.currentResolution = this.getLength();
         }
@@ -729,10 +736,15 @@ var Edge = /** @class */ (function () {
             // put it in the correct coordinate system
             newPathPointsInGeoCoords.push(this.vertex0);
             for (var i = 1; i < newPathPointsInEdgeCoords.length - 1; i++)
-                newPathPointsInGeoCoords.push(this.tileL.surface.φλ(this.fromEdgeCoords(newPathPointsInEdgeCoords[i])));
+                newPathPointsInGeoCoords.push(this.surface.φλ(this.fromEdgeCoords(newPathPointsInEdgeCoords[i])));
             newPathPointsInGeoCoords.push(this.vertex1);
+            // add in any midpoints necessary to limit distortion from coordinate system curvature
+            var newPathPointsInResolvedGeoCoords = Edge.minimallyResolve(newPathPointsInGeoCoords, this.surface);
             // save it to this.paths
-            this.paths.push({ resolution: this.currentResolution, points: newPathPointsInGeoCoords });
+            this.paths.push({
+                resolution: this.currentResolution,
+                points: newPathPointsInResolvedGeoCoords,
+            });
             this.finestPathPointsInEdgeCoords = newPathPointsInEdgeCoords;
         }
         // select the relevant path from the list and return
@@ -742,6 +754,26 @@ var Edge = /** @class */ (function () {
                 "greebled the paths to ".concat(this.currentResolution, "."));
         else
             return this.paths[pathIndex].points;
+    };
+    /**
+     * for the 3D math in this file, straight lines are expected to be roughly geodesic.
+     * but in the mapping files, they are expected to be straight in equirectangular coordinates.
+     * the mismatch doesn't usually matter, but near the pole when the difference is greatest it can
+     * cause Voronoi polygons to intersect themselves or turn inside-out.  thus, we need to limit
+     * the amount of distortion in our Edges by adding intermediate nodes when this happens.
+     */
+    Edge.minimallyResolve = function (oldPoints, surface) {
+        var newPoints = oldPoints.slice();
+        for (var i = 1; i < newPoints.length;) {
+            var Δλ = localizeInRange(newPoints[i].λ - newPoints[i - 1].λ, -Math.PI, Math.PI);
+            if (Math.abs(Δλ) > Math.PI / 2) {
+                var midpoint = surface.φλ(surface.xyz(newPoints[i - 1]).plus(surface.xyz(newPoints[i])).over(2));
+                newPoints.splice(i, 0, midpoint);
+            }
+            else
+                i++;
+        }
+        return newPoints;
     };
     /** distance between the Vertices this connects */
     Edge.prototype.getLength = function () {

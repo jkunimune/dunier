@@ -108,13 +108,15 @@ var Culture = /** @class */ (function () {
     /**
      * base a culture off of some ancestor culture, with some changes
      * @param parent the proto-culture off of which this one is based
+     * @param id a nonnegative integer unique to this culture
      * @param homeland the place that will serve as the new cultural capital
      * @param technology the current technology level to which these people have access
      * @param seed a random number seed
      */
-    function Culture(parent, homeland, technology, seed) {
+    function Culture(parent, id, homeland, technology, seed) {
         var e_4, _a, e_5, _b;
         this.parent = parent;
+        this.id = id;
         this.rng = new Random(seed);
         this.featureLists = [];
         this.homeland = homeland;
@@ -304,6 +306,9 @@ var Culture = /** @class */ (function () {
             return this.parent.getAncestor(n - 1);
     };
     ;
+    Culture.prototype.getTiles = function () {
+        return this.tiles;
+    };
     Culture.prototype.getName = function () {
         return this.lect.standardRegister.getEthnonym(this.homeland.index);
     };
