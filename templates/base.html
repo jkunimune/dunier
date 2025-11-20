@@ -1,9 +1,15 @@
 <!doctype html>
-<html lang="{.language.fallback}">
+<html lang="{.language.fallback}" prefix="og: https://ogp.me/ns#">
   <head>
-    <!-- Required meta tags -->
+    <!-- metadata -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta property="og:title" content="{title.{.name}}" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://dunier.kunimune.blog/{.language}/{.name}.html" />
+    <meta property="og:image" content="/resources/banner.png" />
+    <meta property="og:image:alt" content="{meta.logo_alt}" />
+    <meta property="og:description" content="{meta.description}" />
 
     <link rel="stylesheet" href="/resources/style.css">
 
