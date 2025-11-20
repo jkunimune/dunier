@@ -165,7 +165,12 @@ var SoundChange = /** @class */ (function (_super) {
                     drowWen.push(oldWord[i]); // just add the next character of old
             }
         }
-        return drowWen.reverse();
+        var newWord = drowWen.reverse();
+        // if this change would make the word too short, cancel it
+        if (newWord.length < oldWord.length && newWord.length < 3)
+            return oldWord;
+        else
+            return newWord;
     };
     /**
      * does the segment string at the end of oldWord qualify to be changed?

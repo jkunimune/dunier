@@ -153,9 +153,11 @@ worker.onmessage = function (message) {
             option.textContent = focusOptions[i].label;
             picker.appendChild(option);
         }
-        // if the selection could not be kept, default it to continent 1
-        if (picker.selectedIndex === -1 && picker.childNodes.length > 1)
-            picker.childNodes.item(1).selected = true;
+        // if the selection could not be kept, default it to continent 2
+        if (picker.selectedIndex === -1) {
+            var selectedIndex = Math.min(2, picker.childNodes.length - 1);
+            picker.childNodes.item(selectedIndex).selected = true;
+        }
     }
 };
 worker.onerror = function (error) {

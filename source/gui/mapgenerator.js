@@ -324,10 +324,8 @@ function listFocusOptions(continents, world, selectedFocusOption, language, styl
     }
     // now, if the set of options no longer contains the selected one, set it to the default
     if (!focusOptions.some(function (option) { return selectedFocusOption === option.value; })) {
-        if (focusOptions.length > 1)
-            selectedFocusOption = focusOptions[1].value;
-        else
-            selectedFocusOption = focusOptions[0].value;
+        var selectedIndex = Math.min(2, focusOptions.length - 1);
+        selectedFocusOption = focusOptions[selectedIndex].value;
     }
     return [focusOptions, selectedFocusOption];
 }
