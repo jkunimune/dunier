@@ -336,10 +336,8 @@ function listFocusOptions(continents: Set<Tile>[], world: World, selectedFocusOp
 
 	// now, if the set of options no longer contains the selected one, set it to the default
 	if (!focusOptions.some(option => selectedFocusOption === option.value)) {
-		if (focusOptions.length > 1)
-			selectedFocusOption = focusOptions[1].value;
-		else
-			selectedFocusOption = focusOptions[0].value;
+		const selectedIndex = Math.min(2, focusOptions.length - 1);
+		selectedFocusOption = focusOptions[selectedIndex].value;
 	}
 
 	return [focusOptions, selectedFocusOption];
