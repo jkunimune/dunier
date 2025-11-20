@@ -7,7 +7,7 @@ import {
 	filterSet, findRoot, localizeInRange,
 	pathToString,
 } from "../utilities/miscellaneus.js";
-import {World} from "../generation/world.js";
+import {Region, World} from "../generation/world.js";
 import {MapProjection} from "./projection.js";
 import {Civ} from "../generation/civ.js";
 import {ErodingSegmentTree} from "../utilities/erodingsegmenttree.js";
@@ -23,20 +23,24 @@ import {
 import {chooseLabelLocation} from "./labeling.js";
 import {cloneNode, h, VNode} from "../gui/virtualdom.js";
 import {poissonDiscSample} from "../utilities/poissondisc.js";
-
-import TEXTURE_MIXES from "../../resources/texture_mixes.js";
 import {Random} from "../utilities/random.js";
 import {offset} from "../utilities/offset.js";
+
+import TEXTURE_MIXES from "../../resources/texture_mixes.js";
 
 
 // DEBUG OPTIONS
 const DISABLE_GREEBLING = false; // make all lines as simple as possible
 const SMOOTH_RIVERS = false; // make rivers out of bezier curves so there's no sharp corners
 const SHOW_TILE_INDICES = false; // label each tile with its number
+const SHOW_STRAIGHT_SKELETONS = false; // draw the straight skeleton of every tile
 const COLOR_BY_PLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_SUBPLATE = false; // choropleth the land by plate index rather than whatever else
 const COLOR_BY_CONTINENT = false; // choropleth the land by continent index rather than whatever else
+const COLOR_BY_CULTURE = false; // base the political borders off of cultures instead of civs
 const COLOR_BY_TILE = false; // color each tile a different color
+const COLOR_BY_TEMPERATURE = false; // color each tile based on its mean annual temperature
+const COLOR_BY_RAINFALL = false; // color each tile based on its mean annual rainfall
 const SHOW_SEA_BORDERS = false; // include ocean territory in each country's border
 const SHOW_TECH_LEVEL = false; // caption each country with its current technology level
 const SHOW_LABEL_PATHS = false; // instead of placing labels, just stroke the path where the label would have gone
@@ -199,6 +203,40 @@ const DEPTH_COLORS = [
 	'rgb( 51,  50,  92)',
 	'rgb( 31,  29,  43)',
 ];
+/** colormap for rainfall */
+const RAINFALL_COLORS = [
+	'#ffffff',
+	'#e5eddb',
+	'#c9dcb7',
+	'#a5cd9f',
+	'#81bf95',
+	'#5bb090',
+	'#3d9e8e',
+	'#288c8b',
+	'#167a87',
+	'#046782',
+	'#02557d',
+	'#104075',
+	'#19296d',
+	'#1f0769',
+];
+/** colormap for temperature and insolation */
+export const TEMPERATURE_COLORS = [
+	'rgb(251, 254, 248)',
+	'rgb(216, 231, 245)',
+	'rgb(164, 215, 237)',
+	'rgb(104, 203, 206)',
+	'rgb( 68, 185, 156)',
+	'rgb( 54, 167, 105)',
+	'rgb( 64, 145,  47)',
+	'rgb( 92, 116,  11)',
+	'rgb(100,  89,   5)',
+	'rgb( 99,  62,   1)',
+	'rgb( 91,  33,   1)',
+	'rgb( 75,   2,   6)',
+	'rgb( 41,   4,   5)',
+	'rgb(  7,   0,   0)',
+];
 
 /** a type of area feature with a particular greebling profile */
 enum Layer {
@@ -344,7 +382,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	const bbox = rawBbox.rotate(orientation).scale(scale).offset(margin);
 
 	let colorScheme = COLOR_SCHEMES.get(colorSchemeName);
-	if (COLOR_BY_PLATE || COLOR_BY_SUBPLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE)
+	if (COLOR_BY_PLATE || COLOR_BY_SUBPLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE || COLOR_BY_TEMPERATURE || COLOR_BY_RAINFALL)
 		colorScheme = COLOR_SCHEMES.get('debug');
 
 	const svg = h('svg', {
@@ -408,6 +446,23 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			transform, createSVGGroup(svg, "tiles"), Layer.GEO,
 			colorScheme.waterStroke, 0.2));
 	}
+	else if (COLOR_BY_CULTURE && world !== null) {
+		areaFeatures.push(...fillMultiple(
+			world.getCultures(true).map(culture => culture.tiles), COUNTRY_COLORS,
+			surface.tiles, colorScheme.landFill,
+			transform, createSVGGroup(svg, "cultures"), Layer.KULTUR,
+			colorScheme.primaryStroke, 0.4));
+	}
+	else if (COLOR_BY_TEMPERATURE) {
+		areaFeatures.push(...fillChoropleth(
+			surface.tiles, n => n.temperature, 6, TEMPERATURE_COLORS,
+			transform, createSVGGroup(svg, "choropleth"), Layer.GEO, -35));
+	}
+	else if (COLOR_BY_RAINFALL) {
+		areaFeatures.push(...fillChoropleth(
+			surface.tiles, n => n.rainfall, 0.25, RAINFALL_COLORS,
+			transform, createSVGGroup(svg, "choropleth"), Layer.GEO));
+	}
 	else if (colorSchemeName === 'physical') {
 		// color the land by biome
 		areaFeatures.push(...fillChoropleth(
@@ -420,10 +475,10 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 			throw new Error("this Chart was asked to color land politicly but the provided World was null");
 		let biggestCivs = world.getCivs(true);
 		biggestCivs = biggestCivs.filter( // skip really small countries
-			civ => civ.tileTree.size > 1 || civ.getPopulation()/civ.getTotalArea() >= BORDER_SPECIFY_THRESHOLD);
+			civ => civ.getTiles().size > 1 || civ.getPopulation()/civ.getTotalArea() >= BORDER_SPECIFY_THRESHOLD);
 		const biggestCivExtents = [];
 		for (const civ of biggestCivs)
-			biggestCivExtents.push(filterSet(civ.tileTree.keys(), n => !n.isWater()));
+			biggestCivExtents.push(filterSet(civ.getTiles(), n => !n.isWater()));
 		const drawnCivs = fillMultiple(
 			biggestCivExtents, COUNTRY_COLORS, surface.tiles, colorScheme.landFill,
 			transform, createSVGGroup(svg, "countries"), Layer.KULTUR);
@@ -521,26 +576,24 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 	if (civLabels) {
 		if (world === null)
 			throw new Error("this Chart was asked to label countries but the provided World was null");
-		placeLabels(
-			world.getCivs(), style, (landTexture) ? politicalColorMap : null,
-			transform, createSVGGroup(svg, "labels"), fontSize, 3*fontSize,
-			characterWidthMap);
+		if (COLOR_BY_CULTURE)
+			placeLabels(
+				world.getCultures(), style, null,
+				transform, createSVGGroup(svg, "labels"), fontSize, 3*fontSize,
+				characterWidthMap);
+		else
+			placeLabels(
+				world.getCivs(), style, (landTexture) ? politicalColorMap : null,
+				transform, createSVGGroup(svg, "labels"), fontSize, 3*fontSize,
+				characterWidthMap);
+	}
+
+	if (SHOW_STRAIGHT_SKELETONS) {
+		drawStraightSkeletons(surface, transform, createSVGGroup(svg, "spooky_scary_skeletons"));
 	}
 
 	if (SHOW_TILE_INDICES) {
-		const g = createSVGGroup(svg, "indices");
-		g.attributes.style = "text-anchor: middle; dominant-baseline: middle";
-		for (const tile of surface.tiles) {
-			const text = h('text'); // start by creating the text element
-			const location = transformPoint(tile, transform);
-			if (location !== null) {
-				text.attributes["x"] = location.x.toFixed(3);
-				text.attributes["y"] = location.y.toFixed(3);
-				text.attributes["font-size"] = "0.2em";
-				text.textContent = `${tile.index}`;
-				g.children.push(text);
-			}
-		}
+		placeTileLabels(surface.tiles, transform, createSVGGroup(svg, "indices"));
 	}
 
 	// add a margin and outline to the whole thing
@@ -548,7 +601,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 
 	// add the windrose
 	if (windrose) {
-		placeWindrose(bbox, resources.get("windrose"), createSVGGroup(svg, "compass-rose"));
+		placeWindrose(bbox.offset(-margin), resources.get("windrose"), createSVGGroup(svg, "compass-rose"));
 	}
 
 	let visible;
@@ -558,7 +611,7 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		visible = [];
 		for (const civ of world.getCivs(true))
 			if (transformedOutline(
-				[...civ.tileTree.keys()].filter(n => !n.isWater()),
+				filterSet(civ.getTiles(), n => !n.isWater()),
 				Layer.KULTUR, transform
 			).length > 0)
 				visible.push(civ);
@@ -628,19 +681,20 @@ function fillMultiple(regions: Set<Tile>[], colors: string[], tiles: Set<Tile> |
  * @param tiles the tiles to color in
  * @param valuator the function that is used to determine in which bin each tile goes
  * @param binSize the size of each interval to color together
+ * @param binOffset the minimum value of the lowest bin
  * @param colors the color for each value bin
  * @param transform the projection, extent, scale, and orientation information
  * @param svg object on which to put the Paths
  * @param greeble what kind of edge it is for the purposes of greebling
  */
 function fillChoropleth(tiles: Set<Tile>, valuator: (t: Tile) => number, binSize: number, colors: string[],
-                        transform: Transform, svg: VNode, greeble: Layer): {path: PathSegment[], color: string}[] {
+                        transform: Transform, svg: VNode, greeble: Layer, binOffset=0): {path: PathSegment[], color: string}[] {
 	const contours = [];
 	for (let i = 0; i < colors.length; i ++) {
 		if (colors[i] === "none")
 			continue;
-		const min = (i !== 0) ? i * binSize : -Infinity;
-		const max = (i !== colors.length - 1) ? (i + 1) * binSize : Infinity;
+		const min = (i !== 0) ? binOffset + i*binSize : -Infinity;
+		const max = (i !== colors.length - 1) ? binOffset + (i + 1)*binSize : Infinity;
 		const path = fill(
 			filterSet(tiles, n => valuator(n) >= min && valuator(n) < max),
 			transform, svg, colors[i], greeble);
@@ -707,11 +761,11 @@ function drawRivers(rivers: Set<(Tile | Vertex)[]>, riverDisplayThreshold: numbe
 function drawBorders(civs: Civ[], transform: Transform, svg: VNode, color: string, width: number, includeSea=false): PathSegment[][] {
 	const lineFeatures = [];
 	for (const civ of civs) {
-		if (civ.tileTree.size === 1 && civ.getPopulation()/civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
+		if (civ.getTiles().size === 1 && civ.getPopulation()/civ.getTotalArea() < BORDER_SPECIFY_THRESHOLD)
 			continue; // skip really small countries
-		let tiles = new Set(civ.tileTree.keys());
+		let tiles = civ.getTiles();
 		if (!includeSea)
-			tiles = filterSet(civ.tileTree.keys(), n => !n.isWater());
+			tiles = filterSet(tiles, n => !n.isWater());
 		const line = fill(
 			tiles, transform, svg, 'none', Layer.KULTUR, color, width);
 		if (line.length > 0)
@@ -1038,31 +1092,31 @@ function drawGraticule(surface: Surface, extent: {φMin: number, φMax: number, 
  *                    a bigger label, it will appear at this font size
  * @param characterWidthMap a table containing the width of every possible character, for label length calculation purposes
  */
-function placeLabels(civs: Civ[], style: string, haloInfo: null | Map<number, string>, transform: Transform, svg: VNode,
+function placeLabels(civs: Region[], style: string, haloInfo: null | Map<number, string>, transform: Transform, svg: VNode,
                      minFontSize: number, maxFontSize: number, characterWidthMap: Map<string, number>): void {
 		let labelIndex = 0;
 		for (const civ of civs) {
-			if (civ.getPopulation() > 0) {
-				const tiles = [...civ.tileTree.keys()].filter(n => !n.isSaltWater()); // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
-				let label;
-				if (SHOW_TECH_LEVEL)
-					label = (Math.log(civ.technology)*1400 - 3000).toFixed(0);
-				else
-					label = civ.getName().toString(style).toUpperCase();
-				let haloColor;
-				if (haloInfo === null)
-					haloColor = null;
-				else if (haloInfo.has(civ.id))
-					haloColor = haloInfo.get(civ.id);
-				else
-					haloColor = haloInfo.get(0);
+			const tiles = [...civ.getTiles()].filter(n => !n.isSaltWater()); // TODO: do something fancier... maybe the intersection of the voronoi space and the convex hull
+			if (tiles.length < 0)
+				throw new Error("you seem to have passed a nonexistent Civ to placeLabels.");
+			let label;
+			if (SHOW_TECH_LEVEL && civ instanceof Civ)
+				label = (Math.log(civ.technology)*1400 - 3000).toFixed(0);
+			else
+				label = civ.getName().toString(style).toUpperCase();
+			let haloColor;
+			if (haloInfo === null)
+				haloColor = null;
+			else if (haloInfo.has(civ.id))
+				haloColor = haloInfo.get(civ.id);
+			else
+				haloColor = haloInfo.get(0);
 
-				placeLabel(
-					tiles, label, transform, svg,
-					minFontSize, maxFontSize, haloColor,
-					labelIndex, characterWidthMap);
-				labelIndex += 1;
-			}
+			placeLabel(
+				tiles, label, transform, svg,
+				minFontSize, maxFontSize, haloColor,
+				labelIndex, characterWidthMap);
+			labelIndex += 1;
 		}
 	}
 
@@ -1140,8 +1194,48 @@ function placeLabel(tiles: Tile[], label: string, transform: Transform, svg: VNo
 }
 
 /**
+ * as a debugging tool, put a text box on every Tile showing its index
+ */
+function placeTileLabels(tiles: Set<Tile>, transform: Transform, svg: VNode) {
+	svg.attributes.style = "text-anchor: middle; dominant-baseline: middle";
+	for (const tile of tiles) {
+		const text = h('text'); // start by creating the text element
+		const location = transformPoint(tile, transform);
+		if (location !== null) {
+			text.attributes["x"] = location.x.toFixed(3);
+			text.attributes["y"] = location.y.toFixed(3);
+			text.attributes["font-size"] = "0.2em";
+			text.textContent = `${tile.index}`;
+			svg.children.push(text);
+		}
+	}
+}
+
+/**
+ * as a debugging tool, draw the straight skeleton of every tile
+ */
+function drawStraightSkeletons(surface: Surface, transform: Transform, svg: VNode) {
+	const edges = new Set<Edge>();
+	for (const tile of surface.tiles)
+		for (const edge of tile.neighbors.values())
+			edges.add(edge);
+	const path = [];
+	for (const edge of edges) {
+		edge.setCoordinatesAndBounds();
+		const edgeCoordsPolygon = [edge.vertex0.pos].concat(edge.leftBoundCartesian, [edge.vertex1.pos], edge.rightBoundCartesian);
+		const geoCoordsPolygon = edgeCoordsPolygon.map(surface.φλ, surface);
+		const start = geoCoordsPolygon[geoCoordsPolygon.length - 1];
+		path.push({type: 'M', args: [start.φ, start.λ]});
+		for (let i = 0; i < geoCoordsPolygon.length; i ++)
+			path.push({type: 'L', args: [geoCoordsPolygon[i].φ, geoCoordsPolygon[i].λ]});
+	}
+	svg.attributes.style = "fill: none; stroke: #302d2877; stroke-width: 0.2px; stroke-linecap: round; stroke-linejoin: round";
+	draw(transformPath(path, transform), svg);
+}
+
+/**
  *
- * @param bbox
+ * @param bbox the spacial extent of the map area
  * @param content
  * @param svg SVG object on which to put the content
  */
@@ -1363,17 +1457,18 @@ function convertToGreebledPath(points: Iterable<ΦΛPoint[]>, greeble: Layer, sc
 				if (start.neighbors.has(end))
 					edge = start.neighbors.get(end);
 			let step: ΦΛPoint[];
-			// if there is an edge and it should be greebled, greeble it
-			if (edge !== null && weShouldGreeble(edge, greeble)) {
-				const path = edge.getPath(GREEBLE_SCALE/scale);
+			// if this is an edge or something, just use a strait line
+			if (edge === null)
+				step = [end];
+			// if there is an edge, greeble it
+			else {
+				// if it's not a precise edge, tho, then greeble minimally
+				const edgeScale = weShouldGreeble(edge, greeble) ? scale : 0;
+				const path = edge.getPath(GREEBLE_SCALE/edgeScale);
 				if (edge.vertex0 === start)
 					step = path.slice(1);
 				else
 					step = path.slice(0, path.length - 1).reverse();
-			}
-			// otherwise, draw a strait line
-			else {
-				step = [end];
 			}
 			console.assert(step[step.length - 1].φ === end.φ && step[step.length - 1].λ === end.λ, step, "did not end at", end);
 

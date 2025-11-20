@@ -135,8 +135,9 @@ describe("Edge", () => {
 			});
 			test("coarsest scale", () => {
 				expect(edge.getPath(Infinity)).toEqual([
-					expect.objectContaining({φ: edge.vertex0.φ, λ: edge.vertex0.λ}),
-					expect.objectContaining({φ: edge.vertex1.φ, λ: edge.vertex1.λ}),
+					expect.objectContaining({φ: edge.vertex0.φ, λ: expect.closeTo(-2*Math.PI/3)}),
+					expect.objectContaining({λ: expect.closeTo(-Math.PI)}),
+					expect.objectContaining({φ: edge.vertex1.φ, λ: expect.closeTo(2*Math.PI/3)}),
 				]);
 			});
 			test("illegal scale", () => {

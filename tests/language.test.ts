@@ -171,7 +171,7 @@ describe("script", () => {
 		});
 		test("en", () => {
 			expect(words.map(word => transcribe(word, "en")).join(" ")).toEqual(
-				"nchtark ngweun yung weequegiagwagwegageethathecacky teaeet");
+				"nchtark ngweeun yung weequeegiagwagweegageethatheecacky teeait");
 		});
 		test("ja", () => {
 			expect(words.map(word => transcribe(word, "ja")).join(" ")).toEqual(
