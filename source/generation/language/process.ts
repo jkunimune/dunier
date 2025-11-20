@@ -128,7 +128,12 @@ export class SoundChange extends LocalProcess {
 				if (i >= 0) drowWen.push(oldWord[i]); // just add the next character of old
 			}
 		}
-		return drowWen.reverse();
+		const newWord = drowWen.reverse();
+		// if this change would make the word too short, cancel it
+		if (newWord.length < oldWord.length && newWord.length < 3)
+			return oldWord;
+		else
+			return newWord;
 	}
 
 	/**
