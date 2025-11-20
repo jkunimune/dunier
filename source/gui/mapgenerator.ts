@@ -393,7 +393,7 @@ function applyMap(
 		const i = Number.parseInt(focusSpecifier.split("-")[0].slice(7));
 		try {
 			const civ = world.getCiv(i);
-			regionOfInterest = filterSet(civ.tileTree.keys(), tile => !tile.isWater());
+			regionOfInterest = filterSet(civ.getTiles(), tile => !tile.isWater());
 		}
 		catch {
 			console.error(`invalid civ index: ${i}`);
