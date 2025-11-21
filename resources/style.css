@@ -9,7 +9,7 @@ html, body {
 body {
     display: flex;
     flex-direction: column;
-    font-family: "Noto Sans","Noto Color Emoji","Segoe UI Symbol","Helvetica Neue",sans-serif;
+    font-family: "Noto Sans",sans-serif;
     color: #212529;
     font-weight: 400;
     height: 100%;
@@ -695,14 +695,14 @@ button.close {
 }
 
 .info-icon {
-    background: none;
+    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='15' viewBox='-40 -40 80 80' stroke='black'%3e%3cpath fill='none' stroke-width='8' d='M0,-36 A36,36,0,0,0,0,36 A36,36,0,0,0,0,-36 Z M0,23 L0,-7 M0,-15 L0,-23'/%3e%3c/svg%3e") no-repeat center;
     border: none;
-    font-size: 1.25rem;
-    color: rgba(0, 0, 0, 0.5);
+    width: 1.25rem;
+    opacity: 0.5;
     padding-right: 0;
 }
 .info-icon:hover, .info-icon:focus {
-    color: rgba(0, 0, 0, 0.7);
+    opacity: 0.7;
 }
 
 .tooltip {
