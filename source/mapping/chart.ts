@@ -386,6 +386,8 @@ export function depict(surface: Surface, continents: Set<Tile>[] | null, world: 
 		colorScheme = COLOR_SCHEMES.get('debug');
 
 	const svg = h('svg', {
+		xmlns: "http://www.w3.org/2000/svg",
+		"xmlns:xlink": "http://www.w3.org/1999/xlink",
 		viewBox: `${bbox.left.toFixed(3)} ${bbox.top.toFixed(3)} ${bbox.width.toFixed(3)} ${bbox.height.toFixed(3)}`,
 	});
 
@@ -960,6 +962,7 @@ function drawTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][], areaFeatur
 		// and a horizontally flipped version
 		const flippedTexture = h('use', {id: `texture-${textureName}-flip`});
 		flippedTexture.attributes.href = `#texture-${textureName}`;
+		flippedTexture.attributes["xlink:href"] = `#texture-${textureName}`;
 		flippedTexture.attributes.transform = "scale(-1, 1)";
 		defs.children.push(flippedTexture);
 	}
@@ -969,7 +972,12 @@ function drawTexture(tiles: Set<Tile>, lineFeatures: PathSegment[][], areaFeatur
 		`stroke:${strokeColor}; stroke-width:${strokeWidth}; stroke-linejoin:round; stroke-linecap: round;`;
 	for (const {x, y, name, flipped} of symbols) {
 		const referenceID = `#texture-${name}` + (flipped ? "-flip" : "");
-		const picture = h('use', {href: referenceID, x: x.toFixed(3), y: y.toFixed(3), fill: fillColor});
+		const picture = h('use', {
+			href: referenceID,
+			"xlink:href": referenceID,
+			x: x.toFixed(3), y: y.toFixed(3),
+			fill: fillColor,
+		});
 		for (const region of areaFeatures) { // check if it should inherit color from a base fill
 			if (contains(region.path, {s: x, t: y}, INFINITE_PLANE, Rule.POSITIVE)) {
 				picture.attributes.fill = region.color;
@@ -1177,6 +1185,7 @@ function placeLabel(tiles: Tile[], label: string, transform: Transform, svg: VNo
 		class: 'label',
 		startOffset: '50%',
 		href: `#labelArc${labelIndex}`,
+		"xlink:href": `#labelArc${labelIndex}`,
 	});
 	textPath.textContent = label;
 
