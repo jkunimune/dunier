@@ -369,6 +369,8 @@ export function depict(surface, continents, world, projectionName, regionOfInter
     if (COLOR_BY_PLATE || COLOR_BY_SUBPLATE || COLOR_BY_CONTINENT || COLOR_BY_TILE || COLOR_BY_TEMPERATURE || COLOR_BY_RAINFALL)
         colorScheme = COLOR_SCHEMES.get('debug');
     var svg = h('svg', {
+        xmlns: "http://www.w3.org/2000/svg",
+        "xmlns:xlink": "http://www.w3.org/1999/xlink",
         viewBox: "".concat(bbox.left.toFixed(3), " ").concat(bbox.top.toFixed(3), " ").concat(bbox.width.toFixed(3), " ").concat(bbox.height.toFixed(3)),
     });
     // set the basic overarching styles
@@ -1021,6 +1023,7 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
             // and a horizontally flipped version
             var flippedTexture = h('use', { id: "texture-".concat(textureName, "-flip") });
             flippedTexture.attributes.href = "#texture-".concat(textureName);
+            flippedTexture.attributes["xlink:href"] = "#texture-".concat(textureName);
             flippedTexture.attributes.transform = "scale(-1, 1)";
             defs.children.push(flippedTexture);
         }
@@ -1039,7 +1042,12 @@ function drawTexture(tiles, lineFeatures, areaFeatures, transform, svg, defs, fi
         for (var symbols_2 = __values(symbols), symbols_2_1 = symbols_2.next(); !symbols_2_1.done; symbols_2_1 = symbols_2.next()) {
             var _k = symbols_2_1.value, x = _k.x, y = _k.y, name_3 = _k.name, flipped = _k.flipped;
             var referenceID = "#texture-".concat(name_3) + (flipped ? "-flip" : "");
-            var picture = h('use', { href: referenceID, x: x.toFixed(3), y: y.toFixed(3), fill: fillColor });
+            var picture = h('use', {
+                href: referenceID,
+                "xlink:href": referenceID,
+                x: x.toFixed(3), y: y.toFixed(3),
+                fill: fillColor,
+            });
             try {
                 for (var areaFeatures_1 = (e_15 = void 0, __values(areaFeatures)), areaFeatures_1_1 = areaFeatures_1.next(); !areaFeatures_1_1.done; areaFeatures_1_1 = areaFeatures_1.next()) { // check if it should inherit color from a base fill
                     var region = areaFeatures_1_1.value;
@@ -1293,6 +1301,7 @@ function placeLabel(tiles, label, transform, svg, minFontSize, maxFontSize, halo
         class: 'label',
         startOffset: '50%',
         href: "#labelArc".concat(labelIndex),
+        "xlink:href": "#labelArc".concat(labelIndex),
     });
     textPath.textContent = label;
     // also add a halo below it if desired
