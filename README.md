@@ -1,6 +1,6 @@
-# Dunier – fantasy map generator
+# Dunier – fantasy world generator
 
-Dunier is a tool being designed to help world builders build more and more realistic
+Dunier is a tool designed to help world builders build more and more realistic
 worlds. Sometimes you need a world, but don't want to painstakingly build every
 aspect of it yourself. Maybe you're running an RPG campaign and just need a
 believable setting for your plot. Maybe you're a world builder who's more interested
@@ -8,7 +8,7 @@ in culture and magic than in locations and names. Then Dunier is the tool for
 you.
 
 Not just a map generator, Dunier also gives you an info sheet on each country,
-a list of names in each language, and a 3&thinsp;000 year history of conquest,
+a list of names in each language, and a 3&nbsp;000 year history of conquest,
 division, and advancement across the world.
 
 Dunier is inspired by previous fantasy map generators like
@@ -18,6 +18,8 @@ many fine details like mine locations and diplomatic relations. It does, however
 account for several features missing in other generators that are noticeable on the
 macroscopic scale, such as planetary curvature, plate tectonics, and linguistic
 drift.
+
+Dunier is hosted at [dunier.kunimune.blog](https://dunier.kunimune.blog).  For more information about it, read my blog post about it, ["Dunier: a fantasy world generator"](https://kunimune.blog/2025/11/19/dunier-a-fantasy-world-generator/).
 
 ## Contents
 
