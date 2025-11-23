@@ -1180,25 +1180,24 @@ function placeLabel(tiles: Tile[], label: string, transform: Transform, svg: VNo
 
 	// create the text element
 	const textGroup = h('text', {
+		class: 'label',
 		style: `font-size: ${fontSize.toFixed(1)}px; letter-spacing: ${(location.letterSpacing*.5).toFixed(1)}em;`}); // this .5em is just a guess at the average letter width
 	const textPath = h('textPath', {
-		class: 'label',
 		startOffset: '50%',
 		href: `#labelArc${labelIndex}`,
 		"xlink:href": `#labelArc${labelIndex}`,
 	});
 	textPath.textContent = label;
+	textGroup.children.push(textPath);
 
 	// also add a halo below it if desired
 	if (haloColor !== null) {
-		const haloPath = cloneNode(textPath);
-		haloPath.attributes.class += ' halo';
-		haloPath.attributes.stroke = haloColor;
-
-		textGroup.children.push(haloPath);
+		const haloTextGroup = cloneNode(textGroup);
+		haloTextGroup.attributes.class += ' halo';
+		haloTextGroup.attributes.stroke = haloColor;
+		svg.children.push(haloTextGroup);
 	}
 
-	textGroup.children.push(textPath);
 	svg.children.push(textGroup);
 }
 
